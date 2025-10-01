@@ -137,7 +137,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: duplicator-linux-appimage
-          path: dist/Duplicator-1.0.0.AppImage
+          path: dist/Duplicator-1.0.12.AppImage
           retention-days: 7
         
       - name: Test summary

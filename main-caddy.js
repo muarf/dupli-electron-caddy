@@ -57,9 +57,10 @@ function getCaddyPath() {
 function getPhpFpmPath() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
     const isWindows = process.platform === 'win32';
+    const isMacOS = process.platform === 'darwin';
     
-    if (isAppImage) {
-        // AppImage : utiliser le PHP-FPM inclus
+    if (isAppImage || isMacOS) {
+        // AppImage ou macOS : utiliser le PHP-FPM inclus
         return path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php-fpm');
     } else if (isWindows) {
         // Windows : utiliser le PHP-FPM inclus
@@ -75,9 +76,10 @@ function getPhpFpmPath() {
 function getPhpPath() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
     const isWindows = process.platform === 'win32';
+    const isMacOS = process.platform === 'darwin';
     
-    if (isAppImage) {
-        // AppImage : utiliser le PHP inclus
+    if (isAppImage || isMacOS) {
+        // AppImage ou macOS : utiliser le PHP inclus
         return path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php');
     } else if (isWindows) {
         // Windows : utiliser le PHP inclus
@@ -93,8 +95,9 @@ function getPhpPath() {
 function getConfigPath() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
     const isWindows = process.platform === 'win32';
+    const isMacOS = process.platform === 'darwin';
     
-    if (isAppImage) {
+    if (isAppImage || isMacOS) {
         return process.resourcesPath;
     } else if (isWindows) {
         // Windows portable : utiliser resources/
@@ -108,9 +111,10 @@ function getConfigPath() {
 function getCaddyfilePath() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
     const isWindows = process.platform === 'win32';
+    const isMacOS = process.platform === 'darwin';
     
-    if (isAppImage) {
-        // Dans l'AppImage, le Caddyfile est dans resources/
+    if (isAppImage || isMacOS) {
+        // Dans l'AppImage ou macOS, le Caddyfile est dans resources/
         return path.join(process.resourcesPath, 'Caddyfile');
     } else if (isWindows) {
         // Windows portable : le Caddyfile est dans resources/
@@ -125,9 +129,10 @@ function startPhpFpm() {
     const phpPath = getPhpPath();
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
     
-    // Le chemin de l'app dépend si on est en AppImage, Windows ou développement
+    // Le chemin de l'app dépend si on est en AppImage, Windows, macOS ou développement
     const isWindows = process.platform === 'win32';
-    const appPath = isAppImage 
+    const isMacOS = process.platform === 'darwin';
+    const appPath = (isAppImage || isMacOS)
         ? path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public')
         : isWindows
         ? path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public')
@@ -137,11 +142,11 @@ function startPhpFpm() {
     console.log('Platform:', process.platform);
     console.log('isAppImage:', isAppImage);
     console.log('isWindows:', isWindows);
+    console.log('isMacOS:', isMacOS);
     console.log('process.resourcesPath:', process.resourcesPath);
     console.log('PHP Path:', phpPath);
     console.log('App Path:', appPath);
     console.log('App Path exists:', fs.existsSync(appPath));
-    console.log('App Path existe:', fs.existsSync(appPath));
     
     // Créer le répertoire de sessions s'il n'existe pas
     const sessionPath = '/tmp/duplicator_sessions';
@@ -237,11 +242,13 @@ function startCaddy() {
     const caddyfile = getCaddyfilePath();
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
     const isWindows = process.platform === 'win32';
+    const isMacOS = process.platform === 'darwin';
     
     console.log('Démarrage de Caddy...');
     console.log('Platform:', process.platform);
     console.log('isAppImage:', isAppImage);
     console.log('isWindows:', isWindows);
+    console.log('isMacOS:', isMacOS);
     console.log('process.resourcesPath:', process.resourcesPath);
     console.log('Caddy Path:', caddyPath);
     console.log('Caddy Path exists:', fs.existsSync(caddyPath));
