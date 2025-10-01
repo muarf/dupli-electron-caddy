@@ -42,7 +42,10 @@ function getCaddyPath() {
         return caddyPath;
     } else if (isWindows) {
         // Windows portable : utiliser le Caddy inclus
-        return path.join(process.resourcesPath, 'app.asar.unpacked', 'caddy', 'caddy.exe');
+        const caddyPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'caddy', 'caddy.exe');
+        console.log('Chemin Caddy Windows:', caddyPath);
+        console.log('Caddy Windows existe:', fs.existsSync(caddyPath));
+        return caddyPath;
     } else {
         // Développement : utiliser le Caddy inclus ou système
         const caddyPath = path.join(__dirname, 'caddy', 'caddy');

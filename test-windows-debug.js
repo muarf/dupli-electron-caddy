@@ -93,3 +93,4 @@ if (fs.existsSync(caddyPath)) {
 } else {
     console.log('❌ Caddy non trouvé');
 }
+
