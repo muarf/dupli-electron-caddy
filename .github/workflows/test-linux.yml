@@ -59,21 +59,30 @@ jobs:
       - name: Verify AppImage
         run: |
           echo "=== Vérification de l'AppImage ==="
-          if [ -f "dist/Duplicator-1.0.0.AppImage" ]; then
+          VERSION=$(node -p "require('./package.json').version")
+          APPIMAGE_FILE="dist/Duplicator-${VERSION}.AppImage"
+          echo "Version: $VERSION"
+          echo "Fichier attendu: $APPIMAGE_FILE"
+          
+          if [ -f "$APPIMAGE_FILE" ]; then
             echo "✅ AppImage créé"
-            ls -lh dist/Duplicator-1.0.0.AppImage
-            chmod +x dist/Duplicator-1.0.0.AppImage
-            echo "📊 Taille de l'AppImage: $(du -h dist/Duplicator-1.0.0.AppImage | cut -f1)"
-            echo "🔍 Type de fichier: $(file dist/Duplicator-1.0.0.AppImage)"
+            ls -lh "$APPIMAGE_FILE"
+            chmod +x "$APPIMAGE_FILE"
+            echo "📊 Taille de l'AppImage: $(du -h "$APPIMAGE_FILE" | cut -f1)"
+            echo "🔍 Type de fichier: $(file "$APPIMAGE_FILE")"
           else
             echo "❌ AppImage manquant"
+            echo "Fichiers disponibles dans dist/:"
+            ls -la dist/
             exit 1
           fi
         
       - name: Extract and verify AppImage contents
         run: |
           echo "=== Extraction de l'AppImage ==="
-          ./dist/Duplicator-1.0.0.AppImage --appimage-extract
+          VERSION=$(node -p "require('./package.json').version")
+          APPIMAGE_FILE="dist/Duplicator-${VERSION}.AppImage"
+          ./"$APPIMAGE_FILE" --appimage-extract
           
           echo "Vérification du contenu..."
           if [ -f "squashfs-root/resources/app.asar.unpacked/caddy/caddy" ]; then
@@ -137,7 +146,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: duplicator-linux-appimage
-          path: dist/Duplicator-1.0.12.AppImage
+          path: dist/Duplicator-*.AppImage
           retention-days: 7
         
       - name: Test summary

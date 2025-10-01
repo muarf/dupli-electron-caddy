@@ -25,10 +25,11 @@ const CADDY_VERSIONS = {
 // Configuration des téléchargements PHP
 const PHP_VERSIONS = {
     'linux': {
-        url: 'https://github.com/shivammathur/php-src-prebuilt/releases/download/php-8.4.13/php-8.4.13-linux-x64.tar.gz',
+        url: 'https://github.com/php/php-src/releases/download/php-8.4.13/php-8.4.13.tar.gz',
         filename: 'php_linux.tar.gz',
         binary: 'php',
-        fpm: 'php-fpm'
+        fpm: 'php-fpm',
+        useSystem: true // Utiliser le PHP système sur Linux
     },
     'windows': {
         url: 'https://windows.php.net/downloads/releases/php-8.4.13-nts-Win32-vs17-x64.zip',
@@ -37,10 +38,11 @@ const PHP_VERSIONS = {
         fpm: 'php-fpm.exe'
     },
     'darwin': {
-        url: 'https://github.com/shivammathur/php-src-prebuilt/releases/download/php-8.4.13/php-8.4.13-macos-x64.tar.gz',
+        url: 'https://github.com/php/php-src/releases/download/php-8.4.13/php-8.4.13.tar.gz',
         filename: 'php_macos.tar.gz',
         binary: 'php',
-        fpm: 'php-fpm'
+        fpm: 'php-fpm',
+        useSystem: true // Utiliser le PHP système sur macOS
     }
 };
 
@@ -124,32 +126,68 @@ async function downloadPhp() {
     }
     
     try {
-        // Télécharger PHP
-        console.log(`Téléchargement depuis: ${config.url}`);
-        await downloadFile(config.url, downloadPath);
-        console.log('Téléchargement terminé');
-        
-        // Extraire le fichier
-        console.log('Extraction en cours...');
-        if (extractFile(downloadPath, phpDir)) {
-            console.log('Extraction terminée');
+        // Si useSystem est true, utiliser le PHP système
+        if (config.useSystem) {
+            console.log(`Utilisation du PHP système pour ${platform}`);
             
-            // Rendre les binaires exécutables sur Unix
-            if (platform !== 'win32') {
-                if (fs.existsSync(binaryPath)) {
-                    fs.chmodSync(binaryPath, '755');
+            // Vérifier que PHP est disponible
+            const { execSync } = require('child_process');
+            try {
+                execSync('php --version', { stdio: 'pipe' });
+                console.log('PHP système détecté et fonctionnel');
+            } catch (error) {
+                console.error('PHP système non disponible');
+                throw new Error('PHP système non disponible');
+            }
+            
+            // Créer des liens symboliques vers le PHP système
+            if (platform === 'win32') {
+                // Sur Windows, on garde les binaires existants
+                console.log('Binaires Windows déjà présents');
+            } else {
+                // Sur Unix, créer des liens symboliques
+                if (!fs.existsSync(binaryPath)) {
+                    fs.symlinkSync('/usr/bin/php', binaryPath);
                 }
-                if (fs.existsSync(fpmPath)) {
-                    fs.chmodSync(fpmPath, '755');
+                if (!fs.existsSync(fpmPath)) {
+                    try {
+                        fs.symlinkSync('/usr/bin/php-fpm', fpmPath);
+                    } catch (error) {
+                        // php-fpm peut ne pas être disponible, on continue sans
+                        console.log('php-fpm non disponible, utilisation du serveur PHP intégré');
+                    }
                 }
             }
             
-            // Supprimer le fichier d'archive
-            fs.unlinkSync(downloadPath);
-            
-            console.log(`PHP installé avec succès: ${binaryPath}`);
+            console.log(`PHP système configuré: ${binaryPath}`);
         } else {
-            throw new Error('Échec de l\'extraction');
+            // Télécharger PHP
+            console.log(`Téléchargement depuis: ${config.url}`);
+            await downloadFile(config.url, downloadPath);
+            console.log('Téléchargement terminé');
+            
+            // Extraire le fichier
+            console.log('Extraction en cours...');
+            if (extractFile(downloadPath, phpDir)) {
+                console.log('Extraction terminée');
+                
+                // Rendre les binaires exécutables sur Unix
+                if (platform !== 'win32') {
+                    if (fs.existsSync(binaryPath)) {
+                        fs.chmodSync(binaryPath, '755');
+                    }
+                    if (fs.existsSync(fpmPath)) {
+                        fs.chmodSync(fpmPath, '755');
+                    }
+                }
+                
+                // Supprimer le fichier d'archive
+                fs.unlinkSync(downloadPath);
+                
+                console.log(`PHP installé avec succès: ${binaryPath}`);
+            } else {
+                throw new Error('Échec de l\'extraction');
+            }
         }
         
     } catch (error) {
