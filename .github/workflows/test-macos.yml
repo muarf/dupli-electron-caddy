@@ -1,0 +1,219 @@
+name: Test macOS Build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Permet de lancer manuellement
+
+jobs:
+  build-and-test-macos:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Download Caddy for macOS
+        run: |
+          echo "Téléchargement de Caddy pour macOS..."
+          curl -L -o caddy_macos.tar.gz "https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_macOS_amd64.tar.gz"
+          tar -xzf caddy_macos.tar.gz
+          chmod +x caddy
+          rm caddy_macos.tar.gz
+          echo "Caddy téléchargé: $(ls -la caddy | awk '{print $5}') bytes"
+        
+      - name: Verify PHP binaries
+        run: |
+          echo "Vérification des binaires PHP inclus..."
+          
+          if [ -f "php/php" ]; then
+            echo "✅ php trouvé"
+            ./php/php --version
+            echo "Taille: $(stat -f%z php/php) bytes"
+          else
+            echo "❌ php manquant dans le repo"
+            echo "Contenu du dossier php/:"
+            if [ -d "php" ]; then
+              ls -la php/
+            else
+              echo "Dossier php/ n'existe pas"
+            fi
+          fi
+          
+          if [ -f "php/php-fpm" ]; then
+            echo "✅ php-fpm trouvé"
+            echo "Taille: $(stat -f%z php/php-fpm) bytes"
+          else
+            echo "❌ php-fpm manquant dans le repo"
+          fi
+        
+      - name: Build application
+        run: npm run build:caddy -- --mac
+        
+      - name: Verify build artifacts
+        run: |
+          echo "=== Vérification des artifacts de build ==="
+          
+          if [ -d "dist" ]; then
+            echo "📁 Contenu du dossier dist/:"
+            ls -la dist/
+            
+            if [ -d "dist/mac" ]; then
+              echo "📁 Contenu du dossier dist/mac/:"
+              ls -la dist/mac/
+            fi
+          else
+            echo "❌ Dossier dist/ manquant"
+          fi
+          
+          # Vérifier les binaires dans l'app
+          if [ -d "dist/mac/Duplicator.app" ]; then
+            echo "📱 Structure de l'application:"
+            find dist/mac/Duplicator.app -name "*.exe" -o -name "caddy" -o -name "php" | head -10
+            
+            echo "🔍 Vérification des binaires Caddy et PHP:"
+            if [ -f "dist/mac/Duplicator.app/Contents/Resources/app.asar.unpacked/caddy/caddy" ]; then
+              echo "✅ Caddy macOS présent dans l'app"
+              ls -la "dist/mac/Duplicator.app/Contents/Resources/app.asar.unpacked/caddy/caddy"
+            else
+              echo "❌ Caddy macOS manquant dans l'app"
+            fi
+            
+            if [ -f "dist/mac/Duplicator.app/Contents/Resources/app.asar.unpacked/php/php" ]; then
+              echo "✅ PHP macOS présent dans l'app"
+              ls -la "dist/mac/Duplicator.app/Contents/Resources/app.asar.unpacked/php/php"
+            else
+              echo "❌ PHP macOS manquant dans l'app"
+            fi
+          fi
+          
+          # Vérifier le Caddyfile
+          if [ -f "dist/mac/Duplicator.app/Contents/Resources/Caddyfile" ]; then
+            echo "✅ Caddyfile présent"
+            echo "Contenu du Caddyfile:"
+            cat "dist/mac/Duplicator.app/Contents/Resources/Caddyfile"
+          else
+            echo "❌ Caddyfile manquant"
+          fi
+          
+          # Test de validation si les fichiers existent
+          caddyExists=false
+          caddyfileExists=false
+          
+          if [ -f "dist/mac/Duplicator.app/Contents/Resources/app.asar.unpacked/caddy/caddy" ]; then
+            caddyExists=true
+          fi
+          
+          if [ -f "dist/mac/Duplicator.app/Contents/Resources/Caddyfile" ]; then
+            caddyfileExists=true
+          fi
+          
+          if [ "$caddyExists" = true ] && [ "$caddyfileExists" = true ]; then
+            echo "🔧 Validation de la configuration Caddy..."
+            ./dist/mac/Duplicator.app/Contents/Resources/app.asar.unpacked/caddy/caddy validate --config ./dist/mac/Duplicator.app/Contents/Resources/Caddyfile
+          else
+            echo "⚠️  Impossible de valider la configuration Caddy (fichiers manquants)"
+            echo "Caddy existe: $caddyExists"
+            echo "Caddyfile existe: $caddyfileExists"
+          fi
+        
+      - name: Test application launch (short)
+        run: |
+          echo "=== Test de démarrage de l'application ==="
+          
+          # Démarrer l'application
+          open dist/mac/Duplicator.app
+          echo "Application démarrée"
+          
+          # Attendre 15 secondes pour que l'app démarre
+          sleep 15
+          
+          # Vérifier si les processus sont lancés
+          phpProcess=$(ps aux | grep -i php | grep -v grep | head -1)
+          caddyProcess=$(ps aux | grep -i caddy | grep -v grep | head -1)
+          
+          if [ -n "$phpProcess" ]; then
+            echo "✅ Processus PHP détecté: $phpProcess"
+          else
+            echo "⚠️  Processus PHP non détecté"
+          fi
+          
+          if [ -n "$caddyProcess" ]; then
+            echo "✅ Processus Caddy détecté: $caddyProcess"
+          else
+            echo "⚠️  Processus Caddy non détecté"
+          fi
+          
+          # Tester si le port 8000 répond
+          if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000 | grep -q "200"; then
+            echo "✅ Application répond sur le port 8000"
+          else
+            echo "⚠️  Application ne répond pas sur le port 8000"
+          fi
+          
+          # Arrêter l'application
+          pkill -f "Duplicator"
+          pkill -f "php.*127.0.0.1:8001"
+          pkill -f "caddy"
+        
+      - name: Create screenshots
+        continue-on-error: true
+        run: |
+          echo "=== Capture d'écran de l'application ==="
+          
+          # Démarrer l'application
+          open dist/mac/Duplicator.app
+          echo "Application démarrée"
+          
+          # Attendre que l'application soit complètement chargée
+          sleep 20
+          
+          # Prendre un screenshot avec screencapture (commande macOS native)
+          screencapture -x screenshot.png
+          
+          echo "✅ Screenshot sauvegardé: screenshot.png"
+          
+          # Arrêter l'application
+          pkill -f "Duplicator"
+          pkill -f "php.*127.0.0.1:8001"
+          pkill -f "caddy"
+          
+      - name: Upload screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-screenshot
+          path: screenshot.png
+          retention-days: 7
+        
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: duplicator-macos-build
+          path: dist/mac/
+          retention-days: 7
+          
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-logs
+          path: |
+            *.log
+            error
+          if-no-files-found: ignore
+          retention-days: 7
