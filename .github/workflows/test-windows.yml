@@ -33,17 +33,29 @@ jobs:
           Remove-Item "caddy_windows.zip"
           echo "Caddy téléchargé: $(Get-Item caddy/caddy.exe | Select-Object -ExpandProperty Length) bytes"
         
-      - name: Copy PHP binaries for Windows
+      - name: Download PHP for Windows
         run: |
-          echo "Copie des binaires PHP..."
+          echo "Téléchargement de PHP pour Windows..."
+          Invoke-WebRequest -Uri "https://windows.php.net/downloads/releases/php-8.3.6-Win32-vs16-x64.zip" -OutFile "php_windows.zip"
+          
           if (-not (Test-Path "php")) {
             New-Item -ItemType Directory -Path "php"
           }
-          Copy-Item "php.exe" -Destination "php/" -Force
-          Copy-Item "php8ts.dll" -Destination "php/" -Force
-          Copy-Item "libsqlite3.dll" -Destination "php/" -Force
-          echo "PHP binaires copiés"
-          dir php/
+          
+          echo "Extraction de PHP..."
+          Expand-Archive -Path "php_windows.zip" -DestinationPath "php" -Force
+          Remove-Item "php_windows.zip"
+          
+          echo "Vérification des binaires PHP:"
+          dir php/ | Where-Object { $_.Name -like "*.exe" -or $_.Name -like "*.dll" } | Select-Object Name, Length
+          
+          if (Test-Path "php/php.exe") {
+            echo "✅ php.exe téléchargé"
+            & "php/php.exe" --version
+          } else {
+            echo "❌ php.exe manquant"
+            exit 1
+          }
         
       - name: Build Windows app
         run: npm run build:caddy -- --win
