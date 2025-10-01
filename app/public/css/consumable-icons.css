@@ -1,0 +1,167 @@
+.consumable-icon {
+    width: 24px;
+    height: 24px;
+    display: inline-block;
+    margin-right: 8px;
+    vertical-align: middle;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    position: relative;
+}
+
+/* Style pour les icônes TONER (rond simple) */
+.consumable-icon.toner {
+    border-radius: 50%;
+}
+
+/* Style pour les icônes ENCRE (forme goutte) */
+.consumable-icon.encre {
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+}
+
+/* Icônes pour duplicopieurs */
+.consumable-icon.encre {
+    background: linear-gradient(45deg, #2c3e50, #34495e);
+}
+.consumable-icon.encre:after {
+    content: "💧";
+    position: absolute;
+    top: -2px;
+    left: 2px;
+    font-size: 12px;
+    transform: rotate(45deg);
+}
+.consumable-icon.master {
+    background: linear-gradient(45deg, #000, #333);
+    border-radius: 50%;
+}
+.consumable-icon.master:after {
+    content: "⚫";
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    font-size: 10px;
+}
+
+/* Icônes TONER (rond simple) */
+.consumable-icon.noir {
+    background: #000;
+    border-radius: 50%;
+}
+.consumable-icon.noir:after {
+    content: "⚫";
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    font-size: 10px;
+}
+.consumable-icon.cyan {
+    background: #00FFFF;
+    border-radius: 50%;
+}
+.consumable-icon.cyan:after {
+    content: "🔵";
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    font-size: 10px;
+}
+.consumable-icon.magenta {
+    background: #FF00FF;
+    border-radius: 50%;
+}
+.consumable-icon.magenta:after {
+    content: "🟣";
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    font-size: 10px;
+}
+.consumable-icon.yellow {
+    background: #FFFF00;
+    border-radius: 50%;
+}
+.consumable-icon.yellow:after {
+    content: "🟡";
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    font-size: 10px;
+}
+.consumable-icon.tambour {
+    background: linear-gradient(45deg, #8B4513, #A0522D);
+    border-radius: 50%;
+}
+.consumable-icon.tambour:after {
+    content: "🥁";
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    font-size: 10px;
+}
+.consumable-icon.dev {
+    background: linear-gradient(45deg, #666, #888);
+    border-radius: 50%;
+}
+.consumable-icon.dev:after {
+    content: "⚙️";
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    font-size: 10px;
+}
+
+/* Icônes ENCRE (forme goutte) */
+.consumable-icon.noire {
+    background: #000;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+}
+.consumable-icon.noire:after {
+    content: "💧";
+    position: absolute;
+    top: -2px;
+    left: 2px;
+    font-size: 12px;
+    transform: rotate(45deg);
+}
+.consumable-icon.bleue {
+    background: #0000FF;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+}
+.consumable-icon.bleue:after {
+    content: "💧";
+    position: absolute;
+    top: -2px;
+    left: 2px;
+    font-size: 12px;
+    transform: rotate(45deg);
+}
+.consumable-icon.rouge {
+    background: #FF0000;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+}
+.consumable-icon.rouge:after {
+    content: "💧";
+    position: absolute;
+    top: -2px;
+    left: 2px;
+    font-size: 12px;
+    transform: rotate(45deg);
+}
+.consumable-icon.jaune {
+    background: #FFD700;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+}
+.consumable-icon.jaune:after {
+    content: "💧";
+    position: absolute;
+    top: -2px;
+    left: 2px;
+    font-size: 12px;
+    transform: rotate(45deg);
+}
