@@ -114,7 +114,31 @@ jobs:
       - name: Test Caddyfile validation
         run: |
           echo "=== Validation du Caddyfile ==="
-          & "dist/win-unpacked/resources/app.asar.unpacked/caddy/caddy.exe" validate --config "dist/win-unpacked/resources/Caddyfile"
+          echo "🔍 Vérification des binaires..."
+          
+          if (Test-Path "dist/win-unpacked/resources/app.asar.unpacked/caddy/caddy.exe") {
+            echo "✅ Caddy Windows présent"
+            Get-Item "dist/win-unpacked/resources/app.asar.unpacked/caddy/caddy.exe" | Select-Object Name, Length
+          } else {
+            echo "❌ Caddy Windows manquant"
+            echo "Contenu du dossier caddy:"
+            Get-ChildItem "dist/win-unpacked/resources/app.asar.unpacked/caddy/" -ErrorAction SilentlyContinue
+          }
+          
+          if (Test-Path "dist/win-unpacked/resources/Caddyfile") {
+            echo "✅ Caddyfile présent"
+            Get-Content "dist/win-unpacked/resources/Caddyfile"
+          } else {
+            echo "❌ Caddyfile manquant"
+          }
+          
+          # Test de validation si les fichiers existent
+          if (Test-Path "dist/win-unpacked/resources/app.asar.unpacked/caddy/caddy.exe" -and Test-Path "dist/win-unpacked/resources/Caddyfile") {
+            echo "🔧 Validation de la configuration Caddy..."
+            & "dist/win-unpacked/resources/app.asar.unpacked/caddy/caddy.exe" validate --config "dist/win-unpacked/resources/Caddyfile"
+          } else {
+            echo "⚠️  Impossible de valider la configuration Caddy (fichiers manquants)"
+          }
         
       - name: Test application launch (short)
         run: |

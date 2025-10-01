@@ -113,6 +113,18 @@ jobs:
           echo "📁 Structure du dossier app.asar.unpacked:"
           ls -la squashfs-root/resources/app.asar.unpacked/ 2>/dev/null || echo "Dossier app.asar.unpacked non trouvé"
           
+          echo "📁 Contenu du dossier caddy:"
+          ls -la squashfs-root/resources/app.asar.unpacked/caddy/ 2>/dev/null || echo "Dossier caddy non trouvé"
+          
+          echo "🔍 Vérification des permissions du binaire Caddy:"
+          if [ -f "squashfs-root/resources/app.asar.unpacked/caddy/caddy" ]; then
+            ls -la squashfs-root/resources/app.asar.unpacked/caddy/caddy
+            echo "Test d'exécution du binaire Caddy:"
+            squashfs-root/resources/app.asar.unpacked/caddy/caddy version 2>&1 || echo "Erreur d'exécution du binaire Caddy"
+          else
+            echo "❌ Binaire Caddy non trouvé"
+          fi
+          
           # Test de validation si les fichiers existent
           if [ -f "squashfs-root/resources/app.asar.unpacked/caddy/caddy" ] && [ -f "squashfs-root/resources/Caddyfile" ]; then
             echo "✅ Validation de la configuration Caddy..."
