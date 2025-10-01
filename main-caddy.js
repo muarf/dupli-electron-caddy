@@ -60,15 +60,16 @@ function getPhpFpmPath() {
     const isMacOS = process.platform === 'darwin';
     
     if (isAppImage || isMacOS) {
-        // AppImage ou macOS : utiliser le PHP-FPM inclus
-        return path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php-fpm');
+        // AppImage ou macOS : vérifier si php-fpm existe, sinon retourner null
+        const phpFpmPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php-fpm');
+        return fs.existsSync(phpFpmPath) ? phpFpmPath : null;
     } else if (isWindows) {
         // Windows : utiliser le PHP-FPM inclus
         return path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php-fpm.exe');
     } else {
         // Développement : utiliser le PHP-FPM inclus
         const phpFpmPath = path.join(__dirname, 'php', 'php-fpm');
-        return fs.existsSync(phpFpmPath) ? phpFpmPath : 'php-fpm';
+        return fs.existsSync(phpFpmPath) ? phpFpmPath : null;
     }
 }
 
@@ -78,16 +79,12 @@ function getPhpPath() {
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
     
-    if (isAppImage || isMacOS) {
-        // AppImage ou macOS : utiliser le PHP inclus
-        return path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php');
-    } else if (isWindows) {
+    if (isWindows) {
         // Windows : utiliser le PHP inclus
         return path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php.exe');
     } else {
-        // Développement : utiliser le PHP inclus
-        const phpPath = path.join(__dirname, 'php', 'php');
-        return fs.existsSync(phpPath) ? phpPath : '/usr/bin/php';
+        // Linux/macOS : utiliser le PHP système (pas de binaires embarqués pour l'instant)
+        return 'php';
     }
 }
 

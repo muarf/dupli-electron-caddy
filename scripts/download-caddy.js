@@ -151,7 +151,13 @@ async function downloadPhp() {
                 }
                 if (!fs.existsSync(fpmPath)) {
                     try {
-                        fs.symlinkSync('/usr/bin/php-fpm', fpmPath);
+                        // Vérifier si php-fpm existe avant de créer le lien
+                        if (fs.existsSync('/usr/bin/php-fpm')) {
+                            fs.symlinkSync('/usr/bin/php-fpm', fpmPath);
+                            console.log('php-fpm lié avec succès');
+                        } else {
+                            console.log('php-fpm non disponible, utilisation du serveur PHP intégré');
+                        }
                     } catch (error) {
                         // php-fpm peut ne pas être disponible, on continue sans
                         console.log('php-fpm non disponible, utilisation du serveur PHP intégré');

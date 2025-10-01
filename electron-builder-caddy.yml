@@ -28,6 +28,7 @@ asarUnpack:
   - caddy/**/*
   - Caddyfile
   - php-fpm.conf
+# Plus besoin d'exclure les liens symboliques car ils ont été supprimés
 linux:
   target: 
     - target: AppImage
