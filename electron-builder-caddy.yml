@@ -2,6 +2,7 @@ appId: com.dupli.app
 productName: Duplicator
 directories:
   output: dist
+icon: icons/icon-clean.svg
 publish:
   provider: github
   releaseType: release
@@ -55,4 +56,4 @@ nsis:
   createStartMenuShortcut: true
   shortcutName: Duplicator
   deleteAppDataOnUninstall: false
-  artifactName: Duplicator-Caddy-Setup-${version}.exe
+  artifactName: Duplicator-Setup-${version}.exe

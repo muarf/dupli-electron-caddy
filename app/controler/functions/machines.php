@@ -226,7 +226,7 @@ class MachineManager
      * @param int $year Année (par défaut: année actuelle)
      * @return array Statistiques par mois
      */
-    public function getMonthlyStats(int $year = null): array
+    public function getMonthlyStats(?int $year = null): array
     {
         if ($year === null) {
             $year = (int) date('Y');
