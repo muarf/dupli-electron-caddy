@@ -5,22 +5,22 @@ Application de gestion de comptabilité pour collectifs de reproduction (duplico
 ## 🚀 Fonctionnalités
 
 ### 📊 Gestion Comptable
-- Calcul des prix de revient pour les photocopies
-- Gestion des coûts d'impression (papier, encre, maintenance)
-- Suivi des volumes d'impression
+- Calcul des prix de revient pour les différentes machines
+- Gestion des coûts d'impression (papier, encre, masters, tambours, devellopeurs)
+- Suivi des volumes d'impression 
+- Statistiques d'utilisation, prévision des temps de changement de consommables
 - Rapports de rentabilité
 
 ### 📄 Traitement de Documents
-- Imposition de PDF (mise en page optimisée)
-- Unimposition de PDF (séparation des pages)
-- Interface web moderne pour la gestion des documents
-- Support de multiples formats
+- Imposition de PDF (8/16 pages A5/A6 sur un A3 rectoverso)
+- Unimposition de PDF (séparation des pages pour un pdf déjà imposé en livret)
+- Interface web moderne ormats
 
 ### 🔧 Technique
 - Serveur Caddy intégré pour la portabilité
 - Support PHP avec serveur intégré
 - Application Electron cross-platform (Windows, Linux, macOS)
-- Interface utilisateur intuitive
+- Interface utilisateur intuitive ( on essaie ;))
 
 ## 📦 Installation
 
@@ -130,14 +130,6 @@ PHP fonctionne en mode serveur intégré sur le port 8001, configuré avec :
 - `max_execution_time=300`
 - `memory_limit=256M`
 
-## 🚀 Déploiement
-
-### GitHub Actions
-
-Le projet utilise GitHub Actions pour :
-- Tests automatiques
-- Build cross-platform
-- Publication automatique des releases
 
 ### Releases
 
@@ -150,22 +142,8 @@ Les releases sont automatiquement créées avec :
 
 ### Problèmes courants
 
-1. **Caddy ne démarre pas** : Vérifiez que les binaires sont téléchargés
-2. **PHP ne répond pas** : Vérifiez les logs dans la console
-3. **Port déjà utilisé** : Changez le port dans le Caddyfile
+Dites moi !
 
 ### Logs
 
 Les logs sont affichés dans la console de l'application Electron.
-
-## 🤝 Contribution
-
-1. Fork le projet
-2. Créez une branche feature (`git checkout -b feature/AmazingFeature`)
-3. Committez vos changements (`git commit -m 'Add some AmazingFeature'`)
-4. Push vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrez une Pull Request
-
-## 📞 Support
-
-Pour toute question ou problème, ouvrez une issue sur GitHub.

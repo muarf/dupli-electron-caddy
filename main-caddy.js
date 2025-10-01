@@ -235,6 +235,8 @@ function startPhpServer() {
 function startCaddy() {
     const caddyPath = getCaddyPath();
     const caddyfile = getCaddyfilePath();
+    const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isWindows = process.platform === 'win32';
     
     console.log('Démarrage de Caddy...');
     console.log('Platform:', process.platform);

@@ -5,6 +5,7 @@ directories:
 publish:
   provider: github
   releaseType: release
+  token: ${GH_TOKEN}
 files:
   - main-caddy.js
   - main.js
