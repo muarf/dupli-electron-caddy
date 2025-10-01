@@ -1,0 +1,111 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ pwa ]
+  pull_request:
+    branches: [ pwa ]
+  workflow_dispatch:  # Permet de lancer manuellement
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: 34.0.0
+          ndk-version: 25.1.8937393
+      
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      
+      - name: Sync Capacitor
+        run: npm run pwa:sync
+      
+      - name: Build APK
+        run: |
+          cd android
+          ./gradlew assembleDebug
+      
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: duplicator-android-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+      
+      - name: Create Release
+        if: github.ref == 'refs/heads/pwa'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: android-v${{ github.run_number }}
+          name: Duplicator Android APK v${{ github.run_number }}
+          body: |
+            ## 📱 Duplicator Android APK
+            
+            Version: ${{ github.run_number }}
+            Build: ${{ github.sha }}
+            
+            ### 📥 Installation
+            1. Téléchargez l'APK
+            2. Activez "Sources inconnues" dans les paramètres Android
+            3. Installez l'APK
+            
+            ### ✨ Fonctionnalités
+            - Gestion comptable pour duplicopieurs
+            - Calcul des prix de revient
+            - Traitement de documents PDF
+            - Interface PWA optimisée
+          files: android/app/build/outputs/apk/debug/app-debug.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      
+      - name: Build summary
+        if: always()
+        run: |
+          echo ""
+          echo "════════════════════════════════════════"
+          echo "✅ BUILD ANDROID TERMINÉ"
+          echo "════════════════════════════════════════"
+          echo ""
+          if [ -f "android/app/build/outputs/apk/debug/app-debug.apk" ]; then
+            echo "📱 APK généré avec succès"
+            ls -lh android/app/build/outputs/apk/debug/app-debug.apk
+          else
+            echo "❌ Échec de la génération de l'APK"
+          fi
+          echo ""
+          echo "L'APK est disponible dans les artifacts"
