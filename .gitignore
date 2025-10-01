@@ -6,7 +6,7 @@ dist/
 *.AppImage
 *.dmg
 *.snap
-# Note: php.exe is needed for Windows builds, so not ignored
+# Note: php.exe and caddy.exe are needed for Windows builds, so not ignored
 
 # Binaries
 caddy/*.tar.gz

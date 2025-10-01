@@ -1,10 +1,22 @@
-# Duplicator - Application Electron avec Caddy
+# Duplicator - Gestion de Comptabilité pour Collectif de Reproduction
 
-Application de duplication de documents avec interface web, packagée en application Electron cross-platform avec serveur Caddy intégré.
+Application de gestion de comptabilité pour collectifs de reproduction (duplicopieurs/photocopieurs) avec calcul des prix de revient, packagée en application Electron cross-platform avec serveur Caddy intégré.
 
 ## 🚀 Fonctionnalités
 
-- Interface web moderne pour la duplication de documents
+### 📊 Gestion Comptable
+- Calcul des prix de revient pour les photocopies
+- Gestion des coûts d'impression (papier, encre, maintenance)
+- Suivi des volumes d'impression
+- Rapports de rentabilité
+
+### 📄 Traitement de Documents
+- Imposition de PDF (mise en page optimisée)
+- Unimposition de PDF (séparation des pages)
+- Interface web moderne pour la gestion des documents
+- Support de multiples formats
+
+### 🔧 Technique
 - Serveur Caddy intégré pour la portabilité
 - Support PHP avec serveur intégré
 - Application Electron cross-platform (Windows, Linux, macOS)
