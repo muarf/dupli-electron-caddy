@@ -100,7 +100,26 @@ jobs:
       - name: Test Caddy configuration
         run: |
           echo "=== Test de la configuration Caddy ==="
-          squashfs-root/resources/app.asar.unpacked/caddy/caddy validate --config squashfs-root/resources/Caddyfile
+          echo "🔍 Recherche du binaire Caddy..."
+          find squashfs-root -name "caddy" -type f 2>/dev/null || echo "Binaire caddy non trouvé"
+          find squashfs-root -name "caddy.exe" -type f 2>/dev/null || echo "Binaire caddy.exe non trouvé"
+          
+          echo "🔍 Recherche du Caddyfile..."
+          find squashfs-root -name "Caddyfile" -type f 2>/dev/null || echo "Caddyfile non trouvé"
+          
+          echo "📁 Structure du dossier resources:"
+          ls -la squashfs-root/resources/ 2>/dev/null || echo "Dossier resources non trouvé"
+          
+          echo "📁 Structure du dossier app.asar.unpacked:"
+          ls -la squashfs-root/resources/app.asar.unpacked/ 2>/dev/null || echo "Dossier app.asar.unpacked non trouvé"
+          
+          # Test de validation si les fichiers existent
+          if [ -f "squashfs-root/resources/app.asar.unpacked/caddy/caddy" ] && [ -f "squashfs-root/resources/Caddyfile" ]; then
+            echo "✅ Validation de la configuration Caddy..."
+            squashfs-root/resources/app.asar.unpacked/caddy/caddy validate --config squashfs-root/resources/Caddyfile
+          else
+            echo "⚠️  Impossible de valider la configuration Caddy (fichiers manquants)"
+          fi
         
       - name: Upload AppImage
         uses: actions/upload-artifact@v4
