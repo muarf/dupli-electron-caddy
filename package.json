@@ -19,7 +19,11 @@
     "test:e2e": "jest --testPathPattern=e2e",
     "test:e2e:simple": "jest --testPathPattern=electron-app-simple",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "pwa:serve": "cd app/public && python3 -m http.server 8080",
+    "pwa:sync": "npx cap sync",
+    "pwa:android": "npx cap open android",
+    "pwa:build": "npx cap build android"
   },
   "keywords": [],
   "author": "",
@@ -109,5 +113,10 @@
       "deleteAppDataOnUninstall": false,
       "artifactName": "Duplicator-Setup-${version}.exe"
     }
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^7.4.3"
   }
 }
