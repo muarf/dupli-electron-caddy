@@ -89,8 +89,12 @@ function getPhpPath() {
 // Obtenir le chemin de la configuration
 function getConfigPath() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isWindows = process.platform === 'win32';
     
     if (isAppImage) {
+        return process.resourcesPath;
+    } else if (isWindows) {
+        // Windows portable : utiliser resources/
         return process.resourcesPath;
     } else {
         return __dirname;
@@ -100,9 +104,13 @@ function getConfigPath() {
 // Obtenir le chemin du Caddyfile
 function getCaddyfilePath() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isWindows = process.platform === 'win32';
     
     if (isAppImage) {
         // Dans l'AppImage, le Caddyfile est dans resources/
+        return path.join(process.resourcesPath, 'Caddyfile');
+    } else if (isWindows) {
+        // Windows portable : le Caddyfile est dans resources/
         return path.join(process.resourcesPath, 'Caddyfile');
     } else {
         return path.join(__dirname, 'Caddyfile');
@@ -114,14 +122,22 @@ function startPhpFpm() {
     const phpPath = getPhpPath();
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
     
-    // Le chemin de l'app dépend si on est en AppImage ou non
+    // Le chemin de l'app dépend si on est en AppImage, Windows ou développement
+    const isWindows = process.platform === 'win32';
     const appPath = isAppImage 
+        ? path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public')
+        : isWindows
         ? path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public')
         : path.join(__dirname, 'app', 'public');
     
     console.log('Démarrage du serveur PHP intégré...');
+    console.log('Platform:', process.platform);
+    console.log('isAppImage:', isAppImage);
+    console.log('isWindows:', isWindows);
+    console.log('process.resourcesPath:', process.resourcesPath);
     console.log('PHP Path:', phpPath);
     console.log('App Path:', appPath);
+    console.log('App Path exists:', fs.existsSync(appPath));
     console.log('App Path existe:', fs.existsSync(appPath));
     
     // Créer le répertoire de sessions s'il n'existe pas
@@ -172,8 +188,11 @@ function startPhpServer() {
     const phpPath = getPhpPath();
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
     
-    // Le chemin de l'app dépend si on est en AppImage ou non
+    // Le chemin de l'app dépend si on est en AppImage, Windows ou développement
+    const isWindows = process.platform === 'win32';
     const appPath = isAppImage 
+        ? path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public')
+        : isWindows
         ? path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public')
         : path.join(__dirname, 'app', 'public');
     
@@ -215,7 +234,12 @@ function startCaddy() {
     const caddyfile = getCaddyfilePath();
     
     console.log('Démarrage de Caddy...');
+    console.log('Platform:', process.platform);
+    console.log('isAppImage:', isAppImage);
+    console.log('isWindows:', isWindows);
+    console.log('process.resourcesPath:', process.resourcesPath);
     console.log('Caddy Path:', caddyPath);
+    console.log('Caddy Path exists:', fs.existsSync(caddyPath));
     console.log('Caddyfile:', caddyfile);
     console.log('Caddyfile existe:', fs.existsSync(caddyfile));
     
