@@ -75,8 +75,8 @@ describe('Application Electron E2E (Simplifié)', () => {
             const caddyfileContent = fs.readFileSync(caddyfilePath, 'utf8');
             
             expect(caddyfileContent).toContain(':8000');
-            expect(caddyfileContent).toContain('php_fastcgi');
-            expect(caddyfileContent).toContain('file_server');
+            expect(caddyfileContent).toContain('reverse_proxy');
+            expect(caddyfileContent).toContain('127.0.0.1:8001');
         });
 
         test('devrait avoir une configuration PHP-FPM valide', () => {

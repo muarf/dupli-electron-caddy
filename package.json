@@ -15,9 +15,9 @@
     "test": "jest",
     "test:unit": "jest --testPathPattern=unit",
     "test:integration": "jest --testPathPattern=integration",
-    "test:integration:simple": "jest --testPathPattern=integration-simple",
+    "test:integration:simple": "jest --testPathPattern=caddy-php-simple",
     "test:e2e": "jest --testPathPattern=e2e",
-    "test:e2e:simple": "jest --testPathPattern=e2e-simple",
+    "test:e2e:simple": "jest --testPathPattern=electron-app-simple",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },
