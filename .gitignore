@@ -9,7 +9,6 @@ dist/
 # Note: php.exe is needed for Windows builds, so not ignored
 
 # Binaries
-caddy/caddy
 caddy/*.tar.gz
 caddy/*.zip
 php/php

@@ -28,16 +28,22 @@ asarUnpack:
   - Caddyfile
   - php-fpm.conf
 linux:
-  target: AppImage
+  target: 
+    - target: AppImage
+      arch: [x64]
   category: Office
   executableName: Duplicator
   executableArgs: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"]
 mac:
-  target: dmg
+  target: 
+    - target: dmg
+      arch: [x64]
   category: public.app-category.productivity
 win:
   target:
     - target: nsis
+      arch: [x64]
+    - target: zip
       arch: [x64]
   forceCodeSigning: false
 nsis:
