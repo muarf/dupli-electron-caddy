@@ -186,10 +186,43 @@ jobs:
           # Nettoyer les processus orphelins
           Get-Process | Where-Object { $_.ProcessName -like "*php*" -or $_.ProcessName -like "*caddy*" } | Stop-Process -Force
         
-      - name: Create screenshots (if possible)
+      - name: Create screenshots
         continue-on-error: true
         run: |
-          echo "Note: Screenshots nécessiteraient des outils supplémentaires"
+          echo "=== Capture d'écran de l'application ==="
+          
+          # Démarrer l'application
+          $app = Start-Process "dist/win-unpacked/Duplicator.exe" -PassThru
+          echo "Application démarrée avec PID: $($app.Id)"
+          
+          # Attendre que l'application soit complètement chargée
+          Start-Sleep -Seconds 20
+          
+          # Prendre un screenshot avec PowerShell
+          Add-Type -AssemblyName System.Windows.Forms
+          Add-Type -AssemblyName System.Drawing
+          
+          $screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $bitmap = New-Object System.Drawing.Bitmap $screen.Width, $screen.Height
+          $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+          $graphics.CopyFromScreen($screen.Location, [System.Drawing.Point]::Empty, $screen.Size)
+          
+          $screenshotPath = "screenshot.png"
+          $bitmap.Save($screenshotPath, [System.Drawing.Imaging.ImageFormat]::Png)
+          
+          echo "✅ Screenshot sauvegardé: $screenshotPath"
+          
+          # Arrêter l'application
+          Stop-Process -Id $app.Id -Force
+          Get-Process | Where-Object { $_.ProcessName -like "*php*" -or $_.ProcessName -like "*caddy*" } | Stop-Process -Force
+          
+      - name: Upload screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-screenshot
+          path: screenshot.png
+          retention-days: 7
         
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

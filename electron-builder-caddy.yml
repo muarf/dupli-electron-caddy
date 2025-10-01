@@ -5,6 +5,7 @@ directories:
 publish:
   provider: github
   releaseType: release
+  publish: always
 files:
   - main-caddy.js
   - main.js
