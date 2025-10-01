@@ -133,11 +133,16 @@ jobs:
           }
           
           # Test de validation si les fichiers existent
-          if (Test-Path "dist/win-unpacked/resources/app.asar.unpacked/caddy/caddy.exe" -and Test-Path "dist/win-unpacked/resources/Caddyfile") {
+          $caddyExists = Test-Path "dist/win-unpacked/resources/app.asar.unpacked/caddy/caddy.exe"
+          $caddyfileExists = Test-Path "dist/win-unpacked/resources/Caddyfile"
+          
+          if ($caddyExists -and $caddyfileExists) {
             echo "🔧 Validation de la configuration Caddy..."
             & "dist/win-unpacked/resources/app.asar.unpacked/caddy/caddy.exe" validate --config "dist/win-unpacked/resources/Caddyfile"
           } else {
             echo "⚠️  Impossible de valider la configuration Caddy (fichiers manquants)"
+            echo "Caddy existe: $caddyExists"
+            echo "Caddyfile existe: $caddyfileExists"
           }
         
       - name: Test application launch (short)
