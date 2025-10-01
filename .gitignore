@@ -4,9 +4,9 @@ node_modules/
 # Build outputs
 dist/
 *.AppImage
-*.exe
 *.dmg
 *.snap
+# Note: php.exe is needed for Windows builds, so not ignored
 
 # Binaries
 caddy/caddy
