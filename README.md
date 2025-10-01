@@ -158,10 +158,6 @@ Les releases sont automatiquement créées avec :
 
 Les logs sont affichés dans la console de l'application Electron.
 
-## 📄 Licence
-
-Ce projet est sous licence MIT.
-
 ## 🤝 Contribution
 
 1. Fork le projet
