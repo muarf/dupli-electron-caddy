@@ -156,9 +156,10 @@ jobs:
         with:
           name: test-logs
           path: |
-            /tmp/duplicator_caddy_errors.log
-            /tmp/duplicator_php_errors.log
+            C:\Users\runneradmin\AppData\Local\Temp\duplicator_caddy_errors.log
+            C:\Users\runneradmin\AppData\Local\Temp\duplicator_php_errors.log
           retention-days: 3
+          if-no-files-found: ignore
         continue-on-error: true
         
       - name: Test summary
