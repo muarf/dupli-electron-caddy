@@ -25,10 +25,10 @@ const CADDY_VERSIONS = {
 // Configuration des téléchargements PHP
 const PHP_VERSIONS = {
     'linux': {
-        url: 'https://github.com/php/php-src/releases/download/php-8.3.6/php-8.3.6.tar.gz',
-        filename: 'php_linux.tar.gz',
-        binary: 'php',
-        fpm: 'php-fpm'
+        url: 'https://windows.php.net/downloads/releases/php-8.4.13-nts-Win32-vs17-x64.zip',
+        filename: 'php_linux.zip',
+        binary: 'php.exe',
+        fpm: 'php-fpm.exe'
     },
     'windows': {
         url: 'https://windows.php.net/downloads/releases/php-8.4.13-nts-Win32-vs17-x64.zip',
@@ -37,10 +37,10 @@ const PHP_VERSIONS = {
         fpm: 'php-fpm.exe'
     },
     'darwin': {
-        url: 'https://github.com/php/php-src/releases/download/php-8.3.6/php-8.3.6.tar.gz',
-        filename: 'php_macos.tar.gz',
-        binary: 'php',
-        fpm: 'php-fpm'
+        url: 'https://windows.php.net/downloads/releases/php-8.4.13-nts-Win32-vs17-x64.zip',
+        filename: 'php_macos.zip',
+        binary: 'php.exe',
+        fpm: 'php-fpm.exe'
     }
 };
 
@@ -102,10 +102,12 @@ function extractFile(filepath, extractPath) {
 // Fonction pour télécharger PHP
 async function downloadPhp() {
     const platform = process.platform;
-    const config = PHP_VERSIONS[platform];
+    // Mapper win32 vers windows pour la compatibilité
+    const platformKey = platform === 'win32' ? 'windows' : platform;
+    const config = PHP_VERSIONS[platformKey];
     
     if (!config) {
-        console.error(`Plateforme non supportée: ${platform}`);
+        console.error(`Plateforme non supportée: ${platform} (mappé vers ${platformKey})`);
         process.exit(1);
     }
     
@@ -159,10 +161,12 @@ async function downloadPhp() {
 // Fonction principale
 async function downloadCaddy() {
     const platform = process.platform;
-    const config = CADDY_VERSIONS[platform];
+    // Mapper win32 vers windows pour la compatibilité
+    const platformKey = platform === 'win32' ? 'windows' : platform;
+    const config = CADDY_VERSIONS[platformKey];
     
     if (!config) {
-        console.error(`Plateforme non supportée: ${platform}`);
+        console.error(`Plateforme non supportée: ${platform} (mappé vers ${platformKey})`);
         process.exit(1);
     }
     
@@ -217,7 +221,7 @@ async function downloadAll() {
 
 // Exécuter si appelé directement
 if (require.main === module) {
-    downloadCaddy();
+    downloadAll();
 }
 
 module.exports = { downloadCaddy, downloadPhp, downloadAll, CADDY_VERSIONS, PHP_VERSIONS };

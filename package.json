@@ -8,7 +8,7 @@
     "start:caddy": "electron main-caddy.js --no-sandbox --disable-gpu",
     "dev": "NODE_ENV=development electron . --no-sandbox --disable-gpu",
     "build": "electron-builder",
-    "build:caddy": "npm run download-caddy && electron-builder --config electron-builder-caddy.yml",
+    "build:caddy": "electron-builder --config electron-builder-caddy.yml",
     "download-caddy": "node scripts/download-caddy.js",
     "download-php": "node -e \"require('./scripts/download-caddy.js').downloadPhp()\"",
     "download-all": "node -e \"require('./scripts/download-caddy.js').downloadAll()\"",
