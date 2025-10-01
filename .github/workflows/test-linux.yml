@@ -103,7 +103,7 @@ jobs:
           squashfs-root/resources/app.asar.unpacked/caddy/caddy validate --config squashfs-root/resources/Caddyfile
         
       - name: Upload AppImage
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: duplicator-linux-appimage
           path: dist/Duplicator-1.0.0.AppImage

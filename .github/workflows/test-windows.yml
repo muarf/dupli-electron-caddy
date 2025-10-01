@@ -144,7 +144,7 @@ jobs:
           echo "Note: Screenshots nécessiteraient des outils supplémentaires"
         
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: duplicator-windows-build
           path: dist/win-unpacked/
@@ -152,7 +152,7 @@ jobs:
         
       - name: Upload logs
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-logs
           path: |
