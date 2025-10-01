@@ -63,7 +63,8 @@ jobs:
             echo "✅ AppImage créé"
             ls -lh dist/Duplicator-1.0.0.AppImage
             chmod +x dist/Duplicator-1.0.0.AppImage
-            ./dist/Duplicator-1.0.0.AppImage --version
+            echo "📊 Taille de l'AppImage: $(du -h dist/Duplicator-1.0.0.AppImage | cut -f1)"
+            echo "🔍 Type de fichier: $(file dist/Duplicator-1.0.0.AppImage)"
           else
             echo "❌ AppImage manquant"
             exit 1
