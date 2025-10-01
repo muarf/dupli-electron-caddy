@@ -1,0 +1,113 @@
+{
+  "name": "dupli-electron",
+  "version": "1.0.0",
+  "main": "main-caddy.js",
+  "scripts": {
+    "start": "electron . --no-sandbox --disable-gpu",
+    "start:php": "electron main.js --no-sandbox --disable-gpu",
+    "start:caddy": "electron main-caddy.js --no-sandbox --disable-gpu",
+    "dev": "NODE_ENV=development electron . --no-sandbox --disable-gpu",
+    "build": "electron-builder",
+    "build:caddy": "npm run download-caddy && electron-builder --config electron-builder-caddy.yml",
+    "download-caddy": "node scripts/download-caddy.js",
+    "download-php": "node -e \"require('./scripts/download-caddy.js').downloadPhp()\"",
+    "download-all": "node -e \"require('./scripts/download-caddy.js').downloadAll()\"",
+    "test": "jest",
+    "test:unit": "jest --testPathPattern=unit",
+    "test:integration": "jest --testPathPattern=integration",
+    "test:integration:simple": "jest --testPathPattern=integration-simple",
+    "test:e2e": "jest --testPathPattern=e2e",
+    "test:e2e:simple": "jest --testPathPattern=e2e-simple",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Duplicator - Application de duplication de documents",
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "electron": "^28.3.3",
+    "electron-builder": "^26.0.12",
+    "jest": "^29.7.0",
+    "spectron": "^19.0.0",
+    "supertest": "^6.3.4"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/tests/**/*.test.js",
+      "**/tests/**/*.spec.js"
+    ],
+    "collectCoverageFrom": [
+      "main*.js",
+      "scripts/**/*.js",
+      "!node_modules/**",
+      "!dist/**"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ]
+  },
+  "build": {
+    "appId": "com.dupli.app",
+    "productName": "Duplicator",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main-caddy.js",
+      "main.js",
+      "preload.js",
+      "Caddyfile",
+      "php-fpm.conf",
+      "app/**/*",
+      "php/**/*",
+      "ghostscript/**/*",
+      "caddy/**/*"
+    ],
+    "asarUnpack": [
+      "php/**/*",
+      "app/**/*",
+      "ghostscript/**/*",
+      "caddy/**/*"
+    ],
+    "linux": {
+      "target": "AppImage",
+      "category": "Office",
+      "executableName": "Duplicator",
+      "executableArgs": [
+        "--no-sandbox",
+        "--disable-gpu",
+        "--disable-setuid-sandbox"
+      ]
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "forceCodeSigning": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Duplicator",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "Duplicator-Setup-${version}.exe"
+    }
+  }
+}

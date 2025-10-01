@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+*.AppImage
+*.exe
+*.dmg
+*.snap
+
+# Binaries
+caddy/caddy
+caddy/*.tar.gz
+caddy/*.zip
+php/php
+php/*.tar.gz
+php/*.zip
+php_linux.zip
+
+# Logs
+*.log
+appimage.log
+error
+
+# Temp files
+temp/
+tmp/
+*.tmp
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# App specific
+app/duplinew.sqlite
+app/sessions/
+app/public/tmp/*
+app/public/sauvegarde/*
+squashfs-root/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Environment
+.env
+.env.local
+
+# Cache
+.cache/
+.npm/
+.electron/
+

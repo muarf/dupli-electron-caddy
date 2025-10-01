@@ -1,0 +1,121 @@
+name: Test Linux Build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-0 \
+            libnotify4 \
+            libnss3 \
+            libxss1 \
+            libxtst6 \
+            xvfb \
+            libatspi2.0-0 \
+            libdrm2 \
+            libgbm1 \
+            libxcb-dri3-0
+      
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Download Caddy
+        run: npm run download-caddy
+        
+      - name: Copy PHP binary
+        run: |
+          echo "Copie du binaire PHP..."
+          mkdir -p php
+          cp /usr/bin/php php/
+          chmod +x php/php
+          ./php/php --version
+        
+      - name: Run tests
+        run: npm run test:e2e:simple
+        
+      - name: Build Linux AppImage
+        run: npm run build:caddy
+        
+      - name: Verify AppImage
+        run: |
+          echo "=== Vérification de l'AppImage ==="
+          if [ -f "dist/Duplicator-1.0.0.AppImage" ]; then
+            echo "✅ AppImage créé"
+            ls -lh dist/Duplicator-1.0.0.AppImage
+            chmod +x dist/Duplicator-1.0.0.AppImage
+            ./dist/Duplicator-1.0.0.AppImage --version
+          else
+            echo "❌ AppImage manquant"
+            exit 1
+          fi
+        
+      - name: Extract and verify AppImage contents
+        run: |
+          echo "=== Extraction de l'AppImage ==="
+          ./dist/Duplicator-1.0.0.AppImage --appimage-extract
+          
+          echo "Vérification du contenu..."
+          if [ -f "squashfs-root/resources/app.asar.unpacked/caddy/caddy" ]; then
+            echo "✅ Caddy présent"
+            squashfs-root/resources/app.asar.unpacked/caddy/caddy version
+          else
+            echo "❌ Caddy manquant"
+          fi
+          
+          if [ -f "squashfs-root/resources/app.asar.unpacked/php/php" ]; then
+            echo "✅ PHP présent"
+            squashfs-root/resources/app.asar.unpacked/php/php --version
+          else
+            echo "❌ PHP manquant"
+          fi
+          
+          if [ -f "squashfs-root/resources/Caddyfile" ]; then
+            echo "✅ Caddyfile présent"
+            cat squashfs-root/resources/Caddyfile
+          else
+            echo "❌ Caddyfile manquant"
+          fi
+        
+      - name: Test Caddy configuration
+        run: |
+          echo "=== Test de la configuration Caddy ==="
+          squashfs-root/resources/app.asar.unpacked/caddy/caddy validate --config squashfs-root/resources/Caddyfile
+        
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v3
+        with:
+          name: duplicator-linux-appimage
+          path: dist/Duplicator-1.0.0.AppImage
+          retention-days: 7
+        
+      - name: Test summary
+        if: always()
+        run: |
+          echo ""
+          echo "════════════════════════════════════════"
+          echo "✅ TEST LINUX TERMINÉ"
+          echo "════════════════════════════════════════"
+          echo ""
+          echo "L'AppImage est disponible dans les artifacts"
+

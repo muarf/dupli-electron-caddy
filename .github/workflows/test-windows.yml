@@ -1,0 +1,174 @@
+name: Test Windows Build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Permet de lancer manuellement
+
+jobs:
+  build-and-test-windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Download Caddy for Windows
+        run: |
+          echo "Téléchargement de Caddy pour Windows..."
+          Invoke-WebRequest -Uri "https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_windows_amd64.zip" -OutFile "caddy_windows.zip"
+          Expand-Archive -Path "caddy_windows.zip" -DestinationPath "caddy" -Force
+          Remove-Item "caddy_windows.zip"
+          echo "Caddy téléchargé: $(Get-Item caddy/caddy.exe | Select-Object -ExpandProperty Length) bytes"
+        
+      - name: Copy PHP binaries for Windows
+        run: |
+          echo "Copie des binaires PHP..."
+          if (-not (Test-Path "php")) {
+            New-Item -ItemType Directory -Path "php"
+          }
+          Copy-Item "php.exe" -Destination "php/" -Force
+          Copy-Item "php8ts.dll" -Destination "php/" -Force
+          Copy-Item "libsqlite3.dll" -Destination "php/" -Force
+          echo "PHP binaires copiés"
+          dir php/
+        
+      - name: Build Windows app
+        run: npm run build:caddy -- --win
+        
+      - name: Verify build output
+        run: |
+          echo "=== Vérification du build ==="
+          if (Test-Path "dist/win-unpacked/Duplicator.exe") {
+            echo "✅ Duplicator.exe existe"
+            $size = (Get-Item "dist/win-unpacked/Duplicator.exe").Length / 1MB
+            echo "   Taille: $([math]::Round($size, 2)) MB"
+          } else {
+            echo "❌ Duplicator.exe manquant"
+            exit 1
+          }
+          
+          if (Test-Path "dist/win-unpacked/resources/app.asar.unpacked/caddy/caddy.exe") {
+            echo "✅ caddy.exe existe"
+          } else {
+            echo "❌ caddy.exe manquant"
+          }
+          
+          if (Test-Path "dist/win-unpacked/resources/app.asar.unpacked/php/php.exe") {
+            echo "✅ php.exe existe"
+          } else {
+            echo "❌ php.exe manquant"
+          }
+          
+          if (Test-Path "dist/win-unpacked/resources/Caddyfile") {
+            echo "✅ Caddyfile existe"
+          } else {
+            echo "❌ Caddyfile manquant"
+          }
+          
+          echo ""
+          echo "=== Structure complète ==="
+          tree dist/win-unpacked/resources/ -L 2
+        
+      - name: Test Caddy binary
+        run: |
+          echo "=== Test de Caddy ==="
+          & "dist/win-unpacked/resources/app.asar.unpacked/caddy/caddy.exe" version
+        
+      - name: Test PHP binary
+        run: |
+          echo "=== Test de PHP ==="
+          & "dist/win-unpacked/resources/app.asar.unpacked/php/php.exe" --version
+        
+      - name: Test Caddyfile validation
+        run: |
+          echo "=== Validation du Caddyfile ==="
+          & "dist/win-unpacked/resources/app.asar.unpacked/caddy/caddy.exe" validate --config "dist/win-unpacked/resources/Caddyfile"
+        
+      - name: Test application launch (short)
+        run: |
+          echo "=== Test de démarrage de l'application ==="
+          $app = Start-Process "dist/win-unpacked/Duplicator.exe" -PassThru
+          echo "Application démarrée avec PID: $($app.Id)"
+          
+          # Attendre 15 secondes pour que l'app démarre
+          Start-Sleep -Seconds 15
+          
+          # Vérifier si les processus sont lancés
+          $phpProcess = Get-Process | Where-Object { $_.ProcessName -like "*php*" }
+          $caddyProcess = Get-Process | Where-Object { $_.ProcessName -like "*caddy*" }
+          
+          if ($phpProcess) {
+            echo "✅ Processus PHP détecté: $($phpProcess.ProcessName)"
+          } else {
+            echo "⚠️  Processus PHP non détecté"
+          }
+          
+          if ($caddyProcess) {
+            echo "✅ Processus Caddy détecté: $($caddyProcess.ProcessName)"
+          } else {
+            echo "⚠️  Processus Caddy non détecté"
+          }
+          
+          # Tester si le port 8000 répond
+          try {
+            $response = Invoke-WebRequest -Uri "http://127.0.0.1:8000" -TimeoutSec 5 -UseBasicParsing
+            echo "✅ Application répond sur le port 8000"
+            echo "   Status: $($response.StatusCode)"
+          } catch {
+            echo "⚠️  Application ne répond pas sur le port 8000"
+            echo "   Erreur: $_"
+          }
+          
+          # Arrêter l'application
+          Stop-Process -Id $app.Id -Force
+          
+          # Nettoyer les processus orphelins
+          Get-Process | Where-Object { $_.ProcessName -like "*php*" -or $_.ProcessName -like "*caddy*" } | Stop-Process -Force
+        
+      - name: Create screenshots (if possible)
+        continue-on-error: true
+        run: |
+          echo "Note: Screenshots nécessiteraient des outils supplémentaires"
+        
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: duplicator-windows-build
+          path: dist/win-unpacked/
+          retention-days: 7
+        
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-logs
+          path: |
+            /tmp/duplicator_caddy_errors.log
+            /tmp/duplicator_php_errors.log
+          retention-days: 3
+        continue-on-error: true
+        
+      - name: Test summary
+        if: always()
+        run: |
+          echo ""
+          echo "════════════════════════════════════════"
+          echo "✅ TEST WINDOWS TERMINÉ"
+          echo "════════════════════════════════════════"
+          echo ""
+          echo "Les artifacts sont disponibles dans l'onglet Actions"
+          echo "Vous pouvez télécharger le build et les logs"
+

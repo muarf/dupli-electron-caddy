@@ -1,0 +1,47 @@
+appId: com.dupli.app
+productName: Duplicator
+directories:
+  output: dist
+files:
+  - main-caddy.js
+  - main.js
+  - preload.js
+  - Caddyfile
+  - php-fpm.conf
+  - app/**/*
+  - php/**/*
+  - ghostscript/**/*
+  - caddy/**/*
+extraResources:
+  - from: "Caddyfile"
+    to: "Caddyfile"
+  - from: "php-fpm.conf"
+    to: "php-fpm.conf"
+asarUnpack:
+  - php/**/*
+  - app/**/*
+  - ghostscript/**/*
+  - caddy/**/*
+  - Caddyfile
+  - php-fpm.conf
+linux:
+  target: AppImage
+  category: Office
+  executableName: Duplicator
+  executableArgs: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"]
+mac:
+  target: dmg
+  category: public.app-category.productivity
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  forceCodeSigning: false
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Duplicator
+  deleteAppDataOnUninstall: false
+  artifactName: Duplicator-Caddy-Setup-${version}.exe
