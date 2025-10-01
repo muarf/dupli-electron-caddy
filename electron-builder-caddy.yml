@@ -2,6 +2,9 @@ appId: com.dupli.app
 productName: Duplicator
 directories:
   output: dist
+publish:
+  provider: github
+  releaseType: release
 files:
   - main-caddy.js
   - main.js
