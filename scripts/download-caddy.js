@@ -25,22 +25,22 @@ const CADDY_VERSIONS = {
 // Configuration des téléchargements PHP
 const PHP_VERSIONS = {
     'linux': {
-        url: 'https://windows.php.net/downloads/releases/php-8.3.6-Win32-vs16-x64.zip',
-        filename: 'php_linux.zip',
-        binary: 'php.exe',
-        fpm: 'php-fpm.exe'
+        url: 'https://github.com/php/php-src/releases/download/php-8.3.6/php-8.3.6.tar.gz',
+        filename: 'php_linux.tar.gz',
+        binary: 'php',
+        fpm: 'php-fpm'
     },
     'windows': {
-        url: 'https://windows.php.net/downloads/releases/php-8.3.6-Win32-vs16-x64.zip',
+        url: 'https://windows.php.net/downloads/releases/php-8.4.13-nts-Win32-vs17-x64.zip',
         filename: 'php_windows.zip',
         binary: 'php.exe',
         fpm: 'php-fpm.exe'
     },
     'darwin': {
-        url: 'https://windows.php.net/downloads/releases/php-8.3.6-Win32-vs16-x64.zip',
-        filename: 'php_macos.zip',
-        binary: 'php.exe',
-        fpm: 'php-fpm.exe'
+        url: 'https://github.com/php/php-src/releases/download/php-8.3.6/php-8.3.6.tar.gz',
+        filename: 'php_macos.tar.gz',
+        binary: 'php',
+        fpm: 'php-fpm'
     }
 };
 

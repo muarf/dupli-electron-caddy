@@ -33,28 +33,33 @@ jobs:
           Remove-Item "caddy_windows.zip"
           echo "Caddy téléchargé: $(Get-Item caddy/caddy.exe | Select-Object -ExpandProperty Length) bytes"
         
-      - name: Download PHP for Windows
+      - name: Verify PHP binaries
         run: |
-          echo "Téléchargement de PHP pour Windows..."
-          Invoke-WebRequest -Uri "https://windows.php.net/downloads/releases/php-8.3.6-Win32-vs16-x64.zip" -OutFile "php_windows.zip"
-          
-          if (-not (Test-Path "php")) {
-            New-Item -ItemType Directory -Path "php"
-          }
-          
-          echo "Extraction de PHP..."
-          Expand-Archive -Path "php_windows.zip" -DestinationPath "php" -Force
-          Remove-Item "php_windows.zip"
-          
-          echo "Vérification des binaires PHP:"
-          dir php/ | Where-Object { $_.Name -like "*.exe" -or $_.Name -like "*.dll" } | Select-Object Name, Length
+          echo "Vérification des binaires PHP inclus..."
           
           if (Test-Path "php/php.exe") {
-            echo "✅ php.exe téléchargé"
+            echo "✅ php.exe trouvé"
             & "php/php.exe" --version
+            echo "Taille: $((Get-Item 'php/php.exe').Length) bytes"
           } else {
-            echo "❌ php.exe manquant"
+            echo "❌ php.exe manquant dans le repo"
+            echo "Contenu du dossier php/:"
+            if (Test-Path "php") {
+              dir php/
+            } else {
+              echo "Dossier php/ n'existe pas"
+            }
             exit 1
+          }
+          
+          echo "Vérification des DLL nécessaires:"
+          $required_dlls = @("php8ts.dll", "libsqlite3.dll")
+          foreach ($dll in $required_dlls) {
+            if (Test-Path "php/$dll") {
+              echo "✅ $dll trouvé"
+            } else {
+              echo "⚠️  $dll manquant (peut être optionnel)"
+            }
           }
         
       - name: Build Windows app
