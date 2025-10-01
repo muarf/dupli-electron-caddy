@@ -54,7 +54,7 @@ jobs:
         run: npm run test:e2e:simple
         
       - name: Build Linux AppImage
-        run: npm run build:caddy
+        run: npm run build:caddy -- --publish=always
         
       - name: Verify AppImage
         run: |

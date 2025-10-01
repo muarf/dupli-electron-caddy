@@ -31,6 +31,8 @@ jobs:
         run: |
           echo "Téléchargement de Caddy pour macOS..."
           curl -L -o caddy_macos.tar.gz "https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_macOS_amd64.tar.gz"
+          echo "Fichier téléchargé: $(ls -la caddy_macos.tar.gz)"
+          echo "Type de fichier: $(file caddy_macos.tar.gz)"
           tar -xzf caddy_macos.tar.gz
           chmod +x caddy
           rm caddy_macos.tar.gz
