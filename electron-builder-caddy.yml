@@ -2,7 +2,7 @@ appId: com.dupli.app
 productName: Duplicator
 directories:
   output: dist
-icon: icons/icon-clean.svg
+icon: icons/icon.png
 publish:
   provider: github
   releaseType: release
