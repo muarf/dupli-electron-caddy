@@ -27,41 +27,42 @@ jobs:
       - name: Install dependencies
         run: npm install
         
-      - name: Install Caddy via Homebrew
+      - name: Install Caddy and PHP via Homebrew
         run: |
-          echo "Installation de Caddy via Homebrew..."
-          brew install caddy
-          echo "Caddy installé via Homebrew"
+          echo "Installation de Caddy et PHP via Homebrew..."
+          brew install caddy php
+          echo "Caddy et PHP installés via Homebrew"
           
-          # Copier le binaire vers le dossier caddy/
+          # Copier le binaire Caddy vers le dossier caddy/
           mkdir -p caddy
           cp /opt/homebrew/bin/caddy caddy/caddy || cp /usr/local/bin/caddy caddy/caddy
           chmod +x caddy/caddy
           echo "Caddy copié: $(ls -la caddy/caddy | awk '{print $5}') bytes"
-        
-      - name: Verify PHP binaries
-        run: |
-          echo "Vérification des binaires PHP inclus..."
           
-          if [ -f "php/php" ]; then
-            echo "✅ php trouvé"
-            ./php/php --version
-            echo "Taille: $(stat -f%z php/php) bytes"
+          # Vérifier que PHP est disponible
+          php --version
+          echo "PHP version: $(php --version | head -1)"
+        
+      - name: Verify PHP installation
+        run: |
+          echo "Vérification de l'installation PHP..."
+          
+          # Vérifier que PHP est disponible dans le système
+          if command -v php &> /dev/null; then
+            echo "✅ PHP système disponible"
+            php --version
+            echo "Chemin PHP: $(which php)"
           else
-            echo "❌ php manquant dans le repo"
-            echo "Contenu du dossier php/:"
-            if [ -d "php" ]; then
-              ls -la php/
-            else
-              echo "Dossier php/ n'existe pas"
-            fi
+            echo "❌ PHP non disponible"
+            exit 1
           fi
           
-          if [ -f "php/php-fpm" ]; then
-            echo "✅ php-fpm trouvé"
-            echo "Taille: $(stat -f%z php/php-fpm) bytes"
+          # Vérifier que php-fpm est disponible
+          if command -v php-fpm &> /dev/null; then
+            echo "✅ php-fpm disponible"
+            php-fpm --version
           else
-            echo "❌ php-fpm manquant dans le repo"
+            echo "⚠️  php-fpm non disponible, utilisation du serveur PHP intégré"
           fi
         
       - name: Build application
