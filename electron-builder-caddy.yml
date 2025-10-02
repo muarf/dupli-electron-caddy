@@ -51,6 +51,7 @@ win:
     - target: zip
       arch: [x64]
   forceCodeSigning: false
+  asar: false
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
