@@ -26,6 +26,10 @@ jobs:
       
       - name: Install dependencies
         run: npm install
+      
+      - name: Bump version (patch)
+        run: |
+          node -e "const fs=require('fs');const pkg=JSON.parse(fs.readFileSync('package.json'));const v=pkg.version.split('.').map(n=>+n);v[2]++;pkg.version=v.join('.');fs.writeFileSync('package.json',JSON.stringify(pkg,null,2)+'\n');console.log('New version:',pkg.version);"
         
       - name: Download Caddy for Windows
         run: |

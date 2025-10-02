@@ -24,6 +24,7 @@ extraResources:
     to: "php-fpm.conf"
 asarUnpack:
   - "**/{php,ghostscript,caddy}/**/*"
+  - app/**/*
   - Caddyfile
   - php-fpm.conf
 # Plus besoin d'exclure les liens symboliques car ils ont été supprimés
