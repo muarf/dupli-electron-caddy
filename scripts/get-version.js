@@ -5,31 +5,56 @@ const fs = require('fs');
 
 function getVersionFromGit() {
     try {
-        // Récupérer le nombre de commits depuis le dernier tag
-        const commitCount = execSync('git rev-list --count HEAD', { encoding: 'utf8' }).trim();
-        
-        // Récupérer le dernier tag
-        let lastTag;
+        // Vérifier d'abord s'il existe des tags
+        let hasTags = false;
         try {
-            lastTag = execSync('git describe --tags --abbrev=0', { encoding: 'utf8' }).trim();
+            execSync('git tag --list', { encoding: 'utf8' });
+            // Si on arrive ici, il y a des tags ou la commande a réussi
+            hasTags = true;
         } catch (error) {
+            hasTags = false;
+        }
+        
+        let lastTag;
+        if (hasTags) {
+            try {
+                lastTag = execSync('git describe --tags --abbrev=0', { encoding: 'utf8' }).trim();
+            } catch (error) {
+                // Problème avec describe, utiliser le premier tag disponible
+                const tags = execSync('git tag --list --sort=-version:refname', { encoding: 'utf8' }).trim().split('\n');
+                lastTag = tags[0] || '1.0.0';
+            }
+        } else {
             // Pas de tags, utiliser 1.0.0 comme base
             lastTag = '1.0.0';
         }
         
-        // Extraire la version de base (1.0.0)
+        // Récupérer le nombre de commits total si pas de tags, sinon depuis le dernier tag
+        let commitCount;
+        if (hasTags) {
+            try {
+                commitCount = execSync(`git rev-list --count ${lastTag}..HEAD`, { encoding: 'utf8' }).trim();
+            } catch (error) {
+                commitCount = execSync('git rev-list --count HEAD', { encoding: 'utf8' }).trim();
+            }
+        } else {
+            // Pas de tags, utiliser le nombre total de commits
+            commitCount = execSync('git rev-list --count HEAD', { encoding: 'utf8' }).trim();
+        }
+        
+        // Extraire la version de base
         const baseVersion = lastTag.replace(/^v/, '');
         const [major, minor, patch] = baseVersion.split('.');
         
         // Calculer la nouvelle version
-        const newVersion = `${major}.${minor}.${parseInt(patch) + parseInt(commitCount)}`;
+        const newPatch = parseInt(patch) + parseInt(commitCount);
+        const newVersion = `${major}.${minor}.${newPatch}`;
         
         return newVersion;
     } catch (error) {
         console.error('Erreur lors de la récupération de la version:', error.message);
-        // Fallback vers une version timestamp
-        const timestamp = Math.floor(Date.now() / 1000);
-        return `1.0.${timestamp}`;
+        // Fallback vers une version par défaut
+        return '1.0.0';
     }
 }
 
