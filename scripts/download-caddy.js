@@ -25,11 +25,11 @@ const CADDY_VERSIONS = {
 // Configuration des téléchargements PHP
 const PHP_VERSIONS = {
     'linux': {
-        url: 'https://github.com/php/php-src/releases/download/php-8.4.13/php-8.4.13.tar.gz',
+        url: 'https://github.com/muarf/php-static-builder/releases/download/v8.2.14-static/php-static-amd64-linux.tar.gz',
         filename: 'php_linux.tar.gz',
         binary: 'php',
         fpm: 'php-fpm',
-        useSystem: true // Utiliser le PHP système sur Linux
+        useStatic: true // Utiliser les binaires statiques
     },
     'windows': {
         url: 'https://windows.php.net/downloads/releases/php-8.4.13-nts-Win32-vs17-x64.zip',
@@ -38,11 +38,11 @@ const PHP_VERSIONS = {
         fpm: 'php-fpm.exe'
     },
     'darwin': {
-        url: 'https://github.com/php/php-src/releases/download/php-8.4.13/php-8.4.13.tar.gz',
+        url: 'https://github.com/muarf/php-static-builder/releases/download/v8.2.14-static/php-static-amd64-macos.tar.gz',
         filename: 'php_macos.tar.gz',
         binary: 'php',
         fpm: 'php-fpm',
-        useSystem: true // Utiliser le PHP système sur macOS
+        useStatic: true // Utiliser les binaires statiques
     }
 };
 
@@ -126,8 +126,50 @@ async function downloadPhp() {
     }
     
     try {
-        // Si useSystem est true, utiliser le PHP système
-        if (config.useSystem) {
+        // Si useStatic est true, utiliser les binaires statiques
+        if (config.useStatic) {
+            console.log(`Utilisation des binaires statiques pour ${platform}`);
+            
+            // Télécharger les binaires statiques
+            console.log(`Téléchargement depuis: ${config.url}`);
+            await downloadFile(config.url, downloadPath);
+            console.log('Téléchargement terminé');
+            
+            // Extraire le fichier
+            console.log('Extraction en cours...');
+            if (extractFile(downloadPath, phpDir)) {
+                console.log('Extraction terminée');
+                
+                // Déplacer les binaires vers la bonne location
+                if (platform !== 'win32') {
+                    const extractedPhpPath = path.join(phpDir, 'bin', 'php');
+                    
+                    if (fs.existsSync(extractedPhpPath)) {
+                        // Supprimer le fichier/dossier cible s'il existe
+                        if (fs.existsSync(binaryPath)) {
+                            if (fs.statSync(binaryPath).isDirectory()) {
+                                fs.rmSync(binaryPath, { recursive: true, force: true });
+                            } else {
+                                fs.unlinkSync(binaryPath);
+                            }
+                        }
+                        fs.copyFileSync(extractedPhpPath, binaryPath);
+                        fs.chmodSync(binaryPath, '755');
+                        console.log(`PHP copié vers: ${binaryPath}`);
+                    }
+                    
+                    // PHP-FPM n'est pas inclus dans les binaires statiques
+                    console.log('PHP-FPM non disponible dans les binaires statiques, utilisation du serveur PHP intégré');
+                }
+                
+                // Supprimer le fichier d'archive
+                fs.unlinkSync(downloadPath);
+                
+                console.log(`PHP statique installé avec succès: ${binaryPath}`);
+            } else {
+                throw new Error('Échec de l\'extraction');
+            }
+        } else if (config.useSystem) {
             console.log(`Utilisation du PHP système pour ${platform}`);
             
             // Vérifier que PHP est disponible

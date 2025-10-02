@@ -27,42 +27,39 @@ jobs:
       - name: Install dependencies
         run: npm install
         
-      - name: Install Caddy and PHP via Homebrew
+      - name: Download tools
         run: |
-          echo "Installation de Caddy et PHP via Homebrew..."
-          brew install caddy php
-          echo "Caddy et PHP installés via Homebrew"
-          
-          # Copier le binaire Caddy vers le dossier caddy/
-          mkdir -p caddy
-          cp /opt/homebrew/bin/caddy caddy/caddy || cp /usr/local/bin/caddy caddy/caddy
-          chmod +x caddy/caddy
-          echo "Caddy copié: $(ls -la caddy/caddy | awk '{print $5}') bytes"
-          
-          # Vérifier que PHP est disponible
-          php --version
-          echo "PHP version: $(php --version | head -1)"
+          echo "Téléchargement de Caddy et PHP..."
+          npm run download-caddy
+          echo "Caddy et PHP téléchargés"
         
-      - name: Verify PHP installation
+      - name: Verify binaries
         run: |
-          echo "Vérification de l'installation PHP..."
+          echo "Vérification des binaires téléchargés..."
           
-          # Vérifier que PHP est disponible dans le système
-          if command -v php &> /dev/null; then
-            echo "✅ PHP système disponible"
-            php --version
-            echo "Chemin PHP: $(which php)"
+          # Vérifier Caddy
+          if [ -f "caddy/caddy" ]; then
+            echo "✅ Caddy présent: $(ls -la caddy/caddy | awk '{print $5}') bytes"
+            ./caddy/caddy version
           else
-            echo "❌ PHP non disponible"
+            echo "❌ Caddy manquant"
             exit 1
           fi
           
-          # Vérifier que php-fpm est disponible
-          if command -v php-fpm &> /dev/null; then
-            echo "✅ php-fpm disponible"
-            php-fpm --version
+          # Vérifier PHP
+          if [ -f "php/php" ]; then
+            echo "✅ PHP présent: $(ls -la php/php | awk '{print $5}') bytes"
+            ./php/php --version
           else
-            echo "⚠️  php-fpm non disponible, utilisation du serveur PHP intégré"
+            echo "❌ PHP manquant"
+            exit 1
+          fi
+          
+          # Vérifier PHP-FPM
+          if [ -f "php/php-fpm" ]; then
+            echo "✅ PHP-FPM présent: $(ls -la php/php-fpm | awk '{print $5}') bytes"
+          else
+            echo "⚠️  PHP-FPM manquant, utilisation du serveur PHP intégré"
           fi
         
       - name: Build application
