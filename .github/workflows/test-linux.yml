@@ -2,9 +2,9 @@ name: Test Linux Build
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, php-static-binaries ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, php-static-binaries ]
   workflow_dispatch:
 
 jobs:
