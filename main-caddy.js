@@ -83,8 +83,8 @@ function getPhpPath() {
         // Windows : utiliser le PHP inclus
         return path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php.exe');
     } else {
-        // Linux/macOS : utiliser le PHP système (pas de binaires embarqués pour l'instant)
-        return 'php';
+        // Linux/macOS : utiliser les binaires statiques intégrés
+        return path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php');
     }
 }
 
