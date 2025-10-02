@@ -14,7 +14,10 @@ files:
   - Caddyfile
   - php-fpm.conf
   - app/**/*
-  - php/**/*
+  - php/bin/*
+  - php/etc/*
+  - php/lib/*
+  - php/sbin/*
   - ghostscript/**/*
   - caddy/**/*
 extraResources:
@@ -23,7 +26,10 @@ extraResources:
   - from: "php-fpm.conf"
     to: "php-fpm.conf"
 asarUnpack:
-  - php/**/*
+  - php/bin/*
+  - php/etc/*
+  - php/lib/*
+  - php/sbin/*
   - app/**/*
   - ghostscript/**/*
   - caddy/**/*

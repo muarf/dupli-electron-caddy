@@ -16,7 +16,7 @@ const CADDY_VERSIONS = {
         binary: 'caddy.exe'
     },
     'darwin': {
-        url: 'https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_macOS_amd64.tar.gz',
+        url: 'https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_mac_amd64.tar.gz',
         filename: 'caddy_macos.tar.gz',
         binary: 'caddy'
     }
