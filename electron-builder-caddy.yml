@@ -8,7 +8,7 @@ publish:
   releaseType: release
   publishAutoUpdate: false
 files:
-  - main-caddy!
+  - main-caddy.js
   - main.js
   - preload.js
   - Caddyfile
