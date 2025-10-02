@@ -189,13 +189,40 @@ async function downloadPhp() {
             } else {
                 // Sur Unix, créer des liens symboliques
                 if (!fs.existsSync(binaryPath)) {
-                    fs.symlinkSync('/usr/bin/php', binaryPath);
+                    // Essayer plusieurs chemins pour PHP selon l'installation
+                    const possiblePaths = ['/opt/homebrew/bin/php', '/usr/bin/php', '/usr/local/bin/php'];
+                    let phpPath = null;
+                    
+                    for (const path of possiblePaths) {
+                        if (fs.existsSync(path)) {
+                            phpPath = path;
+                            break;
+                        }
+                    }
+                    
+                    if (phpPath) {
+                        fs.symlinkSync(phpPath, binaryPath);
+                        console.log(`PHP lié depuis: ${phpPath} -> ${binaryPath}`);
+                    } else {
+                        throw new Error('PHP non trouvé dans les chemins standards');
+                    }
                 }
                 if (!fs.existsSync(fpmPath)) {
                     try {
-                        // Vérifier si php-fpm existe avant de créer le lien
-                        if (fs.existsSync('/usr/bin/php-fpm')) {
-                            fs.symlinkSync('/usr/bin/php-fpm', fpmPath);
+                        // Essayer plusieurs chemins pour php-fpm selon l'installation
+                        const possibleFpmPaths = ['/opt/homebrew/bin/php-fpm', '/usr/bin/php-fpm', '/usr/local/bin/php-fpm'];
+                        let phpFpmPath = null;
+                        
+                        for (const path of possibleFpmPaths) {
+                            if (fs.existsSync(path)) {
+                                phpFpmPath = path;
+                                break;
+                            }
+                        }
+                        
+                        if (phpFpmPath) {
+                            fs.symlinkSync(phpFpmPath, fpmPath);
+                            console.log(`php-fpm lié depuis: ${phpFpmPath} -> ${fmpPath}`);
                             console.log('php-fpm lié avec succès');
                         } else {
                             console.log('php-fpm non disponible, utilisation du serveur PHP intégré');
