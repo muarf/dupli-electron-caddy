@@ -17,11 +17,6 @@ files:
   - php/**/*
   - ghostscript/**/*
   - caddy/**/*
-extraResources:
-  - from: "Caddyfile"
-    to: "Caddyfile"
-  - from: "php-fpm.conf"
-    to: "php-fpm.conf"
 asarUnpack:
   - php/**/*
   - app/**/*

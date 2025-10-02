@@ -114,8 +114,8 @@ function getCaddyfilePath() {
         // Dans l'AppImage ou macOS, le Caddyfile est dans resources/
         return path.join(process.resourcesPath, 'Caddyfile');
     } else if (isWindows) {
-        // Windows portable : le Caddyfile est dans resources/
-        return path.join(process.resourcesPath, 'Caddyfile');
+        // Windows portable : le Caddyfile est dans app.asar.unpacked/
+        return path.join(process.resourcesPath, 'app.asar.unpacked', 'Caddyfile');
     } else {
         return path.join(__dirname, 'Caddyfile');
     }
