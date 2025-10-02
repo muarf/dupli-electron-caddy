@@ -22,14 +22,13 @@ extraResources:
     to: "Caddyfile"
   - from: "php-fpm.conf"
     to: "php-fpm.conf"
-asarUnpack:
-  - "php/**/*"
-  - "ghostscript/**/*"
-  - "caddy/**/*"
-  - "app/**/*"
-  - "Caddyfile"
-  - "php-fpm.conf"
-# Plus besoin d'exclure les liens symboliques car ils ont été supprimés
+  - from: "caddy/**/*"
+    to: "caddy/"
+  - from: "php/**/*"
+    to: "php/"
+  - from: "ghostscript/**/*"
+    to: "ghostscript/"
+# ASAR disabled for Windows, using extraResources instead
 linux:
   target: 
     - target: AppImage
