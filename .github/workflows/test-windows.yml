@@ -55,12 +55,33 @@ jobs:
           }
           
           echo "Vérification des DLL nécessaires:"
-          $required_dlls = @("php8ts.dll", "libsqlite3.dll")
+          $required_dlls = @("php8.dll", "libsqlite3.dll")
           foreach ($dll in $required_dlls) {
             if (Test-Path "php/$dll") {
               echo "✅ $dll trouvé"
             } else {
               echo "⚠️  $dll manquant (peut être optionnel)"
+            }
+          }
+
+      - name: Copy VC++ runtime DLLs into php/
+        run: |
+          echo "Copie des DLL VC++ runtime dans php/..."
+          $dlls = @(
+            "vcruntime140.dll",
+            "vcruntime140_1.dll",
+            "msvcp140.dll",
+            "msvcp140_atomic_wait.dll",
+            "concrt140.dll"
+          )
+          New-Item -ItemType Directory -Force -Path php | Out-Null
+          foreach ($d in $dlls) {
+            $src = "C:\\Windows\\System32\\$d"
+            if (Test-Path $src) {
+              Copy-Item $src php\ -Force
+              echo "Copié: $d"
+            } else {
+              echo "Non trouvé: $d (peut être non nécessaire selon l'environnement)"
             }
           }
         

@@ -14,13 +14,7 @@ files:
   - Caddyfile
   - php-fpm.conf
   - app/**/*
-  - php/bin/*
-  - php/etc/*
-  - php/lib/*
-  - php/sbin/*
-  - php/php.exe
-  - php/php8.dll
-  - php/libsqlite3.dll
+  - php/**/*
   - ghostscript/**/*
   - caddy/**/*
 extraResources:
@@ -29,13 +23,7 @@ extraResources:
   - from: "php-fpm.conf"
     to: "php-fpm.conf"
 asarUnpack:
-  - php/bin/*
-  - php/etc/*
-  - php/lib/*
-  - php/sbin/*
-  - php/php.exe
-  - php/php8.dll
-  - php/libsqlite3.dll
+  - php/**/*
   - app/**/*
   - ghostscript/**/*
   - caddy/**/*

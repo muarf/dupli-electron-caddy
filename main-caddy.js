@@ -2,10 +2,18 @@ const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
 
 let mainWindow;
 let caddyProcess;
 let phpFpmProcess;
+
+// Répertoire de logs persistants
+const tmpDir = process.platform === 'win32'
+    ? (process.env.TEMP || (process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'Temp') : 'C:\\Windows\\Temp'))
+    : '/tmp';
+const phpLogPath = path.join(tmpDir, 'duplicator_php_errors.log');
+const caddyLogPath = path.join(tmpDir, 'duplicator_caddy_errors.log');
 
 // Nettoyer les fichiers temporaires
 function cleanupTmpFiles() {
@@ -171,6 +179,7 @@ function startPhpFpm() {
     });
     
     phpFpmProcess.stderr.on('data', (data) => {
+        try { fs.appendFileSync(phpLogPath, data.toString()); } catch (e) {}
         console.error('PHP Error:', data.toString());
     });
     
@@ -272,6 +281,7 @@ function startCaddy() {
     });
     
     caddyProcess.stderr.on('data', (data) => {
+        try { fs.appendFileSync(caddyLogPath, data.toString()); } catch (e) {}
         console.error('Caddy Error:', data.toString());
     });
     
@@ -323,9 +333,39 @@ function createWindow() {
         try {
             await startPhpFpm();
             await startCaddy();
-            
-            // Charger l'application
-            mainWindow.loadURL('http://127.0.0.1:8000/');
+
+            // Attendre la disponibilité du port 8000 (Caddy), sinon fallback 8001 (PHP intégré)
+            async function waitForHttp(url, timeoutMs) {
+                const start = Date.now();
+                while (Date.now() - start < timeoutMs) {
+                    try {
+                        await new Promise((resolve, reject) => {
+                            const req = http.get(url, (res) => {
+                                // Consommer la réponse rapidement
+                                res.resume();
+                                resolve();
+                            });
+                            req.on('error', reject);
+                            req.setTimeout(2000, () => {
+                                req.destroy(new Error('timeout'));
+                            });
+                        });
+                        return true;
+                    } catch (e) {
+                        await new Promise(r => setTimeout(r, 500));
+                    }
+                }
+                return false;
+            }
+
+            const caddyUp = await waitForHttp('http://127.0.0.1:8000/', 15000);
+            if (caddyUp) {
+                mainWindow.loadURL('http://127.0.0.1:8000/');
+            } else {
+                // Fallback: essayer directement le serveur PHP intégré
+                const phpUp = await waitForHttp('http://127.0.0.1:8001/', 5000);
+                mainWindow.loadURL(phpUp ? 'http://127.0.0.1:8001/' : 'http://127.0.0.1:8000/');
+            }
             mainWindow.show();
             
             console.log('Serveurs démarrés avec succès');
