@@ -27,6 +27,12 @@ jobs:
       - name: Install dependencies
         run: npm install
         
+      - name: Update version
+        run: |
+          echo "Mise à jour de la version..."
+          node scripts/get-version.js
+          echo "Version mise à jour"
+        
       - name: Download Caddy for Windows
         run: |
           echo "Téléchargement de Caddy pour Windows..."

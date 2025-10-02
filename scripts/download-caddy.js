@@ -38,11 +38,11 @@ const PHP_VERSIONS = {
         fpm: 'php-fpm.exe'
     },
     'darwin': {
-        url: 'https://github.com/muarf/php-static-builder/releases/download/v8.2.14-static/php-static-amd64-macos.tar.gz',
-        filename: 'php_macos.tar.gz',
+        url: '',
+        filename: '',
         binary: 'php',
         fpm: 'php-fpm',
-        useStatic: true // Utiliser les binaires statiques
+        useSystem: true // Utiliser le PHP système sur macOS (GitHub Actions)
     }
 };
 
