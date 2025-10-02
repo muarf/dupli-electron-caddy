@@ -182,59 +182,28 @@ async function downloadPhp() {
                 throw new Error('PHP système non disponible');
             }
             
-            // Créer des liens symboliques vers le PHP système
+            // Copier le binaire système (pas de symlink pour éviter le blocage asar/electron-builder)
             if (platform === 'win32') {
-                // Sur Windows, on garde les binaires existants
                 console.log('Binaires Windows déjà présents');
             } else {
-                // Sur Unix, créer des liens symboliques
-                if (!fs.existsSync(binaryPath)) {
-                    // Essayer plusieurs chemins pour PHP selon l'installation
-                    const possiblePaths = ['/opt/homebrew/bin/php', '/usr/bin/php', '/usr/local/bin/php'];
-                    let phpPath = null;
-                    
-                    for (const path of possiblePaths) {
-                        if (fs.existsSync(path)) {
-                            phpPath = path;
-                            break;
-                        }
-                    }
-                    
-                    if (phpPath) {
-                        fs.symlinkSync(phpPath, binaryPath);
-                        console.log(`PHP lié depuis: ${phpPath} -> ${binaryPath}`);
-                    } else {
-                        throw new Error('PHP non trouvé dans les chemins standards');
-                    }
+                // Déterminer le chemin du PHP système
+                const possiblePaths = ['/opt/homebrew/bin/php', '/usr/bin/php', '/usr/local/bin/php'];
+                let phpPath = null;
+                for (const p of possiblePaths) {
+                    if (fs.existsSync(p)) { phpPath = p; break; }
                 }
-                if (!fs.existsSync(fpmPath)) {
-                    try {
-                        // Essayer plusieurs chemins pour php-fpm selon l'installation
-                        const possibleFpmPaths = ['/opt/homebrew/bin/php-fpm', '/usr/bin/php-fpm', '/usr/local/bin/php-fpm'];
-                        let phpFpmPath = null;
-                        
-                        for (const path of possibleFpmPaths) {
-                            if (fs.existsSync(path)) {
-                                phpFpmPath = path;
-                                break;
-                            }
-                        }
-                        
-                        if (phpFpmPath) {
-                            fs.symlinkSync(phpFpmPath, fpmPath);
-                            console.log(`php-fpm lié depuis: ${phpFpmPath} -> ${fmpPath}`);
-                            console.log('php-fpm lié avec succès');
-                        } else {
-                            console.log('php-fpm non disponible, utilisation du serveur PHP intégré');
-                        }
-                    } catch (error) {
-                        // php-fpm peut ne pas être disponible, on continue sans
-                        console.log('php-fpm non disponible, utilisation du serveur PHP intégré');
-                    }
+                if (!phpPath) {
+                    throw new Error('PHP non trouvé dans les chemins standards');
                 }
+                // Copier
+                fs.copyFileSync(phpPath, binaryPath);
+                try { fs.chmodSync(binaryPath, '755'); } catch (e) {}
+                console.log(`PHP copié depuis: ${phpPath} -> ${binaryPath}`);
+
+                // php-fpm peut être absent; on n’en a pas besoin (serveur intégré)
             }
             
-            console.log(`PHP système configuré: ${binaryPath}`);
+            console.log(`PHP système configuré (copie locale): ${binaryPath}`);
         } else {
             // Télécharger PHP
             console.log(`Téléchargement depuis: ${config.url}`);
