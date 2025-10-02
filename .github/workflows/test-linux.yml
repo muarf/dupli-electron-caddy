@@ -2,9 +2,9 @@ name: Test Linux Build
 
 on:
   push:
-    branches: [ main, master, php-static-binaries ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main, master, php-static-binaries ]
+    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
@@ -47,12 +47,6 @@ jobs:
           echo "Mise à jour de la version..."
           node scripts/get-version.js
           echo "Version mise à jour"
-          
-      - name: Download tools
-        run: |
-          echo "Téléchargement de Caddy et PHP..."
-          npm run download-caddy
-          echo "Caddy et PHP téléchargés"
         
       - name: Verify binaries
         run: |
