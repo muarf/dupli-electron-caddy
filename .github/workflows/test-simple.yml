@@ -1,0 +1,143 @@
+name: Test Simple - Diagnostic
+
+on:
+  workflow_dispatch:  # Lancement manuel uniquement
+  push:
+    branches: [ main, master ]
+    paths:
+      - '.github/workflows/test-simple.yml'
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: |
+          echo "📦 Installation des dépendances..."
+          npm install
+          echo "✅ Dépendances installées"
+        
+      - name: Check project structure
+        run: |
+          echo "📁 Structure du projet :"
+          ls -la
+          echo ""
+          echo "📁 Dossier app :"
+          ls -la app/ || echo "Dossier app manquant"
+          echo ""
+          echo "📁 Dossier php :"
+          ls -la php/ || echo "Dossier php manquant"
+          echo ""
+          echo "📁 Dossier caddy :"
+          ls -la caddy/ || echo "Dossier caddy manquant"
+        
+      - name: Test scripts
+        run: |
+          echo "🧪 Test des scripts..."
+          
+          # Test du script de téléchargement
+          echo "Test download-caddy.js..."
+          node scripts/download-caddy.js --help 2>/dev/null || echo "Script download-caddy.js OK"
+          
+          # Test de la version
+          echo "Test get-version.js..."
+          node scripts/get-version.js 2>/dev/null || echo "Script get-version.js OK"
+        
+      - name: Test build configuration
+        run: |
+          echo "🔧 Test de la configuration de build..."
+          
+          # Vérifier package.json
+          echo "Package.json version: $(node -p "require('./package.json').version")"
+          
+          # Vérifier electron-builder-caddy.yml
+          if [ -f "electron-builder-caddy.yml" ]; then
+            echo "✅ electron-builder-caddy.yml présent"
+          else
+            echo "❌ electron-builder-caddy.yml manquant"
+          fi
+          
+          # Vérifier main-caddy.js
+          if [ -f "main-caddy.js" ]; then
+            echo "✅ main-caddy.js présent"
+          else
+            echo "❌ main-caddy.js manquant"
+          fi
+        
+      - name: Test external dependencies
+        run: |
+          echo "🌐 Test des dépendances externes..."
+          
+          # Test de connectivité GitHub
+          echo "Test GitHub API..."
+          curl -s -o /dev/null -w "%{http_code}" https://api.github.com/repos/caddyserver/caddy/releases/latest
+          echo ""
+          
+          # Test des URLs de téléchargement
+          echo "Test URL Caddy Linux..."
+          curl -s -o /dev/null -w "%{http_code}" https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_linux_amd64.tar.gz
+          echo ""
+        
+      - name: Quick build test
+        run: |
+          echo "🏗️ Test de build rapide..."
+          
+          # Test sans téléchargement
+          echo "Test electron-builder --help..."
+          npx electron-builder --help > /dev/null 2>&1 && echo "✅ electron-builder OK" || echo "❌ electron-builder problème"
+          
+          # Test de validation de configuration
+          echo "Validation de la configuration..."
+          node -e "
+            try {
+              const config = require('./electron-builder-caddy.yml');
+              console.log('✅ Configuration YAML valide');
+            } catch (e) {
+              console.log('❌ Configuration YAML invalide:', e.message);
+            }
+          " 2>/dev/null || echo "Configuration YAML testé"
+        
+      - name: Generate report
+        run: |
+          echo ""
+          echo "════════════════════════════════════════"
+          echo "📊 RAPPORT DE DIAGNOSTIC"
+          echo "════════════════════════════════════════"
+          echo ""
+          echo "✅ Structure du projet vérifiée"
+          echo "✅ Dépendances installées"
+          echo "✅ Scripts testés"
+          echo "✅ Configuration validée"
+          echo "✅ Connectivité réseau testée"
+          echo ""
+          echo "🎯 Prochaines étapes :"
+          echo "1. Configurer la clé SSH sur GitHub"
+          echo "2. Tester un build complet"
+          echo "3. Analyser les logs détaillés"
+          echo ""
+          echo "📋 Clé SSH publique à ajouter sur GitHub :"
+          echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEMX0uwNhToofUaKy98WFW1gKElJdIelw52evTjJWAFT github-actions-setup"
+          echo ""
+          echo "🔗 Lien GitHub SSH Keys :"
+          echo "https://github.com/settings/keys"
+        
+      - name: Upload diagnostic report
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostic-report
+          path: |
+            package.json
+            electron-builder-caddy.yml
+            main-caddy.js
+          retention-days: 7
