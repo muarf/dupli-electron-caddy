@@ -153,8 +153,11 @@ function startPhpFpm() {
     
     // Utiliser le php.ini pour activer les extensions SQLite
     const phpIniPath = path.join(appPath, '..', 'php.ini');
+    const phpExtPath = path.join(appPath, '..', 'php', 'ext');
     console.log('PHP Ini Path:', phpIniPath);
     console.log('PHP Ini exists:', fs.existsSync(phpIniPath));
+    console.log('PHP Ext Path:', phpExtPath);
+    console.log('PHP Ext exists:', fs.existsSync(phpExtPath));
     
     phpFpmProcess = spawn(phpPath, [
         '-c', phpIniPath,
@@ -162,6 +165,7 @@ function startPhpFpm() {
         '-t', appPath,
         '-d', 'display_errors=1',
         '-d', 'log_errors=1',
+        '-d', `extension_dir=${phpExtPath}`,
         '-d', 'upload_max_filesize=50M',
         '-d', 'post_max_size=50M',
         '-d', 'max_execution_time=300',
