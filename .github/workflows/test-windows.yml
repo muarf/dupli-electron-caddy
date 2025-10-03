@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Récupérer tout l'historique et les tags pour le versioning
         
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -264,10 +266,16 @@ jobs:
           # Obtenir la version depuis Git tags en priorité
           $version = $null
           
-          # 1. Essayer de récupérer le dernier tag Git
+          # 1. Essayer de récupérer le dernier tag Git (méthode améliorée)
+          echo "Recherche des tags Git..."
+          
+          # Méthode alternative: récupérer directement depuis git tag --list
           try {
-            $lastTag = git describe --tags --abbrev=0 2>$null
-            if ($lastTag) {
+            $allTags = git tag --list "v*" --sort=-version:refname
+            if ($allTags -and $allTags.Length -gt 0) {
+              $lastTag = $allTags[0]
+              echo "Dernier tag trouvé: $lastTag"
+              
               # Extraire la version sans le 'v' du tag
               $version = $lastTag -replace '^v', ''
               echo "Version depuis Git tag: $lastTag -> $version"
@@ -277,11 +285,18 @@ jobs:
               if ($versionParts.Length -eq 3) {
                 $patch = [int]$versionParts[2] + 1
                 $version = "$($versionParts[0]).$($versionParts[1]).$patch"
-                echo "Prochaine version: $version"
+                echo "✅ Prochaine version calculée: $version"
+              } else {
+                echo "⚠️ Format de version inattendu: $version"
+                $version = $null
               }
+            } else {
+              echo "⚠️ Aucun tag trouvé avec 'git tag --list'"
+              $version = $null
             }
           } catch {
-            echo "Aucun tag Git trouvé, fallback..."
+            echo "❌ Erreur lors de la récupération des tags: $($_.Exception.Message)"
+            $version = $null
           }
           
           # 2. Fallback: utiliser package.json si aucun tag
