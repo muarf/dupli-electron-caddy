@@ -87,48 +87,7 @@ npm run build:caddy -- --linux
 npm run build:caddy -- --mac
 ```
 
-## 📁 Structure du projet
 
-```
-dupli-electron-caddy/
-├── app/                    # Application PHP
-│   ├── public/            # Fichiers publics
-│   └── ...
-├── caddy/                 # Binaires Caddy
-├── php/                   # Binaires PHP
-├── scripts/               # Scripts utilitaires
-├── tests/                 # Tests
-├── main-caddy.js          # Processus principal Electron
-├── Caddyfile              # Configuration Caddy
-└── package.json
-```
-
-## 🔧 Configuration
-
-### Caddy
-
-Le serveur Caddy est configuré via le fichier `Caddyfile` :
-
-```
-:8000 {
-    reverse_proxy 127.0.0.1:8001
-    
-    header {
-        X-Content-Type-Options nosniff
-        X-Frame-Options SAMEORIGIN
-        X-XSS-Protection "1; mode=block"
-        Referrer-Policy strict-origin-when-cross-origin
-    }
-}
-```
-
-### PHP
-
-PHP fonctionne en mode serveur intégré sur le port 8001, configuré avec :
-- `upload_max_filesize=50M`
-- `post_max_size=50M`
-- `max_execution_time=300`
-- `memory_limit=256M`
 
 
 ### Releases
@@ -137,6 +96,25 @@ Les releases sont automatiquement créées avec :
 - Windows: `Duplicator-Caddy-Setup-{version}.exe`
 - Linux: `Duplicator-{version}.AppImage`
 - macOS: `Duplicator-{version}.dmg`
+
+## ✅ À vérifier
+
+- **Statistiques** : Vérifier que les statistiques prennent en charge toutes les machines
+- **Machine à toner** : Vérifier que ça marche avec une machine à toner
+
+## 🐛 Bugs connus
+
+- **Affichage des prix** : Pas d'affichage du prix en JS sur la page `tirage_multimachines` des passages et des masters
+- **Newsletter** : Pas possible d'enlever la newsletter
+- **Changements admin** : Sur la page admin les changements n'ont pas de type
+- **Type photocopieuse** : Photocopieuse à encre a "master" et "drum" dans le type, alors que c'est juste pour les photocopieurs à toner
+
+## 📋 TODO
+
+- **PDF A4/A5 → A3** : PDF d'une page A4/A5 multiple sur du A3
+- **PDF recto/verso → A3** : PDF de deux pages recto/verso multiple sur du A3
+- **Statistiques de remplissage** : Statistique de remplissage de la page
+- **Outils Riso** : Intégrer outils Riso open source pour séparer les couleurs/coloriser noir et blanc
 
 ## 🐛 Dépannage
 

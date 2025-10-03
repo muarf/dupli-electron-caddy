@@ -568,8 +568,9 @@ function Action($conf)
                 
                 $cleanedPdfFile = $tmp_dir . 'cleaned_' . $timestamp . '.pdf';
                 
-                // Nettoyer le PDF avec Ghostscript
-                $command = "gs -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($pdfFile) . " 2>&1";
+                // Nettoyer le PDF avec Ghostscript - détection automatique de la plateforme
+                $gs_command = (PHP_OS_FAMILY === 'Windows') ? 'gs10060w64.exe' : 'gs';
+                $command = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($pdfFile) . " 2>&1";
                 $output = shell_exec($command);
                 
                 if (!file_exists($cleanedPdfFile) || filesize($cleanedPdfFile) == 0) {

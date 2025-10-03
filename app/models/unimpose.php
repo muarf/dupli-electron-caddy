@@ -31,9 +31,10 @@ function unimpose_booklet($input_file, $output_file) {
         throw new Exception("Impossible de déterminer le nombre de pages du PDF.");
     }
     
-    // Convertir le PDF avec Ghostscript pour le rendre compatible avec TCPDF
+    // Convertir le PDF avec Ghostscript pour le rendre compatible avec TCPDF - détection automatique de la plateforme
     $compatibleFile = preg_replace('/\.pdf$/', '_compatible.pdf', $input_file);
-    $cmd = "gs -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -sOutputFile=" . escapeshellarg($compatibleFile) . " " . escapeshellarg($input_file) . " 2>/dev/null";
+    $gs_command = (PHP_OS_FAMILY === 'Windows') ? 'gs10060w64.exe' : 'gs';
+    $cmd = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -sOutputFile=" . escapeshellarg($compatibleFile) . " " . escapeshellarg($input_file) . " 2>/dev/null";
     exec($cmd, $output, $returnCode);
         
     if ($returnCode !== 0 || !file_exists($compatibleFile)) {
