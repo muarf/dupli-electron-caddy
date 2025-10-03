@@ -35,6 +35,35 @@ jobs:
           Remove-Item "caddy_windows.zip"
           echo "Caddy téléchargé: $(Get-Item caddy/caddy.exe | Select-Object -ExpandProperty Length) bytes"
         
+      - name: Extract VCRuntime DLLs
+        run: |
+          echo "Téléchargement et extraction des DLL VCRuntime..."
+          Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x64.exe" -OutFile "vc_redist.x64.exe"
+          
+          # Extraire les DLL nécessaires pour PHP
+          $exeArgs = "/x:`"php`" /q"
+          Start-Process -FilePath "vc_redist.x64.exe" -ArgumentList $exeArgs -Wait -NoNewWindow
+          
+          # Copier les DLL depuis les dossiers d'extraction courants
+          $extractPaths = @("php\x64\Microsoft.VC143.CRT\*", "php\x64\microsoft.vc143.crt\*", "php\VC_redist.x64\x64\Microsoft.VC143.CRT\*")
+          $requiredDlls = @("vcruntime140.dll", "msvcp140.dll", "ucrtbase.dll")
+          
+          foreach ($extractPath in $extractPaths) {
+            if (Test-Path $extractPath) {
+              foreach ($dll in $requiredDlls) {
+                $source = Get-ChildItem -Path $extractPath -Filter $dll -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($source) {
+                  Copy-Item $source.FullName "php/$dll" -Force
+                  Write-Host "✅ Copié $dll vers php/"
+                  break
+                }
+              }
+            }
+          }
+          
+          echo "Vérification des DLL extraites:"
+          Get-ChildItem php -Filter "*.dll" | ForEach-Object { Write-Host "  ✅ $($_.Name)" }
+        
       - name: Verify PHP binaries
         run: |
           echo "Vérification des binaires PHP inclus..."
@@ -55,12 +84,12 @@ jobs:
           }
           
           echo "Vérification des DLL nécessaires:"
-          $required_dlls = @("php8ts.dll", "libsqlite3.dll")
+          $required_dlls = @("php8.dll", "libsqlite3.dll", "vcruntime140.dll", "msvcp140.dll")
           foreach ($dll in $required_dlls) {
             if (Test-Path "php/$dll") {
               echo "✅ $dll trouvé"
             } else {
-              echo "⚠️  $dll manquant (peut être optionnel)"
+              echo "❌ $dll manquant (CRITIQUE pour Windows)"
             }
           }
         
