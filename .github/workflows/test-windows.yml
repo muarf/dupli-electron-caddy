@@ -66,6 +66,46 @@ jobs:
             }
           }
         
+      - name: Update package.json version
+        run: |
+          echo "=== Mise à jour de la version dans package.json ==="
+          
+          # Calculer la nouvelle version depuis Git tags
+          echo "Recherche du dernier tag..."
+          $lastTag = git tag --list "v*" --sort=-version:refname | Select-Object -First 1
+          
+          if ($lastTag) {
+            echo "Dernier tag trouvé: $lastTag"
+            
+            # Extraire la version sans le 'v' et incrémenter
+            $currentVersion = $lastTag -replace '^v', ''
+            $versionParts = $currentVersion -split '\.'
+            
+            if ($versionParts.Length -eq 3) {
+              $patchNumber = [int]$versionParts[2] + 1
+              $newVersion = "$($versionParts[0]).$($versionParts[1]).$patchNumber"
+              echo "Nouvelle version calculée: $newVersion"
+              
+              # Modifier package.json
+              echo "Mise à jour package.json..."
+              $packageJson = Get-Content "package.json" | ConvertFrom-Json
+              $packageJson.version = $newVersion
+              $packageJson | ConvertTo-Json -Depth 100 | Set-Content "package.json"
+              
+              echo "✅ package.json mis à jour avec version: $newVersion"
+              echo "Nouveau contenu package.json version:"
+              (Get-Content "package.json" | ConvertFrom-Json).version
+              
+            } else {
+              echo "⚠️ Format de version inattendu: $currentVersion"
+              exit 1
+            }
+          } else {
+            echo "⚠️ Aucun tag Git trouvé, garder la version actuelle"
+            echo "Version actuelle:" 
+            (Get-Content "package.json" | ConvertFrom-Json).version
+          }
+        
       - name: Build Windows app
         run: npm run build:caddy -- --win --publish=always
         
@@ -254,9 +294,9 @@ jobs:
           
           # Vérifier les packages disponibles
           echo "Packages disponibles:"
-          if (Test-Path "dist/Duplicator-Setup-*.exe") {
+          if (Test-Path "dist/Duplicator-*.exe") {
             echo "✅ Installateur NSIS trouvé"
-            Get-ChildItem "dist/Duplicator-Setup-*.exe" | ForEach-Object { echo "  - $($_.Name)" }
+            Get-ChildItem "dist/Duplicator-*.exe" | ForEach-Object { echo "  - $($_.Name)" }
           }
           if (Test-Path "dist/Duplicator-*-win.zip") {
             echo "✅ Version portable ZIP trouvée"
@@ -360,7 +400,7 @@ jobs:
               " `
               --generate-notes `
               "dist/Duplicator-*-win.zip" `
-              "dist/Duplicator-Setup-*.exe" 2>$null || echo "Erreur création release"
+              "dist/Duplicator-*.exe" 2>$null || echo "Erreur création release"
               
             echo "✅ Release GitHub créée: v$version"
           } else {
@@ -368,19 +408,13 @@ jobs:
             
             # Upload des nouveaux assets dans la release existante
             $zipFile = Get-ChildItem "dist/Duplicator-*-win.zip" | Select-Object -First 1
-            $exeFile = Get-ChildItem "dist/Duplicator-Setup-*.exe" | Select-Object -First 1
+            $exeFile = Get-ChildItem "dist/Duplicator-*.exe" | Select-Object -First 1
             
             if ($zipFile) {
-              echo "Upload ZIP: $($zipFile.FullName)"
               gh release upload "v$version" $zipFile.FullName --clobber 2>$null || echo "Erreur upload ZIP"
-            } else {
-              echo "⚠️ Fichier ZIP non trouvé: dist/Duplicator-*-win.zip"
             }
             if ($exeFile) {
-              echo "Upload EXE: $($exeFile.FullName)"
-              gh release upload "v$version" $exeFile.FullName --clobber 2>$null || echo "Erreur upload EXE"
-            } else {
-              echo "⚠️ Fichier EXE non trouvé: dist/Duplicator-Setup-*.exe"
+              gh release upload "v$version" $exeFile.FullName --clobber 2>$null || echo "Erreur upload EXE" 
             }
             
             echo "✅ Assets mis à jour dans la release existante"

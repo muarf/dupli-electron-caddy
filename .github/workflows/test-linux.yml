@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Récupérer tout l'historique et les tags pour le versioning
         
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -52,6 +54,46 @@ jobs:
         
       - name: Run tests
         run: npm run test:e2e:simple
+        
+      - name: Update package.json version
+        run: |
+          echo "=== Mise à jour de la version dans package.json ==="
+          
+          # Calculer la nouvelle version depuis Git tags
+          echo "Recherche du dernier tag..."
+          LAST_TAG=$(git tag --list "v*" --sort=-version:refname | head -1)
+          
+          if [ -n "$LAST_TAG" ]; then
+            echo "Dernier tag trouvé: $LAST_TAG"
+            
+            # Extraire la version sans le 'v' et incrémenter
+            CURRENT_VERSION=$(echo "$LAST_TAG" | sed 's/^v//')
+            echo "Version actuelle: $CURRENT_VERSION"
+            
+            # Diviser la version et incrémenter le patch
+            IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+            if [ ${#VERSION_PARTS[@]} -eq 3 ]; then
+              PATCH_NUMBER=$((VERSION_PARTS[2] + 1))
+              NEW_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$PATCH_NUMBER"
+              echo "Nouvelle version calculée: $NEW_VERSION"
+              
+              # Modifier package.json avec jq
+              echo "Mise à jour package.json..."
+              npm pkg set version="$NEW_VERSION"
+              
+              echo "✅ package.json mis à jour avec version: $NEW_VERSION"
+              echo "Nouveau contenu package.json version:"
+              node -p "require('./package.json').version"
+              
+            else
+              echo "⚠️ Format de version inattendu: $CURRENT_VERSION"
+              exit 1
+            fi
+          else
+            echo "⚠️ Aucun tag Git trouvé, garder la version actuelle"
+            echo "Version actuelle:" 
+            node -p "require('./package.json').version"
+          fi
         
       - name: Build Linux AppImage
         run: npm run build:caddy -- --publish=always
