@@ -151,8 +151,13 @@ function startPhpFpm() {
         fs.mkdirSync(sessionPath, { recursive: true });
     }
     
-    // Pas de fichier php.ini pour éviter les erreurs d'extensions Windows
+    // Utiliser le php.ini pour activer les extensions SQLite
+    const phpIniPath = path.join(appPath, '..', 'php.ini');
+    console.log('PHP Ini Path:', phpIniPath);
+    console.log('PHP Ini exists:', fs.existsSync(phpIniPath));
+    
     phpFpmProcess = spawn(phpPath, [
+        '-c', phpIniPath,
         '-S', '127.0.0.1:8001',
         '-t', appPath,
         '-d', 'display_errors=1',
