@@ -243,6 +243,102 @@ jobs:
           if-no-files-found: ignore
         continue-on-error: true
         
+      - name: Create GitHub Release
+        if: success() && github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "=== Création de la release GitHub ==="
+          
+          # Vérifier les packages disponibles
+          echo "Packages disponibles:"
+          if (Test-Path "dist/Duplicator-*.exe") {
+            echo "✅ Installateur NSIS trouvé"
+            Get-ChildItem "dist/Duplicator-*.exe" | ForEach-Object { echo "  - $($_.Name)" }
+          }
+          if (Test-Path "dist/Duplicator-*-win.zip") {
+            echo "✅ Version portable ZIP trouvée"
+            Get-ChildItem "dist/Duplicator-*-win.zip" | ForEach-Object { echo "  - $($_.Name)" }
+          }
+          
+          # Obtenir la version depuis package.json ou git
+          $version = $null
+          if (Test-Path "package.json") {
+            $packageJson = Get-Content "package.json" | ConvertFrom-Json
+            $version = $packageJson.version
+          }
+          if (-not $version) {
+            $version = git describe --tags --abbrev=0 2>$null
+            if (-not $version) {
+              $version = "1.0.$(git rev-list --count HEAD)"
+            }
+          }
+          
+          echo "Version détectée: $version"
+          
+          # Vérifier si la release existe déjà
+          $releaseExists = $false
+          try {
+            gh release view "v$version" >$null 2>&1
+            $releaseExists = $true
+            echo "Release v$version existe déjà"
+          } catch {
+            echo "Release v$version n'existe pas, création..."
+            $releaseExists = $false
+          }
+          
+          if (-not $releaseExists) {
+            # Créer la release
+            gh release create "v$version" `
+              --title "Duplicator v$version - Windows" `
+              --notes "
+              🚀 **Duplicator v$version - Windows Release**
+              
+              **Corrections:**
+              ✅ SQLite extensions ajoutées (php_sqlite3.dll, php_pdo_sqlite.dll)
+              ✅ Visual C++ Runtime DLLs incluses 
+              ✅ Application portable Windows prête
+              
+              **Ressources incluses:**
+              🔹 Caddy Web Server v2.7.6
+              🔹 PHP ${version}-Windows avec SQLite 
+              🔹 Ghostscript pour PDF
+              🔹 Extensions PDO SQLite corrigées
+              
+              **Instructions:**
+              1. Télécharger le package souhaité (NSIS installer ou ZIP portable)
+              2. Lancer l'application (Duplicator.exe)
+              3. L'interface web s'ouvrira automatiquement
+              
+              **Système requis:**
+              - Windows 10/11 (64-bit)
+              ⚠️ Plus besoin d'installer Visual C++ Redistributable !
+              
+              ---
+              *Build automatique depuis GitHub Actions* 🏗️
+              " `
+              --generate-notes `
+              "dist/Duplicator-*-win.zip" `
+              "dist/Duplicator-*.exe" 2>$null || echo "Erreur création release"
+              
+            echo "✅ Release GitHub créée: v$version"
+          } else {
+            echo "ℹ️ Release déjà existante, mise à jour des assets..."
+            
+            # Upload des nouveaux assets dans la release existante
+            $zipFile = Get-ChildItem "dist/Duplicator-*-win.zip" | Select-Object -First 1
+            $exeFile = Get-ChildItem "dist/Duplicator-*.exe" | Select-Object -First 1
+            
+            if ($zipFile) {
+              gh release upload "v$version" $zipFile.FullName --clobber 2>$null || echo "Erreur upload ZIP"
+            }
+            if ($exeFile) {
+              gh release upload "v$version" $exeFile.FullName --clobber 2>$null || echo "Erreur upload EXE" 
+            }
+            
+            echo "✅ Assets mis à jour dans la release existante"
+          }
+        
       - name: Test summary
         if: always()
         run: |
