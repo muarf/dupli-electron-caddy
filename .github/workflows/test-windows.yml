@@ -254,9 +254,9 @@ jobs:
           
           # Vérifier les packages disponibles
           echo "Packages disponibles:"
-          if (Test-Path "dist/Duplicator-*.exe") {
+          if (Test-Path "dist/Duplicator-Setup-*.exe") {
             echo "✅ Installateur NSIS trouvé"
-            Get-ChildItem "dist/Duplicator-*.exe" | ForEach-Object { echo "  - $($_.Name)" }
+            Get-ChildItem "dist/Duplicator-Setup-*.exe" | ForEach-Object { echo "  - $($_.Name)" }
           }
           if (Test-Path "dist/Duplicator-*-win.zip") {
             echo "✅ Version portable ZIP trouvée"
@@ -360,7 +360,7 @@ jobs:
               " `
               --generate-notes `
               "dist/Duplicator-*-win.zip" `
-              "dist/Duplicator-*.exe" 2>$null || echo "Erreur création release"
+              "dist/Duplicator-Setup-*.exe" 2>$null || echo "Erreur création release"
               
             echo "✅ Release GitHub créée: v$version"
           } else {
@@ -368,13 +368,19 @@ jobs:
             
             # Upload des nouveaux assets dans la release existante
             $zipFile = Get-ChildItem "dist/Duplicator-*-win.zip" | Select-Object -First 1
-            $exeFile = Get-ChildItem "dist/Duplicator-*.exe" | Select-Object -First 1
+            $exeFile = Get-ChildItem "dist/Duplicator-Setup-*.exe" | Select-Object -First 1
             
             if ($zipFile) {
+              echo "Upload ZIP: $($zipFile.FullName)"
               gh release upload "v$version" $zipFile.FullName --clobber 2>$null || echo "Erreur upload ZIP"
+            } else {
+              echo "⚠️ Fichier ZIP non trouvé: dist/Duplicator-*-win.zip"
             }
             if ($exeFile) {
-              gh release upload "v$version" $exeFile.FullName --clobber 2>$null || echo "Erreur upload EXE" 
+              echo "Upload EXE: $($exeFile.FullName)"
+              gh release upload "v$version" $exeFile.FullName --clobber 2>$null || echo "Erreur upload EXE"
+            } else {
+              echo "⚠️ Fichier EXE non trouvé: dist/Duplicator-Setup-*.exe"
             }
             
             echo "✅ Assets mis à jour dans la release existante"
