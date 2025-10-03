@@ -261,17 +261,43 @@ jobs:
             Get-ChildItem "dist/Duplicator-*-win.zip" | ForEach-Object { echo "  - $($_.Name)" }
           }
           
-          # Obtenir la version depuis package.json ou git
+          # Obtenir la version depuis Git tags en priorité
           $version = $null
-          if (Test-Path "package.json") {
-            $packageJson = Get-Content "package.json" | ConvertFrom-Json
-            $version = $packageJson.version
-          }
-          if (-not $version) {
-            $version = git describe --tags --abbrev=0 2>$null
-            if (-not $version) {
-              $version = "1.0.$(git rev-list --count HEAD)"
+          
+          # 1. Essayer de récupérer le dernier tag Git
+          try {
+            $lastTag = git describe --tags --abbrev=0 2>$null
+            if ($lastTag) {
+              # Extraire la version sans le 'v' du tag
+              $version = $lastTag -replace '^v', ''
+              echo "Version depuis Git tag: $lastTag -> $version"
+              
+              # Calculer la prochaine version (patch incrémenté)
+              $versionParts = $version -split '\.'
+              if ($versionParts.Length -eq 3) {
+                $patch = [int]$versionParts[2] + 1
+                $version = "$($versionParts[0]).$($versionParts[1]).$patch"
+                echo "Prochaine version: $version"
+              }
             }
+          } catch {
+            echo "Aucun tag Git trouvé, fallback..."
+          }
+          
+          # 2. Fallback: utiliser package.json si aucun tag
+          if (-not $version) {
+            if (Test-Path "package.json") {
+              $packageJson = Get-Content "package.json" | ConvertFrom-Json
+              $version = $packageJson.version
+              echo "Version depuis package.json: $version"
+            }
+          }
+          
+          # 3. Fallback final: version basée sur les commits
+          if (-not $version) {
+            $commitCount = git rev-list --count HEAD
+            $version = "1.0.$commitCount"
+            echo "Version depuis commit count: $version"
           }
           
           echo "Version détectée: $version"
