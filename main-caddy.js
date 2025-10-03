@@ -153,7 +153,7 @@ function startPhpFpm() {
     
     // Utiliser le php.ini pour activer les extensions SQLite
     const phpIniPath = path.join(appPath, '..', 'php.ini');
-    const phpExtPath = path.join(appPath, '..', 'php', 'ext');
+    const phpExtPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'ext');
     console.log('PHP Ini Path:', phpIniPath);
     console.log('PHP Ini exists:', fs.existsSync(phpIniPath));
     console.log('PHP Ext Path:', phpExtPath);
