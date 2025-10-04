@@ -108,6 +108,7 @@ Les releases sont automatiquement créées avec :
 - **Newsletter** : Pas possible d'enlever la newsletter
 - **Changements admin** : Sur la page admin les changements n'ont pas de type
 - **Type photocopieuse** : Photocopieuse à encre a "master" et "drum" dans le type, alors que c'est juste pour les photocopieurs à toner
+- **page impose/unimpose** : header different
 
 ## 📋 TODO
 
