@@ -35,6 +35,14 @@
                     <small class="text-muted d-block">Transformer un livret en pages normales</small>
                   </a>
                 </li>
+                <li role="separator" class="divider"></li>
+                <li>
+                  <a href="?imposition_tracts">
+                    <i class="fa fa-copy" style="color: #ffd93d; margin-right: 8px;"></i>
+                    <strong>Imposition Tracts</strong>
+                    <small class="text-muted d-block">Dupliquer et optimiser vos tracts</small>
+                  </a>
+                </li>
               </ul>
             </li>
             <li>
