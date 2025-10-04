@@ -110,7 +110,8 @@ Les releases sont automatiquement créées avec :
 
 ## 🐛 Bugs connus
 
-*Aucun bug connu actuellement*
+- **Multitirages** : Fonctionne uniquement avec la même machine (pas de mélange de machines)
+- **Désimposer** : Ne fonctionne qu'avec le script Python (pas d'interface web)
 
 ## ✅ Bugs corrigés (v1.1.0)
 
@@ -146,6 +147,7 @@ Nouvelle fonctionnalité pour optimiser l'impression de tracts et documents :
 ## 📋 TODO
 
 - **Statistiques de remplissage** : Statistique de remplissage de la page
+- **Vérification des statistiques** : Vérifier que les stats prennent en compte tous les tirages de toutes les machines
 - **Outils Riso** : Intégrer outils Riso open source pour séparer les couleurs/coloriser noir et blanc
 
 ## 🐛 Dépannage
