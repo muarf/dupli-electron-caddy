@@ -121,6 +121,7 @@ Les releases sont automatiquement créées avec :
 - ✅ **Type photocopieuse** : Distinction correcte entre photocopieurs à encre et à toner
 - ✅ **Headers pages** : Uniformisation des headers entre impose/unimpose
 - ✅ **Erreurs PHP** : Correction des erreurs de variables non initialisées et de syntaxe PDO
+- ✅ **Téléchargement BDD** : Correction du téléchargement des sauvegardes (HTML → fichier .sqlite)
 
 ## 🆕 Nouvelles fonctionnalités (v1.1.0)
 
