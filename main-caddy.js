@@ -111,8 +111,8 @@ function getCaddyfilePath() {
     const isMacOS = process.platform === 'darwin';
     
     if (isAppImage || isMacOS) {
-        // Dans l'AppImage ou macOS, le Caddyfile est dans resources/
-        return path.join(process.resourcesPath, 'Caddyfile');
+        // Dans l'AppImage ou macOS, le Caddyfile est dans app.asar.unpacked/ (comme Windows)
+        return path.join(process.resourcesPath, 'app.asar.unpacked', 'Caddyfile');
     } else if (isWindows) {
         // Windows portable : le Caddyfile est dans app.asar.unpacked/
         return path.join(process.resourcesPath, 'app.asar.unpacked', 'Caddyfile');
