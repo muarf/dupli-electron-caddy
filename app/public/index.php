@@ -4,6 +4,9 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+// Inclure func.php AVANT les gestionnaires d'erreur pour avoir accès à template()
+include(__DIR__ . '/../controler/func.php');
+
 // Gestionnaire d'erreur global pour éviter les pages blanches
 set_error_handler(function($severity, $message, $file, $line) {
     if (error_reporting() & $severity) {
@@ -25,6 +28,8 @@ set_error_handler(function($severity, $message, $file, $line) {
             return template(__DIR__ . "/../view/imposition.html.php", $errorArray);
         } elseif ($currentPage === 'unimpose') {
             return template(__DIR__ . "/../view/unimpose.html.php", $errorArray);
+        } elseif ($currentPage === 'admin') {
+            return template(__DIR__ . "/../view/admin.login.html.php", $errorArray);
         } else {
             return template(__DIR__ . "/../view/accueil.html.php", $errorArray);
         }
@@ -48,6 +53,8 @@ set_exception_handler(function($exception) {
         return template(__DIR__ . "/../view/imposition.html.php", $errorArray);
     } elseif ($currentPage === 'unimpose') {
         return template(__DIR__ . "/../view/unimpose.html.php", $errorArray);
+    } elseif ($currentPage === 'admin') {
+        return template(__DIR__ . "/../view/admin.login.html.php", $errorArray);
     } else {
         return template(__DIR__ . "/../view/accueil.html.php", $errorArray);
     }
@@ -70,7 +77,6 @@ ini_set('upload_tmp_dir', $temp_dir);
 
 session_start();
 
-include(__DIR__ . '/../controler/func.php');
 // conf.php sera inclus après l'exécution du modèle pour avoir la bonne base active
 
 
