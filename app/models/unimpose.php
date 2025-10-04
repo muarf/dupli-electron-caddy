@@ -11,7 +11,7 @@ function unimpose_booklet($input_file, $output_file) {
     }
     
     // Vérifier avec pdfinfo - avec fallback Ghostscript si échec
-    $infoCmd = "pdfinfo " . escapeshellarg($input_file) . " 2>/dev/null";
+    $infoCmd = "pdfinfo " . escapeshellarg($input_file) . " 2>&1";
     exec($infoCmd, $infoOutput, $infoReturn);
     
     $cleanedPdfFile = null;
@@ -39,26 +39,29 @@ function unimpose_booklet($input_file, $output_file) {
                 $gs_command = 'gs';
             }
             
-            $cmd = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($input_file) . " 2>/dev/null";
+            $cmd = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($input_file) . " 2>&1";
             exec($cmd, $output, $returnCode);
             
             if ($returnCode !== 0 || !file_exists($cleanedPdfFile)) {
-                throw new Exception("Impossible de nettoyer le PDF avec Ghostscript.");
+                $gsError = implode("\n", $output);
+                throw new Exception("Impossible de nettoyer le PDF avec Ghostscript. Erreur: " . $gsError);
             }
             
             // Réessayer pdfinfo avec le PDF nettoyé
-            $infoCmd = "pdfinfo " . escapeshellarg($cleanedPdfFile) . " 2>/dev/null";
+            $infoCmd = "pdfinfo " . escapeshellarg($cleanedPdfFile) . " 2>&1";
             exec($infoCmd, $infoOutput, $infoReturn);
             
             if ($infoReturn !== 0) {
-                throw new Exception("Le PDF reste illisible même après nettoyage Ghostscript.");
+                $pdfinfoError = implode("\n", $infoOutput);
+                throw new Exception("Le PDF reste illisible même après nettoyage Ghostscript. Erreur pdfinfo: " . $pdfinfoError);
             }
             
             $usedGhostscript = true;
             $input_file = $cleanedPdfFile; // Utiliser le fichier nettoyé
             
         } catch (Exception $e) {
-            throw new Exception("Le PDF est corrompu ou illisible selon pdfinfo. Tentative de nettoyage Ghostscript échouée : " . $e->getMessage());
+            $pdfinfoError = implode("\n", $infoOutput);
+            throw new Exception("Le PDF est corrompu ou illisible selon pdfinfo. Erreur pdfinfo: " . $pdfinfoError . " | Tentative de nettoyage Ghostscript échouée : " . $e->getMessage());
         }
     }
     
@@ -86,11 +89,12 @@ function unimpose_booklet($input_file, $output_file) {
     } else {
         $gs_command = 'gs';
     }
-    $cmd = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -sOutputFile=" . escapeshellarg($compatibleFile) . " " . escapeshellarg($input_file) . " 2>/dev/null";
+    $cmd = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -sOutputFile=" . escapeshellarg($compatibleFile) . " " . escapeshellarg($input_file) . " 2>&1";
     exec($cmd, $output, $returnCode);
         
     if ($returnCode !== 0 || !file_exists($compatibleFile)) {
-        throw new Exception("Impossible de convertir le PDF pour le rendre compatible.");
+        $gsError = implode("\n", $output);
+        throw new Exception("Impossible de convertir le PDF pour le rendre compatible. Erreur Ghostscript: " . $gsError);
     }
     
     // Utiliser le script Python pour la désimposition
@@ -188,6 +192,13 @@ function Action($conf) {
         }
     } catch (Exception $e) {
         $errors[] = "Erreur lors du traitement : " . $e->getMessage();
+        
+        // Logger l'erreur complète pour le débogage
+        error_log("UNIMPOSE ERROR: " . $e->getMessage());
+        error_log("UNIMPOSE STACK TRACE: " . $e->getTraceAsString());
+        
+        // Ajouter des détails techniques pour l'utilisateur
+        $errors[] = "Détails techniques : " . $e->getFile() . " ligne " . $e->getLine();
     }
     
     // Version simplifiée avec formulaire d'upload
