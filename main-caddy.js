@@ -151,8 +151,8 @@ function startPhpFpm() {
         fs.mkdirSync(sessionPath, { recursive: true });
     }
     
-    // Utiliser le php.ini pour activer les extensions SQLite
-    const phpIniPath = path.join(appPath, '..', 'php.ini');
+    // Utiliser le php-appimage.ini pour AppImage Linux
+    const phpIniPath = path.join(appPath, '..', 'php-appimage.ini');
     const phpExtPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'ext');
     console.log('PHP Ini Path:', phpIniPath);
     console.log('PHP Ini exists:', fs.existsSync(phpIniPath));
