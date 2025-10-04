@@ -151,8 +151,10 @@ function startPhpFpm() {
         fs.mkdirSync(sessionPath, { recursive: true });
     }
     
-    // Utiliser le php-appimage.ini pour AppImage Linux
-    const phpIniPath = path.join(appPath, '..', 'php-appimage.ini');
+    // Utiliser le bon fichier php.ini selon la plateforme
+    const phpIniPath = isAppImage 
+        ? path.join(appPath, '..', 'php-appimage.ini')  // AppImage Linux
+        : path.join(appPath, '..', 'php.ini');          // Windows et autres
     const phpExtPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'ext');
     console.log('PHP Ini Path:', phpIniPath);
     console.log('PHP Ini exists:', fs.existsSync(phpIniPath));
