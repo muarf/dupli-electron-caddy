@@ -10,12 +10,56 @@ function unimpose_booklet($input_file, $output_file) {
         throw new Exception("Le fichier PDF n'existe pas ou n'est pas lisible.");
     }
     
-    // Vérifier avec pdfinfo
+    // Vérifier avec pdfinfo - avec fallback Ghostscript si échec
     $infoCmd = "pdfinfo " . escapeshellarg($input_file) . " 2>/dev/null";
     exec($infoCmd, $infoOutput, $infoReturn);
     
+    $cleanedPdfFile = null;
+    $usedGhostscript = false;
+    
     if ($infoReturn !== 0) {
-        throw new Exception("Le PDF est corrompu ou illisible selon pdfinfo.");
+        // pdfinfo a échoué, essayer de nettoyer avec Ghostscript
+        try {
+            $timestamp = date('YmdHis');
+            $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
+            
+            if (!file_exists($tmp_dir)) {
+                mkdir($tmp_dir, 0755, true);
+            }
+            
+            $cleanedPdfFile = $tmp_dir . 'cleaned_unimpose_' . $timestamp . '.pdf';
+            
+            // Nettoyer le PDF avec Ghostscript
+            if (PHP_OS_FAMILY === 'Windows') {
+                $gs_command = __DIR__ . '/../../ghostscript/gswin64c.exe';
+                if (!file_exists($gs_command)) {
+                    throw new Exception("Ghostscript Windows non trouvé : " . $gs_command);
+                }
+            } else {
+                $gs_command = 'gs';
+            }
+            
+            $cmd = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($input_file) . " 2>/dev/null";
+            exec($cmd, $output, $returnCode);
+            
+            if ($returnCode !== 0 || !file_exists($cleanedPdfFile)) {
+                throw new Exception("Impossible de nettoyer le PDF avec Ghostscript.");
+            }
+            
+            // Réessayer pdfinfo avec le PDF nettoyé
+            $infoCmd = "pdfinfo " . escapeshellarg($cleanedPdfFile) . " 2>/dev/null";
+            exec($infoCmd, $infoOutput, $infoReturn);
+            
+            if ($infoReturn !== 0) {
+                throw new Exception("Le PDF reste illisible même après nettoyage Ghostscript.");
+            }
+            
+            $usedGhostscript = true;
+            $input_file = $cleanedPdfFile; // Utiliser le fichier nettoyé
+            
+        } catch (Exception $e) {
+            throw new Exception("Le PDF est corrompu ou illisible selon pdfinfo. Tentative de nettoyage Ghostscript échouée : " . $e->getMessage());
+        }
     }
     
     // Extraire le nombre de pages depuis pdfinfo
@@ -80,6 +124,11 @@ function unimpose_booklet($input_file, $output_file) {
     // Déplacer le fichier de sortie vers la destination finale
     if (!rename($pythonOutput, $output_file)) {
         throw new Exception("Impossible de déplacer le fichier de sortie.");
+    }
+    
+    // Nettoyer le fichier temporaire nettoyé par Ghostscript si utilisé
+    if ($usedGhostscript && $cleanedPdfFile && file_exists($cleanedPdfFile)) {
+        unlink($cleanedPdfFile);
     }
     
     return $output_file;
