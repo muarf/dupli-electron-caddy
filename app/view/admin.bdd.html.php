@@ -380,7 +380,7 @@
                               <i class="fa fa-upload"></i> Restaurer
                             </button>
                           </form>
-                          <a href="download_backup.php?file=<?= urlencode($backup['filename']) ?>" class="btn btn-info btn-xs">
+                          <a href="public/sauvegarde/<?= urlencode($backup['filename']) ?>" class="btn btn-info btn-xs" download>
                             <i class="fa fa-download"></i> Télécharger
                           </a>
                           <form method="post" style="display: inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette sauvegarde ? Cette action est irréversible !');">
