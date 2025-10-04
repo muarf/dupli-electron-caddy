@@ -4,6 +4,55 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+// Gestionnaire d'erreur global pour éviter les pages blanches
+set_error_handler(function($severity, $message, $file, $line) {
+    if (error_reporting() & $severity) {
+        $error = "Erreur PHP [$severity]: $message dans $file ligne $line";
+        error_log($error);
+        
+        // Déterminer la page actuelle
+        $currentPage = key($_GET) ?? 'accueil';
+        
+        // Créer un tableau d'erreur standardisé
+        $errorArray = [
+            'errors' => ["Erreur système : " . $message],
+            'page' => $currentPage,
+            'timestamp' => date('Y-m-d H:i:s')
+        ];
+        
+        // Rediriger vers la page d'erreur ou la page actuelle avec erreur
+        if ($currentPage === 'imposition') {
+            return template(__DIR__ . "/../view/imposition.html.php", $errorArray);
+        } elseif ($currentPage === 'unimpose') {
+            return template(__DIR__ . "/../view/unimpose.html.php", $errorArray);
+        } else {
+            return template(__DIR__ . "/../view/accueil.html.php", $errorArray);
+        }
+    }
+    return false;
+});
+
+// Gestionnaire d'exception global
+set_exception_handler(function($exception) {
+    $error = "Exception non capturée : " . $exception->getMessage() . " dans " . $exception->getFile() . " ligne " . $exception->getLine();
+    error_log($error);
+    
+    $currentPage = key($_GET) ?? 'accueil';
+    $errorArray = [
+        'errors' => ["Erreur critique : " . $exception->getMessage()],
+        'page' => $currentPage,
+        'timestamp' => date('Y-m-d H:i:s')
+    ];
+    
+    if ($currentPage === 'imposition') {
+        return template(__DIR__ . "/../view/imposition.html.php", $errorArray);
+    } elseif ($currentPage === 'unimpose') {
+        return template(__DIR__ . "/../view/unimpose.html.php", $errorArray);
+    } else {
+        return template(__DIR__ . "/../view/accueil.html.php", $errorArray);
+    }
+});
+
 // Configuration cross-platform des chemins temporaires
 $temp_dir = sys_get_temp_dir();
 $session_path = $temp_dir . DIRECTORY_SEPARATOR . 'duplicator_sessions';

@@ -3,6 +3,19 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
+// Gestion des erreurs non capturées côté Electron
+process.on('uncaughtException', (error) => {
+    console.error('Erreur non capturée:', error);
+    // Optionnel : redémarrer l'application
+    // app.relaunch();
+    // app.exit(1);
+});
+
+// Gestion des erreurs de promesses non résolues
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Promesse rejetée non gérée:', reason);
+});
+
 let mainWindow;
 let phpServer;
 
@@ -76,6 +89,10 @@ function startPhpServer() {
     phpServer.on('close', (code) => {
         console.log(`Serveur PHP fermé avec le code ${code}`);
     });
+    
+    phpServer.on('error', (error) => {
+        console.error('Erreur serveur PHP:', error);
+    });
 }
 
 // Arrêter le serveur PHP
@@ -114,6 +131,12 @@ function createWindow() {
         mainWindow.loadURL('http://127.0.0.1:8000/');
         mainWindow.show();
     }, 2000);
+
+    // Gestion des erreurs de chargement
+    mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+        console.error('Erreur de chargement:', errorCode, errorDescription);
+        mainWindow.loadURL('data:text/html,<h1>Erreur de connexion</h1><p>Impossible de se connecter au serveur PHP.</p><button onclick="location.reload()">Recharger</button>');
+    });
     
     // Ouvrir les DevTools en développement
     if (process.env.NODE_ENV === 'development') {
