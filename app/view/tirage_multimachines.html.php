@@ -268,7 +268,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                                             <?php 
                                             // Calculer les coûts détaillés pour le duplicopieur
                                             $prix_data = $prix_data ?? [];
-                                            $duplicopieur_id = $machine['duplicopieur_id'] ?? 1;
+                                            $duplicopieur_id = $machine['duplicopieur_id'] ?? $duplicopieur_selectionne['id'];
                                             $machine_key = 'dupli_' . $duplicopieur_id;
                                             $prix_master = $prix_data[$machine_key]['master']['unite'] ?? 0;
                                             
@@ -494,7 +494,6 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
     <!-- Formulaire d'enregistrement -->
     <form class="form-horizontal" action="" method="post" id="form-enregistrement" onsubmit="console.log('Formulaire soumis !'); return true;">
         <fieldset>
-            <legend>Enregistrement du tirage multi-machines</legend>
             
             <!-- Champs cachés -->
             <input type="hidden" value="<?php echo $contact; ?>" name="contact"/>
@@ -824,14 +823,14 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                                 <div class="form-group">
                                     <label class="col-md-6 control-label" for="master_ap_0">Nombre de Masters APRÈS</label>  
                                     <div class="col-md-6">
-                                        <input id="master_ap_0" name="machines[0][master_ap]" class="form-control input-md" type="number" min="0" value="0" onchange="calculateTotalPrice()">
+                                        <input id="master_ap_0" name="machines[0][master_ap]" class="form-control input-md" type="number" min="0" value="<?= $master_av ?>" onchange="calculateTotalPrice()">
                                         <span class="help-block">Compteur masters après utilisation</span>  
                                     </div>
                                 </div>
                                 <div class="form-group">
                                     <label class="col-md-6 control-label" for="passage_ap_0">Nombre de Passages APRÈS</label>  
                                     <div class="col-md-6">
-                                        <input id="passage_ap_0" name="machines[0][passage_ap]" class="form-control input-md" type="number" min="0" value="0" onchange="calculateTotalPrice()">
+                                        <input id="passage_ap_0" name="machines[0][passage_ap]" class="form-control input-md" type="number" min="0" value="<?= $passage_av ?>" onchange="calculateTotalPrice()">
                                         <span class="help-block">Compteur passages après utilisation</span>  
                                     </div>
                                 </div>
@@ -989,7 +988,6 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
     <!-- Formulaire d'enregistrement -->
     <form class="form-horizontal" action="" method="post">
         <fieldset>
-            <legend>Enregistrement du tirage multi-machines</legend>
             
             <!-- Champs cachés -->
             <input type="hidden" value="<?php echo $contact; ?>" name="contact"/>
@@ -1238,7 +1236,7 @@ function calculateMachinePrice(machineIndex) {
         // Tarifs depuis la base de données selon la nouvelle structure
         // Utiliser l'ID du duplicopieur sélectionné
         var duplicopieurSelect = machineElement.querySelector('select[name*="[duplicopieur_id]"]');
-        var duplicopieurId = duplicopieurSelect ? duplicopieurSelect.value : '1'; // Fallback sur ID 1
+        var duplicopieurId = duplicopieurSelect ? duplicopieurSelect.value : '<?= $duplicopieur_selectionne['id'] ?? '' ?>'; // Utiliser l'ID du duplicopieur sélectionné
         var machineKey = 'dupli_' + duplicopieurId;
         var prixMaster = prixData[machineKey] && prixData[machineKey]['master'] ? prixData[machineKey]['master']['unite'] : 0;
         

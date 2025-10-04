@@ -188,6 +188,9 @@ require_once __DIR__ . '/../controler/conf.php';
         if ($conf === null) {
             return "Erreur: Configuration non définie";
         }
+        
+        // Initialiser le tableau de données
+        $array = array();
         // Utiliser la classe appropriée selon le type de base de données
         if (isset($conf['db_type']) && $conf['db_type'] === 'sqlite') {
             $dbManager = new SQLiteDatabaseManager($conf);
@@ -418,6 +421,9 @@ function handlePostActions($array, $dbManager, $backupManager, $siteManager, $pr
             $array['settings_error'] = $result['error'];
         } else {
             $array['settings_updated'] = true;
+            // Récupérer les paramètres mis à jour pour les afficher dans le formulaire
+            $updated_settings = $siteManager->getCurrentSettings();
+            $array = array_merge($array, $updated_settings);
         }
     }
     

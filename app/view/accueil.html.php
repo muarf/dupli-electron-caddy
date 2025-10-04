@@ -30,14 +30,16 @@
             <h1 class="text-center">Informations utiles</h1>
             <hr>
             <?php 
-            for ($i = 0;$i < count($news);$i++) 
-            {?>
+            if (isset($news) && is_array($news)) {
+                for ($i = 0;$i < count($news);$i++) 
+                {?>
               <div class="well">
                 <h3><?= $news[$i]['titre'] ?></h3>
                 <div class="text-muted text-right"><small><?= $news[$i]['time'] ?></small></div>
                 <div class="news-content"><?= html_entity_decode($news[$i]['news']) ?></div>
               </div>
             <?php 
+                }
             }  ?>
           </div>
         </div>

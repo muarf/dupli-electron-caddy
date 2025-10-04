@@ -396,7 +396,7 @@ function Action() {
                 $prix_papier = 0;
                 
                 // NOUVELLE STRUCTURE : Utiliser l'ID du duplicopieur sélectionné
-                $duplicopieur_id = $machine['duplicopieur_id'] ?? 1; // Fallback sur ID 1 si pas défini
+                $duplicopieur_id = $machine['duplicopieur_id'] ?? $array['duplicopieur_selectionne']['id']; // Utiliser l'ID du duplicopieur sélectionné
                 $machine_key = 'dupli_' . $duplicopieur_id;
                 $prix_master = $prix_data[$machine_key]['master']['unite'] ?? 0;
                 
@@ -611,7 +611,7 @@ function Action() {
                 
                 // NOUVELLE STRUCTURE : Calculer le prix directement comme le JavaScript pour être cohérent
                 $prix_data = get_price();
-                $duplicopieur_id = $machine['duplicopieur_id'] ?? 1; // Fallback sur ID 1 si pas défini
+                $duplicopieur_id = $machine['duplicopieur_id'] ?? $array['duplicopieur_selectionne']['id']; // Utiliser l'ID du duplicopieur sélectionné
                 $machine_key = 'dupli_' . $duplicopieur_id;
                 $prix_master = $prix_data[$machine_key]['master']['unite'] ?? 0;
                 
@@ -833,7 +833,7 @@ function Action() {
                         
                         // Déterminer le nom de la machine et l'ID du duplicopieur
                         $nom_machine = 'Duplicopieur';
-                        $duplicopieur_id = 1;
+                        $duplicopieur_id = $array['duplicopieur_selectionne']['id'];
                         if (isset($machine['duplicopieur_id']) && !empty($machine['duplicopieur_id'])) {
                             $duplicopieur_id = intval($machine['duplicopieur_id']);
                             // Récupérer le nom de la machine depuis la table duplicopieurs
@@ -935,7 +935,7 @@ function Action() {
  */
 function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, $photocopiers) {
     // Récupérer les dernières valeurs de compteurs pour le duplicopieur par défaut
-    $con = pdo_connect()();
+    $con = pdo_connect();
     $last_values = ['master_av' => 0, 'passage_av' => 0];
     if ($duplicopieur_selectionne) {
         // Construire le nom de la machine duplicopieur sélectionnée
@@ -1112,14 +1112,14 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
                     <div class="form-group">
                         <label class="col-md-6 control-label" for="master_ap_' . $index . '">Nombre de Masters APRÈS</label>  
                         <div class="col-md-6">
-                            <input id="master_ap_' . $index . '" name="machines[' . $index . '][master_ap]" class="form-control input-md" type="number" min="0" value="0" onchange="calculateTotalPrice()">
+                            <input id="master_ap_' . $index . '" name="machines[' . $index . '][master_ap]" class="form-control input-md" type="number" min="0" value="' . $last_values['master_av'] . '" onchange="calculateTotalPrice()">
                             <span class="help-block">Compteur masters après utilisation</span>  
                         </div>
                     </div>
                     <div class="form-group">
                         <label class="col-md-6 control-label" for="passage_ap_' . $index . '">Nombre de Passages APRÈS</label>  
                         <div class="col-md-6">
-                            <input id="passage_ap_' . $index . '" name="machines[' . $index . '][passage_ap]" class="form-control input-md" type="number" min="0" value="0" onchange="calculateTotalPrice()">
+                            <input id="passage_ap_' . $index . '" name="machines[' . $index . '][passage_ap]" class="form-control input-md" type="number" min="0" value="' . $last_values['passage_av'] . '" onchange="calculateTotalPrice()">
                             <span class="help-block">Compteur passages après utilisation</span>  
                         </div>
                     </div>
