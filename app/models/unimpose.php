@@ -35,7 +35,7 @@ function unimpose_booklet($input_file, $output_file) {
     $compatibleFile = preg_replace('/\.pdf$/', '_compatible.pdf', $input_file);
     if (PHP_OS_FAMILY === 'Windows') {
         // Chemin complet vers Ghostscript Windows
-        $gs_command = __DIR__ . '/../../ghostscript/gs10060w64.exe';
+        $gs_command = __DIR__ . '/../../ghostscript/gswin64c.exe';
         if (!file_exists($gs_command)) {
             throw new Exception("Ghostscript Windows non trouvé : " . $gs_command);
         }
