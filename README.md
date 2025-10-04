@@ -110,7 +110,7 @@ Les releases sont automatiquement créées avec :
 
 ## 🐛 Bugs connus
 
-- **Affichage des prix** : Pas d'affichage du prix en JS sur la page `tirage_multimachines` des passages et des masters
+*Aucun bug connu actuellement*
 
 ## ✅ Bugs corrigés (v1.1.0)
 
