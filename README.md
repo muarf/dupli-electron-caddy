@@ -12,9 +12,15 @@ Application de gestion de comptabilité pour collectifs de reproduction (duplico
 - Rapports de rentabilité
 
 ### 📄 Traitement de Documents
-- Imposition de PDF (8/16 pages A5/A6 sur un A3 rectoverso)
-- Unimposition de PDF (séparation des pages pour un pdf déjà imposé en livret)
-- Interface web moderne ormats
+- **Imposition de PDF** (8/16 pages A5/A6 sur un A3 rectoverso)
+- **Unimposition de PDF** (séparation des pages pour un pdf déjà imposé en livret)
+- **Imposition Tracts** (duplication intelligente A4/A5/A6 vers A3 avec orientation optimisée)
+  - Détection automatique du format PDF (A4, A5, A6)
+  - Duplication automatique (2x A4, 4x A5, 8x A6 sur A3)
+  - Gestion recto/verso avec pages séparées
+  - Prévisualisation intégrée et téléchargement
+  - Fallback Ghostscript pour PDF incompatibles
+- Interface web moderne avec drag & drop
 
 ### 🔧 Technique
 - Serveur Caddy intégré pour la portabilité
@@ -105,15 +111,39 @@ Les releases sont automatiquement créées avec :
 ## 🐛 Bugs connus
 
 - **Affichage des prix** : Pas d'affichage du prix en JS sur la page `tirage_multimachines` des passages et des masters
-- **Newsletter** : Pas possible d'enlever la newsletter
-- **Changements admin** : Sur la page admin les changements n'ont pas de type
-- **Type photocopieuse** : Photocopieuse à encre a "master" et "drum" dans le type, alors que c'est juste pour les photocopieurs à toner
-- **page impose/unimpose** : header different
+
+## ✅ Bugs corrigés (v1.1.0)
+
+- ✅ **Page Admin** : Correction de l'affichage répété et des variables non définies
+- ✅ **Ajout de machines** : Résolution de l'erreur "Unexpected end of JSON input" sur la page tirage_multimachines
+- ✅ **Newsletter** : Possibilité d'activer/désactiver la newsletter depuis l'admin
+- ✅ **Changements admin** : Types de machines correctement détectés dynamiquement
+- ✅ **Type photocopieuse** : Distinction correcte entre photocopieurs à encre et à toner
+- ✅ **Headers pages** : Uniformisation des headers entre impose/unimpose
+- ✅ **Erreurs PHP** : Correction des erreurs de variables non initialisées et de syntaxe PDO
+
+## 🆕 Nouvelles fonctionnalités (v1.1.0)
+
+### Imposition Tracts
+Nouvelle fonctionnalité pour optimiser l'impression de tracts et documents :
+
+- **Interface intuitive** : Drag & drop pour sélectionner vos PDF
+- **Détection automatique** : Reconnaissance automatique des formats A4, A5, A6
+- **Duplication intelligente** : 
+  - A4 → 2 copies sur A3 (paysage)
+  - A5 → 4 copies sur A3 (portrait) 
+  - A6 → 8 copies sur A3 (paysage)
+- **Gestion recto/verso** : Traitement automatique des documents recto/verso
+- **Prévisualisation** : Aperçu du résultat avant téléchargement
+- **Fallback robuste** : Utilisation de Ghostscript pour les PDF incompatibles
+
+### Améliorations techniques
+- **Corrections PHP** : Résolution des erreurs de variables non définies
+- **Interface admin** : Correction des problèmes d'affichage répété
+- **AJAX robuste** : Correction des erreurs de communication client/serveur
 
 ## 📋 TODO
 
-- **PDF A4/A5 → A3** : PDF d'une page A4/A5 multiple sur du A3
-- **PDF recto/verso → A3** : PDF de deux pages recto/verso multiple sur du A3
 - **Statistiques de remplissage** : Statistique de remplissage de la page
 - **Outils Riso** : Intégrer outils Riso open source pour séparer les couleurs/coloriser noir et blanc
 
