@@ -3,6 +3,19 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
+// Gestion des erreurs non capturées côté Electron
+process.on('uncaughtException', (error) => {
+    console.error('Erreur non capturée:', error);
+    // Optionnel : redémarrer l'application
+    // app.relaunch();
+    // app.exit(1);
+});
+
+// Gestion des erreurs de promesses non résolues
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Promesse rejetée non gérée:', reason);
+});
+
 let mainWindow;
 let phpServer;
 
@@ -21,8 +34,10 @@ function cleanupTmpFiles() {
         const files = fs.readdirSync(tmpPath);
         files.forEach(file => {
             const filePath = path.join(tmpPath, file);
-            if (fs.statSync(filePath).isFile()) {
+            try {
                 fs.unlinkSync(filePath);
+            } catch (error) {
+                console.error('Erreur lors de la suppression du fichier temporaire:', error);
             }
         });
     }
@@ -39,7 +54,7 @@ function startPhpServer() {
         // AppImage : utiliser le PHP système
         phpPath = '/usr/bin/php';
         appPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
-        phpIniPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'php.ini');
+        phpIniPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'php-appimage.ini');
     } else if (isWindows) {
         // Windows portable : utiliser les chemins unpacked
         phpPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php.exe');
@@ -76,6 +91,10 @@ function startPhpServer() {
     phpServer.on('close', (code) => {
         console.log(`Serveur PHP fermé avec le code ${code}`);
     });
+    
+    phpServer.on('error', (error) => {
+        console.error('Erreur serveur PHP:', error);
+    });
 }
 
 // Arrêter le serveur PHP
@@ -86,97 +105,85 @@ function stopPhpServer() {
     }
 }
 
+// Créer la fenêtre principale
 function createWindow() {
-    // Nettoyer les fichiers temporaires au démarrage
-    cleanupTmpFiles();
-    
-    // Créer la fenêtre du navigateur
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
-        minWidth: 800,
-        minHeight: 600,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
-            preload: path.join(__dirname, 'preload.js'),
-            sandbox: false,
-            offscreen: false
+            enableRemoteModule: false
         },
-        show: false
+        icon: path.join(__dirname, 'icons', 'icon.png'),
+        title: 'Duplicator - Gestion de Comptabilité'
     });
-    
-    // Démarrer le serveur PHP
-    startPhpServer();
-    
-    // Attendre que le serveur soit prêt puis charger l'application
-    setTimeout(() => {
-        mainWindow.loadURL('http://127.0.0.1:8000/');
-        mainWindow.show();
-    }, 2000);
-    
-    // Ouvrir les DevTools en développement
+
+    // Charger l'application web
+    mainWindow.loadURL('http://127.0.0.1:8000');
+
+    // Ouvrir les liens externes dans le navigateur par défaut
+    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+        shell.openExternal(url);
+        return { action: 'deny' };
+    });
+
+    // Gestion des erreurs de chargement
+    mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+        console.error('Erreur de chargement:', errorCode, errorDescription);
+        mainWindow.loadURL('data:text/html,<h1>Erreur de connexion</h1><p>Impossible de se connecter au serveur PHP.</p><button onclick="location.reload()">Recharger</button>');
+    });
+
+    // Ouvrir les DevTools en mode développement
     if (process.env.NODE_ENV === 'development') {
         mainWindow.webContents.openDevTools();
     }
 }
 
-// Désactiver l'accélération GPU pour éviter les erreurs GLX
-app.disableHardwareAcceleration();
+// Gestionnaires IPC
+ipcMain.handle('open-file', async (event, filePath) => {
+    try {
+        await shell.openPath(filePath);
+    } catch (error) {
+        console.error('Erreur ouverture fichier:', error);
+        throw error;
+    }
+});
 
-// Cette méthode sera appelée quand Electron aura fini de s'initialiser
-app.whenReady().then(createWindow);
-
-// Quitter quand toutes les fenêtres sont fermées
-app.on('window-all-closed', () => {
-    // Nettoyer les fichiers temporaires à la fermeture
+// Événements de l'application
+app.whenReady().then(() => {
     cleanupTmpFiles();
+    startPhpServer();
     
-    // Arrêter le serveur PHP
+    // Attendre que le serveur PHP soit prêt
+    setTimeout(() => {
+        createWindow();
+    }, 2000);
+
+    app.on('activate', () => {
+        if (BrowserWindow.getAllWindows().length === 0) {
+            createWindow();
+        }
+    });
+});
+
+app.on('window-all-closed', () => {
     stopPhpServer();
-    
-    // Sur macOS, il est courant pour les applications et leur barre de menu
-    // de rester actives jusqu'à ce que l'utilisateur quitte explicitement avec Cmd + Q
     if (process.platform !== 'darwin') {
         app.quit();
     }
 });
 
-app.on('activate', () => {
-    // Sur macOS, il est courant de recréer une fenêtre dans l'app quand l'icône
-    // du dock est cliquée et qu'il n'y a pas d'autres fenêtres d'ouvertes
-    if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow();
-    }
+app.on('before-quit', () => {
+    stopPhpServer();
+    cleanupTmpFiles();
 });
 
-// Gérer l'ouverture de fichiers (PDF, etc.)
-ipcMain.handle('open-file', async (event, filePath) => {
-    try {
-        const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
-        let fullPath;
-        
-        if (isAppImage) {
-            fullPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public', filePath);
-        } else {
-            fullPath = path.join(__dirname, 'app', 'public', filePath);
-        }
-        
-        await shell.openPath(fullPath);
-        return { success: true };
-    } catch (error) {
-        console.error('Erreur ouverture fichier:', error);
-        return { success: false, error: error.message };
-    }
+// Gestion des erreurs de l'application
+app.on('render-process-gone', (event, webContents, details) => {
+    console.error('Processus de rendu fermé:', details);
 });
 
-// Nettoyer les fichiers temporaires
-ipcMain.handle('cleanup-tmp-files', async () => {
-    try {
-        cleanupTmpFiles();
-        return { success: true };
-    } catch (error) {
-        console.error('Erreur nettoyage:', error);
-        return { success: false, error: error.message };
-    }
+app.on('child-process-gone', (event, details) => {
+    console.error('Processus enfant fermé:', details);
 });
