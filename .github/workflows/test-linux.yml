@@ -2,7 +2,7 @@ name: Test Linux Build
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, fix-linux-appimage ]
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
