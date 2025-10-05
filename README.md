@@ -151,8 +151,6 @@ Nouvelle fonctionnalité pour optimiser l'impression de tracts et documents :
 - **Lien header** : Ajouter un lien dans le header vers tirage_multimachines nommé "Enregistrer tirage"
 - **Footer avec reload** : Ajouter un footer toujours présent avec un bouton qui reload l'app electron et/ou le site web
 - **Outils Riso** : Intégrer outils Riso open source pour séparer les couleurs/coloriser noir et blanc
-- **Footer manquant** : Le footer ne s'affiche plus et j'aimerais qu'il y ait un bouton précédent
-- **Lien nouveau tirage** : J'aimerais un lien dans le header vers tirage_multimachines (Nouveau tirage)
 
 ## 🐛 Dépannage
 
