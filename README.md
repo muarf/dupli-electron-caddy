@@ -123,6 +123,8 @@ Les releases sont automatiquement créées avec :
 - ✅ **Headers pages** : Uniformisation des headers entre impose/unimpose
 - ✅ **Erreurs PHP** : Correction des erreurs de variables non initialisées et de syntaxe PDO
 - ✅ **Téléchargement BDD** : Correction du téléchargement des sauvegardes (HTML → fichier .sqlite)
+- ✅ **Statistiques globales** : Inclusion des photocopieurs dans les statistiques globales (blablastats)
+- ✅ **Fonctions stats** : Correction des structures manquantes dans stats_by_machine_photocop
 
 ## 🆕 Nouvelles fonctionnalités (v1.1.0)
 
@@ -147,7 +149,6 @@ Nouvelle fonctionnalité pour optimiser l'impression de tracts et documents :
 ## 📋 TODO
 
 - **Statistiques de remplissage** : Statistique de remplissage de la page
-- **Vérification des statistiques** : Vérifier que les stats prennent en compte tous les tirages de toutes les machines
 - **Outils Riso** : Intégrer outils Riso open source pour séparer les couleurs/coloriser noir et blanc
 
 ## 🐛 Dépannage
