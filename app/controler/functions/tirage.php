@@ -9,10 +9,14 @@
 /**
  * Insérer un tirage photocopieur
  */
-function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb, $mot, $date)
+function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb, $mot, $date, $db = null)
 {
-    $con   = pdo_connect();
-    $db    = pdo_connect();
+    // CORRECTION DEADLOCK : Utiliser la connexion passée en paramètre si disponible (pour les transactions)
+    if ($db === null) {
+        $con   = pdo_connect();
+        $db    = pdo_connect();
+    }
+    
     $query = $db->prepare('INSERT into photocop (type, marque, contact, nb_f, rv, prix, paye, cb, mot, date) VALUES (:type,:marque,:contact,:nb_f,:rv,:prix,:paye,:cb,:mot,:date)');
     $query->bindParam(':type', $type);
     $query->bindParam(':marque', $marque);

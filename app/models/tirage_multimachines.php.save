@@ -891,8 +891,7 @@ function Action() {
                                         $paye,
                                         $cb,
                                         $mot,
-                                        $date,
-                                        $db  // CORRECTION DEADLOCK : Passer la connexion de la transaction
+                                        $date
                                     );
                                 }
                             }
