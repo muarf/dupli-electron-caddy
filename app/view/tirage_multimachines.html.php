@@ -1122,9 +1122,16 @@ function toggleMachineType(machineIndex) {
         duplicopieurInterface.style.display = '';
         photocopieurInterface.style.display = 'none';
         
-        // Désactiver la validation des champs photocopieur
-        var photocopFields = photocopieurInterface.querySelectorAll('input[required]');
+        // Activer les champs duplicopieur
+        var duplicopieurFields = duplicopieurInterface.querySelectorAll('input, select, textarea');
+        duplicopieurFields.forEach(function(field) {
+            field.disabled = false;
+        });
+        
+        // Désactiver ET désactiver la validation des champs photocopieur
+        var photocopFields = photocopieurInterface.querySelectorAll('input, select, textarea');
         photocopFields.forEach(function(field) {
+            field.disabled = true; // CORRECTION: désactiver pour ne pas envoyer dans POST
             field.removeAttribute('required');
         });
         
@@ -1137,9 +1144,22 @@ function toggleMachineType(machineIndex) {
         duplicopieurInterface.style.display = 'none';
         photocopieurInterface.style.display = '';
         
-        // Activer la validation des champs photocopieur
-        var photocopFields = photocopieurInterface.querySelectorAll('input[name*="[nb_exemplaires]"], input[name*="[nb_feuilles]"]');
+        // Désactiver les champs duplicopieur
+        var duplicopieurFields = duplicopieurInterface.querySelectorAll('input, select, textarea');
+        duplicopieurFields.forEach(function(field) {
+            field.disabled = true; // CORRECTION: désactiver pour ne pas envoyer dans POST
+            field.removeAttribute('required');
+        });
+        
+        // Activer ET activer la validation des champs photocopieur
+        var photocopFields = photocopieurInterface.querySelectorAll('input, select, textarea');
         photocopFields.forEach(function(field) {
+            field.disabled = false;
+        });
+        
+        // Activer la validation des champs requis
+        var requiredFields = photocopieurInterface.querySelectorAll('input[name*="[nb_exemplaires]"], input[name*="[nb_feuilles]"]');
+        requiredFields.forEach(function(field) {
             field.setAttribute('required', 'required');
         });
     }

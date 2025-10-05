@@ -35,7 +35,9 @@ function get_price()
         ');
         
         if ($query) {
-            while($result = $query->fetch(PDO::FETCH_OBJ))
+            // CORRECTION DEADLOCK SQLite : Utiliser fetchAll() pour libérer immédiatement le curseur
+            $results = $query->fetchAll(PDO::FETCH_OBJ);
+            foreach($results as $result)
             {
                 // Pour les duplicopieurs, structurer différemment les tambours
                 if ($result->machine_type === 'dupli') {

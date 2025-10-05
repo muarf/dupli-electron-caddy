@@ -9,10 +9,13 @@
 /**
  * Insérer un tirage photocopieur
  */
-function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb, $mot, $date)
+function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb, $mot, $date, $db = null)
 {
-    $con   = pdo_connect();
-    $db    = pdo_connect();
+    // CORRECTION DEADLOCK : Utiliser la connexion passée en paramètre si disponible (pour les transactions)
+    if ($db === null) {
+        $db = pdo_connect();
+    }
+    
     $query = $db->prepare('INSERT into photocop (type, marque, contact, nb_f, rv, prix, paye, cb, mot, date) VALUES (:type,:marque,:contact,:nb_f,:rv,:prix,:paye,:cb,:mot,:date)');
     $query->bindParam(':type', $type);
     $query->bindParam(':marque', $marque);
@@ -24,7 +27,11 @@ function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb
     $query->bindParam(':cb', $cb);
     $query->bindParam(':mot', $mot);
     $query->bindParam(':date', $date);
-    $query->execute() or die('<div class="alert alert-danger"> <strong>Danger!</strong> Une erreur s\'est produite.<a href="javascript:" onclick="history.go(-1); return false"></div>');
+    
+    if (!$query->execute()) {
+        $errorInfo = $query->errorInfo();
+        throw new Exception("Erreur lors de l'insertion photocop : " . $errorInfo[2]);
+    }
 }
 
 /**
