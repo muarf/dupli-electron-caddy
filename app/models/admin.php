@@ -9,6 +9,8 @@ require_once __DIR__ . '/../controler/func.php';
 
 function Action($conf = null)
 {
+    $array = [];
+    
     // Gestion AJAX pour récupérer un changement (AVANT la connexion à la base)
     if(isset($_GET['ajax']) && $_GET['ajax'] === 'get_change' && isset($_GET['id'])) {
         try {
@@ -585,10 +587,69 @@ function handlePostActions($array, $dbManager, $backupManager, $siteManager, $pr
     if(isset($_POST['delete'])) {
         $machine = $_GET['table'];
         $id = $_GET['edit'];
-        $editManager->deleteTirage($id, $machine);
-        // Rediriger vers la liste des tirages après suppression
-        $array['redirect_url'] = 'index.php?admin&tirages';
-        $array['tirage_deleted'] = true;
+        
+        try {
+            $editManager->deleteTirage($id, $machine);
+            // Rediriger vers la liste des tirages après suppression
+            $array['redirect_url'] = 'index.php?admin&tirages';
+            $array['tirage_deleted'] = true;
+        } catch (Throwable $e) {
+            // Afficher une page d'erreur simple au lieu d'une page blanche
+            ?>
+            <!DOCTYPE html>
+            <html lang="fr">
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <title>Erreur - Duplicator</title>
+                <link href="css/bootstrap.css" rel="stylesheet" type="text/css">
+                <link href="css/font-awesome.min.css" rel="stylesheet" type="text/css">
+            </head>
+            <body style="padding-bottom: 60px;">
+                <div class="navbar navbar-default navbar-static-top">
+                    <div class="container">
+                        <div class="navbar-header">
+                            <a class="navbar-brand" href="?accueil">
+                                <span><big>Duplicator.</big></span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="container" style="margin-top: 50px;">
+                    <div class="row">
+                        <div class="col-md-8 col-md-offset-2">
+                            <div class="alert alert-danger">
+                                <h2><i class="fa fa-exclamation-triangle"></i> Une erreur s'est produite</h2>
+                                <p><strong>Message d'erreur :</strong> <?= htmlspecialchars($e->getMessage()) ?></p>
+                                <p><strong>Fichier :</strong> <?= htmlspecialchars($e->getFile()) ?></p>
+                                <p><strong>Ligne :</strong> <?= htmlspecialchars($e->getLine()) ?></p>
+                                <p><strong>Heure :</strong> <?= date('Y-m-d H:i:s') ?></p>
+                                
+                                <hr>
+                                <p>
+                                    <a href="?accueil" class="btn btn-primary">
+                                        <i class="fa fa-home"></i> Retour à l'accueil
+                                    </a>
+                                    <button onclick="history.back()" class="btn btn-default">
+                                        <i class="fa fa-arrow-left"></i> Page précédente
+                                    </button>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="navbar navbar-default navbar-fixed-bottom">
+                    <div class="container">
+                        <p class="navbar-text text-center">Codé avec ❤️ pour Duplicator</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            <?php
+            exit;
+        }
     }
     
     if(isset($_POST['save']) && !isset($_POST['titre'])) {
