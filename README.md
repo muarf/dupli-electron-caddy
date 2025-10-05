@@ -20,13 +20,6 @@ Application de gestion de comptabilité pour collectifs de reproduction (duplico
   - Gestion recto/verso avec pages séparées
   - Prévisualisation intégrée et téléchargement
   - Fallback Ghostscript pour PDF incompatibles
-- **PDF vers PNG** (conversion de PDF en images PNG pour traitement)
-- **PNG vers PDF** (assemblage d'images PNG en documents PDF)
-- **Séparateur de couleurs Riso** (séparation RGB/CMYK pour impression multi-tambours)
-  - Modes RGB, CMYK, et 2 couleurs
-  - Outil pipette pour isolation de couleurs
-  - Effets de postérisation et halftone (trames)
-  - Export individuel ou ZIP de toutes les couches
 - Interface web moderne avec drag & drop
 
 ### 🔧 Technique
@@ -37,7 +30,7 @@ Application de gestion de comptabilité pour collectifs de reproduction (duplico
 
 ## 📦 Installation
 
-### Prérequis (Développement)
+### Prérequis
 
 - Node.js 18+ 
 - npm ou yarn
@@ -54,20 +47,6 @@ npm install
 # Télécharger Caddy et PHP pour toutes les plateformes
 npm run download-all
 ```
-
-### Installation de l'application (Utilisateurs)
-
-Au premier lancement de l'application, vous avez **2 options** :
-
-#### Option 1 : Créer vos machines
-- Configurez manuellement vos duplicopieurs et photocopieurs
-- Définissez les prix et compteurs initiaux
-- Créez votre mot de passe administrateur
-
-#### Option 2 : Importer une base de données
-- Restaurez une base SQLite existante (depuis une autre instance ou sauvegarde)
-- Le fichier doit contenir au moins une machine configurée
-- Un backup automatique est créé si une base existe déjà
 
 ## 🔧 Développement
 
@@ -124,24 +103,15 @@ Les releases sont automatiquement créées avec :
 - Linux: `Duplicator-{version}.AppImage`
 - macOS: `Duplicator-{version}.dmg`
 
+## ✅ À vérifier
+
+- **Statistiques** : Vérifier que les statistiques prennent en charge toutes les machines
+- **Machine à toner** : Vérifier que ça marche avec une machine à toner
+
 ## 🐛 Bugs connus
 
-## ⚠️ À tester/vérifier pour v1.3.0
-
-
-## ✅ Bugs corrigés (v1.2.0 / v1.3.0-dev)
-
-- ✅ **Persistence BDD** : La base de données persiste maintenant correctement lors des mises à jour
-  - BDD stockée dans userData (`AppData/Roaming` sur Windows, `~/.config` sur Linux)
-  - Communication Electron → PHP via variable d'environnement `DUPLICATOR_DB_PATH`
-  - Aucune perte de données lors des mises à jour
-- ✅ **Erreurs 403 explicites** : Messages d'erreur détaillés pour pages non autorisées
-  - Affiche la page demandée et comment corriger
-  - Liste toutes les pages autorisées
-  - Facilite le débogage
-- ✅ **Timeouts Caddy** : Augmentation des timeouts (120s) pour traitement d'images lourdes
-  - Résout les timeouts sur les opérations PDF/image
-  - Logs détaillés pour débogage
+- **Multitirages** : Fonctionne uniquement avec la même machine (pas de mélange de machines)
+- **Désimposer** : Ne fonctionne qu'avec le script Python (pas d'interface web)
 
 ## ✅ Bugs corrigés (v1.1.0)
 
@@ -153,43 +123,6 @@ Les releases sont automatiquement créées avec :
 - ✅ **Headers pages** : Uniformisation des headers entre impose/unimpose
 - ✅ **Erreurs PHP** : Correction des erreurs de variables non initialisées et de syntaxe PDO
 - ✅ **Téléchargement BDD** : Correction du téléchargement des sauvegardes (HTML → fichier .sqlite)
-- ✅ **Statistiques globales** : Inclusion des photocopieurs dans les statistiques globales (blablastats)
-- ✅ **Fonctions stats** : Correction des structures manquantes dans stats_by_machine_photocop
-
-## 🆕 Nouvelles fonctionnalités (v1.2.0 / v1.3.0-dev)
-
-### Installation améliorée
-- **Double option d'installation** : Créer des machines OU importer une BDD existante
-  - Interface de choix claire au premier lancement
-  - Upload de fichier SQLite avec validation
-  - Backup automatique avant restauration
-  - Migration facilitée entre instances
-
-### Outils de traitement d'images
-- **PDF vers PNG** : Conversion de documents PDF en images
-  - Extraction de pages individuelles
-  - Export en PNG haute qualité
-  - Gestion multi-pages
-  
-- **PNG vers PDF** : Assemblage d'images en document PDF
-  - Support drag & drop
-  - Ordre personnalisable
-  - Prévisualisation
-  
-- **Séparateur de couleurs Riso** : Séparation de couleurs pour impression RISO
-  - Mode RGB (3 canaux) / CMYK (4 canaux) / 2 couleurs (N&B)
-  - Outil pipette avec tolérance réglable
-  - Effets de postérisation (réduction de niveaux de gris)
-  - Effets halftone (trames de points authentiques)
-  - Export par couche ou ZIP complet
-  - Interface complète côté client (JavaScript)
-
-### Améliorations techniques
-- **Persistence BDD garantie** : Base de données dans userData, jamais écrasée
-- **Cross-platform robuste** : Sessions et chemins compatibles Windows/Linux/macOS
-- **Timeouts augmentés** : 120s pour opérations lourdes (images, PDF)
-- **Erreurs explicites** : Messages 403 détaillés avec instructions de correction
-- **Logs détaillés** : Caddy logs dans `/tmp/caddy_duplicator.log`
 
 ## 🆕 Nouvelles fonctionnalités (v1.1.0)
 
@@ -211,55 +144,22 @@ Nouvelle fonctionnalité pour optimiser l'impression de tracts et documents :
 - **Interface admin** : Correction des problèmes d'affichage répété
 - **AJAX robuste** : Correction des erreurs de communication client/serveur
 
-## 📋 TODO (v1.4.0+)
+## 📋 TODO
 
-- **Séparateur Riso** : 
-  - Corriger les trames (halftone)
-  - Améliorer la navigation de la page
-- **FrankenPHP pour Linux** : Intégrer FrankenPHP pour simplifier le déploiement Linux AppImage (binaire statique)
-- **Support macOS** : Vérifier et tester le fonctionnement complet sous macOS
 - **Statistiques de remplissage** : Statistique de remplissage de la page
+- **Vérification des statistiques** : Vérifier que les stats prennent en compte tous les tirages de toutes les machines
+- **Lien header** : Ajouter un lien dans le header vers tirage_multimachines nommé "Enregistrer tirage"
+- **Footer avec reload** : Ajouter un footer toujours présent avec un bouton qui reload l'app electron et/ou le site web
+- **Outils Riso** : Intégrer outils Riso open source pour séparer les couleurs/coloriser noir et blanc
+- **Footer manquant** : Le footer ne s'affiche plus et j'aimerais qu'il y ait un bouton précédent
+- **Lien nouveau tirage** : J'aimerais un lien dans le header vers tirage_multimachines (Nouveau tirage)
 
 ## 🐛 Dépannage
 
 ### Problèmes courants
 
+Dites moi !
+
 ### Logs
 
-#### Console Electron
-Les logs de démarrage et erreurs sont affichés dans la console Electron (DevTools).
-
-#### Logs Caddy
-- Fichier : `/tmp/caddy_duplicator.log` (Linux/macOS) ou `%TEMP%\caddy_duplicator.log` (Windows)
-- Contenu : Requêtes, erreurs, timeouts
-
-#### Logs PHP
-Affichés dans la console Electron avec préfixe `PHP Server:` ou `PHP Error:`
-
-## 💾 Données et Persistence
-
-### Emplacement de la base de données
-La base de données SQLite est **automatiquement** stockée dans le dossier userData de l'application :
-- **Windows** : `C:\Users\<USERNAME>\AppData\Roaming\Duplicator\duplinew.sqlite`
-- **Linux** : `~/.config/Duplicator/duplinew.sqlite`
-- **macOS** : `~/Library/Application Support/Duplicator/duplinew.sqlite`
-
-### Sauvegardes
-Les sauvegardes manuelles sont stockées dans `app/public/sauvegarde/` et peuvent être :
-- Créées depuis l'admin
-- Téléchargées
-- Restaurées
-- Utilisées lors de l'installation (import de BDD)
-
-## 📋 TODO (v1.4.0+)
-
-- **Séparateur Riso** : 
-  - Corriger les trames (halftone)
-  - Améliorer la navigation de la page
-- **Nettoyage automatique** : Améliorer le nettoyage des fichiers temporaires
-  - Nettoyer les vieux fichiers dans `app/public/tmp/`
-  - Nettoyer automatiquement au démarrage et à la fermeture
-  - Option manuelle dans l'admin
-- **FrankenPHP pour Linux** : Intégrer FrankenPHP pour simplifier le déploiement Linux AppImage (binaire statique)
-- **Support macOS** : Vérifier et tester le fonctionnement complet sous macOS
-- **Statistiques de remplissage** : Statistique de remplissage de la page
+Les logs sont affichés dans la console de l'application Electron.

@@ -13,7 +13,8 @@ function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb
 {
     // CORRECTION DEADLOCK : Utiliser la connexion passée en paramètre si disponible (pour les transactions)
     if ($db === null) {
-        $db = pdo_connect();
+        $con   = pdo_connect();
+        $db    = pdo_connect();
     }
     
     $query = $db->prepare('INSERT into photocop (type, marque, contact, nb_f, rv, prix, paye, cb, mot, date) VALUES (:type,:marque,:contact,:nb_f,:rv,:prix,:paye,:cb,:mot,:date)');
@@ -27,11 +28,7 @@ function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb
     $query->bindParam(':cb', $cb);
     $query->bindParam(':mot', $mot);
     $query->bindParam(':date', $date);
-    
-    if (!$query->execute()) {
-        $errorInfo = $query->errorInfo();
-        throw new Exception("Erreur lors de l'insertion photocop : " . $errorInfo[2]);
-    }
+    $query->execute() or die('<div class="alert alert-danger"> <strong>Danger!</strong> Une erreur s\'est produite.<a href="javascript:" onclick="history.go(-1); return false"></div>');
 }
 
 /**
@@ -46,31 +43,13 @@ function last($machine, $sql, $page = 1, $per_page = 20)
     $offset = ($page - 1) * $per_page;
     
     // Vérifier si c'est un duplicopieur (nom complet comme "Ricoh dx4545" ou juste "riso_double")
-    // SQLite n'a pas CONCAT, on utilise l'opérateur ||
-    if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
-        $query_check = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR (marque = ? AND modele = ?))');
-    } else {
-        if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
-        $query_check = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR (marque = ? AND modele = ?))');
-    } else {
-        $query_check = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR (marque = ? AND modele = ?))');
-    }
-    }
+    $query_check = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR (marque = ? AND modele = ?))');
     $query_check->execute([$machine, $machine, $machine]);
     $is_duplicopieur = $query_check->fetchColumn() > 0;
     
     if ($is_duplicopieur) {
         // C'est un duplicopieur, utiliser la table dupli avec filtre par duplicopieur_id
-        // SQLite n'a pas CONCAT, on utilise l'opérateur ||
-        if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
-            $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR (marque = ? AND modele = ?))');
-        } else {
-            if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
-        $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR (marque = ? AND modele = ?))');
-    } else {
-        $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR (marque = ? AND modele = ?))');
-    }
-        }
+        $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR (marque = ? AND modele = ?))');
         $query_dup->execute([$machine, $machine, $machine]);
         $duplicopieur_id = $query_dup->fetchColumn();
         
@@ -167,11 +146,7 @@ function get_tirage($id,$machine)
     } else {
         // Vérifier si c'est un duplicopieur (nom complet comme "riso rz 370")
         // Gérer le cas où marque = modele (nom complet) et le cas où marque != modele
-        if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
-        $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR marque = ? OR modele = ?)');
-    } else {
-        $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR marque = ? OR modele = ?)');
-    }
+        $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR marque = ? OR modele = ?)');
         $query->execute([$machine, $machine, $machine]);
         $is_duplicopieur = $query->fetchColumn() > 0;
         
@@ -275,11 +250,7 @@ function update_tirage($id,$form,$machine){
          } else {
             // Vérifier si c'est un duplicopieur (nom complet comme "riso rz 370")
             // Gérer le cas où marque = modele (nom complet) et le cas où marque != modele
-            if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
-        $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR marque = ? OR modele = ?)');
-    } else {
-        $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR marque = ? OR modele = ?)');
-    }
+            $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR marque = ? OR modele = ?)');
             $query->execute([$machine, $machine, $machine]);
             $is_duplicopieur = $query->fetchColumn() > 0;
              
@@ -299,10 +270,7 @@ function update_tirage($id,$form,$machine){
                           $query->bindValue(':'.$key, $column);
                      }
                  }
-                 $query->execute();
-                 if ($query->errorCode() != '00000') {
-                     throw new Exception("Erreur SQL duplicopieur: " . implode(', ', $query->errorInfo()));
-                 }
+                 $query->execute() or die(print_r($query->errorInfo()));
                  
             } else {
                 // Pour les photocopieurs, vérifier que c'est une marque valide
@@ -310,10 +278,9 @@ function update_tirage($id,$form,$machine){
                 $valid_marques = $query->fetchAll(PDO::FETCH_COLUMN);
                 in_array($machine,$valid_marques) or die('donttrytohackme');
                 
-                // Récupérer les colonnes existantes de la table photocop (SQLite compatible)
-                $query = $db->query('PRAGMA table_info(photocop)');
-                $columns_info = $query->fetchAll(PDO::FETCH_ASSOC);
-                $columns = array_column($columns_info, 'name');
+                // Récupérer les colonnes existantes de la table photocop
+                $query = $db->query('DESCRIBE photocop');
+                $columns = $query->fetchAll(PDO::FETCH_COLUMN);
                 
                     // Filtrer les données pour ne garder que les colonnes existantes
                     $filtered_update = array();
@@ -364,11 +331,7 @@ function del_tirage($id,$machine){
     } else {
             // Vérifier si c'est un duplicopieur (nom complet comme "riso rz 370")
             // Gérer le cas où marque = modele (nom complet) et le cas où marque != modele
-            if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
-        $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR marque = ? OR modele = ?)');
-    } else {
-        $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR marque = ? OR modele = ?)');
-    }
+            $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR marque = ? OR modele = ?)');
             $query->execute([$machine, $machine, $machine]);
             $is_duplicopieur = $query->fetchColumn() > 0;
         
