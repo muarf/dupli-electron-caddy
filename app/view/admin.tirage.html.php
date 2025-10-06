@@ -41,6 +41,24 @@ function getTableForMachine($machine) {
                     <?= $delete_error ?>
                 </div>
             <?php endif; ?>
+            
+            <?php if (isset($payment_success)): ?>
+                <div class="alert alert-success alert-dismissible" role="alert">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <i class="fa fa-check"></i> <?= $payment_success ?>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (isset($payment_error)): ?>
+                <div class="alert alert-danger alert-dismissible" role="alert">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <i class="fa fa-exclamation-triangle"></i> <?= $payment_error ?>
+                </div>
+            <?php endif; ?>
 
             <?php foreach ($machines as $machine){?>
              <div class="col-md-6">
@@ -230,10 +248,62 @@ function calculateTotal() {
     $('#myModal').modal('show');
 }
 
-// Fonction existante pour payer (si elle n'existe pas déjà)
+// Fonction pour marquer les tirages sélectionnés comme payés
 function pay() {
-    // Logique existante pour marquer comme payé
-    alert('Fonctionnalité de paiement à implémenter');
+    // Récupérer toutes les checkboxes cochées
+    const checkboxes = document.querySelectorAll('input[name="chkbox[]"]:checked');
+    
+    if (checkboxes.length === 0) {
+        alert('Veuillez sélectionner au moins un tirage à marquer comme payé.');
+        return;
+    }
+    
+    // Collecter les informations des tirages sélectionnés
+    const selectedTirages = [];
+    checkboxes.forEach(checkbox => {
+        selectedTirages.push({
+            id: checkbox.getAttribute('data-id'),
+            machine: checkbox.getAttribute('data-machine'),
+            prix: checkbox.value
+        });
+    });
+    
+    // Confirmer le paiement
+    const total = selectedTirages.reduce((sum, tirage) => sum + parseFloat(tirage.prix), 0);
+    if (!confirm(`Confirmer le paiement de ${selectedTirages.length} tirage(s) pour un total de ${total.toFixed(2)}€ ?`)) {
+        return;
+    }
+    
+    // Envoyer la requête de paiement
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '?admin&tirages';
+    
+    // Ajouter les tirages à marquer comme payés
+    selectedTirages.forEach((tirage, index) => {
+        const idInput = document.createElement('input');
+        idInput.type = 'hidden';
+        idInput.name = 'pay_ids[]';
+        idInput.value = tirage.id;
+        form.appendChild(idInput);
+        
+        const machineInput = document.createElement('input');
+        machineInput.type = 'hidden';
+        machineInput.name = 'pay_machines[]';
+        machineInput.value = tirage.machine;
+        form.appendChild(machineInput);
+    });
+    
+    // Ajouter un champ pour indiquer que c'est un paiement
+    const actionInput = document.createElement('input');
+    actionInput.type = 'hidden';
+    actionInput.name = 'action';
+    actionInput.value = 'mark_as_paid';
+    form.appendChild(actionInput);
+    
+    // Soumettre le formulaire
+    document.body.appendChild(form);
+    form.submit();
 }
 
 // Fonction existante pour fermer le modal (si elle n'existe pas déjà)

@@ -275,8 +275,8 @@
     <div class="container">
         <div class="main-container">
             <div class="page-header text-center">
-                <h1><i class="fa fa-file-pdf-o"></i> Imposition PDF</h1>
-                <div class="subtitle">Version PHP - Compatible avec tous les formats</div>
+                <h1><i class="fa fa-magic"></i> Imposer un PDF</h1>
+                <div class="subtitle">Créer un livret A3 à partir de pages A4</div>
             </div>
             
             <div class="form-section">

@@ -13,6 +13,8 @@
     <script>
       $(document).ready(function(){
         $('[data-toggle="tooltip"]').tooltip(); 
+        // S'assurer que les dropdowns fonctionnent sur toutes les pages
+        $('.dropdown-toggle').dropdown();
       });
     </script>
     <!-- <script type="text/javascript">
@@ -37,11 +39,11 @@
 
  -->
   </head>
-  <body>
+  <body style="padding-bottom: 60px;">
 
 <?= $header  ?>
  <div class="section">
-      <div <?php if(!isset($_GET['admin'])){ ?> class="container" <?php } ?> >
+      <div <?php if(!isset($_GET['admin'])){ ?> class="container-fluid" <?php } ?> >
 <?= $content ?>
 </div></div></div>
 <?= $footer ?>

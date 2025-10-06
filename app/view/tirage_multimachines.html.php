@@ -196,9 +196,9 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
     <!-- Récapitulatif après soumission -->
     <?php if (isset($contact) && isset($machines) && ($contact != "")): ?>
     <div class="summary-card">
-        <h3><i class="fas fa-calculator"></i> Récapitulatif du tirage</h3>
-        <div class="total-price"><?= number_format($prix_total, 2) ?>€</div>
-        <p class="mb-0">Contact: <strong><?= htmlspecialchars($contact) ?></strong></p>
+        <h3 class="text-center"><i class="fas fa-calculator"></i> Récapitulatif du tirage</h3>
+        <div class="total-price text-center"><?= number_format($prix_total, 2) ?>€</div>
+        <p class="mb-0 text-center">Contact: <strong><?= htmlspecialchars($contact) ?></strong></p>
     </div>
     
             <div class="row">
@@ -206,7 +206,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
             <?php foreach ($machines as $index => $machine): ?>
                 <div class="col-md-6 col-lg-4 mb-4">
                     <div class="machine-card">
-                        <h5><i class="fas fa-print"></i> Tirage #<?= ($index + 1) ?></h5>
+                        <h5 class="text-center"><i class="fas fa-print"></i> Tirage #<?= ($index + 1) ?></h5>
                         <p><strong><?= ucfirst($machine['type']) ?></strong></p>
                         <div class="text-center">
                             <span class="badge bg-primary fs-6"><?= number_format($machine['prix'], 2) ?>€</span>
@@ -241,7 +241,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
             <?php foreach ($machines as $index => $machine): ?>
                 <div class="col-md-6">
                     <div class="machine-card">
-                        <h4><i class="fas fa-print"></i> Tirage #<?= ($index + 1) ?> - <?= ucfirst($machine['type']) ?></h4>
+                        <h4 class="text-center"><i class="fas fa-print"></i> Tirage #<?= ($index + 1) ?> - <?= ucfirst($machine['type']) ?></h4>
                             <?php if ($machine['type'] === 'duplicopieur'): ?>
                                 <div class="row">
                                     <div class="col-md-6">
@@ -657,7 +657,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
 
 <form class="form-horizontal" action="#after" method="post" id="multimachines-form">
     <fieldset>
-        <legend>Formulaire Multi-Tirages</legend>
+        <legend class="text-center">Formulaire Multi-Tirages</legend>
         
         <!-- Contact -->
         <div class="form-group">
@@ -670,12 +670,12 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
         
         <!-- Machines -->
         <div id="machines-container">
-            <h4>Machines du tirage</h4>
+            <h4 class="text-center">Tirages</h4>
             
             <!-- Machine par défaut -->
             <div class="machine-item" data-index="0">
                 <hr>
-                <h5>Tirage #1</h5>
+                <h5 class="text-center">Tirage #1</h5>
                 
                 <!-- Type de machine -->
                 <div class="form-group">
@@ -970,8 +970,8 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
         
         <!-- Récapitulatif total -->
         <div class="alert alert-info">
-            <h4>Récapitulatif du tirage</h4>
-            <p><strong>Prix total : <span id="prix-total">0.00€</span></strong></p>
+            <h4 class="text-center">Récapitulatif du tirage</h4>
+            <p class="text-center"><strong>Prix total : <span id="prix-total">0.00€</span></strong></p>
         </div>
         
         <!-- Bouton suivant -->

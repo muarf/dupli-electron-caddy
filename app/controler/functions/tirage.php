@@ -273,7 +273,10 @@ function update_tirage($id,$form,$machine){
                           $query->bindValue(':'.$key, $column);
                      }
                  }
-                 $query->execute() or die(print_r($query->errorInfo()));
+                 $query->execute();
+                 if ($query->errorCode() != '00000') {
+                     throw new Exception("Erreur SQL duplicopieur: " . implode(', ', $query->errorInfo()));
+                 }
                  
             } else {
                 // Pour les photocopieurs, vérifier que c'est une marque valide
@@ -281,9 +284,10 @@ function update_tirage($id,$form,$machine){
                 $valid_marques = $query->fetchAll(PDO::FETCH_COLUMN);
                 in_array($machine,$valid_marques) or die('donttrytohackme');
                 
-                // Récupérer les colonnes existantes de la table photocop
-                $query = $db->query('DESCRIBE photocop');
-                $columns = $query->fetchAll(PDO::FETCH_COLUMN);
+                // Récupérer les colonnes existantes de la table photocop (SQLite compatible)
+                $query = $db->query('PRAGMA table_info(photocop)');
+                $columns_info = $query->fetchAll(PDO::FETCH_ASSOC);
+                $columns = array_column($columns_info, 'name');
                 
                     // Filtrer les données pour ne garder que les colonnes existantes
                     $filtered_update = array();

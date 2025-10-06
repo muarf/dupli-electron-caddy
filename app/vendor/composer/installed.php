@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'dupli-dev/app',
-        'pretty_version' => 'dev-main',
-        'version' => 'dev-main',
-        'reference' => '41da137f0cb422a60d6b7bc2916f30b165ffd927',
+        'pretty_version' => '1.0.0+no-version-set',
+        'version' => '1.0.0.0',
+        'reference' => null,
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -11,11 +11,20 @@
     ),
     'versions' => array(
         'dupli-dev/app' => array(
-            'pretty_version' => 'dev-main',
-            'version' => 'dev-main',
-            'reference' => '41da137f0cb422a60d6b7bc2916f30b165ffd927',
+            'pretty_version' => '1.0.0+no-version-set',
+            'version' => '1.0.0.0',
+            'reference' => null,
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
+        'setasign/fpdf' => array(
+            'pretty_version' => '1.8.6',
+            'version' => '1.8.6.0',
+            'reference' => '0838e0ee4925716fcbbc50ad9e1799b5edfae0a0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../setasign/fpdf',
             'aliases' => array(),
             'dev_requirement' => false,
         ),

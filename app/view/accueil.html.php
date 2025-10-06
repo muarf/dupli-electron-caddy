@@ -1,5 +1,5 @@
 
-            <h1>Bienvenue duplicateur-euse</h1>
+            <h1 class="text-center">Bienvenue duplicateur-euse</h1>
             <hr>
 
           </div>

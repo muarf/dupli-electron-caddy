@@ -6,6 +6,49 @@ function Action()
     $array = array();
     $db = pdo_connect();
     
+    // Gestion AJAX pour récupérer le type de machine
+    if(isset($_GET['ajax']) && $_GET['ajax'] === 'get_machine_type' && isset($_GET['machine'])) {
+        try {
+            $machine = $_GET['machine'];
+            $db = pdo_connect();
+            
+            // Vérifier si c'est un duplicopieur
+            $query = $db->prepare('SELECT id FROM duplicopieurs WHERE (CONCAT(marque, " ", modele) = ? OR (marque = ? AND modele = ?)) AND actif = 1');
+            $query->execute([$machine, $machine, $machine]);
+            $duplicopieur = $query->fetch(PDO::FETCH_ASSOC);
+            
+            if ($duplicopieur) {
+                // C'est un duplicopieur
+                $type = 'duplicopieur';
+            } else {
+                // Vérifier si c'est un photocopieur
+                $query = $db->prepare('SELECT type_encre FROM photocopieurs WHERE marque = ? AND actif = 1');
+                $query->execute([$machine]);
+                $photocop = $query->fetch(PDO::FETCH_ASSOC);
+                
+                if ($photocop) {
+                    // C'est un photocopieur, déterminer le type selon type_encre
+                    if ($photocop['type_encre'] === 'encre') {
+                        $type = 'photocop_encre';
+                    } else {
+                        $type = 'photocop_toner';
+                    }
+                } else {
+                    $type = 'unknown';
+                }
+            }
+            
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'type' => $type]);
+            exit;
+            
+        } catch (Exception $e) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            exit;
+        }
+    }
+    
     // Gestion AJAX pour récupérer les derniers compteurs
     if(isset($_GET['ajax']) && $_GET['ajax'] === 'get_last_counters' && isset($_GET['machine'])) {
         try {

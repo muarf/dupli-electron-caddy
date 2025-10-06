@@ -11,9 +11,8 @@ class BackupManager {
     public function __construct($conf) {
         $this->conf = $conf;
         
-        // Utiliser le même répertoire que la base de données pour la compatibilité
-        $db_dir = dirname($conf['db_path']);
-        $this->backup_dir = $db_dir . DIRECTORY_SEPARATOR . 'sauvegarde' . DIRECTORY_SEPARATOR;
+        // Utiliser le répertoire public/sauvegarde pour l'accessibilité web
+        $this->backup_dir = __DIR__ . '/../../public/sauvegarde' . DIRECTORY_SEPARATOR;
         
         // Créer le dossier de sauvegarde s'il n'existe pas
         if (!is_dir($this->backup_dir)) {

@@ -10,7 +10,12 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="?accueil"><span><big>Duplicator.</big></span></a>
+          <a class="navbar-brand" href="?accueil" style="display: flex; align-items: center;">
+            <button type="button" class="btn btn-default btn-sm" onclick="history.back()" style="margin-right: 10px; vertical-align: middle;">
+              <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span> Précédent
+            </button>
+            <span><big>Duplicator.</big></span>
+          </a>
         </div>
         <div class="collapse navbar-collapse" id="navbar-ex-collapse">
           <ul class="nav navbar-nav navbar-right">
@@ -44,6 +49,12 @@
                   </a>
                 </li>
               </ul>
+            </li>
+            <li>
+              <a href="?tirage_multimachines">
+                <span class="glyphicon glyphicon-print" aria-hidden="true"></span>
+                Nouveau Tirage
+              </a>
             </li>
             <li>
               <a href="?changement">

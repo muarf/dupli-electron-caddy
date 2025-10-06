@@ -196,37 +196,50 @@ function prix_du($machine)
 {
     $db = pdo_connect();
     
-    // Vérifier si c'est un duplicopieur (nom complet comme "Ricoh dx4545")
-    $query_check = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND CONCAT(marque, " ", modele) = ?');
-    $query_check->execute([$machine]);
+    // Vérifier si c'est un duplicopieur - essayer plusieurs formats de nom
+    $query_check = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR marque = ? OR modele = ?)');
+    $query_check->execute([$machine, $machine, $machine]);
     $is_duplicopieur = $query_check->fetchColumn() > 0;
     
     if ($is_duplicopieur) {
         // C'est un duplicopieur, utiliser la table dupli avec filtre par duplicopieur_id
-        $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND CONCAT(marque, " ", modele) = ?');
-        $query_dup->execute([$machine]);
+        $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR marque = ? OR modele = ?) LIMIT 1');
+        $query_dup->execute([$machine, $machine, $machine]);
         $duplicopieur_id = $query_dup->fetchColumn();
         
         if ($duplicopieur_id) {
-            $query = $db->prepare('SELECT sum(prix) AS nbr FROM dupli WHERE duplicopieur_id = ? AND paye = "non"');
+            $query = $db->prepare('SELECT sum(CAST(prix AS REAL)) AS nbr FROM dupli WHERE duplicopieur_id = ? AND paye = "non"');
             $query->execute([$duplicopieur_id]);
+            $result = $query->fetch(PDO::FETCH_OBJ);
+            $euros = $result->nbr;
+            
+            // Si aucun résultat avec duplicopieur_id, essayer avec nom_machine comme fallback
+            if (!$euros) {
+                $query_fallback = $db->prepare('SELECT sum(CAST(prix AS REAL)) AS nbr FROM dupli WHERE nom_machine = ? AND paye = "non"');
+                $query_fallback->execute([$machine]);
+                $result_fallback = $query_fallback->fetch(PDO::FETCH_OBJ);
+                $euros = $result_fallback->nbr;
+            }
         } else {
             // Fallback si pas trouvé
-            $query = $db->query('SELECT sum(prix) AS nbr FROM dupli WHERE paye = "non"');
+            $query = $db->query('SELECT sum(CAST(prix AS REAL)) AS nbr FROM dupli WHERE paye = "non"');
+            $result = $query->fetch(PDO::FETCH_OBJ);
+            $euros = $result->nbr;
         }
     } else if ($machine === 'A3' || $machine === 'A4' || $machine === 'dupli') {
         // Pour A3, A4, et dupli (ancien système), utiliser la table dupli sans filtre
-        $query = $db->query('SELECT sum(prix) AS nbr FROM dupli WHERE paye = "non"');
+        $query = $db->query('SELECT sum(CAST(prix AS REAL)) AS nbr FROM dupli WHERE paye = "non"');
+        $result = $query->fetch(PDO::FETCH_OBJ);
+        $euros = $result->nbr;
     } else {
         // Pour les photocopieurs, utiliser la table photocop avec filtre par marque
-        $query = $db->prepare('SELECT sum(prix) AS nbr FROM photocop WHERE marque = ? AND paye = "non"');
+        $query = $db->prepare('SELECT sum(CAST(prix AS REAL)) AS nbr FROM photocop WHERE marque = ? AND paye = "non"');
         $query->execute(array($machine));
+        $result = $query->fetch(PDO::FETCH_OBJ);
+        $euros = $result->nbr;
     }
     
-    $result = $query->fetch(PDO::FETCH_OBJ);
-    $euros = $result->nbr;
-    
-    return $euros;
+    return $euros ?: 0;
 }
 
 /**

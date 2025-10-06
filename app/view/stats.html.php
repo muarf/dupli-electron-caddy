@@ -1,7 +1,6 @@
 <div class="section">
-  <div class="container">
-    <div class="row">
-      <div class="col-md-10 col-md-offset-1">
+  <div class="row">
+    <div class="col-md-12">
         <h1 class="text-center">Statistiques</h1>
         <div class="alert alert-info">
         <?php 
@@ -32,17 +31,23 @@
     }
     ?>
     <div class="col-md-6">
-      <h3 class="well well-sm"><center> Statistiques par mois <?= htmlspecialchars($machine_name) ?></center></h3>
-      <table class="table">
-        <thead>
+      <div class="panel panel-info">
+        <div class="panel-heading">
+          <h3 class="panel-title text-center">
+            <i class="fa fa-bar-chart"></i> Statistiques par mois <?= htmlspecialchars($machine_name) ?>
+          </h3>
+        </div>
+        <div class="panel-body">
+          <table class="table table-striped table-hover table-bordered">
+        <thead class="thead-dark">
           <tr>
-            <th>date</th>
-            <th>feuilles </th>
-            <th>tirages</th>
-            <th>moyenne</th>
-            <th>Prix</th>
-            <th>Prix payé</th>
-            <th>difference</th>
+            <th><i class="fa fa-calendar"></i> Date</th>
+            <th><i class="fa fa-file-o"></i> Feuilles</th>
+            <th><i class="fa fa-print"></i> Tirages</th>
+            <th><i class="fa fa-calculator"></i> Moyenne</th>
+            <th><i class="fa fa-euro"></i> Prix</th>
+            <th><i class="fa fa-money"></i> Prix payé</th>
+            <th><i class="fa fa-chart-line"></i> Différence</th>
           </tr>
         </thead>
         <tbody>
@@ -77,49 +82,67 @@
             </tbody>
           </table>
           <?php $iii = 1;?>
-          <ul class="pagination">
-          <?php while($iii < ($stat['duplicopieurs'][$machine_name]['nb_page'] ?? 0)) { ?>
-            <li><a href="?stats&<?=$page_param?>=<?= $iii?>"><?= $iii?></a></li>
-          <?php $iii++;} ?>
-          </ul>
+          <nav aria-label="Navigation des pages">
+            <ul class="pagination pagination-sm">
+            <?php while($iii < ($stat['duplicopieurs'][$machine_name]['nb_page'] ?? 0)) { ?>
+              <li><a href="?stats&<?=$page_param?>=<?= $iii?>"><?= $iii?></a></li>
+            <?php $iii++;} ?>
+            </ul>
+          </nav>
         </div>
+      </div>
+    </div>
   <?php endforeach; ?>
 <?php else: ?>
   <div class="col-md-6">
-    <h3 class="well well-sm"><center> Statistiques par mois Duplicopieur</center></h3>
-    <table class="table">
-      <thead>
-        <tr>
-          <th>date</th>
-          <th>feuilles </th>
-          <th>tirages</th>
-          <th>moyenne</th>
-          <th>Prix</th>
-          <th>Prix payé</th>
-          <th>difference</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td colspan="7" class="text-center">Aucun duplicopieur installé</td></tr>
-      </tbody>
-    </table>
+    <div class="panel panel-warning">
+      <div class="panel-heading">
+        <h3 class="panel-title text-center">
+          <i class="fa fa-exclamation-triangle"></i> Statistiques par mois Duplicopieur
+        </h3>
+      </div>
+      <div class="panel-body">
+        <table class="table table-striped table-bordered">
+          <thead class="thead-dark">
+            <tr>
+              <th><i class="fa fa-calendar"></i> Date</th>
+              <th><i class="fa fa-file-o"></i> Feuilles</th>
+              <th><i class="fa fa-print"></i> Tirages</th>
+              <th><i class="fa fa-calculator"></i> Moyenne</th>
+              <th><i class="fa fa-euro"></i> Prix</th>
+              <th><i class="fa fa-money"></i> Prix payé</th>
+              <th><i class="fa fa-chart-line"></i> Différence</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="warning"><td colspan="7" class="text-center"><i class="fa fa-info-circle"></i> Aucun duplicopieur installé</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 <?php endif; ?>
 
 <?php if(isset($photocopiers_installes) && !empty($photocopiers_installes)): ?>
   <?php foreach($photocopiers_installes as $photocop_name): ?>
     <div class="col-md-6">
-      <h3 class="well well-sm"><center> Statistiques par mois <?= htmlspecialchars($photocop_name) ?></center></h3>
-      <table class="table">
-        <thead>
+      <div class="panel panel-success">
+        <div class="panel-heading">
+          <h3 class="panel-title text-center">
+            <i class="fa fa-print"></i> Statistiques par mois <?= htmlspecialchars($photocop_name) ?>
+          </h3>
+        </div>
+        <div class="panel-body">
+          <table class="table table-striped table-hover table-bordered">
+        <thead class="thead-dark">
           <tr>
-            <th>date</th>
-            <th>feuilles </th>
-            <th>tirages</th>
-            <th>moyenne</th>
-            <th>Prix</th>
-            <th>Prix payé</th>
-            <th>difference</th>
+            <th><i class="fa fa-calendar"></i> Date</th>
+            <th><i class="fa fa-file-o"></i> Feuilles</th>
+            <th><i class="fa fa-print"></i> Tirages</th>
+            <th><i class="fa fa-calculator"></i> Moyenne</th>
+            <th><i class="fa fa-euro"></i> Prix</th>
+            <th><i class="fa fa-money"></i> Prix payé</th>
+            <th><i class="fa fa-chart-line"></i> Différence</th>
           </tr>
         </thead>
         <tbody>
@@ -154,16 +177,19 @@
             </tbody>
           </table>
           <?php $iii = 1;?>
-          <ul class="pagination">
-          <?php while($iii < ($stat['photocopiers'][$photocop_name]['nb_page'] ?? 0)) { ?>
-            <li><a href="?stats&<?=$page_param?>=<?= $iii?>"><?= $iii?></a></li>
-          <?php $iii++;} ?>
-          </ul>
+          <nav aria-label="Navigation des pages">
+            <ul class="pagination pagination-sm">
+            <?php while($iii < ($stat['photocopiers'][$photocop_name]['nb_page'] ?? 0)) { ?>
+              <li><a href="?stats&<?=$page_param?>=<?= $iii?>"><?= $iii?></a></li>
+            <?php $iii++;} ?>
+            </ul>
+          </nav>
         </div>
+      </div>
+    </div>
   <?php endforeach; ?>
 <?php endif; ?>
 
-      </div>
     </div>
   </div>
 

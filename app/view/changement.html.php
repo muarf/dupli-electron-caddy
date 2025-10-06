@@ -154,37 +154,83 @@ if(isset($success_message)): ?>
 
 <script>
 $(document).ready(function() {
-    // Types de consommables par machine
-    var consumableTypes = {};
+    // Variables globales
+    var duplicopieurs_tambours = {};
     var duplicopieursNames = [];
     
-    // Ajouter les types pour les duplicopieurs
-    var duplicopieursData = {};
+    // Ajouter les données des duplicopieurs
     <?php if(isset($duplicopieurs) && count($duplicopieurs) > 0): ?>
         <?php foreach($duplicopieurs as $dup): ?>
-            consumableTypes['<?= htmlspecialchars($dup['name']) ?>'] = [
-                {value: 'master', text: 'Master'},
-                {value: 'encre', text: 'Encre'}
-            ];
+            duplicopieurs_tambours['<?= htmlspecialchars($dup['name']) ?>'] = <?= json_encode($dup['tambours']) ?>;
             duplicopieursNames.push('<?= htmlspecialchars($dup['name']) ?>');
-            duplicopieursData['<?= htmlspecialchars($dup['name']) ?>'] = <?= json_encode($dup['tambours']) ?>;
         <?php endforeach; ?>
     <?php endif; ?>
     
-    // Ajouter les types pour les photocopieurs
-    <?php if(isset($photocopiers) && count($photocopiers) > 0): ?>
-        <?php foreach($photocopiers as $photocop): ?>
-            consumableTypes['<?= htmlspecialchars($photocop) ?>'] = [
-                {value: 'noire', text: 'Encre noire'},
-                {value: 'bleue', text: 'Encre bleue'},
-                {value: 'rouge', text: 'Encre rouge'},
-                {value: 'jaune', text: 'Encre jaune'},
-                {value: 'couleur', text: 'Encre couleur'},
-                {value: 'tambour', text: 'Tambour (Drum Unit)'},
-                {value: 'dev', text: 'Unité de développement'}
-            ];
-        <?php endforeach; ?>
-    <?php endif; ?>
+    // Fonction pour mettre à jour les options de type selon la machine
+    function updateTypeOptions(machine, selectElement) {
+        $.get('?changement&ajax=get_machine_type&machine=' + encodeURIComponent(machine) + '&t=' + Date.now())
+            .done(function(response) {
+                if (response.success) {
+                    var type = response.type;
+                    var options = '';
+                    
+                    if (type === 'duplicopieur') {
+                        // Duplicopieurs : master et encre
+                        options = '<option value="master">Master</option>' +
+                                 '<option value="encre">Encre</option>';
+                    } else if (type === 'photocop_encre') {
+                        // Photocopieurs à encre : 4 couleurs seulement
+                        options = '<option value="noire">Encre noire</option>' +
+                                 '<option value="bleue">Encre bleue</option>' +
+                                 '<option value="rouge">Encre rouge</option>' +
+                                 '<option value="jaune">Encre jaune</option>';
+                    } else if (type === 'photocop_toner') {
+                        // Photocopieurs à toner : 4 couleurs + dev + tambour
+                        options = '<option value="noir">Noir</option>' +
+                                 '<option value="cyan">Cyan</option>' +
+                                 '<option value="magenta">Magenta</option>' +
+                                 '<option value="yellow">Yellow</option>' +
+                                 '<option value="dev">Dev</option>' +
+                                 '<option value="tambour">Tambour</option>';
+                    } else {
+                        options = '<option value="">Type de machine non reconnu</option>';
+                    }
+                    
+                    selectElement.html('<option value="">Sélectionnez un type</option>' + options);
+                }
+            })
+            .fail(function() {
+                selectElement.html('<option value="">Erreur lors du chargement</option>');
+            });
+    }
+    
+    // Fonction pour gérer l'affichage du champ tambour selon le type
+    function toggleTambourField(type, machine) {
+        var tambourField = $('#tambour');
+        var tambourLabel = $('#tambour').prev('label');
+        var tambourGroup = $('#tambour-group');
+        
+        if (type === 'master') {
+            // Pour les masters, pas besoin de tambour
+            tambourGroup.hide();
+            tambourField.prop('required', false);
+        } else if (type === 'encre' || type === 'tambour') {
+            // Pour l'encre et les tambours, on doit choisir le tambour
+            tambourGroup.show();
+            tambourField.prop('required', true);
+            
+            // Remplir les options de tambours
+            if (duplicopieurs_tambours[machine]) {
+                tambourField.html('<option value="">Sélectionnez un tambour</option>');
+                $.each(duplicopieurs_tambours[machine], function(index, tambour) {
+                    tambourField.append('<option value="' + tambour + '">' + tambour + '</option>');
+                });
+            }
+        } else {
+            tambourGroup.hide();
+            tambourField.prop('required', false);
+        }
+    }
     
     // Gestion du changement de machine
     $('#machine').change(function() {
@@ -198,11 +244,9 @@ $(document).ready(function() {
         typeSelect.html('<option value="">Sélectionnez un type</option>');
         tambourSelect.html('<option value="">Sélectionnez un tambour</option>');
         
-        if (machine && consumableTypes[machine]) {
-            // Ajouter les options pour cette machine
-            $.each(consumableTypes[machine], function(index, option) {
-                typeSelect.append('<option value="' + option.value + '">' + option.text + '</option>');
-            });
+        if (machine) {
+            // Utiliser la nouvelle fonction pour mettre à jour les types
+            updateTypeOptions(machine, typeSelect);
             
             // Afficher/masquer les champs selon le type de machine
             if (duplicopieursNames.indexOf(machine) !== -1) {
@@ -210,8 +254,9 @@ $(document).ready(function() {
                 tambourGroup.show();
                 
                 // Remplir les options de tambours
-                if (duplicopieursData[machine]) {
-                    $.each(duplicopieursData[machine], function(index, tambour) {
+                if (duplicopieurs_tambours[machine]) {
+                    tambourSelect.html('<option value="">Sélectionnez un tambour</option>');
+                    $.each(duplicopieurs_tambours[machine], function(index, tambour) {
                         tambourSelect.append('<option value="' + tambour + '">' + tambour + '</option>');
                     });
                 }
@@ -254,28 +299,24 @@ $(document).ready(function() {
         }
     });
     
-    // Gestion du changement de type de consommable
+    // Event listener pour le changement de type
     $('#type').change(function() {
         var type = $(this).val();
         var machine = $('#machine').val();
+        toggleTambourField(type, machine);
         
-        // Pour les duplicopieurs, rendre les champs obligatoires selon le type
+        // Gestion du champ masters pour les duplicopieurs
         if (duplicopieursNames.indexOf(machine) !== -1) {
             if (type === 'master') {
                 $('#nb_m').prop('required', true);
-                $('#tambour').prop('required', false);
-            } else if (type === 'tambour') {
-                $('#nb_m').prop('required', false);
-                $('#tambour').prop('required', true);
+                $('#masters-group').show();
             } else {
                 $('#nb_m').prop('required', false);
-                $('#tambour').prop('required', false);
+                $('#masters-group').hide();
             }
-        } else {
-            $('#nb_m').prop('required', false);
-            $('#tambour').prop('required', false);
         }
     });
+    
     
     // Validation du formulaire
     $('#changement-form').submit(function(e) {

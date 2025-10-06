@@ -95,8 +95,8 @@ class SiteManager {
         try {
             $db = pdo_connect();
             
-            $stmt = $db->prepare("INSERT INTO site_settings (setting_name, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?");
-            $stmt->execute(array($setting_name, $setting_value, $setting_value));
+            $stmt = $db->prepare("INSERT OR REPLACE INTO site_settings (setting_name, setting_value) VALUES (?, ?)");
+            $stmt->execute(array($setting_name, $setting_value));
             
         } catch (PDOException $e) {
             throw new Exception("Erreur lors de la mise à jour du paramètre $setting_name : " . $e->getMessage());
