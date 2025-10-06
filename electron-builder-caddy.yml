@@ -17,13 +17,7 @@ files:
   - php/**/*
   - ghostscript/**/*
   - caddy/**/*
-asarUnpack:
-  - php/**/*
-  - app/**/*
-  - ghostscript/**/*
-  - caddy/**/*
-  - Caddyfile
-  - php-fpm.conf
+# asarUnpack configuré spécifiquement par plateforme pour éviter les erreurs de chemins longs
 # Plus besoin d'exclure les liens symboliques car ils ont été supprimés
 linux:
   target: 
@@ -32,11 +26,27 @@ linux:
   category: Office
   executableName: Duplicator
   executableArgs: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"]
+  # Configuration spécifique Linux
+  asarUnpack:
+    - "php/**/*"
+    - "app/**/*"
+    - "ghostscript/**/*"
+    - "caddy/**/*"
+    - "Caddyfile"
+    - "php-fpm.conf"
 mac:
   target: 
     - target: dmg
       arch: [x64]
   category: public.app-category.productivity
+  # Configuration spécifique macOS
+  asarUnpack:
+    - "php/**/*"
+    - "app/**/*"
+    - "ghostscript/**/*"
+    - "caddy/**/*"
+    - "Caddyfile"
+    - "php-fpm.conf"
 win:
   target:
     - target: nsis
@@ -46,6 +56,14 @@ win:
     - target: zip
       arch: [x64]
   forceCodeSigning: false
+  # Configuration spécifique Windows pour éviter l'erreur "pattern is too long"
+  asarUnpack:
+    - "php/**/*"
+    - "app/**/*"
+    - "ghostscript/**/*"
+    - "caddy/**/*"
+    - "Caddyfile"
+    - "php-fpm.conf"
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
