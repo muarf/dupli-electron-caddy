@@ -56,14 +56,8 @@ win:
     - target: zip
       arch: [x64]
   forceCodeSigning: false
-  # Configuration spécifique Windows pour éviter l'erreur "pattern is too long"
-  asarUnpack:
-    - "php/**/*"
-    - "app/**/*"
-    - "ghostscript/**/*"
-    - "caddy/**/*"
-    - "Caddyfile"
-    - "php-fpm.conf"
+  # Désactiver ASAR sur Windows pour éviter l'erreur "pattern is too long"
+  asar: false
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
