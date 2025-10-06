@@ -160,3 +160,4 @@ Dites moi !
 ### Logs
 
 Les logs sont affichés dans la console de l'application Electron.
+# Trigger Windows build
