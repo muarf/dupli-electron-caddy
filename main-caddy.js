@@ -41,11 +41,26 @@ function getCaddyPath() {
         console.log('Caddy existe:', fs.existsSync(caddyPath));
         return caddyPath;
     } else if (isWindows) {
-        // Windows portable : utiliser le Caddy inclus
-        const caddyPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'caddy', 'caddy.exe');
-        console.log('Chemin Caddy Windows:', caddyPath);
-        console.log('Caddy Windows existe:', fs.existsSync(caddyPath));
-        return caddyPath;
+        // Windows : détecter si ASAR est utilisé ou non
+        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'caddy', 'caddy.exe');
+        const noAsarPath = path.join(process.resourcesPath, 'caddy', 'caddy.exe');
+        
+        // Essayer d'abord sans ASAR (configuration actuelle)
+        if (fs.existsSync(noAsarPath)) {
+            console.log('Chemin Caddy Windows (sans ASAR):', noAsarPath);
+            console.log('Caddy Windows existe:', fs.existsSync(noAsarPath));
+            return noAsarPath;
+        }
+        // Fallback avec ASAR si nécessaire
+        else if (fs.existsSync(asarPath)) {
+            console.log('Chemin Caddy Windows (avec ASAR):', asarPath);
+            console.log('Caddy Windows existe:', fs.existsSync(asarPath));
+            return asarPath;
+        }
+        else {
+            console.error('Caddy.exe non trouvé ni avec ASAR ni sans ASAR');
+            return 'caddy.exe'; // Fallback système
+        }
     } else {
         // Développement : utiliser le Caddy inclus ou système
         const caddyPath = path.join(__dirname, 'caddy', 'caddy');
