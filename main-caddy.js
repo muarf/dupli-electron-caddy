@@ -42,16 +42,17 @@ function getCaddyPath() {
         return caddyPath;
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
+        // Même avec asar: false, les fichiers sont dans resources/app/
         const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'caddy', 'caddy.exe');
-        const noAsarPath = path.join(process.resourcesPath, 'caddy', 'caddy.exe');
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'caddy', 'caddy.exe');
         
-        // Essayer d'abord sans ASAR (configuration actuelle)
+        // Essayer d'abord sans ASAR (configuration actuelle: resources/app/)
         if (fs.existsSync(noAsarPath)) {
             console.log('Chemin Caddy Windows (sans ASAR):', noAsarPath);
             console.log('Caddy Windows existe:', fs.existsSync(noAsarPath));
             return noAsarPath;
         }
-        // Fallback avec ASAR si nécessaire
+        // Fallback avec ASAR si nécessaire (resources/app.asar.unpacked/)
         else if (fs.existsSync(asarPath)) {
             console.log('Chemin Caddy Windows (avec ASAR):', asarPath);
             console.log('Caddy Windows existe:', fs.existsSync(asarPath));
@@ -96,15 +97,16 @@ function getPhpPath() {
     
     if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
+        // Même avec asar: false, les fichiers sont dans resources/app/
         const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php.exe');
-        const noAsarPath = path.join(process.resourcesPath, 'php', 'php.exe');
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'php', 'php.exe');
         
-        // Essayer d'abord sans ASAR (configuration actuelle)
+        // Essayer d'abord sans ASAR (configuration actuelle: resources/app/)
         if (fs.existsSync(noAsarPath)) {
             console.log('PHP trouvé (sans ASAR):', noAsarPath);
             return noAsarPath;
         }
-        // Fallback avec ASAR si nécessaire
+        // Fallback avec ASAR si nécessaire (resources/app.asar.unpacked/)
         else if (fs.existsSync(asarPath)) {
             console.log('PHP trouvé (avec ASAR):', asarPath);
             return asarPath;
@@ -146,15 +148,16 @@ function getCaddyfilePath() {
         return path.join(process.resourcesPath, 'app.asar.unpacked', 'Caddyfile');
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
+        // Même avec asar: false, les fichiers sont dans resources/app/
         const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'Caddyfile');
-        const noAsarPath = path.join(process.resourcesPath, 'Caddyfile');
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'Caddyfile');
         
-        // Essayer d'abord sans ASAR (configuration actuelle)
+        // Essayer d'abord sans ASAR (configuration actuelle: resources/app/)
         if (fs.existsSync(noAsarPath)) {
             console.log('Caddyfile trouvé (sans ASAR):', noAsarPath);
             return noAsarPath;
         }
-        // Fallback avec ASAR si nécessaire
+        // Fallback avec ASAR si nécessaire (resources/app.asar.unpacked/)
         else if (fs.existsSync(asarPath)) {
             console.log('Caddyfile trouvé (avec ASAR):', asarPath);
             return asarPath;
@@ -182,15 +185,16 @@ function startPhpFpm() {
         appPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
+        // Même avec asar: false, les fichiers sont dans resources/app/
         const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
-        const noAsarPath = path.join(process.resourcesPath, 'app', 'public');
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
         
-        // Essayer d'abord sans ASAR (configuration actuelle)
+        // Essayer d'abord sans ASAR (configuration actuelle: resources/app/app/public)
         if (fs.existsSync(noAsarPath)) {
             appPath = noAsarPath;
             console.log('App Path trouvé (sans ASAR):', appPath);
         }
-        // Fallback avec ASAR si nécessaire
+        // Fallback avec ASAR si nécessaire (resources/app.asar.unpacked/app/public)
         else if (fs.existsSync(asarPath)) {
             appPath = asarPath;
             console.log('App Path trouvé (avec ASAR):', appPath);
@@ -226,8 +230,9 @@ function startPhpFpm() {
         phpExtPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'ext');
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non pour les extensions
+        // Même avec asar: false, les fichiers sont dans resources/app/
         const asarExtPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'ext');
-        const noAsarExtPath = path.join(process.resourcesPath, 'php', 'ext');
+        const noAsarExtPath = path.join(process.resourcesPath, 'app', 'php', 'ext');
         
         phpIniPath = path.join(appPath, '..', 'php.ini');
         phpExtPath = fs.existsSync(noAsarExtPath) ? noAsarExtPath : asarExtPath;
@@ -348,14 +353,15 @@ function startCaddy() {
         appPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
+        // Même avec asar: false, les fichiers sont dans resources/app/
         const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
-        const noAsarPath = path.join(process.resourcesPath, 'app', 'public');
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
         
-        // Essayer d'abord sans ASAR (configuration actuelle)
+        // Essayer d'abord sans ASAR (configuration actuelle: resources/app/app/public)
         if (fs.existsSync(noAsarPath)) {
             appPath = noAsarPath;
         }
-        // Fallback avec ASAR si nécessaire
+        // Fallback avec ASAR si nécessaire (resources/app.asar.unpacked/app/public)
         else if (fs.existsSync(asarPath)) {
             appPath = asarPath;
         }
