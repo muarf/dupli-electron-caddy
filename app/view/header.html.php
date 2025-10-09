@@ -48,6 +48,29 @@
                     <small class="text-muted d-block">Dupliquer et optimiser vos tracts</small>
                   </a>
                 </li>
+                <li role="separator" class="divider"></li>
+                <li>
+                  <a href="?png_to_pdf">
+                    <i class="fa fa-file-image-o" style="color: #a8e6cf; margin-right: 8px;"></i>
+                    <strong>Images → PDF</strong>
+                    <small class="text-muted d-block">Convertir PNG/JPG en PDF A3/A4</small>
+                  </a>
+                </li>
+                <li>
+                  <a href="?pdf_to_png">
+                    <i class="fa fa-picture-o" style="color: #c3aed6; margin-right: 8px;"></i>
+                    <strong>PDF → Images</strong>
+                    <small class="text-muted d-block">Extraire les pages en PNG</small>
+                  </a>
+                </li>
+                <li role="separator" class="divider"></li>
+                <li>
+                  <a href="?riso_separator">
+                    <i class="fa fa-adjust" style="color: #ff6b9d; margin-right: 8px;"></i>
+                    <strong>Séparateur Riso</strong>
+                    <small class="text-muted d-block">Séparer couleurs pour multi-tambours</small>
+                  </a>
+                </li>
               </ul>
             </li>
             <li>

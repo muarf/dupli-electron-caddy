@@ -190,13 +190,13 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
     ?>
     
     <div class="alert-modern alert alert-success">
-        <strong><i class="fas fa-check-circle"></i> Succès!</strong> Votre tirage multi-machines a été enregistré !
+        <strong><i class="fa fa-check-circle"></i> Succès!</strong> Votre tirage multi-machines a été enregistré !
     </div>
     
     <!-- Récapitulatif après soumission -->
     <?php if (isset($contact) && isset($machines) && ($contact != "")): ?>
     <div class="summary-card">
-        <h3 class="text-center"><i class="fas fa-calculator"></i> Récapitulatif du tirage</h3>
+        <h3 class="text-center"><i class="fa fa-calculator"></i> Récapitulatif du tirage</h3>
         <div class="total-price text-center"><?= number_format($prix_total, 2) ?>€</div>
         <p class="mb-0 text-center">Contact: <strong><?= htmlspecialchars($contact) ?></strong></p>
     </div>
@@ -206,7 +206,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
             <?php foreach ($machines as $index => $machine): ?>
                 <div class="col-md-6 col-lg-4 mb-4">
                     <div class="machine-card">
-                        <h5 class="text-center"><i class="fas fa-print"></i> Tirage #<?= ($index + 1) ?></h5>
+                        <h5 class="text-center"><i class="fa fa-print"></i> Tirage #<?= ($index + 1) ?></h5>
                         <p><strong><?= ucfirst($machine['type']) ?></strong></p>
                         <div class="text-center">
                             <span class="badge bg-primary fs-6"><?= number_format($machine['prix'], 2) ?>€</span>
@@ -218,13 +218,13 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
     </div>
     
     <div class="alert-modern alert alert-warning">
-        <strong><i class="fas fa-exclamation-triangle"></i> Attention!</strong> Ni les locaux, ni l'entretien des machines ne sont comptés dans ce chiffre. Merci de donner un peu plus que demandé, si possible
+        <strong><i class="fa fa-exclamation-triangle"></i> Attention!</strong> Ni les locaux, ni l'entretien des machines ne sont comptés dans ce chiffre. Merci de donner un peu plus que demandé, si possible
     </div>
     <?php endif; ?>
     
     <div class="text-center">
         <a href="?accueil" class="btn btn-modern btn-success-modern btn-lg">
-            <i class="fas fa-home"></i> Retour à l'accueil
+            <i class="fa fa-home"></i> Retour à l'accueil
         </a>
     </div>
     <?php 
@@ -232,7 +232,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
     ?>
     <!-- Page de confirmation améliorée -->
     <div class="alert-modern alert alert-success">
-        <h3><i class="fas fa-check-circle"></i> Confirmation de votre tirage multi-machines</h3>
+        <h3><i class="fa fa-check-circle"></i> Confirmation de votre tirage multi-machines</h3>
         <p><strong>Contact :</strong> <?= htmlspecialchars($contact) ?></p>
     </div>
     
@@ -241,24 +241,24 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
             <?php foreach ($machines as $index => $machine): ?>
                 <div class="col-md-6">
                     <div class="machine-card">
-                        <h4 class="text-center"><i class="fas fa-print"></i> Tirage #<?= ($index + 1) ?> - <?= ucfirst($machine['type']) ?></h4>
+                        <h4 class="text-center"><i class="fa fa-print"></i> Tirage #<?= ($index + 1) ?> - <?= ucfirst($machine['type']) ?></h4>
                             <?php if ($machine['type'] === 'duplicopieur'): ?>
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <h5><i class="fas fa-cogs"></i> Configuration</h5>
+                                        <h5><i class="fa fa-cogs"></i> Configuration</h5>
                                         <ul class="list-unstyled">
                                             <li><strong>Masters :</strong> <?= $machine['nb_masters'] ?? 0 ?></li>
                                             <li><strong>Passages :</strong> <?= $machine['nb_passages'] ?? 0 ?></li>
                                             <?php if (isset($machine['rv']) && $machine['rv'] == 'oui'): ?>
-                                                <li><i class="fas fa-check text-success"></i> Recto/Verso</li>
+                                                <li><i class="fa fa-check text-success"></i> Recto/Verso</li>
                                             <?php endif; ?>
                                             <?php if (isset($machine['A4']) && $machine['A4'] == 'A4'): ?>
-                                                <li><i class="fas fa-check text-success"></i> Format A4</li>
+                                                <li><i class="fa fa-check text-success"></i> Format A4</li>
                                             <?php else: ?>
-                                                <li><i class="fas fa-check text-info"></i> Format A3</li>
+                                                <li><i class="fa fa-check text-info"></i> Format A3</li>
                                             <?php endif; ?>
                                             <?php if (isset($machine['feuilles_payees']) && $machine['feuilles_payees'] == 'oui'): ?>
-                                                <li><i class="fas fa-check text-warning"></i> Feuilles déjà payées</li>
+                                                <li><i class="fa fa-check text-warning"></i> Feuilles déjà payées</li>
                                             <?php endif; ?>
                                         </ul>
                                     </div>

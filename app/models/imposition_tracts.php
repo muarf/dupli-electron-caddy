@@ -198,24 +198,71 @@ function processImpositionTracts()
     chmod($inputFile, 0644);
     
     try {
-        // Analyser le PDF avec la fonction existante
-        $pdfFileArray = [
-            'tmp_name' => $inputFile,
-            'type' => 'application/pdf'
-        ];
-        $analysisResult = analyzePDFFormat($pdfFileArray);
+        // NETTOYER LE PDF AVEC GHOSTSCRIPT FORCÉ (comme unimpose et impose)
+        $timestamp = date('YmdHis');
+        $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
         
-        if (!$analysisResult['success']) {
-            throw new Exception($analysisResult['error']);
+        if (!file_exists($tmp_dir)) {
+            mkdir($tmp_dir, 0755, true);
         }
         
+        $cleanedPdfFile = $tmp_dir . 'cleaned_tracts_' . $timestamp . '.pdf';
+        
+        // Nettoyer le PDF avec Ghostscript - détection automatique de la plateforme
+        if (PHP_OS_FAMILY === 'Windows') {
+            $gs_command = __DIR__ . '/../../ghostscript/gswin64c.exe';
+            if (!file_exists($gs_command)) {
+                throw new Exception("Ghostscript Windows non trouvé : " . $gs_command);
+            }
+        } else {
+            $gs_command = 'gs';
+        }
+        
+        $command = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($inputFile) . " 2>&1";
+        $output = shell_exec($command);
+        
+        if (!file_exists($cleanedPdfFile) || filesize($cleanedPdfFile) == 0) {
+            throw new Exception("Échec du nettoyage Ghostscript. Sortie: " . $output);
+        }
+        
+        // Utiliser le fichier nettoyé pour l'analyse
+        $pdfFileArray = [
+            'tmp_name' => $cleanedPdfFile,
+            'type' => 'application/pdf'
+        ];
+        
+        // Créer une instance de FPDI pour analyser
+        $pdf = new TCPDI();
+        $pageCount = $pdf->setSourceFile($cleanedPdfFile);
+        
+        if ($pageCount === 0) {
+            throw new Exception('Impossible de lire le PDF même après nettoyage Ghostscript');
+        }
+        
+        // Analyser la première page pour déterminer le format
+        $tplId = $pdf->importPage(1);
+        $size = $pdf->getTemplateSize($tplId);
+        
+        $widthMm = (int)round($size['width']);
+        $heightMm = (int)round($size['height']);
+        
+        // Déterminer le format
+        $format = determineFormat($widthMm, $heightMm);
+        
         $pdfInfo = [
-            'format' => $analysisResult['format'],
-            'page_count' => $analysisResult['page_count'],
-            'dimensions' => $analysisResult['dimensions'],
-            'ghostscript_used' => $analysisResult['ghostscript_used'] ?? false
+            'format' => $format,
+            'page_count' => $pageCount,
+            'dimensions' => [
+                'width' => $widthMm,
+                'height' => $heightMm
+            ],
+            'ghostscript_used' => true
         ];
         $array['pdf_info'] = $pdfInfo;
+        
+        // Remplacer le fichier original par le fichier nettoyé
+        unlink($inputFile);
+        $inputFile = $cleanedPdfFile;
         
         // Récupérer les options d'imposition
         $manualFormat = $_POST['manual_format'] ?? 'auto';
