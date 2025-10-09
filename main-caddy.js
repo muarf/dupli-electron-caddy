@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -6,6 +7,40 @@ const fs = require('fs');
 let mainWindow;
 let caddyProcess;
 let phpFpmProcess;
+
+// Obtenir le chemin de la base de données (dans userData pour la persistance lors des mises à jour)
+function getDatabasePath() {
+    const userDataPath = app.getPath('userData');
+    const dbPath = path.join(userDataPath, 'duplinew.sqlite');
+    
+    // Si la base de données n'existe pas encore, copier le template depuis l'application
+    if (!fs.existsSync(dbPath)) {
+        const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+        const isWindows = process.platform === 'win32';
+        
+        let templatePath;
+        if (isAppImage) {
+            templatePath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'duplinew.sqlite');
+        } else if (isWindows) {
+            const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'duplinew.sqlite');
+            const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'duplinew.sqlite');
+            templatePath = fs.existsSync(noAsarPath) ? noAsarPath : asarPath;
+        } else {
+            templatePath = path.join(__dirname, 'app', 'duplinew.sqlite');
+        }
+        
+        // Copier le template si il existe
+        if (fs.existsSync(templatePath)) {
+            console.log('Création de la base de données utilisateur depuis:', templatePath);
+            fs.copyFileSync(templatePath, dbPath);
+        } else {
+            console.log('Aucun template de BDD trouvé, nouvelle BDD sera créée par l\'application');
+        }
+    }
+    
+    console.log('Chemin de la base de données:', dbPath);
+    return dbPath;
+}
 
 // Nettoyer les fichiers temporaires
 function cleanupTmpFiles() {
@@ -476,11 +511,92 @@ function createWindow() {
     }
 }
 
+// Configuration de l'auto-updater
+function setupAutoUpdater() {
+    // Configuration
+    autoUpdater.autoDownload = false; // Ne pas télécharger automatiquement (demander d'abord)
+    autoUpdater.autoInstallOnAppQuit = true; // Installer automatiquement au redémarrage
+    
+    // Événements de mise à jour
+    autoUpdater.on('checking-for-update', () => {
+        console.log('Vérification des mises à jour...');
+    });
+    
+    autoUpdater.on('update-available', (info) => {
+        console.log('Mise à jour disponible:', info.version);
+        
+        // Envoyer une notification à l'interface
+        if (mainWindow && mainWindow.webContents) {
+            mainWindow.webContents.send('update-available', info);
+        }
+    });
+    
+    autoUpdater.on('update-not-available', (info) => {
+        console.log('Aucune mise à jour disponible');
+        
+        if (mainWindow && mainWindow.webContents) {
+            mainWindow.webContents.send('update-not-available', info);
+        }
+    });
+    
+    autoUpdater.on('error', (err) => {
+        console.error('Erreur lors de la mise à jour:', err);
+        
+        if (mainWindow && mainWindow.webContents) {
+            mainWindow.webContents.send('update-error', err);
+        }
+    });
+    
+    autoUpdater.on('download-progress', (progressObj) => {
+        console.log(`Téléchargement: ${progressObj.percent.toFixed(2)}%`);
+        
+        // Envoyer la progression à l'interface
+        if (mainWindow && mainWindow.webContents) {
+            mainWindow.webContents.send('download-progress', progressObj);
+        }
+    });
+    
+    autoUpdater.on('update-downloaded', (info) => {
+        console.log('Mise à jour téléchargée, installation au redémarrage');
+        
+        // Notifier l'utilisateur
+        if (mainWindow && mainWindow.webContents) {
+            mainWindow.webContents.send('update-downloaded', info);
+        }
+    });
+    
+    // Vérifier les mises à jour au démarrage (après 10 secondes)
+    setTimeout(() => {
+        console.log('Lancement de la vérification des mises à jour...');
+        autoUpdater.checkForUpdates().catch(err => {
+            console.error('Erreur vérification mise à jour:', err);
+        });
+    }, 10000);
+    
+    // Vérifier toutes les 4 heures
+    setInterval(() => {
+        console.log('Vérification périodique des mises à jour...');
+        autoUpdater.checkForUpdates().catch(err => {
+            console.error('Erreur vérification mise à jour:', err);
+        });
+    }, 4 * 60 * 60 * 1000);
+}
+
 // Désactiver l'accélération GPU pour éviter les erreurs GLX
 app.disableHardwareAcceleration();
 
 // Cette méthode sera appelée quand Electron aura fini de s'initialiser
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+    createWindow();
+    
+    // Initialiser la base de données dans userData
+    getDatabasePath();
+    
+    // Configurer l'auto-updater uniquement en production
+    if (process.env.NODE_ENV !== 'development') {
+        setupAutoUpdater();
+    }
+});
 
 // Quitter quand toutes les fenêtres sont fermées
 app.on('window-all-closed', () => {
@@ -534,6 +650,56 @@ ipcMain.handle('cleanup-tmp-files', async () => {
         console.error('Erreur nettoyage:', error);
         return { success: false, error: error.message };
     }
+});
+
+// ============ Handlers pour les mises à jour ============
+
+// Vérifier les mises à jour
+ipcMain.handle('check-for-updates', async () => {
+    try {
+        const result = await autoUpdater.checkForUpdates();
+        return { success: true, updateInfo: result ? result.updateInfo : null };
+    } catch (error) {
+        console.error('Erreur vérification mise à jour:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Télécharger une mise à jour
+ipcMain.handle('download-update', async () => {
+    try {
+        await autoUpdater.downloadUpdate();
+        return { success: true };
+    } catch (error) {
+        console.error('Erreur téléchargement mise à jour:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Installer la mise à jour (redémarre l'application)
+ipcMain.handle('install-update', () => {
+    try {
+        autoUpdater.quitAndInstall();
+        return { success: true };
+    } catch (error) {
+        console.error('Erreur installation mise à jour:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Obtenir le chemin de la base de données
+ipcMain.handle('get-database-path', () => {
+    try {
+        return { success: true, path: getDatabasePath() };
+    } catch (error) {
+        console.error('Erreur récupération chemin BDD:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Obtenir la version actuelle de l'application
+ipcMain.handle('get-app-version', () => {
+    return { success: true, version: app.getVersion() };
 });
 
 // Gérer l'arrêt propre de l'application

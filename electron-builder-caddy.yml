@@ -6,7 +6,7 @@ icon: icons/icon.png
 publish:
   provider: github
   releaseType: release
-  publishAutoUpdate: false
+  publishAutoUpdate: true
 files:
   - main-caddy.js
   - main.js

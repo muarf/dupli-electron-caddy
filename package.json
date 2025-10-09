@@ -109,5 +109,8 @@
       "deleteAppDataOnUninstall": false,
       "artifactName": "Duplicator-Setup-${version}.exe"
     }
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
   }
 }
