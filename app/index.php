@@ -316,7 +316,7 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','installation','setup','setup_save','stats','imposition','unimpose','png_to_pdf','pdf_to_png','riso_separator','error');
+$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','installation','setup','setup_save','setup_upload','stats','imposition','unimpose','png_to_pdf','pdf_to_png','riso_separator','error');
 
 if(in_array($page, $page_secure,true)){
     
