@@ -3,6 +3,7 @@ const { autoUpdater } = require('electron-updater');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
 let mainWindow;
 let caddyProcess;
@@ -252,8 +253,9 @@ function startPhpFpm() {
     console.log('App Path:', appPath);
     console.log('App Path exists:', fs.existsSync(appPath));
     
-    // Créer le répertoire de sessions s'il n'existe pas
-    const sessionPath = '/tmp/duplicator_sessions';
+    // Créer le répertoire de sessions s'il n'existe pas (cross-platform)
+    const sessionPath = path.join(os.tmpdir(), 'duplicator_sessions');
+    console.log('Session Path:', sessionPath);
     if (!fs.existsSync(sessionPath)) {
         fs.mkdirSync(sessionPath, { recursive: true });
     }
@@ -291,7 +293,7 @@ function startPhpFpm() {
         '-d', 'post_max_size=50M',
         '-d', 'max_execution_time=300',
         '-d', 'memory_limit=256M',
-        '-d', 'session.save_path=/tmp/duplicator_sessions'
+        '-d', `session.save_path=${sessionPath}`
     ], {
         stdio: ['pipe', 'pipe', 'pipe']
     });
@@ -336,6 +338,12 @@ function startPhpServer() {
     console.log('App Path:', appPath);
     console.log('App Path existe:', fs.existsSync(appPath));
     
+    // Créer le répertoire de sessions s'il n'existe pas (cross-platform)
+    const sessionPath = path.join(os.tmpdir(), 'duplicator_sessions');
+    if (!fs.existsSync(sessionPath)) {
+        fs.mkdirSync(sessionPath, { recursive: true });
+    }
+    
     // Pas de php.ini pour éviter les erreurs d'extensions
     phpFpmProcess = spawn(phpPath, [
         '-S', '127.0.0.1:8001',
@@ -345,7 +353,7 @@ function startPhpServer() {
         '-d', 'post_max_size=50M',
         '-d', 'max_execution_time=300',
         '-d', 'memory_limit=256M',
-        '-d', 'session.save_path=/tmp/duplicator_sessions'
+        '-d', `session.save_path=${sessionPath}`
     ], {
         stdio: ['pipe', 'pipe', 'pipe']
     });

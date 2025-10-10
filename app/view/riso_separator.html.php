@@ -1,5 +1,5 @@
-<!-- JSZip pour export multiple -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<!-- JSZip pour export multiple (local) -->
+<script src="js/jszip.min.js"></script>
 <!-- Riso Tools - Fonctions avancées -->
 <script src="js/riso-tools.js"></script>
 
