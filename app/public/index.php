@@ -149,7 +149,7 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','installation','setup','setup_save','stats','imposition','unimpose','imposition_tracts');
+$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','installation','setup','setup_save','stats','imposition','unimpose','imposition_tracts','pdf_to_png','png_to_pdf','riso_separator');
 
 if(in_array($page, $page_secure,true)){
     
@@ -200,7 +200,84 @@ if(in_array($page, $page_secure,true)){
     }
 } 
 else {
-     header("Status", true, 403);
+    // Page non autorisée - Afficher une erreur claire
+    http_response_code(403);
+    header('Content-Type: text/html; charset=utf-8');
+    
+    $error_html = '<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Erreur 403 - Page non autorisée</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 40px; background: #f5f5f5; }
+        .error-box { 
+            background: white; 
+            border-left: 4px solid #d32f2f; 
+            padding: 20px; 
+            max-width: 800px; 
+            margin: 0 auto;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #d32f2f; margin-top: 0; }
+        code { 
+            background: #f5f5f5; 
+            padding: 2px 6px; 
+            border-radius: 3px;
+            color: #c7254e;
+        }
+        .pages-list {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .fix-instruction {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-box">
+        <h1>🚫 Erreur 403 - Page non autorisée</h1>
+        <p><strong>La page demandée n\'est pas dans la liste des pages autorisées.</strong></p>
+        
+        <p>Page demandée : <code>' . htmlspecialchars($page) . '</code></p>
+        
+        <div class="fix-instruction">
+            <strong>🔧 Comment corriger :</strong>
+            <p>Ajoutez <code>' . htmlspecialchars($page) . '</code> dans le tableau <code>$page_secure</code> de :</p>
+            <ul>
+                <li><code>app/public/index.php</code> (ligne ~152)</li>
+                <li><code>app/index.php</code> (ligne ~319)</li>
+            </ul>
+        </div>
+        
+        <details>
+            <summary><strong>Pages actuellement autorisées :</strong></summary>
+            <div class="pages-list">';
+    
+    foreach ($page_secure as $p) {
+        $error_html .= '<code>' . htmlspecialchars($p) . '</code> ';
+    }
+    
+    $error_html .= '</div>
+        </details>
+        
+        <p style="margin-top: 30px;">
+            <a href="?accueil" style="color: #1976d2; text-decoration: none;">← Retour à l\'accueil</a>
+        </p>
+    </div>
+</body>
+</html>';
+    
+    echo $error_html;
+    exit;
 } 
 
 ?>
