@@ -94,17 +94,21 @@ dupli-electron-caddy/
 ### Caddy
 Le fichier `Caddyfile` configure :
 - Port 8000
-- Gestion des fichiers statiques
-- Intégration PHP-FPM
-- Headers de sécurité
-- Logs d'erreur
+- Reverse proxy vers PHP (127.0.0.1:8001)
+- Headers de sécurité (X-Content-Type-Options, X-Frame-Options, etc.)
+- Headers CORS pour compatibilité
+- **Timeouts augmentés** : 120s read/write pour traitement d'images
+- **Logs détaillés** : `/tmp/caddy_duplicator.log` (niveau INFO)
 
-### PHP-FPM
-Le fichier `php-fpm.conf` configure :
-- Socket Unix
-- Gestion des processus
-- Configuration PHP
-- Sessions
+### PHP
+Le serveur PHP intégré est configuré via :
+- **Sessions cross-platform** : `os.tmpdir()/duplicator_sessions` (compatible Windows/Linux/macOS)
+- **Extensions chargées** : sqlite3, pdo_sqlite, gd, fileinfo, curl (selon plateforme)
+- **Limites** : 
+  - upload_max_filesize: 50M
+  - memory_limit: 256M
+  - max_execution_time: 300s
+- **Base de données** : Chemin passé via variable d'environnement `DUPLICATOR_DB_PATH`
 
 ## 🐛 Dépannage
 

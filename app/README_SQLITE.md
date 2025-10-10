@@ -15,6 +15,8 @@ L'application a été convertie avec succès de MySQL vers SQLite. La table `dup
 - Changement du DSN de MySQL vers SQLite
 - Suppression des paramètres de connexion (login/password)
 - Ajout du type de base de données (`db_type`)
+- **Support variable d'environnement** : Utilise `DUPLICATOR_DB_PATH` en priorité (fourni par Electron)
+- **Détection automatique** : Fallback sur AppImage ou développement local si variable absente
 
 ### 2. Gestionnaire de base de données (`controler/functions/database.php`)
 - Adaptation de la classe `DatabaseManager` pour SQLite
@@ -70,8 +72,21 @@ php -S 127.0.0.1:8000 -t public
 
 ## Fichiers de base de données
 
-- **SQLite** : `/home/ubuntu/dupli-sqlite/duplinew.sqlite`
-- **Backup MySQL** : `/home/ubuntu/dupli-sqlite/duplinew_with_data.sql.backup`
+### Electron (Application packagée)
+La base de données est **automatiquement gérée** par Electron dans le dossier userData :
+
+- **Windows** : `C:\Users\<USERNAME>\AppData\Roaming\Duplicator\duplinew.sqlite`
+- **Linux** : `~/.config/Duplicator/duplinew.sqlite`
+- **macOS** : `~/Library/Application Support/Duplicator/duplinew.sqlite`
+
+Le chemin est communiqué à PHP via la variable d'environnement `DUPLICATOR_DB_PATH`.
+
+### Développement
+- **SQLite** : `/root/dupli-electron-caddy/app/duplinew.sqlite`
+
+### Sauvegardes
+- **Dossier** : `app/public/sauvegarde/`
+- Les sauvegardes peuvent être téléchargées et importées lors de l'installation
 
 ## Tests effectués
 
