@@ -295,7 +295,11 @@ function startPhpFpm() {
         '-d', 'memory_limit=256M',
         '-d', `session.save_path=${sessionPath}`
     ], {
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: {
+            ...process.env,
+            DUPLICATOR_DB_PATH: getDatabasePath()
+        }
     });
     
     phpFpmProcess.stdout.on('data', (data) => {
@@ -355,7 +359,11 @@ function startPhpServer() {
         '-d', 'memory_limit=256M',
         '-d', `session.save_path=${sessionPath}`
     ], {
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: {
+            ...process.env,
+            DUPLICATOR_DB_PATH: getDatabasePath()
+        }
     });
     
     phpFpmProcess.stdout.on('data', (data) => {
