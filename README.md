@@ -126,29 +126,15 @@ Les releases sont automatiquement créées avec :
 
 ## 🐛 Bugs connus
 
-- **Multitirages** : Fonctionne uniquement avec la même machine (pas de mélange de machines)
-
 ## ⚠️ À tester/vérifier pour v1.3.0
 
-- **Statistiques** : Vérifier que les statistiques prennent en charge toutes les machines
-- **Machine à toner** : Vérifier le fonctionnement complet avec machines à toner
-- **Import BDD** : Tester l'import de BDD sur toutes les plateformes
-- **Séparateur Riso** : Tests approfondis sur Windows packagé
-- **Persistence BDD** : Valider la persistence après plusieurs mises à jour successives
 
 ## ✅ Bugs corrigés (v1.2.0 / v1.3.0-dev)
 
-- ✅ **Erreur 502 Windows** : Résolution de l'erreur 502 sur les pages riso_separator, pdf_to_png, png_to_pdf
-  - Fichiers JavaScript manquants (`riso-tools.js`, `jszip.min.js`) maintenant inclus
-  - Pages manquantes ajoutées dans `$page_secure`
-  - Dépendance CDN externe (JSZip) remplacée par version locale
 - ✅ **Persistence BDD** : La base de données persiste maintenant correctement lors des mises à jour
   - BDD stockée dans userData (`AppData/Roaming` sur Windows, `~/.config` sur Linux)
   - Communication Electron → PHP via variable d'environnement `DUPLICATOR_DB_PATH`
   - Aucune perte de données lors des mises à jour
-- ✅ **Sessions cross-platform** : Chemins de sessions compatibles Windows/Linux/macOS
-  - Utilisation de `os.tmpdir()` au lieu de `/tmp/` hardcodé
-  - Fonctionne sur toutes les plateformes
 - ✅ **Erreurs 403 explicites** : Messages d'erreur détaillés pour pages non autorisées
   - Affiche la page demandée et comment corriger
   - Liste toutes les pages autorisées
@@ -238,24 +224,6 @@ Nouvelle fonctionnalité pour optimiser l'impression de tracts et documents :
 
 ### Problèmes courants
 
-#### Erreur 502 Bad Gateway
-- **Cause** : PHP ne répond pas ou crash
-- **Solutions** :
-  1. Vérifier que les pages sont dans `$page_secure` (app/public/index.php et app/index.php)
-  2. Vérifier les logs Caddy : `/tmp/caddy_duplicator.log` (Linux) ou `%TEMP%\caddy_duplicator.log` (Windows)
-  3. Vérifier que les extensions PHP sont chargées (sqlite3, gd, fileinfo)
-
-#### Page blanche ou 403
-- **Cause** : Page manquante dans `$page_secure`
-- **Solution** : L'erreur affiche maintenant comment corriger (liste des pages à ajouter)
-
-#### La BDD disparaît après mise à jour
-- **Résolu depuis v1.2.0** : La BDD persiste dans userData
-- **Emplacements** :
-  - Windows: `C:\Users\USERNAME\AppData\Roaming\Duplicator\duplinew.sqlite`
-  - Linux: `~/.config/Duplicator/duplinew.sqlite`
-  - macOS: `~/Library/Application Support/Duplicator/duplinew.sqlite`
-
 ### Logs
 
 #### Console Electron
@@ -282,3 +250,12 @@ Les sauvegardes manuelles sont stockées dans `app/public/sauvegarde/` et peuven
 - Téléchargées
 - Restaurées
 - Utilisées lors de l'installation (import de BDD)
+
+## 📋 TODO (v1.4.0+)
+
+- **Séparateur Riso** : 
+  - Corriger les trames (halftone)
+  - Améliorer la navigation de la page
+- **FrankenPHP pour Linux** : Intégrer FrankenPHP pour simplifier le déploiement Linux AppImage (binaire statique)
+- **Support macOS** : Vérifier et tester le fonctionnement complet sous macOS
+- **Statistiques de remplissage** : Statistique de remplissage de la page
