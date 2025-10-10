@@ -60,14 +60,6 @@
             padding: 10px;
         }
         select.form-control {
-            -webkit-appearance: none !important;
-            -moz-appearance: none !important;
-            appearance: none !important;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") !important;
-            background-repeat: no-repeat !important;
-            background-position: right 12px center !important;
-            background-size: 16px !important;
-            padding-right: 40px !important;
             background-color: white !important;
             color: #495057 !important;
             font-weight: 500 !important;
@@ -75,29 +67,15 @@
             line-height: 1.5 !important;
             border: 2px solid #e9ecef !important;
             border-radius: 6px !important;
+            padding: 12px 15px !important;
+            min-height: 45px !important;
         }
         select.form-control option {
             background-color: white !important;
-            color: #495057 !important;
-            font-weight: 500 !important;
-            padding: 10px !important;
-            font-size: 16px !important;
-        }
-        /* Style de test pour forcer la visibilité */
-        #imposition_type {
-            background-color: #fff !important;
             color: #000 !important;
-            font-size: 18px !important;
-            font-weight: bold !important;
-            border: 3px solid #007bff !important;
-            min-height: 50px !important;
-        }
-        #imposition_type option {
-            background-color: #fff !important;
-            color: #000 !important;
+            font-weight: normal !important;
+            padding: 12px !important;
             font-size: 16px !important;
-            font-weight: bold !important;
-            padding: 15px !important;
         }
         .form-control:focus {
             border-color: #a8e6cf;
@@ -341,6 +319,40 @@
                         </div>
                     </div>
 
+                    <div class="checkbox-group">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <label for="add_crop_marks">
+                                    <input type="checkbox" name="add_crop_marks" id="add_crop_marks">
+                                    <i class="fa fa-scissors"></i> Ajouter les hirondelles de coupe
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="crop_marks_options" style="display: none; margin-top: 15px; padding-left: 30px;">
+                            <div class="form-group">
+                                <label for="imposition_mode"><i class="fa fa-book"></i> Mode d'imposition :</label>
+                                <select name="imposition_mode" id="imposition_mode" class="form-control">
+                                    <option value="brochure">Brochure (sans gouttière + hirondelles globales)</option>
+                                    <option value="livre">Livre (gouttière + hirondelles individuelles)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="bleed_mode"><i class="fa fa-arrows-alt"></i> Gestion du format :</label>
+                                <select name="bleed_mode" id="bleed_mode" class="form-control">
+                                    <option value="fullsize">Fond perdu (pages en taille réelle)</option>
+                                    <option value="resize">Redimensionner (réduire les pages)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="bleed_size"><i class="fa fa-ruler"></i> Taille marge de coupe (mm) :</label>
+                                <input type="number" name="bleed_size" id="bleed_size" class="form-control" value="3" min="1" max="10" step="0.5">
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="text-center">
                         <button type="submit" class="btn btn-impose">
                             <i class="fa fa-magic"></i> Imposer le PDF
@@ -561,6 +573,20 @@
             document.addEventListener('drop', function(e) {
                 e.preventDefault();
             });
+
+            // Gestion de l'affichage des options hirondelles
+            const addCropMarks = document.getElementById('add_crop_marks');
+            const cropMarksOptions = document.getElementById('crop_marks_options');
+
+            if (addCropMarks && cropMarksOptions) {
+                addCropMarks.addEventListener('change', function() {
+                    if (this.checked) {
+                        cropMarksOptions.style.display = 'block';
+                    } else {
+                        cropMarksOptions.style.display = 'none';
+                    }
+                });
+            }
         });
     </script>
 </body>

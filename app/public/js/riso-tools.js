@@ -176,6 +176,7 @@ function extractCMYKChannels(img) {
 
 /**
  * Isoler une couleur spécifique avec tolérance (Magic Wand)
+ * Sélectionne automatiquement les couleurs dominantes (texte + fond)
  */
 function isolateColor(imageData, targetR, targetG, targetB, tolerance = 30) {
     const width = imageData.width;
@@ -193,7 +194,7 @@ function isolateColor(imageData, targetR, targetG, targetB, tolerance = 30) {
         const g = data[i+1];
         const b = data[i+2];
         
-        // Calculer distance euclidienne dans l'espace RGB
+        // Calculer la distance avec la couleur cible
         const distance = Math.sqrt(
             Math.pow(r - targetR, 2) + 
             Math.pow(g - targetG, 2) + 
@@ -308,7 +309,7 @@ function splitGrayscaleInTwo(imageData, threshold = 128) {
 
 /**
  * Appliquer un effet halftone (trame de points) à une image
- * Simplifié - pour un vrai effet Riso, il faut une bibliothèque plus complexe
+ * Utilise un tramage ordonné avec matrice de seuil pour un rendu professionnel
  */
 function applyHalftone(imageData, dotSize = 4, angle = 45) {
     const width = imageData.width;
@@ -328,46 +329,84 @@ function applyHalftone(imageData, dotSize = 4, angle = 45) {
         result.data[i+3] = 255;
     }
     
-    // Appliquer les points selon l'intensité
-    const angleRad = angle * Math.PI / 180;
+    // Matrice de seuil pour tramage ordonné (Bayer matrix 8x8)
+    const bayerMatrix = [
+        [ 0, 32,  8, 40,  2, 34, 10, 42],
+        [48, 16, 56, 24, 50, 18, 58, 26],
+        [12, 44,  4, 36, 14, 46,  6, 38],
+        [60, 28, 52, 20, 62, 30, 54, 22],
+        [ 3, 35, 11, 43,  1, 33,  9, 41],
+        [51, 19, 59, 27, 49, 17, 57, 25],
+        [15, 47,  7, 39, 13, 45,  5, 37],
+        [63, 31, 55, 23, 61, 29, 53, 21]
+    ];
     
-    for (let y = 0; y < height; y += dotSize) {
-        for (let x = 0; x < width; x += dotSize) {
-            // Calculer l'intensité moyenne de la zone
-            let totalIntensity = 0;
-            let count = 0;
+    const matrixSize = 8;
+    const angleRad = angle * Math.PI / 180;
+    const cosAngle = Math.cos(angleRad);
+    const sinAngle = Math.sin(angleRad);
+    
+    // dotSize contrôle l'espacement de la grille (1-10)
+    // Plus dotSize est petit, plus la trame est fine (plus de points)
+    // La taille des cellules de la grille
+    const cellSize = dotSize;
+    
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const i = (y * width + x) * 4;
             
-            for (let dy = 0; dy < dotSize && y + dy < height; dy++) {
-                for (let dx = 0; dx < dotSize && x + dx < width; dx++) {
-                    const i = ((y + dy) * width + (x + dx)) * 4;
-                    const gray = (imageData.data[i] + imageData.data[i+1] + imageData.data[i+2]) / 3;
-                    totalIntensity += gray;
-                    count++;
-                }
+            // Récupérer la valeur de gris du pixel
+            const alpha = imageData.data[i+3] / 255;
+            let gray;
+            
+            if (alpha === 0) {
+                // Pixel transparent = blanc
+                gray = 255;
+            } else {
+                gray = (imageData.data[i] + imageData.data[i+1] + imageData.data[i+2]) / 3;
             }
             
-            const avgIntensity = totalIntensity / count;
-            const dotRadius = (1 - avgIntensity / 255) * (dotSize / 2);
+            // Appliquer la rotation pour éviter le moiré
+            const rotX = x * cosAngle - y * sinAngle;
+            const rotY = x * sinAngle + y * cosAngle;
             
-            // Dessiner le point
-            const centerX = x + dotSize / 2;
-            const centerY = y + dotSize / 2;
+            // Position dans la grille de tramage
+            const cellX = Math.floor(rotX / cellSize);
+            const cellY = Math.floor(rotY / cellSize);
             
-            for (let dy = 0; dy < dotSize && y + dy < height; dy++) {
-                for (let dx = 0; dx < dotSize && x + dx < width; dx++) {
-                    const distance = Math.sqrt(
-                        Math.pow(dx - dotSize/2, 2) + 
-                        Math.pow(dy - dotSize/2, 2)
-                    );
-                    
-                    if (distance <= dotRadius) {
-                        const i = ((y + dy) * width + (x + dx)) * 4;
-                        result.data[i] = 0;
-                        result.data[i+1] = 0;
-                        result.data[i+2] = 0;
-                    }
-                }
+            // Position relative dans la cellule (0 à cellSize)
+            const localX = rotX - cellX * cellSize;
+            const localY = rotY - cellY * cellSize;
+            
+            // Centre de la cellule
+            const centerX = cellSize / 2;
+            const centerY = cellSize / 2;
+            
+            // Distance au centre de la cellule
+            const dx = localX - centerX;
+            const dy = localY - centerY;
+            const distanceToCenter = Math.sqrt(dx * dx + dy * dy);
+            
+            // Rayon du point basé sur l'intensité (inversé: noir = gros point)
+            const intensity = 1 - (gray / 255);
+            // Le rayon maximum est 100% de la taille de la cellule pour que les points se touchent complètement
+            const maxRadius = cellSize * 0.5; // Rayon = moitié de la cellule
+            const dotRadius = intensity * maxRadius;
+            
+            // Décision: point noir ou blanc SANS anti-aliasing pour garder le noir franc
+            let pixelValue;
+            if (distanceToCenter <= dotRadius) {
+                // Noir franc - pas d'anti-aliasing
+                pixelValue = 0;
+            } else {
+                // Blanc franc
+                pixelValue = 255;
             }
+            
+            result.data[i] = pixelValue;
+            result.data[i+1] = pixelValue;
+            result.data[i+2] = pixelValue;
+            result.data[i+3] = 255;
         }
     }
     
