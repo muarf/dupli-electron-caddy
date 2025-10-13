@@ -56,26 +56,28 @@ jobs:
       # - name: Run tests
       #   run: npm run test:e2e:simple
         
-      - name: Check and remove PHP directory
+      - name: Replace PHP directory with empty one
         run: |
-          echo "=== État avant suppression ==="
-          ls -lh | grep -E "^d" || true
+          echo "=== État avant modification ==="
           du -sh php/ 2>/dev/null || echo "php/ n'existe pas"
-          df -h /
+          df -h / | grep "/"
           
           echo ""
-          echo "=== Suppression du dossier php/ ==="
+          echo "=== Remplacement du dossier php/ par un dossier vide ==="
           if [ -d "php/" ]; then
-            rm -rf php/
-            echo "✅ Dossier php/ supprimé"
+            echo "Taille avant: $(du -sh php/ | cut -f1)"
+            rm -rf php/*
+            echo "✅ Contenu de php/ supprimé, dossier vide créé"
           else
-            echo "⚠️ Dossier php/ n'existe pas déjà"
+            mkdir -p php/
+            echo "✅ Dossier php/ vide créé"
           fi
           
           echo ""
-          echo "=== État après suppression ==="
-          ls -lh | grep -E "^d" || true
-          df -h /
+          echo "=== État après modification ==="
+          ls -la php/ || true
+          df -h / | grep "/"
+          echo "Espace économisé !"
         
       - name: Update package.json version
         run: |
