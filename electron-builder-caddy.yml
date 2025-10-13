@@ -29,6 +29,15 @@ linux:
   executableArgs: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"]
   # Configuration spécifique Linux - utilise PHP système, pas de binaires embarqués
   files:
+    - main-caddy.js
+    - main.js
+    - preload.js
+    - Caddyfile
+    - php-fpm.conf
+    - php-install-guide.html
+    - app/**/*
+    - ghostscript/**/*
+    - caddy/**/*
     - "!php/**/*"  # Exclure PHP - on utilise le PHP système sur Linux
   asarUnpack:
     - "app/**/*"
@@ -44,6 +53,15 @@ mac:
   category: public.app-category.productivity
   # Configuration spécifique macOS - inclut PHP
   files:
+    - main-caddy.js
+    - main.js
+    - preload.js
+    - Caddyfile
+    - php-fpm.conf
+    - php-install-guide.html
+    - app/**/*
+    - ghostscript/**/*
+    - caddy/**/*
     - "php/**/*"  # Inclure PHP pour macOS
   asarUnpack:
     - "php/**/*"
@@ -65,6 +83,15 @@ win:
   asar: false
   # Configuration spécifique Windows - inclut PHP embarqué
   files:
+    - main-caddy.js
+    - main.js
+    - preload.js
+    - Caddyfile
+    - php-fpm.conf
+    - php-install-guide.html
+    - app/**/*
+    - ghostscript/**/*
+    - caddy/**/*
     - "php/**/*"  # Inclure PHP pour Windows
 nsis:
   oneClick: false
