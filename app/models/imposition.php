@@ -1,5 +1,4 @@
 <?php
-error_log("DEBUG FICHIER: /root/dupli-php-dev/models/imposition.php VERSION NOUVELLE");
 require_once(__DIR__ . '/../vendor/autoload.php');
 require_once(__DIR__ . '/../controler/functions/utilities.php');
 use setasign\Fpdi\TcpdfFpdi as TCPDI;
@@ -461,7 +460,6 @@ function Action($conf)
             $template_ids_preview = [];
             
             // Initialiser le preview pour A6 et A5
-            error_log("DEBUG: previewMode = " . ($previewMode ? "true" : "false") . ", imposition_type = " . $imposition_type);
             if ($previewMode) {
                 $pdfPreview = new TCPDI();
                 $pdfPreview->setSourceFile($pdfFile);
@@ -484,7 +482,6 @@ function Action($conf)
                     $pdfFinal->AddPage('L', [$a3_width, $a3_height]);
                     if ($previewMode) {
                         $pdfPreview->AddPage('L', [$a3_width, $a3_height]);
-                        error_log("DEBUG A6: Après AddPage RECTO, pages = " . $pdfPreview->getNumPages());
                     }
                     
                     // Calculer l'offset pour centrer la grille 2x4 sur la feuille A3
@@ -523,7 +520,6 @@ function Action($conf)
                             addPageNumber($pdfPreview, $page_num, $x, $y, $new_width, $new_height, 0);
                             $pages_after = $pdfPreview->getNumPages();
                             if ($pages_after != $pages_before) {
-                                error_log("DEBUG A6 RECTO: addPageNumber a ajouté " . ($pages_after - $pages_before) . " page(s)! (page $page_num)");
                             }
                         }
                         
@@ -558,7 +554,6 @@ function Action($conf)
                     $pdfFinal->AddPage('L', [$a3_width, $a3_height]);
                     if ($previewMode) {
                         $pdfPreview->AddPage('L', [$a3_width, $a3_height]);
-                        error_log("DEBUG A6: Après AddPage VERSO, pages = " . $pdfPreview->getNumPages());
                     }
                     
                     // Calculer l'offset pour centrer la grille 2x4 sur la feuille A3
@@ -597,7 +592,6 @@ function Action($conf)
                             addPageNumber($pdfPreview, $page_num, $x, $y, $new_width, $new_height, 0);
                             $pages_after = $pdfPreview->getNumPages();
                             if ($pages_after != $pages_before) {
-                                error_log("DEBUG A6 RECTO: addPageNumber a ajouté " . ($pages_after - $pages_before) . " page(s)! (page $page_num)");
                             }
                         }
                         
@@ -671,6 +665,10 @@ function Action($conf)
                         // Position en grille 2x2 pour le recto
                         $page_row = intval($j / 2);  // 0, 1 (2 rangées)
                         $page_col = $j % 2;          // 0, 1 (2 colonnes)
+                        
+                        // DEBUG: Log pour la première page seulement
+                        if ($j == 0 && $i == 0) {
+                        }
                         
                         // Ajouter la gouttière dans le calcul
                         $x = $global_x_offset + $page_col * ($page_width + $gutter_width) + $x_offset;
@@ -861,15 +859,12 @@ function Action($conf)
             $array['download_url'] = 'download_pdf.php?file=' . $final_filename;
             
             if ($previewMode) {
-                error_log("DEBUG: Sauvegarde du preview, pdfPreview existe = " . (isset($pdfPreview) && $pdfPreview !== null ? "OUI" : "NON"));
-                error_log("DEBUG: Nombre de pages dans pdfPreview = " . (isset($pdfPreview) && $pdfPreview !== null ? $pdfPreview->getNumPages() : "N/A"));
                 
                 // Sauvegarder le preview (créé en même temps que le final)
                 $preview_filename = $safe_filename . '_preview.pdf';
                 $output_pdf_path_preview = $tmp_dir . $preview_filename;
                 $pdfPreview->Output($output_pdf_path_preview, 'F');
                 
-                error_log("DEBUG: Preview sauvegardé à " . $output_pdf_path_preview);
                 
                 // Utiliser l'endpoint d'affichage pour la prévisualisation avec timestamp pour éviter le cache
                 $array['preview_url'] = 'view_pdf.php?file=' . $preview_filename . '&t=' . time();
@@ -1020,7 +1015,6 @@ function Action($conf)
 
                 // Traitement de l'imposition
                 if ($imposition_type === 'a6') {
-                    error_log("DEBUG GHOSTSCRIPT A6: Début du traitement A6");
                     // Pour A6 : créer recto et verso séparés (même logique que le bloc principal)
                     for ($i = 0; $i < count($ordered_pages_array); $i += $pages_per_sheet) {
                         $sheet_pages = array_slice($ordered_pages_array, $i, $pages_per_sheet);
@@ -1071,7 +1065,6 @@ function Action($conf)
                         $pdfFinal->AddPage('L', [$a3_width, $a3_height]);
                         if ($previewMode) {
                             $pdfPreview->AddPage('L', [$a3_width, $a3_height]);
-                            error_log("DEBUG GHOSTSCRIPT A6: Après AddPage VERSO, pages = " . $pdfPreview->getNumPages());
                         }
                         
                     // Calculer l'offset pour centrer la grille 2x4 sur la feuille A3
