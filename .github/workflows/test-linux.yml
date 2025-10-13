@@ -56,11 +56,26 @@ jobs:
       # - name: Run tests
       #   run: npm run test:e2e:simple
         
-      - name: Remove PHP directory (not needed for Linux)
+      - name: Check and remove PHP directory
         run: |
-          echo "Suppression du dossier php/ pour économiser de l'espace disque..."
-          rm -rf php/
-          echo "✅ Dossier php/ supprimé (Linux utilise PHP système)"
+          echo "=== État avant suppression ==="
+          ls -lh | grep -E "^d" || true
+          du -sh php/ 2>/dev/null || echo "php/ n'existe pas"
+          df -h /
+          
+          echo ""
+          echo "=== Suppression du dossier php/ ==="
+          if [ -d "php/" ]; then
+            rm -rf php/
+            echo "✅ Dossier php/ supprimé"
+          else
+            echo "⚠️ Dossier php/ n'existe pas déjà"
+          fi
+          
+          echo ""
+          echo "=== État après suppression ==="
+          ls -lh | grep -E "^d" || true
+          df -h /
         
       - name: Update package.json version
         run: |
@@ -101,6 +116,24 @@ jobs:
             echo "Version actuelle:" 
             node -p "require('./package.json').version"
           fi
+        
+      - name: Pre-build check
+        run: |
+          echo "=== Vérifications avant build ==="
+          echo "Espace disque:"
+          df -h /
+          echo ""
+          echo "Dossiers présents:"
+          ls -la
+          echo ""
+          echo "Fichiers dans caddy/:"
+          ls -la caddy/ || echo "❌ Pas de dossier caddy/"
+          echo ""
+          echo "Fichiers dans app/:"
+          ls -la app/ | head -20 || echo "❌ Pas de dossier app/"
+          echo ""
+          echo "Dossier php/ existe?"
+          ls -la php/ 2>&1 | head -5 || echo "✅ php/ n'existe pas (normal pour Linux)"
         
       - name: Build Linux AppImage
         run: npm run build:caddy -- --publish=always
