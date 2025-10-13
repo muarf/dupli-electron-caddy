@@ -46,31 +46,13 @@ function last($machine, $sql, $page = 1, $per_page = 20)
     $offset = ($page - 1) * $per_page;
     
     // Vérifier si c'est un duplicopieur (nom complet comme "Ricoh dx4545" ou juste "riso_double")
-    // SQLite n'a pas CONCAT, on utilise l'opérateur ||
-    if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
-        $query_check = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR (marque = ? AND modele = ?))');
-    } else {
-        if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
-        $query_check = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR (marque = ? AND modele = ?))');
-    } else {
-        $query_check = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR (marque = ? AND modele = ?))');
-    }
-    }
+    $query_check = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR (marque = ? AND modele = ?))');
     $query_check->execute([$machine, $machine, $machine]);
     $is_duplicopieur = $query_check->fetchColumn() > 0;
     
     if ($is_duplicopieur) {
         // C'est un duplicopieur, utiliser la table dupli avec filtre par duplicopieur_id
-        // SQLite n'a pas CONCAT, on utilise l'opérateur ||
-        if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
-            $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR (marque = ? AND modele = ?))');
-        } else {
-            if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
-        $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR (marque = ? AND modele = ?))');
-    } else {
-        $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR (marque = ? AND modele = ?))');
-    }
-        }
+        $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR (marque = ? AND modele = ?))');
         $query_dup->execute([$machine, $machine, $machine]);
         $duplicopieur_id = $query_dup->fetchColumn();
         
@@ -167,11 +149,7 @@ function get_tirage($id,$machine)
     } else {
         // Vérifier si c'est un duplicopieur (nom complet comme "riso rz 370")
         // Gérer le cas où marque = modele (nom complet) et le cas où marque != modele
-        if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
-        $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR marque = ? OR modele = ?)');
-    } else {
-        $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR marque = ? OR modele = ?)');
-    }
+        $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR marque = ? OR modele = ?)');
         $query->execute([$machine, $machine, $machine]);
         $is_duplicopieur = $query->fetchColumn() > 0;
         
@@ -275,11 +253,7 @@ function update_tirage($id,$form,$machine){
          } else {
             // Vérifier si c'est un duplicopieur (nom complet comme "riso rz 370")
             // Gérer le cas où marque = modele (nom complet) et le cas où marque != modele
-            if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
-        $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR marque = ? OR modele = ?)');
-    } else {
-        $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR marque = ? OR modele = ?)');
-    }
+            $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR marque = ? OR modele = ?)');
             $query->execute([$machine, $machine, $machine]);
             $is_duplicopieur = $query->fetchColumn() > 0;
              
@@ -364,11 +338,7 @@ function del_tirage($id,$machine){
     } else {
             // Vérifier si c'est un duplicopieur (nom complet comme "riso rz 370")
             // Gérer le cas où marque = modele (nom complet) et le cas où marque != modele
-            if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
-        $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR marque = ? OR modele = ?)');
-    } else {
-        $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR marque = ? OR modele = ?)');
-    }
+            $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR marque = ? OR modele = ?)');
             $query->execute([$machine, $machine, $machine]);
             $is_duplicopieur = $query->fetchColumn() > 0;
         

@@ -1,7 +1,41 @@
+<style>
+  /* Amélioration de la lisibilité des champs de prix */
+  .prix-input {
+    font-size: 16px !important;
+    font-weight: bold;
+    padding: 8px 12px !important;
+    height: auto !important;
+    min-width: 100px;
+    text-align: right;
+  }
+  .prix-table th {
+    font-size: 13px;
+    background-color: #f5f5f5;
+    font-weight: bold;
+  }
+  .prix-table td {
+    vertical-align: middle !important;
+    padding: 12px 8px !important;
+  }
+  .prix-calcule {
+    font-size: 16px;
+    font-weight: bold;
+  }
+  .btn-change-prix {
+    padding: 8px 20px;
+    font-size: 14px;
+  }
+</style>
+
 <div class="section">
   <div class="container">
     <div class="row">
-      <div class="col-md-10 col-md-offset-1">
+      <div class="col-md-12">
+        
+        <div class="page-header">
+          <h1><i class="fa fa-euro"></i> Gestion des Prix</h1>
+          <p class="lead">Visualisez les prix calculés automatiquement et modifiez les prix unitaires et d'achat pour chaque consommable.</p>
+        </div>
         
         <?php 
         // Afficher un tableau pour chaque machine (duplicopieur ou photocopieuse)
@@ -13,7 +47,7 @@
             ?>
             <legend align="center">Prix Duplicopieur - <?= htmlspecialchars($key) ?></legend>
             
-            <table id="example-<?= preg_replace('/[^a-zA-Z0-9]/', '_', $key) ?>" class="table table-striped" cellspacing="0" width="100%">
+            <table id="example-<?= preg_replace('/[^a-zA-Z0-9]/', '_', $key) ?>" class="table table-striped table-bordered prix-table" cellspacing="0" width="100%">
               <thead>
                 <th style="width:10%;">changement</th><th style="width:13%;">nb actuel</th><th style="width:13%;">Moyenne</th><th style="width:10%;">temps moyen</th><th style="width:10%;">Prochain</th><th style="width:10%;">dernier</th><th style="width:10%;">prix calculé (eur/unité)</th><th style="width:7%;">prix utilisé</th><th style="width:7%;">prix à l'achat</th><th>edit</th>
               </thead>
@@ -33,10 +67,10 @@
                         <td><?= isset($cons[$key][$type]['moyenne_totale']['temps']) ? ceil($cons[$key][$type]['moyenne_totale']['temps']/86400) : 0 ?> jours</td>
                         <td><?= isset($cons[$key][$type]['temps_jusqua']) ? ceil($cons[$key][$type]['temps_jusqua']/86400) : 0 ?>jours</td>
                         <td><?= isset($cons[$key][$type]['temps_depuis']) ? ceil($cons[$key][$type]['temps_depuis']/86400) : 0 ?> jours</td>
-                        <td style="color:<?= isset($cons[$key][$type]['color']) ? $cons[$key][$type]['color'] : 'black' ?>"><strong><?=  isset($cons[$key][$type]['prix_calcule']) ? round($cons[$key][$type]['prix_calcule'],4) : 0 ?></strong> euros</td>
-                        <td><form method="post"><div class="form-group"><input class="form-control input-sm" name="prix_unite" value="<?= isset($prix[$key][$type]['unite']) ? round($prix[$key][$type]['unite'],4) : 0 ?>" /> </div></td>
-                        <td><div class="form-group"><input class="form-control input-sm" name="prix_pack" value="<?= isset($prix[$key][$type]['pack']) ? round($prix[$key][$type]['pack'],4) : 0 ?>" /> </div></td>
-                        <td><input type="hidden" value="<?=$key?>" name="machine" /><input type="hidden" value="<?=$type?>" name="type" /><button id="singlebutton" type="submit" class="btn btn-warning">change</button></form></td>
+                        <td style="color:<?= isset($cons[$key][$type]['color']) ? $cons[$key][$type]['color'] : 'black' ?>" class="prix-calcule"><?=  isset($cons[$key][$type]['prix_calcule']) ? round($cons[$key][$type]['prix_calcule'],4) : 0 ?> €</td>
+                        <td><form method="post"><div class="form-group"><input class="form-control prix-input" name="prix_unite" value="<?= isset($prix[$key][$type]['unite']) ? round($prix[$key][$type]['unite'],4) : 0 ?>" /> </div></td>
+                        <td><div class="form-group"><input class="form-control prix-input" name="prix_pack" value="<?= isset($prix[$key][$type]['pack']) ? round($prix[$key][$type]['pack'],4) : 0 ?>" /> </div></td>
+                        <td><input type="hidden" value="<?=$key?>" name="machine" /><input type="hidden" value="<?=$type?>" name="type" /><button type="submit" class="btn btn-warning btn-change-prix"><i class="fa fa-check"></i> Modifier</button></form></td>
                       </tr>
                     <?php 
                 }
@@ -53,7 +87,7 @@
             $mot = "passages";?>
             <legend align="center">Prix Photocopieuse - <?= htmlspecialchars($key) ?></legend>
             
-            <table id="example-<?= preg_replace('/[^a-zA-Z0-9]/', '_', $key) ?>" class="table table-striped" cellspacing="0" width="100%">
+            <table id="example-<?= preg_replace('/[^a-zA-Z0-9]/', '_', $key) ?>" class="table table-striped table-bordered prix-table" cellspacing="0" width="100%">
               <thead>
                 <th style="width:10%;">changement</th><th style="width:13%;">nb actuel</th><th style="width:13%;">Moyenne</th><th style="width:10%;">temps moyen</th><th style="width:10%;">Prochain</th><th style="width:10%;">dernier</th><th style="width:10%;">prix calculé (eur/unité)</th><th style="width:7%;">prix utilisé</th><th style="width:7%;">prix à l'achat</th><th>edit</th>
               </thead>
@@ -65,10 +99,10 @@
                   <td><?= ceil($cons[$key][$key]['moyenne_total']['temps']/86400) ?> jours</td>
                   <td><?= ceil($cons[$key][$key]['temps_jusqua']/86400)?>jours</td>
                   <td><?= ceil($cons[$key][$key]['temps_depuis']/86400)?> jours</td>
-                  <td style="color:<?= isset($cons[$key][$key]['color']) ? $cons[$key][$key]['color'] : 'black' ?>;"><strong><?=  isset($cons[$key][$key]['prix_calcule']) ? round($cons[$key][$key]['prix_calcule'],4) : 0 ?></strong> euros</td>
-                  <td><form method="post"><div class="form-group"><input class="form-control input-sm" name="prix_unite" value="<?= round(floatval($prix[$key]['encre']['unite'] ?? 0), 4)?>" /> </div></td>
-                  <td><div class="form-group"><input type="hidden" value="encre" name="type" /><input type="hidden" value="photocop" name="machine" />  <input class="form-control input-sm" name="prix_pack" value="<?= round(floatval($prix[$key]['encre']['pack'] ?? 0), 4)?>" /> </div></td>
-                  <td><button id="singlebutton" name="singlebutton" type="submit" class="btn btn-warning">change</button></form></td>
+                  <td style="color:<?= isset($cons[$key][$key]['color']) ? $cons[$key][$key]['color'] : 'black' ?>;" class="prix-calcule"><?=  isset($cons[$key][$key]['prix_calcule']) ? round($cons[$key][$key]['prix_calcule'],4) : 0 ?> €</td>
+                  <td><form method="post"><div class="form-group"><input class="form-control prix-input" name="prix_unite" value="<?= round(floatval($prix[$key]['encre']['unite'] ?? 0), 4)?>" /> </div></td>
+                  <td><div class="form-group"><input type="hidden" value="encre" name="type" /><input type="hidden" value="photocop" name="machine" />  <input class="form-control prix-input" name="prix_pack" value="<?= round(floatval($prix[$key]['encre']['pack'] ?? 0), 4)?>" /> </div></td>
+                  <td><button type="submit" class="btn btn-warning btn-change-prix"><i class="fa fa-check"></i> Modifier</button></form></td>
                 </tr>
               </tbody>
             </table>
@@ -84,7 +118,7 @@
           <?php foreach($cons['photocopieurs'] as $photocop_name => $photocop_data): ?>
             <legend align="center">Prix Photocopieuse - <?= htmlspecialchars($photocop_name) ?></legend>
             
-            <table id="example-<?= preg_replace('/[^a-zA-Z0-9]/', '_', $photocop_name) ?>" class="table table-striped" cellspacing="0" width="100%">
+            <table id="example-<?= preg_replace('/[^a-zA-Z0-9]/', '_', $photocop_name) ?>" class="table table-striped table-bordered prix-table" cellspacing="0" width="100%">
               <thead>
                 <th style="width:10%;">changement</th><th style="width:13%;">nb actuel</th><th style="width:13%;">Moyenne</th><th style="width:10%;">temps moyen</th><th style="width:10%;">Prochain</th><th style="width:10%;">dernier</th><th style="width:10%;">prix calculé (eur/unité)</th><th style="width:7%;">prix utilisé</th><th style="width:7%;">prix à l'achat</th><th>edit</th>
               </thead>
@@ -97,10 +131,10 @@
                     <td><?= isset($data['moyenne_total']['temps']) ? ceil($data['moyenne_total']['temps']/86400) : 0 ?> jours</td>
                     <td><?= isset($data['temps_jusqua']) ? ceil($data['temps_jusqua']/86400) : 0 ?>jours</td>
                     <td><?= isset($data['temps_depuis']) ? ceil($data['temps_depuis']/86400) : 0 ?> jours</td>
-                    <td style="color:<?= isset($data['color']) ? $data['color'] : 'black' ?>;"><strong><?= isset($data['prix_calcule']) ? round($data['prix_calcule'],4) : 0 ?></strong> euros</td>
-                    <td><form method="post"><div class="form-group"><input class="form-control input-sm" name="prix_unite" value="<?= round(floatval($prix[$photocop_name][$color]['unite'] ?? 0), 4)?>" /> </div></td>
-                    <td><div class="form-group"><input type="hidden" value="<?= $color ?>" name="type" /><input type="hidden" value="photocop" name="machine" />  <input class="form-control input-sm" name="prix_pack" value="<?= round(floatval($prix[$photocop_name][$color]['pack'] ?? 0), 4)?>" /> </div></td>
-                    <td><button id="singlebutton" name="singlebutton" type="submit" class="btn btn-warning">change</button></form></td>
+                    <td style="color:<?= isset($data['color']) ? $data['color'] : 'black' ?>;" class="prix-calcule"><?= isset($data['prix_calcule']) ? round($data['prix_calcule'],4) : 0 ?> €</td>
+                    <td><form method="post"><div class="form-group"><input class="form-control prix-input" name="prix_unite" value="<?= round(floatval($prix[$photocop_name][$color]['unite'] ?? 0), 4)?>" /> </div></td>
+                    <td><div class="form-group"><input type="hidden" value="<?= $color ?>" name="type" /><input type="hidden" value="photocop" name="machine" />  <input class="form-control prix-input" name="prix_pack" value="<?= round(floatval($prix[$photocop_name][$color]['pack'] ?? 0), 4)?>" /> </div></td>
+                    <td><button type="submit" class="btn btn-warning btn-change-prix"><i class="fa fa-check"></i> Modifier</button></form></td>
                   </tr>
                 <?php endforeach; ?>
               </tbody>
@@ -115,7 +149,7 @@
           <div class="col-md-10 col-md-offset-1">
             <legend align="center">Prix du Papier</legend>
             
-            <table class="table table-striped" cellspacing="0" width="100%">
+            <table class="table table-striped table-bordered prix-table" cellspacing="0" width="100%">
               <thead>
                 <th style="width:20%;">Type</th>
                 <th style="width:20%;">Prix actuel (€)</th>
@@ -129,7 +163,7 @@
                   <td>
                     <form method="post" style="display: inline;">
                       <div class="form-group">
-                        <input type="number" step="0.001" class="form-control input-sm" name="papier_A4" 
+                        <input type="number" step="0.001" class="form-control prix-input" name="papier_A4" 
                                value="<?= isset($prix['papier']['A4']) ? $prix['papier']['A4'] : '0.01' ?>" 
                                min="0" max="1" required>
                       </div>
@@ -145,7 +179,7 @@
                   <td>
                     <form method="post" style="display: inline;">
                       <div class="form-group">
-                        <input type="number" step="0.001" class="form-control input-sm" name="papier_A3" 
+                        <input type="number" step="0.001" class="form-control prix-input" name="papier_A3" 
                                value="<?= isset($prix['papier']['A3']) ? $prix['papier']['A3'] : '0.02' ?>" 
                                min="0" max="1" required>
                       </div>

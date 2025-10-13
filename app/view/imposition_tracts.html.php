@@ -17,6 +17,47 @@ ob_start();
                 </p>
             </div>
 
+            <!-- Zone de résultat -->
+            <?php if (!empty($success) || !empty($download_url)): ?>
+                <div class="alert alert-success" style="margin-top: 30px;">
+                    <h4><i class="fa fa-check-circle"></i> Imposition réussie !</h4>
+                    <p>Votre tract a été dupliqué et optimisé avec succès.</p>
+                    
+                    <?php if (!empty($download_url)): ?>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <a href="<?= htmlspecialchars($download_url) ?>" class="btn btn-success btn-lg" download>
+                                <i class="fa fa-download"></i> Télécharger le PDF optimisé
+                            </a>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <?php if (!empty($preview_url)): ?>
+                        <div style="margin-top: 30px;">
+                            <h4><i class="fa fa-eye"></i> Prévisualisation</h4>
+                            <div style="border: 2px solid #ddd; border-radius: 8px; overflow: hidden;">
+                                <iframe src="<?= htmlspecialchars($preview_url) ?>" width="100%" height="600px" style="border: none;"></iframe>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <?php if (!empty($result)): ?>
+                        <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.7); border-radius: 8px;">
+                            <h5>Informations :</h5>
+                            <p><?= htmlspecialchars($result) ?></p>
+                        </div>
+                    <?php endif; ?>
+                    
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button onclick="window.location.href='?imposition_tracts'" class="btn btn-warning">
+                            <i class="fa fa-plus"></i> Nouvelle imposition
+                        </button>
+                        <button onclick="window.location.href='?accueil'" class="btn btn-default">
+                            <i class="fa fa-home"></i> Retour à l'accueil
+                        </button>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <!-- Messages d'erreur -->
             <?php if (!empty($errors)): ?>
                 <div class="alert alert-danger">
@@ -147,46 +188,6 @@ ob_start();
                 </div>
             <?php endif; ?>
 
-            <!-- Zone de résultat -->
-            <?php if (!empty($success) || !empty($download_url)): ?>
-                <div class="alert alert-success" style="margin-top: 30px;">
-                    <h4><i class="fa fa-check-circle"></i> Imposition réussie !</h4>
-                    <p>Votre tract a été dupliqué et optimisé avec succès.</p>
-                    
-                    <?php if (!empty($download_url)): ?>
-                        <div style="text-align: center; margin-top: 20px;">
-                            <a href="<?= htmlspecialchars($download_url) ?>" class="btn btn-success btn-lg" download>
-                                <i class="fa fa-download"></i> Télécharger le PDF optimisé
-                            </a>
-                        </div>
-                    <?php endif; ?>
-                    
-                    <?php if (!empty($preview_url)): ?>
-                        <div style="margin-top: 30px;">
-                            <h4><i class="fa fa-eye"></i> Prévisualisation</h4>
-                            <div style="border: 2px solid #ddd; border-radius: 8px; overflow: hidden;">
-                                <iframe src="<?= htmlspecialchars($preview_url) ?>" width="100%" height="600px" style="border: none;"></iframe>
-                            </div>
-                        </div>
-                    <?php endif; ?>
-                    
-                    <?php if (!empty($result)): ?>
-                        <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.7); border-radius: 8px;">
-                            <h5>Informations :</h5>
-                            <p><?= htmlspecialchars($result) ?></p>
-                        </div>
-                    <?php endif; ?>
-                    
-                    <div style="text-align: center; margin-top: 20px;">
-                        <button onclick="window.location.href='?imposition_tracts'" class="btn btn-warning">
-                            <i class="fa fa-plus"></i> Nouvelle imposition
-                        </button>
-                        <button onclick="window.location.href='?accueil'" class="btn btn-default">
-                            <i class="fa fa-home"></i> Retour à l'accueil
-                        </button>
-                    </div>
-                </div>
-            <?php endif; ?>
 
             <!-- Instructions -->
             <div class="panel panel-warning" style="margin-top: 30px;">
