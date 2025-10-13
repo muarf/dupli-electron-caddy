@@ -15,10 +15,9 @@ files:
   - php-fpm.conf
   - php-install-guide.html
   - app/**/*
-  - php/**/*
   - ghostscript/**/*
   - caddy/**/*
-  - "!php/**/*" # Exclure PHP pour Linux (sera ajouté spécifiquement par plateforme)
+  # PHP sera inclus spécifiquement par plateforme (Windows/macOS oui, Linux non)
 # asarUnpack configuré spécifiquement par plateforme pour éviter les erreurs de chemins longs
 # Plus besoin d'exclure les liens symboliques car ils ont été supprimés
 linux:
@@ -43,7 +42,9 @@ mac:
     - target: dmg
       arch: [x64]
   category: public.app-category.productivity
-  # Configuration spécifique macOS
+  # Configuration spécifique macOS - inclut PHP
+  files:
+    - "php/**/*"  # Inclure PHP pour macOS
   asarUnpack:
     - "php/**/*"
     - "app/**/*"
@@ -62,6 +63,9 @@ win:
   forceCodeSigning: false
   # Désactiver ASAR sur Windows pour éviter l'erreur "pattern is too long"
   asar: false
+  # Configuration spécifique Windows - inclut PHP embarqué
+  files:
+    - "php/**/*"  # Inclure PHP pour Windows
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
