@@ -65,7 +65,12 @@ class TirageManager {
      */
     private function isDuplicopieur($machine) {
         $db = pdo_connect();
-        $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR (marque = ? AND modele = ?))');
+        // SQLite n'a pas CONCAT, on utilise l'opérateur ||
+        if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
+            $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR (marque = ? AND modele = ?))');
+        } else {
+            $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR (marque = ? AND modele = ?))');
+        }
         $query->execute([$machine, $machine, $machine]);
         return $query->fetchColumn() > 0;
     }
@@ -93,7 +98,12 @@ class TirageManager {
                 // Déterminer si c'est un duplicopieur ou un photocopieur
                 if ($this->isDuplicopieur($machine)) {
                     // Pour les duplicopieurs, supprimer dans la table dupli avec duplicopieur_id
-                    $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR (marque = ? AND modele = ?))');
+                    // SQLite n'a pas CONCAT, on utilise l'opérateur ||
+                    if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
+                        $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR (marque = ? AND modele = ?))');
+                    } else {
+                        $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR (marque = ? AND modele = ?))');
+                    }
                     $query_dup->execute([$machine, $machine, $machine]);
                     $duplicopieur_id = $query_dup->fetchColumn();
                     
@@ -127,6 +137,73 @@ class TirageManager {
         
         return array(
             'deleted_count' => $deleted_count,
+            'errors' => $errors
+        );
+    }
+    
+    /**
+     * Marquer plusieurs tirages sélectionnés comme payés
+     */
+    public function markSelectedAsPaid($pay_ids, $pay_machines) {
+        $db = pdo_connect();
+        $paid_count = 0;
+        $errors = array();
+        
+        for ($i = 0; $i < count($pay_ids); $i++) {
+            $id = intval($pay_ids[$i]);
+            $machine = $pay_machines[$i];
+            
+            try {
+                // Déterminer si c'est un duplicopieur ou un photocopieur
+                if ($this->isDuplicopieur($machine)) {
+                    // Pour les duplicopieurs, marquer comme payé dans la table dupli
+                    // SQLite n'a pas CONCAT, on utilise l'opérateur ||
+                    if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
+                        $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR (marque = ? AND modele = ?))');
+                    } else {
+                        $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR (marque = ? AND modele = ?))');
+                    }
+                    $query_dup->execute([$machine, $machine, $machine]);
+                    $duplicopieur_id = $query_dup->fetchColumn();
+                    
+                    if ($duplicopieur_id) {
+                        // Utiliser duplicopieur_id si disponible
+                        $query = $db->prepare('UPDATE dupli SET paye = "oui" WHERE id = ? AND duplicopieur_id = ?');
+                        $query->execute([$id, $duplicopieur_id]);
+                        if ($query->rowCount() > 0) {
+                            $paid_count++;
+                        } else {
+                            // Fallback avec nom_machine
+                            $query_fallback = $db->prepare('UPDATE dupli SET paye = "oui" WHERE id = ? AND nom_machine = ?');
+                            $query_fallback->execute([$id, $machine]);
+                            if ($query_fallback->rowCount() > 0) {
+                                $paid_count++;
+                            }
+                        }
+                    }
+                } else if ($machine === 'A3' || $machine === 'A4' || $machine === 'dupli') {
+                    // Pour les anciens duplicopieurs
+                    $table_name = ($machine === 'dupli') ? 'dupli' : strtolower($machine);
+                    $query = $db->prepare('UPDATE ' . $table_name . ' SET paye = "oui" WHERE id = ?');
+                    $query->execute([$id]);
+                    if ($query->rowCount() > 0) {
+                        $paid_count++;
+                    }
+                } else {
+                    // Pour les photocopieurs
+                    $query = $db->prepare('UPDATE photocop SET paye = "oui" WHERE id = ? AND marque = ?');
+                    $query->execute([$id, $machine]);
+                    if ($query->rowCount() > 0) {
+                        $paid_count++;
+                    }
+                }
+            } catch (Exception $e) {
+                $errors[] = "Erreur lors du paiement du tirage $id ($machine): " . $e->getMessage();
+            }
+        }
+        
+        return array(
+            'paid_count' => $paid_count,
             'errors' => $errors
         );
     }

@@ -1,1 +1,43 @@
-.aider*
+# Dépendances
+/vendor/
+composer.phar
+
+# Base de données SQLite
+*.sqlite
+*.sqlite-journal
+*.db
+
+# Sessions et fichiers temporaires
+/sessions/
+/tmp/
+*.tmp
+
+# Sauvegardes
+/sauvegarde/
+
+# Fichiers de configuration sensibles
+php.ini
+php-appimage.ini
+
+# Fichiers de log
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Tests
+test_*.php
+
+# PDFs générés
+*.pdf
+
+# Node modules (si jamais utilisé)
+node_modules/

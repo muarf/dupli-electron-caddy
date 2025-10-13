@@ -10,14 +10,19 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="?accueil"><span><big>Duplicator.</big></span></a>
+          <a class="navbar-brand" href="?accueil" style="display: flex; align-items: center;">
+            <button type="button" class="btn btn-default btn-sm" onclick="history.back()" style="margin-right: 10px; vertical-align: middle;">
+              <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span> Précédent
+            </button>
+            <span><big>Duplicator.</big></span>
+          </a>
         </div>
         <div class="collapse navbar-collapse" id="navbar-ex-collapse">
           <ul class="nav navbar-nav navbar-right">
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
                 <span class="glyphicon glyphicon-file" aria-hidden="true"></span>
-                PDF Tools <span class="caret"></span>
+                Outils PDF <span class="caret"></span>
               </a>
               <ul class="dropdown-menu">
                 <li>
@@ -43,7 +48,44 @@
                     <small class="text-muted d-block">Dupliquer et optimiser vos tracts</small>
                   </a>
                 </li>
+                <li role="separator" class="divider"></li>
+                <li>
+                  <a href="?png_to_pdf">
+                    <i class="fa fa-file-image-o" style="color: #a8e6cf; margin-right: 8px;"></i>
+                    <strong>Images → PDF</strong>
+                    <small class="text-muted d-block">Convertir PNG/JPG en PDF A3/A4</small>
+                  </a>
+                </li>
+                <li>
+                  <a href="?pdf_to_png">
+                    <i class="fa fa-picture-o" style="color: #c3aed6; margin-right: 8px;"></i>
+                    <strong>PDF → Images</strong>
+                    <small class="text-muted d-block">Extraire les pages en PNG</small>
+                  </a>
+                </li>
+                <li role="separator" class="divider"></li>
+                <li>
+                  <a href="?riso_separator">
+                    <i class="fa fa-adjust" style="color: #ff6b9d; margin-right: 8px;"></i>
+                    <strong>Séparateur Riso</strong>
+                    <small class="text-muted d-block">Séparer couleurs pour multi-tambours</small>
+                  </a>
+                </li>
+                <li role="separator" class="divider"></li>
+                <li>
+                  <a href="?taux_remplissage">
+                    <i class="fa fa-bar-chart" style="color: #84fab0; margin-right: 8px;"></i>
+                    <strong>Taux de Remplissage</strong>
+                    <small class="text-muted d-block">Calculer le % d'encre utilisé</small>
+                  </a>
+                </li>
               </ul>
+            </li>
+            <li>
+              <a href="?tirage_multimachines">
+                <span class="glyphicon glyphicon-print" aria-hidden="true"></span>
+                Nouveau Tirage
+              </a>
             </li>
             <li>
               <a href="?changement">

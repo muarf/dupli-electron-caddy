@@ -5,12 +5,13 @@
 // }
 
 // Configuration SQLite
-// Dans l'AppImage, utiliser le répertoire home de l'utilisateur
-$current_dir = getcwd();
-if (strpos($current_dir, '.mount') !== false || strpos($current_dir, 'AppDir') !== false) {
-    // AppImage : utiliser le répertoire home de l'utilisateur
-    $home_dir = $_SERVER['HOME'] ?? getenv('HOME') ?? '/tmp';
-    $sqlite_db_path = $home_dir . '/.duplicator/duplinew.sqlite';
+// Priorité 1 : Variable d'environnement d'Electron (garantit persistence userData)
+// Priorité 2 : Détection AppImage
+// Priorité 3 : Développement local
+
+if (getenv('DUPLICATOR_DB_PATH')) {
+    // Chemin fourni par Electron - Utiliser celui-ci en priorité
+    $sqlite_db_path = getenv('DUPLICATOR_DB_PATH');
     
     // Créer le répertoire s'il n'existe pas
     $db_dir = dirname($sqlite_db_path);
@@ -18,8 +19,22 @@ if (strpos($current_dir, '.mount') !== false || strpos($current_dir, 'AppDir') !
         mkdir($db_dir, 0755, true);
     }
 } else {
-    // Développement : utiliser le répertoire de l'app
-    $sqlite_db_path = __DIR__ . '/../duplinew.sqlite';
+    // Fallback sur la détection automatique
+    $current_dir = getcwd();
+    if (strpos($current_dir, '.mount') !== false || strpos($current_dir, 'AppDir') !== false) {
+        // AppImage : utiliser le répertoire home de l'utilisateur
+        $home_dir = $_SERVER['HOME'] ?? getenv('HOME') ?? '/tmp';
+        $sqlite_db_path = $home_dir . '/.duplicator/duplinew.sqlite';
+        
+        // Créer le répertoire s'il n'existe pas
+        $db_dir = dirname($sqlite_db_path);
+        if (!is_dir($db_dir)) {
+            mkdir($db_dir, 0755, true);
+        }
+    } else {
+        // Développement : utiliser le répertoire de l'app
+        $sqlite_db_path = __DIR__ . '/../duplinew.sqlite';
+    }
 }
 
 // Ne pas créer automatiquement la base de données

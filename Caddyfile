@@ -1,4 +1,11 @@
 :8000 {
+    # Logs pour debug
+    log {
+        output file /tmp/caddy_duplicator.log
+        format console
+        level INFO
+    }
+
     # Security headers
     header {
         X-Content-Type-Options nosniff
@@ -14,6 +21,16 @@
         Access-Control-Allow-Headers "Content-Type, Authorization"
     }
 
-    # Reverse proxy to PHP built-in server
-    reverse_proxy 127.0.0.1:8001
+    # Reverse proxy to PHP built-in server with increased timeouts
+    reverse_proxy 127.0.0.1:8001 {
+        # Timeouts augmentés pour les opérations lentes (traitement d'images, PDF)
+        transport http {
+            dial_timeout 10s
+            read_timeout 120s
+            write_timeout 120s
+        }
+        
+        # Gestion des erreurs
+        flush_interval -1
+    }
 }

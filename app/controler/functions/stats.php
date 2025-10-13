@@ -102,7 +102,7 @@ function nombre_feuilles_depuis_photocop($photocop_name, $now, $ago)
     } else {
         $sql              = ' WHERE marque = "' . $photocop_name . '"';
     }
-    $query                 = $db->query('select sum(rv) as nbr from photocop ' . $sql . '');
+    $query                 = $db->query('select sum(nb_f) as nbr from photocop ' . $sql . '');
     $result                = $query->fetch(PDO::FETCH_OBJ);
     $nbf_total['nbf']      = $result->nbr ? $result->nbr : 0;
     $query                 = $db->query('select sum(prix) as nbr from photocop ' . $sql . '');
@@ -158,6 +158,49 @@ function stats_par_mois($machine)
     
     while ($now >= $result->date) {
         $stat[$i] = nombre_feuilles_depuis($machine, $now, $mois);
+        $now      = $stat[$i]['ago'];
+        $i++;
+    }
+    $stats_par_mois['nb_f'] = 0;
+    $stats_par_mois['nb_t'] = 0;
+    $stats_par_mois['nb_moy_par_mois'] = 0;
+    for ($i = 0; $i < count($stat); $i++) {
+        $stats_par_mois['nb_f']  += $stat[$i]['nbf'] ;
+        $stats_par_mois['nb_t']  += $stat[$i]['nbt'] ;
+        $stats_par_mois['nb_moy_par_mois'] += $stat[$i]['moy'] ;
+    }
+    $stats_par_mois['fin'] = count($stat);
+    
+    return $stats_par_mois;
+}
+
+/**
+ * Stats par mois pour photocopieurs
+ */
+function stats_par_mois_photocop($photocop_name)
+{
+    $db = pdo_connect();
+    
+    $query  = $db->query('SELECT date from photocop WHERE marque = "' . $photocop_name . '" order by id asc limit 1');
+    $result = $query->fetch(PDO::FETCH_OBJ);
+    
+    // Si la table est vide, retourner des statistiques vides
+    if (!$result) {
+        return array(
+            'nb_f' => 0,
+            'nb_t' => 0,
+            'nb_moy_par_mois' => 0,
+            'fin' => 0
+        );
+    }
+    
+    $now    = time();
+    $i      = 0;
+    $mois   = 86400 * 30;
+    $stat   = array();
+    
+    while ($now >= $result->date) {
+        $stat[$i] = nombre_feuilles_depuis_photocop($photocop_name, $now, $mois);
         $now      = $stat[$i]['ago'];
         $i++;
     }
@@ -233,6 +276,29 @@ function blablastats($fin=0,$nb_t=0,$nb_f=0,$nb_moy_par_mois=0,$ca_voulu = 0,$ca
                 if($result->paye == "oui"){ $ca_declare_paye += $result->prix; }
             }
         }      
+    }
+    
+    // Ajouter les statistiques des photocopieurs
+    $photocopiers = $db->query("SELECT DISTINCT marque FROM photocop WHERE marque IS NOT NULL AND marque != ''")->fetchAll(PDO::FETCH_COLUMN);
+    foreach($photocopiers as $photocop_name) {
+        $stats_par_mois_photocop = stats_par_mois_photocop($photocop_name);
+        $fin += $stats_par_mois_photocop['fin'];
+        $nb_t += $stats_par_mois_photocop['nb_t'];
+        $nb_f += $stats_par_mois_photocop['nb_f'];
+        $nb_moy_par_mois += $stats_par_mois_photocop['nb_moy_par_mois'];
+        
+        // Ajouter les CA des photocopieurs
+        $query = $db->prepare("SELECT * FROM photocop WHERE marque = ?");
+        $query->execute([$photocop_name]);
+        while($result = $query->fetch(PDO::FETCH_OBJ))
+        {
+            $ca_voulu += (!is_numeric($result->prix)) ? 0: $result->prix;
+            $ca_cb_paye += (!is_numeric($result->cb)) ? 0: $result->cb; 
+            if(is_numeric($result->prix))
+            {
+                if($result->paye == "oui"){ $ca_declare_paye += $result->prix; }
+            }
+        }
     }
     $doit = $ca_voulu - $ca_declare_paye;
     $benf = $ca_cb_paye - $ca_voulu;

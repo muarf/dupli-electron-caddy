@@ -1,85 +1,26 @@
 <?php
 require_once(__DIR__ . '/../vendor/autoload.php');
-use setasign\Fpdi\TcpdfFpdi as TCPDI;
+require_once(__DIR__ . '/unimpose_logic.php');
 
 function unimpose_booklet($input_file, $output_file) {
-    /**Transforme un livret en PDF page par page - basé sur unimpose.py*/
+    /**Transforme un livret en PDF page par page - avec nettoyage Ghostscript forcé*/
     
     // Vérifier d'abord que le fichier existe et est lisible
     if (!file_exists($input_file) || !is_readable($input_file)) {
         throw new Exception("Le fichier PDF n'existe pas ou n'est pas lisible.");
     }
     
-    // Vérifier avec pdfinfo - avec fallback Ghostscript si échec
-    $infoCmd = "pdfinfo " . escapeshellarg($input_file) . " 2>&1";
-    exec($infoCmd, $infoOutput, $infoReturn);
+    // FORCER le nettoyage Ghostscript dans tous les cas
+    $timestamp = date('YmdHis');
+    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
     
-    $cleanedPdfFile = null;
-    $usedGhostscript = false;
-    
-    if ($infoReturn !== 0) {
-        // pdfinfo a échoué, essayer de nettoyer avec Ghostscript
-        try {
-            $timestamp = date('YmdHis');
-            $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
-            
-            if (!file_exists($tmp_dir)) {
-                mkdir($tmp_dir, 0755, true);
-            }
-            
-            $cleanedPdfFile = $tmp_dir . 'cleaned_unimpose_' . $timestamp . '.pdf';
-            
-            // Nettoyer le PDF avec Ghostscript
-            if (PHP_OS_FAMILY === 'Windows') {
-                $gs_command = __DIR__ . '/../../ghostscript/gswin64c.exe';
-                if (!file_exists($gs_command)) {
-                    throw new Exception("Ghostscript Windows non trouvé : " . $gs_command);
-                }
-            } else {
-                $gs_command = 'gs';
-            }
-            
-            $cmd = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($input_file) . " 2>&1";
-            exec($cmd, $output, $returnCode);
-            
-            if ($returnCode !== 0 || !file_exists($cleanedPdfFile)) {
-                $gsError = implode("\n", $output);
-                throw new Exception("Impossible de nettoyer le PDF avec Ghostscript. Erreur: " . $gsError);
-            }
-            
-            // Réessayer pdfinfo avec le PDF nettoyé
-            $infoCmd = "pdfinfo " . escapeshellarg($cleanedPdfFile) . " 2>&1";
-            exec($infoCmd, $infoOutput, $infoReturn);
-            
-            if ($infoReturn !== 0) {
-                $pdfinfoError = implode("\n", $infoOutput);
-                throw new Exception("Le PDF reste illisible même après nettoyage Ghostscript. Erreur pdfinfo: " . $pdfinfoError);
-            }
-            
-            $usedGhostscript = true;
-            $input_file = $cleanedPdfFile; // Utiliser le fichier nettoyé
-            
-        } catch (Exception $e) {
-            $pdfinfoError = implode("\n", $infoOutput);
-            throw new Exception("Le PDF est corrompu ou illisible selon pdfinfo. Erreur pdfinfo: " . $pdfinfoError . " | Tentative de nettoyage Ghostscript échouée : " . $e->getMessage());
-        }
+    if (!file_exists($tmp_dir)) {
+        mkdir($tmp_dir, 0755, true);
     }
     
-    // Extraire le nombre de pages depuis pdfinfo
-    $pageCount = 0;
-    foreach ($infoOutput as $line) {
-        if (preg_match('/^Pages:\s+(\d+)/', $line, $matches)) {
-            $pageCount = (int)$matches[1];
-            break;
-        }
-    }
+    $cleanedPdfFile = $tmp_dir . 'cleaned_unimpose_' . $timestamp . '.pdf';
     
-    if ($pageCount <= 0) {
-        throw new Exception("Impossible de déterminer le nombre de pages du PDF.");
-    }
-    
-    // Convertir le PDF avec Ghostscript pour le rendre compatible avec TCPDF - détection automatique de la plateforme
-    $compatibleFile = preg_replace('/\.pdf$/', '_compatible.pdf', $input_file);
+    // Nettoyer le PDF avec Ghostscript - détection automatique de la plateforme
     if (PHP_OS_FAMILY === 'Windows') {
         // Chemin complet vers Ghostscript Windows
         $gs_command = __DIR__ . '/../../ghostscript/gswin64c.exe';
@@ -89,53 +30,46 @@ function unimpose_booklet($input_file, $output_file) {
     } else {
         $gs_command = 'gs';
     }
-    $cmd = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -sOutputFile=" . escapeshellarg($compatibleFile) . " " . escapeshellarg($input_file) . " 2>&1";
-    exec($cmd, $output, $returnCode);
+    
+    $command = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($input_file) . " 2>&1";
+    $output = shell_exec($command);
+    
+    if (!file_exists($cleanedPdfFile) || filesize($cleanedPdfFile) == 0) {
+        throw new Exception("Échec du nettoyage Ghostscript. Sortie: " . $output);
+    }
+    
+        // Utiliser directement le fichier de sortie (unimpose_logic.php ajoutera -ppp)
+        $finalOutputFile = $output_file;
         
-    if ($returnCode !== 0 || !file_exists($compatibleFile)) {
-        $gsError = implode("\n", $output);
-        throw new Exception("Impossible de convertir le PDF pour le rendre compatible. Erreur Ghostscript: " . $gsError);
-    }
-    
-    // Utiliser le script Python pour la désimposition
-    $pythonScript = '/home/ubuntu/unimpose.py';
-    
-    if (!file_exists($pythonScript)) {
-        unlink($compatibleFile);
-        throw new Exception("Script Python de désimposition non trouvé : " . $pythonScript);
-    }
-    
-    // Appeler le script Python dans le répertoire où se trouve le fichier compatible
-    $workingDir = dirname($compatibleFile);
-    $cmd = "cd " . escapeshellarg($workingDir) . " && python3 " . escapeshellarg($pythonScript) . " " . escapeshellarg($compatibleFile) . " 2>&1";
-    exec($cmd, $output, $returnCode);
-    
-    // Nettoyer le fichier temporaire
-    unlink($compatibleFile);
-    
-    if ($returnCode !== 0) {
-        $errorMsg = implode("\n", $output);
-        throw new Exception("Erreur lors de l'exécution du script Python : " . $errorMsg);
-    }
-    
-    // Le script Python crée un fichier "output.pdf" dans le répertoire de travail
-    $pythonOutput = $workingDir . "/output.pdf";
-    
-    if (!file_exists($pythonOutput)) {
-        throw new Exception("Le script Python n'a pas créé le fichier de sortie dans : " . $pythonOutput);
-    }
-    
-    // Déplacer le fichier de sortie vers la destination finale
-    if (!rename($pythonOutput, $output_file)) {
-        throw new Exception("Impossible de déplacer le fichier de sortie.");
-    }
-    
-    // Nettoyer le fichier temporaire nettoyé par Ghostscript si utilisé
-    if ($usedGhostscript && $cleanedPdfFile && file_exists($cleanedPdfFile)) {
-        unlink($cleanedPdfFile);
-    }
-    
-    return $output_file;
+        // Maintenant exécuter la désimposition avec le PDF nettoyé
+        try {
+            // Utiliser la classe UnimposeBooklet existante
+            $unimpose = new UnimposeBooklet($cleanedPdfFile, $finalOutputFile);
+            $resultFile = $unimpose->unimposeBooklet();
+        
+        // Nettoyer le fichier temporaire
+        if (file_exists($cleanedPdfFile)) {
+            unlink($cleanedPdfFile);
+        }
+        
+        if (!$resultFile) {
+            throw new Exception("Échec de la désimposition du PDF");
+        }
+        
+        return $resultFile;
+        
+    } catch (Exception $e) {
+            // Nettoyer le fichier temporaire en cas d'erreur
+            if (file_exists($cleanedPdfFile)) {
+                unlink($cleanedPdfFile);
+            }
+            
+            // Afficher l'erreur détaillée pour debug
+            error_log("Erreur détaillée de désimposition : " . $e->getMessage());
+            error_log("Trace : " . $e->getTraceAsString());
+            
+            throw new Exception("Erreur lors de la désimposition : " . $e->getMessage());
+        }
 }
 
 function Action($conf) {
@@ -169,8 +103,9 @@ function Action($conf) {
                 $uploadFile = $tmpDir . "unimpose_upload_" . $timestamp . ".pdf";
                 
                 if (move_uploaded_file($_FILES["pdf"]["tmp_name"], $uploadFile)) {
-                    // Générer le fichier de sortie
-                    $outputFile = $tmpDir . "unimpose_output_" . $timestamp . ".pdf";
+                    // Générer le fichier de sortie avec le nom original + _unimposed
+                    $originalName = pathinfo($_FILES["pdf"]["name"], PATHINFO_FILENAME);
+                    $outputFile = $tmpDir . $originalName . '_unimposed.pdf';
                     
                     // Exécuter la désimposition
                     $resultFile = unimpose_booklet($uploadFile, $outputFile);
@@ -191,15 +126,12 @@ function Action($conf) {
             }
         }
     } catch (Exception $e) {
-        $errors[] = "Erreur lors du traitement : " . $e->getMessage();
-        
-        // Logger l'erreur complète pour le débogage
-        error_log("UNIMPOSE ERROR: " . $e->getMessage());
-        error_log("UNIMPOSE STACK TRACE: " . $e->getTraceAsString());
-        
-        // Ajouter des détails techniques pour l'utilisateur
-        $errors[] = "Détails techniques : " . $e->getFile() . " ligne " . $e->getLine();
-    }
+            // Afficher l'erreur détaillée pour debug
+            error_log("Erreur détaillée dans Action : " . $e->getMessage());
+            error_log("Trace complète : " . $e->getTraceAsString());
+            
+            $errors[] = "Erreur lors du traitement : " . $e->getMessage();
+        }
     
     // Version simplifiée avec formulaire d'upload
     $html = '<div class="container">';

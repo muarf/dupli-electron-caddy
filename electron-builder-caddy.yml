@@ -6,24 +6,20 @@ icon: icons/icon.png
 publish:
   provider: github
   releaseType: release
-  publishAutoUpdate: false
+  publishAutoUpdate: true
 files:
   - main-caddy.js
   - main.js
   - preload.js
   - Caddyfile
   - php-fpm.conf
+  - php-install-guide.html
   - app/**/*
   - php/**/*
   - ghostscript/**/*
   - caddy/**/*
-asarUnpack:
-  - php/**/*
-  - app/**/*
-  - ghostscript/**/*
-  - caddy/**/*
-  - Caddyfile
-  - php-fpm.conf
+  - "!php/**/*" # Exclure PHP pour Linux (sera ajouté spécifiquement par plateforme)
+# asarUnpack configuré spécifiquement par plateforme pour éviter les erreurs de chemins longs
 # Plus besoin d'exclure les liens symboliques car ils ont été supprimés
 linux:
   target: 
@@ -32,11 +28,29 @@ linux:
   category: Office
   executableName: Duplicator
   executableArgs: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"]
+  # Configuration spécifique Linux - utilise PHP système, pas de binaires embarqués
+  files:
+    - "!php/**/*"  # Exclure PHP - on utilise le PHP système sur Linux
+  asarUnpack:
+    - "app/**/*"
+    - "ghostscript/**/*"
+    - "caddy/**/*"
+    - "Caddyfile"
+    - "php-fpm.conf"
+    - "php-install-guide.html"
 mac:
   target: 
     - target: dmg
       arch: [x64]
   category: public.app-category.productivity
+  # Configuration spécifique macOS
+  asarUnpack:
+    - "php/**/*"
+    - "app/**/*"
+    - "ghostscript/**/*"
+    - "caddy/**/*"
+    - "Caddyfile"
+    - "php-fpm.conf"
 win:
   target:
     - target: nsis
@@ -46,6 +60,8 @@ win:
     - target: zip
       arch: [x64]
   forceCodeSigning: false
+  # Désactiver ASAR sur Windows pour éviter l'erreur "pattern is too long"
+  asar: false
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true

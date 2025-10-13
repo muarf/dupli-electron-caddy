@@ -1,6 +1,3 @@
-<?php
-$title = "Administration - Connexion";
-$content = '
 <style>
     .login-container {
         max-width: 400px;
@@ -32,6 +29,14 @@ $content = '
         background-color: #0056b3;
         border-color: #0056b3;
     }
+    .alert-danger {
+        animation: shake 0.5s;
+    }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
 </style>
 
 <div class="login-container">
@@ -40,10 +45,16 @@ $content = '
         <p class="text-muted">Connexion requise</p>
     </div>
     
+    <?php if (!empty($login_error)): ?>
+        <div class="alert alert-danger" role="alert">
+            <i class="fa fa-exclamation-triangle"></i> <?= htmlspecialchars($login_error) ?>
+        </div>
+    <?php endif; ?>
+    
     <form method="POST" action="?admin">
         <div class="form-group">
             <label for="password">Mot de passe :</label>
-            <input type="password" class="form-control" id="password" name="password" required>
+            <input type="password" class="form-control" id="password" name="password" required autofocus>
         </div>
         
         <button type="submit" class="btn btn-primary btn-login">
@@ -53,13 +64,7 @@ $content = '
     
     <div class="text-center mt-3">
         <a href="?accueil" class="text-muted">
-            <i class="fa fa-arrow-left"></i> Retour à l\'accueil
+            <i class="fa fa-arrow-left"></i> Retour à l'accueil
         </a>
     </div>
 </div>
-';
-
-include 'base.html.php';
-?>
-
-

@@ -121,19 +121,19 @@ jobs:
             exit 1
           }
           
-          if (Test-Path "dist/win-unpacked/resources/app.asar.unpacked/caddy/caddy.exe") {
+          if (Test-Path "dist/win-unpacked/resources/app/caddy/caddy.exe") {
             echo "✅ caddy.exe existe"
           } else {
             echo "❌ caddy.exe manquant"
           }
           
-          if (Test-Path "dist/win-unpacked/resources/app.asar.unpacked/php/php.exe") {
+          if (Test-Path "dist/win-unpacked/resources/app/php/php.exe") {
             echo "✅ php.exe existe"
           } else {
             echo "❌ php.exe manquant"
           }
           
-          if (Test-Path "dist/win-unpacked/resources/Caddyfile") {
+          if (Test-Path "dist/win-unpacked/resources/app/Caddyfile") {
             echo "✅ Caddyfile existe"
           } else {
             echo "❌ Caddyfile manquant"
@@ -146,41 +146,41 @@ jobs:
       - name: Test Caddy binary
         run: |
           echo "=== Test de Caddy ==="
-          & "dist/win-unpacked/resources/app.asar.unpacked/caddy/caddy.exe" version
+          & "dist/win-unpacked/resources/app/caddy/caddy.exe" version
         
       - name: Test PHP binary
         run: |
           echo "=== Test de PHP ==="
-          & "dist/win-unpacked/resources/app.asar.unpacked/php/php.exe" --version
+          & "dist/win-unpacked/resources/app/php/php.exe" --version
         
       - name: Test Caddyfile validation
         run: |
           echo "=== Validation du Caddyfile ==="
           echo "🔍 Vérification des binaires..."
           
-          if (Test-Path "dist/win-unpacked/resources/app.asar.unpacked/caddy/caddy.exe") {
+          if (Test-Path "dist/win-unpacked/resources/app/caddy/caddy.exe") {
             echo "✅ Caddy Windows présent"
-            Get-Item "dist/win-unpacked/resources/app.asar.unpacked/caddy/caddy.exe" | Select-Object Name, Length
+            Get-Item "dist/win-unpacked/resources/app/caddy/caddy.exe" | Select-Object Name, Length
           } else {
             echo "❌ Caddy Windows manquant"
             echo "Contenu du dossier caddy:"
-            Get-ChildItem "dist/win-unpacked/resources/app.asar.unpacked/caddy/" -ErrorAction SilentlyContinue
+            Get-ChildItem "dist/win-unpacked/resources/app/caddy/" -ErrorAction SilentlyContinue
           }
           
-          if (Test-Path "dist/win-unpacked/resources/app.asar.unpacked/Caddyfile") {
+          if (Test-Path "dist/win-unpacked/resources/app/Caddyfile") {
             echo "✅ Caddyfile présent"
-            Get-Content "dist/win-unpacked/resources/app.asar.unpacked/Caddyfile"
+            Get-Content "dist/win-unpacked/resources/app/Caddyfile"
           } else {
             echo "❌ Caddyfile manquant"
           }
           
           # Test de validation si les fichiers existent
-          $caddyExists = Test-Path "dist/win-unpacked/resources/app.asar.unpacked/caddy/caddy.exe"
-          $caddyfileExists = Test-Path "dist/win-unpacked/resources/app.asar.unpacked/Caddyfile"
+          $caddyExists = Test-Path "dist/win-unpacked/resources/app/caddy/caddy.exe"
+          $caddyfileExists = Test-Path "dist/win-unpacked/resources/app/Caddyfile"
           
           if ($caddyExists -and $caddyfileExists) {
             echo "🔧 Validation de la configuration Caddy..."
-            & "dist/win-unpacked/resources/app.asar.unpacked/caddy/caddy.exe" validate --config "dist/win-unpacked/resources/app.asar.unpacked/Caddyfile"
+            & "dist/win-unpacked/resources/app/caddy/caddy.exe" validate --config "dist/win-unpacked/resources/app/Caddyfile"
           } else {
             echo "⚠️  Impossible de valider la configuration Caddy (fichiers manquants)"
             echo "Caddy existe: $caddyExists"

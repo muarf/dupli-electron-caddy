@@ -20,21 +20,11 @@ Libre de droit si c'est pour un projet non commercial, hors partis et syndicats.
 		-	Date moyenne de changement de fournitures
 		-	Inscription Mailing-list (manuel)
 ```
-## TODO
-### Utilisateurice
-- [ ] Creer des comptes pour pouvoir payer une fois plusieurs impressions
-- [ ] Rappel par mail pour payer
-### Administration
-- [ ] Rendre plus visuel les changements d'encre / master
-- [ ] Permettre de recommander l'encre ou les masters par l'interface
-- [ ] Mailing liste automatique
-### Code
-- [x] footer
-- [x] Mettre à jour tinymce
-- [ ] Pouvoir ajouter sa/ses machines, rendre plus univvc rsel le code
-- [ ] Changer la gestion de la classe c'est un gros bordel
-- [ ] indenter et commenter.
-- [ ] se faire relire par un pro :) (avis aux pros)
+## Features récemment ajoutées
+- [x] Désimposition de PDF (unimpose) - Transforme un livret imposé en pages normales
+- [x] Intégration PHP native (remplace le script Python)
+- [x] Nettoyage Ghostscript automatique pour compatibilité PDF
+- [x] Interface utilisateur moderne avec drag & drop
 ## Built With
 
 * [bootstrap](https://getbootstrap.com/) - Css & Js

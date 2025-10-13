@@ -44,37 +44,25 @@ class EditManager {
      * Supprimer un tirage
      */
     public function deleteTirage($id, $machine) {
-        $db = $this->con->pdo_connect();
+        $db = pdo_connect();
         $id = ceil($id);
         
-        // Vérifier si c'est une machine valide (A3, A4, dupli) ou une marque de photocopieuse
-        if($machine == "A3" || $machine == "A4" || $machine == "dupli") {
-            // Pour les duplicopieurs, vérifier que c'est une machine valide
-            $machines = array("A3","A4","dupli");
-            in_array($machine,$machines) or die('donttrytohackme');
-            
-            if($machine == "dupli") {
-                $table_name = "dupli";
-            } else {
-                $table_name = strtolower($machine);
-            }
-            $db->query('DELETE from '.$table_name.' WHERE id= '.$id.'');
+        // Vérifier si c'est un duplicopieur (nom complet comme "Ricoh dx4545")
+        $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque = ? OR modele = ?)');
+        $query->execute([$machine, $machine]);
+        $is_duplicopieur = $query->fetchColumn() > 0;
+        
+        if($is_duplicopieur) {
+            // C'est un duplicopieur, supprimer dans la table dupli avec le nom_machine
+            $db->query('DELETE from dupli WHERE id= '.$id.' AND nom_machine = "'.$machine.'"');
         } else {
-            // Vérifier si c'est un duplicopieur (nom complet comme "Ricoh dx4545")
-            $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND CONCAT(marque, " ", modele) = ?');
-            $query->execute([$machine]);
-            $is_duplicopieur = $query->fetchColumn() > 0;
-            
-            if($is_duplicopieur) {
-                // C'est un duplicopieur, supprimer dans la table dupli avec le nom_machine
-                $db->query('DELETE from dupli WHERE id= '.$id.' AND nom_machine = "'.$machine.'"');
-            } else {
-                // Pour les photocopieurs, vérifier que c'est une marque valide
-                $query = $db->query('SELECT DISTINCT marque FROM photocop WHERE marque IS NOT NULL AND marque != ""');
-                $valid_marques = $query->fetchAll(PDO::FETCH_COLUMN);
-                in_array($machine,$valid_marques) or die('donttrytohackme');
-                $db->query('DELETE from photocop WHERE id= '.$id.' AND marque = "'.$machine.'"');
+            // Pour les photocopieurs, vérifier que c'est une marque valide
+            $query = $db->query('SELECT DISTINCT marque FROM photocop WHERE marque IS NOT NULL AND marque != ""');
+            $valid_marques = $query->fetchAll(PDO::FETCH_COLUMN);
+            if (!in_array($machine, $valid_marques)) {
+                throw new Exception("Machine '$machine' non autorisée");
             }
+            $db->query('DELETE from photocop WHERE id= '.$id.' AND marque = "'.$machine.'"');
         }
         
         return true;

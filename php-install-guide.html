@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHP n'est pas installé - Duplicator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #2d3748;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #718096;
+            font-size: 16px;
+        }
+        
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .section h2 {
+            color: #2d3748;
+            font-size: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section h2::before {
+            content: "🐧";
+            margin-right: 10px;
+            font-size: 24px;
+        }
+        
+        .debian::before {
+            content: "📦";
+        }
+        
+        .redhat::before {
+            content: "🎩";
+        }
+        
+        .arch::before {
+            content: "🏔️";
+        }
+        
+        .command {
+            background: #2d3748;
+            color: #a0ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 10px 0;
+            overflow-x: auto;
+            position: relative;
+        }
+        
+        .command code {
+            display: block;
+            white-space: pre;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+        
+        .copy-btn:hover {
+            background: #5568d3;
+        }
+        
+        .extensions {
+            background: #fff5f5;
+            border-left-color: #f56565;
+            margin-top: 20px;
+        }
+        
+        .extensions h2::before {
+            content: "⚙️";
+        }
+        
+        .extension-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .extension-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .note {
+            background: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        .note strong {
+            color: #92400e;
+        }
+        
+        .note p {
+            color: #78350f;
+            margin: 5px 0;
+            line-height: 1.6;
+        }
+        
+        .refresh-btn {
+            display: block;
+            width: 100%;
+            margin-top: 30px;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .refresh-btn:active {
+            transform: translateY(0);
+        }
+        
+        .system-info {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: #edf2f7;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #4a5568;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="icon">⚠️</div>
+            <h1>PHP n'est pas installé sur votre système</h1>
+            <p class="subtitle">Duplicator nécessite PHP pour fonctionner. Veuillez l'installer selon votre distribution Linux.</p>
+        </div>
+        
+        <div class="section debian">
+            <h2>Debian / Ubuntu / Linux Mint</h2>
+            <div class="command">
+                <code>sudo apt update
+sudo apt install php php-cli php-gd php-sqlite3 php-mbstring php-xml</code>
+                <button class="copy-btn" onclick="copyCommand(this)">Copier</button>
+            </div>
+        </div>
+        
+        <div class="section redhat">
+            <h2>Fedora / RHEL / CentOS</h2>
+            <div class="command">
+                <code>sudo dnf install php php-cli php-gd php-pdo php-mbstring php-xml</code>
+                <button class="copy-btn" onclick="copyCommand(this)">Copier</button>
+            </div>
+            <p style="margin-top: 10px; color: #718096; font-size: 14px;">
+                Pour CentOS/RHEL plus anciens, utilisez <code style="background: #edf2f7; padding: 2px 6px; border-radius: 3px;">yum</code> au lieu de <code style="background: #edf2f7; padding: 2px 6px; border-radius: 3px;">dnf</code>
+            </p>
+        </div>
+        
+        <div class="section arch">
+            <h2>Arch Linux / Manjaro</h2>
+            <div class="command">
+                <code>sudo pacman -S php php-gd php-sqlite</code>
+                <button class="copy-btn" onclick="copyCommand(this)">Copier</button>
+            </div>
+        </div>
+        
+        <div class="section extensions">
+            <h2>Extensions PHP requises</h2>
+            <p style="margin-bottom: 10px; color: #718096;">Duplicator nécessite les extensions PHP suivantes :</p>
+            <div class="extension-list">
+                <div class="extension-item">✓ php-gd</div>
+                <div class="extension-item">✓ php-sqlite3</div>
+                <div class="extension-item">✓ php-mbstring</div>
+                <div class="extension-item">✓ php-xml</div>
+                <div class="extension-item">✓ php-cli</div>
+            </div>
+        </div>
+        
+        <div class="note">
+            <strong>📝 Note importante :</strong>
+            <p>Après l'installation de PHP, vous devrez peut-être redémarrer votre terminal ou votre session pour que les modifications prennent effet.</p>
+            <p style="margin-top: 10px;">Pour vérifier que PHP est correctement installé, ouvrez un terminal et tapez :</p>
+            <div class="command" style="margin-top: 10px;">
+                <code>php --version</code>
+                <button class="copy-btn" onclick="copyCommand(this)">Copier</button>
+            </div>
+        </div>
+        
+        <button class="refresh-btn" onclick="location.reload()">
+            🔄 Redémarrer l'application après installation
+        </button>
+        
+        <div class="system-info">
+            <strong>Architecture détectée :</strong> <span id="arch-info">Chargement...</span><br>
+            <strong>Plateforme :</strong> <span id="platform-info">Chargement...</span>
+        </div>
+    </div>
+    
+    <script>
+        // Détecter l'architecture et la plateforme
+        const userAgent = navigator.userAgent;
+        const platform = navigator.platform;
+        
+        document.getElementById('platform-info').textContent = platform;
+        document.getElementById('arch-info').textContent = navigator.userAgent.includes('x86_64') || navigator.userAgent.includes('x64') ? 'x64 (64-bit)' : 
+                                                           navigator.userAgent.includes('aarch64') || navigator.userAgent.includes('arm64') ? 'ARM64' : 
+                                                           'x86 (32-bit)';
+        
+        // Fonction pour copier les commandes
+        function copyCommand(button) {
+            const commandDiv = button.parentElement;
+            const code = commandDiv.querySelector('code');
+            const text = code.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = button.textContent;
+                button.textContent = '✓ Copié !';
+                button.style.background = '#48bb78';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#667eea';
+                }, 2000);
+            }).catch(err => {
+                console.error('Erreur lors de la copie:', err);
+                button.textContent = '✗ Erreur';
+                button.style.background = '#f56565';
+            });
+        }
+        
+        // Essayer de redétecter PHP toutes les 30 secondes
+        setInterval(() => {
+            // Dans un contexte Electron, on pourrait communiquer avec le processus principal
+            // pour vérifier si PHP est maintenant disponible
+            console.log('Vérification de PHP...');
+        }, 30000);
+    </script>
+</body>
+</html>
+

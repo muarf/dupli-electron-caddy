@@ -10,13 +10,15 @@ $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_S
 $filepath = $tmp_dir . $filename;
 
 // Vérifier que le fichier existe et est dans le bon répertoire
-if (!file_exists($filepath) || !str_starts_with(realpath($filepath), realpath($tmp_dir))) {
+$real_filepath = realpath($filepath);
+$real_tmp_dir = realpath($tmp_dir);
+if (!file_exists($filepath) || !$real_filepath || !$real_tmp_dir || strpos($real_filepath, $real_tmp_dir) !== 0) {
     http_response_code(404);
     die('Fichier non trouvé');
 }
 
 // Vérifier l'extension
-if (!str_ends_with(strtolower($filename), '.pdf')) {
+if (substr(strtolower($filename), -4) !== '.pdf') {
     http_response_code(400);
     die('Type de fichier non autorisé');
 }

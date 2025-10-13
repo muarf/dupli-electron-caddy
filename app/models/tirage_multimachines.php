@@ -58,6 +58,7 @@ if(isset($_GET['ajax']) && $_GET['ajax'] === 'get_last_counters' && isset($_GET[
             $query_counters = $db->prepare('SELECT master_ap, passage_ap FROM dupli WHERE nom_machine = ? ORDER BY id DESC LIMIT 1');
             $query_counters->execute([$machine]);
             $last_counters = $query_counters->fetch(PDO::FETCH_ASSOC);
+            $query_counters->closeCursor(); // Bonne pratique : fermer le curseur
             
             if ($last_counters) {
                 $counters = [
@@ -87,17 +88,20 @@ if(isset($_GET['ajax']) && $_GET['ajax'] === 'get_last_counters' && isset($_GET[
  * Fonctions utilitaires pour les prix des photocopieurs
  */
 function getMachinePrices($db, $machine_name) {
+    // CORRECTION DEADLOCK : Utiliser la connexion passée en paramètre (pas de nouvelle connexion pendant une transaction)
+    
     // Déterminer la clé de la machine selon la nouvelle structure
     $machine_type = '';
     $machine_id = 0;
     
     // Vérifier si c'est un photocopieur
-    $query = $db->prepare('SELECT id, type_encre FROM photocopieurs WHERE marque = ? AND actif = 1');
-    $query->execute([$machine_name]);
-    $photocop = $query->fetch(PDO::FETCH_ASSOC);
+    $query1 = $db->prepare('SELECT id, type_encre FROM photocopieurs WHERE marque = ? AND actif = 1');
+    $query1->execute([$machine_name]);
+    $photocop = $query1->fetch(PDO::FETCH_ASSOC);
+    $query1->closeCursor(); // CORRECTION CRITIQUE : Fermer le curseur avant la prochaine requête
     
     error_log("DEBUG getMachinePrices - machine_name: $machine_name");
-    error_log("DEBUG getMachinePrices - photocop trouvé: " . print_r($photocop, true));
+    error_log("DEBUG getMachinePrices - photocop trouvé: id=" . ($photocop['id'] ?? 'N/A') . ", type_encre=" . ($photocop['type_encre'] ?? 'N/A'));
     
     if ($photocop) {
         // C'est un photocopieur
@@ -111,13 +115,16 @@ function getMachinePrices($db, $machine_name) {
         error_log("DEBUG getMachinePrices - Pas de photocopieur trouvé, utilisation dupli_1");
     }
     
-    $query = $db->prepare('SELECT type, unite, pack FROM prix WHERE machine_type = ? AND machine_id = ?');
-    $query->execute([$machine_type, $machine_id]);
+    $query2 = $db->prepare('SELECT type, unite, pack FROM prix WHERE machine_type = ? AND machine_id = ?');
+    $query2->execute([$machine_type, $machine_id]);
     $prices = [];
     
     error_log("DEBUG getMachinePrices - Requête prix: machine_type=$machine_type, machine_id=$machine_id");
     
-    while ($row = $query->fetch(PDO::FETCH_ASSOC)) {
+    // CORRECTION DEADLOCK : Utiliser fetchAll() pour libérer immédiatement le curseur SQLite
+    $rows = $query2->fetchAll(PDO::FETCH_ASSOC);
+    $query2->closeCursor(); // Fermer explicitement
+    foreach ($rows as $row) {
         $prices[$row['type']] = [
             'unite' => floatval($row['unite']),
             'pack' => floatval($row['pack'])
@@ -125,16 +132,51 @@ function getMachinePrices($db, $machine_name) {
         error_log("DEBUG getMachinePrices - Prix ajouté: " . $row['type'] . " = " . $row['unite']);
     }
     
-    error_log("DEBUG getMachinePrices - Prix finaux: " . print_r($prices, true));
+    error_log("DEBUG getMachinePrices - Prix finaux: " . count($prices) . " éléments");
     
     return $prices;
 }
 
+/**
+ * Fonction optimisée pour calculer le prix d'une brochure photocopieur
+ * Évite les requêtes DB répétées et les logs excessifs
+ */
+function calculateBrochurePriceOptimized($brochure, $prix_papier_a3, $prix_papier_a4, $machine_prices, $machine_type_detected, $machine_name) {
+    $nb_exemplaires = intval($brochure['nb_exemplaires']);
+    $nb_feuilles = intval($brochure['nb_feuilles']);
+    $nb_f_total = $nb_exemplaires * $nb_feuilles;
+    $taille = $brochure['taille'];
+    $rv = isset($brochure['rv']) && $brochure['rv'] == 'oui';
+    $couleur = isset($brochure['couleur']) && $brochure['couleur'] == 'oui';
+    $feuilles_payees = isset($brochure['feuilles_payees']) && $brochure['feuilles_payees'] == 'oui';
+    
+    // Calcul rapide
+    $nb_p = $rv ? $nb_f_total * 2 : $nb_f_total;
+    $prix_papier = ($taille == 'A4') ? $prix_papier_a4 : $prix_papier_a3;
+    $prix_papier_total = $feuilles_payees ? 0 : ($nb_f_total * $prix_papier);
+    
+    // Calcul coût par page optimisé
+    try {
+        $cost_per_page = calculatePageCost($machine_name, $machine_type_detected, $machine_prices, $couleur, $rv);
+    } catch (Exception $e) {
+        $cost_per_page = 0.01; // Prix de secours
+    }
+    
+    // Ajuster selon la taille
+    if ($taille === 'A4') $cost_per_page = $cost_per_page / 2;
+    
+    $prix_encre_total = $nb_p * $cost_per_page;
+    return $prix_papier_total + $prix_encre_total;
+}
+
 function determineMachineType($db, $machine_name) {
+    // CORRECTION DEADLOCK : Utiliser la connexion passée en paramètre (pas de nouvelle connexion pendant une transaction)
+    
     // Vérifier si c'est un photocopieur
-    $query = $db->prepare('SELECT id, type_encre FROM photocopieurs WHERE marque = ? AND actif = 1');
-    $query->execute([$machine_name]);
-    $photocop = $query->fetch(PDO::FETCH_ASSOC);
+    $query_type1 = $db->prepare('SELECT id, type_encre FROM photocopieurs WHERE marque = ? AND actif = 1');
+    $query_type1->execute([$machine_name]);
+    $photocop = $query_type1->fetch(PDO::FETCH_ASSOC);
+    $query_type1->closeCursor(); // CORRECTION CRITIQUE : Fermer le curseur avant la prochaine requête
     
     if ($photocop) {
         // C'est un photocopieur, utiliser le type_encre de la table
@@ -144,57 +186,59 @@ function determineMachineType($db, $machine_name) {
         $machine_type = 'dupli';
         $machine_id = 1;
         
-        $query = $db->prepare('SELECT COUNT(*) as count FROM prix WHERE machine_type = ? AND machine_id = ? AND type IN ("tambour", "dev")');
-        $query->execute([$machine_type, $machine_id]);
-        $result = $query->fetch(PDO::FETCH_ASSOC);
+        $query_type2 = $db->prepare('SELECT COUNT(*) as count FROM prix WHERE machine_type = ? AND machine_id = ? AND type IN ("tambour", "dev")');
+        $query_type2->execute([$machine_type, $machine_id]);
+        $result = $query_type2->fetch(PDO::FETCH_ASSOC);
+        $query_type2->closeCursor(); // CORRECTION CRITIQUE : Fermer le curseur
         
         return ($result['count'] > 0) ? 'toner' : 'encre';
     }
 }
 
 function calculatePageCost($machine_name, $machine_type, $prices, $is_color, $is_duplex) {
+    error_log("DEBUG calculatePageCost - ENTREE avec prix fixes");
+    
     $cost_per_page = 0;
     
-    if ($machine_type === 'toner') {
-        // Machine toner : calculer selon les couleurs utilisées
-        if ($is_color) {
-            // Impression couleur : cyan + magenta + yellow + noir + tambour + dev
-            $cost_per_page += ($prices['cyan']['unite'] ?? 0);
-            $cost_per_page += ($prices['magenta']['unite'] ?? 0);
-            $cost_per_page += ($prices['yellow']['unite'] ?? 0);
-            $cost_per_page += ($prices['noir']['unite'] ?? 0);
+    try {
+        if ($machine_type === 'toner') {
+            error_log("DEBUG calculatePageCost - BRANCHE TONER");
+            if ($is_color) {
+                $cost_per_page += ($prices['cyan']['unite'] ?? 0);
+                $cost_per_page += ($prices['magenta']['unite'] ?? 0);
+                $cost_per_page += ($prices['yellow']['unite'] ?? 0);
+                $cost_per_page += ($prices['noir']['unite'] ?? 0);
+            } else {
+                $cost_per_page += ($prices['noir']['unite'] ?? 0);
+            }
         } else {
-            // Impression noir et blanc : noir + tambour + dev
-            $cost_per_page += ($prices['noir']['unite'] ?? 0);
+            error_log("DEBUG calculatePageCost - BRANCHE ENCRE");
+            if ($is_color) {
+                $cost_per_page += ($prices['bleue']['unite'] ?? 0);
+                $cost_per_page += ($prices['jaune']['unite'] ?? 0);
+                $cost_per_page += ($prices['noire']['unite'] ?? 0);
+                $cost_per_page += ($prices['rouge']['unite'] ?? 0);
+            } else {
+                $cost_per_page += ($prices['noire']['unite'] ?? 0);
+            }
         }
         
-        // Ajouter les coûts du tambour et révélateur (unite = coût par page)
-        if (isset($prices['tambour'])) {
-            $cost_per_page += ($prices['tambour']['unite'] ?? 0);
-        }
+        error_log("DEBUG calculatePageCost - COÛT FINAL: $cost_per_page");
+        return $cost_per_page;
         
-        if (isset($prices['dev'])) {
-            $cost_per_page += ($prices['dev']['unite'] ?? 0);
-        }
-        
-    } else {
-        // Machine encre : calculer selon les couleurs utilisées
-        if ($is_color) {
-            // Impression couleur : additionner toutes les couleurs individuelles (pas la valeur "couleur" globale)
-            $cost_per_page += ($prices['bleue']['unite'] ?? 0);
-            $cost_per_page += ($prices['jaune']['unite'] ?? 0);
-            $cost_per_page += ($prices['noire']['unite'] ?? 0);
-            $cost_per_page += ($prices['rouge']['unite'] ?? 0);
-        } else {
-            // Impression noir et blanc : seulement noir
-            $cost_per_page += ($prices['noire']['unite'] ?? 0);
-        }
+    } catch (Exception $e) {
+        error_log("DEBUG calculatePageCost - ERREUR: " . $e->getMessage());
+        return 0.01; // Prix de secours
     }
-    
-    return $cost_per_page;
 }
 
-function Action() {
+function Action($conf = null) {
+    error_log("=== NOUVEAU TEST MULTIMACHINES " . date('Y-m-d H:i:s') . " ===");
+    error_log("=== TEST LOG SIMPLE " . date('H:i:s') . " ===");
+    error_log("=== POST DATA DEBUG - REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
+    error_log("=== POST DATA DEBUG - POST count: " . count($_POST));
+    error_log("=== POST DATA DEBUG - POST keys: " . implode(', ', array_keys($_POST)));
+    error_log("=== POST DATA DEBUG - POST content: " . substr(serialize($_POST), 0, 500));
     $con = pdo_connect();
     $array = array();
     $array['errors'] = array();
@@ -316,6 +360,7 @@ function Action() {
         $query_counters = $db->prepare('SELECT master_ap, passage_ap FROM dupli WHERE nom_machine = ? ORDER BY id DESC LIMIT 1');
         $query_counters->execute([$machine_name]);
         $last_counters = $query_counters->fetch(PDO::FETCH_ASSOC);
+        $query_counters->closeCursor(); // Bonne pratique : fermer le curseur
         
         if ($last_counters) {
             $array['master_av'] = ceil($last_counters['master_ap']);
@@ -341,6 +386,7 @@ function Action() {
     
     // Traitement des données POST - Affichage de la page de confirmation
     if (isset($_POST['contact']) && isset($_POST['ok'])) {
+        error_log("DEBUG - ENTREE DANS CONFIRMATION (bouton ok)");
         if (isset($_GET['debug'])) {
             $array['debug']['confirmation'] = "ENTRÉE DANS LA CONFIRMATION - " . date('H:i:s');
         }
@@ -457,6 +503,7 @@ function Action() {
                         $query_counters = $db->prepare('SELECT master_ap, passage_ap FROM dupli WHERE nom_machine = ? ORDER BY id DESC LIMIT 1');
                         $query_counters->execute([$machine_name]);
                         $last_counters = $query_counters->fetch(PDO::FETCH_ASSOC);
+                        $query_counters->closeCursor(); // CORRECTION DEADLOCK : Fermer le curseur SQLite
                         
                         if ($last_counters) {
                             $master_av = ceil($last_counters['master_ap']);
@@ -479,10 +526,18 @@ function Action() {
                 $array['prix_total'] += $prix_total;
             } else if ($machine['type'] === 'photocopieur') {
                 // Calcul photocopieur
+                error_log("DEBUG CONFIRMATION - DEBUT photocopieur index=$index, machine=" . ($machine['machine'] ?? 'N/A'));
                 $prix_total = 0;
                 if (isset($_GET['debug'])) {
                     $array['debug']['photocopieur_' . $index] = "Machine " . $index . " (photocopieur) détectée";
                 }
+                
+                // OPTIMISATION : Récupérer les prix UNE SEULE FOIS avant la boucle (comme dans l'enregistrement)
+                error_log("DEBUG CONFIRMATION - AVANT getMachinePrices");
+                $machine_prices = getMachinePrices($db, $machine['machine']);
+                error_log("DEBUG CONFIRMATION - APRES getMachinePrices, AVANT determineMachineType");
+                $machine_type_detected = determineMachineType($db, $machine['machine']);
+                error_log("DEBUG CONFIRMATION - APRES determineMachineType");
                 
                 if (isset($machine['brochures']) && is_array($machine['brochures'])) {
                     if (isset($_GET['debug'])) {
@@ -509,10 +564,6 @@ function Action() {
                             $nbPages = $nb_exemplaires * $nb_feuilles;
                             $prixPapier = $array['prix_data']['papier'][$taille] ?? 0;
                             $coutPapier = $feuilles_payees ? 0 : ($nbPages * $prixPapier);
-                            
-                            // NOUVELLE STRUCTURE : Utiliser les fonctions dynamiques comme à l'enregistrement
-                            $machine_prices = getMachinePrices($db, $machine['machine']);
-                            $machine_type_detected = determineMachineType($db, $machine['machine']);
                             
                             // Calculer le coût par page selon le type de machine et les couleurs
                             $cost_per_page = calculatePageCost($machine['machine'], $machine_type_detected, $machine_prices, $couleur, $rv);
@@ -553,7 +604,13 @@ function Action() {
     }
     
     // Traitement des données POST - Enregistrement en BDD
+    error_log("DEBUG POST CHECK - contact isset: " . (isset($_POST['contact']) ? 'OUI' : 'NON') . ", enregistrer isset: " . (isset($_POST['enregistrer']) ? 'OUI' : 'NON'));
+    error_log("DEBUG POST CHECK - POST keys: " . implode(', ', array_keys($_POST)));
     if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
+        error_log("DEBUG - ENTREE DANS ENREGISTREMENT (bouton enregistrer)");
+        // Augmenter le timeout pour éviter les timeouts - CORRECTION TIMEOUT
+        set_time_limit(120); // Augmenté de 60 à 120 secondes
+        ini_set('max_execution_time', 120); // Force PHP timeout
         // Debug simple pour vérifier que le code est exécuté (seulement si debug dans l'URL)
         if (isset($_GET['debug'])) {
             $array['debug']['simple'] = "CODE D'ENREGISTREMENT EXÉCUTÉ !";
@@ -563,10 +620,24 @@ function Action() {
             $array['debug']['enregistrement'] .= "<br>Machines: " . (isset($_POST['machines']) ? count($_POST['machines']) : 'NON DÉFINI');
         }
         // Définir les machines pour l'affichage du formulaire
-        $array['machines'] = $_POST['machines'];
+        $array['machines'] = $_POST['machines'] ?? [];
+        
+        // Vérifier qu'on a des machines
+        if (empty($array['machines'])) {
+            error_log("DEBUG ENREGISTREMENT - ERREUR: Aucune machine fournie");
+            $array['errors'][] = "Aucune machine fournie pour l'enregistrement";
+            return $array;
+        }
+        
+        // OPTIMISATION : Récupérer les prix UNE SEULE FOIS pour toutes les machines
+        error_log("DEBUG ENREGISTREMENT - Récupération globale des prix AVANT la boucle");
+        $prix_data_global = get_price();
+        error_log("DEBUG ENREGISTREMENT - Prix globaux récupérés avec succès");
         
         // Calculer le prix pour chaque machine AVANT l'enregistrement
-        foreach ($_POST['machines'] as $index => $machine) {
+        error_log("DEBUG ENREGISTREMENT - Début calcul prix pour " . count($array['machines']) . " machines");
+        foreach ($array['machines'] as $index => $machine) {
+            error_log("DEBUG ENREGISTREMENT - Traitement machine $index de type: " . $machine['type']);
             if (isset($_GET['debug'])) {
                 $array['debug']['machine_' . $index] = "Machine " . $index . " - Type: " . $machine['type'];
                 $array['debug']['machine_type_check_' . $index] = "Type check: " . ($machine['type'] === 'duplicopieur' ? 'TRUE' : 'FALSE');
@@ -610,7 +681,8 @@ function Action() {
                 }
                 
                 // NOUVELLE STRUCTURE : Calculer le prix directement comme le JavaScript pour être cohérent
-                $prix_data = get_price();
+                // Utiliser les prix globaux au lieu d'appeler get_price() à chaque fois
+                $prix_data = $prix_data_global;
                 $duplicopieur_id = $machine['duplicopieur_id'] ?? $array['duplicopieur_selectionne']['id']; // Utiliser l'ID du duplicopieur sélectionné
                 $machine_key = 'dupli_' . $duplicopieur_id;
                 $prix_master = $prix_data[$machine_key]['master']['unite'] ?? 0;
@@ -644,54 +716,54 @@ function Action() {
                 }
                 
             } else if ($machine['type'] === 'photocopieur') {
-                // Calcul photocopieur
+                // Calcul photocopieur - OPTIMISÉ POUR ÉVITER TIMEOUT
+                error_log("DEBUG ENREGISTREMENT - ENTREE DANS CALCUL PHOTOCOPIEUR machine $index");
                 $prix_machine = 0;
                 
+                // OPTIMISATION : Utiliser les prix globaux récupérés avant la boucle
+                error_log("DEBUG ENREGISTREMENT - Utilisation des prix globaux");
+                try {
+                    $prix_data = $prix_data_global;
+                    error_log("DEBUG ENREGISTREMENT - Prix globaux utilisés avec succès");
+                    $prix_papier_a3 = $prix_data['papier']['A3'] ?? 0.02;
+                    $prix_papier_a4 = $prix_data['papier']['A4'] ?? 0.01;
+                    error_log("DEBUG ENREGISTREMENT - Prix papier récupérés: A3=$prix_papier_a3, A4=$prix_papier_a4");
+                } catch (Exception $e) {
+                    error_log("DEBUG ENREGISTREMENT - ERREUR dans get_price(): " . $e->getMessage());
+                    $prix_papier_a3 = 0.02;
+                    $prix_papier_a4 = 0.01;
+                }
+                
+                // OPTIMISATION : Récupérer les prix machine UNE SEULE FOIS
+                error_log("DEBUG ENREGISTREMENT - Récupération prix machine (une seule fois)");
+                try {
+                    $machine_prices = getMachinePrices($db, $machine['machine']);
+                    $machine_type_detected = determineMachineType($db, $machine['machine']);
+                    error_log("DEBUG ENREGISTREMENT - Prix machine récupérés pour: " . $machine['machine']);
+                } catch (Exception $e) {
+                    error_log("DEBUG ENREGISTREMENT - ERREUR prix machine: " . $e->getMessage());
+                    $machine_prices = [
+                        'noire' => ['unite' => 0.03],
+                        'bleue' => ['unite' => 0.05],
+                        'rouge' => ['unite' => 0.05],
+                        'jaune' => ['unite' => 0.05]
+                    ];
+                    $machine_type_detected = 'encre';
+                }
+                
                 if (isset($machine['brochures']) && is_array($machine['brochures'])) {
-                    foreach ($machine['brochures'] as $brochure) {
+                    error_log("DEBUG ENREGISTREMENT - Début boucle brochures optimisée, count: " . count($machine['brochures']));
+                    foreach ($machine['brochures'] as $brochure_index => $brochure) {
                         if (!empty($brochure['nb_exemplaires']) && !empty($brochure['nb_feuilles']) && !empty($brochure['taille'])) {
-                            $nb_exemplaires = intval($brochure['nb_exemplaires']);
-                            $nb_feuilles = intval($brochure['nb_feuilles']);
-                            $nb_f_total = $nb_exemplaires * $nb_feuilles;
-                            $taille = $brochure['taille'];
-                            $rv = isset($brochure['rv']) && $brochure['rv'] == 'oui';
-                            $couleur = isset($brochure['couleur']) && $brochure['couleur'] == 'oui';
-                            $feuilles_payees = isset($brochure['feuilles_payees']) && $brochure['feuilles_payees'] == 'oui';
-                            
-                            // Calculer le prix dynamiquement
-                            $nb_p = $rv ? $nb_f_total * 2 : $nb_f_total;
-                            
-                            // NOUVELLE STRUCTURE : Prix papier depuis la base de données
-                            $prix_data = get_price();
-                            $prix_papier = ($taille == 'A4') ? ($prix_data['papier']['A4'] ?? 0.01) : ($prix_data['papier']['A3'] ?? 0.02);
-                            $prix_papier_total = $feuilles_payees ? 0 : ($nb_f_total * $prix_papier);
-                            
-                            // Récupérer les prix de la machine depuis la base de données
-                            $machine_prices = getMachinePrices($db, $machine['machine']);
-                            $machine_type_detected = determineMachineType($db, $machine['machine']);
-                            
-                            // Debug: Log des prix récupérés
-                            error_log("DEBUG ENREGISTREMENT - Machine: " . $machine['machine']);
-                            error_log("DEBUG ENREGISTREMENT - Type détecté: " . $machine_type_detected);
-                            error_log("DEBUG ENREGISTREMENT - Prix récupérés: " . print_r($machine_prices, true));
-                            
-                            // Calculer le coût par page selon le type de machine et les couleurs
-                            $cost_per_page = calculatePageCost($machine['machine'], $machine_type_detected, $machine_prices, $couleur, $rv);
-                            
-                            // Debug: Log du coût par page
-                            error_log("DEBUG ENREGISTREMENT - Coût par page: " . $cost_per_page);
-                            
-                            // Ajuster selon la taille (A3 = prix normal, A4 = prix/2)
-                            if ($taille === 'A4') $cost_per_page = $cost_per_page / 2;
-                            
-                            $prix_encre_total = $nb_p * $cost_per_page;
-                            
-                            // Debug: Log des calculs finaux
-                            error_log("DEBUG ENREGISTREMENT - Nb pages: " . $nb_p);
-                            error_log("DEBUG ENREGISTREMENT - Prix encre total: " . $prix_encre_total);
-                            error_log("DEBUG ENREGISTREMENT - Prix papier total: " . $prix_papier_total);
-                            
-                            $prix_brochure = $prix_papier_total + $prix_encre_total;
+                            // Utilisation de la fonction optimisée
+                            $prix_brochure = calculateBrochurePriceOptimized(
+                                $brochure, 
+                                $prix_papier_a3, 
+                                $prix_papier_a4, 
+                                $machine_prices, 
+                                $machine_type_detected, 
+                                $machine['machine']
+                            );
                             $prix_machine += $prix_brochure;
                             
                             // Debug: Log du prix final de la brochure
@@ -811,6 +883,7 @@ function Action() {
                                 $query_counters = $db->prepare('SELECT master_ap, passage_ap FROM dupli WHERE nom_machine = ? ORDER BY id DESC LIMIT 1');
                                 $query_counters->execute([$machine_name]);
                                 $last_counters = $query_counters->fetch(PDO::FETCH_ASSOC);
+                                $query_counters->closeCursor(); // Bonne pratique : fermer le curseur
                                 
                                 if ($last_counters) {
                                     $master_av = ceil($last_counters['master_ap']);
@@ -837,9 +910,10 @@ function Action() {
                         if (isset($machine['duplicopieur_id']) && !empty($machine['duplicopieur_id'])) {
                             $duplicopieur_id = intval($machine['duplicopieur_id']);
                             // Récupérer le nom de la machine depuis la table duplicopieurs
-                            $query = $db->prepare('SELECT marque, modele FROM duplicopieurs WHERE id = ?');
-                            $query->execute([$duplicopieur_id]);
-                            $dup = $query->fetch(PDO::FETCH_ASSOC);
+                            $query_dup = $db->prepare('SELECT marque, modele FROM duplicopieurs WHERE id = ?');
+                            $query_dup->execute([$duplicopieur_id]);
+                            $dup = $query_dup->fetch(PDO::FETCH_ASSOC);
+                            $query_dup->closeCursor(); // CORRECTION CRITIQUE : Fermer le curseur
                             if ($dup) {
                                 $nom_machine = $dup['marque'] . ' ' . $dup['modele'];
                                 if ($dup['marque'] === $dup['modele']) {
@@ -870,6 +944,9 @@ function Action() {
                         // Debug: Log du prix final transmis à insert_photocop
                         error_log("DEBUG ENREGISTREMENT - Prix final transmis à insert_photocop: " . $prix_machine_calcule);
                         
+                        // Debug: Log des brochures reçues
+                        error_log("DEBUG ENREGISTREMENT - Brochures reçues: " . count($machine['brochures']) . " brochures");
+                        
                         // Traiter les brochures pour récupérer les infos nécessaires à l'enregistrement
                         if (isset($machine['brochures']) && is_array($machine['brochures'])) {
                             foreach ($machine['brochures'] as $brochure) {
@@ -881,8 +958,9 @@ function Action() {
                                     $rv = isset($brochure['rv']) && $brochure['rv'] == 'oui' ? 'oui' : 'non';
                                     
                                     // Insérer dans la table photocop avec le prix transmis
+                                    error_log("DEBUG ENREGISTREMENT - Tentative insertion photocop: type=photocopieur, marque=$marque, nb_f_total=$nb_f_total, prix=$prix_machine_calcule");
                                     insert_photocop(
-                                        $taille,
+                                        'photocopieur',  // CORRECTION: $type au lieu de $taille
                                         $marque,
                                         $machine['contact'] ?? $contact,
                                         $nb_f_total,
@@ -894,6 +972,7 @@ function Action() {
                                         $date,
                                         $db  // CORRECTION DEADLOCK : Passer la connexion de la transaction
                                     );
+                                    error_log("DEBUG ENREGISTREMENT - Insertion photocop réussie");
                                 }
                             }
                         }
@@ -950,6 +1029,7 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
         $query_counters = $db->prepare('SELECT master_ap, passage_ap FROM dupli WHERE nom_machine = ? ORDER BY id DESC LIMIT 1');
         $query_counters->execute([$machine_name]);
         $last_counters = $query_counters->fetch(PDO::FETCH_ASSOC);
+        $query_counters->closeCursor(); // Bonne pratique : fermer le curseur
         
         if ($last_counters) {
             $last_values['master_av'] = ceil($last_counters['master_ap']);
@@ -957,42 +1037,54 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
         }
     }
     
-    $html = '<hr>
-        <h5>Tirage #' . ($index + 1) . '</h5>
-        
-        <!-- Contact pour ce tirage -->
-        <div class="form-group">
-            <label class="col-md-4 control-label" for="contact_' . $index . '">Contact</label>  
-            <div class="col-md-4">
-                <input id="contact_' . $index . '" name="machines[' . $index . '][contact]" class="form-control input-md" type="text" value="">
-                <span class="help-block">Modifiez si différent du contact principal</span>
-            </div>
-        </div>
-        
-        <!-- Type de machine -->
-        <div class="form-group">
-            <label class="col-md-4 control-label">Type de machine</label>
-            <div class="col-md-4">
-                <div class="radio">
-                    <label>
-                        <input type="radio" name="machines[' . $index . '][type]" value="duplicopieur" checked onchange="toggleMachineType(' . $index . ')">
-                        Duplicopieur
-                    </label>
+    $html = '<div class="machine-item panel panel-primary" data-index="' . $index . '">
+        <!-- Header cliquable avec preview -->
+        <div class="panel-heading" style="cursor: pointer;">
+            <div class="row" onclick="toggleMachinePanel(' . $index . ')">
+                <div class="col-xs-8 col-sm-9">
+                    <h4 class="panel-title" style="margin: 0;">
+                        <i class="fa fa-chevron-down toggle-icon" id="toggle-icon-' . $index . '"></i>
+                        <strong>Tirage #' . ($index + 1) . '</strong>
+                        <span class="machine-type-badge badge" id="type-badge-' . $index . '">Duplicopieur</span>
+                    </h4>
                 </div>
-                <div class="radio">
-                    <label>
-                        <input type="radio" name="machines[' . $index . '][type]" value="photocopieur" onchange="toggleMachineType(' . $index . ')">
-                        Photocopieur
-                    </label>
+                <div class="col-xs-4 col-sm-3 text-right">
+                    <span class="machine-price-preview" id="price-preview-' . $index . '">0.00€</span>
                 </div>
             </div>
         </div>
         
-        <!-- Interface duplicopieur -->
-        <div id="duplicopieur-interface-' . $index . '" class="machine-interface">
+        <!-- Corps du panel (pliable) -->
+        <div class="panel-body machine-content" id="machine-content-' . $index . '" style="padding: 20px;">
+        
+        <!-- Type de machine - Système onglets -->
+        <div class="form-group">
+            <div class="col-md-12">
+                <ul class="nav nav-tabs" role="tablist" style="margin-bottom: 20px;">
+                    <li role="presentation" class="active" id="tab-duplicopieur-' . $index . '">
+                        <a href="#" onclick="selectMachineTypeTab(' . $index . ', \'duplicopieur\'); return false;" style="font-size: 16px;">
+                            <i class="fa fa-print" style="margin-right: 5px;"></i> Duplicopieur
+                        </a>
+                    </li>
+                    <li role="presentation" id="tab-photocopieur-' . $index . '">
+                        <a href="#" onclick="selectMachineTypeTab(' . $index . ', \'photocopieur\'); return false;" style="font-size: 16px;">
+                            <i class="fa fa-copy" style="margin-right: 5px;"></i> Photocopieur
+                        </a>
+                    </li>
+                </ul>
+                <!-- Inputs cachés pour les valeurs -->
+                <input type="radio" name="machines[' . $index . '][type]" value="duplicopieur" checked onchange="toggleMachineType(' . $index . ')" style="display: none;" id="radio-duplicopieur-' . $index . '">
+                <input type="radio" name="machines[' . $index . '][type]" value="photocopieur" onchange="toggleMachineType(' . $index . ')" style="display: none;" id="radio-photocopieur-' . $index . '">
+            </div>
+        </div>
+        
+            <!-- Interface duplicopieur -->
+            <div id="duplicopieur-interface-' . $index . '" class="machine-interface" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #17a2b8;">
             <div class="form-group">
-                <label class="col-md-4 control-label">Duplicopieur</label>
-                <div class="col-md-4">';
+                <label class="col-md-3 control-label">
+                    <i class="fa fa-cog" style="margin-right: 5px;"></i> Duplicopieur
+                </label>
+                <div class="col-md-9">';
     
     // Logique duplicopieur (identique à la première machine)
     if(isset($duplicopieur_selectionne)) {
@@ -1035,43 +1127,47 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
             </div>
             
             <!-- Options duplicopieur -->
-            <div class="form-group">
-                <label class="col-md-4 control-label" for="A4_' . $index . '">A4</label>
-                <div class="col-md-4">
-                    <div class="checkbox">
-                        <label for="A4_' . $index . '">
-                            <input name="machines[' . $index . '][A4]" value="A4" type="checkbox" onchange="calculateTotalPrice()">
-                            oui
-                        </label>
-                    </div>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="col-md-4 control-label" for="rv_' . $index . '">Recto/verso</label>
-                <div class="col-md-4">
-                    <div class="checkbox">
-                        <label for="rv_' . $index . '">
-                            <input name="machines[' . $index . '][rv]" value="oui" type="checkbox" onchange="calculateTotalPrice()">
-                            oui
-                        </label>
-                    </div>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="col-md-4 control-label" for="feuilles_payees_' . $index . '">2ème couleur ? (feuilles déjà payées)</label>
-                <div class="col-md-4">
-                    <div class="checkbox">
-                        <label for="feuilles_payees_' . $index . '">
-                            <input name="machines[' . $index . '][feuilles_payees]" value="oui" type="checkbox" onchange="calculateTotalPrice()">
-                            oui
-                        </label>
+            <div class="form-group" style="padding: 10px; margin: 10px 0;">
+                <label class="col-md-2 control-label">
+                    <i class="fa fa-sliders" style="margin-right: 5px;"></i> Options
+                </label>
+                <div class="col-md-10">
+                    <div class="row">
+                        <div class="col-xs-4 col-sm-3">
+                            <div class="checkbox">
+                                <label for="A4_' . $index . '">
+                                    <input name="machines[' . $index . '][A4]" value="A4" type="checkbox" onchange="calculateTotalPrice()" id="A4_' . $index . '">
+                                    <i class="fa fa-file-text-o"></i> Format A4
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-xs-4 col-sm-3">
+                            <div class="checkbox">
+                                <label for="rv_' . $index . '">
+                                    <input name="machines[' . $index . '][rv]" value="oui" type="checkbox" onchange="calculateTotalPrice()" id="rv_' . $index . '">
+                                    <i class="fa fa-files-o"></i> Recto/verso
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-xs-12 col-sm-6">
+                            <div class="checkbox">
+                                <label for="feuilles_payees_' . $index . '">
+                                    <input name="machines[' . $index . '][feuilles_payees]" value="oui" type="checkbox" onchange="calculateTotalPrice()" id="feuilles_payees_' . $index . '">
+                                    <i class="fa fa-paint-brush"></i> 2ème couleur (feuilles payées)
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             
             <!-- Mode de saisie -->
-            <div class="form-group">
-                <label class="col-md-4 control-label">Mode de saisie</label>
+            <div class="col-md-12" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid #28a745;">
+                <legend style="border-bottom: 2px solid #dee2e6; padding-bottom: 10px; margin-bottom: 15px; font-size: 18px;">
+                    <i class="fa fa-keyboard-o" style="margin-right: 8px; color: #28a745;"></i> Mode de saisie
+                </legend>
+                <div class="form-group">
+                    <label class="col-md-3 control-label">Type de saisie</label>
                 <div class="col-md-4">
                     <div class="radio">
                         <label>
@@ -1144,13 +1240,16 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
                     </div>
                 </div>
             </div>
-        </div>
+            </div><!-- Fin col-md-12 mode de saisie -->
+        </div><!-- Fin duplicopieur-interface -->
         
-        <!-- Interface photocopieur -->
-        <div id="photocopieur-interface-' . $index . '" class="machine-interface" style="display:none;">
+            <!-- Interface photocopieur -->
+            <div id="photocopieur-interface-' . $index . '" class="machine-interface" style="display:none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #e83e8c;">
             <div class="form-group">
-                <label class="col-md-4 control-label" for="marque_' . $index . '">Photocopieuse à utiliser</label>
-                <div class="col-md-4">
+                <label class="col-md-3 control-label" for="marque_' . $index . '">
+                    <i class="fa fa-desktop" style="margin-right: 5px;"></i> Photocopieuse
+                </label>
+                <div class="col-md-9">
                     <select id="marque_' . $index . '" name="machines[' . $index . '][machine]" class="form-control">';
     
     // Logique photocopieur
@@ -1170,79 +1269,96 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
                 </div>
             </div>
             
+            
             <!-- Brochures -->
             <div class="brochures-container" data-machine="' . $index . '">
-                <h6>Brochures/Tracts à imprimer</h6>
-                <div class="brochure-item" data-brochure="0">
-                    <div class="form-group">
-                        <label class="col-md-4 control-label" for="nb_exemplaires_' . $index . '_0">Nombre d\'exemplaires</label>  
-                        <div class="col-md-4">
-                            <input id="nb_exemplaires_' . $index . '_0" name="machines[' . $index . '][brochures][0][nb_exemplaires]" class="form-control input-md" type="number" min="1" value="1" onchange="calculateTotalPrice()">
-                            <span class="help-block">Nombre d\'exemplaires à imprimer</span>  
+                <h5 style="background: #f8f9fa; padding: 12px; border-radius: 5px; margin-bottom: 15px; border-left: 3px solid #9c27b0;">
+                    <i class="fa fa-book" style="margin-right: 8px; color: #9c27b0;"></i> Brochures/Tracts à imprimer
+                </h5>
+                <div class="brochure-item" data-brochure="0" style="padding: 15px; background: #ffffff; border: 1px solid #dee2e6; border-radius: 5px; margin-bottom: 10px;">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="control-label" for="nb_exemplaires_' . $index . '_0">Exemplaires</label>  
+                                <input id="nb_exemplaires_' . $index . '_0" name="machines[' . $index . '][brochures][0][nb_exemplaires]" class="form-control input-sm" type="number" min="1" value="1" onchange="calculateTotalPrice()" style="max-width: 100px;">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label class="control-label" for="nb_feuilles_' . $index . '_0">Feuilles / ex.</label>  
+                                <input id="nb_feuilles_' . $index . '_0" name="machines[' . $index . '][brochures][0][nb_feuilles]" class="form-control input-sm" type="number" min="1" onchange="calculateTotalPrice()" style="max-width: 100px;">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label" for="radios_' . $index . '_0">Taille</label>
+                                <div> 
+                                    <label class="radio-inline" for="radios-' . $index . '-0-0">
+                                        <input name="machines[' . $index . '][brochures][0][taille]" id="radios-' . $index . '-0-0" value="A4" checked="checked" type="radio" onchange="calculateTotalPrice()">
+                                        A4
+                                    </label> 
+                                    <label class="radio-inline" for="radios-' . $index . '-0-1">
+                                        <input name="machines[' . $index . '][brochures][0][taille]" id="radios-' . $index . '-0-1" value="A3" type="radio" onchange="calculateTotalPrice()">
+                                        A3
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label class="col-md-4 control-label" for="nb_feuilles_' . $index . '_0">Nombre de feuilles par exemplaire</label>  
-                        <div class="col-md-4">
-                            <input id="nb_feuilles_' . $index . '_0" name="machines[' . $index . '][brochures][0][nb_feuilles]" class="form-control input-md" type="number" min="1" onchange="calculateTotalPrice()">
-                            <span class="help-block">Nombre de feuilles par exemplaire</span>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-md-4 control-label" for="radios_' . $index . '_0">Taille</label>
-                        <div class="col-md-4"> 
-                            <label class="radio-inline" for="radios-' . $index . '-0-0">
-                                <input name="machines[' . $index . '][brochures][0][taille]" id="radios-' . $index . '-0-0" value="A4" checked="checked" type="radio" onchange="calculateTotalPrice()">
-                                A4
-                            </label> 
-                            <label class="radio-inline" for="radios-' . $index . '-0-1">
-                                <input name="machines[' . $index . '][brochures][0][taille]" id="radios-' . $index . '-0-1" value="A3" type="radio" onchange="calculateTotalPrice()">
-                                A3
-                            </label>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-md-4 control-label" for="rv_' . $index . '_0">Recto/verso</label>
-                        <div class="col-md-4">
-                            <div class="checkbox">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <label class="control-label"><i class="fa fa-cogs"></i> Options</label>
+                            <div class="checkbox-inline" style="margin-right: 20px;">
                                 <label for="rv_' . $index . '_0">
-                                    <input name="machines[' . $index . '][brochures][0][rv]" value="oui" type="checkbox" onchange="calculateTotalPrice()">
-                                    oui
+                                    <input name="machines[' . $index . '][brochures][0][rv]" value="oui" type="checkbox" onchange="calculateTotalPrice()" id="rv_' . $index . '_0">
+                                    <i class="fa fa-files-o"></i> Recto/verso
                                 </label>
                             </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-md-4 control-label" for="couleur_' . $index . '_0">Couleur</label>
-                        <div class="col-md-4">
-                            <div class="checkbox">
-                                <label for="couleur_' . $index . '_0">
-                                    <input name="machines[' . $index . '][brochures][0][couleur]" value="oui" type="checkbox" onchange="calculateTotalPrice()">
-                                    oui
-                                </label>
+                                <div class="checkbox-inline" style="margin-right: 20px;">
+                                    <label for="couleur_' . $index . '_0">
+                                        <input name="machines[' . $index . '][brochures][0][couleur]" value="oui" type="checkbox" onchange="calculateTotalPrice(); toggleFillRateDisplay(' . $index . ');" id="couleur_' . $index . '_0">
+                                        <i class="fa fa-tint"></i> Couleur
+                                    </label>
+                                </div>
+                                <div class="checkbox-inline">
+                                    <label for="feuilles_payees_' . $index . '_0">
+                                        <input name="machines[' . $index . '][brochures][0][feuilles_payees]" value="oui" type="checkbox" onchange="calculateTotalPrice()" id="feuilles_payees_' . $index . '_0">
+                                        <i class="fa fa-check-square"></i> Feuilles payées
+                                    </label>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-md-4 control-label" for="feuilles_payees_' . $index . '_0">Feuilles déjà payées</label>
-                        <div class="col-md-4">
-                            <div class="checkbox">
-                                <label for="feuilles_payees_' . $index . '_0">
-                                    <input name="machines[' . $index . '][brochures][0][feuilles_payees]" value="oui" type="checkbox" onchange="calculateTotalPrice()">
-                                    oui
-                                </label>
+                        
+                        <!-- Taux de remplissage couleur - sous la case couleur -->
+                        <div class="form-group" id="fill-rate-group-' . $index . '" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px; display: none; border-left: 3px solid #e83e8c;">
+                            <label class="col-md-3 control-label">
+                                <i class="fa fa-percent" style="margin-right: 5px;"></i> Taux de remplissage couleur
+                            </label>
+                            <div class="col-md-9">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <input type="range" id="fill_rate_photocop_slider_' . $index . '" min="0" max="100" value="50" step="5" 
+                                               class="form-control" oninput="updateFillRateDisplay(\'photocop\', ' . $index . ')" style="margin: 8px 0;">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <span id="fill_rate_photocop_display_' . $index . '" style="font-size: 16px; font-weight: bold; color: #e83e8c;">50%</span>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="fill_rate_photocop_' . $index . '" name="machines[' . $index . '][fill_rate]" value="0.5">
+                                <span class="help-block">Ajustez le taux de remplissage des couleurs (0% = très léger, 100% = très foncé)</span>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                </div><!-- Fin brochure-item -->
+            </div><!-- Fin brochures-container -->
+        </div><!-- Fin photocopieur-interface -->
         
         <!-- Prix de la machine -->
-        <div class="form-group">
-            <label class="col-md-4 control-label">Prix de ce tirage</label>
-            <div class="col-md-4">
-                <div class="form-control-static machine-price" data-machine="' . $index . '">0.00€</div>
+        <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #28a745;">
+            <label class="col-md-4 control-label" style="font-size: 14px; font-weight: normal;">
+                <i class="fa fa-euro" style="margin-right: 5px; color: #28a745;"></i> Prix de ce tirage
+            </label>
+            <div class="col-md-8">
+                <div class="form-control-static machine-price" data-machine="' . $index . '" id="machine-price-' . $index . '" style="font-size: 16px; font-weight: bold; color: #28a745;">0.00€</div>
             </div>
         </div>
         
@@ -1250,9 +1366,14 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
         <div class="form-group">
             <div class="col-md-4"></div>
             <div class="col-md-4">
-                <button type="button" class="btn btn-danger btn-sm remove-machine" data-index="' . $index . '">- Supprimer ce tirage</button>
+                <button type="button" class="btn btn-danger btn-sm remove-machine" data-index="' . $index . '">
+                    <i class="fa fa-trash"></i> Supprimer ce tirage
+                </button>
             </div>
-        </div>';
+        </div>
+        
+        </div><!-- Fin panel-body -->
+    </div><!-- Fin panel machine-item -->';
     
     return $html;
 }

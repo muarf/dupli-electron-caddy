@@ -38,26 +38,134 @@
             padding: 15px;
             margin-top: 15px;
         }
+        .choice-card {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 30px;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .choice-card:hover {
+            border-color: #007bff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+        .choice-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #007bff;
+        }
+        .upload-zone {
+            border: 2px dashed #007bff;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9fa;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
     <div class="setup-container">
         <div class="text-center mb-4">
             <h1>🚀 Configuration initiale de Dupli</h1>
-            <p class="lead">Ajoutez vos machines pour commencer à utiliser l'application</p>
+            <p class="lead"><?= $mode === 'choice' ? 'Choisissez comment configurer votre application' : ($mode === 'upload' ? 'Importer une base de données existante' : 'Ajoutez vos machines pour commencer') ?></p>
         </div>
 
-        <?php if (isset($_SESSION['setup_errors']) && !empty($_SESSION['setup_errors'])): ?>
+        <?php if (isset($errors) && !empty($errors)): ?>
             <div class="alert alert-danger">
                 <h5>⚠️ Erreurs détectées :</h5>
                 <ul class="mb-0">
-                    <?php foreach ($_SESSION['setup_errors'] as $error): ?>
+                    <?php foreach ($errors as $error): ?>
                         <li><?= htmlspecialchars($error) ?></li>
                     <?php endforeach; ?>
                 </ul>
             </div>
-            <?php unset($_SESSION['setup_errors']); ?>
         <?php endif; ?>
+
+        <?php if (isset($success)): ?>
+            <div class="alert alert-success">
+                <strong>✅ Succès :</strong> <?= htmlspecialchars($success) ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($mode === 'choice'): ?>
+            <!-- ÉCRAN DE CHOIX -->
+            <div class="row">
+                <div class="col-md-6">
+                    <a href="?setup&mode=create" style="text-decoration: none; color: inherit;">
+                        <div class="choice-card text-center">
+                            <div class="choice-icon">
+                                <i class="fa fa-plus-circle"></i>
+                            </div>
+                            <h3>Créer mes machines</h3>
+                            <p class="text-muted">
+                                Configurer manuellement vos duplicopieurs et photocopieurs
+                            </p>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <a href="?setup&mode=upload" style="text-decoration: none; color: inherit;">
+                        <div class="choice-card text-center">
+                            <div class="choice-icon">
+                                <i class="fa fa-upload"></i>
+                            </div>
+                            <h3>Importer une base</h3>
+                            <p class="text-muted">
+                                Restaurer une base de données existante depuis un fichier
+                            </p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+        <?php elseif ($mode === 'upload'): ?>
+            <!-- ÉCRAN D'UPLOAD -->
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        <i class="fa fa-upload"></i> Importer une base de données
+                    </h3>
+                </div>
+                <div class="panel-body">
+                    <form action="?setup_upload" method="POST" enctype="multipart/form-data">
+                        <div class="upload-zone">
+                            <i class="fa fa-database" style="font-size: 64px; color: #007bff; margin-bottom: 20px;"></i>
+                            <h4>Sélectionnez votre fichier SQLite</h4>
+                            <p class="text-muted">Fichier .sqlite (max 50 MB)</p>
+                            <input type="file" name="database_file" accept=".sqlite" required class="form-control" style="margin-top: 20px;">
+                        </div>
+
+                        <div class="alert alert-info" style="margin-top: 20px;">
+                            <strong><i class="fa fa-info-circle"></i> Information :</strong>
+                            <ul>
+                                <li>Le fichier doit être une base de données SQLite (.sqlite)</li>
+                                <li>La base doit contenir au moins une machine configurée</li>
+                                <li>Une sauvegarde de sécurité sera créée si une base existe déjà</li>
+                            </ul>
+                        </div>
+
+                        <div class="text-center" style="margin-top: 30px;">
+                            <a href="?setup&mode=choice" class="btn btn-default btn-lg">
+                                <i class="fa fa-arrow-left"></i> Retour
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fa fa-upload"></i> Importer la base de données
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        <?php else: // mode === 'create' ?>
+            <!-- ÉCRAN DE CRÉATION DES MACHINES -->
+            <div class="text-right mb-3">
+                <a href="?setup&mode=choice" class="btn btn-default">
+                    <i class="fa fa-arrow-left"></i> Retour au choix
+                </a>
+            </div>
 
         <form id="setupForm" method="POST" action="?setup_save">
             <!-- Configuration du mot de passe administrateur -->
@@ -381,10 +489,13 @@
                 Vous pourrez modifier ces informations plus tard dans l'administration
             </small>
         </div>
-    </div>
+
+        <?php endif; // Fin du mode create ?>
 
     <script src="js/jquery.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
+
+    <?php if ($mode === 'create'): // Script uniquement pour le mode create ?>
     <script>
         $(document).ready(function() {
             let machines = [];
@@ -731,6 +842,9 @@
             window.removeMachine = removeMachine;
         });
     </script>
+    <?php endif; // Fin du script pour mode create ?>
+
+    </div> <!-- Fin setup-container -->
 </body>
 </html>
 

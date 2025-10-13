@@ -22,36 +22,38 @@ function get_price()
     $prix = array();
     
     try {
-        // Récupérer les prix avec les clés simples
+        // Récupérer les prix avec les clés simples (SQLite utilise || pour la concaténation)
         $query = $db->query('
             SELECT p.*, 
                    CASE 
-                       WHEN p.machine_type = "dupli" THEN CONCAT("dupli_", p.machine_id)
-                       WHEN p.machine_type = "photocop" THEN CONCAT("photocop_", p.machine_id)
-                       ELSE CONCAT(p.machine_type, "_", p.machine_id)
+                       WHEN p.machine_type = "dupli" THEN "dupli_" || p.machine_id
+                       WHEN p.machine_type = "photocop" THEN "photocop_" || p.machine_id
+                       ELSE p.machine_type || "_" || p.machine_id
                    END as machine_key
             FROM prix p
             ORDER BY p.machine_type, p.machine_id, p.type
         ');
         
         if ($query) {
-            while($result = $query->fetch(PDO::FETCH_OBJ))
+            // CORRECTION DEADLOCK SQLite : Utiliser fetchAll() pour libérer immédiatement le curseur
+            $results = $query->fetchAll(PDO::FETCH_OBJ);
+            foreach($results as $result)
             {
                 // Pour les duplicopieurs, structurer différemment les tambours
                 if ($result->machine_type === 'dupli') {
                     // Si c'est un tambour (tambour_noir, tambour_bleu, etc.)
                     if (strpos($result->type, 'tambour_') === 0) {
-                        $prix[$result->machine_key][$result->type]['unite'] = $result->unite;
-                        $prix[$result->machine_key][$result->type]['pack'] = $result->pack;
+                        $prix[$result->machine_key][$result->type]['unite'] = floatval($result->unite);
+                        $prix[$result->machine_key][$result->type]['pack'] = floatval($result->pack);
                     } else {
                         // Pour master et encre, garder la structure actuelle
-                        $prix[$result->machine_key][$result->type]['unite'] = $result->unite;
-                        $prix[$result->machine_key][$result->type]['pack'] = $result->pack;
+                        $prix[$result->machine_key][$result->type]['unite'] = floatval($result->unite);
+                        $prix[$result->machine_key][$result->type]['pack'] = floatval($result->pack);
                     }
                 } else {
                     // Pour les autres machines (photocopieurs), garder la structure actuelle
-                    $prix[$result->machine_key][$result->type]['unite'] = $result->unite;
-                    $prix[$result->machine_key][$result->type]['pack'] = $result->pack;
+                    $prix[$result->machine_key][$result->type]['unite'] = floatval($result->unite);
+                    $prix[$result->machine_key][$result->type]['pack'] = floatval($result->pack);
                 }
             }
         }
@@ -60,8 +62,8 @@ function get_price()
         if ($query) {
             $result = $query->fetch(PDO::FETCH_OBJ);
             if ($result) {
-                $prix['papier']['A3'] = $result->prix*2;
-                $prix['papier']['A4'] = $result->prix;
+                $prix['papier']['A3'] = floatval($result->prix)*2;
+                $prix['papier']['A4'] = floatval($result->prix);
             } else {
                 // Valeurs par défaut si pas de données
                 $prix['papier']['A3'] = 0.02;
@@ -194,37 +196,60 @@ function prix_du($machine)
 {
     $db = pdo_connect();
     
-    // Vérifier si c'est un duplicopieur (nom complet comme "Ricoh dx4545")
-    $query_check = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND CONCAT(marque, " ", modele) = ?');
-    $query_check->execute([$machine]);
+    // Vérifier si c'est un duplicopieur - essayer plusieurs formats de nom
+    // SQLite n'a pas CONCAT, on utilise l'opérateur ||
+    if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
+        $query_check = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR marque = ? OR modele = ?)');
+    } else {
+        $query_check = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR marque = ? OR modele = ?)');
+    }
+    $query_check->execute([$machine, $machine, $machine]);
     $is_duplicopieur = $query_check->fetchColumn() > 0;
     
     if ($is_duplicopieur) {
         // C'est un duplicopieur, utiliser la table dupli avec filtre par duplicopieur_id
-        $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND CONCAT(marque, " ", modele) = ?');
-        $query_dup->execute([$machine]);
+        // SQLite n'a pas CONCAT, on utilise l'opérateur ||
+        if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
+            $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR marque = ? OR modele = ?) LIMIT 1');
+        } else {
+            $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR marque = ? OR modele = ?) LIMIT 1');
+        }
+        $query_dup->execute([$machine, $machine, $machine]);
         $duplicopieur_id = $query_dup->fetchColumn();
         
         if ($duplicopieur_id) {
-            $query = $db->prepare('SELECT sum(prix) AS nbr FROM dupli WHERE duplicopieur_id = ? AND paye = "non"');
+            $query = $db->prepare('SELECT sum(CAST(prix AS REAL)) AS nbr FROM dupli WHERE duplicopieur_id = ? AND paye = "non"');
             $query->execute([$duplicopieur_id]);
+            $result = $query->fetch(PDO::FETCH_OBJ);
+            $euros = $result->nbr;
+            
+            // Si aucun résultat avec duplicopieur_id, essayer avec nom_machine comme fallback
+            if (!$euros) {
+                $query_fallback = $db->prepare('SELECT sum(CAST(prix AS REAL)) AS nbr FROM dupli WHERE nom_machine = ? AND paye = "non"');
+                $query_fallback->execute([$machine]);
+                $result_fallback = $query_fallback->fetch(PDO::FETCH_OBJ);
+                $euros = $result_fallback->nbr;
+            }
         } else {
             // Fallback si pas trouvé
-            $query = $db->query('SELECT sum(prix) AS nbr FROM dupli WHERE paye = "non"');
+            $query = $db->query('SELECT sum(CAST(prix AS REAL)) AS nbr FROM dupli WHERE paye = "non"');
+            $result = $query->fetch(PDO::FETCH_OBJ);
+            $euros = $result->nbr;
         }
     } else if ($machine === 'A3' || $machine === 'A4' || $machine === 'dupli') {
         // Pour A3, A4, et dupli (ancien système), utiliser la table dupli sans filtre
-        $query = $db->query('SELECT sum(prix) AS nbr FROM dupli WHERE paye = "non"');
+        $query = $db->query('SELECT sum(CAST(prix AS REAL)) AS nbr FROM dupli WHERE paye = "non"');
+        $result = $query->fetch(PDO::FETCH_OBJ);
+        $euros = $result->nbr;
     } else {
         // Pour les photocopieurs, utiliser la table photocop avec filtre par marque
-        $query = $db->prepare('SELECT sum(prix) AS nbr FROM photocop WHERE marque = ? AND paye = "non"');
+        $query = $db->prepare('SELECT sum(CAST(prix AS REAL)) AS nbr FROM photocop WHERE marque = ? AND paye = "non"');
         $query->execute(array($machine));
+        $result = $query->fetch(PDO::FETCH_OBJ);
+        $euros = $result->nbr;
     }
     
-    $result = $query->fetch(PDO::FETCH_OBJ);
-    $euros = $result->nbr;
-    
-    return $euros;
+    return $euros ?: 0;
 }
 
 /**

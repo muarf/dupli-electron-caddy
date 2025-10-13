@@ -293,10 +293,12 @@ function pdo_connect()
         // Options spécifiques pour SQLite
         if ($conf['db_type'] === 'sqlite') {
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $db->setAttribute(PDO::ATTR_TIMEOUT, 30);
+            $db->setAttribute(PDO::ATTR_TIMEOUT, 60); // Augmenté de 30 à 60 secondes
             // S'assurer que SQLite peut écrire
             $db->exec("PRAGMA journal_mode=WAL");
             $db->exec("PRAGMA synchronous=NORMAL");
+            $db->exec("PRAGMA temp_store=MEMORY"); // Optimisation mémoire
+            $db->exec("PRAGMA cache_size=10000"); // Cache plus important
         }
         
         return $db;

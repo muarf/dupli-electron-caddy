@@ -60,14 +60,6 @@
             padding: 10px;
         }
         select.form-control {
-            -webkit-appearance: none !important;
-            -moz-appearance: none !important;
-            appearance: none !important;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") !important;
-            background-repeat: no-repeat !important;
-            background-position: right 12px center !important;
-            background-size: 16px !important;
-            padding-right: 40px !important;
             background-color: white !important;
             color: #495057 !important;
             font-weight: 500 !important;
@@ -75,29 +67,15 @@
             line-height: 1.5 !important;
             border: 2px solid #e9ecef !important;
             border-radius: 6px !important;
+            padding: 12px 15px !important;
+            min-height: 45px !important;
         }
         select.form-control option {
             background-color: white !important;
-            color: #495057 !important;
-            font-weight: 500 !important;
-            padding: 10px !important;
-            font-size: 16px !important;
-        }
-        /* Style de test pour forcer la visibilité */
-        #imposition_type {
-            background-color: #fff !important;
             color: #000 !important;
-            font-size: 18px !important;
-            font-weight: bold !important;
-            border: 3px solid #007bff !important;
-            min-height: 50px !important;
-        }
-        #imposition_type option {
-            background-color: #fff !important;
-            color: #000 !important;
+            font-weight: normal !important;
+            padding: 12px !important;
             font-size: 16px !important;
-            font-weight: bold !important;
-            padding: 15px !important;
         }
         .form-control:focus {
             border-color: #a8e6cf;
@@ -275,78 +253,8 @@
     <div class="container">
         <div class="main-container">
             <div class="page-header text-center">
-                <h1><i class="fa fa-file-pdf-o"></i> Imposition PDF</h1>
-                <div class="subtitle">Version PHP - Compatible avec tous les formats</div>
-            </div>
-            
-            <div class="form-section">
-                <?php if (!empty($errors)): ?>
-                    <div class="alert alert-danger">
-                        <h4><i class="fa fa-exclamation-triangle"></i> Erreurs détectées :</h4>
-                        <ul class="mb-3">
-                            <?php foreach ($errors as $error): ?>
-                                <li><?= htmlspecialchars($error) ?></li>
-                            <?php endforeach; ?>
-                        </ul>
-                        <div class="mt-3">
-                            <button onclick="history.back()" class="btn btn-secondary me-2">
-                                <i class="fa fa-arrow-left"></i> Retour
-                            </button>
-                            <button onclick="location.reload()" class="btn btn-primary me-2">
-                                <i class="fa fa-refresh"></i> Recharger
-                            </button>
-                            <button onclick="window.location.href='?accueil'" class="btn btn-success">
-                                <i class="fa fa-home"></i> Accueil
-                            </button>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-                <form method="POST" enctype="multipart/form-data" class="form-horizontal">
-                    <div class="file-upload-area" id="fileUploadArea">
-                        <div class="file-upload-icon">
-                            <i class="fa fa-cloud-upload"></i>
-                        </div>
-                        <div class="file-upload-text" id="uploadText">
-                            Glissez-déposez votre PDF ici
-                        </div>
-                        <div class="file-upload-subtext" id="uploadSubtext">
-                            ou cliquez pour sélectionner un fichier
-                        </div>
-                        <input type="file" name="pdf" id="pdf" accept="application/pdf" required style="display: none;">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="imposition_type"><i class="fa fa-cogs"></i> Type d'imposition :</label>
-                        <select name="imposition_type" id="imposition_type" class="form-control">
-                            <option value="a5">8 pages A5 par A3 (4 recto + 4 verso)</option>
-                            <option value="a6">16 pages A6 par A3 (8 recto + 8 verso)</option>
-                        </select>
-                    </div>
-
-                    <div class="checkbox-group">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label for="preview">
-                                    <input type="checkbox" name="preview" id="preview">
-                                    <i class="fa fa-eye"></i> Prévisualiser avec numéros de page
-                                </label>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="force_resize">
-                                    <input type="checkbox" name="force_resize" id="force_resize">
-                                    <i class="fa fa-expand"></i> Forcer le redimensionnement
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="text-center">
-                        <button type="submit" class="btn btn-impose">
-                            <i class="fa fa-magic"></i> Imposer le PDF
-                        </button>
-                    </div>
-                </form>
+                <h1><i class="fa fa-magic"></i> Imposer un PDF</h1>
+                <div class="subtitle">Créer un livret A3 à partir de pages A4</div>
             </div>
 
             <?php if ($success): ?>
@@ -459,6 +367,125 @@
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
+            
+            <div class="form-section">
+                <?php if (!empty($errors)): ?>
+                    <div class="alert alert-danger">
+                        <h4><i class="fa fa-exclamation-triangle"></i> Erreurs détectées :</h4>
+                        <ul class="mb-3">
+                            <?php foreach ($errors as $error): ?>
+                                <li><?= htmlspecialchars($error) ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                        <div class="mt-3">
+                            <button onclick="history.back()" class="btn btn-secondary me-2">
+                                <i class="fa fa-arrow-left"></i> Retour
+                            </button>
+                            <button onclick="location.reload()" class="btn btn-primary me-2">
+                                <i class="fa fa-refresh"></i> Recharger
+                            </button>
+                            <button onclick="window.location.href='?accueil'" class="btn btn-success">
+                                <i class="fa fa-home"></i> Accueil
+                            </button>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <form method="POST" enctype="multipart/form-data" class="form-horizontal">
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <div class="file-upload-icon">
+                            <i class="fa fa-cloud-upload"></i>
+                        </div>
+                        <div class="file-upload-text" id="uploadText">
+                            Glissez-déposez votre PDF ici
+                        </div>
+                        <div class="file-upload-subtext" id="uploadSubtext">
+                            ou cliquez pour sélectionner un fichier
+                        </div>
+                        <input type="file" name="pdf" id="pdf" accept="application/pdf" required style="display: none;">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="imposition_type"><i class="fa fa-cogs"></i> Type d'imposition :</label>
+                        <select name="imposition_type" id="imposition_type" class="form-control">
+                            <option value="a5">8 pages A5 par A3 (4 recto + 4 verso)</option>
+                            <option value="a6">16 pages A6 par A3 (8 recto + 8 verso)</option>
+                        </select>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="preview">
+                                    <input type="checkbox" name="preview" id="preview">
+                                    <i class="fa fa-eye"></i> Prévisualiser avec numéros de page
+                                </label>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="force_resize">
+                                    <input type="checkbox" name="force_resize" id="force_resize">
+                                    <i class="fa fa-expand"></i> Forcer le redimensionnement
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <label for="add_crop_marks">
+                                    <input type="checkbox" name="add_crop_marks" id="add_crop_marks">
+                                    <i class="fa fa-scissors"></i> Ajouter les traits de coupe
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="crop_marks_options" style="display: none; margin-top: 15px; padding-left: 30px;">
+                            <div class="form-group">
+                                <label for="imposition_mode"><i class="fa fa-book"></i> Mode d'imposition :</label>
+                                <select name="imposition_mode" id="imposition_mode" class="form-control">
+                                    <option value="brochure">Mode brochure (sans marges intérieures)</option>
+                                    <option value="livre">Mode livre (avec marges intérieures)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="bleed_mode"><i class="fa fa-arrows-alt"></i> Gestion du format :</label>
+                                <select name="bleed_mode" id="bleed_mode" class="form-control">
+                                    <option value="fullsize">Fond perdu (pages en taille réelle)</option>
+                                    <option value="resize">Redimensionner (réduire les pages)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="bleed_size"><i class="fa fa-ruler"></i> Taille marge de coupe (mm) :</label>
+                                <input type="number" name="bleed_size" id="bleed_size" class="form-control" value="3" min="1" max="10" step="0.5">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="crop_marks_type"><i class="fa fa-scissors"></i> Type de traits de coupe :</label>
+                                <select name="crop_marks_type" id="crop_marks_type" class="form-control">
+                                    <option value="normal">Traits de coupe normaux (coins)</option>
+                                    <option value="central">Traits de coupe centraux (A3→A4)</option>
+                                    <option value="both">Les deux types</option>
+                                </select>
+                                <small class="help-block text-muted">
+                                    <strong>Normaux :</strong> Traits aux 4 coins<br>
+                                    <strong>Centraux :</strong> Trait au milieu selon orientation (21cm)<br>
+                                    <strong>Les deux :</strong> Combinaison des deux
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-impose">
+                            <i class="fa fa-magic"></i> Imposer le PDF
+                        </button>
+                    </div>
+                </form>
+            </div>
+
         </div>
     </div>
 
@@ -561,6 +588,20 @@
             document.addEventListener('drop', function(e) {
                 e.preventDefault();
             });
+
+            // Gestion de l'affichage des options traits de coupe
+            const addCropMarks = document.getElementById('add_crop_marks');
+            const cropMarksOptions = document.getElementById('crop_marks_options');
+
+            if (addCropMarks && cropMarksOptions) {
+                addCropMarks.addEventListener('change', function() {
+                    if (this.checked) {
+                        cropMarksOptions.style.display = 'block';
+                    } else {
+                        cropMarksOptions.style.display = 'none';
+                    }
+                });
+            }
         });
     </script>
 </body>

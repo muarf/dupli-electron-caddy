@@ -7,8 +7,8 @@ function Action(){
         $has_machines = check_machines_exist();
         
         if (!$has_machines) {
-            // Pas de machines, rediriger vers la page d'enregistrement
-            header('Location: ?setup');
+            // Pas de machines, rediriger vers le choix d'installation
+            header('Location: ?setup&mode=choice');
             exit;
         }
         
@@ -16,8 +16,8 @@ function Action(){
         header('Location: ?accueil');
         exit;
     } catch (PDOException $e) {
-        // Base de données non trouvée, rediriger vers la page d'enregistrement
-        header('Location: ?setup');
+        // Base de données non trouvée, rediriger vers le choix d'installation
+        header('Location: ?setup&mode=choice');
         exit;
     }
 }
