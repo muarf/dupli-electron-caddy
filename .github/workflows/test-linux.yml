@@ -88,6 +88,12 @@ jobs:
           fi
           mkdir -p php/
           
+          echo "Nettoyage des fichiers temporaires de l'application..."
+          rm -rf app/public/tmp/* || true
+          rm -rf app/public/sauvegarde/* || true
+          rm -rf app/tmp/* || true
+          echo "Fichiers temporaires supprimés"
+          
           echo "Nettoyage du cache electron-builder..."
           rm -rf ~/.cache/electron-builder || true
           
