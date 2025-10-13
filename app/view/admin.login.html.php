@@ -29,6 +29,14 @@
         background-color: #0056b3;
         border-color: #0056b3;
     }
+    .alert-danger {
+        animation: shake 0.5s;
+    }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
 </style>
 
 <div class="login-container">

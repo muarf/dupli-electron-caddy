@@ -558,7 +558,7 @@ function exportImageData(imageData, filename) {
 /**
  * Créer un ZIP avec plusieurs couches
  */
-async function exportLayersAsZip(layers, baseFilename = 'riso_layers') {
+async function exportLayersAsZip(layers, baseFilename = 'riso') {
     if (typeof JSZip === 'undefined') {
         throw new Error('JSZip non disponible');
     }

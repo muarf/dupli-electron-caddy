@@ -6,7 +6,7 @@ use setasign\Fpdi\Tcpdf\Fpdi;
 /**
  * Convertit un PDF en images PNG (une image par page)
  */
-function convert_pdf_to_png($pdf_file, $output_dir, $dpi = 150) {
+function convert_pdf_to_png($pdf_file, $output_dir, $dpi = 150, $base_filename = 'page') {
     try {
         // Vérifier que Ghostscript est disponible
         $gs_command = 'gs';
@@ -27,9 +27,8 @@ function convert_pdf_to_png($pdf_file, $output_dir, $dpi = 150) {
             mkdir($output_dir, 0777, true);
         }
         
-        // Générer un préfixe unique pour les fichiers de sortie
-        $timestamp = date('YmdHis');
-        $prefix = 'page_' . $timestamp . '_%03d.png';
+        // Générer un préfixe avec le nom du fichier original
+        $prefix = $base_filename . '_page_%03d.png';
         $output_pattern = $output_dir . $prefix;
         
         // Utiliser Ghostscript pour convertir le PDF en PNG
@@ -44,7 +43,7 @@ function convert_pdf_to_png($pdf_file, $output_dir, $dpi = 150) {
         }
         
         // Lister les fichiers PNG créés
-        $created_files = glob($output_dir . 'page_' . $timestamp . '_*.png');
+        $created_files = glob($output_dir . $base_filename . '_page_*.png');
         
         if (empty($created_files)) {
             throw new Exception("Aucune image n'a été créée. Le PDF est peut-être vide ou corrompu.");
@@ -94,6 +93,8 @@ function Action($conf) {
                 }
                 
                 $timestamp = date('YmdHis');
+                $originalName = pathinfo($_FILES["pdf"]["name"], PATHINFO_FILENAME);
+                $safe_filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $originalName);
                 $uploadFile = $tmpDir . "pdf_upload_" . $timestamp . ".pdf";
                 
                 if (move_uploaded_file($_FILES["pdf"]["tmp_name"], $uploadFile)) {
@@ -101,7 +102,7 @@ function Action($conf) {
                     $outputDir = $tmpDir . 'pdf_to_png_' . $timestamp . '/';
                     
                     // Exécuter la conversion
-                    $created_files = convert_pdf_to_png($uploadFile, $outputDir, $dpi);
+                    $created_files = convert_pdf_to_png($uploadFile, $outputDir, $dpi, $safe_filename);
                     
                     if (!empty($created_files)) {
                         $success = true;
@@ -115,7 +116,7 @@ function Action($conf) {
                         }
                         
                         // Créer un fichier ZIP contenant toutes les images
-                        $zip_filename = 'pdf_pages_' . $timestamp . '.zip';
+                        $zip_filename = $safe_filename . '_pages.zip';
                         $zip_path = $tmpDir . $zip_filename;
                         
                         $zip = new ZipArchive();

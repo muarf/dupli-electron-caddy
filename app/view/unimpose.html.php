@@ -17,6 +17,31 @@ ob_start();
                 </p>
             </div>
 
+            <!-- Résultat -->
+            <?php if ($success && !empty($result)): ?>
+                <div class="panel panel-success">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <i class="fa fa-check-circle"></i> Désimposition réussie !
+                        </h3>
+                    </div>
+                    <div class="panel-body text-center">
+                        <div style="font-size: 48px; color: #28a745; margin-bottom: 20px;">
+                            <i class="fa fa-file-text-o"></i>
+                        </div>
+                        <h4 style="color: #333; margin-bottom: 20px;">
+                            Votre PDF a été désimposé avec succès
+                        </h4>
+                        <p style="color: #666; margin-bottom: 25px;">
+                            Le fichier <strong><?= htmlspecialchars($result) ?></strong> est prêt au téléchargement.
+                        </p>
+                        <a href="<?= htmlspecialchars($download_url) ?>" class="btn btn-success btn-lg" onclick="openPdfInApp('<?= htmlspecialchars($download_url) ?>')">
+                            <i class="fa fa-download"></i> Télécharger le PDF désimposé
+                        </a>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <!-- Messages d'erreur -->
             <?php if (!empty($errors)): ?>
                 <div class="alert alert-danger">
@@ -95,30 +120,6 @@ ob_start();
                 </div>
             </div>
 
-            <!-- Résultat -->
-            <?php if ($success && !empty($result)): ?>
-                <div class="panel panel-success">
-                    <div class="panel-heading">
-                        <h3 class="panel-title">
-                            <i class="fa fa-check-circle"></i> Désimposition réussie !
-                        </h3>
-                    </div>
-                    <div class="panel-body text-center">
-                        <div style="font-size: 48px; color: #28a745; margin-bottom: 20px;">
-                            <i class="fa fa-file-text-o"></i>
-                        </div>
-                        <h4 style="color: #333; margin-bottom: 20px;">
-                            Votre PDF a été désimposé avec succès
-                        </h4>
-                        <p style="color: #666; margin-bottom: 25px;">
-                            Le fichier <strong><?= htmlspecialchars($result) ?></strong> est prêt au téléchargement.
-                        </p>
-                        <a href="<?= htmlspecialchars($download_url) ?>" class="btn btn-success btn-lg" onclick="openPdfInApp('<?= htmlspecialchars($download_url) ?>')">
-                            <i class="fa fa-download"></i> Télécharger le PDF désimposé
-                        </a>
-                    </div>
-                </div>
-            <?php endif; ?>
         </div>
     </div>
 </div>

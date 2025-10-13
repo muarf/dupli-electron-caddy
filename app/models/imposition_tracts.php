@@ -177,6 +177,7 @@ function processImpositionTracts()
     // Créer un nom de fichier unique
     $uniqueId = uniqid();
     $originalName = $_FILES['pdf_file']['name'];
+    $originalNameWithoutExt = pathinfo($originalName, PATHINFO_FILENAME);
     $tempFile = $_FILES['pdf_file']['tmp_name'];
     $inputFile = sys_get_temp_dir() . '/tracts_input_' . $uniqueId . '.pdf';
     
@@ -299,7 +300,9 @@ function processImpositionTracts()
             throw new Exception("Le répertoire temporaire n'est pas accessible en écriture: $tmp_dir");
         }
         
-        $finalFileName = 'tracts_final_' . $timestamp . '.pdf';
+        // Nettoyer le nom de fichier
+        $safe_filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $originalNameWithoutExt);
+        $finalFileName = $safe_filename . '_imposed.pdf';
         $finalFilePath = $tmp_dir . $finalFileName;
         
         if (!copy($resultFile, $finalFilePath)) {

@@ -149,7 +149,7 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','installation','setup','setup_save','setup_upload','stats','imposition','unimpose','imposition_tracts','pdf_to_png','png_to_pdf','riso_separator');
+$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','installation','setup','setup_save','setup_upload','stats','imposition','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','taux_remplissage','error');
 
 if(in_array($page, $page_secure,true)){
     
@@ -251,10 +251,10 @@ else {
         
         <div class="fix-instruction">
             <strong>🔧 Comment corriger :</strong>
-            <p>Ajoutez <code>' . htmlspecialchars($page) . '</code> dans le tableau <code>$page_secure</code> de :</p>
+            <p>Ajoutez <code>' . htmlspecialchars($page) . '</code> dans le tableau <code>$page_secure</code> des fichiers :</p>
             <ul>
-                <li><code>app/public/index.php</code> (ligne ~152)</li>
-                <li><code>app/index.php</code> (ligne ~319)</li>
+                <li><code>public/index.php</code> (ligne ~152)</li>
+                <li><code>index.php</code> (ligne ~319)</li>
             </ul>
         </div>
         

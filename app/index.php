@@ -1,14 +1,12 @@
 <?php
 
-// Activer l'affichage des erreurs avec format personnalisé
+// Activer l'affichage des erreurs
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// Définir un format d'erreur personnalisé
-ini_set('html_errors', 1);
-ini_set('error_prepend_string', '<div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; margin: 10px; border-radius: 5px;"><h3>🚨 Erreur Duplicator</h3>');
-ini_set('error_append_string', '<p><a href="?accueil" style="color: #721c24; text-decoration: underline;">← Retour à l\'accueil</a></p></div>');
+// Charger le gestionnaire d'erreurs personnalisé
+require_once __DIR__ . '/controler/functions/error_handler.php';
 
 // Définir un gestionnaire d'erreur personnalisé pour toutes les erreurs
 set_error_handler(function($severity, $message, $file, $line) {
@@ -29,25 +27,52 @@ set_error_handler(function($severity, $message, $file, $line) {
         'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'N/A'
     ];
     
-    // Afficher notre page d'erreur personnalisée
-    displayCustomErrorPage($errorData);
+    // Afficher notre page d'erreur personnalisée élégante
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    if (!function_exists('show_error_page')) {
+        require_once __DIR__ . '/controler/functions/error_handler.php';
+    }
+    if (!function_exists('template')) {
+        require_once __DIR__ . '/controler/func.php';
+    }
+    
+    // Mapper les types d'erreurs
+    $error_types = [
+        E_ERROR => 'Erreur Fatale',
+        E_WARNING => 'Avertissement',
+        E_NOTICE => 'Notice',
+        E_USER_ERROR => 'Erreur Utilisateur',
+        E_USER_WARNING => 'Avertissement Utilisateur',
+        E_USER_NOTICE => 'Notice Utilisateur'
+    ];
+    
+    $error_type_name = isset($error_types[$severity]) ? $error_types[$severity] : 'Erreur';
+    
+    echo show_error_page($message, $error_type_name, $file, $line);
     exit;
 });
 
 // Gestionnaire d'exceptions
 set_exception_handler(function($exception) {
-    $errorData = [
-        'type' => 'Exception',
-        'message' => $exception->getMessage(),
-        'file' => $exception->getFile(),
-        'line' => $exception->getLine(),
-        'trace' => $exception->getTraceAsString(),
-        'timestamp' => date('Y-m-d H:i:s'),
-        'url' => $_SERVER['REQUEST_URI'] ?? 'N/A',
-        'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'N/A'
-    ];
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    if (!function_exists('show_error_page')) {
+        require_once __DIR__ . '/controler/functions/error_handler.php';
+    }
+    if (!function_exists('template')) {
+        require_once __DIR__ . '/controler/func.php';
+    }
     
-    displayCustomErrorPage($errorData);
+    echo show_error_page(
+        $exception->getMessage(), 
+        'Exception', 
+        $exception->getFile(), 
+        $exception->getLine(),
+        $exception->getTraceAsString()
+    );
     exit;
 });
 
@@ -55,17 +80,22 @@ set_exception_handler(function($exception) {
 register_shutdown_function(function() {
     $error = error_get_last();
     if ($error !== null && in_array($error['type'], [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR])) {
-        $errorData = [
-            'type' => 'Erreur fatale',
-            'message' => $error['message'],
-            'file' => $error['file'],
-            'line' => $error['line'],
-            'timestamp' => date('Y-m-d H:i:s'),
-            'url' => $_SERVER['REQUEST_URI'] ?? 'N/A',
-            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'N/A'
-        ];
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        if (!function_exists('show_error_page')) {
+            require_once __DIR__ . '/controler/functions/error_handler.php';
+        }
+        if (!function_exists('template')) {
+            require_once __DIR__ . '/controler/func.php';
+        }
         
-        displayCustomErrorPage($errorData);
+        echo show_error_page(
+            $error['message'], 
+            'Erreur Fatale', 
+            $error['file'], 
+            $error['line']
+        );
     }
 });
 
@@ -237,7 +267,7 @@ ini_set('upload_tmp_dir', $temp_dir);
 
 session_start();
 
-include(__DIR__ . '/../controler/func.php');
+include(__DIR__ . '/controler/func.php');
 // conf.php sera inclus après l'exécution du modèle pour avoir la bonne base active
 
 
@@ -291,11 +321,11 @@ if ($page === 'ajax_delete_machine') {
     
     try {
         // Inclure les fichiers nécessaires
-        require_once '../controler/func.php';
-        require_once '../models/admin/MachineManager.php';
+        require_once __DIR__ . '/controler/func.php';
+        require_once __DIR__ . '/models/admin/MachineManager.php';
         
         // Configuration de la base de données
-        require_once '../controler/conf.php';
+        require_once __DIR__ . '/controler/conf.php';
         
         // Créer l'instance du gestionnaire de machines
         $machineManager = new AdminMachineManager($conf);
@@ -316,7 +346,7 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','installation','setup','setup_save','setup_upload','stats','imposition','unimpose','png_to_pdf','pdf_to_png','riso_separator','error');
+$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','installation','setup','setup_save','setup_upload','stats','imposition','imposition_tracts','unimpose','png_to_pdf','pdf_to_png','riso_separator','taux_remplissage','error');
 
 if(in_array($page, $page_secure,true)){
     
@@ -337,9 +367,9 @@ if(in_array($page, $page_secure,true)){
     }
     
     // Inclure la configuration APRÈS l'exécution du modèle pour avoir la bonne base active
-    include(__DIR__ . '/../controler/conf.php');
+    include(__DIR__ . '/controler/conf.php');
     
-    include(__DIR__ . '/../models/'.$page.'.php');
+    include(__DIR__ . '/models/'.$page.'.php');
     
     // Pages spéciales qui n'utilisent pas le template standard
     if ($page == 'installation' || $page == 'setup') {
@@ -347,8 +377,8 @@ if(in_array($page, $page_secure,true)){
         echo $content;
     } else {
         // Pages normales avec header/footer
-        include(__DIR__ . '/../models/header.php');
-        include(__DIR__ . '/../models/footer.php');
+        include(__DIR__ . '/models/header.php');
+        include(__DIR__ . '/models/footer.php');
         $header = headerAction($page);
         $footer = footerAction($page);
         
@@ -365,7 +395,7 @@ if(in_array($page, $page_secure,true)){
             $array = array_merge($GLOBALS['model_variables'], $array);
     }
         
-        echo template(__DIR__ . "/../view/base.html.php", $array);
+        echo template(__DIR__ . "/view/base.html.php", $array);
     }
 } 
 else {
@@ -420,10 +450,9 @@ else {
         
         <div class="fix-instruction">
             <strong>🔧 Comment corriger :</strong>
-            <p>Ajoutez <code>' . htmlspecialchars($page) . '</code> dans le tableau <code>$page_secure</code> de :</p>
+            <p>Ajoutez <code>' . htmlspecialchars($page) . '</code> dans le tableau <code>$page_secure</code> du fichier :</p>
             <ul>
-                <li><code>app/public/index.php</code> (ligne ~152)</li>
-                <li><code>app/index.php</code> (ligne ~319)</li>
+                <li><code>index.php</code> (ligne ~319)</li>
             </ul>
         </div>
         

@@ -103,9 +103,9 @@ function Action($conf) {
                 $uploadFile = $tmpDir . "unimpose_upload_" . $timestamp . ".pdf";
                 
                 if (move_uploaded_file($_FILES["pdf"]["tmp_name"], $uploadFile)) {
-                    // Générer le fichier de sortie avec le nom original + -ppp
+                    // Générer le fichier de sortie avec le nom original + _unimposed
                     $originalName = pathinfo($_FILES["pdf"]["name"], PATHINFO_FILENAME);
-                    $outputFile = $tmpDir . $originalName . '.pdf';
+                    $outputFile = $tmpDir . $originalName . '_unimposed.pdf';
                     
                     // Exécuter la désimposition
                     $resultFile = unimpose_booklet($uploadFile, $outputFile);

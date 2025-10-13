@@ -22,7 +22,7 @@
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
                 <span class="glyphicon glyphicon-file" aria-hidden="true"></span>
-                PDF Tools <span class="caret"></span>
+                Outils PDF <span class="caret"></span>
               </a>
               <ul class="dropdown-menu">
                 <li>
@@ -69,6 +69,14 @@
                     <i class="fa fa-adjust" style="color: #ff6b9d; margin-right: 8px;"></i>
                     <strong>Séparateur Riso</strong>
                     <small class="text-muted d-block">Séparer couleurs pour multi-tambours</small>
+                  </a>
+                </li>
+                <li role="separator" class="divider"></li>
+                <li>
+                  <a href="?taux_remplissage">
+                    <i class="fa fa-bar-chart" style="color: #84fab0; margin-right: 8px;"></i>
+                    <strong>Taux de Remplissage</strong>
+                    <small class="text-muted d-block">Calculer le % d'encre utilisé</small>
                   </a>
                 </li>
               </ul>

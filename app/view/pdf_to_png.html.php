@@ -12,6 +12,54 @@
                 </p>
             </div>
 
+            <!-- Résultat -->
+            <?php if ($success && !empty($result)): ?>
+                <div class="panel panel-success">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <i class="fa fa-check-circle"></i> Conversion réussie !
+                        </h3>
+                    </div>
+                    <div class="panel-body">
+                        <div style="text-align: center; font-size: 48px; color: #28a745; margin-bottom: 20px;">
+                            <i class="fa fa-images"></i>
+                        </div>
+                        <h4 style="color: #333; margin-bottom: 20px; text-center;">
+                            <?= count($result) ?> image(s) extraite(s) avec succès
+                        </h4>
+                        
+                        <!-- Liste des images avec aperçu -->
+                        <div class="row">
+                            <?php foreach ($download_urls as $index => $url): ?>
+                                <div class="col-md-4 col-sm-6" style="margin-bottom: 15px;">
+                                    <div class="thumbnail" style="text-align: center;">
+                                        <img src="<?= htmlspecialchars($url) ?>" alt="Page <?= ($index + 1) ?>" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px;">
+                                        <div class="caption">
+                                            <p><strong>Page <?= ($index + 1) ?></strong></p>
+                                            <a href="<?= htmlspecialchars($url) ?>" class="btn btn-sm btn-success" download>
+                                                <i class="fa fa-download"></i> Télécharger
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                        
+                        <!-- Bouton pour tout télécharger -->
+                        <div class="text-center" style="margin-top: 20px;">
+                            <?php if (!empty($zip_url)): ?>
+                                <a href="<?= htmlspecialchars($zip_url) ?>" class="btn btn-primary btn-lg" download>
+                                    <i class="fa fa-download"></i> Télécharger tout en ZIP
+                                </a>
+                            <?php endif; ?>
+                            <a href="?pdf_to_png" class="btn btn-default btn-lg">
+                                <i class="fa fa-plus"></i> Convertir un autre PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <!-- Messages d'erreur -->
             <?php if (!empty($errors)): ?>
                 <div class="alert alert-danger">
@@ -117,53 +165,6 @@
                 </div>
             </div>
 
-            <!-- Résultat -->
-            <?php if ($success && !empty($result)): ?>
-                <div class="panel panel-success">
-                    <div class="panel-heading">
-                        <h3 class="panel-title">
-                            <i class="fa fa-check-circle"></i> Conversion réussie !
-                        </h3>
-                    </div>
-                    <div class="panel-body">
-                        <div style="text-align: center; font-size: 48px; color: #28a745; margin-bottom: 20px;">
-                            <i class="fa fa-images"></i>
-                        </div>
-                        <h4 style="color: #333; margin-bottom: 20px; text-center;">
-                            <?= count($result) ?> image(s) extraite(s) avec succès
-                        </h4>
-                        
-                        <!-- Liste des images avec aperçu -->
-                        <div class="row">
-                            <?php foreach ($download_urls as $index => $url): ?>
-                                <div class="col-md-4 col-sm-6" style="margin-bottom: 15px;">
-                                    <div class="thumbnail" style="text-align: center;">
-                                        <img src="<?= htmlspecialchars($url) ?>" alt="Page <?= ($index + 1) ?>" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px;">
-                                        <div class="caption">
-                                            <p><strong>Page <?= ($index + 1) ?></strong></p>
-                                            <a href="<?= htmlspecialchars($url) ?>" class="btn btn-sm btn-success" download>
-                                                <i class="fa fa-download"></i> Télécharger
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                        
-                        <!-- Bouton pour tout télécharger -->
-                        <div class="text-center" style="margin-top: 20px;">
-                            <?php if (!empty($zip_url)): ?>
-                                <a href="<?= htmlspecialchars($zip_url) ?>" class="btn btn-primary btn-lg" download>
-                                    <i class="fa fa-download"></i> Télécharger tout en ZIP
-                                </a>
-                            <?php endif; ?>
-                            <a href="?pdf_to_png" class="btn btn-default btn-lg">
-                                <i class="fa fa-plus"></i> Convertir un autre PDF
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            <?php endif; ?>
             
             <!-- Bouton retour -->
             <div class="text-center" style="margin-top: 20px;">
