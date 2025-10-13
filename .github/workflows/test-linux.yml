@@ -56,6 +56,12 @@ jobs:
       # - name: Run tests
       #   run: npm run test:e2e:simple
         
+      - name: Remove PHP directory (not needed for Linux)
+        run: |
+          echo "Suppression du dossier php/ pour économiser de l'espace disque..."
+          rm -rf php/
+          echo "✅ Dossier php/ supprimé (Linux utilise PHP système)"
+        
       - name: Update package.json version
         run: |
           echo "=== Mise à jour de la version dans package.json ==="
