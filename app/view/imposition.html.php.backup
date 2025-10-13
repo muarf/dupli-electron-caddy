@@ -256,117 +256,6 @@
                 <h1><i class="fa fa-magic"></i> Imposer un PDF</h1>
                 <div class="subtitle">Créer un livret A3 à partir de pages A4</div>
             </div>
-
-            <?php if ($success): ?>
-                <div class="result-section">
-                    <div class="alert alert-success">
-                        <h4><i class="fa fa-check-circle"></i> Succès !</h4>
-                        <p class="mb-0"><?= htmlspecialchars($result) ?></p>
-                    </div>
-
-                    <?php if ($page_count > 0): ?>
-                        <div class="result-card">
-                            <h3><i class="fa fa-info-circle"></i> Informations du PDF</h3>
-                            <p><strong>Nombre de pages :</strong> <?= $page_count ?></p>
-                            <p><strong>Ordre des pages réorganisées :</strong></p>
-                            <div class="page-sequence-container" style="background: white; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-top: 15px;">
-                                <?php 
-                                // Diviser la séquence en groupes selon le type d'imposition
-                                $pages_array = explode(', ', $ordered_pages);
-                                $total_pages = count($pages_array);
-                                
-                                // Déterminer le type d'imposition depuis le POST
-                                $imposition_type = isset($_POST['imposition_type']) ? $_POST['imposition_type'] : 'a5';
-                                
-                                if ($imposition_type === 'a6') {
-                                    $pages_per_sheet = 16; // 8 recto + 8 verso pour A6
-                                    $recto_count = 8;
-                                    $verso_count = 8;
-                                } else {
-                                    $pages_per_sheet = 8; // 4 recto + 4 verso pour A5
-                                    $recto_count = 4;
-                                    $verso_count = 4;
-                                }
-                                
-                                $num_sheets = ceil($total_pages / $pages_per_sheet);
-                                
-                                // Afficher seulement la première feuille
-                                $sheet_pages = array_slice($pages_array, 0, $pages_per_sheet);
-                                $recto_pages = array_slice($sheet_pages, 0, $recto_count);
-                                $verso_pages = array_slice($sheet_pages, $recto_count, $verso_count);
-                                ?>
-                                
-                                <div class="sheet-info" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px; text-align: center;">
-                                    <h4 style="margin: 0; color: #495057;">
-                                        <i class="fa fa-info-circle"></i> 
-                                        <?= $num_sheets ?> feuille<?= $num_sheets > 1 ? 's' : '' ?> A3 nécessaire<?= $num_sheets > 1 ? 's' : '' ?>
-                                        (<?= $total_pages ?> pages au total)
-                                    </h4>
-                                </div>
-                                
-                                <div class="sheet-group" style="margin-bottom: 25px; border: 2px solid #e9ecef; border-radius: 8px; overflow: hidden;">
-                                    <div class="sheet-header" style="background: linear-gradient(135deg, #a8e6cf 0%, #dcedc1 100%); padding: 10px; text-align: center; font-weight: bold; color: #2c5530;">
-                                        Exemple - Feuille 1 (<?= $page_count ?> pages)
-                                    </div>
-                                    <div class="sheet-content" style="display: flex; background: white;">
-                                        <div class="recto-side" style="flex: 1; padding: 15px; border-right: 1px solid #e9ecef;">
-                                            <div class="side-label" style="background: #007bff; color: white; padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 10px; display: inline-block;">
-                                                RECTO (<?= $recto_count ?> pages)
-                                            </div>
-                                            <div class="page-numbers" style="font-family: monospace; font-size: 16px; line-height: 1.8;">
-                                                <?php foreach ($recto_pages as $index => $page): ?>
-                                                    <span class="page-number" style="display: inline-block; background: #f8f9fa; border: 1px solid #dee2e6; padding: 8px 12px; margin: 2px; border-radius: 4px; min-width: 40px; text-align: center; font-weight: bold;">
-                                                        <?= htmlspecialchars(trim($page)) ?>
-                                                    </span>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        </div>
-                                        <div class="verso-side" style="flex: 1; padding: 15px;">
-                                            <div class="side-label" style="background: #28a745; color: white; padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 10px; display: inline-block;">
-                                                VERSO (<?= $verso_count ?> pages)
-                                            </div>
-                                            <div class="page-numbers" style="font-family: monospace; font-size: 16px; line-height: 1.8;">
-                                                <?php foreach ($verso_pages as $index => $page): ?>
-                                                    <span class="page-number" style="display: inline-block; background: #f8f9fa; border: 1px solid #dee2e6; padding: 8px 12px; margin: 2px; border-radius: 4px; min-width: 40px; text-align: center; font-weight: bold;">
-                                                        <?= htmlspecialchars(trim($page)) ?>
-                                                    </span>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Séquence complète en format compact -->
-                                <div class="full-sequence" style="margin-top: 20px; padding-top: 15px; border-top: 2px solid #e9ecef;">
-                                    <div class="sequence-label" style="font-weight: bold; color: #495057; margin-bottom: 10px;">
-                                        <i class="fa fa-list"></i> Séquence complète :
-                                    </div>
-                                    <div class="sequence-text" style="font-family: monospace; font-size: 14px; background: #f8f9fa; padding: 15px; border-radius: 4px; word-break: break-all; line-height: 1.4;">
-                                        <?= htmlspecialchars($ordered_pages) ?>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endif; ?>
-
-                    <?php if ($preview_url): ?>
-                        <div class="result-card">
-                            <h3><i class="fa fa-eye"></i> Prévisualisation</h3>
-                            <div class="pdf-preview">
-                                <iframe src="<?= htmlspecialchars($preview_url) ?>" width="100%" height="600px" style="border: none;"></iframe>
-                            </div>
-                        </div>
-                    <?php endif; ?>
-
-                    <?php if ($download_url): ?>
-                        <div class="text-center">
-                            <a href="<?= htmlspecialchars($download_url) ?>" target="_blank" class="btn btn-download" onclick="openPdfInApp('<?= htmlspecialchars($download_url) ?>')">
-                                <i class="fa fa-download"></i> Télécharger le PDF imposé
-                            </a>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
             
             <div class="form-section">
                 <?php if (!empty($errors)): ?>
@@ -486,6 +375,116 @@
                 </form>
             </div>
 
+            <?php if ($success): ?>
+                <div class="result-section">
+                    <div class="alert alert-success">
+                        <h4><i class="fa fa-check-circle"></i> Succès !</h4>
+                        <p class="mb-0"><?= htmlspecialchars($result) ?></p>
+                    </div>
+
+                    <?php if ($page_count > 0): ?>
+                        <div class="result-card">
+                            <h3><i class="fa fa-info-circle"></i> Informations du PDF</h3>
+                            <p><strong>Nombre de pages :</strong> <?= $page_count ?></p>
+                            <p><strong>Ordre des pages réorganisées :</strong></p>
+                            <div class="page-sequence-container" style="background: white; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-top: 15px;">
+                                <?php 
+                                // Diviser la séquence en groupes selon le type d'imposition
+                                $pages_array = explode(', ', $ordered_pages);
+                                $total_pages = count($pages_array);
+                                
+                                // Déterminer le type d'imposition depuis le POST
+                                $imposition_type = isset($_POST['imposition_type']) ? $_POST['imposition_type'] : 'a5';
+                                
+                                if ($imposition_type === 'a6') {
+                                    $pages_per_sheet = 16; // 8 recto + 8 verso pour A6
+                                    $recto_count = 8;
+                                    $verso_count = 8;
+                                } else {
+                                    $pages_per_sheet = 8; // 4 recto + 4 verso pour A5
+                                    $recto_count = 4;
+                                    $verso_count = 4;
+                                }
+                                
+                                $num_sheets = ceil($total_pages / $pages_per_sheet);
+                                
+                                // Afficher seulement la première feuille
+                                $sheet_pages = array_slice($pages_array, 0, $pages_per_sheet);
+                                $recto_pages = array_slice($sheet_pages, 0, $recto_count);
+                                $verso_pages = array_slice($sheet_pages, $recto_count, $verso_count);
+                                ?>
+                                
+                                <div class="sheet-info" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px; text-align: center;">
+                                    <h4 style="margin: 0; color: #495057;">
+                                        <i class="fa fa-info-circle"></i> 
+                                        <?= $num_sheets ?> feuille<?= $num_sheets > 1 ? 's' : '' ?> A3 nécessaire<?= $num_sheets > 1 ? 's' : '' ?>
+                                        (<?= $total_pages ?> pages au total)
+                                    </h4>
+                                </div>
+                                
+                                <div class="sheet-group" style="margin-bottom: 25px; border: 2px solid #e9ecef; border-radius: 8px; overflow: hidden;">
+                                    <div class="sheet-header" style="background: linear-gradient(135deg, #a8e6cf 0%, #dcedc1 100%); padding: 10px; text-align: center; font-weight: bold; color: #2c5530;">
+                                        Exemple - Feuille 1 (<?= $page_count ?> pages)
+                                    </div>
+                                    <div class="sheet-content" style="display: flex; background: white;">
+                                        <div class="recto-side" style="flex: 1; padding: 15px; border-right: 1px solid #e9ecef;">
+                                            <div class="side-label" style="background: #007bff; color: white; padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 10px; display: inline-block;">
+                                                RECTO (<?= $recto_count ?> pages)
+                                            </div>
+                                            <div class="page-numbers" style="font-family: monospace; font-size: 16px; line-height: 1.8;">
+                                                <?php foreach ($recto_pages as $index => $page): ?>
+                                                    <span class="page-number" style="display: inline-block; background: #f8f9fa; border: 1px solid #dee2e6; padding: 8px 12px; margin: 2px; border-radius: 4px; min-width: 40px; text-align: center; font-weight: bold;">
+                                                        <?= htmlspecialchars(trim($page)) ?>
+                                                    </span>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                        <div class="verso-side" style="flex: 1; padding: 15px;">
+                                            <div class="side-label" style="background: #28a745; color: white; padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 10px; display: inline-block;">
+                                                VERSO (<?= $verso_count ?> pages)
+                                            </div>
+                                            <div class="page-numbers" style="font-family: monospace; font-size: 16px; line-height: 1.8;">
+                                                <?php foreach ($verso_pages as $index => $page): ?>
+                                                    <span class="page-number" style="display: inline-block; background: #f8f9fa; border: 1px solid #dee2e6; padding: 8px 12px; margin: 2px; border-radius: 4px; min-width: 40px; text-align: center; font-weight: bold;">
+                                                        <?= htmlspecialchars(trim($page)) ?>
+                                                    </span>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Séquence complète en format compact -->
+                                <div class="full-sequence" style="margin-top: 20px; padding-top: 15px; border-top: 2px solid #e9ecef;">
+                                    <div class="sequence-label" style="font-weight: bold; color: #495057; margin-bottom: 10px;">
+                                        <i class="fa fa-list"></i> Séquence complète :
+                                    </div>
+                                    <div class="sequence-text" style="font-family: monospace; font-size: 14px; background: #f8f9fa; padding: 15px; border-radius: 4px; word-break: break-all; line-height: 1.4;">
+                                        <?= htmlspecialchars($ordered_pages) ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($preview_url): ?>
+                        <div class="result-card">
+                            <h3><i class="fa fa-eye"></i> Prévisualisation</h3>
+                            <div class="pdf-preview">
+                                <iframe src="<?= htmlspecialchars($preview_url) ?>" width="100%" height="600px" style="border: none;"></iframe>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($download_url): ?>
+                        <div class="text-center">
+                            <a href="<?= htmlspecialchars($download_url) ?>" target="_blank" class="btn btn-download" onclick="openPdfInApp('<?= htmlspecialchars($download_url) ?>')">
+                                <i class="fa fa-download"></i> Télécharger le PDF imposé
+                            </a>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 

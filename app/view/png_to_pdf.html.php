@@ -12,6 +12,34 @@
                 </p>
             </div>
 
+            <!-- Résultat -->
+            <?php if ($success && !empty($result)): ?>
+                <div class="panel panel-success">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            <i class="fa fa-check-circle"></i> Conversion réussie !
+                        </h3>
+                    </div>
+                    <div class="panel-body text-center">
+                        <div style="font-size: 48px; color: #28a745; margin-bottom: 20px;">
+                            <i class="fa fa-file-pdf-o"></i>
+                        </div>
+                        <h4 style="color: #333; margin-bottom: 20px;">
+                            Votre PDF est prêt !
+                        </h4>
+                        <p style="color: #666; margin-bottom: 25px;">
+                            Le fichier <strong><?= htmlspecialchars($result) ?></strong> a été créé avec succès.
+                        </p>
+                        <a href="<?= htmlspecialchars($download_url) ?>" class="btn btn-success btn-lg" download>
+                            <i class="fa fa-download"></i> Télécharger le PDF
+                        </a>
+                        <a href="?png_to_pdf" class="btn btn-default btn-lg" style="margin-left: 10px;">
+                            <i class="fa fa-plus"></i> Convertir d'autres images
+                        </a>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <!-- Messages d'erreur -->
             <?php if (!empty($errors)): ?>
                 <div class="alert alert-danger">
@@ -134,32 +162,6 @@
                 </div>
             </div>
 
-            <!-- Résultat -->
-            <?php if ($success && !empty($result)): ?>
-                <div class="panel panel-success">
-                    <div class="panel-heading">
-                        <h3 class="panel-title">
-                            <i class="fa fa-check-circle"></i> Conversion réussie !
-                        </h3>
-                    </div>
-                    <div class="panel-body text-center">
-                        <div style="font-size: 48px; color: #28a745; margin-bottom: 20px;">
-                            <i class="fa fa-file-pdf-o"></i>
-                        </div>
-                        <h4 style="color: #333; margin-bottom: 20px;">
-                            Votre PDF est prêt !
-                        </h4>
-                        <p style="color: #666; margin-bottom: 25px;">
-                            Le fichier <strong><?= htmlspecialchars($result) ?></strong> a été créé avec succès.
-                        </p>
-                        <a href="<?= htmlspecialchars($download_url) ?>" class="btn btn-success btn-lg" download>
-                            <i class="fa fa-download"></i> Télécharger le PDF
-                        </a>
-                        <a href="?png_to_pdf" class="btn btn-default btn-lg" style="margin-left: 10px;">
-                            <i class="fa fa-plus"></i> Convertir d'autres images
-                        </a>
-                    </div>
-                </div>
             <?php endif; ?>
             
             <!-- Bouton retour -->
