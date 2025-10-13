@@ -29,6 +29,8 @@ linux:
   executableArgs: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"]
   # Configuration spécifique Linux - utilise PHP système, pas de binaires embarqués
   # Le dossier php/ est vidé avant le build dans le workflow (économie d'espace)
+  # Désactiver ASAR sur Linux pour éviter l'erreur "file already exists"
+  asar: false
   files:
     - main-caddy.js
     - main.js
@@ -40,13 +42,6 @@ linux:
     - ghostscript/**/*
     - caddy/**/*
     - "!php/**/*"  # Exclure le dossier php/ (vidé, utilise PHP système)
-  asarUnpack:
-    - "app/**/*"
-    - "ghostscript/**/*"
-    - "caddy/**/*"
-    - "Caddyfile"
-    - "php-fpm.conf"
-    - "php-install-guide.html"
 mac:
   target: 
     - target: dmg
