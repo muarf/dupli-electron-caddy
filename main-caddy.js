@@ -125,6 +125,22 @@ function getPhpFpmPath() {
     }
 }
 
+// Vérifier si PHP est installé sur le système
+function checkPhpInstalled() {
+    return new Promise((resolve) => {
+        const { exec } = require('child_process');
+        exec('php --version', (error, stdout, stderr) => {
+            if (error) {
+                console.error('PHP n\'est pas installé ou non accessible:', error.message);
+                resolve(false);
+            } else {
+                console.log('PHP détecté:', stdout.split('\n')[0]);
+                resolve(true);
+            }
+        });
+    });
+}
+
 // Obtenir le chemin de PHP selon la plateforme
 function getPhpPath() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
@@ -152,7 +168,7 @@ function getPhpPath() {
             return 'php.exe'; // Fallback système
         }
     } else {
-        // Linux/macOS : utiliser le PHP système (pas de binaires embarqués pour l'instant)
+        // Linux/macOS : utiliser le PHP système
         return 'php';
     }
 }
@@ -260,41 +276,87 @@ function startPhpFpm() {
         fs.mkdirSync(sessionPath, { recursive: true });
     }
     
-    // Utiliser le bon fichier php.ini selon la plateforme
-    let phpIniPath, phpExtPath;
+    // Préparer les arguments PHP selon la plateforme
+    let phpArgs;
+    
     if (isAppImage) {
-        phpIniPath = path.join(appPath, '..', 'php-appimage.ini');  // AppImage Linux
-        phpExtPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'ext');
+        // AppImage Linux : utiliser PHP système sans php.ini personnalisé
+        // Le PHP système a déjà ses extensions configurées
+        console.log('Configuration PHP pour AppImage (PHP système)');
+        phpArgs = [
+            '-S', '127.0.0.1:8001',
+            '-t', appPath,
+            '-d', 'display_errors=1',
+            '-d', 'log_errors=1',
+            '-d', 'upload_max_filesize=50M',
+            '-d', 'post_max_size=50M',
+            '-d', 'max_execution_time=300',
+            '-d', 'memory_limit=256M',
+            '-d', `session.save_path=${sessionPath}`
+        ];
     } else if (isWindows) {
-        // Windows : détecter si ASAR est utilisé ou non pour les extensions
-        // Même avec asar: false, les fichiers sont dans resources/app/
+        // Windows : utiliser le PHP embarqué avec extensions
         const asarExtPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'ext');
         const noAsarExtPath = path.join(process.resourcesPath, 'app', 'php', 'ext');
+        const phpIniPath = path.join(appPath, '..', 'php.ini');
+        const phpExtPath = fs.existsSync(noAsarExtPath) ? noAsarExtPath : asarExtPath;
         
-        phpIniPath = path.join(appPath, '..', 'php.ini');
-        phpExtPath = fs.existsSync(noAsarExtPath) ? noAsarExtPath : asarExtPath;
+        console.log('Configuration PHP pour Windows');
+        console.log('PHP Ini Path:', phpIniPath);
+        console.log('PHP Ini exists:', fs.existsSync(phpIniPath));
+        console.log('PHP Ext Path:', phpExtPath);
+        console.log('PHP Ext exists:', fs.existsSync(phpExtPath));
+        
+        phpArgs = [
+            '-c', phpIniPath,
+            '-S', '127.0.0.1:8001',
+            '-t', appPath,
+            '-d', 'display_errors=1',
+            '-d', 'log_errors=1',
+            '-d', `extension_dir=${phpExtPath}`,
+            '-d', 'upload_max_filesize=50M',
+            '-d', 'post_max_size=50M',
+            '-d', 'max_execution_time=300',
+            '-d', 'memory_limit=256M',
+            '-d', `session.save_path=${sessionPath}`
+        ];
     } else {
-        phpIniPath = path.join(appPath, '..', 'php.ini');
-        phpExtPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'ext');
+        // macOS ou développement : utiliser php.ini si disponible
+        const phpIniPath = path.join(appPath, '..', 'php.ini');
+        const phpExtPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'ext');
+        
+        console.log('Configuration PHP pour macOS/dev');
+        
+        if (fs.existsSync(phpIniPath)) {
+            phpArgs = [
+                '-c', phpIniPath,
+                '-S', '127.0.0.1:8001',
+                '-t', appPath,
+                '-d', 'display_errors=1',
+                '-d', 'log_errors=1',
+                '-d', `extension_dir=${phpExtPath}`,
+                '-d', 'upload_max_filesize=50M',
+                '-d', 'post_max_size=50M',
+                '-d', 'max_execution_time=300',
+                '-d', 'memory_limit=256M',
+                '-d', `session.save_path=${sessionPath}`
+            ];
+        } else {
+            phpArgs = [
+                '-S', '127.0.0.1:8001',
+                '-t', appPath,
+                '-d', 'display_errors=1',
+                '-d', 'log_errors=1',
+                '-d', 'upload_max_filesize=50M',
+                '-d', 'post_max_size=50M',
+                '-d', 'max_execution_time=300',
+                '-d', 'memory_limit=256M',
+                '-d', `session.save_path=${sessionPath}`
+            ];
+        }
     }
-    console.log('PHP Ini Path:', phpIniPath);
-    console.log('PHP Ini exists:', fs.existsSync(phpIniPath));
-    console.log('PHP Ext Path:', phpExtPath);
-    console.log('PHP Ext exists:', fs.existsSync(phpExtPath));
     
-    phpFpmProcess = spawn(phpPath, [
-        '-c', phpIniPath,
-        '-S', '127.0.0.1:8001',
-        '-t', appPath,
-        '-d', 'display_errors=1',
-        '-d', 'log_errors=1',
-        '-d', `extension_dir=${phpExtPath}`,
-        '-d', 'upload_max_filesize=50M',
-        '-d', 'post_max_size=50M',
-        '-d', 'max_execution_time=300',
-        '-d', 'memory_limit=256M',
-        '-d', `session.save_path=${sessionPath}`
-    ], {
+    phpFpmProcess = spawn(phpPath, phpArgs, {
         stdio: ['pipe', 'pipe', 'pipe'],
         env: {
             ...process.env,
@@ -492,6 +554,54 @@ function createWindow() {
     
     // Démarrer les serveurs
     async function startServers() {
+        const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+        const isLinux = process.platform === 'linux';
+        
+        // Pour Linux AppImage, vérifier si PHP est installé
+        if (isLinux && isAppImage) {
+            const phpInstalled = await checkPhpInstalled();
+            if (!phpInstalled) {
+                console.error('PHP non installé sur le système Linux');
+                // Afficher la page d'aide pour installer PHP
+                const guidePath = path.join(__dirname, 'php-install-guide.html');
+                if (fs.existsSync(guidePath)) {
+                    mainWindow.loadFile(guidePath);
+                } else {
+                    // Si le fichier n'existe pas en dev, chercher dans resources
+                    const resourceGuidePath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php-install-guide.html');
+                    if (fs.existsSync(resourceGuidePath)) {
+                        mainWindow.loadFile(resourceGuidePath);
+                    } else {
+                        // Créer une page d'erreur simple
+                        mainWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(`
+                            <!DOCTYPE html>
+                            <html>
+                            <head>
+                                <meta charset="UTF-8">
+                                <title>PHP non installé</title>
+                                <style>
+                                    body { font-family: Arial, sans-serif; padding: 40px; text-align: center; background: #f5f5f5; }
+                                    h1 { color: #e53e3e; }
+                                    p { color: #4a5568; margin: 20px 0; }
+                                    code { background: #2d3748; color: #a0ff00; padding: 10px; display: block; margin: 20px auto; max-width: 600px; border-radius: 5px; }
+                                </style>
+                            </head>
+                            <body>
+                                <h1>⚠️ PHP n'est pas installé</h1>
+                                <p>Duplicator nécessite PHP pour fonctionner.</p>
+                                <p>Veuillez installer PHP avec les commandes suivantes :</p>
+                                <code>sudo apt update<br>sudo apt install php php-cli php-gd php-sqlite3 php-mbstring php-xml</code>
+                                <p>Puis redémarrez l'application.</p>
+                            </body>
+                            </html>
+                        `));
+                    }
+                }
+                mainWindow.show();
+                return;
+            }
+        }
+        
         try {
             await startPhpFpm();
             await startCaddy();
