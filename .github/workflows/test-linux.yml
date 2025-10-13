@@ -15,6 +15,22 @@ jobs:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
     
     steps:
+      - name: Free up disk space on GitHub Actions runner
+        run: |
+          echo "=== Espace disque AVANT nettoyage ==="
+          df -h /
+          echo ""
+          echo "Suppression de fichiers inutiles du runner GitHub Actions..."
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune -af || true
+          sudo apt-get clean || true
+          echo ""
+          echo "=== Espace disque APRÈS nettoyage ==="
+          df -h /
+      
       - name: Checkout code
         uses: actions/checkout@v3
         with:
@@ -56,28 +72,31 @@ jobs:
       # - name: Run tests
       #   run: npm run test:e2e:simple
         
-      - name: Replace PHP directory with empty one
+      - name: Cleanup unnecessary files to save disk space
         run: |
-          echo "=== État avant modification ==="
-          du -sh php/ 2>/dev/null || echo "php/ n'existe pas"
+          echo "=== Nettoyage agressif pour libérer de l'espace ==="
           df -h / | grep "/"
           
           echo ""
-          echo "=== Remplacement du dossier php/ par un dossier vide ==="
+          echo "Suppression du cache npm..."
+          npm cache clean --force
+          
+          echo "Vider le dossier php/..."
           if [ -d "php/" ]; then
-            echo "Taille avant: $(du -sh php/ | cut -f1)"
+            echo "Taille php/: $(du -sh php/ | cut -f1)"
             rm -rf php/*
-            echo "✅ Contenu de php/ supprimé, dossier vide créé"
-          else
-            mkdir -p php/
-            echo "✅ Dossier php/ vide créé"
           fi
+          mkdir -p php/
+          
+          echo "Nettoyage du cache electron-builder..."
+          rm -rf ~/.cache/electron-builder || true
+          
+          echo "Nettoyage node_modules/.cache..."
+          rm -rf node_modules/.cache || true
           
           echo ""
-          echo "=== État après modification ==="
-          ls -la php/ || true
+          echo "=== Espace libéré ==="
           df -h / | grep "/"
-          echo "Espace économisé !"
         
       - name: Update package.json version
         run: |
