@@ -28,7 +28,7 @@ linux:
   executableName: Duplicator
   executableArgs: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"]
   # Configuration spécifique Linux - utilise PHP système, pas de binaires embarqués
-  # Le dossier php/ est supprimé avant le build dans le workflow
+  # Le dossier php/ est vidé avant le build dans le workflow (économie d'espace)
   files:
     - main-caddy.js
     - main.js
@@ -39,7 +39,7 @@ linux:
     - app/**/*
     - ghostscript/**/*
     - caddy/**/*
-    # PHP n'est pas listé ici car le dossier php/ est supprimé avant le build
+    - "!php/**/*"  # Exclure le dossier php/ (vidé, utilise PHP système)
   asarUnpack:
     - "app/**/*"
     - "ghostscript/**/*"
