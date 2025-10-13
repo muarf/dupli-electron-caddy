@@ -420,6 +420,7 @@ let isolatedLayers = [];
 let currentWorkingImageData = null; // Image de travail (diminuée à chaque sélection)
 let posterizedSelection = null; // Stocke la sélection postérisée
 let halftonedSelection = null; // Stocke la sélection tramée
+let originalFileName = 'riso'; // Nom du fichier original uploadé
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', function() {
@@ -512,6 +513,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Charger et afficher l'image
 function loadImage(file) {
+    // Stocker le nom du fichier original (sans extension)
+    originalFileName = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, '_');
+    
     const reader = new FileReader();
     reader.onload = function(e) {
         const img = new Image();
@@ -902,7 +906,7 @@ async function exportAll() {
     const url = URL.createObjectURL(content);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'riso_layers.zip';
+    a.download = originalFileName + '_riso.zip';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1581,7 +1585,7 @@ async function exportAllIsolated() {
     const url = URL.createObjectURL(content);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'riso_pipette_layers.zip';
+    a.download = originalFileName + '_riso_pipette.zip';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

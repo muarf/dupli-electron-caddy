@@ -146,6 +146,70 @@ if (isset($array['prix_data'])) {
         font-size: 2rem;
         font-weight: bold;
     }
+    
+    /* Styles pour l'accordéon */
+    .machine-item {
+        background: #fff;
+        border: 1px solid #337ab7;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 8px rgba(51, 122, 183, 0.15);
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+    
+    .machine-item:hover {
+        box-shadow: 0 4px 12px rgba(51, 122, 183, 0.25);
+        transform: translateY(-2px);
+    }
+    
+    .machine-item.panel-expanded {
+        border-color: #2e6da4;
+    }
+    
+    .machine-item .panel-heading {
+        background: linear-gradient(135deg, #337ab7 0%, #2e6da4 100%);
+        color: white;
+        padding: 15px 20px;
+        cursor: pointer;
+        border-radius: 8px 8px 0 0;
+        transition: background 0.3s ease;
+    }
+    
+    .machine-item .panel-heading:hover {
+        background: linear-gradient(135deg, #2e6da4 0%, #286090 100%);
+    }
+    
+    .machine-item .panel-title {
+        font-size: 18px;
+        font-weight: 600;
+    }
+    
+    .machine-item .toggle-icon {
+        transition: transform 0.3s ease;
+        margin-right: 10px;
+    }
+    
+    .machine-item .machine-type-badge {
+        background-color: rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 13px;
+        font-weight: 500;
+    }
+    
+    .machine-item .machine-price-preview {
+        font-size: 20px;
+        font-weight: bold;
+        color: white;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    
+    .machine-item .panel-body {
+        padding: 25px;
+        background: #fafafa;
+    }
 </style>
 
 <div class="container-fluid">
@@ -207,11 +271,13 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                 <div class="col-md-6 col-lg-4 mb-4">
                     <div class="machine-card">
                         <h5 class="text-center"><i class="fa fa-print"></i> Tirage #<?= ($index + 1) ?></h5>
-                        <p><strong><?= ucfirst($machine['type']) ?></strong></p>
-                        <div class="text-center">
-                            <span class="badge bg-primary fs-6"><?= number_format($machine['prix'], 2) ?>€</span>
-            </div>
-        </div>
+                        <p class="text-center"><strong><?= ucfirst($machine['type']) ?></strong></p>
+                        <div class="text-center" style="margin-top: 15px;">
+                            <h3 style="color: #337ab7; margin: 0;">
+                                <strong><?= number_format($machine['prix'], 2) ?>€</strong>
+                            </h3>
+                        </div>
+                    </div>
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
@@ -673,35 +739,55 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
             <h4 class="text-center">Tirages</h4>
             
             <!-- Machine par défaut -->
-            <div class="machine-item" data-index="0">
-                <hr>
-                <h5 class="text-center">Tirage #1</h5>
-                
-                <!-- Type de machine -->
-                <div class="form-group">
-                    <label class="col-md-4 control-label">Type de machine</label>
-                    <div class="col-md-4">
-                        <div class="radio">
-                            <label>
-                                <input type="radio" name="machines[0][type]" value="duplicopieur" checked onchange="toggleMachineType(0)">
-                                Duplicopieur
-                            </label>
+            <div class="machine-item panel panel-primary" data-index="0">
+                <!-- Header cliquable avec preview -->
+                <div class="panel-heading" style="cursor: pointer;">
+                    <div class="row" onclick="toggleMachinePanel(0)">
+                        <div class="col-xs-8 col-sm-9">
+                            <h4 class="panel-title" style="margin: 0;">
+                                <i class="fa fa-chevron-down toggle-icon" id="toggle-icon-0"></i>
+                                <strong>Tirage #1</strong>
+                                <span class="machine-type-badge badge" id="type-badge-0">Duplicopieur</span>
+                            </h4>
                         </div>
-                        <div class="radio">
-                            <label>
-                                <input type="radio" name="machines[0][type]" value="photocopieur" onchange="toggleMachineType(0)">
-                                Photocopieur
-                            </label>
+                        <div class="col-xs-4 col-sm-3 text-right">
+                            <span class="machine-price-preview" id="price-preview-0">0.00€</span>
                         </div>
                     </div>
                 </div>
                 
+                <!-- Corps du panel (pliable) -->
+                <div class="panel-body machine-content" id="machine-content-0" style="padding: 20px;">
+                
+                <!-- Type de machine - Système d'onglets -->
+                <div class="form-group">
+                    <div class="col-md-12">
+                        <ul class="nav nav-tabs" role="tablist" style="margin-bottom: 20px;">
+                            <li role="presentation" class="active" id="tab-duplicopieur-0">
+                                <a href="#" onclick="selectMachineTypeTab(0, 'duplicopieur'); return false;" style="font-size: 16px;">
+                                    <i class="fa fa-print" style="margin-right: 5px;"></i> Duplicopieur
+                                </a>
+                            </li>
+                            <li role="presentation" id="tab-photocopieur-0">
+                                <a href="#" onclick="selectMachineTypeTab(0, 'photocopieur'); return false;" style="font-size: 16px;">
+                                    <i class="fa fa-copy" style="margin-right: 5px;"></i> Photocopieur
+                                </a>
+                            </li>
+                        </ul>
+                        <!-- Inputs cachés pour les valeurs -->
+                        <input type="radio" name="machines[0][type]" value="duplicopieur" checked onchange="toggleMachineType(0)" style="display: none;" id="radio-duplicopieur-0">
+                        <input type="radio" name="machines[0][type]" value="photocopieur" onchange="toggleMachineType(0)" style="display: none;" id="radio-photocopieur-0">
+                    </div>
+                </div>
+                
                 <!-- Interface duplicopieur -->
-                <div id="duplicopieur-interface-0" class="machine-interface">
+                <div id="duplicopieur-interface-0" class="machine-interface" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #17a2b8;">
                     <!-- Affichage du duplicopieur -->
                     <div class="form-group">
-                        <label class="col-md-4 control-label">Duplicopieur</label>
-                        <div class="col-md-4">
+                        <label class="col-md-3 control-label">
+                            <i class="fa fa-cog" style="margin-right: 5px;"></i> Duplicopieur
+                        </label>
+                        <div class="col-md-9">
                             <?php if(isset($duplicopieur_selectionne)): ?>
                                 <input type="hidden" name="machines[0][duplicopieur_id]" value="<?= $duplicopieur_selectionne['id'] ?>">
                                 <p class="form-control-static">
@@ -732,8 +818,10 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                     
                     <!-- Sélection du tambour -->
                     <div class="form-group" id="tambour-group-0" style="display: none;">
-                        <label class="col-md-4 control-label">Tambour utilisé</label>
-                        <div class="col-md-4">
+                        <label class="col-md-3 control-label">
+                            <i class="fa fa-circle" style="margin-right: 5px;"></i> Tambour utilisé
+                        </label>
+                        <div class="col-md-9">
                             <select name="machines[0][tambour]" class="form-control" id="tambour-select-0">
                                 
                             </select>
@@ -742,46 +830,47 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                     </div>
                     
                     <!-- Options duplicopieur -->
-                    <div class="form-group">
-                        <label class="col-md-4 control-label" for="A4_0">A4</label>
-                        <div class="col-md-4">
-                            <div class="checkbox">
-                                <label for="A4_0">
-                                    <input name="machines[0][A4]" value="A4" type="checkbox" onchange="calculateTotalPrice()">
-                                    oui
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-md-4 control-label" for="rv_0">Recto/verso</label>
-                        <div class="col-md-4">
-                            <div class="checkbox">
-                                <label for="rv_0">
-                                    <input name="machines[0][rv]" value="oui" type="checkbox" onchange="calculateTotalPrice()">
-                                    oui
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="col-md-4 control-label" for="feuilles_payees_0">2ème couleur ? (feuilles déjà payées)</label>
-                        <div class="col-md-4">
-                            <div class="checkbox">
-                                <label for="feuilles_payees_0">
-                                    <input name="machines[0][feuilles_payees]" value="oui" type="checkbox" onchange="calculateTotalPrice()">
-                                    oui
-                                </label>
+                    <div class="form-group" style="padding: 10px; margin: 10px 0;">
+                        <label class="col-md-2 control-label">
+                            <i class="fa fa-sliders" style="margin-right: 5px;"></i> Options
+                        </label>
+                        <div class="col-md-10">
+                            <div class="row">
+                                <div class="col-xs-4 col-sm-3">
+                                    <div class="checkbox">
+                                        <label for="A4_0">
+                                            <input name="machines[0][A4]" value="A4" type="checkbox" onchange="calculateTotalPrice()" id="A4_0">
+                                            <i class="fa fa-file-text-o"></i> Format A4
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-xs-4 col-sm-3">
+                                    <div class="checkbox">
+                                        <label for="rv_0">
+                                            <input name="machines[0][rv]" value="oui" type="checkbox" onchange="calculateTotalPrice()" id="rv_0">
+                                            <i class="fa fa-files-o"></i> Recto/verso
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-xs-12 col-sm-6">
+                                    <div class="checkbox">
+                                        <label for="feuilles_payees_0">
+                                            <input name="machines[0][feuilles_payees]" value="oui" type="checkbox" onchange="calculateTotalPrice()" id="feuilles_payees_0">
+                                            <i class="fa fa-paint-brush"></i> 2ème couleur (feuilles payées)
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Mode de saisie -->
-                    <div class="col-md-2"></div>
-                    <div class="col-md-8">
-                        <legend>Mode de saisie</legend>
+                    <div class="col-md-12" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid #28a745;">
+                        <legend style="border-bottom: 2px solid #dee2e6; padding-bottom: 10px; margin-bottom: 15px; font-size: 18px;">
+                            <i class="fa fa-keyboard-o" style="margin-right: 8px; color: #28a745;"></i> Mode de saisie
+                        </legend>
                         <div class="form-group">
-                            <label class="col-md-4 control-label">Type de saisie</label>
+                            <label class="col-md-3 control-label">Type de saisie</label>
                             <div class="col-md-4">
                                 <div class="radio">
                                     <label>
@@ -800,57 +889,64 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                         
                         <!-- Mode compteurs -->
                         <div id="compteurs-mode-0" class="saisie-mode">
-                            <div class="col-md-1"></div>
-                            <div class="col-md-5">
-                                <legend>Avant</legend>
-                                <div class="form-group">
-                                    <label class="col-md-6 control-label" for="master_av_0">Nombre de Masters AVANT</label>  
-                                    <div class="col-md-6">
-                                        <input id="master_av_0" name="machines[0][master_av]" class="form-control input-md" type="number" min="0" value="<?= isset($master_av) ? $master_av : '0' ?>" onchange="calculateTotalPrice()">
-                                        <span class="help-block">Compteur masters avant utilisation</span>  
-                                    </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <fieldset style="border: 1px solid #ddd; padding: 15px; border-radius: 5px;">
+                                        <legend style="width: auto; padding: 0 10px; font-size: 16px; margin-bottom: 10px;">Compteurs AVANT</legend>
+                                        <div class="form-group">
+                                            <label class="col-xs-4 control-label" for="master_av_0">Masters</label>  
+                                            <div class="col-xs-8">
+                                                <input id="master_av_0" name="machines[0][master_av]" class="form-control input-sm" type="number" min="0" value="<?= isset($master_av) ? $master_av : '0' ?>" onchange="calculateTotalPrice()" style="max-width: 120px;">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-xs-4 control-label" for="passage_av_0">Passages</label>  
+                                            <div class="col-xs-8">
+                                                <input id="passage_av_0" name="machines[0][passage_av]" class="form-control input-sm" type="number" min="0" value="<?= isset($passage_av) ? $passage_av : '0' ?>" onchange="calculateTotalPrice()" style="max-width: 120px;">
+                                            </div>
+                                        </div>
+                                    </fieldset>
                                 </div>
-                                <div class="form-group">
-                                    <label class="col-md-6 control-label" for="passage_av_0">Nombre de Passages AVANT</label>  
-                                    <div class="col-md-6">
-                                        <input id="passage_av_0" name="machines[0][passage_av]" class="form-control input-md" type="number" min="0" value="<?= isset($passage_av) ? $passage_av : '0' ?>" onchange="calculateTotalPrice()">
-                                        <span class="help-block">Compteur passages avant utilisation</span>  
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-5">
-                                <legend>Après</legend>
-                                <div class="form-group">
-                                    <label class="col-md-6 control-label" for="master_ap_0">Nombre de Masters APRÈS</label>  
-                                    <div class="col-md-6">
-                                        <input id="master_ap_0" name="machines[0][master_ap]" class="form-control input-md" type="number" min="0" value="<?= $master_av ?>" onchange="calculateTotalPrice()">
-                                        <span class="help-block">Compteur masters après utilisation</span>  
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label class="col-md-6 control-label" for="passage_ap_0">Nombre de Passages APRÈS</label>  
-                                    <div class="col-md-6">
-                                        <input id="passage_ap_0" name="machines[0][passage_ap]" class="form-control input-md" type="number" min="0" value="<?= $passage_av ?>" onchange="calculateTotalPrice()">
-                                        <span class="help-block">Compteur passages après utilisation</span>  
-                                    </div>
+                                <div class="col-md-6">
+                                    <fieldset style="border: 1px solid #ddd; padding: 15px; border-radius: 5px;">
+                                        <legend style="width: auto; padding: 0 10px; font-size: 16px; margin-bottom: 10px;">Compteurs APRÈS</legend>
+                                        <div class="form-group">
+                                            <label class="col-xs-4 control-label" for="master_ap_0">Masters</label>  
+                                            <div class="col-xs-8">
+                                                <input id="master_ap_0" name="machines[0][master_ap]" class="form-control input-sm" type="number" min="0" value="<?= $master_av ?>" onchange="calculateTotalPrice()" style="max-width: 120px;">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="col-xs-4 control-label" for="passage_ap_0">Passages</label>  
+                                            <div class="col-xs-8">
+                                                <input id="passage_ap_0" name="machines[0][passage_ap]" class="form-control input-sm" type="number" min="0" value="<?= $passage_av ?>" onchange="calculateTotalPrice()" style="max-width: 120px;">
+                                            </div>
+                                        </div>
+                                    </fieldset>
                                 </div>
                             </div>
                         </div>
                         
                         <!-- Mode manuel -->
                         <div id="manuel-mode-0" class="saisie-mode" style="display:none;">
-                        <div class="form-group">
-                            <label class="col-md-4 control-label" for="nb_masters_0">Nombre de Masters effectués</label>  
-                            <div class="col-md-4">
-                                    <input id="nb_masters_0" name="machines[0][nb_masters]" class="form-control input-md" type="number" min="0" value="0" onchange="calculateTotalPrice()">
-                                <span class="help-block">Nombre de masters que vous avez utilisés</span>  
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="col-md-4 control-label" for="nb_passages_0">Nombre de Passages effectués</label>  
-                            <div class="col-md-4">
-                                    <input id="nb_passages_0" name="machines[0][nb_passages]" class="form-control input-md" type="number" min="0" value="0" onchange="calculateTotalPrice()">
-                                <span class="help-block">Nombre de passages/copies que vous avez effectués</span>  
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="col-xs-4 control-label" for="nb_masters_0">Masters</label>  
+                                        <div class="col-xs-8">
+                                            <input id="nb_masters_0" name="machines[0][nb_masters]" class="form-control input-sm" type="number" min="0" value="0" onchange="calculateTotalPrice()" style="max-width: 120px;">
+                                            <span class="help-block">Nombre utilisé</span>  
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="col-xs-4 control-label" for="nb_passages_0">Passages</label>  
+                                        <div class="col-xs-8">
+                                            <input id="nb_passages_0" name="machines[0][nb_passages]" class="form-control input-sm" type="number" min="0" value="0" onchange="calculateTotalPrice()" style="max-width: 120px;">
+                                            <span class="help-block">Nombre effectué</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -858,11 +954,13 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                 </div>
                 
                 <!-- Interface photocopieur -->
-                <div id="photocopieur-interface-0" class="machine-interface" style="display:none;">
+                <div id="photocopieur-interface-0" class="machine-interface" style="display:none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #e83e8c;">
                     <!-- Sélection photocopieuse -->
                     <div class="form-group">
-                        <label class="col-md-4 control-label" for="marque_0">Photocopieuse à utiliser</label>
-                        <div class="col-md-4">
+                        <label class="col-md-3 control-label" for="marque_0">
+                            <i class="fa fa-desktop" style="margin-right: 5px;"></i> Photocopieuse
+                        </label>
+                        <div class="col-md-9">
                             <select id="marque_0" name="machines[0][machine]" class="form-control">
                                 <?php
                                 if (isset($photocopiers) && !empty($photocopiers)) {
@@ -881,92 +979,109 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                         </div>
                     </div>
                     
+                    
                     <!-- Section pour les brochures/tracts -->
                     <div class="brochures-container" data-machine="0">
-                        <h6>Brochures/Tracts à imprimer</h6>
-                        <div class="brochure-item" data-brochure="0">
-                            <div class="form-group">
-                                <label class="col-md-4 control-label" for="nb_exemplaires_0_0">Nombre d'exemplaires</label>  
-                                <div class="col-md-4">
-                                    <input id="nb_exemplaires_0_0" name="machines[0][brochures][0][nb_exemplaires]" class="form-control input-md" type="number" min="1" value="1" onchange="calculateTotalPrice()">
-                                    <span class="help-block">Nombre d'exemplaires à imprimer</span>  
+                        <h5 style="background: #f8f9fa; padding: 12px; border-radius: 5px; margin-bottom: 15px; border-left: 3px solid #9c27b0;">
+                            <i class="fa fa-book" style="margin-right: 8px; color: #9c27b0;"></i> Brochures/Tracts à imprimer
+                        </h5>
+                        <div class="brochure-item" data-brochure="0" style="padding: 15px; background: #ffffff; border: 1px solid #dee2e6; border-radius: 5px; margin-bottom: 10px;">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label class="control-label" for="nb_exemplaires_0_0">Exemplaires</label>  
+                                        <input id="nb_exemplaires_0_0" name="machines[0][brochures][0][nb_exemplaires]" class="form-control input-sm" type="number" min="1" value="1" onchange="calculateTotalPrice()" style="max-width: 100px;">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label class="control-label" for="nb_feuilles_0_0">Feuilles / ex.</label>  
+                                        <input id="nb_feuilles_0_0" name="machines[0][brochures][0][nb_feuilles]" class="form-control input-sm" type="number" min="1" onchange="calculateTotalPrice()" style="max-width: 100px;">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="control-label" for="radios_0_0">Taille</label>
+                                        <div> 
+                                            <label class="radio-inline" for="radios-0-0-0">
+                                                <input name="machines[0][brochures][0][taille]" id="radios-0-0-0" value="A4" checked="checked" type="radio" onchange="calculateTotalPrice()">
+                                                A4
+                                            </label> 
+                                            <label class="radio-inline" for="radios-0-0-1">
+                                                <input name="machines[0][brochures][0][taille]" id="radios-0-0-1" value="A3" type="radio" onchange="calculateTotalPrice()">
+                                                A3
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <label class="col-md-4 control-label" for="nb_feuilles_0_0">Nombre de feuilles par exemplaire</label>  
-                                <div class="col-md-4">
-                                    <input id="nb_feuilles_0_0" name="machines[0][brochures][0][nb_feuilles]" class="form-control input-md" type="number" min="1" onchange="calculateTotalPrice()">
-                                    <span class="help-block">Nombre de feuilles par exemplaire</span>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-md-4 control-label" for="radios_0_0">Taille</label>
-                                <div class="col-md-4"> 
-                                    <label class="radio-inline" for="radios-0-0-0">
-                                        <input name="machines[0][brochures][0][taille]" id="radios-0-0-0" value="A4" checked="checked" type="radio" onchange="calculateTotalPrice()">
-                                        A4
-                                    </label> 
-                                    <label class="radio-inline" for="radios-0-0-1">
-                                        <input name="machines[0][brochures][0][taille]" id="radios-0-0-1" value="A3" type="radio" onchange="calculateTotalPrice()">
-                                        A3
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-md-4 control-label" for="rv_0_0">Recto/verso</label>
-                                <div class="col-md-4">
-                                    <div class="checkbox">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <label class="control-label"><i class="fa fa-cogs"></i> Options</label>
+                                    <div class="checkbox-inline" style="margin-right: 20px;">
                                         <label for="rv_0_0">
-                                            <input name="machines[0][brochures][0][rv]" value="oui" type="checkbox" onchange="calculateTotalPrice()">
-                                            oui
+                                            <input name="machines[0][brochures][0][rv]" value="oui" type="checkbox" onchange="calculateTotalPrice()" id="rv_0_0">
+                                            <i class="fa fa-files-o"></i> Recto/verso
                                         </label>
                                     </div>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="col-md-4 control-label" for="couleur_0_0">Couleur</label>
-                                <div class="col-md-4">
-                                    <div class="checkbox">
+                                    <div class="checkbox-inline" style="margin-right: 20px;">
                                         <label for="couleur_0_0">
-                                            <input name="machines[0][brochures][0][couleur]" value="oui" type="checkbox" onchange="calculateTotalPrice()">
-                                            oui
+                                            <input name="machines[0][brochures][0][couleur]" value="oui" type="checkbox" onchange="calculateTotalPrice(); toggleFillRateDisplay(0);" id="couleur_0_0">
+                                            <i class="fa fa-tint"></i> Couleur
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-inline">
+                                        <label for="feuilles_payees_0_0">
+                                            <input name="machines[0][brochures][0][feuilles_payees]" value="oui" type="checkbox" onchange="calculateTotalPrice()" id="feuilles_payees_0_0">
+                                            <i class="fa fa-check-square"></i> Feuilles payées
                                         </label>
                                     </div>
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <label class="col-md-4 control-label" for="feuilles_payees_0_0">Feuilles déjà payées</label>
-                                <div class="col-md-4">
-                                    <div class="checkbox">
-                                        <label for="feuilles_payees_0_0">
-                                            <input name="machines[0][brochures][0][feuilles_payees]" value="oui" type="checkbox" onchange="calculateTotalPrice()">
-                                            oui
-                                        </label>
+                            
+                            <!-- Taux de remplissage couleur - sous la case couleur -->
+                            <div class="form-group" id="fill-rate-group-0" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px; display: none; border-left: 3px solid #e83e8c;">
+                                <label class="col-md-3 control-label">
+                                    <i class="fa fa-percent" style="margin-right: 5px;"></i> Taux de remplissage couleur
+                                </label>
+                                <div class="col-md-9">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <input type="range" id="fill_rate_photocop_slider_0" min="0" max="100" value="50" step="5" 
+                                                   class="form-control" oninput="updateFillRateDisplay('photocop', 0)" style="margin: 8px 0;">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <span id="fill_rate_photocop_display_0" style="font-size: 16px; font-weight: bold; color: #e83e8c;">50%</span>
+                                        </div>
                                     </div>
+                                    <input type="hidden" id="fill_rate_photocop_0" name="machines[0][fill_rate]" value="0.5">
+                                    <span class="help-block">Ajustez le taux de remplissage des couleurs (0% = très léger, 100% = très foncé)</span>
                                 </div>
                             </div>
                         </div>
-                        
+                    </div>
+                </div><!-- Fin photocopieur-interface -->
+                
+                <!-- Prix de la machine -->
+                <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #28a745;">
+                    <label class="col-md-4 control-label" style="font-size: 14px; font-weight: normal;">
+                        <i class="fa fa-euro" style="margin-right: 5px; color: #28a745;"></i> Prix de ce tirage
+                    </label>
+                    <div class="col-md-8">
+                        <div class="form-control-static machine-price" data-machine="0" id="machine-price-0" style="font-size: 16px; font-weight: bold; color: #28a745;">0.00€</div>
                     </div>
                 </div>
                 
-                <!-- Prix de la machine -->
-                <div class="form-group">
-                    <label class="col-md-4 control-label">Prix de ce tirage</label>
-                    <div class="col-md-4">
-                        <div class="form-control-static machine-price" data-machine="0">0.00€</div>
-                    </div>
-                </div>
+                </div><!-- Fin panel-body -->
+            </div><!-- Fin machine-item -->
+            
+            <!-- Bouton pour ajouter une machine (à l'intérieur du container) -->
+            <div class="text-center" style="margin: 20px 0;">
+                <button type="button" id="add-machine" class="btn btn-success btn-lg">
+                    <i class="fa fa-plus-circle"></i> Ajouter un tirage
+                </button>
             </div>
-        </div>
-        
-        <!-- Bouton pour ajouter une machine -->
-        <div class="form-group">
-            <div class="col-md-4"></div>
-            <div class="col-md-4">
-                <button type="button" id="add-machine" class="btn btn-success">+ Ajouter un tirage</button>
-            </div>
-        </div>
+        </div><!-- Fin machines-container -->
         
         <!-- Récapitulatif total -->
         <div class="alert alert-info">
@@ -1040,9 +1155,12 @@ let machineCount = 1;
 const prixData = <?= json_encode($prix_data ?? []) ?>;
 
 // Debug : afficher la structure des prix
-console.log('Prix data:', prixData);
-console.log('dupli_1 structure:', prixData['dupli_1']);
-console.log('tambour_noir price:', prixData['dupli_1'] ? prixData['dupli_1']['tambour_noir'] : 'NOT_FOUND');
+console.log('🔍 DEBUG PRIX - Prix data:', prixData);
+console.log('🔍 DEBUG PRIX - Type de prixData:', typeof prixData);
+console.log('🔍 DEBUG PRIX - Taille de prixData:', Object.keys(prixData).length);
+console.log('🔍 DEBUG PRIX - Clés disponibles:', Object.keys(prixData));
+console.log('🔍 DEBUG PRIX - dupli_1 structure:', prixData['dupli_1']);
+console.log('🔍 DEBUG PRIX - tambour_noir price:', prixData['dupli_1'] ? prixData['dupli_1']['tambour_noir'] : 'NOT_FOUND');
 
 // Fonction pour trouver la clé de prix d'une machine par son nom
 function findMachinePriceKey(machineName) {
@@ -1119,7 +1237,7 @@ function toggleMachineType(machineIndex) {
         if (duplicopieurSelect) {
             duplicopieurSelect.required = true;
         }
-        duplicopieurInterface.style.display = '';
+        duplicopieurInterface.style.display = 'block';
         photocopieurInterface.style.display = 'none';
         
         // Activer les champs duplicopieur
@@ -1142,7 +1260,7 @@ function toggleMachineType(machineIndex) {
             duplicopieurSelect.value = ''; // Vider le champ
         }
         duplicopieurInterface.style.display = 'none';
-        photocopieurInterface.style.display = '';
+        photocopieurInterface.style.display = 'block';
         
         // Désactiver les champs duplicopieur
         var duplicopieurFields = duplicopieurInterface.querySelectorAll('input, select, textarea');
@@ -1165,26 +1283,34 @@ function toggleMachineType(machineIndex) {
     }
     
     calculateTotalPrice();
+    // Mettre à jour le preview du panel
+    updatePanelPreview(machineIndex);
 }
 
 function calculateMachinePrice(machineIndex) {
-    console.log("calculateMachinePrice appelé avec index:", machineIndex);
+    console.log("🔍 calculateMachinePrice appelé avec index:", machineIndex);
     var machineElement = document.querySelector(`[data-index="${machineIndex}"]`);
-    console.log("machineElement trouvé:", machineElement ? "oui" : "non");
-    if (!machineElement) return 0;
+    console.log("🔍 machineElement trouvé:", machineElement ? "oui" : "non");
+    if (!machineElement) {
+        console.log("❌ ERREUR: machineElement non trouvé pour index", machineIndex);
+        return 0;
+    }
     
     var typeRadio = machineElement.querySelector(`input[name="machines[${machineIndex}][type]"]:checked`);
-    console.log("typeRadio trouvé:", typeRadio ? typeRadio.value : "non");
-    if (!typeRadio) return 0;
+    console.log("🔍 typeRadio trouvé:", typeRadio ? typeRadio.value : "non");
+    if (!typeRadio) {
+        console.log("❌ ERREUR: typeRadio non trouvé pour index", machineIndex);
+        return 0;
+    }
     
     var price = 0;
     var detailCalcul = '';
     
     if (typeRadio.value === 'duplicopieur') {
-        console.log("Calcul duplicopieur pour index:", machineIndex);
+        console.log("🔍 Calcul duplicopieur pour index:", machineIndex);
         // Calcul pour duplicopieur
         var modeSaisieRadio = machineElement.querySelector(`input[name="machines[${machineIndex}][mode_saisie]"]:checked`);
-        console.log("modeSaisieRadio trouvé:", modeSaisieRadio ? modeSaisieRadio.value : "non");
+        console.log("🔍 modeSaisieRadio trouvé:", modeSaisieRadio ? modeSaisieRadio.value : "non");
         var nbMasters = 0;
         var nbPassages = 0;
         
@@ -1215,7 +1341,7 @@ function calculateMachinePrice(machineIndex) {
             var passageAv = parseFloat(passageAvElement ? passageAvElement.value : 0) || 0;
             var passageAp = parseFloat(passageApElement ? passageApElement.value : 0) || 0;
             
-            console.log("Valeurs brutes des champs:", {
+            console.log("🔍 Valeurs brutes des champs:", {
                 masterAvElement_value: masterAvElement ? masterAvElement.value : "élément non trouvé",
                 masterApElement_value: masterApElement ? masterApElement.value : "élément non trouvé",
                 passageAvElement_value: passageAvElement ? passageAvElement.value : "élément non trouvé",
@@ -1225,7 +1351,7 @@ function calculateMachinePrice(machineIndex) {
             nbMasters = Math.max(0, masterAp - masterAv);
             nbPassages = Math.max(0, passageAp - passageAv);
             
-            console.log("Valeurs calculées:", {
+            console.log("🔍 Valeurs calculées:", {
                 masterAv: masterAv,
                 masterAp: masterAp,
                 passageAv: passageAv,
@@ -1344,6 +1470,11 @@ function calculateMachinePrice(machineIndex) {
             var photocopName = machineElement.querySelector('select[name*="[machine]"]').value;
             var prixEncre = 0;
             
+            // Récupérer le taux de remplissage
+            var fillRateElement = machineElement.querySelector('#fill_rate_photocop_' + machineIndex);
+            var fillRate = fillRateElement ? parseFloat(fillRateElement.value) : 0.5;
+            var fillRateMultiplier = couleur ? (fillRate / 0.5) : 1.0; // 50% = ×1, 100% = ×2
+            
             // NOUVELLE STRUCTURE : Utiliser la fonction pour trouver la clé dynamique
             var machineKey = findMachinePriceKey(photocopName);
             console.log('🔑 Clé trouvée pour', photocopName, ':', machineKey);
@@ -1354,24 +1485,24 @@ function calculateMachinePrice(machineIndex) {
                 if (photocopName.toLowerCase() === 'comcolor') {
                     // Photocopieur à encre : additionner toutes les encres
                     if (couleur) {
-                        // Couleur : bleue + couleur + jaune + noire + rouge
-                        prixEncre += (machinePrices['bleue']?.unite || 0);
-                        prixEncre += (machinePrices['couleur']?.unite || 0);
-                        prixEncre += (machinePrices['jaune']?.unite || 0);
-                        prixEncre += (machinePrices['noire']?.unite || 0);
-                        prixEncre += (machinePrices['rouge']?.unite || 0);
+                        // Couleur : bleue + couleur + jaune + noire + rouge (avec taux de remplissage)
+                        prixEncre += (machinePrices['bleue']?.unite || 0) * fillRateMultiplier;
+                        prixEncre += (machinePrices['couleur']?.unite || 0) * fillRateMultiplier;
+                        prixEncre += (machinePrices['jaune']?.unite || 0) * fillRateMultiplier;
+                        prixEncre += (machinePrices['noire']?.unite || 0) * fillRateMultiplier;
+                        prixEncre += (machinePrices['rouge']?.unite || 0) * fillRateMultiplier;
                     } else {
-                        // Noir et blanc : seulement noire
+                        // Noir et blanc : seulement noire (pas de taux de remplissage)
                         prixEncre += (machinePrices['noire']?.unite || 0);
                     }
                 } else if (photocopName.toLowerCase() === 'konika') {
                     // Photocopieur à toner : additionner tous les toners + tambour + developer
                     if (couleur) {
-                        // Couleur : cyan + jaune + magenta + noir + tambour + dev
-                        prixEncre += (machinePrices['cyan']?.unite || 0);
-                        prixEncre += (machinePrices['jaune']?.unite || 0);
-                        prixEncre += (machinePrices['magenta']?.unite || 0);
-                        prixEncre += (machinePrices['noir']?.unite || 0);
+                        // Couleur : cyan + jaune + magenta + noir + tambour + dev (avec taux de remplissage)
+                        prixEncre += (machinePrices['cyan']?.unite || 0) * fillRateMultiplier;
+                        prixEncre += (machinePrices['jaune']?.unite || 0) * fillRateMultiplier;
+                        prixEncre += (machinePrices['magenta']?.unite || 0) * fillRateMultiplier;
+                        prixEncre += (machinePrices['noir']?.unite || 0) * fillRateMultiplier;
                         prixEncre += (machinePrices['tambour']?.unite || 0);
                         prixEncre += (machinePrices['dev']?.unite || 0);
                     } else {
@@ -1513,25 +1644,45 @@ function calculateMachinePrice(machineIndex) {
     
     // Mettre à jour l'affichage du prix de cette machine
     var priceElement = machineElement.querySelector('.machine-price');
+    console.log("🔍 Élément .machine-price trouvé:", priceElement ? "oui" : "non");
     if (priceElement) {
         priceElement.innerHTML = price.toFixed(2) + '€' + detailCalcul;
+        console.log("✅ Prix mis à jour dans l'élément:", price.toFixed(2) + '€');
+    } else {
+        console.log("❌ ERREUR: Élément .machine-price non trouvé pour machine", machineIndex);
+        // Essayer de trouver l'élément par ID
+        var priceElementById = document.getElementById('machine-price-' + machineIndex);
+        console.log("🔍 Élément #machine-price-" + machineIndex + " trouvé:", priceElementById ? "oui" : "non");
+        if (priceElementById) {
+            priceElementById.innerHTML = price.toFixed(2) + '€' + detailCalcul;
+            console.log("✅ Prix mis à jour par ID:", price.toFixed(2) + '€');
+        }
     }
     
+    console.log(`🔍 Prix final retourné pour machine ${machineIndex}: ${price.toFixed(2)}€`);
     return price;
 }
 
 function calculateTotalPrice() {
-    console.log("calculateTotalPrice appelé");
+    console.log("🔍 calculateTotalPrice appelé");
     var total = 0;
     var machineElements = document.querySelectorAll('.machine-item');
-    console.log("machineElements trouvés:", machineElements.length);
+    console.log("🔍 machineElements trouvés:", machineElements.length);
+    
+    if (machineElements.length === 0) {
+        console.log("❌ ERREUR: Aucune machine trouvée avec la classe .machine-item");
+        return;
+    }
     
     machineElements.forEach(function(machineElement) {
         var machineIndex = machineElement.getAttribute('data-index');
-        console.log("machineIndex:", machineIndex);
+        console.log("🔍 machineIndex:", machineIndex);
         var price = calculateMachinePrice(machineIndex);
-        console.log("prix calculé pour index", machineIndex, ":", price);
-            total += price;
+        console.log("🔍 prix calculé pour index", machineIndex, ":", price);
+        total += price;
+        
+        // Mettre à jour le preview du panel
+        updatePanelPreview(machineIndex);
     });
     
     console.log("Total final:", total);
@@ -1553,20 +1704,14 @@ function calculateTotalPrice() {
         }
     }
     
-    // Mettre à jour le champ de paiement si "oui" est coché
-    var payeOui = document.getElementById('payeoui');
-    if (payeOui && payeOui.checked) {
-        var cbField = document.getElementById('cb1');
-        if (cbField) {
-            cbField.value = total.toFixed(2);
-        }
-    }
-    
     return total; // Retourner le total pour utilisation dans updatePaymentAmount
 }
 
 // Gestion des machines
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔍 DOM chargé, initialisation des prix...');
+    calculateTotalPrice();
+    
     const addMachineBtn = document.getElementById('add-machine');
     if (!addMachineBtn) {
         console.log('Bouton add-machine non trouvé - probablement sur la page de confirmation');
@@ -1599,18 +1744,32 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('tempDiv.children.length:', tempDiv.children.length);
             console.log('Tous les enfants:', Array.from(tempDiv.children).map(el => el.tagName));
             
-            // Créer un conteneur pour la nouvelle machine
-            const newMachineContainer = document.createElement('div');
-            newMachineContainer.className = 'machine-item';
-            newMachineContainer.setAttribute('data-index', newIndex);
+            // Le HTML généré est déjà un panel complet, on l'utilise directement
+            const newMachineContainer = tempDiv.firstElementChild;
             
-            // Ajouter tous les enfants du tempDiv au nouveau conteneur
-            while (tempDiv.firstChild) {
-                newMachineContainer.appendChild(tempDiv.firstChild);
+            if (!newMachineContainer) {
+                console.error('Aucun élément trouvé dans le HTML généré');
+                alert('Erreur lors de l\'ajout de la machine: HTML invalide');
+                return;
             }
             
             // Ajouter la machine au container
-            container.appendChild(newMachineContainer);
+            // Trouver le div qui contient le bouton "Ajouter un tirage" (le dernier .text-center)
+            const addButtonContainer = container.querySelector('div.text-center:last-child');
+            
+            console.log('🔍 container:', container);
+            console.log('🔍 addButtonContainer:', addButtonContainer);
+            console.log('🔍 container.children:', Array.from(container.children).map(el => el.className || el.tagName));
+            
+            if (addButtonContainer && container.contains(addButtonContainer)) {
+                // Insérer la nouvelle machine AVANT le div du bouton
+                container.insertBefore(newMachineContainer, addButtonContainer);
+                console.log('✅ Machine ajoutée avec succès avant le bouton!');
+            } else {
+                // Fallback : ajouter à la fin du container
+                console.log('⚠️ Fallback: ajout à la fin');
+                container.appendChild(newMachineContainer);
+            }
     machineCount++;
     
             // Debug: vérifier le contenu de newMachineContainer
@@ -1663,6 +1822,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialiser la validation pour la première machine (duplicopieur par défaut)
     toggleMachineType(0);
+    
+    // Charger les tambours pour la machine 0 si un duplicopieur est déjà sélectionné
+    var duplicopieurSelect0 = document.querySelector('select[name="machines[0][duplicopieur_id]"]');
+    var duplicopieurHidden0 = document.querySelector('input[name="machines[0][duplicopieur_id]"]');
+    var duplicopieurId0 = null;
+    
+    if (duplicopieurSelect0 && duplicopieurSelect0.value) {
+        duplicopieurId0 = duplicopieurSelect0.value;
+    } else if (duplicopieurHidden0 && duplicopieurHidden0.value) {
+        duplicopieurId0 = duplicopieurHidden0.value;
+    }
+    
+    if (duplicopieurId0) {
+        console.log('🎯 Chargement initial des tambours pour machine 0, duplicopieur ID:', duplicopieurId0);
+        loadTamboursForDuplicopieur(duplicopieurId0, 0);
+    }
     
     calculateTotalPrice();
     
@@ -1804,6 +1979,134 @@ function updateDuplicopieurCounters(duplicopieurId, machineIndex) {
         });
 }
 
+// Fonction pour traduire les noms de tambours
+function translateTambour(tambour) {
+    const translations = {
+        'tambour_noir': 'Tambour Noir',
+        'tambour_rouge': 'Tambour Rouge',
+        'tambour_bleu': 'Tambour Bleu',
+        'tambour_vert': 'Tambour Vert',
+        'tambour_jaune': 'Tambour Jaune'
+    };
+    return translations[tambour] || tambour.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+// Fonction pour gérer le système d'onglets
+function selectMachineTypeTab(machineIndex, type) {
+    console.log('Sélection onglet:', type, 'pour machine:', machineIndex);
+    
+    // Mettre à jour les classes des onglets
+    const tabDupli = document.getElementById('tab-duplicopieur-' + machineIndex);
+    const tabPhoto = document.getElementById('tab-photocopieur-' + machineIndex);
+    
+    if (tabDupli && tabPhoto) {
+        if (type === 'duplicopieur') {
+            tabDupli.classList.add('active');
+            tabPhoto.classList.remove('active');
+        } else {
+            tabPhoto.classList.add('active');
+            tabDupli.classList.remove('active');
+        }
+    }
+    
+    // Cocher le bon radio button caché
+    const radioDupli = document.getElementById('radio-duplicopieur-' + machineIndex);
+    const radioPhoto = document.getElementById('radio-photocopieur-' + machineIndex);
+    
+    if (radioDupli && radioPhoto) {
+        if (type === 'duplicopieur') {
+            radioDupli.checked = true;
+        } else {
+            radioPhoto.checked = true;
+        }
+    }
+    
+    // Déclencher le changement d'interface
+    toggleMachineType(machineIndex);
+}
+
+// Fonction pour ouvrir/fermer un panel d'accordéon
+function toggleMachinePanel(machineIndex) {
+    const content = document.getElementById('machine-content-' + machineIndex);
+    const icon = document.getElementById('toggle-icon-' + machineIndex);
+    const panel = document.querySelector('.machine-item[data-index="' + machineIndex + '"]');
+    
+    if (content && icon) {
+        if (content.style.display === 'none') {
+            // Ouvrir le panel
+            $(content).slideDown(300);
+            icon.classList.remove('fa-chevron-right');
+            icon.classList.add('fa-chevron-down');
+            panel.classList.add('panel-expanded');
+        } else {
+            // Fermer le panel
+            $(content).slideUp(300);
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-right');
+            panel.classList.remove('panel-expanded');
+        }
+    }
+}
+
+// Fonction pour mettre à jour le preview du panel (prix et type)
+function updatePanelPreview(machineIndex) {
+    console.log("🔍 updatePanelPreview appelé pour machine", machineIndex);
+    const pricePreview = document.getElementById('price-preview-' + machineIndex);
+    const typeBadge = document.getElementById('type-badge-' + machineIndex);
+    
+    console.log("🔍 Éléments trouvés:", {
+        pricePreview: pricePreview ? "oui" : "non",
+        typeBadge: typeBadge ? "oui" : "non"
+    });
+    
+    // Mettre à jour le type
+    const typeRadio = document.querySelector(`input[name="machines[${machineIndex}][type]"]:checked`);
+    if (typeBadge && typeRadio) {
+        typeBadge.textContent = typeRadio.value === 'duplicopieur' ? 'Duplicopieur' : 'Photocopieur';
+        console.log("✅ Type mis à jour:", typeRadio.value);
+    }
+    
+    // Mettre à jour le prix
+    if (pricePreview) {
+        const price = calculateMachinePrice(machineIndex);
+        pricePreview.textContent = price.toFixed(2) + '€';
+        console.log("✅ Prix preview mis à jour:", price.toFixed(2) + '€');
+    } else {
+        console.log("❌ ERREUR: price-preview-" + machineIndex + " non trouvé");
+    }
+}
+
+function updateFillRateDisplay(prefix, machineIndex) {
+    var slider = document.getElementById('fill_rate_' + prefix + '_slider_' + machineIndex);
+    var display = document.getElementById('fill_rate_' + prefix + '_display_' + machineIndex);
+    var hidden = document.getElementById('fill_rate_' + prefix + '_' + machineIndex);
+    
+    if (slider && display && hidden) {
+        var value = parseInt(slider.value);
+        var percentage = value + '%';
+        var fillRate = (value / 100).toFixed(1);
+        
+        display.textContent = percentage;
+        hidden.value = fillRate;
+        
+        // Recalculer le prix
+        calculateTotalPrice();
+    }
+}
+
+function toggleFillRateDisplay(machineIndex) {
+    var fillRateGroup = document.getElementById('fill-rate-group-' + machineIndex);
+    var couleurCheckbox = document.getElementById('couleur_' + machineIndex + '_0');
+    
+    if (fillRateGroup && couleurCheckbox) {
+        if (couleurCheckbox.checked) {
+            fillRateGroup.style.display = 'block';
+        } else {
+            fillRateGroup.style.display = 'none';
+        }
+    }
+}
+
 // Fonction pour charger les tambours d'un duplicopieur
 function loadTamboursForDuplicopieur(duplicopieurId, machineIndex) {
     console.log('🥁 Chargement des tambours pour duplicopieur ID:', duplicopieurId);
@@ -1818,21 +2121,30 @@ function loadTamboursForDuplicopieur(duplicopieurId, machineIndex) {
                 // Vider le select
                 tambourSelect.empty();
                 
-                
-                // Ajouter les tambours disponibles
-                response.tambours.forEach(function(tambour) {
-                    tambourSelect.append('<option value="' + tambour + '">' + tambour + '</option>');
+                // Ajouter les tambours disponibles avec traduction
+                response.tambours.forEach(function(tambour, index) {
+                    var tambourLabel = translateTambour(tambour);
+                    var option = $('<option></option>')
+                        .attr('value', tambour)
+                        .text(tambourLabel);
+                    
+                    // Sélectionner automatiquement le premier tambour
+                    if (index === 0) {
+                        option.attr('selected', 'selected');
+                    }
+                    
+                    tambourSelect.append(option);
                 });
                 
-                // Afficher le groupe tambour si il y a plusieurs tambours
+                // Afficher le groupe tambour uniquement si plusieurs tambours disponibles
                 if (response.tambours.length > 1) {
                     tambourGroup.show();
                     tambourSelect.prop('required', true);
                 } else {
+                    // Un seul tambour : le sélectionner automatiquement en arrière-plan (caché)
                     tambourGroup.hide();
                     tambourSelect.prop('required', false);
-                    // Ne pas pré-sélectionner automatiquement, laisser l'utilisateur choisir
-                    // tambourSelect.val(response.tambours[0]);
+                    tambourSelect.val(response.tambours[0]);
                 }
                 
                 console.log('🎯 Tambours chargés:', response.tambours.length, 'tambour(s)');
@@ -1843,7 +2155,16 @@ function loadTamboursForDuplicopieur(duplicopieurId, machineIndex) {
                     if (typeof calculateTotalPrice === 'function') {
                         calculateTotalPrice();
                     }
+                    // Mettre à jour le preview du panel
+                    updatePanelPreview(machineIndex);
                 });
+                
+                // Déclencher le calcul initial du prix
+                if (typeof calculateTotalPrice === 'function') {
+                    calculateTotalPrice();
+                }
+                // Mettre à jour le preview du panel
+                updatePanelPreview(machineIndex);
             } else {
                 console.log('❌ Erreur lors du chargement des tambours:', response.error);
             }

@@ -65,7 +65,12 @@ class TirageManager {
      */
     private function isDuplicopieur($machine) {
         $db = pdo_connect();
-        $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR (marque = ? AND modele = ?))');
+        // SQLite n'a pas CONCAT, on utilise l'opérateur ||
+        if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
+            $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR (marque = ? AND modele = ?))');
+        } else {
+            $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR (marque = ? AND modele = ?))');
+        }
         $query->execute([$machine, $machine, $machine]);
         return $query->fetchColumn() > 0;
     }
@@ -93,7 +98,12 @@ class TirageManager {
                 // Déterminer si c'est un duplicopieur ou un photocopieur
                 if ($this->isDuplicopieur($machine)) {
                     // Pour les duplicopieurs, supprimer dans la table dupli avec duplicopieur_id
-                    $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR (marque = ? AND modele = ?))');
+                    // SQLite n'a pas CONCAT, on utilise l'opérateur ||
+                    if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
+                        $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR (marque = ? AND modele = ?))');
+                    } else {
+                        $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR (marque = ? AND modele = ?))');
+                    }
                     $query_dup->execute([$machine, $machine, $machine]);
                     $duplicopieur_id = $query_dup->fetchColumn();
                     
@@ -147,7 +157,12 @@ class TirageManager {
                 // Déterminer si c'est un duplicopieur ou un photocopieur
                 if ($this->isDuplicopieur($machine)) {
                     // Pour les duplicopieurs, marquer comme payé dans la table dupli
-                    $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR (marque = ? AND modele = ?))');
+                    // SQLite n'a pas CONCAT, on utilise l'opérateur ||
+                    if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
+                        $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (marque || " " || modele = ? OR (marque = ? AND modele = ?))');
+                    } else {
+                        $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE actif = 1 AND (CONCAT(marque, " ", modele) = ? OR (marque = ? AND modele = ?))');
+                    }
                     $query_dup->execute([$machine, $machine, $machine]);
                     $duplicopieur_id = $query_dup->fetchColumn();
                     

@@ -126,8 +126,12 @@ function Action($conf) {
             
             // Si on a au moins un fichier uploadé et pas d'erreurs bloquantes
             if (!empty($uploadedFiles)) {
+                // Utiliser le nom de la première image comme base
+                $firstImageName = pathinfo($_FILES["images"]["name"][0], PATHINFO_FILENAME);
+                $safe_filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $firstImageName);
+                
                 // Générer le fichier de sortie
-                $outputFile = $tmpDir . "images_to_pdf_" . $timestamp . "_" . $format . ".pdf";
+                $outputFile = $tmpDir . $safe_filename . ".pdf";
                 
                 // Exécuter la conversion
                 $result_ok = convert_png_to_pdf($uploadedFiles, $outputFile, $format, $orientation);

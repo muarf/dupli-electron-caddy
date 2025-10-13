@@ -153,7 +153,7 @@ function Action($conf = null)
             if ($result && password_verify($_POST['password'], $result['password_hash'])) {
                 $_SESSION['user'] = "1";
             } else {
-                die('Le mot de passe est invalide.');
+                $array['login_error'] = 'Mot de passe incorrect. Veuillez réessayer.';
             }
         } catch (Exception $e) {
             // Fallback vers l'ancien système en cas d'erreur
@@ -161,7 +161,7 @@ function Action($conf = null)
             if (password_verify($_POST['password'], $hash)) {
                 $_SESSION['user'] = "1";
             } else {
-                die('Le mot de passe est invalide.');
+                $array['login_error'] = 'Mot de passe incorrect. Veuillez réessayer.';
             }
         }
     }
@@ -188,8 +188,21 @@ require_once __DIR__ . '/../controler/conf.php';
         
         // Initialiser les managers
         if ($conf === null) {
-            return "Erreur: Configuration non définie";
+            error_log("ERREUR ADMIN: Configuration est NULL!");
+            require_once __DIR__ . '/../controler/functions/error_handler.php';
+            $result = show_error_page(
+                "La configuration de la base de données n'a pas été chargée correctement. Cela peut arriver si les fichiers de configuration sont manquants ou corrompus.",
+                "Configuration non définie",
+                __FILE__,
+                __LINE__,
+                null,
+                "Vérifiez que le fichier controler/conf.php existe et contient les bonnes informations de connexion à la base de données."
+            );
+            error_log("ERREUR ADMIN: Page d'erreur générée, longueur: " . strlen($result));
+            return $result;
         }
+        
+        error_log("ADMIN: Configuration chargée, type = " . ($conf['db_type'] ?? 'non défini'));
         
         // Initialiser le tableau de données
         $array = array();

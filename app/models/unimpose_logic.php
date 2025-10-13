@@ -133,9 +133,8 @@ class UnimposeBooklet {
                 }
             }
             
-            // Sauvegarder le PDF avec suffixe -ppp
-            $pathInfo = pathinfo($this->outputFile);
-            $finalOutputFile = $pathInfo['dirname'] . DIRECTORY_SEPARATOR . $pathInfo['filename'] . '-ppp.pdf';
+            // Sauvegarder le PDF avec le nom fourni
+            $finalOutputFile = $this->outputFile;
             $outputPdf->Output($finalOutputFile, 'F');
             
             // Nettoyer les fichiers temporaires

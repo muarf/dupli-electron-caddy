@@ -324,7 +324,7 @@
                             <div class="col-md-12">
                                 <label for="add_crop_marks">
                                     <input type="checkbox" name="add_crop_marks" id="add_crop_marks">
-                                    <i class="fa fa-scissors"></i> Ajouter les hirondelles de coupe
+                                    <i class="fa fa-scissors"></i> Ajouter les traits de coupe
                                 </label>
                             </div>
                         </div>
@@ -333,8 +333,8 @@
                             <div class="form-group">
                                 <label for="imposition_mode"><i class="fa fa-book"></i> Mode d'imposition :</label>
                                 <select name="imposition_mode" id="imposition_mode" class="form-control">
-                                    <option value="brochure">Brochure (sans gouttière + hirondelles globales)</option>
-                                    <option value="livre">Livre (gouttière + hirondelles individuelles)</option>
+                                    <option value="brochure">Mode brochure (sans marges intérieures)</option>
+                                    <option value="livre">Mode livre (avec marges intérieures)</option>
                                 </select>
                             </div>
 
@@ -349,6 +349,20 @@
                             <div class="form-group">
                                 <label for="bleed_size"><i class="fa fa-ruler"></i> Taille marge de coupe (mm) :</label>
                                 <input type="number" name="bleed_size" id="bleed_size" class="form-control" value="3" min="1" max="10" step="0.5">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="crop_marks_type"><i class="fa fa-scissors"></i> Type de traits de coupe :</label>
+                                <select name="crop_marks_type" id="crop_marks_type" class="form-control">
+                                    <option value="normal">Traits de coupe normaux (coins)</option>
+                                    <option value="central">Traits de coupe centraux (A3→A4)</option>
+                                    <option value="both">Les deux types</option>
+                                </select>
+                                <small class="help-block text-muted">
+                                    <strong>Normaux :</strong> Traits aux 4 coins<br>
+                                    <strong>Centraux :</strong> Trait au milieu selon orientation (21cm)<br>
+                                    <strong>Les deux :</strong> Combinaison des deux
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -574,7 +588,7 @@
                 e.preventDefault();
             });
 
-            // Gestion de l'affichage des options hirondelles
+            // Gestion de l'affichage des options traits de coupe
             const addCropMarks = document.getElementById('add_crop_marks');
             const cropMarksOptions = document.getElementById('crop_marks_options');
 

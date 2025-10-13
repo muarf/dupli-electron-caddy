@@ -1037,54 +1037,42 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
         }
     }
     
-    $html = '<div class="machine-item panel panel-primary" data-index="' . $index . '">
-        <!-- Header cliquable avec preview -->
-        <div class="panel-heading" style="cursor: pointer;">
-            <div class="row" onclick="toggleMachinePanel(' . $index . ')">
-                <div class="col-xs-8 col-sm-9">
-                    <h4 class="panel-title" style="margin: 0;">
-                        <i class="fa fa-chevron-down toggle-icon" id="toggle-icon-' . $index . '"></i>
-                        <strong>Tirage #' . ($index + 1) . '</strong>
-                        <span class="machine-type-badge badge" id="type-badge-' . $index . '">Duplicopieur</span>
-                    </h4>
-                </div>
-                <div class="col-xs-4 col-sm-3 text-right">
-                    <span class="machine-price-preview" id="price-preview-' . $index . '">0.00€</span>
-                </div>
-            </div>
-        </div>
+    $html = '<hr>
+        <h5>Tirage #' . ($index + 1) . '</h5>
         
-        <!-- Corps du panel (pliable) -->
-        <div class="panel-body machine-content" id="machine-content-' . $index . '" style="padding: 20px;">
-        
-        <!-- Type de machine - Système onglets -->
+        <!-- Contact pour ce tirage -->
         <div class="form-group">
-            <div class="col-md-12">
-                <ul class="nav nav-tabs" role="tablist" style="margin-bottom: 20px;">
-                    <li role="presentation" class="active" id="tab-duplicopieur-' . $index . '">
-                        <a href="#" onclick="selectMachineTypeTab(' . $index . ', \'duplicopieur\'); return false;" style="font-size: 16px;">
-                            <i class="fa fa-print" style="margin-right: 5px;"></i> Duplicopieur
-                        </a>
-                    </li>
-                    <li role="presentation" id="tab-photocopieur-' . $index . '">
-                        <a href="#" onclick="selectMachineTypeTab(' . $index . ', \'photocopieur\'); return false;" style="font-size: 16px;">
-                            <i class="fa fa-copy" style="margin-right: 5px;"></i> Photocopieur
-                        </a>
-                    </li>
-                </ul>
-                <!-- Inputs cachés pour les valeurs -->
-                <input type="radio" name="machines[' . $index . '][type]" value="duplicopieur" checked onchange="toggleMachineType(' . $index . ')" style="display: none;" id="radio-duplicopieur-' . $index . '">
-                <input type="radio" name="machines[' . $index . '][type]" value="photocopieur" onchange="toggleMachineType(' . $index . ')" style="display: none;" id="radio-photocopieur-' . $index . '">
+            <label class="col-md-4 control-label" for="contact_' . $index . '">Contact</label>  
+            <div class="col-md-4">
+                <input id="contact_' . $index . '" name="machines[' . $index . '][contact]" class="form-control input-md" type="text" value="">
+                <span class="help-block">Modifiez si différent du contact principal</span>
             </div>
         </div>
         
-            <!-- Interface duplicopieur -->
-            <div id="duplicopieur-interface-' . $index . '" class="machine-interface" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #17a2b8;">
+        <!-- Type de machine -->
+        <div class="form-group">
+            <label class="col-md-4 control-label">Type de machine</label>
+            <div class="col-md-4">
+                <div class="radio">
+                    <label>
+                        <input type="radio" name="machines[' . $index . '][type]" value="duplicopieur" checked onchange="toggleMachineType(' . $index . ')">
+                        Duplicopieur
+                    </label>
+                </div>
+                <div class="radio">
+                    <label>
+                        <input type="radio" name="machines[' . $index . '][type]" value="photocopieur" onchange="toggleMachineType(' . $index . ')">
+                        Photocopieur
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Interface duplicopieur -->
+        <div id="duplicopieur-interface-' . $index . '" class="machine-interface">
             <div class="form-group">
-                <label class="col-md-3 control-label">
-                    <i class="fa fa-cog" style="margin-right: 5px;"></i> Duplicopieur
-                </label>
-                <div class="col-md-9">';
+                <label class="col-md-4 control-label">Duplicopieur</label>
+                <div class="col-md-4">';
     
     // Logique duplicopieur (identique à la première machine)
     if(isset($duplicopieur_selectionne)) {
@@ -1127,47 +1115,43 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
             </div>
             
             <!-- Options duplicopieur -->
-            <div class="form-group" style="padding: 10px; margin: 10px 0;">
-                <label class="col-md-2 control-label">
-                    <i class="fa fa-sliders" style="margin-right: 5px;"></i> Options
-                </label>
-                <div class="col-md-10">
-                    <div class="row">
-                        <div class="col-xs-4 col-sm-3">
-                            <div class="checkbox">
-                                <label for="A4_' . $index . '">
-                                    <input name="machines[' . $index . '][A4]" value="A4" type="checkbox" onchange="calculateTotalPrice()" id="A4_' . $index . '">
-                                    <i class="fa fa-file-text-o"></i> Format A4
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-xs-4 col-sm-3">
-                            <div class="checkbox">
-                                <label for="rv_' . $index . '">
-                                    <input name="machines[' . $index . '][rv]" value="oui" type="checkbox" onchange="calculateTotalPrice()" id="rv_' . $index . '">
-                                    <i class="fa fa-files-o"></i> Recto/verso
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-xs-12 col-sm-6">
-                            <div class="checkbox">
-                                <label for="feuilles_payees_' . $index . '">
-                                    <input name="machines[' . $index . '][feuilles_payees]" value="oui" type="checkbox" onchange="calculateTotalPrice()" id="feuilles_payees_' . $index . '">
-                                    <i class="fa fa-paint-brush"></i> 2ème couleur (feuilles payées)
-                                </label>
-                            </div>
-                        </div>
+            <div class="form-group">
+                <label class="col-md-4 control-label" for="A4_' . $index . '">A4</label>
+                <div class="col-md-4">
+                    <div class="checkbox">
+                        <label for="A4_' . $index . '">
+                            <input name="machines[' . $index . '][A4]" value="A4" type="checkbox" onchange="calculateTotalPrice()">
+                            oui
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-md-4 control-label" for="rv_' . $index . '">Recto/verso</label>
+                <div class="col-md-4">
+                    <div class="checkbox">
+                        <label for="rv_' . $index . '">
+                            <input name="machines[' . $index . '][rv]" value="oui" type="checkbox" onchange="calculateTotalPrice()">
+                            oui
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-md-4 control-label" for="feuilles_payees_' . $index . '">2ème couleur ? (feuilles déjà payées)</label>
+                <div class="col-md-4">
+                    <div class="checkbox">
+                        <label for="feuilles_payees_' . $index . '">
+                            <input name="machines[' . $index . '][feuilles_payees]" value="oui" type="checkbox" onchange="calculateTotalPrice()">
+                            oui
+                        </label>
                     </div>
                 </div>
             </div>
             
             <!-- Mode de saisie -->
-            <div class="col-md-12" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 10px; border-left: 4px solid #28a745;">
-                <legend style="border-bottom: 2px solid #dee2e6; padding-bottom: 10px; margin-bottom: 15px; font-size: 18px;">
-                    <i class="fa fa-keyboard-o" style="margin-right: 8px; color: #28a745;"></i> Mode de saisie
-                </legend>
-                <div class="form-group">
-                    <label class="col-md-3 control-label">Type de saisie</label>
+            <div class="form-group">
+                <label class="col-md-4 control-label">Mode de saisie</label>
                 <div class="col-md-4">
                     <div class="radio">
                         <label>
@@ -1240,16 +1224,13 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
                     </div>
                 </div>
             </div>
-            </div><!-- Fin col-md-12 mode de saisie -->
-        </div><!-- Fin duplicopieur-interface -->
+        </div>
         
-            <!-- Interface photocopieur -->
-            <div id="photocopieur-interface-' . $index . '" class="machine-interface" style="display:none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #e83e8c;">
+        <!-- Interface photocopieur -->
+        <div id="photocopieur-interface-' . $index . '" class="machine-interface" style="display:none;">
             <div class="form-group">
-                <label class="col-md-3 control-label" for="marque_' . $index . '">
-                    <i class="fa fa-desktop" style="margin-right: 5px;"></i> Photocopieuse
-                </label>
-                <div class="col-md-9">
+                <label class="col-md-4 control-label" for="marque_' . $index . '">Photocopieuse à utiliser</label>
+                <div class="col-md-4">
                     <select id="marque_' . $index . '" name="machines[' . $index . '][machine]" class="form-control">';
     
     // Logique photocopieur
@@ -1269,96 +1250,79 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
                 </div>
             </div>
             
-            
             <!-- Brochures -->
             <div class="brochures-container" data-machine="' . $index . '">
-                <h5 style="background: #f8f9fa; padding: 12px; border-radius: 5px; margin-bottom: 15px; border-left: 3px solid #9c27b0;">
-                    <i class="fa fa-book" style="margin-right: 8px; color: #9c27b0;"></i> Brochures/Tracts à imprimer
-                </h5>
-                <div class="brochure-item" data-brochure="0" style="padding: 15px; background: #ffffff; border: 1px solid #dee2e6; border-radius: 5px; margin-bottom: 10px;">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label class="control-label" for="nb_exemplaires_' . $index . '_0">Exemplaires</label>  
-                                <input id="nb_exemplaires_' . $index . '_0" name="machines[' . $index . '][brochures][0][nb_exemplaires]" class="form-control input-sm" type="number" min="1" value="1" onchange="calculateTotalPrice()" style="max-width: 100px;">
-                            </div>
+                <h6>Brochures/Tracts à imprimer</h6>
+                <div class="brochure-item" data-brochure="0">
+                    <div class="form-group">
+                        <label class="col-md-4 control-label" for="nb_exemplaires_' . $index . '_0">Nombre d\'exemplaires</label>  
+                        <div class="col-md-4">
+                            <input id="nb_exemplaires_' . $index . '_0" name="machines[' . $index . '][brochures][0][nb_exemplaires]" class="form-control input-md" type="number" min="1" value="1" onchange="calculateTotalPrice()">
+                            <span class="help-block">Nombre d\'exemplaires à imprimer</span>  
                         </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label class="control-label" for="nb_feuilles_' . $index . '_0">Feuilles / ex.</label>  
-                                <input id="nb_feuilles_' . $index . '_0" name="machines[' . $index . '][brochures][0][nb_feuilles]" class="form-control input-sm" type="number" min="1" onchange="calculateTotalPrice()" style="max-width: 100px;">
-                            </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-md-4 control-label" for="nb_feuilles_' . $index . '_0">Nombre de feuilles par exemplaire</label>  
+                        <div class="col-md-4">
+                            <input id="nb_feuilles_' . $index . '_0" name="machines[' . $index . '][brochures][0][nb_feuilles]" class="form-control input-md" type="number" min="1" onchange="calculateTotalPrice()">
+                            <span class="help-block">Nombre de feuilles par exemplaire</span>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="control-label" for="radios_' . $index . '_0">Taille</label>
-                                <div> 
-                                    <label class="radio-inline" for="radios-' . $index . '-0-0">
-                                        <input name="machines[' . $index . '][brochures][0][taille]" id="radios-' . $index . '-0-0" value="A4" checked="checked" type="radio" onchange="calculateTotalPrice()">
-                                        A4
-                                    </label> 
-                                    <label class="radio-inline" for="radios-' . $index . '-0-1">
-                                        <input name="machines[' . $index . '][brochures][0][taille]" id="radios-' . $index . '-0-1" value="A3" type="radio" onchange="calculateTotalPrice()">
-                                        A3
-                                    </label>
-                                </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-md-4 control-label" for="radios_' . $index . '_0">Taille</label>
+                        <div class="col-md-4"> 
+                            <label class="radio-inline" for="radios-' . $index . '-0-0">
+                                <input name="machines[' . $index . '][brochures][0][taille]" id="radios-' . $index . '-0-0" value="A4" checked="checked" type="radio" onchange="calculateTotalPrice()">
+                                A4
+                            </label> 
+                            <label class="radio-inline" for="radios-' . $index . '-0-1">
+                                <input name="machines[' . $index . '][brochures][0][taille]" id="radios-' . $index . '-0-1" value="A3" type="radio" onchange="calculateTotalPrice()">
+                                A3
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-md-4 control-label" for="rv_' . $index . '_0">Recto/verso</label>
+                        <div class="col-md-4">
+                            <div class="checkbox">
+                                <label for="rv_' . $index . '_0">
+                                    <input name="machines[' . $index . '][brochures][0][rv]" value="oui" type="checkbox" onchange="calculateTotalPrice()">
+                                    oui
+                                </label>
                             </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-12">
-                            <label class="control-label"><i class="fa fa-cogs"></i> Options</label>
-                            <div class="checkbox-inline" style="margin-right: 20px;">
-                                <label for="rv_' . $index . '_0">
-                                    <input name="machines[' . $index . '][brochures][0][rv]" value="oui" type="checkbox" onchange="calculateTotalPrice()" id="rv_' . $index . '_0">
-                                    <i class="fa fa-files-o"></i> Recto/verso
+                    <div class="form-group">
+                        <label class="col-md-4 control-label" for="couleur_' . $index . '_0">Couleur</label>
+                        <div class="col-md-4">
+                            <div class="checkbox">
+                                <label for="couleur_' . $index . '_0">
+                                    <input name="machines[' . $index . '][brochures][0][couleur]" value="oui" type="checkbox" onchange="calculateTotalPrice()">
+                                    oui
                                 </label>
                             </div>
-                                <div class="checkbox-inline" style="margin-right: 20px;">
-                                    <label for="couleur_' . $index . '_0">
-                                        <input name="machines[' . $index . '][brochures][0][couleur]" value="oui" type="checkbox" onchange="calculateTotalPrice(); toggleFillRateDisplay(' . $index . ');" id="couleur_' . $index . '_0">
-                                        <i class="fa fa-tint"></i> Couleur
-                                    </label>
-                                </div>
-                                <div class="checkbox-inline">
-                                    <label for="feuilles_payees_' . $index . '_0">
-                                        <input name="machines[' . $index . '][brochures][0][feuilles_payees]" value="oui" type="checkbox" onchange="calculateTotalPrice()" id="feuilles_payees_' . $index . '_0">
-                                        <i class="fa fa-check-square"></i> Feuilles payées
-                                    </label>
-                                </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-md-4 control-label" for="feuilles_payees_' . $index . '_0">Feuilles déjà payées</label>
+                        <div class="col-md-4">
+                            <div class="checkbox">
+                                <label for="feuilles_payees_' . $index . '_0">
+                                    <input name="machines[' . $index . '][brochures][0][feuilles_payees]" value="oui" type="checkbox" onchange="calculateTotalPrice()">
+                                    oui
+                                </label>
                             </div>
                         </div>
-                        
-                        <!-- Taux de remplissage couleur - sous la case couleur -->
-                        <div class="form-group" id="fill-rate-group-' . $index . '" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px; display: none; border-left: 3px solid #e83e8c;">
-                            <label class="col-md-3 control-label">
-                                <i class="fa fa-percent" style="margin-right: 5px;"></i> Taux de remplissage couleur
-                            </label>
-                            <div class="col-md-9">
-                                <div class="row">
-                                    <div class="col-md-8">
-                                        <input type="range" id="fill_rate_photocop_slider_' . $index . '" min="0" max="100" value="50" step="5" 
-                                               class="form-control" oninput="updateFillRateDisplay(\'photocop\', ' . $index . ')" style="margin: 8px 0;">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <span id="fill_rate_photocop_display_' . $index . '" style="font-size: 16px; font-weight: bold; color: #e83e8c;">50%</span>
-                                    </div>
-                                </div>
-                                <input type="hidden" id="fill_rate_photocop_' . $index . '" name="machines[' . $index . '][fill_rate]" value="0.5">
-                                <span class="help-block">Ajustez le taux de remplissage des couleurs (0% = très léger, 100% = très foncé)</span>
-                            </div>
-                        </div>
-                </div><!-- Fin brochure-item -->
-            </div><!-- Fin brochures-container -->
-        </div><!-- Fin photocopieur-interface -->
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <!-- Prix de la machine -->
-        <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #28a745;">
-            <label class="col-md-4 control-label" style="font-size: 14px; font-weight: normal;">
-                <i class="fa fa-euro" style="margin-right: 5px; color: #28a745;"></i> Prix de ce tirage
-            </label>
-            <div class="col-md-8">
-                <div class="form-control-static machine-price" data-machine="' . $index . '" id="machine-price-' . $index . '" style="font-size: 16px; font-weight: bold; color: #28a745;">0.00€</div>
+        <div class="form-group">
+            <label class="col-md-4 control-label">Prix de ce tirage</label>
+            <div class="col-md-4">
+                <div class="form-control-static machine-price" data-machine="' . $index . '">0.00€</div>
             </div>
         </div>
         
@@ -1366,14 +1330,9 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
         <div class="form-group">
             <div class="col-md-4"></div>
             <div class="col-md-4">
-                <button type="button" class="btn btn-danger btn-sm remove-machine" data-index="' . $index . '">
-                    <i class="fa fa-trash"></i> Supprimer ce tirage
-                </button>
+                <button type="button" class="btn btn-danger btn-sm remove-machine" data-index="' . $index . '">- Supprimer ce tirage</button>
             </div>
-        </div>
-        
-        </div><!-- Fin panel-body -->
-    </div><!-- Fin panel machine-item -->';
+        </div>';
     
     return $html;
 }

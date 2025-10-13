@@ -41,7 +41,12 @@ class PriceManager {
             // Cas : nom d'affichage du duplicopieur (ex: "ricoh dx4545")
             // Chercher l'ID dans la base de données
             $db = pdo_connect();
-            $query = $db->prepare('SELECT id FROM duplicopieurs WHERE (CONCAT(marque, " ", modele) = ? OR marque = ?) AND actif = 1 LIMIT 1');
+            // SQLite n'a pas CONCAT, on utilise l'opérateur ||
+            if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
+                $query = $db->prepare('SELECT id FROM duplicopieurs WHERE (marque || " " || modele = ? OR marque = ?) AND actif = 1 LIMIT 1');
+            } else {
+                $query = $db->prepare('SELECT id FROM duplicopieurs WHERE (CONCAT(marque, " ", modele) = ? OR marque = ?) AND actif = 1 LIMIT 1');
+            }
             $query->execute([$machine, $machine]);
             $result = $query->fetch(PDO::FETCH_ASSOC);
             
@@ -92,7 +97,12 @@ class PriceManager {
         }
         
         // Si pas d'ID fourni, chercher dans la base de données
-        $query = $db->prepare('SELECT id FROM duplicopieurs WHERE (CONCAT(marque, " ", modele) = ? OR marque = ?) AND actif = 1 LIMIT 1');
+        // SQLite n'a pas CONCAT, on utilise l'opérateur ||
+        if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
+            $query = $db->prepare('SELECT id FROM duplicopieurs WHERE (marque || " " || modele = ? OR marque = ?) AND actif = 1 LIMIT 1');
+        } else {
+            $query = $db->prepare('SELECT id FROM duplicopieurs WHERE (CONCAT(marque, " ", modele) = ? OR marque = ?) AND actif = 1 LIMIT 1');
+        }
         $query->execute([$machine_name, $machine_name]);
         $result = $query->fetch(PDO::FETCH_ASSOC);
         
@@ -180,7 +190,12 @@ class PriceManager {
         $prix = get_price();
         
         // Récupérer l'ID du duplicopieur
-        $query = $db->prepare('SELECT id FROM duplicopieurs WHERE (CONCAT(marque, " ", modele) = ? OR marque = ?) AND actif = 1 LIMIT 1');
+        // SQLite n'a pas CONCAT, on utilise l'opérateur ||
+        if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
+            $query = $db->prepare('SELECT id FROM duplicopieurs WHERE (marque || " " || modele = ? OR marque = ?) AND actif = 1 LIMIT 1');
+        } else {
+            $query = $db->prepare('SELECT id FROM duplicopieurs WHERE (CONCAT(marque, " ", modele) = ? OR marque = ?) AND actif = 1 LIMIT 1');
+        }
         $query->execute([$machine_name, $machine_name]);
         $result = $query->fetch(PDO::FETCH_ASSOC);
         
