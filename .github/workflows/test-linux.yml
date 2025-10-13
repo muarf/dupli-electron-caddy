@@ -44,13 +44,13 @@ jobs:
       - name: Install dependencies
         run: npm install
         
-      - name: Verify binaries
+      - name: Verify system PHP
         run: |
-          echo "Copie du binaire PHP..."
-          mkdir -p php
-          cp /usr/bin/php php/
-          chmod +x php/php
-          ./php/php --version
+          echo "Vérification de PHP système..."
+          which php
+          php --version
+          echo "Extensions PHP disponibles:"
+          php -m | grep -E "(gd|sqlite3|mbstring|xml)"
         
       - name: Run tests
         run: npm run test:e2e:simple
@@ -132,20 +132,29 @@ jobs:
             squashfs-root/resources/app.asar.unpacked/caddy/caddy version
           else
             echo "❌ Caddy manquant"
+            exit 1
           fi
           
+          # PHP n'est plus inclus dans l'AppImage Linux - on utilise PHP système
           if [ -f "squashfs-root/resources/app.asar.unpacked/php/php" ]; then
-            echo "✅ PHP présent"
-            squashfs-root/resources/app.asar.unpacked/php/php --version
+            echo "⚠️ PHP présent dans l'AppImage (ne devrait pas être là pour Linux)"
           else
-            echo "❌ PHP manquant"
+            echo "✅ PHP non inclus (utilisation du PHP système)"
           fi
           
-          if [ -f "squashfs-root/resources/Caddyfile" ]; then
+          # Vérifier que la page d'aide PHP est incluse
+          if [ -f "squashfs-root/resources/app.asar.unpacked/php-install-guide.html" ]; then
+            echo "✅ Page d'aide PHP présente"
+          else
+            echo "❌ Page d'aide PHP manquante"
+            exit 1
+          fi
+          
+          if [ -f "squashfs-root/resources/app.asar.unpacked/Caddyfile" ]; then
             echo "✅ Caddyfile présent"
-            cat squashfs-root/resources/Caddyfile
           else
             echo "❌ Caddyfile manquant"
+            exit 1
           fi
         
       - name: Test Caddy configuration
