@@ -21,11 +21,17 @@ Application de gestion de comptabilité pour collectifs de reproduction (duplico
   - Prévisualisation intégrée et téléchargement
   - Fallback Ghostscript pour PDF incompatibles
 - Interface web moderne avec drag & drop
+- **Images vers Pdf** et reciproque
+- **Separateur de couleurs**
+   - RGB, CMYK, 2 couleurs, pipette
+- **Effets images**
+  - Posterisation ( pochoirs multi couches)
+  - Tramage 
 
 ### 🔧 Technique
 - Serveur Caddy intégré pour la portabilité
-- Support PHP avec serveur intégré
-- Application Electron cross-platform (Windows, Linux, macOS)
+- Support PHP avec serveur intégré pour windows
+- Application Electron cross-platform (Windows, Linux, Macos à venir)
 - Interface utilisateur intuitive ( on essaie ;))
 
 ## 📦 Installation
@@ -105,59 +111,18 @@ Les releases sont automatiquement créées avec :
 
 ## ✅ À vérifier
 
-- **Statistiques** : Vérifier que les statistiques prennent en charge toutes les machines
-- **Machine à toner** : Vérifier que ça marche avec une machine à toner
-
-## 🐛 Bugs connus
-
-- **Multitirages** : Fonctionne uniquement avec la même machine (pas de mélange de machines)
-- **Désimposer** : Ne fonctionne qu'avec le script Python (pas d'interface web)
-
-## ✅ Bugs corrigés (v1.1.0)
-
-- ✅ **Page Admin** : Correction de l'affichage répété et des variables non définies
-- ✅ **Ajout de machines** : Résolution de l'erreur "Unexpected end of JSON input" sur la page tirage_multimachines
-- ✅ **Newsletter** : Possibilité d'activer/désactiver la newsletter depuis l'admin
-- ✅ **Changements admin** : Types de machines correctement détectés dynamiquement
-- ✅ **Type photocopieuse** : Distinction correcte entre photocopieurs à encre et à toner
-- ✅ **Headers pages** : Uniformisation des headers entre impose/unimpose
-- ✅ **Erreurs PHP** : Correction des erreurs de variables non initialisées et de syntaxe PDO
-- ✅ **Téléchargement BDD** : Correction du téléchargement des sauvegardes (HTML → fichier .sqlite)
-
-## 🆕 Nouvelles fonctionnalités (v1.1.0)
-
-### Imposition Tracts
-Nouvelle fonctionnalité pour optimiser l'impression de tracts et documents :
-
-- **Interface intuitive** : Drag & drop pour sélectionner vos PDF
-- **Détection automatique** : Reconnaissance automatique des formats A4, A5, A6
-- **Duplication intelligente** : 
-  - A4 → 2 copies sur A3 (paysage)
-  - A5 → 4 copies sur A3 (portrait) 
-  - A6 → 8 copies sur A3 (paysage)
-- **Gestion recto/verso** : Traitement automatique des documents recto/verso
-- **Prévisualisation** : Aperçu du résultat avant téléchargement
-- **Fallback robuste** : Utilisation de Ghostscript pour les PDF incompatibles
-
-### Améliorations techniques
-- **Corrections PHP** : Résolution des erreurs de variables non définies
-- **Interface admin** : Correction des problèmes d'affichage répété
-- **AJAX robuste** : Correction des erreurs de communication client/serveur
 
 ## 📋 TODO
 
-- **Statistiques de remplissage** : Statistique de remplissage de la page
-- **Vérification des statistiques** : Vérifier que les stats prennent en compte tous les tirages de toutes les machines
-- **Lien header** : Ajouter un lien dans le header vers tirage_multimachines nommé "Enregistrer tirage"
-- **Footer avec reload** : Ajouter un footer toujours présent avec un bouton qui reload l'app electron et/ou le site web
-- **Outils Riso** : Intégrer outils Riso open source pour séparer les couleurs/coloriser noir et blanc
+- MacOS RELEASES
+- Contraste, luminosité, bitmap. 
 
 ## 🐛 Dépannage
+
+
 
 ### Problèmes courants
 
 Dites moi !
 
-### Logs
 
-Les logs sont affichés dans la console de l'application Electron.
