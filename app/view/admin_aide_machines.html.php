@@ -5,19 +5,19 @@
   <div class="container">
     <div class="row">
       <div class="col-md-12">
-        <h1 class="text-center">Gestion des Questions-Réponses des Machines</h1>
+        <h1 class="text-center"><?php _e('admin_aide_machines.title'); ?></h1>
         <hr>
         
         <!-- Messages d'erreur/succès -->
         <?php if(isset($aide_error)): ?>
           <div class="alert alert-danger">
-            <strong>Erreur :</strong> <?= htmlspecialchars($aide_error) ?>
+            <strong><?php _e('admin_aide_machines.error'); ?> :</strong> <?= htmlspecialchars($aide_error) ?>
           </div>
         <?php endif; ?>
         
         <?php if(isset($aide_success)): ?>
           <div class="alert alert-success">
-            <strong>Succès :</strong> <?= htmlspecialchars($aide_success) ?>
+            <strong><?php _e('admin_aide_machines.success'); ?> :</strong> <?= htmlspecialchars($aide_success) ?>
           </div>
         <?php endif; ?>
         
@@ -26,7 +26,7 @@
           <div class="col-md-12">
             <div class="panel panel-primary">
               <div class="panel-heading">
-                <h3 class="panel-title"><i class="fa fa-plus"></i> Ajouter une Question-Réponse</h3>
+                <h3 class="panel-title"><i class="fa fa-plus"></i> <?php _e('admin_aide_machines.add_qa'); ?></h3>
               </div>
               <div class="panel-body">
                 <form method="POST" id="add-qa-form">
@@ -35,9 +35,9 @@
                   <div class="row">
                     <div class="col-md-4">
                       <div class="form-group">
-                        <label for="machine">Machine :</label>
+                        <label for="machine"><?php _e('admin_aide_machines.machine'); ?> :</label>
                         <select class="form-control" id="machine" name="machine" required>
-                          <option value="">Sélectionner une machine</option>
+                          <option value=""><?php _e('admin_aide_machines.select_machine'); ?></option>
                           <?php if(isset($all_machines) && !empty($all_machines)): ?>
                             <?php foreach($all_machines as $machine): ?>
                               <option value="<?= htmlspecialchars($machine) ?>"><?= htmlspecialchars($machine) ?></option>
@@ -48,19 +48,19 @@
                     </div>
                     <div class="col-md-4">
                       <div class="form-group">
-                        <label for="categorie">Catégorie :</label>
+                        <label for="categorie"><?php _e('admin_aide_machines.categorie'); ?> :</label>
                         <select class="form-control" id="categorie" name="categorie" required>
-                          <option value="general">Aide générale (page publique)</option>
-                          <option value="changement">Aide changement de consommables</option>
+                          <option value="general"><?php _e('admin_aide_machines.general_help'); ?></option>
+                          <option value="changement"><?php _e('admin_aide_machines.change_help'); ?></option>
                         </select>
-                        <small class="text-muted">Type d'aide à créer</small>
+                        <small class="text-muted"><?php _e('admin_aide_machines.help_type'); ?></small>
                       </div>
                     </div>
                     <div class="col-md-4">
                       <div class="form-group">
-                        <label for="ordre">Ordre d'affichage :</label>
+                        <label for="ordre"><?php _e('admin_aide_machines.display_order'); ?> :</label>
                         <input type="number" class="form-control" id="ordre" name="ordre" value="0" min="0">
-                        <small class="text-muted">Ordre d'affichage des questions (0 = premier)</small>
+                        <small class="text-muted"><?php _e('admin_aide_machines.display_order_help'); ?></small>
                       </div>
                     </div>
                   </div>
@@ -68,9 +68,9 @@
                   <div class="row">
                     <div class="col-md-12">
                       <div class="form-group">
-                        <label for="question">Question :</label>
+                        <label for="question"><?php _e('admin_aide_machines.question'); ?> :</label>
                         <input type="text" class="form-control" id="question" name="question" required>
-                        <small class="text-muted">Titre de la question qui apparaîtra dans l'accordéon</small>
+                        <small class="text-muted"><?php _e('admin_aide_machines.question_help'); ?></small>
                       </div>
                     </div>
                   </div>
@@ -78,9 +78,9 @@
                   <div class="row">
                     <div class="col-md-12">
                       <div class="form-group">
-                        <label for="reponse">Réponse :</label>
+                        <label for="reponse"><?php _e('admin_aide_machines.answer'); ?> :</label>
                         <textarea class="form-control" id="reponse" name="reponse" rows="10" required></textarea>
-                        <small class="text-muted">Vous pouvez utiliser du HTML pour formater le contenu (titres, listes, images, etc.)</small>
+                        <small class="text-muted"><?php _e('admin_aide_machines.answer_help'); ?></small>
                       </div>
                     </div>
                   </div>
@@ -88,7 +88,7 @@
                   <div class="row">
                     <div class="col-md-12 text-center">
                       <button type="submit" class="btn btn-primary btn-lg">
-                        <i class="fa fa-plus"></i> Ajouter la Q&A
+                        <i class="fa fa-plus"></i> <?php _e('admin_aide_machines.add_qa_btn'); ?>
                       </button>
                     </div>
                   </div>
@@ -103,7 +103,7 @@
           <div class="col-md-12">
             <div class="panel panel-default">
               <div class="panel-heading">
-                <h3 class="panel-title"><i class="fa fa-list"></i> Questions-Réponses existantes</h3>
+                <h3 class="panel-title"><i class="fa fa-list"></i> <?php _e('admin_aide_machines.existing_qa'); ?></h3>
               </div>
               <div class="panel-body">
                 <?php if(isset($qa_list) && !empty($qa_list)): ?>
@@ -111,13 +111,13 @@
                     <table class="table table-striped table-hover">
                       <thead>
                         <tr>
-                          <th>Machine</th>
-                          <th>Question</th>
-                          <th>Catégorie</th>
-                          <th>Ordre</th>
-                          <th>Date création</th>
-                          <th>Dernière modification</th>
-                          <th>Actions</th>
+                          <th><?php _e('admin_aide_machines.machine'); ?></th>
+                          <th><?php _e('admin_aide_machines.question'); ?></th>
+                          <th><?php _e('admin_aide_machines.categorie'); ?></th>
+                          <th><?php _e('admin_aide_machines.display_order'); ?></th>
+                          <th><?php _e('admin_aide_machines.creation_date'); ?></th>
+                          <th><?php _e('admin_aide_machines.modification_date'); ?></th>
+                          <th><?php _e('admin_aide_machines.actions'); ?></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -133,9 +133,9 @@
                             </td>
                             <td>
                               <?php if($qa['categorie'] === 'changement'): ?>
-                                <span class="badge badge-warning">Changement</span>
+                                <span class="badge badge-warning"><?php _e('admin_aide_machines.change'); ?></span>
                               <?php else: ?>
-                                <span class="badge badge-primary">Générale</span>
+                                <span class="badge badge-primary"><?php _e('admin_aide_machines.general'); ?></span>
                               <?php endif; ?>
                             </td>
                             <td>
@@ -145,10 +145,10 @@
                             <td><?= date('d/m/Y à H:i', strtotime($qa['date_modification'])) ?></td>
                             <td>
                               <button class="btn btn-sm btn-info edit-qa" data-id="<?= $qa['id'] ?>">
-                                <i class="fa fa-edit"></i> Modifier
+                                <i class="fa fa-edit"></i> <?php _e('admin_aide_machines.edit'); ?>
                               </button>
                               <button class="btn btn-sm btn-danger delete-qa" data-id="<?= $qa['id'] ?>">
-                                <i class="fa fa-trash"></i> Supprimer
+                                <i class="fa fa-trash"></i> <?php _e('admin_aide_machines.delete'); ?>
                               </button>
                             </td>
                           </tr>
@@ -158,7 +158,7 @@
                   </div>
                 <?php else: ?>
                   <div class="alert alert-info text-center">
-                    <i class="fa fa-info-circle"></i> Aucune question-réponse enregistrée pour le moment.
+                    <i class="fa fa-info-circle"></i> <?php _e('admin_aide_machines.no_qa'); ?>
                   </div>
                 <?php endif; ?>
               </div>
@@ -171,14 +171,14 @@
           <div class="col-md-12">
             <div class="panel panel-default">
               <div class="panel-heading">
-                <h3 class="panel-title"><i class="fa fa-arrow-left"></i> Navigation</h3>
+                <h3 class="panel-title"><i class="fa fa-arrow-left"></i> <?php _e('admin_aide_machines.navigation'); ?></h3>
               </div>
               <div class="panel-body">
                 <a href="?admin" class="btn btn-primary">
-                  <i class="fa fa-arrow-left"></i> Retour à l'administration
+                  <i class="fa fa-arrow-left"></i> <?php _e('admin_aide_machines.back_to_admin'); ?>
                 </a>
                 <a href="?aide_machines" class="btn btn-success">
-                  <i class="fa fa-eye"></i> Voir la page publique
+                  <i class="fa fa-eye"></i> <?php _e('admin_aide_machines.view_public_page'); ?>
                 </a>
               </div>
             </div>
@@ -195,7 +195,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal">&times;</button>
-        <h4 class="modal-title">Modifier la Question-Réponse</h4>
+        <h4 class="modal-title"><?php _e('admin_aide_machines.edit_qa_modal'); ?></h4>
       </div>
       <div class="modal-body">
         <form id="edit-form">
@@ -204,9 +204,9 @@
           <div class="row">
             <div class="col-md-4">
               <div class="form-group">
-                <label for="edit_machine">Machine :</label>
+                <label for="edit_machine"><?php _e('admin_aide_machines.machine'); ?> :</label>
                 <select class="form-control" id="edit_machine" name="machine" required>
-                  <option value="">Sélectionner une machine</option>
+                  <option value=""><?php _e('admin_aide_machines.select_machine'); ?></option>
                   <?php if(isset($all_machines) && !empty($all_machines)): ?>
                     <?php foreach($all_machines as $machine): ?>
                       <option value="<?= htmlspecialchars($machine) ?>"><?= htmlspecialchars($machine) ?></option>
@@ -217,36 +217,36 @@
             </div>
             <div class="col-md-4">
               <div class="form-group">
-                <label for="edit_categorie">Catégorie :</label>
+                <label for="edit_categorie"><?php _e('admin_aide_machines.categorie'); ?> :</label>
                 <select class="form-control" id="edit_categorie" name="categorie" required>
-                  <option value="general">Aide générale (page publique)</option>
-                  <option value="changement">Aide changement de consommables</option>
+                  <option value="general"><?php _e('admin_aide_machines.general_help'); ?></option>
+                  <option value="changement"><?php _e('admin_aide_machines.change_help'); ?></option>
                 </select>
               </div>
             </div>
             <div class="col-md-4">
               <div class="form-group">
-                <label for="edit_ordre">Ordre d'affichage :</label>
+                <label for="edit_ordre"><?php _e('admin_aide_machines.display_order'); ?> :</label>
                 <input type="number" class="form-control" id="edit_ordre" name="ordre" min="0">
               </div>
             </div>
           </div>
           
           <div class="form-group">
-            <label for="edit_question">Question :</label>
+            <label for="edit_question"><?php _e('admin_aide_machines.question'); ?> :</label>
             <input type="text" class="form-control" id="edit_question" name="question" required>
           </div>
           
           <div class="form-group">
-            <label for="edit_reponse">Réponse :</label>
+            <label for="edit_reponse"><?php _e('admin_aide_machines.answer'); ?> :</label>
             <textarea class="form-control" id="edit_reponse" name="reponse" rows="10" required></textarea>
-            <small class="text-muted">Vous pouvez utiliser du HTML pour formater le contenu</small>
+            <small class="text-muted"><?php _e('admin_aide_machines.answer_help'); ?></small>
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Annuler</button>
-        <button type="button" class="btn btn-primary" id="save-edit">Sauvegarder</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal"><?php _e('admin_aide_machines.cancel'); ?></button>
+        <button type="button" class="btn btn-primary" id="save-edit"><?php _e('admin_aide_machines.save'); ?></button>
       </div>
     </div>
   </div>
@@ -294,11 +294,11 @@ $(document).ready(function() {
                     
                     $('#editModal').modal('show');
                 } else {
-                    alert('Erreur lors du chargement de la Q&A: ' + (response.error || 'Erreur inconnue'));
+                    alert('<?php _e('admin_aide_machines.error_loading_qa'); ?>: ' + (response.error || '<?php _e('admin_aide_machines.unknown_error'); ?>'));
                 }
             })
             .fail(function(xhr, status, error) {
-                alert('Erreur lors du chargement de la Q&A: ' + error);
+                alert('<?php _e('admin_aide_machines.error_loading'); ?>: ' + error);
             });
     });
     
@@ -320,13 +320,13 @@ $(document).ready(function() {
                 location.reload();
             })
             .fail(function(xhr, status, error) {
-                alert('Erreur lors de la modification: ' + xhr.responseText);
+                alert('<?php _e('admin_aide_machines.error_modification'); ?>: ' + xhr.responseText);
             });
     });
     
     // Gestion de la suppression
     $('.delete-qa').click(function() {
-        if (confirm('Êtes-vous sûr de vouloir supprimer cette Q&A ?')) {
+        if (confirm('<?php _e('admin_aide_machines.confirm_delete'); ?>')) {
             var id = $(this).data('id');
             
             $.post('?admin_aide_machines', {
@@ -359,7 +359,7 @@ $(document).ready(function() {
                 location.reload();
             })
             .fail(function(xhr, status, error) {
-                alert('Erreur lors de l\'ajout: ' + xhr.responseText);
+                alert('<?php _e('admin_aide_machines.error_adding'); ?>: ' + xhr.responseText);
             });
     });
     
