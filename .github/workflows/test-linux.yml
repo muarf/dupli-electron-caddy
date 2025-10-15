@@ -172,6 +172,10 @@ jobs:
         
       - name: Build Linux AppImage
         run: |
+          echo "=== Nettoyage final avant build ==="
+          rm -rf dist/ ~/.cache/electron ~/.cache/electron-builder
+          echo "✅ Caches nettoyés"
+          echo ""
           echo "=== Build Linux AppImage avec debug ==="
           npm run build:caddy -- --publish=never 2>&1 | tee build.log
           BUILD_EXIT_CODE=${PIPESTATUS[0]}
