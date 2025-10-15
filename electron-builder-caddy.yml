@@ -29,6 +29,13 @@ linux:
   executableArgs: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"]
   # Configuration spécifique Linux - utilise PHP système, pas de binaires embarqués
   # Le dossier php/ est vidé avant le build dans le workflow (économie d'espace)
+  asarUnpack:
+    - "app/**/*"
+    - "ghostscript/**/*"
+    - "caddy/**/*"
+    - "Caddyfile"
+    - "php-fpm.conf"
+    - "php-install-guide.html"
 mac:
   target: 
     - target: dmg
