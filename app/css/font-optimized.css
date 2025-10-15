@@ -1,0 +1,75 @@
+/* Optimisation des polices Font Awesome 6 */
+@font-face {
+    font-family: "Font Awesome 6 Free";
+    font-style: normal;
+    font-weight: 900;
+    font-display: swap; /* Évite le blocage du rendu */
+    src: url(../fonts/webfonts/fa-solid-900.woff2) format("woff2"),
+         url(../fonts/webfonts/fa-solid-900.ttf) format("truetype");
+}
+
+@font-face {
+    font-family: "Font Awesome 6 Free";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap; /* Évite le blocage du rendu */
+    src: url(../fonts/webfonts/fa-regular-400.woff2) format("woff2"),
+         url(../fonts/webfonts/fa-regular-400.ttf) format("truetype");
+}
+
+@font-face {
+    font-family: "Font Awesome 6 Brands";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap; /* Évite le blocage du rendu */
+    src: url(../fonts/webfonts/fa-brands-400.woff2) format("woff2"),
+         url(../fonts/webfonts/fa-brands-400.ttf) format("truetype");
+}
+
+/* Classes Font Awesome 6 */
+.fa, .fas {
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+}
+
+.far {
+    font-family: "Font Awesome 6 Free";
+    font-weight: 400;
+}
+
+.fab {
+    font-family: "Font Awesome 6 Brands";
+    font-weight: 400;
+}
+
+/* Icônes principales utilisées dans l'app */
+.fa-print:before { content: "\f02f"; }
+.fa-question-circle:before { content: "\f059"; }
+.fa-search:before { content: "\f002"; }
+.fa-chevron-down:before { content: "\f078"; }
+.fa-chevron-up:before { content: "\f077"; }
+.fa-exclamation-triangle:before { content: "\f071"; }
+.fa-info-circle:before { content: "\f05a"; }
+.fa-list:before { content: "\f03a"; }
+.fa-arrow-left:before { content: "\f060"; }
+.fa-check-circle:before { content: "\f058"; }
+.fa-calculator:before { content: "\f1ec"; }
+.fa-home:before { content: "\f015"; }
+.fa-tint:before { content: "\f043"; }
+.fa-cogs:before { content: "\f085"; }
+.fa-check:before { content: "\f00c"; }
+.fa-euro:before { content: "\f153"; }
+.fa-file-text:before { content: "\f15c"; }
+.fa-copy:before { content: "\f0c5"; }
+.fa-money:before { content: "\f0d6"; }
+.fa-file-text-o:before { content: "\f0f6"; }
+.fa-calculator:before { content: "\f1ec"; }
+.fa-paint-brush:before { content: "\f1fc"; }
+.fa-files-o:before { content: "\f0c5"; }
+.fa-check-square:before { content: "\f14a"; }
+.fa-picture-o:before { content: "\f03e"; }
+.fa-cog:before { content: "\f013"; }
+.fa-microchip:before { content: "\f2db"; }
+.fa-circle:before { content: "\f111"; }
+.fa-layer-group:before { content: "\f5fd"; }
+.fa-bar-chart:before { content: "\f080"; }

@@ -36,8 +36,11 @@ Thumbs.db
 # Tests
 test_*.php
 
-# PDFs générés
+# PDFs générés et fichiers temporaires
 *.pdf
+public/tmp/
+tmp/
+**/tmp/**
 
 # Node modules (si jamais utilisé)
 node_modules/

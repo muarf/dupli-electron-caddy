@@ -6,10 +6,21 @@
     <script type="text/javascript" src="js/jquery.min.js"></script>
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
     <script type="text/javascript" src="js/calcul.js"></script>
-    <link href="css/font-awesome.min.css"
-    rel="stylesheet" type="text/css">
-    <link href="css/bootstrap.css"
-    rel="stylesheet" type="text/css">
+    <!-- Lazy Loading pour optimiser les images -->
+    <script type="text/javascript" src="js/lazy-loading.js"></script>
+    <!-- Preload critique - seulement la police principale utilisée immédiatement -->
+    <link rel="preload" href="fonts/fontawesome-webfont.woff2" as="font" type="font/woff2" crossorigin="anonymous" media="all">
+    <!-- Preload du CSS critique -->
+    <link rel="preload" href="css/bootstrap.css" as="style">
+    <link rel="preload" href="css/font-awesome.min.css" as="style">
+    
+    <!-- CSS non-bloquant avec media="print" puis activation JS -->
+    <link href="css/font-awesome.min.css" rel="stylesheet" type="text/css" media="print" onload="this.media='all'">
+    <link href="css/bootstrap.css" rel="stylesheet" type="text/css" media="print" onload="this.media='all'">
+    <noscript>
+        <link href="css/font-awesome.min.css" rel="stylesheet" type="text/css">
+        <link href="css/bootstrap.css" rel="stylesheet" type="text/css">
+    </noscript>
     <script>
       $(document).ready(function(){
         $('[data-toggle="tooltip"]').tooltip(); 
@@ -17,27 +28,7 @@
         $('.dropdown-toggle').dropdown();
       });
     </script>
-    <!-- <script type="text/javascript">
-    function test() {
-        var machineValue = document.getElementById('machine1').value;
 
-        if (machineValue == 'A4' || machineValue == 'A3') {
-            document.getElementById('reveal').setAttribute('style', 'visibility: visible;');
-            document.getElementById('nb_m').required = true;
-        } else {
-            document.getElementById('reveal').setAttribute('style', 'visibility: hidden;');
-        }
-
-        if (machineValue == 'pA4' || machineValue == 'pA3') {
-            document.getElementById('reveal1').setAttribute('style', 'visibility: visible;');
-            document.getElementById('couleur').required = true;
-        } else {
-            document.getElementById('reveal1').setAttribute('style', 'visibility: hidden;');
-        }
-    }
-</script>
-
- -->
   </head>
   <body style="padding-bottom: 60px;">
 
