@@ -98,7 +98,14 @@ function get_cons($machine)
     {
     	// Pour les duplicopieurs, utiliser 'dupli' au lieu du nom de la machine
     	$table_name = ($machine === 'dx4545' || $machine === 'A3' || $machine === 'dupli') ? 'dupli' : $machine;
-    	$nb = get_last_number($table_name);
+    	
+    	// Essayer de récupérer l'ID du duplicopieur pour un comptage précis
+    	$duplicopieur_id = null;
+    	if (function_exists('get_duplicopieur_id_by_name')) {
+    	    $duplicopieur_id = get_duplicopieur_id_by_name($machine);
+    	}
+    	
+    	$nb = get_last_number($table_name, $duplicopieur_id);
     }
     $query =$db->query('SELECT * FROM cons where machine = "'.$machine.'"');
     $i=0;

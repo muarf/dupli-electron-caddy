@@ -151,8 +151,12 @@ function Action($conf = null)
                     ];
                 }
             } else {
-                // Pour les duplicopieurs, utiliser la fonction existante
-                $counters = get_last_number($machine);
+                // Pour les duplicopieurs, utiliser la fonction existante avec l'ID si disponible
+                $duplicopieur_id = null;
+                if (function_exists('get_duplicopieur_id_by_name')) {
+                    $duplicopieur_id = get_duplicopieur_id_by_name($machine);
+                }
+                $counters = get_last_number($machine, $duplicopieur_id);
             }
             
             header('Content-Type: application/json');

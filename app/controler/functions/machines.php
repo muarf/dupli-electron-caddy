@@ -283,9 +283,10 @@ class MachineManager
  * Récupère le dernier numéro de compteur pour une machine
  * 
  * @param string $machine Nom de la machine
+ * @param int $duplicopieur_id ID du duplicopieur (optionnel)
  * @return array Derniers compteurs (master_av, passage_av)
  */
-function get_last_number($machine)
+function get_last_number($machine, $duplicopieur_id = null)
 {
     $db = pdo_connect();
     
@@ -295,9 +296,28 @@ function get_last_number($machine)
     // Gérer le cas spécial des duplicopieurs qui utilisent tous la table 'dupli'
     if ($table_name === 'dupli' || $table_name === 'dx4545' || $table_name === 'a3') {
         $table_name = 'dupli';
+        
+        // Si on a un duplicopieur_id, l'utiliser pour filtrer
+        if ($duplicopieur_id) {
+            $query = $db->prepare('SELECT master_ap, passage_ap FROM dupli WHERE duplicopieur_id = ? ORDER BY id DESC LIMIT 1');
+            $query->execute([$duplicopieur_id]);
+        } else {
+            // Essayer de trouver l'ID du duplicopieur par son nom
+            $duplicopieur_id = get_duplicopieur_id_by_name($machine);
+            if ($duplicopieur_id) {
+                $query = $db->prepare('SELECT master_ap, passage_ap FROM dupli WHERE duplicopieur_id = ? ORDER BY id DESC LIMIT 1');
+                $query->execute([$duplicopieur_id]);
+            } else {
+                // Fallback : utiliser l'ancien système avec nom_machine
+                $query = $db->prepare('SELECT master_ap, passage_ap FROM dupli WHERE nom_machine = ? ORDER BY id DESC LIMIT 1');
+                $query->execute([$machine]);
+            }
+        }
+    } else {
+        // Pour les autres machines (photocopieurs), utiliser l'ancien système
+        $query = $db->query('SELECT master_ap, passage_ap FROM ' . $table_name . ' ORDER BY id DESC LIMIT 1');
     }
     
-    $query = $db->query('SELECT * FROM ' . $table_name . ' ORDER by id DESC limit 1');
     $result = $query->fetch(PDO::FETCH_OBJ);
     
     if (!$result) {
@@ -309,6 +329,24 @@ function get_last_number($machine)
         $last['passage_av'] = ceil($result->passage_ap);
     }
     return $last;
+}
+
+/**
+ * Récupère l'ID d'un duplicopieur par son nom
+ * 
+ * @param string $machine_name Nom de la machine
+ * @return int|null ID du duplicopieur ou null si non trouvé
+ */
+function get_duplicopieur_id_by_name($machine_name)
+{
+    $db = pdo_connect();
+    
+    // Essayer plusieurs formats de nom
+    $query = $db->prepare('SELECT id FROM duplicopieurs WHERE (marque || " " || modele = ? OR marque = ? OR modele = ?) AND actif = 1 LIMIT 1');
+    $query->execute([$machine_name, $machine_name, $machine_name]);
+    $result = $query->fetch(PDO::FETCH_ASSOC);
+    
+    return $result ? intval($result['id']) : null;
 }
 
 /**

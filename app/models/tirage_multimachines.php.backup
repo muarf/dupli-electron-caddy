@@ -996,7 +996,14 @@ function Action($conf = null) {
     // Traitement pour récupération des valeurs AVANT (duplicopieur)
     if (isset($_POST['contact']) && !isset($_POST['ok'])) {
         $machine = 'dupli';
-        $last = get_last_number($machine);
+        
+        // Utiliser l'ID du duplicopieur sélectionné si disponible
+        $duplicopieur_id = null;
+        if (isset($array['duplicopieur_selectionne']['id'])) {
+            $duplicopieur_id = $array['duplicopieur_selectionne']['id'];
+        }
+        
+        $last = get_last_number($machine, $duplicopieur_id);
         $array['master_av'] = $last['master_av'];
         $array['passage_av'] = $last['passage_av'];
         $array['contact'] = addslashes($_POST['contact']);
