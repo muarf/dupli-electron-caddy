@@ -173,3 +173,4 @@ docker run -it --rm ubuntu:22.04 bash
 **Branche** : fix-linux-appimage  
 **Statut** : Prêt pour build local et tests
 
+

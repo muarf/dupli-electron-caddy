@@ -49,7 +49,7 @@
           <div class="panel-body">
             <div class="row">
               <div class="col-md-3">
-                <a href="?admin&aide" class="btn btn-primary btn-block">
+                <a href="?admin&aide_machines" class="btn btn-primary btn-block">
                   <i class="fa fa-question-circle"></i> Gestion des aides
                 </a>
                 <small class="text-muted">Aides par machine</small>

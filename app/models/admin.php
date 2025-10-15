@@ -34,6 +34,29 @@ function Action($conf = null)
         }
     }
     
+    // Gestion AJAX pour récupérer une aide (AVANT la connexion à la base)
+    if(isset($_GET['ajax']) && $_GET['ajax'] === 'get_aide' && isset($_GET['id'])) {
+        try {
+            require_once __DIR__ . '/admin/AideManager.php';
+            $aideManager = new AideManager();
+            $aide_id = intval($_GET['id']);
+            $aide = $aideManager->getAide($aide_id);
+            
+            if ($aide) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true, 'aide' => $aide]);
+            } else {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'error' => 'Aide non trouvée']);
+            }
+            exit;
+        } catch (Exception $e) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            exit;
+        }
+    }
+    
     // Gestion AJAX pour récupérer le type de machine (toner/encre) - AVANT la connexion à la base
     if(isset($_GET['ajax']) && $_GET['ajax'] === 'get_machine_type' && isset($_GET['machine'])) {
         try {
@@ -183,6 +206,7 @@ function Action($conf = null)
         require_once __DIR__ . '/admin/EditManager.php';
         require_once __DIR__ . '/admin/MachineManager.php';
         require_once __DIR__ . '/admin/ChangesManager.php';
+        require_once __DIR__ . '/admin/AideManager.php';
 require_once __DIR__ . '/../controler/func.php';
 require_once __DIR__ . '/../controler/conf.php';
         
@@ -221,6 +245,7 @@ require_once __DIR__ . '/../controler/conf.php';
         $editManager = new EditManager($conf);
         $machineManager = new AdminMachineManager($conf);
         $changesManager = new ChangesManager($conf);
+        $aideManager = new AideManager($conf);
         
         // Récupérer la base de données actuelle
         $array['current_db'] = $dbManager->getCurrentDatabase();
@@ -232,12 +257,14 @@ require_once __DIR__ . '/../controler/conf.php';
         if(array_key_exists('admin', $_GET)) {
             // Gestion des actions POST
             if($_SERVER['REQUEST_METHOD'] === 'POST') {
-                $array = handlePostActions($array, $dbManager, $backupManager, $siteManager, $priceManager, $tirageManager, $newsManager, $statsManager, $editManager, $machineManager, $changesManager);
+                $array = handlePostActions($array, $dbManager, $backupManager, $siteManager, $priceManager, $tirageManager, $newsManager, $statsManager, $editManager, $machineManager, $changesManager, $aideManager);
             }
             
             // Retourner la vue appropriée selon la section
             if(isset($_GET['changes'])) {
                 return handleChangesSection($array);
+            } elseif(isset($_GET['aide_machines'])) {
+                return handleAideMachinesSection($array);
             } elseif(isset($_GET['aide'])) {
                 return handleAideSection($array);
             } elseif(isset($_GET['bdd'])) {
@@ -305,7 +332,7 @@ require_once __DIR__ . '/../controler/conf.php';
 /**
  * Gérer les actions POST
  */
-function handlePostActions($array, $dbManager, $backupManager, $siteManager, $priceManager, $tirageManager, $newsManager, $statsManager, $editManager, $machineManager, $changesManager) {
+function handlePostActions($array, $dbManager, $backupManager, $siteManager, $priceManager, $tirageManager, $newsManager, $statsManager, $editManager, $machineManager, $changesManager, $aideManager) {
     // Création d'une nouvelle base de données
     if(isset($_POST['create_db']) && isset($_POST['db_name'])) {
         $result = $dbManager->createDatabase(
@@ -521,6 +548,34 @@ function handlePostActions($array, $dbManager, $backupManager, $siteManager, $pr
             $array['change_error'] = $result['error'];
         } else {
             $array['change_success'] = $result['success'];
+        }
+    }
+    
+    // Gestion des aides machines
+    if(isset($_POST['action']) && $_POST['action'] === 'add_aide') {
+        $result = $aideManager->addAide($_POST['machine'], $_POST['contenu_aide']);
+        if (isset($result['error'])) {
+            $array['aide_error'] = $result['error'];
+        } else {
+            $array['aide_success'] = $result['success'];
+        }
+    }
+    
+    if(isset($_POST['action']) && $_POST['action'] === 'edit_aide') {
+        $result = $aideManager->updateAide($_POST['id'], $_POST['machine'], $_POST['contenu_aide']);
+        if (isset($result['error'])) {
+            $array['aide_error'] = $result['error'];
+        } else {
+            $array['aide_success'] = $result['success'];
+        }
+    }
+    
+    if(isset($_POST['action']) && $_POST['action'] === 'delete_aide') {
+        $result = $aideManager->deleteAide($_POST['id']);
+        if (isset($result['error'])) {
+            $array['aide_error'] = $result['error'];
+        } else {
+            $array['aide_success'] = $result['success'];
         }
     }
     
@@ -1418,6 +1473,34 @@ function changePassword($current_password, $new_password, $confirm_password) {
         
     } catch (Exception $e) {
         return ['error' => 'Erreur lors du changement de mot de passe : ' . $e->getMessage()];
+    }
+}
+
+/**
+ * Gérer la section des aides machines
+ */
+function handleAideMachinesSection($array) {
+    try {
+        // Récupérer les données d'aide
+        $aideManager = new AideManager($GLOBALS['model_variables']['current_db'] ?? null);
+        $aideData = $aideManager->getAllAidesData();
+        $array = array_merge($array, $aideData);
+        
+        // Obtenir toutes les machines
+        $array['all_machines'] = $aideManager->getAllMachines();
+        
+        // Gérer les messages
+        if (isset($array['aide_success'])) {
+            $array['message'] = ['type' => 'success', 'text' => $array['aide_success']];
+        } elseif (isset($array['aide_error'])) {
+            $array['message'] = ['type' => 'danger', 'text' => $array['aide_error']];
+        }
+        
+        return template("../view/admin_aide_machines.html.php", $array);
+        
+    } catch (Exception $e) {
+        $array['message'] = ['type' => 'danger', 'text' => 'Erreur : ' . $e->getMessage()];
+        return template("../view/admin_aide_machines.html.php", $array);
     }
 }
 

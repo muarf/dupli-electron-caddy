@@ -172,3 +172,4 @@ fi
 - Electron Builder 26.x
 - Espace disque nécessaire : ~5 GB
 
+
