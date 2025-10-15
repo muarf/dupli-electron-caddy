@@ -20,7 +20,7 @@ function getTableForMachine($machine) {
 
 <div class="row">
             <div class="col-md-10 col-md-offset-1">
-            <h1>Derniers Tirages </h1>
+            <h1><?php _e('admin.print_management'); ?></h1>
 
             <h4><?=  $phrase ?></h4>
             

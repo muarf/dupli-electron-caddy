@@ -1,5 +1,5 @@
 <?php
-$title = "Imposition Tracts";
+$title = __("imposition_tracts.title");
 ob_start();
 ?>
 
@@ -10,17 +10,17 @@ ob_start();
             <div class="page-header text-center" style="background: linear-gradient(135deg, #ffd93d 0%, #ffb347 100%); padding: 30px; border-radius: 10px; margin-bottom: 30px;">
                 <h1 style="color: #333; margin: 0;">
                     <i class="fa fa-copy" style="margin-right: 15px;"></i>
-                    Imposition Tracts
+                    <?php _e('imposition_tracts.title'); ?>
                 </h1>
                 <p class="lead" style="color: #333; margin: 10px 0 0 0; opacity: 0.9;">
-                    Dupliquer et optimiser vos tracts sur feuilles A3
+                    <?php _e('imposition_tracts.subtitle'); ?>
                 </p>
             </div>
 
             <!-- Zone de résultat -->
             <?php if (!empty($success) || !empty($download_url)): ?>
                 <div class="alert alert-success" style="margin-top: 30px;">
-                    <h4><i class="fa fa-check-circle"></i> Imposition réussie !</h4>
+                    <h4><i class="fa fa-check-circle"></i> <?php _e('common.success'); ?> !</h4>
                     <p>Votre tract a été dupliqué et optimisé avec succès.</p>
                     
                     <?php if (!empty($download_url)): ?>

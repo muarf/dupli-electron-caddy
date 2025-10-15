@@ -5,10 +5,10 @@
             <div class="page-header text-center" style="background: linear-gradient(135deg, #a8e6cf 0%, #c3f0ca 100%); padding: 30px; border-radius: 10px; margin-bottom: 30px;">
                 <h1 style="color: #333; margin: 0;">
                     <i class="fa fa-file-image-o" style="margin-right: 15px;"></i>
-                    Images vers PDF
+                    <?php _e('png_to_pdf.title'); ?>
                 </h1>
                 <p class="lead" style="color: #666; margin: 10px 0 0 0;">
-                    Convertissez vos images PNG/JPG en PDF imprimable (A3 ou A4)
+                    <?php _e('png_to_pdf.subtitle'); ?>
                 </p>
             </div>
 
@@ -17,7 +17,7 @@
                 <div class="panel panel-success">
                     <div class="panel-heading">
                         <h3 class="panel-title">
-                            <i class="fa fa-check-circle"></i> Conversion réussie !
+                            <i class="fa fa-check-circle"></i> <?php _e('common.success'); ?> !
                         </h3>
                     </div>
                     <div class="panel-body text-center">

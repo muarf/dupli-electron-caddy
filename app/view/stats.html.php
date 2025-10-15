@@ -1,10 +1,10 @@
 <div class="section">
   <div class="row">
     <div class="col-md-12">
-        <h1 class="text-center">Statistiques</h1>
+        <h1 class="text-center"><?php _e('stats.title'); ?></h1>
         <div class="alert alert-info">
         <?php 
-        $stats_text = get_site_setting('stats_intro_text', 'Depuis le debut de l\'aventure dupli en 2011, nous avons tire un total de {nb_f} pages en plus de {nb_t} fois. Si l\'on regarde de plus pret ca nous fait une moyenne de {nb_t_par_mois} tirages par mois, avec environ {nbf_par_mois} feuilles en moyenne. Vous tirez {nb_moy_par_mois} copies par tirage. Je ne vous epargne pas le chiffre d\'affaire : {ca} euros depuis le debut, si l\'on enleve les {doit} euros que l\'on nous doit : {ca2} euros. Vous nous avez donne {ca1} euros. Nous sommes donc {benf} euros, mais c\'est sans compter le prix du loyer des condos qui a raison de 50 euros par mois nous ferai... ! Le big data est la, je vous laisse regarder :) ps : et c\'est aussi 1800 lignes de code !');
+        $stats_text = get_site_setting('stats_intro_text', __('stats.intro_text'));
         
         $stats_text = str_replace('{nb_f}', '<strong>' . ceil($stats['nb_f'] ?? 0) . ' pages</strong>', $stats_text);
         $stats_text = str_replace('{nb_t}', '<strong>' . ($stats['nb_t'] ?? 0) . ' fois</strong>', $stats_text);

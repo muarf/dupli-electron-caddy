@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../controler/functions/database.php';
 require_once __DIR__ . '/../../controler/functions/pricing.php';
 require_once __DIR__ . '/../../controler/functions/consommation.php';
+require_once __DIR__ . '/../../controler/functions/simple_i18n.php';
 
 /**
  * Gestionnaire de prix pour l'administration

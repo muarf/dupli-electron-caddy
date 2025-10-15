@@ -253,8 +253,8 @@
     <div class="container">
         <div class="main-container">
             <div class="page-header text-center">
-                <h1><i class="fa fa-magic"></i> Imposer un PDF</h1>
-                <div class="subtitle">Créer un livret A3 à partir de pages A4</div>
+                <h1><i class="fa fa-magic"></i> <?php _e('imposition.title'); ?></h1>
+                <div class="subtitle"><?php _e('imposition.subtitle'); ?></div>
             </div>
 
             <?php if ($success): ?>

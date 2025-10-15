@@ -1,6 +1,7 @@
 <?php
 require_once(__DIR__ . '/../vendor/autoload.php');
 require_once(__DIR__ . '/unimpose_logic.php');
+require_once(__DIR__ . '/../controler/functions/simple_i18n.php');
 
 function unimpose_booklet($input_file, $output_file) {
     /**Transforme un livret en PDF page par page - avec nettoyage Ghostscript forcé*/

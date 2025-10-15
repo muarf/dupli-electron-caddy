@@ -5,10 +5,10 @@
             <div class="page-header text-center" style="background: linear-gradient(135deg, #c3aed6 0%, #d5b8e0 100%); padding: 30px; border-radius: 10px; margin-bottom: 30px;">
                 <h1 style="color: #333; margin: 0;">
                     <i class="fa fa-picture-o" style="margin-right: 15px;"></i>
-                    PDF vers Images
+                    <?php _e('pdf_to_png.title'); ?>
                 </h1>
                 <p class="lead" style="color: #666; margin: 10px 0 0 0;">
-                    Extraire les pages d'un PDF en images PNG
+                    <?php _e('pdf_to_png.subtitle'); ?>
                 </p>
             </div>
 
@@ -17,7 +17,7 @@
                 <div class="panel panel-success">
                     <div class="panel-heading">
                         <h3 class="panel-title">
-                            <i class="fa fa-check-circle"></i> Conversion réussie !
+                            <i class="fa fa-check-circle"></i> <?php _e('common.success'); ?> !
                         </h3>
                     </div>
                     <div class="panel-body">

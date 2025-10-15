@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../controler/functions/database.php';
 require_once __DIR__ . '/../controler/functions/pricing.php';
 require_once __DIR__ . '/../controler/functions/tirage.php';
+require_once __DIR__ . '/../controler/functions/simple_i18n.php';
 
 // Gestion AJAX pour récupérer les tambours d'un duplicopieur
 if(isset($_GET['ajax']) && $_GET['ajax'] === 'get_tambours' && isset($_GET['duplicopieur_id'])) {

@@ -1,5 +1,5 @@
 <?php
-$title = "Désimposer un PDF";
+$title = __("unimpose.title");
 ob_start();
 ?>
 
@@ -10,10 +10,10 @@ ob_start();
             <div class="page-header text-center" style="background: linear-gradient(135deg, #ffb3ba 0%, #ffdfba 100%); padding: 30px; border-radius: 10px; margin-bottom: 30px;">
                 <h1 style="color: #333; margin: 0;">
                     <i class="fa fa-undo" style="margin-right: 15px;"></i>
-                    Désimposer un PDF
+                    <?php _e('unimpose.title'); ?>
                 </h1>
                 <p class="lead" style="color: #666; margin: 10px 0 0 0;">
-                    Transforme un livret imposé en pages normales
+                    <?php _e('unimpose.subtitle'); ?>
                 </p>
             </div>
 
@@ -22,7 +22,7 @@ ob_start();
                 <div class="panel panel-success">
                     <div class="panel-heading">
                         <h3 class="panel-title">
-                            <i class="fa fa-check-circle"></i> Désimposition réussie !
+                            <i class="fa fa-check-circle"></i> <?php _e('common.success'); ?> !
                         </h3>
                     </div>
                     <div class="panel-body text-center">

@@ -218,8 +218,8 @@ if (isset($array['prix_data'])) {
             <div class="main-container">
                 <!-- Header -->
                 <div class="header-section">
-                    <h1><i class="fa fa-print"></i> Multi-Tirages</h1>
-                    <p>Gérez facilement vos tirages sur plusieurs machines</p>
+                    <h1><i class="fa fa-print"></i> <?php _e('tirage_multimachines.title'); ?></h1>
+                    <p><?php _e('tirage_multimachines.subtitle'); ?></p>
                 </div>
 
                 <!-- Form Section -->

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../controler/functions/database.php';
+require_once __DIR__ . '/../../controler/functions/simple_i18n.php';
 
 /**
  * Gestionnaire pour les machines (duplicopieurs et photocopieurs) - Administration

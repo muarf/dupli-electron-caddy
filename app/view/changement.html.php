@@ -2,15 +2,15 @@
 // Messages de succès/erreur
 if(isset($success_message)): ?>
     <div class="alert alert-success">
-        <strong>Succès !</strong> <?= htmlspecialchars($success_message) ?>
+        <strong><?php _e('changement.success_title'); ?></strong> <?= htmlspecialchars($success_message) ?>
         <br><br>
         <a href="?accueil" class="btn btn-primary">
-            <i class="fa fa-home"></i> Retour à l'accueil
+            <i class="fa fa-home"></i> <?php _e('changement.back_home'); ?>
         </a>
     </div>
 <?php elseif(isset($error_message)): ?>
     <div class="alert alert-danger">
-        <strong>Erreur :</strong> <?= htmlspecialchars($error_message) ?>
+        <strong><?php _e('changement.error_title'); ?>:</strong> <?= htmlspecialchars($error_message) ?>
     </div>
 <?php endif; ?>
 
@@ -20,7 +20,7 @@ if(isset($success_message)): ?>
         <div class="row">
             <div class="col-md-12">
                 <h1 class="text-center">
-                    <i class="fa fa-tint"></i> Signalement de changement de consommable
+                    <i class="fa fa-tint"></i> <?php _e('changement.title'); ?>
                 </h1>
                 <hr>
                 
@@ -44,7 +44,7 @@ if(isset($success_message)): ?>
                 
                 <form class="form-horizontal" action="" method="post" id="changement-form">
                     <fieldset>
-                        <legend><i class="fa fa-cog"></i> Informations du changement</legend>
+                        <legend><i class="fa fa-cog"></i> <?php _e('changement.change_info'); ?></legend>
                         
                         <!-- Sélection de la machine -->
                         <div class="form-group">

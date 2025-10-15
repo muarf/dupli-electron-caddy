@@ -172,7 +172,7 @@
       <div class="col-md-12">
         <h1 class="text-center">
           <i class="fa fa-question-circle" style="color: #007bff;"></i>
-          Aide & Questions-Réponses des Machines
+          <?php _e('aide_machines.title'); ?>
         </h1>
         <hr>
         

@@ -1,6 +1,7 @@
 <?php
 require_once(__DIR__ . '/../vendor/autoload.php');
 require_once(__DIR__ . '/../controler/functions/utilities.php');
+require_once(__DIR__ . '/../controler/functions/simple_i18n.php');
 use setasign\Fpdi\TcpdfFpdi as TCPDI;
 
 function reordering_pages_a5($number_of_pages) {

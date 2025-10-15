@@ -5,17 +5,17 @@
             <div class="page-header text-center" style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); padding: 30px; border-radius: 10px; margin-bottom: 30px;">
                 <h1 style="color: #333; margin: 0;">
                     <i class="fa fa-bar-chart" style="margin-right: 15px;"></i>
-                    Calcul du Taux de Remplissage
+                    <?php _e('taux_remplissage.title'); ?>
                 </h1>
                 <p class="lead" style="color: #666; margin: 10px 0 0 0;">
-                    Analysez le pourcentage d'encre utilisé dans vos PDF et images
+                    <?php _e('taux_remplissage.subtitle'); ?>
                 </p>
             </div>
 
             <!-- Messages d'erreur -->
             <?php if (!empty($errors)): ?>
                 <div class="alert alert-danger">
-                    <h4><i class="fa fa-exclamation-triangle"></i> Erreurs détectées :</h4>
+                    <h4><i class="fa fa-exclamation-triangle"></i> <?php _e('common.error'); ?> :</h4>
                     <ul class="mb-3">
                         <?php foreach ($errors as $error): ?>
                             <li><?= htmlspecialchars($error) ?></li>
@@ -29,14 +29,14 @@
                 <div class="panel panel-success">
                     <div class="panel-heading">
                         <h3 class="panel-title">
-                            <i class="fa fa-check-circle"></i> Analyse terminée !
+                            <i class="fa fa-check-circle"></i> <?php _e('common.completed'); ?> !
                         </h3>
                     </div>
                     <div class="panel-body">
                         <div class="row">
                             <!-- Aperçu de l'image -->
                             <div class="col-md-5">
-                                <h4 style="margin-top: 0;">Aperçu :</h4>
+                                <h4 style="margin-top: 0;"><?php _e('taux_remplissage.preview'); ?> :</h4>
                                 <div class="thumbnail">
                                     <img src="<?= htmlspecialchars($result['preview_url']) ?>" alt="Aperçu" style="max-width: 100%; height: auto; border: 1px solid #ddd;">
                                     <div class="caption text-center">
@@ -47,7 +47,7 @@
                             
                             <!-- Statistiques -->
                             <div class="col-md-7">
-                                <h4 style="margin-top: 0;">Résultats de l'analyse :</h4>
+                                <h4 style="margin-top: 0;"><?php _e('taux_remplissage.fill_rate'); ?> :</h4>
                                 
                                 <!-- Taux de remplissage principal -->
                                 <div style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: center;">

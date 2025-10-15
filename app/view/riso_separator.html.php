@@ -61,8 +61,8 @@ canvas {
 <div class="riso-container">
     <!-- En-tête -->
     <div class="riso-header">
-        <h1><i class="fa fa-palette"></i> Séparateur de Couleur Riso</h1>
-        <p>Séparez vos images couleur en couches pour impression multi-tambours</p>
+        <h1><i class="fa fa-palette"></i> <?php _e('riso_separator.title'); ?></h1>
+        <p><?php _e('riso_separator.subtitle'); ?></p>
     </div>
 
     <!-- Zone d'upload -->
