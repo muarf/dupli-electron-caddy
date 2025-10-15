@@ -297,6 +297,9 @@ $(document).ready(function() {
             tambourGroup.hide();
             $('#nb_m').prop('required', false);
         }
+        
+        // Mettre à jour l'aide pour la machine sélectionnée
+        updateAide(machine);
     });
     
     // Event listener pour le changement de type
@@ -356,28 +359,27 @@ $(document).ready(function() {
             return;
         }
         
-        // Chercher l'aide pour cette machine
-        var aide = aides.find(function(a) {
-            return a.machine === machine;
-        });
+        // Chercher l'aide pour cette machine dans la catégorie 'changement'
+        var aide = aides[machine];
         
-        if (aide) {
-            // Afficher l'aide spécifique
-            aideContainer.html('<div class="aide-item"><h5><strong>' + machine + '</strong></h5><div class="aide-content">' + aide.contenu_aide + '</div></div>');
+        if (aide && aide.length > 0) {
+            // Construire l'affichage avec les Q&A
+            var html = '<div class="aide-item">';
+            html += '<h4><i class="fa fa-tint"></i> Instructions pour ' + machine + '</h4>';
+            
+            aide.forEach(function(qa) {
+                html += '<div class="qa-item" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid #007bff; background: #f8f9fa; border-radius: 4px;">';
+                html += '<h5 style="color: #007bff; margin-bottom: 10px;"><i class="fa fa-question-circle"></i> ' + qa.question + '</h5>';
+                html += '<div class="qa-answer" style="color: #333;">' + qa.reponse + '</div>';
+                html += '</div>';
+            });
+            
+            html += '</div>';
+            aideContainer.html(html);
         } else {
             // Aide par défaut si aucune aide spécifique
             var defaultAide = '<div class="alert alert-info">' +
                 '<h4><i class="fa fa-info-circle"></i> Instructions pour ' + machine + '</h4>' +
-                '<p><strong>Pour les duplicopieurs (A3/A4) :</strong></p>' +
-                '<ul>' +
-                '<li>Entrez le nombre de passages actuels</li>' +
-                '<li>Sélectionnez le type de consommable changé (Master)</li>' +
-                '</ul>' +
-                '<p><strong>Pour les photocopieurs :</strong></p>' +
-                '<ul>' +
-                '<li>Entrez le nombre total de copies depuis le dernier changement</li>' +
-                '<li>Sélectionnez le type de consommable changé (encre, toner, tambour, etc.)</li>' +
-                '</ul>' +
                 '<p><strong>Pour connaître le nombre à entrer :</strong></p>' +
                 '<ul>' +
                 '<li>Allez sur la machine</li>' +
@@ -385,15 +387,24 @@ $(document).ready(function() {
                 '<li>Imprimez la liste des compteurs</li>' +
                 '<li>Notez le nombre correspondant au consommable changé</li>' +
                 '</ul>' +
+                '<p><strong>Pour les duplicopieurs :</strong></p>' +
+                '<ul>' +
+                '<li>Entrez le nombre de passages actuels</li>' +
+                '<li>Sélectionnez le type de consommable changé (Master, Encre)</li>' +
+                '</ul>' +
+                '<p><strong>Pour les photocopieurs :</strong></p>' +
+                '<ul>' +
+                '<li>Entrez le nombre total de copies depuis le dernier changement</li>' +
+                '<li>Sélectionnez le type de consommable changé (encre, toner, tambour, etc.)</li>' +
+                '</ul>' +
+                '<p><em>Aucune aide spécifique disponible pour cette machine.</em></p>' +
                 '</div>';
             aideContainer.html(defaultAide);
         }
     }
     
-    // Mettre à jour l'aide quand la machine change
-    $('#machine').change(function() {
-        updateAide($(this).val());
-    });
+    // Mettre à jour l'aide quand la machine change (déjà géré dans le gestionnaire principal)
+    // La fonction updateAide() est appelée dans le gestionnaire principal du changement de machine
 });
 </script>
 

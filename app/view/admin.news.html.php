@@ -95,10 +95,20 @@ if(isset($_POST['id']) && !isset($_POST['singlebutton']))
       placeholder: 'Rédigez le contenu de votre news...'
   });
   
-  // Mettre à jour le champ caché avant soumission
-  document.getElementById('news-form-edit').addEventListener('submit', function() {
+  // Gestionnaire d'événement pour synchroniser le contenu après chaque modification
+  quillEdit.on('text-change', function() {
       var content = quillEdit.root.innerHTML;
       document.getElementById('texte-hidden-edit').value = content;
+  });
+  
+  // Mettre à jour le champ caché avant soumission
+  document.getElementById('news-form-edit').addEventListener('submit', function(e) {
+      // Forcer la synchronisation finale
+      var content = quillEdit.root.innerHTML;
+      document.getElementById('texte-hidden-edit').value = content;
+      
+      // Debug: vérifier le contenu
+      console.log('Contenu à sauvegarder:', content);
   });
   </script>
   <?php
@@ -169,10 +179,20 @@ elseif($_GET['news'] == "add")
       placeholder: 'Rédigez le contenu de votre news...'
   });
   
-  // Mettre à jour le champ caché avant soumission
-  document.getElementById('news-form-create').addEventListener('submit', function() {
+  // Gestionnaire d'événement pour synchroniser le contenu après chaque modification
+  quillCreate.on('text-change', function() {
       var content = quillCreate.root.innerHTML;
       document.getElementById('texte-hidden-create').value = content;
+  });
+  
+  // Mettre à jour le champ caché avant soumission
+  document.getElementById('news-form-create').addEventListener('submit', function(e) {
+      // Forcer la synchronisation finale
+      var content = quillCreate.root.innerHTML;
+      document.getElementById('texte-hidden-create').value = content;
+      
+      // Debug: vérifier le contenu
+      console.log('Contenu à sauvegarder:', content);
   });
   </script>
   <?php

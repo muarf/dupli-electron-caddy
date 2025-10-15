@@ -6,8 +6,8 @@ function getTableForMachine($machine) {
     $db = pdo_connect();
     $db = pdo_connect();
     
-    // Vérifier si c'est un duplicopieur
-    $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND CONCAT(marque, " ", modele) = ?');
+    // Vérifier si c'est un duplicopieur (SQLite compatible)
+    $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND TRIM(marque) || " " || TRIM(modele) = ?');
     $query->execute([$machine]);
     
     if ($query->fetchColumn() > 0) {

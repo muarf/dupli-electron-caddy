@@ -94,6 +94,12 @@
               </a>
             </li>
             <li>
+              <a href="?aide_machines">
+                <span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span>
+                Aide & Tutoriels
+              </a>
+            </li>
+            <li>
               <a href="?stats">
                 <span class="glyphicon glyphicon-stats" aria-hidden="true"></span>
                 Statistiques

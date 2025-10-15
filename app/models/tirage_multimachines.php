@@ -48,8 +48,8 @@ if(isset($_GET['ajax']) && $_GET['ajax'] === 'get_last_counters' && isset($_GET[
         $con = pdo_connect();
         $db = pdo_connect();
         
-        // Vérifier si c'est un duplicopieur ou un photocopieur
-        $query = $db->prepare('SELECT COUNT(*) as count FROM duplicopieurs WHERE (CONCAT(marque, " ", modele) = ? OR marque = ?) AND actif = 1');
+        // Vérifier si c'est un duplicopieur ou un photocopieur (SQLite compatible)
+        $query = $db->prepare('SELECT COUNT(*) as count FROM duplicopieurs WHERE (TRIM(marque) || " " || TRIM(modele) = ? OR marque = ?) AND actif = 1');
         $query->execute([$machine, $machine]);
         $is_duplicopieur = $query->fetch(PDO::FETCH_ASSOC)['count'] > 0;
         

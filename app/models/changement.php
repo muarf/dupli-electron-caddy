@@ -12,8 +12,8 @@ function Action()
             $machine = $_GET['machine'];
             $db = pdo_connect();
             
-            // Vérifier si c'est un duplicopieur
-            $query = $db->prepare('SELECT id FROM duplicopieurs WHERE (CONCAT(marque, " ", modele) = ? OR (marque = ? AND modele = ?)) AND actif = 1');
+            // Vérifier si c'est un duplicopieur (SQLite compatible)
+            $query = $db->prepare('SELECT id FROM duplicopieurs WHERE (TRIM(marque) || " " || TRIM(modele) = ? OR (marque = ? AND modele = ?)) AND actif = 1');
             $query->execute([$machine, $machine, $machine]);
             $duplicopieur = $query->fetch(PDO::FETCH_ASSOC);
             
@@ -56,8 +56,8 @@ function Action()
             
             // Vérifier si c'est un duplicopieur en cherchant dans la base
             $db = pdo_connect();
-            // Construire la requête pour gérer les noms avec ou sans duplication
-            $query = $db->prepare('SELECT * FROM duplicopieurs WHERE (CONCAT(marque, " ", modele) = ? OR (marque = ? AND modele = ?)) AND actif = 1');
+            // Construire la requête pour gérer les noms avec ou sans duplication (SQLite compatible)
+            $query = $db->prepare('SELECT * FROM duplicopieurs WHERE (TRIM(marque) || " " || TRIM(modele) = ? OR (marque = ? AND modele = ?)) AND actif = 1');
             $query->execute([$machine, $machine, $machine]);
             $duplicopieur = $query->fetch(PDO::FETCH_ASSOC);
             
@@ -184,14 +184,39 @@ function Action()
     $array['photocopiers'] = $photocopiers;
     
     
-    // Récupérer l'aide dynamique
-    $array['aide_dynamique'] = getAideMachine($db);
+    // Récupérer l'aide dynamique pour les changements de consommables
+    $array['aide_dynamique'] = getAideMachineChangement($db);
     
     return template("../view/changement.html.php", $array);
 }
 
 /**
- * Récupérer l'aide pour une machine spécifique
+ * Récupérer l'aide pour une machine spécifique (changement de consommables)
+ */
+function getAideMachineChangement($db) {
+    try {
+        // Utiliser la nouvelle table aide_machines_qa avec catégorie 'changement'
+        $query = $db->query("SELECT machine, question, reponse FROM aide_machines_qa WHERE categorie = 'changement' ORDER BY machine, ordre");
+        $aides = $query->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Organiser par machine
+        $aides_organisees = [];
+        foreach ($aides as $aide) {
+            if (!isset($aides_organisees[$aide['machine']])) {
+                $aides_organisees[$aide['machine']] = [];
+            }
+            $aides_organisees[$aide['machine']][] = $aide;
+        }
+        
+        return json_encode($aides_organisees);
+        
+    } catch (Exception $e) {
+        return json_encode([]);
+    }
+}
+
+/**
+ * Récupérer l'aide pour une machine spécifique (ancienne méthode pour compatibilité)
  */
 function getAideMachine($db) {
     try {
