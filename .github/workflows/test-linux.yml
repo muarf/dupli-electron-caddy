@@ -20,6 +20,10 @@ jobs:
           echo "=== Espace disque AVANT nettoyage ==="
           df -h /
           echo ""
+          echo "Nettoyage des répertoires temporaires d'electron-builder..."
+          sudo rm -rf /tmp/t-* || true
+          echo "✅ Répertoires temporaires nettoyés"
+          echo ""
           echo "Suppression de fichiers inutiles du runner GitHub Actions..."
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
@@ -163,7 +167,18 @@ jobs:
           ls -la php/ 2>&1 | head -5 || echo "✅ php/ n'existe pas (normal pour Linux)"
         
       - name: Build Linux AppImage
-        run: npm run build:caddy -- --publish=never
+        run: |
+          echo "=== Build Linux AppImage avec debug ==="
+          npm run build:caddy -- --publish=never 2>&1 | tee build.log
+          BUILD_EXIT_CODE=${PIPESTATUS[0]}
+          echo "Build exit code: $BUILD_EXIT_CODE"
+          if [ $BUILD_EXIT_CODE -ne 0 ]; then
+            echo "❌ Build a échoué avec le code $BUILD_EXIT_CODE"
+            echo "=== Dernières lignes du log ==="
+            tail -50 build.log
+            exit $BUILD_EXIT_CODE
+          fi
+          echo "✅ Build réussi"
         
       - name: Verify AppImage
         run: |
