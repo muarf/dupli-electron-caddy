@@ -34,7 +34,7 @@
       <div class="panel panel-info">
         <div class="panel-heading">
           <h3 class="panel-title text-center">
-            <i class="fa fa-bar-chart"></i> Statistiques par mois <?= htmlspecialchars($machine_name) ?>
+            <i class="fa fa-bar-chart"></i> <?php _e('stats.monthly_stats_for'); ?> <?= htmlspecialchars($machine_name) ?>
           </h3>
         </div>
         <div class="panel-body">

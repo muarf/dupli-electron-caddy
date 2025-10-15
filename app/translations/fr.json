@@ -342,6 +342,16 @@
     "confirm_payment_prints": "Confirmer le paiement de",
     "prints_for_total": "tirage(s) pour un total de"
   },
+  "stats": {
+    "monthly_stats_for": "Statistiques par mois",
+    "date": "Date",
+    "sheets": "Feuilles",
+    "prints": "Tirages",
+    "average": "Moyenne",
+    "price": "Prix",
+    "paid_price": "Prix payé",
+    "difference": "Différence"
+  },
   "tirage_multimachines": {
     "title": "Tirage Multi-Machines",
     "subtitle": "Enregistre ton tirage sur toutes les machines disponibles",
