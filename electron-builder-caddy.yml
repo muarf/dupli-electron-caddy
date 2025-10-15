@@ -5,7 +5,7 @@ directories:
 icon: icons/icon.png
 publish:
   provider: github
-  releaseType: release
+  releaseType: draft
   publishAutoUpdate: true
 files:
   - main-caddy.js

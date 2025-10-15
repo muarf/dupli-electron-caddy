@@ -167,7 +167,7 @@ jobs:
           ls -la php/ 2>&1 | head -5 || echo "✅ php/ n'existe pas (normal pour Linux)"
         
       - name: Build Linux AppImage
-        run: npm run build:caddy -- --publish=always
+        run: npm run build:caddy -- --publish=never
         
       - name: Verify AppImage
         run: |
