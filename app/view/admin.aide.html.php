@@ -10,7 +10,7 @@
   <div class="container">
     <div class="row">
       <div class="col-md-10 col-md-offset-1">
-        <h1 class="text-center">Gestion des aides par machine</h1>
+        <h1 class="text-center"><?php _e('admin_aide.title'); ?></h1>
         <hr>
         
         <?php if (isset($message)): ?>
@@ -22,7 +22,7 @@
         <!-- Liste des aides existantes -->
         <div class="panel panel-primary">
           <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-list"></i> Aides existantes</h3>
+            <h3 class="panel-title"><i class="fa fa-list"></i> <?php _e('admin_aide.existing_aides'); ?></h3>
           </div>
           <div class="panel-body">
             <?php if (isset($aides) && count($aides) > 0): ?>
@@ -30,10 +30,10 @@
                 <table class="table table-striped">
                   <thead>
                     <tr>
-                      <th>Machine</th>
-                      <th>Date création</th>
-                      <th>Date modification</th>
-                      <th>Actions</th>
+                      <th><?php _e('admin_aide.machine'); ?></th>
+                      <th><?php _e('admin_aide.creation_date'); ?></th>
+                      <th><?php _e('admin_aide.modification_date'); ?></th>
+                      <th><?php _e('admin_aide.actions'); ?></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -44,10 +44,10 @@
                         <td><?= date('d/m/Y H:i', strtotime($aide['date_modification'])) ?></td>
                         <td>
                           <button class="btn btn-sm btn-info" onclick="editAide(<?= $aide['id'] ?>, '<?= addslashes($aide['machine']) ?>')" data-aide-id="<?= $aide['id'] ?>">
-                            <i class="fa fa-edit"></i> Modifier
+                            <i class="fa fa-edit"></i> <?php _e('admin_aide.edit'); ?>
                           </button>
                           <button class="btn btn-sm btn-danger" onclick="deleteAide(<?= $aide['id'] ?>, '<?= addslashes($aide['machine']) ?>')">
-                            <i class="fa fa-trash"></i> Supprimer
+                            <i class="fa fa-trash"></i> <?php _e('admin_aide.delete'); ?>
                           </button>
                         </td>
                       </tr>
@@ -57,7 +57,7 @@
               </div>
             <?php else: ?>
               <div class="alert alert-info">
-                <i class="fa fa-info-circle"></i> Aucune aide configurée pour le moment.
+                <i class="fa fa-info-circle"></i> <?php _e('admin_aide.no_aides'); ?>
               </div>
             <?php endif; ?>
           </div>
@@ -68,7 +68,7 @@
           <div class="panel-heading">
             <h3 class="panel-title">
               <i class="fa fa-plus"></i> 
-              <span id="form-title">Ajouter une aide</span>
+              <span id="form-title"><?php _e('admin_aide.add_aide'); ?></span>
             </h3>
           </div>
           <div class="panel-body">
@@ -78,9 +78,9 @@
               <input type="hidden" name="contenu_aide" id="contenu_aide_hidden" value="">
               
               <div class="form-group">
-                <label for="machine">Machine :</label>
+                <label for="machine"><?php _e('admin_aide.machine'); ?> :</label>
                 <select name="machine" id="machine" class="form-control" required onchange="loadExistingAide()">
-                  <option value="">Sélectionnez une machine</option>
+                  <option value=""><?php _e('admin_aide.select_machine'); ?></option>
                   <?php if (isset($machines)): ?>
                     <?php foreach ($machines as $machine): ?>
                       <option value="<?= htmlspecialchars($machine) ?>"><?= htmlspecialchars($machine) ?></option>
@@ -90,10 +90,10 @@
               </div>
               
               <div class="form-group">
-                <label for="editor">Contenu de l'aide :</label>
+                <label for="editor"><?php _e('admin_aide.help_content'); ?> :</label>
                 <div id="editor" style="height: 300px; margin-bottom: 10px;">
                   <div class="alert alert-info">
-                    <p style="text-align: center;">Instructions pour cette machine...</p>
+                    <p style="text-align: center;"><?php _e('admin_aide.default_instructions'); ?></p>
                   </div>
                   <div style="text-align: center;">
                     <img src="img/compteur.png" style="width: 80%;">
@@ -101,17 +101,16 @@
                 </div>
                 <small class="text-muted">
                   <i class="fa fa-info-circle"></i> 
-                  Utilisez l'éditeur pour formater le texte et ajouter des images. 
-                  L'aide sera affichée sur la page de changement de consommables.
+                  <?php _e('admin_aide.help_instructions'); ?>
                 </small>
               </div>
               
               <div class="form-group">
                 <button type="submit" class="btn btn-success">
-                  <i class="fa fa-save"></i> Enregistrer
+                  <i class="fa fa-save"></i> <?php _e('admin_aide.save'); ?>
                 </button>
                 <button type="button" class="btn btn-default" onclick="resetForm()">
-                  <i class="fa fa-refresh"></i> Réinitialiser
+                  <i class="fa fa-refresh"></i> <?php _e('admin_aide.reset'); ?>
                 </button>
               </div>
             </form>
@@ -122,7 +121,7 @@
         <div class="row">
           <div class="col-md-12">
             <a href="?admin" class="btn btn-default btn-block">
-              <i class="fa fa-arrow-left"></i> Retour à l'administration
+              <i class="fa fa-arrow-left"></i> <?php _e('admin_aide.back_to_admin'); ?>
             </a>
           </div>
         </div>
@@ -146,7 +145,7 @@ var quill = new Quill('#editor', {
             ['clean']
         ]
     },
-    placeholder: 'Saisissez le contenu de l\'aide...'
+    placeholder: '<?php _e('admin_aide.default_instructions'); ?>'
 });
 
 // Fonction pour mettre à jour le contenu caché avant soumission
@@ -160,7 +159,7 @@ function editAide(id, machine) {
     fetch('?admin&aide&get_content=' + id)
         .then(response => response.text())
         .then(content => {
-            document.getElementById('form-title').textContent = 'Modifier l\'aide pour ' + machine;
+            document.getElementById('form-title').textContent = '<?php _e('admin_aide.edit_aide'); ?> ' + machine;
             document.getElementById('action').value = 'edit';
             document.getElementById('aide_id').value = id;
             document.getElementById('machine').value = machine;
@@ -185,8 +184,8 @@ function editAide(id, machine) {
             document.getElementById('aide-form').scrollIntoView({ behavior: 'smooth' });
         })
         .catch(error => {
-            console.error('Erreur lors du chargement du contenu:', error);
-            alert('Erreur lors du chargement du contenu');
+            console.error('<?php _e('admin_aide.error_loading_content'); ?>:', error);
+            alert('<?php _e('admin_aide.error_loading_content'); ?>');
         });
 }
 
@@ -203,7 +202,7 @@ function loadExistingAide() {
         .then(content => {
             if (content && content.trim() !== '') {
                 // Aide trouvée, passer en mode édition
-                document.getElementById('form-title').textContent = 'Modifier l\'aide pour ' + machine;
+                document.getElementById('form-title').textContent = '<?php _e('admin_aide.edit_aide'); ?> ' + machine;
                 document.getElementById('action').value = 'edit';
                 
                 // Récupérer l'ID de l'aide
@@ -232,7 +231,7 @@ function loadExistingAide() {
                 }, 200);
             } else {
                 // Aucune aide trouvée, passer en mode création
-                document.getElementById('form-title').textContent = 'Ajouter une aide pour ' + machine;
+                document.getElementById('form-title').textContent = '<?php _e('admin_aide.add_aide_for'); ?> ' + machine;
                 document.getElementById('action').value = 'add';
                 document.getElementById('aide_id').value = '';
                 
@@ -261,16 +260,16 @@ function loadExistingAide() {
             }
         })
         .catch(error => {
-            console.error('Erreur lors du chargement de l\'aide:', error);
+            console.error('<?php _e('admin_aide.error_loading_aide'); ?>:', error);
             // En cas d'erreur, passer en mode création
-            document.getElementById('form-title').textContent = 'Ajouter une aide pour ' + machine;
+            document.getElementById('form-title').textContent = '<?php _e('admin_aide.add_aide_for'); ?> ' + machine;
             document.getElementById('action').value = 'add';
             document.getElementById('aide_id').value = '';
         });
 }
 
 function deleteAide(id, machine) {
-    if (confirm('Êtes-vous sûr de vouloir supprimer l\'aide pour ' + machine + ' ?')) {
+    if (confirm('<?php _e('admin_aide.confirm_delete'); ?> ' + machine + ' ?')) {
         var form = document.createElement('form');
         form.method = 'POST';
         form.action = '?admin&aide';
@@ -294,7 +293,7 @@ function deleteAide(id, machine) {
 }
 
 function resetForm() {
-    document.getElementById('form-title').textContent = 'Ajouter une aide';
+    document.getElementById('form-title').textContent = '<?php _e('admin_aide.add_aide'); ?>';
     document.getElementById('action').value = 'add';
     document.getElementById('aide_id').value = '';
     document.getElementById('machine').value = '';
