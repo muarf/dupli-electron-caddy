@@ -150,10 +150,6 @@ jobs:
           echo "Espace disque:"
           df -h /
           echo ""
-          echo "Nettoyage du répertoire temporaire..."
-          sudo find /tmp -name "t-*" -type d -exec rm -rf {} + 2>/dev/null || true
-          echo "✅ Répertoire temporaire nettoyé"
-          echo ""
           echo "Dossiers présents:"
           ls -la
           echo ""
