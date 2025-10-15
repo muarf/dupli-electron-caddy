@@ -1,0 +1,88 @@
+name: Debug Linux Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ fix-linux-appimage ]
+
+jobs:
+  debug-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Cleanup for disk space
+        run: |
+          npm cache clean --force
+          rm -rf php/* || true
+          mkdir -p php/
+          rm -rf app/public/tmp/* || true
+          rm -rf app/public/sauvegarde/* || true
+      
+      - name: Update version
+        run: |
+          LAST_TAG=$(git tag --list "v*" --sort=-version:refname | head -1)
+          if [ -n "$LAST_TAG" ]; then
+            CURRENT_VERSION=$(echo "$LAST_TAG" | sed 's/^v//')
+            IFS='.' read -ra VERSION_PARTS <<< "$CURRENT_VERSION"
+            PATCH_NUMBER=$((VERSION_PARTS[2] + 1))
+            NEW_VERSION="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$PATCH_NUMBER"
+            npm pkg set version="$NEW_VERSION"
+            echo "Version mise à jour: $NEW_VERSION"
+          fi
+        
+      - name: Build with debug
+        run: |
+          echo "=== Configuration electron-builder ==="
+          cat electron-builder-caddy.yml
+          echo ""
+          echo "=== Build Linux AppImage ==="
+          npm run build:caddy -- --publish=never 2>&1 | tee build.log
+          echo ""
+          echo "=== Statut de sortie: $? ==="
+        continue-on-error: true
+      
+      - name: Show build log
+        if: always()
+        run: |
+          echo "=== LOG COMPLET ==="
+          cat build.log || echo "Pas de log"
+      
+      - name: List dist
+        if: always()
+        run: |
+          echo "=== Contenu de dist/ ==="
+          ls -la dist/ || echo "Pas de dist/"
+      
+      - name: Upload AppImage if exists
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-appimage
+          path: dist/*.AppImage
+          if-no-files-found: warn
+      
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: warn
+
