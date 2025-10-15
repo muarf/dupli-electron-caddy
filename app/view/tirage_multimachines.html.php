@@ -856,7 +856,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                                     <div class="checkbox">
                                         <label for="feuilles_payees_0">
                                             <input name="machines[0][feuilles_payees]" value="oui" type="checkbox" onchange="calculateTotalPrice()" id="feuilles_payees_0">
-                                            <i class="fa fa-paint-brush"></i> 2ème couleur (feuilles payées)
+                                            <i class="fa fa-money" style="color: #f39c12;"></i> Feuilles déjà payées
                                         </label>
                                     </div>
                                 </div>
@@ -989,14 +989,31 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                             <div class="row">
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label class="control-label" for="nb_exemplaires_0_0">Exemplaires</label>  
-                                        <input id="nb_exemplaires_0_0" name="machines[0][brochures][0][nb_exemplaires]" class="form-control input-sm" type="number" min="1" value="1" onchange="calculateTotalPrice()" style="max-width: 100px;">
+                                        <label class="control-label" for="nb_exemplaires_0_0">
+                                            <i class="fa fa-copy"></i> Nombre d'exemplaires
+                                        </label>  
+                                        <input id="nb_exemplaires_0_0" name="machines[0][brochures][0][nb_exemplaires]" class="form-control input-sm" type="number" min="1" value="1" onchange="calculateTotalPrice()" style="max-width: 100px;" placeholder="Ex: 10">
+                                        <small class="text-muted">Combien de copies identiques ?</small>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label class="control-label" for="nb_feuilles_0_0">Feuilles / ex.</label>  
-                                        <input id="nb_feuilles_0_0" name="machines[0][brochures][0][nb_feuilles]" class="form-control input-sm" type="number" min="1" onchange="calculateTotalPrice()" style="max-width: 100px;">
+                                        <label class="control-label" for="nb_feuilles_0_0">
+                                            <i class="fa fa-file-text-o"></i> Feuilles par exemplaire
+                                        </label>  
+                                        <input id="nb_feuilles_0_0" name="machines[0][brochures][0][nb_feuilles]" class="form-control input-sm" type="number" min="1" onchange="calculateTotalPrice()" style="max-width: 100px;" placeholder="Ex: 5">
+                                        <small class="text-muted">Pages par copie</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="control-label">
+                                            <i class="fa fa-calculator"></i> Total feuilles
+                                        </label>
+                                        <div class="well well-sm" style="margin: 0; padding: 8px; background: #f8f9fa; border: 1px solid #ddd;">
+                                            <span id="total-feuilles-0-0" style="font-weight: bold; color: #007bff;">1 feuille</span>
+                                            <small class="text-muted">(exemplaires × feuilles/ex.)</small>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -1033,7 +1050,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                                     <div class="checkbox-inline">
                                         <label for="feuilles_payees_0_0">
                                             <input name="machines[0][brochures][0][feuilles_payees]" value="oui" type="checkbox" onchange="calculateTotalPrice()" id="feuilles_payees_0_0">
-                                            <i class="fa fa-check-square"></i> Feuilles payées
+                                            <i class="fa fa-money" style="color: #f39c12;"></i> Feuilles déjà payées
                                         </label>
                                     </div>
                                 </div>
@@ -1280,11 +1297,54 @@ function toggleMachineType(machineIndex) {
         requiredFields.forEach(function(field) {
             field.setAttribute('required', 'required');
         });
+        
+        // Ajouter les gestionnaires pour mettre à jour le total en temps réel
+        var exemplairesInput = photocopieurInterface.querySelector('input[name*="[nb_exemplaires]"]');
+        var feuillesInput = photocopieurInterface.querySelector('input[name*="[nb_feuilles]"]');
+        
+        if (exemplairesInput && feuillesInput) {
+            exemplairesInput.addEventListener('input', updateTotalFeuilles);
+            feuillesInput.addEventListener('input', updateTotalFeuilles);
+        }
     }
     
     calculateTotalPrice();
     // Mettre à jour le preview du panel
     updatePanelPreview(machineIndex);
+    
+    // Mettre à jour le total des feuilles pour cette machine
+    updateTotalFeuillesForMachine(machineIndex);
+}
+
+// Fonction pour mettre à jour le total des feuilles en temps réel
+function updateTotalFeuilles() {
+    var machineIndex = this.closest('[data-index]').getAttribute('data-index');
+    updateTotalFeuillesForMachine(machineIndex);
+}
+
+// Fonction pour mettre à jour le total des feuilles pour une machine spécifique
+function updateTotalFeuillesForMachine(machineIndex) {
+    var brochures = document.querySelectorAll(`[data-index="${machineIndex}"] .brochure-item`);
+    
+    brochures.forEach(function(brochure, brochureIndex) {
+        var exemplairesInput = brochure.querySelector('input[name*="[nb_exemplaires]"]');
+        var feuillesInput = brochure.querySelector('input[name*="[nb_feuilles]"]');
+        var totalSpan = document.getElementById(`total-feuilles-${machineIndex}-${brochureIndex}`);
+        
+        if (exemplairesInput && feuillesInput && totalSpan) {
+            var exemplaires = parseInt(exemplairesInput.value) || 0;
+            var feuilles = parseInt(feuillesInput.value) || 0;
+            var total = exemplaires * feuilles;
+            
+            if (total > 0) {
+                totalSpan.textContent = total + (total > 1 ? ' feuilles' : ' feuille');
+                totalSpan.style.color = '#007bff';
+            } else {
+                totalSpan.textContent = '0 feuille';
+                totalSpan.style.color = '#dc3545';
+            }
+        }
+    });
 }
 
 function calculateMachinePrice(machineIndex) {
@@ -2173,4 +2233,14 @@ function loadTamboursForDuplicopieur(duplicopieurId, machineIndex) {
             console.log('❌ Erreur AJAX pour les tambours:', status, error);
         });
 }
+
+// Initialisation au chargement de la page
+$(document).ready(function() {
+    // Mettre à jour tous les totaux de feuilles au chargement
+    var machines = document.querySelectorAll('[data-index]');
+    machines.forEach(function(machine) {
+        var machineIndex = machine.getAttribute('data-index');
+        updateTotalFeuillesForMachine(machineIndex);
+    });
+});
 </script>

@@ -127,6 +127,10 @@ function displayCustomErrorPage($errorData) {
         <title>Erreur - Duplicator</title>
         <script type="text/javascript" src="js/jquery.min.js"></script>
         <script type="text/javascript" src="js/bootstrap.min.js"></script>
+        <!-- Preload des polices Font Awesome pour améliorer les performances -->
+        <link rel="preload" href="fonts/fontawesome-webfont.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+        
+        <!-- CSS Font Awesome avec font-display: swap -->
         <link href="css/font-awesome.min.css" rel="stylesheet" type="text/css">
         <link href="css/bootstrap.css" rel="stylesheet" type="text/css">
         <style>

@@ -309,8 +309,8 @@
                 <a href="?accueil" class="btn btn-primary">
                   <i class="fa fa-arrow-left"></i> Retour à l'accueil
                 </a>
-                <a href="?devis" class="btn btn-success">
-                  <i class="fa fa-calculator"></i> Faire un devis
+                <a href="?tirage_multimachines" class="btn btn-success">
+                  <i class="fa fa-print"></i> Nouveau Tirage
                 </a>
               </div>
             </div>
