@@ -2,40 +2,40 @@
   <div class="container">
     <div class="row">
       <div class="col-md-10 col-md-offset-1">
-        <h1 class="text-center">Administration</h1>
+        <h1 class="text-center"><?php _e('admin.title'); ?></h1>
         <hr>
         
         
         <!-- Gestion des machines -->
         <div class="panel panel-success">
           <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-cogs"></i> Gestion des machines</h3>
+            <h3 class="panel-title"><i class="fa fa-cogs"></i> <?php _e('admin.machine_management'); ?></h3>
           </div>
           <div class="panel-body">
             <div class="row">
               <div class="col-md-3">
                 <a href="?admin&machines" class="btn btn-success btn-block">
-                  <i class="fa fa-print"></i> Gestion des machines
+                  <i class="fa fa-print"></i> <?php _e('admin.machine_management_btn'); ?>
                 </a>
-                <small class="text-muted">Duplicopieurs et photocopieurs</small>
+                <small class="text-muted"><?php _e('admin.machine_management_desc'); ?></small>
               </div>
               <div class="col-md-3">
                 <a href="?admin&changes" class="btn btn-primary btn-block">
-                  <i class="fa fa-exchange"></i> Gestion des changements
+                  <i class="fa fa-exchange"></i> <?php _e('admin.change_management_btn'); ?>
                 </a>
-                <small class="text-muted">Encre, master, toner</small>
+                <small class="text-muted"><?php _e('admin.change_management_desc'); ?></small>
               </div>
               <div class="col-md-3">
                 <a href="?admin&prix" class="btn btn-info btn-block">
-                  <i class="fa fa-euro"></i> Gestion des prix
+                  <i class="fa fa-euro"></i> <?php _e('admin.price_management_btn'); ?>
                 </a>
-                <small class="text-muted">Tarifs et consommables</small>
+                <small class="text-muted"><?php _e('admin.price_management_desc'); ?></small>
               </div>
               <div class="col-md-3">
                 <a href="?admin&tirages" class="btn btn-warning btn-block">
-                  <i class="fa fa-list"></i> Gestion des tirages
+                  <i class="fa fa-list"></i> <?php _e('admin.print_management_btn'); ?>
                 </a>
-                <small class="text-muted">Voir et modifier les tirages</small>
+                <small class="text-muted"><?php _e('admin.print_management_desc'); ?></small>
               </div>
             </div>
           </div>
@@ -44,21 +44,21 @@
         <!-- Gestion du contenu -->
         <div class="panel panel-info">
           <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-file-text"></i> Gestion du contenu</h3>
+            <h3 class="panel-title"><i class="fa fa-file-text"></i> <?php _e('admin.content_management'); ?></h3>
           </div>
           <div class="panel-body">
             <div class="row">
               <div class="col-md-3">
                 <a href="?admin&aide_machines" class="btn btn-primary btn-block">
-                  <i class="fa fa-question-circle"></i> Gestion des aides
+                  <i class="fa fa-question-circle"></i> <?php _e('admin.help_management_btn'); ?>
                 </a>
-                <small class="text-muted">Aides par machine</small>
+                <small class="text-muted"><?php _e('admin.help_management_desc'); ?></small>
               </div>
               <div class="col-md-3">
                 <a href="?admin&news" class="btn btn-info btn-block">
-                  <i class="fa fa-newspaper-o"></i> Gestion des infos
+                  <i class="fa fa-newspaper-o"></i> <?php _e('admin.news_management_btn'); ?>
                 </a>
-                <small class="text-muted">Actualités et informations</small>
+                <small class="text-muted"><?php _e('admin.news_management_desc'); ?></small>
               </div>
               <div class="col-md-3">
                 <a href="?admin&stats" class="btn btn-default btn-block">

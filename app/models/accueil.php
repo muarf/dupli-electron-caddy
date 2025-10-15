@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../controler/functions/news.php';
 require_once __DIR__ . '/../controler/functions/email.php';
 require_once __DIR__ . '/../controler/functions/database.php';
+require_once __DIR__ . '/../controler/functions/simple_i18n.php';
 
 function Action(){
   $db = pdo_connect();

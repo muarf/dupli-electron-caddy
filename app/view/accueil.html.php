@@ -1,5 +1,5 @@
 
-            <h1 class="text-center">Bienvenue duplicateur-euse</h1>
+            <h1 class="text-center"><?php _e('accueil.welcome'); ?></h1>
             <hr>
 
           </div>
@@ -15,8 +15,8 @@
                 <div style="font-size: 48px; color: #007bff; margin-bottom: 20px;">
                   <i class="fa fa-print"></i>
                 </div>
-                <h2 style="color: #007bff; margin-bottom: 15px; font-weight: bold;">Tirage Multi-Machines</h2>
-                <p style="font-size: 16px; color: #6c757d; margin-bottom: 0;">Enregistre ton tirage sur toutes les machines disponibles et optimise tes impressions !</p>
+                <h2 style="color: #007bff; margin-bottom: 15px; font-weight: bold;"><?php _e('accueil.multi_machine_print'); ?></h2>
+                <p style="font-size: 16px; color: #6c757d; margin-bottom: 0;"><?php _e('accueil.multi_machine_print_desc'); ?></p>
               </div>
             </a>
           </div>
@@ -27,7 +27,7 @@
       <div class="container">
         <div class="row">
           <div class="col-md-12" id="info">
-            <h1 class="text-center">Informations utiles</h1>
+            <h1 class="text-center"><?php _e('accueil.useful_info'); ?></h1>
             <hr>
             <?php 
             if (isset($news) && is_array($news)) {
@@ -51,7 +51,7 @@
       <div class="container">
         <div class="row">
           <div class="col-md-12" id="diffusion">
-            <h1 class="text-center">S'inscrire à la liste de Diffusion</h1>
+            <h1 class="text-center"><?php _e('accueil.mailing_list'); ?></h1>
           </div>
         </div>
         <div class="row">
@@ -62,9 +62,9 @@
               <div class="form-group">
                 <div class="input-group">
                     
-                  <input type="email" name = "email" class="form-control" placeholder="email">
+                  <input type="email" name = "email" class="form-control" placeholder="<?php _e('accueil.email_placeholder'); ?>">
                   <span class="input-group-btn">
-                    <input class="btn btn-success" type="submit">
+                    <input class="btn btn-success" type="submit" value="<?php _e('accueil.submit'); ?>">
                   </span>
                 </div>
               </div>

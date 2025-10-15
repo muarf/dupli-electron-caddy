@@ -26,14 +26,14 @@ class SimpleI18n {
      */
     private function detectLanguage() {
         // 1. Vérifier les paramètres GET
-        if (isset($_GET['lang']) && in_array($_GET['lang'], ['fr', 'en'])) {
+        if (isset($_GET['lang']) && in_array($_GET['lang'], ['fr', 'en', 'es', 'de'])) {
             $this->currentLanguage = $_GET['lang'];
             $_SESSION['language'] = $this->currentLanguage;
             return;
         }
         
         // 2. Vérifier la session
-        if (isset($_SESSION['language']) && in_array($_SESSION['language'], ['fr', 'en'])) {
+        if (isset($_SESSION['language']) && in_array($_SESSION['language'], ['fr', 'en', 'es', 'de'])) {
             $this->currentLanguage = $_SESSION['language'];
             return;
         }
@@ -89,7 +89,7 @@ class SimpleI18n {
      * Changer la langue
      */
     public function setLanguage($language) {
-        if (in_array($language, ['fr', 'en'])) {
+        if (in_array($language, ['fr', 'en', 'es', 'de'])) {
             $this->currentLanguage = $language;
             $_SESSION['language'] = $language;
             $this->loadTranslations();
@@ -135,32 +135,31 @@ function generateLanguageSelector() {
     $html = '<div class="dropdown language-selector" style="display: inline-block;">';
     $html .= '<button class="btn btn-default btn-sm dropdown-toggle" type="button" data-toggle="dropdown">';
     $html .= '<i class="fa fa-globe"></i> ';
-    $html .= ($currentLang === 'fr') ? 'Français' : 'English';
+    
+    $langNames = [
+        'fr' => 'Français',
+        'en' => 'English', 
+        'es' => 'Español',
+        'de' => 'Deutsch'
+    ];
+    
+    $html .= $langNames[$currentLang] ?? 'Français';
     $html .= ' <span class="caret"></span>';
     $html .= '</button>';
     $html .= '<ul class="dropdown-menu">';
     
-    // Français
-    $active = ($currentLang === 'fr') ? ' class="active"' : '';
-    $html .= '<li' . $active . '>';
-    $html .= '<a href="?lang=fr">';
-    $html .= 'Français';
-    if ($currentLang === 'fr') {
-        $html .= ' <i class="fa fa-check"></i>';
+    // Toutes les langues
+    foreach (['fr', 'en', 'es', 'de'] as $lang) {
+        $active = ($currentLang === $lang) ? ' class="active"' : '';
+        $html .= '<li' . $active . '>';
+        $html .= '<a href="?lang=' . $lang . '">';
+        $html .= $langNames[$lang];
+        if ($currentLang === $lang) {
+            $html .= ' <i class="fa fa-check"></i>';
+        }
+        $html .= '</a>';
+        $html .= '</li>';
     }
-    $html .= '</a>';
-    $html .= '</li>';
-    
-    // Anglais
-    $active = ($currentLang === 'en') ? ' class="active"' : '';
-    $html .= '<li' . $active . '>';
-    $html .= '<a href="?lang=en">';
-    $html .= 'English';
-    if ($currentLang === 'en') {
-        $html .= ' <i class="fa fa-check"></i>';
-    }
-    $html .= '</a>';
-    $html .= '</li>';
     
     $html .= '</ul>';
     $html .= '</div>';
