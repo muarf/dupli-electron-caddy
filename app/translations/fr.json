@@ -1,0 +1,42 @@
+{
+  "header": {
+    "previous": "Précédent",
+    "brand": "Duplicator.",
+    "pdf_tools": "Outils PDF",
+    "impose": "Imposer",
+    "impose_desc": "Créer un livret A3",
+    "unimpose": "Désimposer",
+    "unimpose_desc": "Transformer un livret en pages normales",
+    "impose_tracts": "Imposition Tracts",
+    "impose_tracts_desc": "Dupliquer et optimiser vos tracts",
+    "images_to_pdf": "Images → PDF",
+    "images_to_pdf_desc": "Convertir PNG/JPG en PDF A3/A4",
+    "pdf_to_images": "PDF → Images",
+    "pdf_to_images_desc": "Extraire les pages en PNG",
+    "riso_separator": "Séparateur Riso",
+    "riso_separator_desc": "Séparer couleurs pour multi-tambours",
+    "fill_rate": "Taux de Remplissage",
+    "fill_rate_desc": "Calculer le % d'encre utilisé",
+    "new_print": "Nouveau Tirage",
+    "change_report": "Signalement de changement",
+    "help_tutorials": "Aide & Tutoriels",
+    "statistics": "Statistiques",
+    "administration": "Administration"
+  },
+  "footer": {
+    "previous": "Précédent",
+    "coded_with_love": "Codé avec ❤️ pour Duplicator. Source :",
+    "github": "GitHub"
+  },
+  "common": {
+    "toggle_navigation": "Toggle navigation",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "cancel": "Annuler",
+    "save": "Sauvegarder",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "close": "Fermer"
+  }
+}
