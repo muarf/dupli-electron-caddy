@@ -67,7 +67,13 @@
     "settings_management_desc": "Allgemeine Konfiguration",
     "stats_management": "Erweiterte Statistiken",
     "stats_management_btn": "Erweiterte Statistiken",
-    "stats_management_desc": "Analysen und Berichte"
+    "stats_management_desc": "Analysen und Berichte",
+    "translation_management": "Übersetzungsverwaltung",
+    "translation_management_btn": "Übersetzungen verwalten",
+    "translation_management_desc": "Alle Benutzeroberflächen-Übersetzungen bearbeiten",
+    "email_management": "E-Mail-Verwaltung",
+    "email_management_btn": "E-Mail-Verwaltung",
+    "email_management_desc": "Mailingliste und E-Mail-Einstellungen"
   },
   "common": {
     "toggle_navigation": "Navigation umschalten",

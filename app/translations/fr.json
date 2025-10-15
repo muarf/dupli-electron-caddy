@@ -67,7 +67,13 @@
     "settings_management_desc": "Configuration générale",
     "stats_management": "Statistiques avancées",
     "stats_management_btn": "Statistiques avancées",
-    "stats_management_desc": "Analyses et rapports"
+    "stats_management_desc": "Analyses et rapports",
+    "translation_management": "Gestion des Traductions",
+    "translation_management_btn": "Gérer les Traductions",
+    "translation_management_desc": "Modifiez toutes les traductions de l'interface utilisateur",
+    "email_management": "Gestion des Emails",
+    "email_management_btn": "Gestion des Emails",
+    "email_management_desc": "Liste de diffusion et paramètres email"
   },
   "tirage_multimachines": {
     "title": "Tirage Multi-Machines",

@@ -67,7 +67,13 @@
     "settings_management_desc": "Configuración general",
     "stats_management": "Estadísticas Avanzadas",
     "stats_management_btn": "Estadísticas Avanzadas",
-    "stats_management_desc": "Análisis e informes"
+    "stats_management_desc": "Análisis e informes",
+    "translation_management": "Gestión de Traducciones",
+    "translation_management_btn": "Gestionar Traducciones",
+    "translation_management_desc": "Editar todas las traducciones de la interfaz de usuario",
+    "email_management": "Gestión de Emails",
+    "email_management_btn": "Gestión de Emails",
+    "email_management_desc": "Lista de correo y configuración de email"
   },
   "common": {
     "toggle_navigation": "Alternar navegación",

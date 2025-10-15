@@ -67,7 +67,13 @@
     "settings_management_desc": "General configuration",
     "stats_management": "Advanced Statistics",
     "stats_management_btn": "Advanced Statistics",
-    "stats_management_desc": "Analysis and reports"
+    "stats_management_desc": "Analysis and reports",
+    "translation_management": "Translation Management",
+    "translation_management_btn": "Manage Translations",
+    "translation_management_desc": "Edit all user interface translations",
+    "email_management": "Email Management",
+    "email_management_btn": "Email Management",
+    "email_management_desc": "Mailing list and email settings"
   },
   "tirage_multimachines": {
     "title": "Multi-Machine Print",

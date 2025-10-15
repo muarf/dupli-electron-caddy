@@ -62,15 +62,32 @@
               </div>
               <div class="col-md-3">
                 <a href="?admin&stats" class="btn btn-default btn-block">
-                  <i class="fa fa-bar-chart"></i> Gestion des statistiques
+                  <i class="fa fa-bar-chart"></i> <?php _e('admin.stats_management_btn'); ?>
                 </a>
-                <small class="text-muted">Textes et messages des stats</small>
+                <small class="text-muted"><?php _e('admin.stats_management_desc'); ?></small>
               </div>
               <div class="col-md-3">
                 <a href="?admin&emails" class="btn btn-default btn-block">
-                  <i class="fa fa-envelope"></i> Gestion des emails
+                  <i class="fa fa-envelope"></i> <?php _e('admin.email_management_btn'); ?>
                 </a>
-                <small class="text-muted">Liste de diffusion</small>
+                <small class="text-muted"><?php _e('admin.email_management_desc'); ?></small>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Gestion des traductions -->
+        <div class="panel panel-success">
+          <div class="panel-heading">
+            <h3 class="panel-title"><i class="fa fa-globe"></i> <?php _e('admin.translation_management'); ?></h3>
+          </div>
+          <div class="panel-body">
+            <div class="row">
+              <div class="col-md-12">
+                <a href="?admin_translations" class="btn btn-success btn-block btn-lg">
+                  <i class="fa fa-globe"></i> <?php _e('admin.translation_management_btn'); ?>
+                </a>
+                <small class="text-muted"><?php _e('admin.translation_management_desc'); ?></small>
               </div>
             </div>
           </div>
