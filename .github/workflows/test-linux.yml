@@ -154,6 +154,10 @@ jobs:
           echo "Espace disque:"
           df -h /
           echo ""
+          echo "Nettoyage du dossier dist/..."
+          rm -rf dist/
+          echo "✅ dist/ nettoyé"
+          echo ""
           echo "Dossiers présents:"
           ls -la
           echo ""
