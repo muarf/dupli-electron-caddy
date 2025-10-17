@@ -4,6 +4,27 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+// Configuration cross-platform des chemins temporaires (avant session_start)
+$temp_dir = sys_get_temp_dir();
+$session_path = $temp_dir . DIRECTORY_SEPARATOR . 'duplicator_sessions';
+$error_log_path = $temp_dir . DIRECTORY_SEPARATOR . 'duplicator_errors.log';
+
+// Créer le répertoire de sessions s'il n'existe pas
+if (!is_dir($session_path)) {
+    mkdir($session_path, 0777, true);
+}
+
+// Configurer les chemins temporaires
+session_save_path($session_path);
+ini_set('error_log', $error_log_path);
+ini_set('upload_tmp_dir', $temp_dir);
+
+session_start();
+
+// Charger les fonctions de base et i18n AVANT les gestionnaires d'erreurs
+include(__DIR__ . '/../controler/func.php');
+require_once __DIR__ . '/../controler/functions/i18n.php';
+
 // Gestionnaire d'erreur global pour éviter les pages blanches
 set_error_handler(function($severity, $message, $file, $line) {
     if (error_reporting() & $severity) {
@@ -53,28 +74,7 @@ set_exception_handler(function($exception) {
     }
 });
 
-// Configuration cross-platform des chemins temporaires
-$temp_dir = sys_get_temp_dir();
-$session_path = $temp_dir . DIRECTORY_SEPARATOR . 'duplicator_sessions';
-$error_log_path = $temp_dir . DIRECTORY_SEPARATOR . 'duplicator_errors.log';
-
-// Créer le répertoire de sessions s'il n'existe pas
-if (!is_dir($session_path)) {
-    mkdir($session_path, 0777, true);
-}
-
-// Configurer les chemins temporaires
-session_save_path($session_path);
-ini_set('error_log', $error_log_path);
-ini_set('upload_tmp_dir', $temp_dir);
-
-session_start();
-
-include(__DIR__ . '/../controler/func.php');
 // conf.php sera inclus après l'exécution du modèle pour avoir la bonne base active
-
-// Initialiser le système d'internationalisation
-require_once __DIR__ . '/../controler/functions/i18n.php';
 
 // Gérer le changement de langue
 if (isset($_GET['lang']) && in_array($_GET['lang'], ['fr', 'en', 'es', 'de'])) {
