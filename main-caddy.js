@@ -668,8 +668,21 @@ function setupAutoUpdater() {
     autoUpdater.on('error', (err) => {
         console.error('Erreur lors de la mise à jour:', err);
         
-        if (mainWindow && mainWindow.webContents) {
+        // Ne pas afficher d'erreur si c'est un problème de réseau (pas d'internet)
+        const isNetworkError = err.message && (
+            err.message.includes('net::') ||
+            err.message.includes('ENOTFOUND') ||
+            err.message.includes('ECONNREFUSED') ||
+            err.message.includes('ETIMEDOUT') ||
+            err.message.includes('Cannot find') ||
+            err.message.includes('404')
+        );
+        
+        if (!isNetworkError && mainWindow && mainWindow.webContents) {
+            // Afficher l'erreur uniquement si ce n'est pas un problème de réseau
             mainWindow.webContents.send('update-error', err);
+        } else {
+            console.log('Vérification des mises à jour ignorée (pas de connexion internet ou release non disponible)');
         }
     });
     
@@ -695,7 +708,12 @@ function setupAutoUpdater() {
     setTimeout(() => {
         console.log('Lancement de la vérification des mises à jour...');
         autoUpdater.checkForUpdates().catch(err => {
-            console.error('Erreur vérification mise à jour:', err);
+            // Erreur silencieuse si pas de connexion
+            if (err.message && (err.message.includes('net::') || err.message.includes('ENOTFOUND'))) {
+                console.log('Pas de connexion internet, vérification des mises à jour ignorée');
+            } else {
+                console.error('Erreur vérification mise à jour:', err.message);
+            }
         });
     }, 10000);
     
@@ -703,7 +721,12 @@ function setupAutoUpdater() {
     setInterval(() => {
         console.log('Vérification périodique des mises à jour...');
         autoUpdater.checkForUpdates().catch(err => {
-            console.error('Erreur vérification mise à jour:', err);
+            // Erreur silencieuse si pas de connexion
+            if (err.message && (err.message.includes('net::') || err.message.includes('ENOTFOUND'))) {
+                console.log('Pas de connexion internet, vérification des mises à jour ignorée');
+            } else {
+                console.error('Erreur vérification mise à jour:', err.message);
+            }
         });
     }, 4 * 60 * 60 * 1000);
 }
