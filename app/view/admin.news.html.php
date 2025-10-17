@@ -208,9 +208,9 @@ else
           <div class="panel panel-info">
             <div class="panel-heading">
               <h3 class="panel-title">
-                <i class="fa fa-newspaper-o"></i> Gestion des Infos
+                <i class="fa fa-newspaper-o"></i> <?php _e('admin.news_management'); ?>
                 <a href="?admin&news=add" class="btn btn-success btn-sm pull-right">
-                  <i class="fa fa-plus"></i> Créer une nouvelle News
+                  <i class="fa fa-plus"></i> <?php _e('common.add'); ?> <?php _e('admin.news_management'); ?>
                 </a>
               </h3>
             </div>

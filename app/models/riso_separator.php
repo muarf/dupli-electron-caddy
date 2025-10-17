@@ -3,6 +3,7 @@
  * Séparateur de couleur Riso
  * Tout le traitement est fait côté client en JavaScript
  */
+require_once __DIR__ . '/../controler/functions/i18n.php';
 
 function Action($conf) {
     // Récupérer la liste des tambours depuis la base de données

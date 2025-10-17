@@ -7,7 +7,7 @@
   <div class="container">
     <div class="row">
       <div class="col-md-10 col-md-offset-1">
-        <h1 class="text-center">Gestion des Statistiques</h1>
+        <h1 class="text-center"><?php _e('admin.stats_management'); ?></h1>
         <hr>
         
         <!-- Section Texte d'introduction des statistiques -->
@@ -15,7 +15,7 @@
           <div class="col-md-12">
             <div class="panel panel-info">
               <div class="panel-heading">
-                <h3 class="panel-title"><i class="fa fa-bar-chart"></i> Texte d'introduction des statistiques</h3>
+                <h3 class="panel-title"><i class="fa fa-bar-chart"></i> <?php _e('admin.stats_management_desc'); ?></h3>
               </div>
               <div class="panel-body">
                 <?php if(isset($array['stats_text_updated'])): ?>

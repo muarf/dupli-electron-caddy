@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../controler/functions/utilities.php';
+require_once __DIR__ . '/../../controler/functions/i18n.php';
 
 /**
  * Gestionnaire de statistiques pour l'administration

@@ -5,10 +5,10 @@
             <div class="page-header text-center" style="background: linear-gradient(135deg, #c3aed6 0%, #d5b8e0 100%); padding: 30px; border-radius: 10px; margin-bottom: 30px;">
                 <h1 style="color: #333; margin: 0;">
                     <i class="fa fa-picture-o" style="margin-right: 15px;"></i>
-                    PDF vers Images
+                    <?php _e('pdf_to_png.title'); ?>
                 </h1>
                 <p class="lead" style="color: #666; margin: 10px 0 0 0;">
-                    Extraire les pages d'un PDF en images PNG
+                    <?php _e('pdf_to_png.subtitle'); ?>
                 </p>
             </div>
 
@@ -17,7 +17,7 @@
                 <div class="panel panel-success">
                     <div class="panel-heading">
                         <h3 class="panel-title">
-                            <i class="fa fa-check-circle"></i> Conversion réussie !
+                            <i class="fa fa-check-circle"></i> <?php _e('common.success'); ?> !
                         </h3>
                     </div>
                     <div class="panel-body">
@@ -37,7 +37,7 @@
                                         <div class="caption">
                                             <p><strong>Page <?= ($index + 1) ?></strong></p>
                                             <a href="<?= htmlspecialchars($url) ?>" class="btn btn-sm btn-success" download>
-                                                <i class="fa fa-download"></i> Télécharger
+                                                <i class="fa fa-download"></i> <?php _e('common.download'); ?>
                                             </a>
                                         </div>
                                     </div>
@@ -49,11 +49,11 @@
                         <div class="text-center" style="margin-top: 20px;">
                             <?php if (!empty($zip_url)): ?>
                                 <a href="<?= htmlspecialchars($zip_url) ?>" class="btn btn-primary btn-lg" download>
-                                    <i class="fa fa-download"></i> Télécharger tout en ZIP
+                                    <i class="fa fa-download"></i> <?php _e('common.download_all_zip'); ?>
                                 </a>
                             <?php endif; ?>
                             <a href="?pdf_to_png" class="btn btn-default btn-lg">
-                                <i class="fa fa-plus"></i> Convertir un autre PDF
+                                <i class="fa fa-plus"></i> <?php _e('pdf_to_png.convert_another'); ?>
                             </a>
                         </div>
                     </div>
@@ -82,26 +82,26 @@
                                 <div class="panel panel-info">
                                     <div class="panel-heading">
                                         <h4 class="panel-title">
-                                            <i class="fa fa-sliders"></i> Qualité de l'image
+                                            <i class="fa fa-sliders"></i> <?php _e('pdf_to_png.quality'); ?>
                                         </h4>
                                     </div>
                                     <div class="panel-body">
                                         <div class="radio">
                                             <label>
                                                 <input type="radio" name="dpi" value="72">
-                                                <strong>Basse (72 DPI)</strong> <span class="text-muted">- Rapide, fichiers légers</span>
+                                                <strong><?php _e('pdf_to_png.low'); ?></strong> <span class="text-muted"><?php _e('pdf_to_png.low_desc'); ?></span>
                                             </label>
                                         </div>
                                         <div class="radio">
                                             <label>
                                                 <input type="radio" name="dpi" value="150" checked>
-                                                <strong>Moyenne (150 DPI)</strong> <span class="text-muted">- Recommandé</span>
+                                                <strong><?php _e('pdf_to_png.medium'); ?></strong> <span class="text-muted"><?php _e('pdf_to_png.medium_desc'); ?></span>
                                             </label>
                                         </div>
                                         <div class="radio">
                                             <label>
                                                 <input type="radio" name="dpi" value="300">
-                                                <strong>Haute (300 DPI)</strong> <span class="text-muted">- Qualité impression</span>
+                                                <strong><?php _e('pdf_to_png.high'); ?></strong> <span class="text-muted"><?php _e('pdf_to_png.high_desc'); ?></span>
                                             </label>
                                         </div>
                                     </div>
@@ -115,14 +115,14 @@
                                 <i class="fa fa-file-pdf-o"></i>
                             </div>
                             <div id="uploadText">
-                                <h3 style="color: #333; margin-bottom: 10px;">Glissez votre PDF ici</h3>
-                                <p style="color: #666; margin-bottom: 20px;">ou cliquez pour sélectionner un fichier</p>
+                                <h3 style="color: #333; margin-bottom: 10px;"><?php _e('pdf_to_png.drag_drop'); ?></h3>
+                                <p style="color: #666; margin-bottom: 20px;"><?php _e('pdf_to_png.click_select'); ?></p>
                                 <input type="file" name="pdf" id="pdf" accept="application/pdf,.pdf" style="display: none;" required>
                                 <button type="button" class="btn btn-lg" style="background: #c3aed6; border: none; color: white; padding: 12px 30px; border-radius: 25px;">
-                                    <i class="fa fa-upload"></i> Sélectionner un PDF
+                                    <i class="fa fa-upload"></i> <?php _e('pdf_to_png.select_file'); ?>
                                 </button>
                                 <p class="text-muted" style="margin-top: 10px; font-size: 12px;">
-                                    <i class="fa fa-info-circle"></i> PDF - Maximum 50MB
+                                    <i class="fa fa-info-circle"></i> <?php _e('pdf_to_png.file_info'); ?>
                                 </p>
                             </div>
                             <div id="fileInfo" style="display: none;">
@@ -147,20 +147,20 @@
             <div class="panel panel-info">
                 <div class="panel-heading">
                     <h3 class="panel-title">
-                        <i class="fa fa-info-circle"></i> Comment ça marche ?
+                        <i class="fa fa-info-circle"></i> <?php _e('pdf_to_png.how_it_works'); ?>
                     </h3>
                 </div>
                 <div class="panel-body">
-                    <p>Cette fonction permet d'extraire les pages d'un PDF en images PNG :</p>
+                    <p><?php _e('pdf_to_png.how_it_works_desc'); ?></p>
                     <ul>
-                        <li><strong>Une image par page</strong> : Chaque page devient une image séparée</li>
-                        <li><strong>Format PNG</strong> : Haute qualité avec transparence supportée</li>
-                        <li><strong>Qualité réglable</strong> : Choisissez entre 72, 150 ou 300 DPI</li>
-                        <li><strong>Téléchargement ZIP</strong> : Toutes les images dans une archive</li>
+                        <li><?php _e('pdf_to_png.one_image_per_page'); ?></li>
+                        <li><?php _e('pdf_to_png.png_format'); ?></li>
+                        <li><?php _e('pdf_to_png.adjustable_quality'); ?></li>
+                        <li><?php _e('pdf_to_png.zip_download'); ?></li>
                     </ul>
                     <p class="text-muted">
                         <i class="fa fa-lightbulb-o"></i> 
-                        Astuce : Utilisez 300 DPI pour obtenir des images prêtes à imprimer en haute qualité.
+                        <?php _e('pdf_to_png.tip'); ?>
                     </p>
                 </div>
             </div>

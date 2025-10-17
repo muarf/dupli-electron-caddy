@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/admin/AideManager.php';
+require_once __DIR__ . '/../controler/functions/i18n.php';
 
 function Action($conf) {
     // Créer l'instance du gestionnaire d'aides

@@ -1,6 +1,6 @@
 <?php
-$title = "Désimposer un PDF";
-ob_start();
+require_once __DIR__ . '/../controler/functions/i18n.php';
+$title = __("unimpose.title");
 ?>
 
 <div class="container">
@@ -10,10 +10,10 @@ ob_start();
             <div class="page-header text-center" style="background: linear-gradient(135deg, #ffb3ba 0%, #ffdfba 100%); padding: 30px; border-radius: 10px; margin-bottom: 30px;">
                 <h1 style="color: #333; margin: 0;">
                     <i class="fa fa-undo" style="margin-right: 15px;"></i>
-                    Désimposer un PDF
+                    <?php _e('unimpose.title'); ?>
                 </h1>
                 <p class="lead" style="color: #666; margin: 10px 0 0 0;">
-                    Transforme un livret imposé en pages normales
+                    <?php _e('unimpose.subtitle'); ?>
                 </p>
             </div>
 
@@ -22,7 +22,7 @@ ob_start();
                 <div class="panel panel-success">
                     <div class="panel-heading">
                         <h3 class="panel-title">
-                            <i class="fa fa-check-circle"></i> Désimposition réussie !
+                            <i class="fa fa-check-circle"></i> <?php _e('common.success'); ?> !
                         </h3>
                     </div>
                     <div class="panel-body text-center">
@@ -36,7 +36,7 @@ ob_start();
                             Le fichier <strong><?= htmlspecialchars($result) ?></strong> est prêt au téléchargement.
                         </p>
                         <a href="<?= htmlspecialchars($download_url) ?>" class="btn btn-success btn-lg" onclick="openPdfInApp('<?= htmlspecialchars($download_url) ?>')">
-                            <i class="fa fa-download"></i> Télécharger le PDF désimposé
+                            <i class="fa fa-download"></i> <?php _e('unimpose.download_unimposed'); ?>
                         </a>
                     </div>
                 </div>
@@ -74,11 +74,11 @@ ob_start();
                                 <i class="fa fa-file-pdf-o"></i>
                             </div>
                             <div id="uploadText">
-                                <h3 style="color: #333; margin-bottom: 10px;">Glissez votre PDF ici</h3>
-                                <p style="color: #666; margin-bottom: 20px;">ou cliquez pour sélectionner un fichier</p>
+                                <h3 style="color: #333; margin-bottom: 10px;"><?php _e('unimpose.drag_drop'); ?></h3>
+                                <p style="color: #666; margin-bottom: 20px;"><?php _e('unimpose.click_select'); ?></p>
                                 <input type="file" name="pdf" id="pdf" accept=".pdf" style="display: none;" required>
                                 <button type="button" class="btn btn-lg" style="background: #ffb3ba; border: none; color: white; padding: 12px 30px; border-radius: 25px;">
-                                    <i class="fa fa-upload"></i> Sélectionner un PDF
+                                    <i class="fa fa-upload"></i> <?php _e('unimpose.select_pdf'); ?>
                                 </button>
                             </div>
                             <div id="fileInfo" style="display: none;">
@@ -88,10 +88,10 @@ ob_start();
                                 </h4>
                                 <p id="fileName" style="color: #666; margin-bottom: 15px;"></p>
                                 <button type="submit" class="btn btn-success btn-lg">
-                                    <i class="fa fa-magic"></i> Désimposer le PDF
+                                    <i class="fa fa-magic"></i> <?php _e('unimpose.unimpose_pdf'); ?>
                                 </button>
                                 <button type="button" class="btn btn-default btn-lg" onclick="resetForm()" style="margin-left: 10px;">
-                                    <i class="fa fa-times"></i> Annuler
+                                    <i class="fa fa-times"></i> <?php _e('unimpose.cancel'); ?>
                                 </button>
                             </div>
                         </div>
@@ -103,19 +103,19 @@ ob_start();
             <div class="panel panel-info">
                 <div class="panel-heading">
                     <h3 class="panel-title">
-                        <i class="fa fa-info-circle"></i> Comment ça marche ?
+                        <i class="fa fa-info-circle"></i> <?php _e('unimpose.how_it_works'); ?>
                     </h3>
                 </div>
                 <div class="panel-body">
-                    <p>Cette fonction permet de transformer un PDF imposé (livret) en pages normales :</p>
+                    <p><?php _e('unimpose.how_it_works_desc'); ?></p>
                     <ul>
-                        <li><strong>Pages A3 imposées</strong> → <strong>Pages A4 normales</strong></li>
-                        <li><strong>Ordre de livret</strong> → <strong>Ordre séquentiel</strong></li>
-                        <li><strong>2 pages par feuille</strong> → <strong>1 page par feuille</strong></li>
+                        <li><?php _e('unimpose.a3_to_a4'); ?></li>
+                        <li><?php _e('unimpose.booklet_to_sequential'); ?></li>
+                        <li><?php _e('unimpose.two_pages_to_one'); ?></li>
                     </ul>
                     <p class="text-muted">
                         <i class="fa fa-lightbulb-o"></i> 
-                        Parfait pour récupérer un document original à partir d'un livret déjà imposé.
+                        <?php _e('unimpose.tip'); ?>
                     </p>
                 </div>
             </div>
@@ -214,7 +214,3 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 });
 </script>
-
-<?php
-$content = ob_get_clean();
-?>

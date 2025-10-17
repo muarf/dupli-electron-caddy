@@ -2,7 +2,7 @@
   <div class="container">
     <div class="row">
       <div class="col-md-10 col-md-offset-1">
-        <h1 class="text-center">Gestion des machines</h1>
+        <h1 class="text-center"><?php _e('admin.machine_management'); ?></h1>
         <hr>
         
         <!-- Messages de succès/erreur -->

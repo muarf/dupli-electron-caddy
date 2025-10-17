@@ -2,7 +2,7 @@
   <div class="container">
     <div class="row">
       <div class="col-md-10 col-md-offset-1">
-        <h1 class="text-center">Gestion des fichiers de base de données SQLite</h1>
+        <h1 class="text-center"><?php _e('admin_bdd.title'); ?></h1>
         <hr>
         
 
@@ -108,7 +108,7 @@
         <!-- Base de données actuelle -->
         <div class="panel panel-info">
           <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-database"></i> Base de données actuelle</h3>
+            <h3 class="panel-title"><i class="fa fa-database"></i> <?php _e('admin_bdd.current_database'); ?></h3>
           </div>
           <div class="panel-body">
             <div class="alert alert-info">

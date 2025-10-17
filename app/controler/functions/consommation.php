@@ -62,7 +62,8 @@ function get_cons_photocop($couleur)
 {
     $con = pdo_connect();
     $db = pdo_connect();
-    $query =$db->query('SELECT * FROM cons where machine = "photocop" and type= "'.$couleur.'"');
+    // CORRECTION : Recherche insensible à la casse
+    $query =$db->query('SELECT * FROM cons where LOWER(machine) = "photocop" and type= "'.$couleur.'"');
       $i=0;
       while ($result = $query->fetch(PDO::FETCH_OBJ))
       {
@@ -100,7 +101,13 @@ function get_cons($machine)
     	$table_name = ($machine === 'dx4545' || $machine === 'A3' || $machine === 'dupli') ? 'dupli' : $machine;
     	$nb = get_last_number($table_name);
     }
-    $query =$db->query('SELECT * FROM cons where machine = "'.$machine.'"');
+    // CORRECTION : Cas spécial pour "Duplicopieur" et recherche insensible à la casse
+    $machine_for_cons = $machine;
+    if ($machine === 'Duplicopieur') {
+        $machine_for_cons = 'dupli';
+    }
+    
+    $query =$db->query('SELECT * FROM cons where LOWER(machine) = LOWER("'.$machine_for_cons.'")');
     $i=0;
     while ($result = $query->fetch(PDO::FETCH_OBJ))
     {
@@ -239,12 +246,28 @@ function get_cons($machine)
       $res['encre']['temps_jusqua'] = $res['encre']['moyenne_totale']['temps'] - $res['encre']['temps_depuis'];
       $res['master']['temps_jusqua'] = $res['master']['moyenne_totale']['temps'] - $res['master']['temps_depuis'];
       
-      // Éviter la division par zéro - utiliser la bonne clé pour les prix
+      // CORRECTION : Chercher l'ID réel du duplicopieur dans la base de données au lieu d'utiliser dupli_1 en dur
       $machine_key = '';
-      if (strtolower($machine) === 'dx4545' || strtolower($machine) === 'a3' || strtolower($machine) === 'dupli') {
+      // Pour les anciennes machines, utiliser dupli_1 comme fallback
+      $machine_lower = strtolower($machine);
+      if ($machine_lower === 'dx4545' || $machine_lower === 'a3' || $machine_lower === 'dupli' || $machine_lower === 'duplicopieur') {
           $machine_key = 'dupli_1';
       } else {
-          $machine_key = strtoupper($machine);
+          // Pour les nouvelles machines, chercher l'ID réel dans la table duplicopieurs
+          // SQLite utilise || pour la concaténation, pas CONCAT
+          if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
+              $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE (marque = ? OR (marque || " " || modele) = ? OR LOWER(marque) = ?) AND actif = 1 LIMIT 1');
+          } else {
+              $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE (marque = ? OR CONCAT(marque, " ", modele) = ? OR LOWER(marque) = ?) AND actif = 1 LIMIT 1');
+          }
+          $query_dup->execute([$machine, $machine, strtolower($machine)]);
+          $dup_result = $query_dup->fetch(PDO::FETCH_ASSOC);
+          if ($dup_result) {
+              $machine_key = 'dupli_' . $dup_result['id'];
+          } else {
+              // Fallback : utiliser le nom de la machine en uppercase
+              $machine_key = strtoupper($machine);
+          }
       }
       
       $res['master']['prix_calcule'] = ($res['master']['moyenne_totale']['nb_m'] > 0) ? ($prix[$machine_key]['master']['pack'] ?? 0) / $res['master']['moyenne_totale']['nb_m'] : 0;

@@ -5,10 +5,10 @@
             <div class="page-header text-center" style="background: linear-gradient(135deg, #a8e6cf 0%, #c3f0ca 100%); padding: 30px; border-radius: 10px; margin-bottom: 30px;">
                 <h1 style="color: #333; margin: 0;">
                     <i class="fa fa-file-image-o" style="margin-right: 15px;"></i>
-                    Images vers PDF
+                    <?php _e('png_to_pdf.title'); ?>
                 </h1>
                 <p class="lead" style="color: #666; margin: 10px 0 0 0;">
-                    Convertissez vos images PNG/JPG en PDF imprimable (A3 ou A4)
+                    <?php _e('png_to_pdf.subtitle'); ?>
                 </p>
             </div>
 
@@ -17,7 +17,7 @@
                 <div class="panel panel-success">
                     <div class="panel-heading">
                         <h3 class="panel-title">
-                            <i class="fa fa-check-circle"></i> Conversion réussie !
+                            <i class="fa fa-check-circle"></i> <?php _e('common.success'); ?> !
                         </h3>
                     </div>
                     <div class="panel-body text-center">
@@ -85,20 +85,20 @@
                                 <div class="panel panel-info">
                                     <div class="panel-heading">
                                         <h4 class="panel-title">
-                                            <i class="fa fa-rotate-right"></i> Orientation
+                                            <i class="fa fa-rotate-right"></i> <?php _e('png_to_pdf.orientation'); ?>
                                         </h4>
                                     </div>
                                     <div class="panel-body">
                                         <div class="radio">
                                             <label>
                                                 <input type="radio" name="orientation" value="P" checked>
-                                                <strong>Portrait</strong> <i class="fa fa-arrows-v"></i>
+                                                <strong><?php _e('png_to_pdf.portrait'); ?></strong> <i class="fa fa-arrows-v"></i>
                                             </label>
                                         </div>
                                         <div class="radio">
                                             <label>
                                                 <input type="radio" name="orientation" value="L">
-                                                <strong>Paysage</strong> <i class="fa fa-arrows-h"></i>
+                                                <strong><?php _e('png_to_pdf.landscape'); ?></strong> <i class="fa fa-arrows-h"></i>
                                             </label>
                                         </div>
                                     </div>
@@ -112,24 +112,24 @@
                                 <i class="fa fa-picture-o"></i>
                             </div>
                             <div id="uploadText">
-                                <h3 style="color: #333; margin-bottom: 10px;">Glissez vos images ici</h3>
-                                <p style="color: #666; margin-bottom: 20px;">ou cliquez pour sélectionner des fichiers</p>
+                                <h3 style="color: #333; margin-bottom: 10px;"><?php _e('png_to_pdf.drag_drop'); ?></h3>
+                                <p style="color: #666; margin-bottom: 20px;"><?php _e('png_to_pdf.click_select'); ?></p>
                                 <input type="file" name="images[]" id="images" accept="image/png,image/jpeg,image/jpg" multiple style="display: none;" required>
                                 <button type="button" class="btn btn-lg" style="background: #a8e6cf; border: none; color: white; padding: 12px 30px; border-radius: 25px;">
-                                    <i class="fa fa-upload"></i> Sélectionner des images
+                                    <i class="fa fa-upload"></i> <?php _e('png_to_pdf.select_images'); ?>
                                 </button>
                                 <p class="text-muted" style="margin-top: 10px; font-size: 12px;">
-                                    <i class="fa fa-info-circle"></i> PNG, JPG - Maximum 50MB par fichier - Plusieurs images créent un PDF multi-pages
+                                    <i class="fa fa-info-circle"></i> <?php _e('png_to_pdf.file_info'); ?>
                                 </p>
                             </div>
                             <div id="fileInfo" style="display: none;">
                                 <h4 style="color: #333; margin-bottom: 10px;">
                                     <i class="fa fa-check-circle" style="color: #28a745; margin-right: 10px;"></i>
-                                    <span id="fileCount">0</span> image(s) sélectionnée(s)
+                                    <span id="fileCount">0</span> <?php _e('png_to_pdf.images_selected'); ?>
                                 </h4>
                                 <div id="fileList" style="color: #666; margin-bottom: 15px; max-height: 150px; overflow-y: auto;"></div>
                                 <button type="submit" class="btn btn-success btn-lg">
-                                    <i class="fa fa-file-pdf-o"></i> Créer le PDF
+                                    <i class="fa fa-file-pdf-o"></i> <?php _e('png_to_pdf.create_pdf'); ?>
                                 </button>
                                 <button type="button" class="btn btn-default btn-lg" onclick="resetForm()" style="margin-left: 10px;">
                                     <i class="fa fa-times"></i> Annuler
@@ -144,30 +144,28 @@
             <div class="panel panel-info">
                 <div class="panel-heading">
                     <h3 class="panel-title">
-                        <i class="fa fa-info-circle"></i> Comment ça marche ?
+                        <i class="fa fa-info-circle"></i> <?php _e('png_to_pdf.how_it_works'); ?>
                     </h3>
                 </div>
                 <div class="panel-body">
-                    <p>Cette fonction permet de convertir vos images en PDF prêt à imprimer :</p>
+                    <p><?php _e('png_to_pdf.how_it_works_desc'); ?></p>
                     <ul>
-                        <li><strong>Format A4</strong> : Idéal pour impression standard (210 × 297 mm)</li>
-                        <li><strong>Format A3</strong> : Pour grandes affiches (297 × 420 mm)</li>
-                        <li><strong>Multi-images</strong> : Chaque image sera placée sur une page séparée</li>
-                        <li><strong>Ajustement automatique</strong> : Les images sont redimensionnées pour s'adapter au format</li>
+                        <li><?php _e('png_to_pdf.format_a4'); ?></li>
+                        <li><?php _e('png_to_pdf.format_a3'); ?></li>
+                        <li><?php _e('png_to_pdf.multi_images'); ?></li>
+                        <li><?php _e('png_to_pdf.auto_fit'); ?></li>
                     </ul>
                     <p class="text-muted">
                         <i class="fa fa-lightbulb-o"></i> 
-                        Astuce : Pour un tract recto-verso, créez 2 images et convertissez-les en PDF 2 pages.
+                        <?php _e('png_to_pdf.tip'); ?>
                     </p>
                 </div>
             </div>
-
-            <?php endif; ?>
             
             <!-- Bouton retour -->
             <div class="text-center" style="margin-top: 20px;">
                 <a href="?accueil" class="btn btn-default">
-                    <i class="fa fa-home"></i> Retour à l'accueil
+                    <i class="fa fa-home"></i> <?php _e('png_to_pdf.back_home'); ?>
                 </a>
             </div>
         </div>

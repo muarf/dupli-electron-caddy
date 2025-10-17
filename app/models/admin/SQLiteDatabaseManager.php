@@ -28,7 +28,7 @@ class SQLiteDatabaseManager {
         }
         
         // Ajouter l'extension .sqlite si pas présente
-        if(!str_ends_with($db_name, '.sqlite')) {
+        if(substr($db_name, -7) !== '.sqlite') {
             $db_name .= '.sqlite';
         }
         
@@ -110,7 +110,7 @@ class SQLiteDatabaseManager {
         $result = array();
         
         // Ajouter l'extension .sqlite si pas présente
-        if(!str_ends_with($new_db, '.sqlite')) {
+        if(substr($new_db, -7) !== '.sqlite') {
             $new_db .= '.sqlite';
         }
         
@@ -173,7 +173,7 @@ class SQLiteDatabaseManager {
         $result = array();
         
         // Ajouter l'extension .sqlite si pas présente
-        if(!str_ends_with($db_to_delete, '.sqlite')) {
+        if(substr($db_to_delete, -7) !== '.sqlite') {
             $db_to_delete .= '.sqlite';
         }
         
@@ -217,10 +217,10 @@ class SQLiteDatabaseManager {
         }
         
         // Ajouter l'extension .sqlite si pas présente
-        if(!str_ends_with($old_db_name, '.sqlite')) {
+        if(substr($old_db_name, -7) !== '.sqlite') {
             $old_db_name .= '.sqlite';
         }
-        if(!str_ends_with($new_db_name, '.sqlite')) {
+        if(substr($new_db_name, -7) !== '.sqlite') {
             $new_db_name .= '.sqlite';
         }
         
@@ -379,6 +379,20 @@ class SQLiteDatabaseManager {
     public function createEssentialTables($db) {
         // Tables essentielles adaptées pour SQLite
         $tables = array(
+            'active_database' => "CREATE TABLE IF NOT EXISTS active_database (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                database_name TEXT NOT NULL DEFAULT 'duplinew',
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )",
+            
+            'admin_passwords' => "CREATE TABLE IF NOT EXISTS admin_passwords (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                password_hash TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                is_active INTEGER DEFAULT 1
+            )",
+            
             'duplicopieurs' => "CREATE TABLE IF NOT EXISTS duplicopieurs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 marque TEXT NOT NULL,
@@ -453,6 +467,17 @@ class SQLiteDatabaseManager {
                 contenu_aide TEXT NOT NULL,
                 date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
                 date_modification DATETIME DEFAULT CURRENT_TIMESTAMP
+            )",
+            
+            'aide_machines_qa' => "CREATE TABLE IF NOT EXISTS aide_machines_qa (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                machine TEXT NOT NULL,
+                question TEXT NOT NULL,
+                reponse TEXT NOT NULL,
+                ordre INTEGER DEFAULT 0,
+                date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
+                date_modification DATETIME DEFAULT CURRENT_TIMESTAMP,
+                categorie TEXT DEFAULT 'general'
             )",
             
             'dupli' => "CREATE TABLE IF NOT EXISTS dupli (

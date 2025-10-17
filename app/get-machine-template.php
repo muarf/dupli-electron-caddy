@@ -14,11 +14,35 @@ $query = $con->prepare("SELECT * FROM duplicopieurs WHERE actif = 1 ORDER BY mar
 $query->execute();
 $duplicopieurs = $query->fetchAll(PDO::FETCH_ASSOC);
 
-// Récupérer les photocopieurs
+// Récupérer les photocopieurs (exclure les marques de duplicopieurs)
+$duplicopieurs_names = [];
+foreach ($duplicopieurs as $dup) {
+    $machine_name = $dup['marque'] . ' ' . $dup['modele'];
+    if ($dup['marque'] === $dup['modele']) {
+        $machine_name = $dup['marque'];
+    }
+    $duplicopieurs_names[] = $machine_name;
+}
+
+// Debug: log les noms de duplicopieurs à exclure
+file_put_contents('/tmp/debug_get_machine.txt', "DEBUG get-machine-template.php - duplicopieurs_names: " . json_encode($duplicopieurs_names) . "\n", FILE_APPEND);
+
 $photocopiers = [];
-$query = $con->prepare("SELECT * FROM photocopieurs WHERE actif = 1 ORDER BY marque");
-$query->execute();
-$photocopiers = $query->fetchAll(PDO::FETCH_OBJ);
+if (!empty($duplicopieurs_names)) {
+    $placeholders = str_repeat('?,', count($duplicopieurs_names) - 1) . '?';
+    $query = $con->prepare("SELECT * FROM photocopieurs WHERE marque NOT IN ($placeholders) AND actif = 1 ORDER BY marque");
+    $query->execute($duplicopieurs_names);
+    $photocopiers = $query->fetchAll(PDO::FETCH_OBJ);
+} else {
+    $query = $con->query('SELECT * FROM photocopieurs WHERE actif = 1 ORDER BY marque');
+    $photocopiers = $query->fetchAll(PDO::FETCH_OBJ);
+}
+
+// Debug: log les photocopieurs trouvés
+file_put_contents('/tmp/debug_get_machine.txt', "DEBUG get-machine-template.php - photocopiers trouvés: " . count($photocopiers) . "\n", FILE_APPEND);
+foreach ($photocopiers as $photo) {
+    file_put_contents('/tmp/debug_get_machine.txt', "DEBUG get-machine-template.php - photocopieur: " . $photo->marque . "\n", FILE_APPEND);
+}
 
 // Pas de duplicopieur pré-sélectionné pour les nouvelles machines
 $duplicopieur_selectionne = null;
