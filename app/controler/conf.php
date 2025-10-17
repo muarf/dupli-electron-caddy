@@ -11,11 +11,11 @@
 
 if (getenv('DUPLICATOR_DB_PATH')) {
     // Chemin fourni par Electron - Utiliser celui-ci en priorité
-    $sqlite_db_path = '/root/dupli-php-dev/controler/../duplinew.sqlite';
+    $sqlite_db_path = getenv('DUPLICATOR_DB_PATH');
     
-    // Créer le répertoire s'il n'existe pas
+    // Créer le répertoire s'il n'existe pas (seulement si on est en dehors de l'AppImage)
     $db_dir = dirname($sqlite_db_path);
-    if (!is_dir($db_dir)) {
+    if (!is_dir($db_dir) && is_writable(dirname($db_dir))) {
         mkdir($db_dir, 0755, true);
     }
 } else {
@@ -24,7 +24,7 @@ if (getenv('DUPLICATOR_DB_PATH')) {
     if (strpos($current_dir, '.mount') !== false || strpos($current_dir, 'AppDir') !== false) {
         // AppImage : utiliser le répertoire home de l'utilisateur
         $home_dir = $_SERVER['HOME'] ?? getenv('HOME') ?? '/tmp';
-        $sqlite_db_path = '/root/dupli-php-dev/controler/../duplinew.sqlite';
+        $sqlite_db_path = $home_dir . '/.config/Duplicator/duplinew.sqlite';
         
         // Créer le répertoire s'il n'existe pas
         $db_dir = dirname($sqlite_db_path);
@@ -33,7 +33,7 @@ if (getenv('DUPLICATOR_DB_PATH')) {
         }
     } else {
         // Développement : utiliser le répertoire de l'app
-        $sqlite_db_path = '/root/dupli-php-dev/controler/../duplinew.sqlite';
+        $sqlite_db_path = __DIR__ . '/../duplinew.sqlite';
     }
 }
 
