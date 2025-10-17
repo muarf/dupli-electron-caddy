@@ -41,8 +41,8 @@
 
 <div class="login-container">
     <div class="login-header">
-        <h2>🔐 Administration</h2>
-        <p class="text-muted">Connexion requise</p>
+        <h2>🔐 <?php _e('admin_login.title'); ?></h2>
+        <p class="text-muted"><?php _e('admin_login.login_required'); ?></p>
     </div>
     
     <?php if (!empty($login_error)): ?>
@@ -53,18 +53,18 @@
     
     <form method="POST" action="?admin">
         <div class="form-group">
-            <label for="password">Mot de passe :</label>
+            <label for="password"><?php _e('admin_login.password'); ?> :</label>
             <input type="password" class="form-control" id="password" name="password" required autofocus>
         </div>
         
         <button type="submit" class="btn btn-primary btn-login">
-            <i class="fa fa-sign-in"></i> Se connecter
+            <i class="fa fa-sign-in"></i> <?php _e('admin_login.login'); ?>
         </button>
     </form>
     
     <div class="text-center mt-3">
         <a href="?accueil" class="text-muted">
-            <i class="fa fa-arrow-left"></i> Retour à l'accueil
+            <i class="fa fa-arrow-left"></i> <?php _e('admin_login.back_to_home'); ?>
         </a>
     </div>
 </div>

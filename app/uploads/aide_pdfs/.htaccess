@@ -1,0 +1,23 @@
+# Permettre l'accès aux fichiers PDF d'aide
+<Files "*.pdf">
+    Order Allow,Deny
+    Allow from all
+</Files>
+
+# Empêcher l'exécution de scripts
+<Files "*.php">
+    Order Deny,Allow
+    Deny from all
+</Files>
+
+# Empêcher l'accès aux autres types de fichiers
+<FilesMatch "\.(?!pdf$).*">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Empêcher l'accès aux fichiers cachés
+<Files ".*">
+    Order Deny,Allow
+    Deny from all
+</Files>

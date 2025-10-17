@@ -564,13 +564,6 @@ class AdminDatabaseManager {
                 UNIQUE KEY `machine_type_id_type` (`machine_type`,`machine_id`,`type`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
             
-            'prix_backup' => "CREATE TABLE IF NOT EXISTS `prix_backup` (
-                `id` int NOT NULL DEFAULT '0',
-                `machine` varchar(255) CHARACTER SET latin1 NOT NULL,
-                `type` varchar(255) CHARACTER SET latin1 NOT NULL,
-                `unite` float NOT NULL,
-                `pack` int NOT NULL
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
             
             'site_settings' => "CREATE TABLE IF NOT EXISTS `site_settings` (
                 `id` int NOT NULL AUTO_INCREMENT,

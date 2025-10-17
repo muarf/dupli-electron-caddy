@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../controler/functions/database.php';
+require_once __DIR__ . '/../../controler/functions/i18n.php';
 
 /**
  * Gestionnaire des changements de consommables

@@ -84,7 +84,7 @@
 <div class="error-container">
     <div class="error-header">
         <h1><i class="fa fa-exclamation-triangle"></i></h1>
-        <p><?= isset($error_title) ? htmlspecialchars($error_title) : 'Une erreur est survenue' ?></p>
+        <p><?= isset($error_title) ? htmlspecialchars($error_title) : __('error.title') ?></p>
     </div>
     
     <div class="error-details">

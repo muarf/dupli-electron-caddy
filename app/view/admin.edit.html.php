@@ -28,8 +28,8 @@ if (!isset($array) || !isset($array['tirage'])) {
     $tirage = get_tirage($id, $machine);
     if(!$tirage) {
         echo '<div class="alert alert-danger">';
-        echo '<strong>Erreur !</strong> Le tirage n\'a pas été trouvé.';
-        echo '<br><a href="?admin&tirages" class="btn btn-primary">Retour aux tirages</a>';
+        echo '<strong>Erreur !</strong> ' . __('admin_edit.error_not_found');
+        echo '<br><a href="?admin&tirages" class="btn btn-primary">' . __('admin_edit.back_to_tirages') . '</a>';
         echo '</div>';
         return;
     }

@@ -1,5 +1,5 @@
 <?php
-$title = "Imposition Tracts";
+$title = __("imposition_tracts.title");
 ob_start();
 ?>
 
@@ -10,30 +10,30 @@ ob_start();
             <div class="page-header text-center" style="background: linear-gradient(135deg, #ffd93d 0%, #ffb347 100%); padding: 30px; border-radius: 10px; margin-bottom: 30px;">
                 <h1 style="color: #333; margin: 0;">
                     <i class="fa fa-copy" style="margin-right: 15px;"></i>
-                    Imposition Tracts
+                    <?php _e('imposition_tracts.title'); ?>
                 </h1>
                 <p class="lead" style="color: #333; margin: 10px 0 0 0; opacity: 0.9;">
-                    Dupliquer et optimiser vos tracts sur feuilles A3
+                    <?php _e('imposition_tracts.subtitle'); ?>
                 </p>
             </div>
 
             <!-- Zone de résultat -->
             <?php if (!empty($success) || !empty($download_url)): ?>
                 <div class="alert alert-success" style="margin-top: 30px;">
-                    <h4><i class="fa fa-check-circle"></i> Imposition réussie !</h4>
-                    <p>Votre tract a été dupliqué et optimisé avec succès.</p>
+                    <h4><i class="fa fa-check-circle"></i> <?php _e('common.success'); ?> !</h4>
+                    <p><?php _e('imposition_tracts.tract_duplicated_success'); ?></p>
                     
                     <?php if (!empty($download_url)): ?>
                         <div style="text-align: center; margin-top: 20px;">
                             <a href="<?= htmlspecialchars($download_url) ?>" class="btn btn-success btn-lg" download>
-                                <i class="fa fa-download"></i> Télécharger le PDF optimisé
+                                <i class="fa fa-download"></i> <?php _e('imposition_tracts.download_optimized_pdf'); ?>
                             </a>
                         </div>
                     <?php endif; ?>
                     
                     <?php if (!empty($preview_url)): ?>
                         <div style="margin-top: 30px;">
-                            <h4><i class="fa fa-eye"></i> Prévisualisation</h4>
+                            <h4><i class="fa fa-eye"></i> <?php _e('imposition_tracts.preview'); ?></h4>
                             <div style="border: 2px solid #ddd; border-radius: 8px; overflow: hidden;">
                                 <iframe src="<?= htmlspecialchars($preview_url) ?>" width="100%" height="600px" style="border: none;"></iframe>
                             </div>
@@ -42,17 +42,17 @@ ob_start();
                     
                     <?php if (!empty($result)): ?>
                         <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.7); border-radius: 8px;">
-                            <h5>Informations :</h5>
+                            <h5><?php _e('imposition_tracts.information'); ?></h5>
                             <p><?= htmlspecialchars($result) ?></p>
                         </div>
                     <?php endif; ?>
                     
                     <div style="text-align: center; margin-top: 20px;">
                         <button onclick="window.location.href='?imposition_tracts'" class="btn btn-warning">
-                            <i class="fa fa-plus"></i> Nouvelle imposition
+                            <i class="fa fa-plus"></i> <?php _e('imposition_tracts.new_imposition'); ?>
                         </button>
                         <button onclick="window.location.href='?accueil'" class="btn btn-default">
-                            <i class="fa fa-home"></i> Retour à l'accueil
+                            <i class="fa fa-home"></i> <?php _e('imposition_tracts.back_home'); ?>
                         </button>
                     </div>
                 </div>
@@ -61,7 +61,7 @@ ob_start();
             <!-- Messages d'erreur -->
             <?php if (!empty($errors)): ?>
                 <div class="alert alert-danger">
-                    <h4><i class="fa fa-exclamation-triangle"></i> Erreurs détectées :</h4>
+                    <h4><i class="fa fa-exclamation-triangle"></i> <?php _e('imposition_tracts.errors_detected'); ?></h4>
                     <ul class="mb-3">
                         <?php foreach ($errors as $error): ?>
                             <li><?= htmlspecialchars($error) ?></li>
@@ -69,13 +69,13 @@ ob_start();
                     </ul>
                     <div class="mt-3">
                         <button onclick="history.back()" class="btn btn-secondary me-2">
-                            <i class="fa fa-arrow-left"></i> Retour
+                            <i class="fa fa-arrow-left"></i> <?php _e('imposition_tracts.back'); ?>
                         </button>
                         <button onclick="location.reload()" class="btn btn-primary me-2">
-                            <i class="fa fa-refresh"></i> Recharger
+                            <i class="fa fa-refresh"></i> <?php _e('imposition_tracts.reload'); ?>
                         </button>
                         <button onclick="window.location.href='?accueil'" class="btn btn-success">
-                            <i class="fa fa-home"></i> Accueil
+                            <i class="fa fa-home"></i> <?php _e('imposition_tracts.home'); ?>
                         </button>
                     </div>
                 </div>
@@ -89,16 +89,16 @@ ob_start();
                             <div class="file-upload-icon" style="font-size: 48px; color: #ffd93d; margin-bottom: 20px;">
                                 <i class="fa fa-file-pdf-o"></i>
                             </div>
-                            <h4 style="color: #333; margin-bottom: 15px;">Glissez-déposez votre tract PDF ici</h4>
-                            <p style="color: #666; margin-bottom: 20px;">ou cliquez pour sélectionner un fichier</p>
+                            <h4 style="color: #333; margin-bottom: 15px;"><?php _e('imposition_tracts.drag_drop'); ?></h4>
+                            <p style="color: #666; margin-bottom: 20px;"><?php _e('imposition_tracts.click_select'); ?></p>
                             <input type="file" name="pdf_file" id="pdfFile" accept=".pdf" style="display: none;" required>
                             <button type="button" class="btn btn-warning btn-lg" id="selectFileBtn">
-                                <i class="fa fa-folder-open"></i> Choisir un tract PDF
+                                <i class="fa fa-folder-open"></i> <?php _e('imposition_tracts.select_tract'); ?>
                             </button>
                         </div>
                         
                         <div id="fileInfo" style="display: none; margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                            <h5><i class="fa fa-file-pdf-o"></i> Fichier sélectionné :</h5>
+                            <h5><i class="fa fa-file-pdf-o"></i> <?php _e('imposition_tracts.file_selected'); ?></h5>
                             <p id="fileName" style="margin: 5px 0; font-weight: 500;"></p>
                             <p id="fileSize" style="margin: 5px 0; color: #666; font-size: 0.9em;"></p>
                             <p id="pageCount" style="margin: 5px 0; color: #666; font-size: 0.9em;"></p>
@@ -106,11 +106,11 @@ ob_start();
 
                         <!-- Options d'imposition -->
                         <div id="impositionOptions" style="display: none; margin-top: 30px;">
-                            <h4><i class="fa fa-cog"></i> Options d'imposition</h4>
+                            <h4><i class="fa fa-cog"></i> <?php _e('imposition_tracts.imposition_options'); ?></h4>
                             
                             <!-- Type de tract détecté -->
                             <div class="form-group">
-                                <label class="col-md-4 control-label">Type détecté :</label>
+                                <label class="col-md-4 control-label"><?php _e('imposition_tracts.type_detected'); ?></label>
                                 <div class="col-md-8">
                                     <div id="tractType" class="form-control-static" style="font-weight: bold; color: #ffd93d;"></div>
                                 </div>
@@ -118,49 +118,49 @@ ob_start();
 
                             <!-- Sélection manuelle du format (si détection incorrecte) -->
                             <div class="form-group">
-                                <label class="col-md-4 control-label" for="manual_format">Format réel du tract :</label>
+                                <label class="col-md-4 control-label" for="manual_format"><?php _e('imposition_tracts.real_tract_format'); ?></label>
                                 <div class="col-md-8">
                                     <select name="manual_format" id="manual_format" class="form-control">
-                                        <option value="auto">Détection automatique</option>
+                                        <option value="auto"><?php _e('imposition_tracts.auto_detection'); ?></option>
                                         <option value="A4">A4 (210×297 mm)</option>
                                         <option value="A5">A5 (148×210 mm)</option>
                                         <option value="A6">A6 (105×148 mm)</option>
                                     </select>
-                                    <small class="help-block text-muted">Utilisez ceci si la détection automatique est incorrecte</small>
+                                    <small class="help-block text-muted"><?php _e('imposition_tracts.use_if_detection_incorrect'); ?></small>
                                 </div>
                             </div>
 
                             <!-- Option de redimensionnement -->
                             <div class="form-group">
-                                <label class="col-md-4 control-label">Redimensionnement :</label>
+                                <label class="col-md-4 control-label"><?php _e('imposition_tracts.resizing'); ?></label>
                                 <div class="col-md-8">
                                     <div class="checkbox">
                                         <label>
                                             <input type="checkbox" name="force_resize" id="force_resize" value="1">
-                                            Forcer le redimensionnement si le format ne correspond pas
+                                            <?php _e('imposition_tracts.force_resize_if_format_mismatch'); ?>
                                         </label>
                                     </div>
-                                    <small class="help-block text-muted">Redimensionne automatiquement le PDF pour qu'il corresponde au format sélectionné</small>
+                                    <small class="help-block text-muted"><?php _e('imposition_tracts.auto_resize_description'); ?></small>
                                 </div>
                             </div>
 
 
                             <!-- Informations sur l'imposition -->
                             <div class="form-group">
-                                <label class="col-md-4 control-label">Résultat attendu :</label>
+                                <label class="col-md-4 control-label"><?php _e('imposition_tracts.expected_result'); ?></label>
                                 <div class="col-md-8">
                                     <div id="impositionResult" class="form-control-static" style="color: #007bff; font-weight: bold;">
-                                        Sélectionnez un format pour voir le résultat
+                                        <?php _e('imposition_tracts.select_format_to_see_result'); ?>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Marge de coupe -->
                             <div class="form-group">
-                                <label class="col-md-4 control-label" for="cut_margin">Marge de coupe :</label>
+                                <label class="col-md-4 control-label" for="cut_margin"><?php _e('imposition_tracts.cut_margin'); ?></label>
                                 <div class="col-md-8">
                                     <select name="cut_margin" id="cut_margin" class="form-control" required>
-                                        <option value="0">Aucune marge</option>
+                                        <option value="0"><?php _e('imposition_tracts.no_margin'); ?></option>
                                         <option value="2" selected>2 mm</option>
                                         <option value="3">3 mm</option>
                                         <option value="5">5 mm</option>
@@ -172,7 +172,7 @@ ob_start();
                         <div class="form-group" style="margin-top: 30px;">
                             <div class="col-md-12 text-center">
                                 <button type="submit" name="submit" class="btn btn-warning btn-lg" id="submitBtn" style="padding: 15px 40px; font-size: 16px;">
-                                    <i class="fa fa-copy"></i> Créer l'imposition
+                                    <i class="fa fa-copy"></i> <?php _e('imposition_tracts.create_imposition'); ?>
                                 </button>
                             </div>
                         </div>
@@ -192,27 +192,27 @@ ob_start();
             <!-- Instructions -->
             <div class="panel panel-warning" style="margin-top: 30px;">
                 <div class="panel-heading">
-                    <h3 class="panel-title"><i class="fa fa-info-circle"></i> Comment ça marche ?</h3>
+                    <h3 class="panel-title"><i class="fa fa-info-circle"></i> <?php _e('imposition_tracts.how_it_works'); ?></h3>
                 </div>
                 <div class="panel-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <h5><i class="fa fa-file-o" style="color: #ffd93d;"></i> Tract A4</h5>
-                            <p>Duplique automatiquement et place 2 copies sur 1 feuille A3.</p>
+                            <h5><i class="fa fa-file-o" style="color: #ffd93d;"></i> <?php _e('imposition_tracts.tract_a4'); ?></h5>
+                            <p><?php _e('imposition_tracts.tract_a4_desc'); ?></p>
                         </div>
                         <div class="col-md-6">
-                            <h5><i class="fa fa-file-text-o" style="color: #ffd93d;"></i> Tract A5</h5>
-                            <p>Duplique automatiquement et place 4 copies sur 1 feuille A3.</p>
+                            <h5><i class="fa fa-file-text-o" style="color: #ffd93d;"></i> <?php _e('imposition_tracts.tract_a5'); ?></h5>
+                            <p><?php _e('imposition_tracts.tract_a5_desc'); ?></p>
                         </div>
                     </div>
                     <div class="row" style="margin-top: 15px;">
                         <div class="col-md-6">
-                            <h5><i class="fa fa-th" style="color: #ffd93d;"></i> Tract A6</h5>
-                            <p>Duplique automatiquement et place 8 copies sur 1 feuille A3.</p>
+                            <h5><i class="fa fa-th" style="color: #ffd93d;"></i> <?php _e('imposition_tracts.tract_a6'); ?></h5>
+                            <p><?php _e('imposition_tracts.tract_a6_desc'); ?></p>
                         </div>
                         <div class="col-md-6">
-                            <h5><i class="fa fa-refresh" style="color: #ffd93d;"></i> Recto/Verso</h5>
-                            <p>Gère automatiquement les tracts recto/verso avec la même logique.</p>
+                            <h5><i class="fa fa-refresh" style="color: #ffd93d;"></i> <?php _e('imposition_tracts.recto_verso'); ?></h5>
+                            <p><?php _e('imposition_tracts.recto_verso_desc'); ?></p>
                         </div>
                     </div>
                 </div>

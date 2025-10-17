@@ -1,75 +1,77 @@
 <?php
 require_once __DIR__ . '/../controler/functions/database.php';
+require_once __DIR__ . '/../models/tirage_multimachines.php';
 
-session_start();
+// Récupérer l'index de la machine
+$index = isset($_GET['index']) ? (int)$_GET['index'] : 1;
 
-// Vérifier que l'utilisateur est connecté (temporairement désactivé pour debug)
-if (!isset($_SESSION['user_id'])) {
-    // Temporairement désactivé pour debug
-    // http_response_code(401);
-    // echo json_encode(['error' => 'Non autorisé']);
-    // exit;
-}
+// Charger les données nécessaires (duplicopieurs et photocopieurs)
+$con = pdo_connect();
 
-// Vérifier que l'index est fourni
-if (!isset($_GET['index']) || !is_numeric($_GET['index'])) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Index manquant ou invalide']);
-    exit;
-}
+// Récupérer les duplicopieurs
+$duplicopieurs = [];
+$query = $con->prepare("SELECT * FROM duplicopieurs WHERE actif = 1 ORDER BY marque, modele");
+$query->execute();
+$duplicopieurs = $query->fetchAll(PDO::FETCH_ASSOC);
 
-$index = intval($_GET['index']);
-
-try {
-    // Inclure les fichiers nécessaires
-    require_once __DIR__ . '/../controler/func.php';
-    require_once __DIR__ . '/../models/tirage_multimachines.php';
-    
-    // Récupérer les données nécessaires (même logique que dans le modèle principal)
-    $db = pdo_connect();
-    $db = pdo_connect();
-    
-    // Récupérer la liste des duplicopieurs disponibles
-    $query = $db->query("SELECT * FROM duplicopieurs ORDER BY marque, modele");
-    $duplicopieurs = $query->fetchAll(PDO::FETCH_ASSOC);
-    
-    // Si un seul duplicopieur, le sélectionner automatiquement
-    $duplicopieur_selectionne = null;
-    if(count($duplicopieurs) == 1) {
-        $duplicopieur_selectionne = $duplicopieurs[0];
-    }
-    
-    // Récupérer la liste des photocopieurs disponibles (exclure les duplicopieurs)
-    $duplicopieurs_names = [];
-    foreach ($duplicopieurs as $dup) {
-        $machine_name = $dup['marque'] . ' ' . $dup['modele'];
-        if ($dup['marque'] === $dup['modele']) {
-            $machine_name = $dup['marque'];
+// Parser les tambours pour chaque duplicopieur
+foreach($duplicopieurs as $index_dup => $dup) {
+    $tambours = [];
+    if (!empty($dup['tambours'])) {
+        try {
+            $tambours = json_decode($dup['tambours'], true);
+            if (!is_array($tambours)) {
+                $tambours = ['tambour_noir']; // Fallback
+            }
+        } catch (Exception $e) {
+            $tambours = ['tambour_noir']; // Fallback
         }
-        $duplicopieurs_names[] = $machine_name;
-    }
-    
-    $photocopiers = [];
-    if (!empty($duplicopieurs_names)) {
-        $placeholders = str_repeat('?,', count($duplicopieurs_names) - 1) . '?';
-        $query = $db->prepare("SELECT DISTINCT marque FROM photocop WHERE marque NOT IN ($placeholders)");
-        $query->execute($duplicopieurs_names);
-        $photocopiers = $query->fetchAll(PDO::FETCH_OBJ);
     } else {
-        $query = $db->query('SELECT DISTINCT marque FROM photocop');
-        $photocopiers = $query->fetchAll(PDO::FETCH_OBJ);
+        $tambours = ['tambour_noir']; // Fallback pour les anciens duplicopieurs
     }
-    
-    // Générer le HTML de la machine
-    $html = generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, $photocopiers);
-    
-    // Retourner le HTML
-    header('Content-Type: application/json');
-    echo json_encode(['html' => $html]);
-    
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Erreur serveur: ' . $e->getMessage()]);
+    $duplicopieurs[$index_dup]['tambours_parsed'] = $tambours;
 }
-?>
 
+// Récupérer les photocopieurs (exclure les marques de duplicopieurs)
+$duplicopieurs_names = [];
+foreach ($duplicopieurs as $dup) {
+    $machine_name = $dup['marque'] . ' ' . $dup['modele'];
+    if ($dup['marque'] === $dup['modele']) {
+        $machine_name = $dup['marque'];
+    }
+    $duplicopieurs_names[] = $machine_name;
+}
+
+// Debug: log les noms de duplicopieurs à exclure
+file_put_contents('/tmp/debug_get_machine.txt', "DEBUG get-machine-template.php - duplicopieurs_names: " . json_encode($duplicopieurs_names) . "\n", FILE_APPEND);
+
+$photocopiers = [];
+if (!empty($duplicopieurs_names)) {
+    $placeholders = str_repeat('?,', count($duplicopieurs_names) - 1) . '?';
+    $query = $con->prepare("SELECT * FROM photocopieurs WHERE marque NOT IN ($placeholders) AND actif = 1 ORDER BY marque");
+    $query->execute($duplicopieurs_names);
+    $photocopiers = $query->fetchAll(PDO::FETCH_OBJ);
+} else {
+    $query = $con->query('SELECT * FROM photocopieurs WHERE actif = 1 ORDER BY marque');
+    $photocopiers = $query->fetchAll(PDO::FETCH_OBJ);
+}
+
+// Debug: log les photocopieurs trouvés
+file_put_contents('/tmp/debug_get_machine.txt', "DEBUG get-machine-template.php - photocopiers trouvés: " . count($photocopiers) . "\n", FILE_APPEND);
+foreach ($photocopiers as $photo) {
+    file_put_contents('/tmp/debug_get_machine.txt', "DEBUG get-machine-template.php - photocopieur: " . $photo->marque . "\n", FILE_APPEND);
+}
+
+// Si un seul duplicopieur, le sélectionner automatiquement
+$duplicopieur_selectionne = null;
+if (count($duplicopieurs) == 1) {
+    $duplicopieur_selectionne = $duplicopieurs[0];
+}
+
+// Générer le HTML de la machine
+$html = generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, $photocopiers);
+
+// Retourner en JSON
+header('Content-Type: application/json');
+echo json_encode(['success' => true, 'html' => $html]);
+?>

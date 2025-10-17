@@ -2,7 +2,7 @@
   <div class="container">
     <div class="row">
       <div class="col-md-10 col-md-offset-1">
-        <h1 class="text-center">Gestion des Emails</h1>
+        <h1 class="text-center"><?php _e('admin.email_management'); ?></h1>
         <hr>
         
         <!-- Messages de statut -->
@@ -20,7 +20,7 @@
           <div class="col-md-12">
             <div class="panel panel-info">
               <div class="panel-heading">
-                <h3 class="panel-title"><i class="fa fa-cog"></i> Paramètres d'affichage</h3>
+                <h3 class="panel-title"><i class="fa fa-cog"></i> <?php _e('common.settings'); ?></h3>
               </div>
               <div class="panel-body">
                 <form method="post">

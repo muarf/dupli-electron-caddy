@@ -20,7 +20,7 @@ function getTableForMachine($machine) {
 
 <div class="row">
             <div class="col-md-10 col-md-offset-1">
-            <h1>Derniers Tirages </h1>
+            <h1><?php _e('admin.print_management'); ?></h1>
 
             <h4><?=  $phrase ?></h4>
             
@@ -130,17 +130,17 @@ function getTableForMachine($machine) {
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Confirmer le paiement</h5>
+        <h5 class="modal-title"><?php _e('admin_tirage.confirm_payment'); ?></h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div class="modal-body">
-        <p>Total: <span id="total"></span> euros</p>
+        <p><?php _e('admin_tirage.total'); ?>: <span id="total"></span> <?php _e('admin_tirage.euros'); ?></p>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="closeModal()">Retour</button>
-        <button type="button" class="btn btn-primary" onclick="pay()" >Payé</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="closeModal()"><?php _e('admin_tirage.back'); ?></button>
+        <button type="button" class="btn btn-primary" onclick="pay()" ><?php _e('admin_tirage.paid'); ?></button>
       </div>
     </div>
   </div>
@@ -150,18 +150,18 @@ function getTableForMachine($machine) {
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Confirmer la suppression</h5>
+        <h5 class="modal-title"><?php _e('admin_tirage.confirm_deletion'); ?></h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div class="modal-body">
-        <p>Êtes-vous sûr de vouloir supprimer <span id="deleteCount"></span> tirage(s) sélectionné(s) ?</p>
-        <p class="text-danger"><strong>Cette action est irréversible !</strong></p>
+        <p><?php _e('admin_tirage.confirm_delete_prints'); ?> <span id="deleteCount"></span> <?php _e('admin_tirage.selected_prints'); ?></p>
+        <p class="text-danger"><strong><?php _e('admin_tirage.irreversible_action'); ?></strong></p>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Annuler</button>
-        <button type="button" class="btn btn-danger" onclick="confirmDelete()">Supprimer</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal"><?php _e('admin_tirage.cancel'); ?></button>
+        <button type="button" class="btn btn-danger" onclick="confirmDelete()"><?php _e('admin_tirage.delete'); ?></button>
       </div>
     </div>
   </div>
@@ -179,7 +179,7 @@ function deleteSelected() {
     const checkboxes = document.querySelectorAll('input[name="chkbox[]"]:checked');
     
     if (checkboxes.length === 0) {
-        alert('Veuillez sélectionner au moins un tirage à supprimer.');
+        alert('<?php _e('admin_tirage.select_at_least_one'); ?>');
         return;
     }
     
@@ -199,7 +199,7 @@ function deleteSelected() {
 // Fonction pour confirmer la suppression
 function confirmDelete() {
     if (selectedTirages.length === 0) {
-        alert('Aucun tirage sélectionné.');
+        alert('<?php _e('admin_tirage.no_prints_selected'); ?>');
         return;
     }
     
@@ -254,7 +254,7 @@ function pay() {
     const checkboxes = document.querySelectorAll('input[name="chkbox[]"]:checked');
     
     if (checkboxes.length === 0) {
-        alert('Veuillez sélectionner au moins un tirage à marquer comme payé.');
+        alert('<?php _e('admin_tirage.select_at_least_one_pay'); ?>');
         return;
     }
     
@@ -270,7 +270,7 @@ function pay() {
     
     // Confirmer le paiement
     const total = selectedTirages.reduce((sum, tirage) => sum + parseFloat(tirage.prix), 0);
-    if (!confirm(`Confirmer le paiement de ${selectedTirages.length} tirage(s) pour un total de ${total.toFixed(2)}€ ?`)) {
+    if (!confirm(`<?php _e('admin_tirage.confirm_payment_prints'); ?> ${selectedTirages.length} <?php _e('admin_tirage.prints_for_total'); ?> ${total.toFixed(2)}€ ?`)) {
         return;
     }
     

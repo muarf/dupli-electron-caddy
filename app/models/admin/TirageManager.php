@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../controler/functions/database.php';
 require_once __DIR__ . '/../../controler/functions/pricing.php';
 require_once __DIR__ . '/../../controler/functions/tirage.php';
+require_once __DIR__ . '/../../controler/functions/i18n.php';
 
 /**
  * Gestionnaire de tirages pour l'administration

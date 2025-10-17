@@ -1,6 +1,8 @@
 <?php
 require_once(__DIR__ . '/../vendor/autoload.php');
 require_once(__DIR__ . '/unimpose_logic.php');
+require_once(__DIR__ . '/../controler/functions/i18n.php');
+require_once(__DIR__ . '/../controler/functions/utilities.php');
 
 function unimpose_booklet($input_file, $output_file) {
     /**Transforme un livret en PDF page par page - avec nettoyage Ghostscript forcé*/
@@ -73,6 +75,9 @@ function unimpose_booklet($input_file, $output_file) {
 }
 
 function Action($conf) {
+    // Initialiser le système de traduction
+    I18nManager::getInstance();
+    
     $errors = array();
     $success = false;
     $result = '';
@@ -133,118 +138,14 @@ function Action($conf) {
             $errors[] = "Erreur lors du traitement : " . $e->getMessage();
         }
     
-    // Version simplifiée avec formulaire d'upload
-    $html = '<div class="container">';
-    $html .= '<div class="row"><div class="col-md-8 col-md-offset-2">';
-    
-    // En-tête
-    $html .= '<div class="page-header text-center" style="background: linear-gradient(135deg, #ffb3ba 0%, #ffdfba 100%); padding: 30px; border-radius: 10px; margin-bottom: 30px;">';
-    $html .= '<h1 style="color: #333; margin: 0;"><i class="fa fa-undo" style="margin-right: 15px;"></i>Désimposer un PDF</h1>';
-    $html .= '<p class="lead" style="color: #666; margin: 10px 0 0 0;">Transforme un livret imposé en pages normales</p>';
-    $html .= '</div>';
-    
-    // Messages d'erreur
-    if (!empty($errors)) {
-        $html .= '<div class="alert alert-danger">';
-        $html .= '<h4><i class="fa fa-exclamation-triangle"></i> Erreurs détectées :</h4><ul class="mb-0">';
-        foreach ($errors as $error) {
-            $html .= '<li>' . htmlspecialchars($error) . '</li>';
-        }
-        $html .= '</ul></div>';
-    }
-    
-    // Formulaire d'upload avec drag & drop
-    $html .= '<div class="panel panel-default"><div class="panel-body">';
-    $html .= '<form method="POST" enctype="multipart/form-data" id="unimposeForm">';
-    $html .= '<div id="dropZone" style="border: 3px dashed #ffb3ba; border-radius: 15px; padding: 40px; text-align: center; background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%); transition: all 0.3s ease; cursor: pointer;">';
-    $html .= '<div style="font-size: 48px; color: #ffb3ba; margin-bottom: 20px;"><i class="fa fa-file-pdf-o"></i></div>';
-    $html .= '<h3 style="color: #333; margin-bottom: 10px;">Glissez votre PDF ici</h3>';
-    $html .= '<p style="color: #666; margin-bottom: 20px;">ou cliquez pour sélectionner un fichier</p>';
-    $html .= '<input type="file" name="pdf" id="pdfInput" accept=".pdf" required style="display: none;">';
-    $html .= '<button type="button" id="selectFileBtn" class="btn btn-lg" style="background: #ffb3ba; border: none; color: white; padding: 12px 30px; border-radius: 25px; margin-bottom: 20px;">';
-    $html .= '<i class="fa fa-upload"></i> Sélectionner un PDF</button>';
-    $html .= '<div id="fileInfo" style="display: none; margin-top: 20px;">';
-    $html .= '<div class="alert alert-info"><i class="fa fa-file-pdf-o"></i> <span id="fileName"></span></div>';
-    $html .= '<button type="submit" class="btn btn-success btn-lg" style="padding: 12px 30px; border-radius: 25px;">';
-    $html .= '<i class="fa fa-magic"></i> Désimposer le PDF</button>';
-    $html .= '<button type="button" id="resetBtn" class="btn btn-default btn-lg" style="margin-left: 10px; padding: 12px 30px; border-radius: 25px;">';
-    $html .= '<i class="fa fa-times"></i> Annuler</button>';
-    $html .= '</div>';
-    $html .= '</div></form></div></div>';
-    
-    // JavaScript simplifié pour éviter les conflits
-    $html .= '<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const form = document.getElementById("unimposeForm");
-        const pdfInput = document.getElementById("pdfInput");
-        const selectFileBtn = document.getElementById("selectFileBtn");
-        const fileInfo = document.getElementById("fileInfo");
-        const fileName = document.getElementById("fileName");
-        const resetBtn = document.getElementById("resetBtn");
-        
-        // Clic sur le bouton
-        selectFileBtn.addEventListener("click", function(e) {
-            e.preventDefault();
-            pdfInput.click();
-        });
-        
-        // Sélection de fichier
-        pdfInput.addEventListener("change", function() {
-            if (this.files && this.files[0]) {
-                const file = this.files[0];
-                if (file.type !== "application/pdf") {
-                    alert("Veuillez sélectionner un fichier PDF valide.");
-                    this.value = "";
-                    return;
-                }
-                fileName.textContent = file.name + " (" + (file.size / 1024 / 1024).toFixed(2) + " MB)";
-                fileInfo.style.display = "block";
-            }
-        });
-        
-        // Reset
-        resetBtn.addEventListener("click", function(e) {
-            e.preventDefault();
-            pdfInput.value = "";
-            fileInfo.style.display = "none";
-        });
-        
-        // Soumission du formulaire - protection simple
-        form.addEventListener("submit", function(e) {
-            const submitBtn = this.querySelector("button[type=submit]");
-            if (submitBtn.disabled) {
-                e.preventDefault();
-                return false;
-            }
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = "Traitement en cours...";
-        });
-    });
-    </script>';
-    
-    // Informations
-    $html .= '<div class="panel panel-info"><div class="panel-heading">';
-    $html .= '<h3 class="panel-title"><i class="fa fa-info-circle"></i> Comment ça marche ?</h3>';
-    $html .= '</div><div class="panel-body">';
-    $html .= '<p>Cette fonction permet de transformer un PDF imposé (livret) en pages normales :</p>';
-    $html .= '<ul><li><strong>Pages A3 imposées</strong> → <strong>Pages A4 normales</strong></li>';
-    $html .= '<li><strong>Ordre de livret</strong> → <strong>Ordre séquentiel</strong></li>';
-    $html .= '<li><strong>2 pages par feuille</strong> → <strong>1 page par feuille</strong></li></ul>';
-    $html .= '</div></div>';
-    
-    // Résultat
-    if ($success && !empty($result)) {
-        $html .= '<div class="panel panel-success"><div class="panel-heading">';
-        $html .= '<h3 class="panel-title"><i class="fa fa-check-circle"></i> Désimposition réussie !</h3>';
-        $html .= '</div><div class="panel-body text-center">';
-        $html .= '<h4 style="color: #333; margin-bottom: 20px;">Votre PDF a été désimposé avec succès</h4>';
-        $html .= '<a href="' . htmlspecialchars($download_url) . '" class="btn btn-success btn-lg" download>';
-        $html .= '<i class="fa fa-download"></i> Télécharger le PDF désimposé</a>';
-        $html .= '</div></div>';
-    }
-    
-    $html .= '</div></div></div>';
-    return $html;
+    // Retourner le template avec les variables
+    return template(__DIR__ . "/../view/unimpose.html.php", [
+        'errors' => $errors,
+        'success' => $success,
+        'result' => $result,
+        'download_url' => $download_url
+    ]);
 }
+
 
 ?>

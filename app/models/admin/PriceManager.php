@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../controler/functions/database.php';
 require_once __DIR__ . '/../../controler/functions/pricing.php';
 require_once __DIR__ . '/../../controler/functions/consommation.php';
+require_once __DIR__ . '/../../controler/functions/i18n.php';
 
 /**
  * Gestionnaire de prix pour l'administration
@@ -74,7 +75,29 @@ class PriceManager {
      * Obtenir les consommables pour une machine
      */
     public function getConsommables($machine) {
-        return get_cons($machine);
+        $db = pdo_connect();
+        
+        // Cas spécial : Duplicopieur utilise toujours les données "dupli" pour compatibilité
+        if ($machine === 'Duplicopieur') {
+            $machine = 'dupli';
+        }
+        
+        // Vérifier si c'est un duplicopieur
+        if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
+            $query = $db->prepare('SELECT id, tambours FROM duplicopieurs WHERE (marque || " " || modele = ? OR marque = ?) AND actif = 1 LIMIT 1');
+        } else {
+            $query = $db->prepare('SELECT id, tambours FROM duplicopieurs WHERE (CONCAT(marque, " ", modele) = ? OR marque = ?) AND actif = 1 LIMIT 1');
+        }
+        $query->execute([$machine, $machine]);
+        $duplicopieur = $query->fetch(PDO::FETCH_ASSOC);
+        
+        if ($duplicopieur) {
+            // C'est un duplicopieur - utiliser toujours l'ancienne fonction avec les bons noms
+            return get_cons($machine);
+        } else {
+            // Ce n'est pas un duplicopieur, utiliser l'ancienne fonction
+            return get_cons($machine);
+        }
     }
     
     /**
@@ -211,9 +234,9 @@ class PriceManager {
         $prix_unite = isset($prix[$machine_key][$type]['unite']) ? $prix[$machine_key][$type]['unite'] : 0;
         $prix_pack = isset($prix[$machine_key][$type]['pack']) ? $prix[$machine_key][$type]['pack'] : 0;
         
-        // Récupérer les données de consommables
-        $query_cons = $db->prepare('SELECT * FROM cons WHERE machine = ? AND type = ? ORDER BY date ASC');
-        $query_cons->execute([strtolower($machine_name), $type]);
+        // Récupérer les données de consommables avec recherche insensible à la casse
+        $query_cons = $db->prepare('SELECT * FROM cons WHERE LOWER(machine) = LOWER(?) AND type = ? ORDER BY date ASC');
+        $query_cons->execute([$machine_name, $type]);
         
         $res = array();
         $i = 0;
@@ -223,6 +246,32 @@ class PriceManager {
             $res[$i]['nb_p'] = $result_cons->nb_p;
             $res[$i]['nb_m'] = $result_cons->nb_m;
             $i++;
+        }
+        
+        // Si pas de données avec le nom exact, essayer avec des variantes
+        if ($i == 0) {
+            $machine_variants = [
+                strtolower(str_replace(' ', '', $machine_name)),
+                'dupli',
+                'a3', 
+                'a4'
+            ];
+            
+            foreach ($machine_variants as $variant) {
+                $query_cons = $db->prepare('SELECT * FROM cons WHERE machine = ? AND type = ? ORDER BY date ASC');
+                $query_cons->execute([$variant, $type]);
+                
+                while ($result_cons = $query_cons->fetch(PDO::FETCH_OBJ)) {
+                    $res[$i]['date'] = intval($result_cons->date);
+                    $res[$i]['type'] = $result_cons->type;
+                    $res[$i]['nb_p'] = $result_cons->nb_p;
+                    $res[$i]['nb_m'] = $result_cons->nb_m;
+                    $i++;
+                }
+                
+                // Si on a trouvé des données, arrêter de chercher
+                if ($i > 0) break;
+            }
         }
         
         $max = count($res);
@@ -334,24 +383,58 @@ class PriceManager {
         $prix_pack = isset($prix[$machine_key][$tambour]['pack']) ? $prix[$machine_key][$tambour]['pack'] : 0;
         
         // Récupérer les changements de tambour dans cons
-        if ($tambour === 'tambour_noir') {
-            // Pour tambour_noir, chercher les changements de type "tambour" avec tambour = "tambour_noir" ou les anciens changements "encre"
-            $query_cons = $db->prepare('SELECT * FROM cons WHERE machine = ? AND ((type = "tambour" AND tambour = ?) OR type = "encre") ORDER BY date ASC');
-            $query_cons->execute([strtolower($machine_name), $tambour]);
-        } else {
-            // Pour les autres tambours, chercher les changements de type "tambour" avec le tambour spécifique
-            $query_cons = $db->prepare('SELECT * FROM cons WHERE machine = ? AND type = "tambour" AND tambour = ? ORDER BY date ASC');
-            $query_cons->execute([strtolower($machine_name), $tambour]);
-        }
-        
         $res = array();
         $i = 0;
+        
+        if ($tambour === 'tambour_noir') {
+            // Pour tambour_noir, chercher les changements de type "tambour" avec tambour = "tambour_noir" ou les anciens changements "encre"
+            // CORRECTION : Recherche insensible à la casse
+            $query_cons = $db->prepare('SELECT * FROM cons WHERE LOWER(machine) = LOWER(?) AND ((type = "tambour" AND tambour = ?) OR type = "encre") ORDER BY date ASC');
+            $query_cons->execute([$machine_name, $tambour]);
+        } else {
+            // Pour les autres tambours, chercher les changements de type "tambour" avec le tambour spécifique
+            // CORRECTION : Recherche insensible à la casse
+            $query_cons = $db->prepare('SELECT * FROM cons WHERE LOWER(machine) = LOWER(?) AND type = "tambour" AND tambour = ? ORDER BY date ASC');
+            $query_cons->execute([$machine_name, $tambour]);
+        }
+        
         while ($result_cons = $query_cons->fetch(PDO::FETCH_OBJ)) {
             $res[$i]['date'] = intval($result_cons->date);
             $res[$i]['type'] = $result_cons->type;
             $res[$i]['nb_p'] = $result_cons->nb_p;
             $res[$i]['nb_m'] = $result_cons->nb_m;
             $i++;
+        }
+        
+        // Si pas de données avec le nom exact, essayer avec des variantes
+        if ($i == 0) {
+            $machine_variants = [
+                strtolower(str_replace(' ', '', $machine_name)),
+                'dupli',
+                'a3', 
+                'a4'
+            ];
+            
+            foreach ($machine_variants as $variant) {
+                if ($tambour === 'tambour_noir') {
+                    $query_cons = $db->prepare('SELECT * FROM cons WHERE machine = ? AND ((type = "tambour" AND tambour = ?) OR type = "encre") ORDER BY date ASC');
+                    $query_cons->execute([$variant, $tambour]);
+                } else {
+                    $query_cons = $db->prepare('SELECT * FROM cons WHERE machine = ? AND type = "tambour" AND tambour = ? ORDER BY date ASC');
+                    $query_cons->execute([$variant, $tambour]);
+                }
+                
+                while ($result_cons = $query_cons->fetch(PDO::FETCH_OBJ)) {
+                    $res[$i]['date'] = intval($result_cons->date);
+                    $res[$i]['type'] = $result_cons->type;
+                    $res[$i]['nb_p'] = $result_cons->nb_p;
+                    $res[$i]['nb_m'] = $result_cons->nb_m;
+                    $i++;
+                }
+                
+                // Si on a trouvé des données, arrêter de chercher
+                if ($i > 0) break;
+            }
         }
         
         $max = count($res);
@@ -469,8 +552,8 @@ class PriceManager {
         }
         
         // Pour les couleurs individuelles, faire les vrais calculs
-        // Récupérer les données de consommables depuis la table cons
-        $query = $db->prepare('SELECT * FROM cons WHERE machine = ? AND type = ? ORDER BY date ASC');
+        // Récupérer les données de consommables depuis la table cons avec recherche insensible à la casse
+        $query = $db->prepare('SELECT * FROM cons WHERE LOWER(machine) = LOWER(?) AND type = ? ORDER BY date ASC');
         $query->execute(array($photocop_name, $couleur));
         
         $res = array();
@@ -577,10 +660,27 @@ class PriceManager {
                 $data['machines'][$display_name] = $types;
                 
                 // Récupérer les consommables pour ce duplicopieur spécifique
-                foreach ($dup_data['tambours'] as $tambour) {
-                    $data['cons'][$display_name][$tambour] = $this->getPrixTambourDuplicop($machine_name, $tambour, $dup_data['id']);
+                $consommables = $this->getConsommables($machine_name);
+                
+                // Adapter les données selon la structure retournée
+                if (isset($consommables['master']) && isset($consommables['encre'])) {
+                    // Structure ancienne (master/encre)
+                    $data['cons'][$display_name]['master'] = $consommables['master'];
+                    foreach ($dup_data['tambours'] as $tambour) {
+                        if ($tambour === 'tambour_noir') {
+                            $data['cons'][$display_name][$tambour] = $consommables['encre'];
+                        } else {
+                            // Pour les autres tambours, utiliser la méthode spécifique si pas de données génériques
+                            $data['cons'][$display_name][$tambour] = $this->getPrixTambourDuplicop($machine_name, $tambour, $dup_data['id']);
+                        }
+                    }
+                } else {
+                    // Structure nouvelle (par tambour)
+                    foreach ($dup_data['tambours'] as $tambour) {
+                        $data['cons'][$display_name][$tambour] = $consommables[$tambour] ?? $this->getPrixTambourDuplicop($machine_name, $tambour, $dup_data['id']);
+                    }
+                    $data['cons'][$display_name]['master'] = $consommables['master'] ?? $this->getPrixEncreDuplicop($machine_name, 'master');
                 }
-                $data['cons'][$display_name]['master'] = $this->getPrixEncreDuplicop($machine_name, 'master');
                 
                 // Ajouter les prix dans la structure attendue
                 $machine_key = 'dupli_' . $dup_data['id'];

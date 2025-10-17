@@ -172,7 +172,7 @@
       <div class="col-md-12">
         <h1 class="text-center">
           <i class="fa fa-question-circle" style="color: #007bff;"></i>
-          Aide & Questions-Réponses des Machines
+          <?php _e('aide_machines.title'); ?>
         </h1>
         <hr>
         
@@ -180,16 +180,16 @@
         <div class="search-section">
           <h2>
             <i class="fa fa-search"></i>
-            Rechercher une machine
+            <?php _e('aide_machines.search_machine'); ?>
           </h2>
           
           <div class="machine-selector">
             <form method="GET" id="machine-search-form">
               <input type="hidden" name="aide_machines" value="1">
               <div class="form-group">
-                <label for="machine-select">Sélectionner une machine :</label>
+                <label for="machine-select"><?php _e('aide_machines.select_machine'); ?> :</label>
                 <select class="form-control" id="machine-select" name="machine">
-                  <option value="">-- Choisir une machine --</option>
+                  <option value=""><?php _e('aide_machines.choose_machine'); ?></option>
                   <?php if(isset($all_machines) && !empty($all_machines)): ?>
                     <?php foreach($all_machines as $machine): ?>
                       <option value="<?= htmlspecialchars($machine) ?>" 
@@ -202,7 +202,7 @@
               </div>
               <div class="text-center">
                 <button type="submit" class="btn btn-primary btn-lg">
-                  <i class="fa fa-search"></i> Consulter les Q&A
+                  <i class="fa fa-search"></i> <?php _e('aide_machines.consult_qa'); ?>
                 </button>
               </div>
             </form>
@@ -216,7 +216,7 @@
               <div class="machine-header active" onclick="toggleMachineContent('selected')">
                 <h3>
                   <i class="fa fa-print"></i>
-                  Questions-Réponses pour : <?= htmlspecialchars($machine_selectionnee) ?>
+                  <?php _e('aide_machines.qa_for_machine'); ?> : <?= htmlspecialchars($machine_selectionnee) ?>
                   <span class="qa-count"><?= count($qa_selectionnees) ?></span>
                   <i class="fa fa-chevron-down"></i>
                 </h3>
@@ -244,9 +244,9 @@
         <?php elseif(isset($machine_selectionnee) && empty($qa_selectionnees)): ?>
           <div class="alert alert-warning text-center">
             <i class="fa fa-exclamation-triangle"></i>
-            <strong>Aucune Q&A disponible</strong> pour la machine "<?= htmlspecialchars($machine_selectionnee) ?>".
+            <strong><?php _e('aide_machines.no_qa_available'); ?></strong> pour la machine "<?= htmlspecialchars($machine_selectionnee) ?>".
             <br>
-            <small>Contactez l'administrateur pour ajouter des questions-réponses pour cette machine.</small>
+            <small><?php _e('aide_machines.no_qa_available_desc'); ?></small>
           </div>
         <?php endif; ?>
         
@@ -255,7 +255,7 @@
           <div class="qa-container">
             <h2 class="text-center">
               <i class="fa fa-list"></i>
-              Toutes les Questions-Réponses disponibles
+              <?php _e('aide_machines.all_qa_available'); ?>
             </h2>
             
             <?php foreach($qa_by_machine as $machine_name => $qa_list): ?>
@@ -292,9 +292,9 @@
         <?php else: ?>
           <div class="alert alert-info text-center">
             <i class="fa fa-info-circle"></i>
-            Aucune question-réponse n'est encore disponible pour les machines.
+            <?php _e('aide_machines.no_qa_yet'); ?>
             <br>
-            <small>Contactez l'administrateur pour ajouter des informations d'aide.</small>
+            <small><?php _e('aide_machines.no_qa_yet_desc'); ?></small>
           </div>
         <?php endif; ?>
         
@@ -303,14 +303,14 @@
           <div class="col-md-12">
             <div class="panel panel-default">
               <div class="panel-heading">
-                <h3 class="panel-title"><i class="fa fa-arrow-left"></i> Navigation</h3>
+                <h3 class="panel-title"><i class="fa fa-arrow-left"></i> <?php _e('aide_machines.navigation'); ?></h3>
               </div>
               <div class="panel-body">
                 <a href="?accueil" class="btn btn-primary">
-                  <i class="fa fa-arrow-left"></i> Retour à l'accueil
+                  <i class="fa fa-arrow-left"></i> <?php _e('aide_machines.back_to_home'); ?>
                 </a>
                 <a href="?tirage_multimachines" class="btn btn-success">
-                  <i class="fa fa-print"></i> Nouveau Tirage
+                  <i class="fa fa-print"></i> <?php _e('aide_machines.new_print'); ?>
                 </a>
               </div>
             </div>

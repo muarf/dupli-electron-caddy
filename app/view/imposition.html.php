@@ -253,8 +253,8 @@
     <div class="container">
         <div class="main-container">
             <div class="page-header text-center">
-                <h1><i class="fa fa-magic"></i> Imposer un PDF</h1>
-                <div class="subtitle">Créer un livret A3 à partir de pages A4</div>
+                <h1><i class="fa fa-magic"></i> <?php _e('imposition.title'); ?></h1>
+                <div class="subtitle"><?php _e('imposition.subtitle'); ?></div>
             </div>
 
             <?php if ($success): ?>
@@ -361,7 +361,7 @@
                     <?php if ($download_url): ?>
                         <div class="text-center">
                             <a href="<?= htmlspecialchars($download_url) ?>" target="_blank" class="btn btn-download" onclick="openPdfInApp('<?= htmlspecialchars($download_url) ?>')">
-                                <i class="fa fa-download"></i> Télécharger le PDF imposé
+                                <i class="fa fa-download"></i> <?php _e('imposition.download_imposed'); ?>
                             </a>
                         </div>
                     <?php endif; ?>
@@ -397,19 +397,19 @@
                             <i class="fa fa-cloud-upload"></i>
                         </div>
                         <div class="file-upload-text" id="uploadText">
-                            Glissez-déposez votre PDF ici
+                            <?php _e('imposition.drag_drop'); ?>
                         </div>
                         <div class="file-upload-subtext" id="uploadSubtext">
-                            ou cliquez pour sélectionner un fichier
+                            <?php _e('imposition.click_select'); ?>
                         </div>
                         <input type="file" name="pdf" id="pdf" accept="application/pdf" required style="display: none;">
                     </div>
 
                     <div class="form-group">
-                        <label for="imposition_type"><i class="fa fa-cogs"></i> Type d'imposition :</label>
+                        <label for="imposition_type"><i class="fa fa-cogs"></i> <?php _e('imposition.imposition_type'); ?> :</label>
                         <select name="imposition_type" id="imposition_type" class="form-control">
-                            <option value="a5">8 pages A5 par A3 (4 recto + 4 verso)</option>
-                            <option value="a6">16 pages A6 par A3 (8 recto + 8 verso)</option>
+                            <option value="a5"><?php _e('imposition.a5_pages'); ?></option>
+                            <option value="a6"><?php _e('imposition.a6_pages'); ?></option>
                         </select>
                     </div>
 
@@ -418,13 +418,13 @@
                             <div class="col-md-6">
                                 <label for="preview">
                                     <input type="checkbox" name="preview" id="preview">
-                                    <i class="fa fa-eye"></i> Prévisualiser avec numéros de page
+                                    <i class="fa fa-eye"></i> <?php _e('imposition.preview_pages'); ?>
                                 </label>
                             </div>
                             <div class="col-md-6">
                                 <label for="force_resize">
                                     <input type="checkbox" name="force_resize" id="force_resize">
-                                    <i class="fa fa-expand"></i> Forcer le redimensionnement
+                                    <i class="fa fa-expand"></i> <?php _e('imposition.force_resize'); ?>
                                 </label>
                             </div>
                         </div>
@@ -435,44 +435,44 @@
                             <div class="col-md-12">
                                 <label for="add_crop_marks">
                                     <input type="checkbox" name="add_crop_marks" id="add_crop_marks">
-                                    <i class="fa fa-scissors"></i> Ajouter les traits de coupe
+                                    <i class="fa fa-scissors"></i> <?php _e('imposition.add_crop_marks'); ?>
                                 </label>
                             </div>
                         </div>
                         
                         <div id="crop_marks_options" style="display: none; margin-top: 15px; padding-left: 30px;">
                             <div class="form-group">
-                                <label for="imposition_mode"><i class="fa fa-book"></i> Mode d'imposition :</label>
+                                <label for="imposition_mode"><i class="fa fa-book"></i> <?php _e('imposition.imposition_mode'); ?> :</label>
                                 <select name="imposition_mode" id="imposition_mode" class="form-control">
-                                    <option value="brochure">Mode brochure (sans marges intérieures)</option>
-                                    <option value="livre">Mode livre (avec marges intérieures)</option>
+                                    <option value="brochure"><?php _e('imposition.brochure_mode'); ?></option>
+                                    <option value="livre"><?php _e('imposition.book_mode'); ?></option>
                                 </select>
                             </div>
 
                             <div class="form-group">
-                                <label for="bleed_mode"><i class="fa fa-arrows-alt"></i> Gestion du format :</label>
+                                <label for="bleed_mode"><i class="fa fa-arrows-alt"></i> <?php _e('imposition.format_management'); ?> :</label>
                                 <select name="bleed_mode" id="bleed_mode" class="form-control">
-                                    <option value="fullsize">Fond perdu (pages en taille réelle)</option>
-                                    <option value="resize">Redimensionner (réduire les pages)</option>
+                                    <option value="fullsize"><?php _e('imposition.bleed_mode'); ?></option>
+                                    <option value="resize"><?php _e('imposition.resize_mode'); ?></option>
                                 </select>
                             </div>
 
                             <div class="form-group">
-                                <label for="bleed_size"><i class="fa fa-ruler"></i> Taille marge de coupe (mm) :</label>
+                                <label for="bleed_size"><i class="fa fa-ruler"></i> <?php _e('imposition.bleed_size'); ?> :</label>
                                 <input type="number" name="bleed_size" id="bleed_size" class="form-control" value="3" min="1" max="10" step="0.5">
                             </div>
 
                             <div class="form-group">
-                                <label for="crop_marks_type"><i class="fa fa-scissors"></i> Type de traits de coupe :</label>
+                                <label for="crop_marks_type"><i class="fa fa-scissors"></i> <?php _e('imposition.crop_marks_type'); ?> :</label>
                                 <select name="crop_marks_type" id="crop_marks_type" class="form-control">
-                                    <option value="normal">Traits de coupe normaux (coins)</option>
-                                    <option value="central">Traits de coupe centraux (A3→A4)</option>
-                                    <option value="both">Les deux types</option>
+                                    <option value="normal"><?php _e('imposition.normal_crop_marks'); ?></option>
+                                    <option value="central"><?php _e('imposition.central_crop_marks'); ?></option>
+                                    <option value="both"><?php _e('imposition.both_crop_marks'); ?></option>
                                 </select>
                                 <small class="help-block text-muted">
-                                    <strong>Normaux :</strong> Traits aux 4 coins<br>
-                                    <strong>Centraux :</strong> Trait au milieu selon orientation (21cm)<br>
-                                    <strong>Les deux :</strong> Combinaison des deux
+                                    <strong><?php _e('imposition.normal_label'); ?> :</strong> <?php _e('imposition.normal_desc'); ?><br>
+                                    <strong><?php _e('imposition.central_label'); ?> :</strong> <?php _e('imposition.central_desc'); ?><br>
+                                    <strong><?php _e('imposition.both_label'); ?> :</strong> <?php _e('imposition.both_desc'); ?>
                                 </small>
                             </div>
                         </div>
@@ -480,7 +480,7 @@
 
                     <div class="text-center">
                         <button type="submit" class="btn btn-impose">
-                            <i class="fa fa-magic"></i> Imposer le PDF
+                            <i class="fa fa-magic"></i> <?php _e('imposition.impose_pdf'); ?>
                         </button>
                     </div>
                 </form>

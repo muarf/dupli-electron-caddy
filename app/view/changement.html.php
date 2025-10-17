@@ -2,15 +2,15 @@
 // Messages de succès/erreur
 if(isset($success_message)): ?>
     <div class="alert alert-success">
-        <strong>Succès !</strong> <?= htmlspecialchars($success_message) ?>
+        <strong><?php _e('changement.success_title'); ?></strong> <?= htmlspecialchars($success_message) ?>
         <br><br>
         <a href="?accueil" class="btn btn-primary">
-            <i class="fa fa-home"></i> Retour à l'accueil
+            <i class="fa fa-home"></i> <?php _e('changement.back_home'); ?>
         </a>
     </div>
 <?php elseif(isset($error_message)): ?>
     <div class="alert alert-danger">
-        <strong>Erreur :</strong> <?= htmlspecialchars($error_message) ?>
+        <strong><?php _e('changement.error_title'); ?>:</strong> <?= htmlspecialchars($error_message) ?>
     </div>
 <?php endif; ?>
 
@@ -20,7 +20,7 @@ if(isset($success_message)): ?>
         <div class="row">
             <div class="col-md-12">
                 <h1 class="text-center">
-                    <i class="fa fa-tint"></i> Signalement de changement de consommable
+                    <i class="fa fa-tint"></i> <?php _e('changement.title'); ?>
                 </h1>
                 <hr>
                 
@@ -44,7 +44,7 @@ if(isset($success_message)): ?>
                 
                 <form class="form-horizontal" action="" method="post" id="changement-form">
                     <fieldset>
-                        <legend><i class="fa fa-cog"></i> Informations du changement</legend>
+                        <legend><i class="fa fa-cog"></i> <?php _e('changement.change_info'); ?></legend>
                         
                         <!-- Sélection de la machine -->
                         <div class="form-group">
@@ -276,6 +276,7 @@ $(document).ready(function() {
                         console.log('Erreur lors du chargement des compteurs');
                     });
             } else {
+                // C'est un photocopieur - cacher le champ masters
                 mastersGroup.hide();
                 tambourGroup.hide();
                 $('#nb_m').prop('required', false);
@@ -310,13 +311,28 @@ $(document).ready(function() {
         
         // Gestion du champ masters pour les duplicopieurs
         if (duplicopieursNames.indexOf(machine) !== -1) {
+            // Toujours afficher le champ masters pour les duplicopieurs
+            $('#masters-group').show();
+            
             if (type === 'master') {
                 $('#nb_m').prop('required', true);
-                $('#masters-group').show();
             } else {
+                // Pour tous les autres types (tambour, encre), le champ masters est optionnel
                 $('#nb_m').prop('required', false);
-                $('#masters-group').hide();
             }
+            
+            // Récupérer la dernière valeur de masters
+            $.get('models/changement.php?ajax=get_last_counters&machine=' + encodeURIComponent(machine), function(data) {
+                if (data.success && data.counters && data.counters.master_av !== undefined) {
+                    $('#nb_m').val(data.counters.master_av);
+                }
+            }).fail(function() {
+                console.log('Erreur lors de la récupération des compteurs');
+            });
+        } else {
+            // Pour les photocopieurs, cacher le champ masters
+            $('#nb_m').prop('required', false);
+            $('#masters-group').hide();
         }
     });
     

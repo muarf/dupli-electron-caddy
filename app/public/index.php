@@ -73,6 +73,22 @@ session_start();
 include(__DIR__ . '/../controler/func.php');
 // conf.php sera inclus après l'exécution du modèle pour avoir la bonne base active
 
+// Initialiser le système d'internationalisation
+require_once __DIR__ . '/../controler/functions/i18n.php';
+
+// Gérer le changement de langue
+if (isset($_GET['lang']) && in_array($_GET['lang'], ['fr', 'en', 'es', 'de'])) {
+    setLanguage($_GET['lang']);
+    
+    // Si il n'y a que le paramètre lang (pas de page spécifique), rediriger vers accueil
+    if (count($_GET) === 1) {
+        header('Location: ?accueil&lang=' . $_GET['lang']);
+        exit;
+    }
+    
+    // Sinon, ne pas rediriger - continuer avec la page demandée
+    // (le paramètre lang est déjà dans l'URL)
+}
 
 $page = key($_GET) ?? 'accueil';
 
@@ -149,7 +165,7 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','installation','setup','setup_save','setup_upload','stats','imposition','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','taux_remplissage','aide_machines','error');
+$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','stats','imposition','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','taux_remplissage','aide_machines','error','lang');
 
 if(in_array($page, $page_secure,true)){
     

@@ -69,7 +69,7 @@
 <body>
     <div class="setup-container">
         <div class="text-center mb-4">
-            <h1>🚀 Configuration initiale de Dupli</h1>
+            <h1>🚀 <?php _e('setup.title'); ?></h1>
             <p class="lead"><?= $mode === 'choice' ? 'Choisissez comment configurer votre application' : ($mode === 'upload' ? 'Importer une base de données existante' : 'Ajoutez vos machines pour commencer') ?></p>
         </div>
 

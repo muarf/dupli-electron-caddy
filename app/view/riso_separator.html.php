@@ -61,8 +61,8 @@ canvas {
 <div class="riso-container">
     <!-- En-tête -->
     <div class="riso-header">
-        <h1><i class="fa fa-palette"></i> Séparateur de Couleur Riso</h1>
-        <p>Séparez vos images couleur en couches pour impression multi-tambours</p>
+        <h1><i class="fa fa-palette"></i> <?php _e('riso_separator.title'); ?></h1>
+        <p><?php _e('riso_separator.subtitle'); ?></p>
     </div>
 
     <!-- Zone d'upload -->
@@ -71,11 +71,11 @@ canvas {
             <div style="font-size: 64px; color: #ff6b9d; margin-bottom: 20px;">
                 <i class="fa fa-cloud-upload"></i>
             </div>
-            <h3>Glissez votre image ici</h3>
-            <p class="text-muted">ou cliquez pour sélectionner</p>
+            <h3><?php _e('riso_separator.drag_drop'); ?></h3>
+            <p class="text-muted"><?php _e('riso_separator.click_select'); ?></p>
             <input type="file" id="imageInput" accept="image/png,image/jpeg,image/jpg" style="display: none;">
             <button type="button" class="btn btn-lg" style="background: #ff6b9d; color: white; border: none; padding: 12px 30px; border-radius: 25px; margin-top: 15px;">
-                <i class="fa fa-upload"></i> Sélectionner une image
+                <i class="fa fa-upload"></i> <?php _e('riso_separator.select_image'); ?>
             </button>
         </div>
     </div>
@@ -85,12 +85,12 @@ canvas {
         <!-- Image originale -->
         <div class="panel panel-default">
             <div class="panel-heading">
-                <h4><i class="fa fa-image"></i> Image originale</h4>
+                <h4><i class="fa fa-image"></i> <?php _e('riso_separator.original_image'); ?></h4>
             </div>
             <div class="panel-body text-center">
                 <canvas id="originalCanvas" style="cursor: crosshair;"></canvas>
                 <p class="text-muted" style="margin-top: 10px;">
-                    <i class="fa fa-info-circle"></i> Cliquez sur l'image pour isoler une couleur avec la pipette
+                    <i class="fa fa-info-circle"></i> <?php _e('riso_separator.click_to_isolate_color'); ?>
                 </p>
             </div>
         </div>
@@ -98,40 +98,40 @@ canvas {
         <!-- Modes et Outils avancés -->
         <div class="panel panel-warning">
             <div class="panel-heading">
-                <h4><i class="fa fa-magic"></i> Modes et Outils</h4>
+                <h4><i class="fa fa-magic"></i> <?php _e('riso_separator.modes_and_tools'); ?></h4>
             </div>
             <div class="panel-body">
                 <div class="row">
                     <!-- Mode de séparation -->
                     <div class="col-md-4">
-                        <h5><i class="fa fa-cogs"></i> Mode de séparation</h5>
+                        <h5><i class="fa fa-cogs"></i> <?php _e('riso_separator.separation_mode'); ?></h5>
                         <div class="btn-group-vertical btn-block">
                             <button class="btn btn-default" id="modeRGB" onclick="switchMode('RGB')">
-                                <i class="fa fa-circle-o"></i> RGB (3 canaux)
+                                <i class="fa fa-circle-o"></i> <?php _e('riso_separator.rgb_3_channels'); ?>
                             </button>
                             <button class="btn btn-default" id="modeCMYK" onclick="switchMode('CMYK')">
-                                <i class="fa fa-circle-o"></i> CMYK (4 canaux)
+                                <i class="fa fa-circle-o"></i> <?php _e('riso_separator.cmyk_4_channels'); ?>
                             </button>
                             <button class="btn btn-default" id="mode2Color" onclick="switchMode('2COLOR')">
-                                <i class="fa fa-circle-o"></i> 2 Tambours (N&B)
+                                <i class="fa fa-circle-o"></i> <?php _e('riso_separator.2_drums_nb'); ?>
                             </button>
                         </div>
                     </div>
 
                     <!-- Outils -->
                     <div class="col-md-4">
-                        <h5><i class="fa fa-wrench"></i> Outils</h5>
+                        <h5><i class="fa fa-wrench"></i> <?php _e('riso_separator.tools'); ?></h5>
                         <button class="btn btn-primary btn-block" id="pipetteBtn" onclick="togglePipette()">
-                            <i class="fa fa-eyedropper"></i> Pipette (Isoler couleur)
+                            <i class="fa fa-eyedropper"></i> <?php _e('riso_separator.pipette_isolate_color'); ?>
                         </button>
                         <div id="pipetteInfo" style="display: none; margin-top: 10px;">
                             <div class="alert alert-info">
-                                <small>Couleur sélectionnée: <span id="pickedColor" style="display: inline-block; width: 30px; height: 30px; border: 1px solid #000; vertical-align: middle;"></span></small>
+                                <small><?php _e('riso_separator.selected_color'); ?> <span id="pickedColor" style="display: inline-block; width: 30px; height: 30px; border: 1px solid #000; vertical-align: middle;"></span></small>
                                 <br>
-                                <label>Tolérance: <span id="toleranceValue">30</span></label>
+                                <label><?php _e('riso_separator.tolerance_label'); ?> <span id="toleranceValue">30</span></label>
                                 <input type="range" class="form-control" id="toleranceSlider" min="0" max="100" value="30">
                                 <button class="btn btn-sm btn-success btn-block" style="margin-top: 10px;" onclick="applyPipette()">
-                                    <i class="fa fa-check"></i> Valider et créer la couche
+                                    <i class="fa fa-check"></i> <?php _e('riso_separator.validate_create_layer'); ?>
                                 </button>
                             </div>
                         </div>
@@ -139,25 +139,25 @@ canvas {
 
                     <!-- Effets -->
                     <div class="col-md-4">
-                        <h5><i class="fa fa-adjust"></i> Effets</h5>
+                        <h5><i class="fa fa-adjust"></i> <?php _e('riso_separator.effects'); ?></h5>
                         <button class="btn btn-warning btn-block" onclick="resetChannels()">
-                            <i class="fa fa-undo"></i> Réinitialiser les canaux
+                            <i class="fa fa-undo"></i> <?php _e('riso_separator.reset_channels'); ?>
                         </button>
                         <hr>
                         <button class="btn btn-info btn-block" onclick="applyPosterization()">
-                            <i class="fa fa-th"></i> Postériser
+                            <i class="fa fa-th"></i> <?php _e('riso_separator.posterize_button'); ?>
                         </button>
                         <div style="margin-top: 10px;">
-                            <label>Niveaux: <span id="posterLevels">4</span></label>
+                            <label><?php _e('riso_separator.levels'); ?> <span id="posterLevels">4</span></label>
                             <input type="range" class="form-control" id="posterSlider" min="2" max="10" value="4">
                         </div>
                         <div style="margin-top: 10px;">
-                            <label>Taille des points de trame: <span id="halftoneSize">3</span> px</label>
+                            <label><?php _e('riso_separator.halftone_dot_size'); ?> <span id="halftoneSize">3</span> <?php _e('riso_separator.halftone_dot_size_px'); ?></label>
                             <input type="range" class="form-control" id="halftoneSlider" min="1" max="10" value="3">
-                            <small class="text-muted">1=trame fine (400 DPI), 10=trame grossière</small>
+                            <small class="text-muted"><?php _e('riso_separator.halftone_fine_coarse'); ?></small>
                         </div>
                         <button class="btn btn-info btn-block" style="margin-top: 10px;" onclick="applyHalftoneEffect()">
-                            <i class="fa fa-th-large"></i> Halftone (trames)
+                            <i class="fa fa-th-large"></i> <?php _e('riso_separator.halftone_trames'); ?>
                         </button>
                     </div>
                 </div>
@@ -168,30 +168,30 @@ canvas {
         <div id="normalChannelsSection">
             <div class="panel panel-info">
                 <div class="panel-heading">
-                    <h4><i class="fa fa-sliders"></i> Configuration des couches</h4>
+                    <h4><i class="fa fa-sliders"></i> <?php _e('riso_separator.layer_configuration'); ?></h4>
                 </div>
                 <div class="panel-body">
                     <div class="row">
                         <!-- Canal Rouge -->
                         <div class="col-md-4">
                             <div class="channel-panel">
-                                <h5><i class="fa fa-circle" style="color: #ff0000;"></i> Canal Rouge</h5>
+                                <h5><i class="fa fa-circle" style="color: #ff0000;"></i> <?php _e('riso_separator.red_channel'); ?></h5>
                                 <canvas id="redCanvas" class="img-thumbnail"></canvas>
                                 <div class="layer-controls">
-                                    <label>Tambour:</label>
+                                    <label><?php _e('riso_separator.drum'); ?></label>
                                     <select class="form-control tambour-select" data-channel="red">
-                                        <option value="red">Rouge</option>
-                                        <option value="black">Noir</option>
-                                        <option value="blue">Bleu</option>
-                                        <option value="yellow">Jaune</option>
-                                        <option value="green">Vert</option>
-                                        <option value="violet">Violet</option>
-                                        <option value="none">Aucun</option>
+                                        <option value="red"><?php _e('riso_separator.red'); ?></option>
+                                        <option value="black"><?php _e('riso_separator.black'); ?></option>
+                                        <option value="blue"><?php _e('riso_separator.blue'); ?></option>
+                                        <option value="yellow"><?php _e('riso_separator.yellow'); ?></option>
+                                        <option value="green"><?php _e('riso_separator.green'); ?></option>
+                                        <option value="violet"><?php _e('riso_separator.violet'); ?></option>
+                                        <option value="none"><?php _e('riso_separator.none'); ?></option>
                                     </select>
-                                    <label style="margin-top: 10px;">Opacité: <span id="redOpacity">100</span>%</label>
+                                    <label style="margin-top: 10px;"><?php _e('riso_separator.opacity_label'); ?> <span id="redOpacity">100</span>%</label>
                                     <input type="range" class="form-control" id="redOpacitySlider" min="0" max="100" value="100">
                                     <button class="btn btn-sm btn-success btn-block" style="margin-top: 10px;" onclick="exportChannel('red')">
-                                        <i class="fa fa-download"></i> Export PNG
+                                        <i class="fa fa-download"></i> <?php _e('riso_separator.export_png'); ?>
                                     </button>
                                 </div>
                             </div>
@@ -200,10 +200,10 @@ canvas {
                         <!-- Canal Vert -->
                         <div class="col-md-4">
                             <div class="channel-panel">
-                                <h5><i class="fa fa-circle" style="color: #00ff00;"></i> Canal Vert</h5>
+                                <h5><i class="fa fa-circle" style="color: #00ff00;"></i> <?php _e('riso_separator.green_channel'); ?></h5>
                                 <canvas id="greenCanvas" class="img-thumbnail"></canvas>
                                 <div class="layer-controls">
-                                    <label>Tambour:</label>
+                                    <label><?php _e('riso_separator.drum'); ?></label>
                                     <select class="form-control tambour-select" data-channel="green">
                                         <option value="green">Vert</option>
                                         <option value="black">Noir</option>
@@ -216,7 +216,7 @@ canvas {
                                     <label style="margin-top: 10px;">Opacité: <span id="greenOpacity">100</span>%</label>
                                     <input type="range" class="form-control" id="greenOpacitySlider" min="0" max="100" value="100">
                                     <button class="btn btn-sm btn-success btn-block" style="margin-top: 10px;" onclick="exportChannel('green')">
-                                        <i class="fa fa-download"></i> Export PNG
+                                        <i class="fa fa-download"></i> <?php _e('riso_separator.export_png'); ?>
                                     </button>
                                 </div>
                             </div>
@@ -225,10 +225,10 @@ canvas {
                         <!-- Canal Bleu -->
                         <div class="col-md-4">
                             <div class="channel-panel">
-                                <h5><i class="fa fa-circle" style="color: #0000ff;"></i> Canal Bleu</h5>
+                                <h5><i class="fa fa-circle" style="color: #0000ff;"></i> <?php _e('riso_separator.blue_channel'); ?></h5>
                                 <canvas id="blueCanvas" class="img-thumbnail"></canvas>
                                 <div class="layer-controls">
-                                    <label>Tambour:</label>
+                                    <label><?php _e('riso_separator.drum'); ?></label>
                                     <select class="form-control tambour-select" data-channel="blue">
                                         <option value="blue">Bleu</option>
                                         <option value="black">Noir</option>
@@ -241,7 +241,7 @@ canvas {
                                     <label style="margin-top: 10px;">Opacité: <span id="blueOpacity">100</span>%</label>
                                     <input type="range" class="form-control" id="blueOpacitySlider" min="0" max="100" value="100">
                                     <button class="btn btn-sm btn-success btn-block" style="margin-top: 10px;" onclick="exportChannel('blue')">
-                                        <i class="fa fa-download"></i> Export PNG
+                                        <i class="fa fa-download"></i> <?php _e('riso_separator.export_png'); ?>
                                     </button>
                                 </div>
                             </div>
@@ -250,10 +250,10 @@ canvas {
                         <!-- Canal Black (4ème canal pour CMYK) - Caché par défaut -->
                         <div class="col-md-4" id="blackChannelPanel" style="display: none;">
                             <div class="channel-panel">
-                                <h5><i class="fa fa-circle" style="color: #000000;"></i> Canal Black</h5>
+                                <h5><i class="fa fa-circle" style="color: #000000;"></i> <?php _e('riso_separator.black_channel'); ?></h5>
                                 <canvas id="blackCanvas" class="img-thumbnail"></canvas>
                                 <div class="layer-controls">
-                                    <label>Tambour:</label>
+                                    <label><?php _e('riso_separator.drum'); ?></label>
                                     <select class="form-control tambour-select" data-channel="black">
                                         <option value="black">Noir</option>
                                         <option value="red">Rouge</option>
@@ -266,7 +266,7 @@ canvas {
                                     <label style="margin-top: 10px;">Opacité: <span id="blackOpacity">100</span>%</label>
                                     <input type="range" class="form-control" id="blackOpacitySlider" min="0" max="100" value="100">
                                     <button class="btn btn-sm btn-success btn-block" style="margin-top: 10px;" onclick="exportChannel('black')">
-                                        <i class="fa fa-download"></i> Export PNG
+                                        <i class="fa fa-download"></i> <?php _e('riso_separator.export_png'); ?>
                                     </button>
                                 </div>
                             </div>
@@ -278,16 +278,16 @@ canvas {
             <!-- Prévisualisation superposition -->
             <div class="panel panel-success">
                 <div class="panel-heading">
-                    <h4><i class="fa fa-eye"></i> Prévisualisation - Superposition des couches</h4>
+                    <h4><i class="fa fa-eye"></i> <?php _e('riso_separator.preview_layer_superposition'); ?></h4>
                 </div>
                 <div class="panel-body text-center">
                     <canvas id="previewCanvas" class="preview-canvas"></canvas>
                     <div style="margin-top: 20px;">
                         <button class="btn btn-primary btn-lg" onclick="updatePreview()">
-                            <i class="fa fa-refresh"></i> Actualiser la prévisualisation
+                            <i class="fa fa-refresh"></i> <?php _e('riso_separator.refresh_preview'); ?>
                         </button>
                         <button class="btn btn-success btn-lg" onclick="exportAll()">
-                            <i class="fa fa-download"></i> Exporter toutes les couches (ZIP)
+                            <i class="fa fa-download"></i> <?php _e('riso_separator.export_all_layers_zip'); ?>
                         </button>
                     </div>
                 </div>
@@ -299,13 +299,13 @@ canvas {
             <!-- Prévisualisation des couches isolées -->
             <div class="panel panel-success">
                 <div class="panel-heading">
-                    <h4><i class="fa fa-eye"></i> Prévisualisation - Couches isolées</h4>
+                    <h4><i class="fa fa-eye"></i> <?php _e('riso_separator.preview_isolated_layers'); ?></h4>
                 </div>
                 <div class="panel-body text-center">
                     <canvas id="isolatedPreviewCanvas" class="preview-canvas"></canvas>
                     <div style="margin-top: 20px;">
                         <button class="btn btn-success btn-lg" onclick="exportAllIsolated()">
-                            <i class="fa fa-download"></i> Exporter toutes les couches (ZIP)
+                            <i class="fa fa-download"></i> <?php _e('riso_separator.export_all_layers_zip'); ?>
                         </button>
                     </div>
                 </div>
@@ -314,7 +314,7 @@ canvas {
             <!-- Liste des couches isolées -->
             <div class="panel panel-warning">
                 <div class="panel-heading">
-                    <h4><i class="fa fa-eyedropper"></i> Couches isolées par pipette</h4>
+                    <h4><i class="fa fa-eyedropper"></i> <?php _e('riso_separator.isolated_layers_by_pipette'); ?></h4>
                 </div>
                 <div class="panel-body">
                     <div id="isolatedLayersContainer">
@@ -327,10 +327,10 @@ canvas {
         <!-- Boutons d'action -->
         <div class="text-center">
             <button class="btn btn-default btn-lg" onclick="resetSeparator()">
-                <i class="fa fa-refresh"></i> Nouvelle image
+                <i class="fa fa-refresh"></i> <?php _e('riso_separator.new_image'); ?>
             </button>
             <a href="?accueil" class="btn btn-default btn-lg">
-                <i class="fa fa-home"></i> Retour à l'accueil
+                <i class="fa fa-home"></i> <?php _e('riso_separator.back_to_home'); ?>
             </a>
         </div>
     </div>
@@ -338,39 +338,37 @@ canvas {
     <!-- Panneau d'information -->
     <div class="panel panel-info">
         <div class="panel-heading">
-            <h4><i class="fa fa-info-circle"></i> Guide d'utilisation</h4>
+            <h4><i class="fa fa-info-circle"></i> <?php _e('riso_separator.usage_guide'); ?></h4>
         </div>
         <div class="panel-body">
-            <h5><i class="fa fa-book"></i> Workflow de base</h5>
+            <h5><i class="fa fa-book"></i> <?php _e('riso_separator.basic_workflow'); ?></h5>
             <ol>
-                <li><strong>Uploadez</strong> une image couleur (PNG ou JPG)</li>
-                <li><strong>Choisissez un mode</strong> : RGB (3 canaux), CMYK (4 canaux), ou 2 Tambours (N&B)</li>
-                <li><strong>Assignez un tambour</strong> à chaque canal</li>
-                <li><strong>Ajustez l'opacité</strong> de chaque couche</li>
-                <li><strong>Prévisualisez</strong> le résultat final</li>
-                <li><strong>Exportez</strong> les couches pour impression</li>
+                <li><?php _e('riso_separator.step1'); ?></li>
+                <li><?php _e('riso_separator.step2'); ?></li>
+                <li><?php _e('riso_separator.step3'); ?></li>
+                <li><?php _e('riso_separator.step4'); ?></li>
+                <li><?php _e('riso_separator.step5'); ?></li>
+                <li><?php _e('riso_separator.step6'); ?></li>
             </ol>
             
-            <h5><i class="fa fa-magic"></i> Fonctionnalités avancées</h5>
+            <h5><i class="fa fa-magic"></i> <?php _e('riso_separator.advanced_features'); ?></h5>
             <ul>
-                <li><strong>Mode RGB</strong> : Sépare en Rouge, Vert, Bleu (standard)</li>
-                <li><strong>Mode CMYK</strong> : Sépare en Cyan, Magenta, Jaune, Noir (imprimerie)</li>
-                <li><strong>Mode 2 Tambours</strong> : Pour images N&B, sépare tons clairs/foncés</li>
-                <li><strong>Pipette</strong> : Cliquez sur une couleur pour l'isoler avec tolérance réglable</li>
-                <li><strong>Postériser</strong> : Réduit les niveaux de gris (effet sérigraphie)</li>
-                <li><strong>Halftone</strong> : Applique des trames de points (effet Riso authentique)</li>
+                <li><?php _e('riso_separator.rgb_mode'); ?></li>
+                <li><?php _e('riso_separator.cmyk_mode'); ?></li>
+                <li><?php _e('riso_separator.two_drums_mode'); ?></li>
+                <li><?php _e('riso_separator.pipette'); ?></li>
+                <li><?php _e('riso_separator.posterize'); ?></li>
+                <li><?php _e('riso_separator.halftone'); ?></li>
             </ul>
             
             <div class="alert alert-success">
-                <i class="fa fa-lightbulb-o"></i> <strong>Astuce:</strong> 
-                Les couches sont exportées en niveaux de gris. Sur la Riso, imprimez chaque couche 
-                avec le tambour correspondant. La superposition créera l'image couleur finale !
+                <i class="fa fa-lightbulb-o"></i> <strong><?php _e('riso_separator.tip_title'); ?>:</strong> 
+                <?php _e('riso_separator.tip_text'); ?>
             </div>
             
             <div class="alert alert-warning">
-                <i class="fa fa-flask"></i> <strong>Expérimentez !</strong> 
-                Essayez différentes combinaisons de tambours, postérisation, et halftone pour créer 
-                des effets uniques. Le mode 2 tambours est parfait pour affiches bicolores impactantes.
+                <i class="fa fa-flask"></i> <strong><?php _e('riso_separator.experiment_title'); ?></strong> 
+                <?php _e('riso_separator.experiment_text'); ?>
             </div>
         </div>
     </div>
@@ -1429,7 +1427,7 @@ function displayIsolatedLayers() {
                         <canvas id="isolatedWith_${layer.id}" class="img-thumbnail" style="max-width: 300px;"></canvas>
                         <br>
                         <button class="btn btn-sm btn-success" onclick="downloadIsolatedLayer(${layer.id}, 'with')" style="margin-top: 10px;">
-                            <i class="fa fa-download"></i> Télécharger
+                            <i class="fa fa-download"></i> <?php _e('common.download'); ?>
                         </button>
                     </div>
                     <div class="col-md-6">
@@ -1437,7 +1435,7 @@ function displayIsolatedLayers() {
                         <canvas id="isolatedWithout_${layer.id}" class="img-thumbnail" style="max-width: 300px;"></canvas>
                         <br>
                         <button class="btn btn-sm btn-success" onclick="downloadIsolatedLayer(${layer.id}, 'without')" style="margin-top: 10px;">
-                            <i class="fa fa-download"></i> Télécharger
+                            <i class="fa fa-download"></i> <?php _e('common.download'); ?>
                         </button>
                     </div>
                 </div>

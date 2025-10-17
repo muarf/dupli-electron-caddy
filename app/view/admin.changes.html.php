@@ -5,19 +5,19 @@
   <div class="container">
     <div class="row">
       <div class="col-md-12">
-        <h1 class="text-center">Gestion des changements</h1>
+        <h1 class="text-center"><?php _e('admin.change_management'); ?></h1>
         <hr>
         
         <!-- Messages d'erreur/succès -->
         <?php if(isset($change_error)): ?>
           <div class="alert alert-danger">
-            <strong>Erreur :</strong> <?= htmlspecialchars($change_error) ?>
+            <strong><?php _e('common.error'); ?> :</strong> <?= htmlspecialchars($change_error) ?>
           </div>
         <?php endif; ?>
         
         <?php if(isset($change_success)): ?>
           <div class="alert alert-success">
-            <strong>Succès :</strong> <?= htmlspecialchars($change_success) ?>
+            <strong><?php _e('common.success'); ?> :</strong> <?= htmlspecialchars($change_success) ?>
           </div>
         <?php endif; ?>
         
@@ -26,7 +26,7 @@
           <div class="col-md-12">
             <div class="panel panel-primary">
               <div class="panel-heading">
-                <h3 class="panel-title"><i class="fa fa-plus"></i> Ajouter un changement</h3>
+                <h3 class="panel-title"><i class="fa fa-plus"></i> <?php _e('common.add'); ?> <?php _e('changement.change_info'); ?></h3>
               </div>
               <div class="panel-body">
                 <form method="POST" id="add-change-form">

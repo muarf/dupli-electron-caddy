@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../controler/functions/database.php';
+require_once __DIR__ . '/../../controler/functions/i18n.php';
 
 /**
  * Gestionnaire pour les machines (duplicopieurs et photocopieurs) - Administration
@@ -414,7 +415,8 @@ class AdminMachineManager {
      * Récupérer le dernier compteur pour une machine
      */
     private function getLastCounter($db, $machine, $type) {
-        $query = $db->prepare('SELECT nb_p, nb_m FROM cons WHERE machine = ? AND type = ? ORDER BY date DESC LIMIT 1');
+        // CORRECTION : Recherche insensible à la casse
+        $query = $db->prepare('SELECT nb_p, nb_m FROM cons WHERE LOWER(machine) = LOWER(?) AND type = ? ORDER BY date DESC LIMIT 1');
         $query->execute([$machine, $type]);
         $result = $query->fetch(PDO::FETCH_ASSOC);
         
@@ -429,7 +431,8 @@ class AdminMachineManager {
      * Récupérer le dernier compteur de passage pour une machine
      */
     private function getLastPassageCounter($db, $machine) {
-        $query = $db->prepare('SELECT nb_p FROM cons WHERE machine = ? ORDER BY date DESC LIMIT 1');
+        // CORRECTION : Recherche insensible à la casse
+        $query = $db->prepare('SELECT nb_p FROM cons WHERE LOWER(machine) = LOWER(?) ORDER BY date DESC LIMIT 1');
         $query->execute([$machine]);
         $result = $query->fetch(PDO::FETCH_ASSOC);
         
@@ -722,7 +725,8 @@ class AdminMachineManager {
         try {
             // Sauvegarder les anciens compteurs
             $old_passage_counter = 0;
-            $query = $db->prepare('SELECT nb_p FROM cons WHERE machine = ? ORDER BY date DESC LIMIT 1');
+            // CORRECTION : Recherche insensible à la casse
+            $query = $db->prepare('SELECT nb_p FROM cons WHERE LOWER(machine) = LOWER(?) ORDER BY date DESC LIMIT 1');
             $query->execute([$machine_id]);
             $result = $query->fetch(PDO::FETCH_ASSOC);
             if ($result) {
@@ -733,8 +737,8 @@ class AdminMachineManager {
             $query = $db->prepare('DELETE FROM prix WHERE machine = ?');
             $query->execute([$machine_id]);
             
-            // Supprimer les anciennes entrées cons
-            $query = $db->prepare('DELETE FROM cons WHERE machine = ?');
+            // Supprimer les anciennes entrées cons avec recherche insensible à la casse
+            $query = $db->prepare('DELETE FROM cons WHERE LOWER(machine) = LOWER(?)');
             $query->execute([$machine_id]);
             
             // Recréer selon le nouveau type

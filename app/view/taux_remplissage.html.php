@@ -5,17 +5,17 @@
             <div class="page-header text-center" style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); padding: 30px; border-radius: 10px; margin-bottom: 30px;">
                 <h1 style="color: #333; margin: 0;">
                     <i class="fa fa-bar-chart" style="margin-right: 15px;"></i>
-                    Calcul du Taux de Remplissage
+                    <?php _e('taux_remplissage.title'); ?>
                 </h1>
                 <p class="lead" style="color: #666; margin: 10px 0 0 0;">
-                    Analysez le pourcentage d'encre utilisé dans vos PDF et images
+                    <?php _e('taux_remplissage.subtitle'); ?>
                 </p>
             </div>
 
             <!-- Messages d'erreur -->
             <?php if (!empty($errors)): ?>
                 <div class="alert alert-danger">
-                    <h4><i class="fa fa-exclamation-triangle"></i> Erreurs détectées :</h4>
+                    <h4><i class="fa fa-exclamation-triangle"></i> <?php _e('common.error'); ?> :</h4>
                     <ul class="mb-3">
                         <?php foreach ($errors as $error): ?>
                             <li><?= htmlspecialchars($error) ?></li>
@@ -29,14 +29,14 @@
                 <div class="panel panel-success">
                     <div class="panel-heading">
                         <h3 class="panel-title">
-                            <i class="fa fa-check-circle"></i> Analyse terminée !
+                            <i class="fa fa-check-circle"></i> <?php _e('common.completed'); ?> !
                         </h3>
                     </div>
                     <div class="panel-body">
                         <div class="row">
                             <!-- Aperçu de l'image -->
                             <div class="col-md-5">
-                                <h4 style="margin-top: 0;">Aperçu :</h4>
+                                <h4 style="margin-top: 0;"><?php _e('taux_remplissage.preview'); ?> :</h4>
                                 <div class="thumbnail">
                                     <img src="<?= htmlspecialchars($result['preview_url']) ?>" alt="Aperçu" style="max-width: 100%; height: auto; border: 1px solid #ddd;">
                                     <div class="caption text-center">
@@ -47,7 +47,7 @@
                             
                             <!-- Statistiques -->
                             <div class="col-md-7">
-                                <h4 style="margin-top: 0;">Résultats de l'analyse :</h4>
+                                <h4 style="margin-top: 0;"><?php _e('taux_remplissage.fill_rate'); ?> :</h4>
                                 
                                 <!-- Taux de remplissage principal -->
                                 <div style="background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
@@ -148,7 +148,7 @@
                         <!-- Boutons d'action -->
                         <div class="text-center" style="margin-top: 20px;">
                             <a href="?taux_remplissage" class="btn btn-primary btn-lg">
-                                <i class="fa fa-plus"></i> Analyser un autre document
+                                <i class="fa fa-plus"></i> <?php _e('taux_remplissage.analyze_another'); ?>
                             </a>
                         </div>
                     </div>
@@ -205,14 +205,14 @@
                                 <i class="fa fa-file-image-o"></i>
                             </div>
                             <div id="uploadText">
-                                <h3 style="color: #333; margin-bottom: 10px;">Glissez votre PDF ou image ici</h3>
-                                <p style="color: #666; margin-bottom: 20px;">ou cliquez pour sélectionner un fichier</p>
+                                <h3 style="color: #333; margin-bottom: 10px;"><?php _e('taux_remplissage.drag_drop'); ?></h3>
+                                <p style="color: #666; margin-bottom: 20px;"><?php _e('taux_remplissage.click_select'); ?></p>
                                 <input type="file" name="file" id="file" accept="application/pdf,.pdf,image/jpeg,image/jpg,image/png,image/gif" style="display: none;" required>
                                 <button type="button" class="btn btn-lg" style="background: #84fab0; border: none; color: white; padding: 12px 30px; border-radius: 25px;">
-                                    <i class="fa fa-upload"></i> Sélectionner un fichier
+                                    <i class="fa fa-upload"></i> <?php _e('taux_remplissage.select_file'); ?>
                                 </button>
                                 <p class="text-muted" style="margin-top: 10px; font-size: 12px;">
-                                    <i class="fa fa-info-circle"></i> PDF, JPEG, PNG ou GIF - Maximum 50MB
+                                    <i class="fa fa-info-circle"></i> <?php _e('taux_remplissage.file_info'); ?>
                                 </p>
                             </div>
                             <div id="fileInfo" style="display: none;">
@@ -237,20 +237,20 @@
             <div class="panel panel-info">
                 <div class="panel-heading">
                     <h3 class="panel-title">
-                        <i class="fa fa-info-circle"></i> Comment ça marche ?
+                        <i class="fa fa-info-circle"></i> <?php _e('taux_remplissage.how_it_works'); ?>
                     </h3>
                 </div>
                 <div class="panel-body">
-                    <p>Cet outil analyse vos documents pour calculer le pourcentage d'encre/toner utilisé :</p>
+                    <p><?php _e('taux_remplissage.how_it_works_desc'); ?></p>
                     <ul>
-                        <li><strong>Formats supportés</strong> : PDF, JPEG, PNG, GIF</li>
-                        <li><strong>Analyse pixel par pixel</strong> : Compte les pixels non blancs</li>
-                        <li><strong>Tolérance réglable</strong> : Ajustez la sensibilité de détection</li>
-                        <li><strong>Statistiques détaillées</strong> : Taille, résolution, couleurs principales</li>
+                        <li><?php _e('taux_remplissage.supported_formats'); ?></li>
+                        <li><?php _e('taux_remplissage.pixel_analysis'); ?></li>
+                        <li><?php _e('taux_remplissage.adjustable_tolerance'); ?></li>
+                        <li><?php _e('taux_remplissage.detailed_stats'); ?></li>
                     </ul>
                     <p class="text-muted">
                         <i class="fa fa-lightbulb-o"></i> 
-                        Astuce : Un taux de remplissage élevé indique une consommation d'encre importante. Idéal pour estimer les coûts d'impression.
+                        <?php _e('taux_remplissage.tip'); ?>
                     </p>
                 </div>
             </div>

@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../controler/functions/database.php';
 require_once __DIR__ . '/../controler/functions/pricing.php';
 require_once __DIR__ . '/../controler/functions/tirage.php';
+require_once __DIR__ . '/../controler/functions/i18n.php';
 
 // Gestion AJAX pour récupérer les tambours d'un duplicopieur
 if(isset($_GET['ajax']) && $_GET['ajax'] === 'get_tambours' && isset($_GET['duplicopieur_id'])) {
@@ -1014,6 +1015,8 @@ function Action($conf = null) {
  * Génère le HTML d'une machine pour les nouvelles machines ajoutées via AJAX
  */
 function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, $photocopiers) {
+    // Inclure le système de traduction
+    require_once __DIR__ . '/../controler/functions/i18n.php';
     // Récupérer les dernières valeurs de compteurs pour le duplicopieur par défaut
     $con = pdo_connect();
     $last_values = ['master_av' => 0, 'passage_av' => 0];
@@ -1044,12 +1047,12 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
                 <div class="col-xs-8 col-sm-9">
                     <h4 class="panel-title" style="margin: 0;">
                         <i class="fa fa-chevron-down toggle-icon" id="toggle-icon-' . $index . '"></i>
-                        <strong>Tirage #' . ($index + 1) . '</strong>
-                        <span class="machine-type-badge badge" id="type-badge-' . $index . '">Duplicopieur</span>
+                        <strong>' . __('tirage_multimachines.tirage_number') . ($index + 1) . '</strong>
+                        <span class="machine-type-badge badge" id="type-badge-' . $index . '">' . __('tirage_multimachines.duplicopieur_badge') . '</span>
                     </h4>
                 </div>
                 <div class="col-xs-4 col-sm-3 text-right">
-                    <span class="machine-price-preview" id="price-preview-' . $index . '">0.00€</span>
+                    <span class="machine-price-preview" id="price-preview-' . $index . '">' . __('tirage_multimachines.price_preview') . '</span>
                 </div>
             </div>
         </div>
@@ -1063,12 +1066,12 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
                 <ul class="nav nav-tabs" role="tablist" style="margin-bottom: 20px;">
                     <li role="presentation" class="active" id="tab-duplicopieur-' . $index . '">
                         <a href="#" onclick="selectMachineTypeTab(' . $index . ', \'duplicopieur\'); return false;" style="font-size: 16px;">
-                            <i class="fa fa-print" style="margin-right: 5px;"></i> Duplicopieur
+                            <i class="fa fa-print" style="margin-right: 5px;"></i> ' . __('tirage_multimachines.duplicopieur_tab') . '
                         </a>
                     </li>
                     <li role="presentation" id="tab-photocopieur-' . $index . '">
                         <a href="#" onclick="selectMachineTypeTab(' . $index . ', \'photocopieur\'); return false;" style="font-size: 16px;">
-                            <i class="fa fa-copy" style="margin-right: 5px;"></i> Photocopieur
+                            <i class="fa fa-copy" style="margin-right: 5px;"></i> ' . __('tirage_multimachines.photocopieur_tab') . '
                         </a>
                     </li>
                 </ul>
@@ -1091,11 +1094,11 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
         $html .= '<input type="hidden" name="machines[' . $index . '][duplicopieur_id]" value="' . $duplicopieur_selectionne['id'] . '">
                     <p class="form-control-static">
                         <strong>' . htmlspecialchars($duplicopieur_selectionne['marque']) . ' ' . htmlspecialchars($duplicopieur_selectionne['modele']) . '</strong>
-                        <br><small class="text-muted">Supporte A3 et A4</small>
+                        <br><small class="text-muted">' . __('tirage_multimachines.supports_a3_a4') . '</small>
                     </p>';
     } elseif(isset($duplicopieurs) && count($duplicopieurs) > 1) {
         $html .= '<select name="machines[' . $index . '][duplicopieur_id]" class="form-control" required onchange="updateDuplicopieurCounters(this.value, ' . $index . ')">
-                    <option value="">Choisir un duplicopieur</option>';
+                    <option value="">' . __('tirage_multimachines.choose_duplicopieur') . '</option>';
         foreach($duplicopieurs as $dup) {
             // Construire le nom de la machine comme dans le template principal
             $machine_name = $dup['marque'];
@@ -1109,7 +1112,7 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
         }
         $html .= '</select>';
     } else {
-        $html .= '<p class="form-control-static text-danger">Aucun duplicopieur disponible</p>';
+        $html .= '<p class="form-control-static text-danger">' . __('tirage_multimachines.no_duplicopieur_available') . '</p>';
     }
     
     $html .= '</div>

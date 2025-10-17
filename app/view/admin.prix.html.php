@@ -33,9 +33,10 @@
       <div class="col-md-12">
         
         <div class="page-header">
-          <h1><i class="fa fa-euro"></i> Gestion des Prix</h1>
-          <p class="lead">Visualisez les prix calculés automatiquement et modifiez les prix unitaires et d'achat pour chaque consommable.</p>
+          <h1><i class="fa fa-euro"></i> <?php _e('admin.price_management'); ?></h1>
+          <p class="lead"><?php _e('admin.price_management_desc'); ?></p>
         </div>
+        
         
         <?php 
         // Afficher un tableau pour chaque machine (duplicopieur ou photocopieuse)

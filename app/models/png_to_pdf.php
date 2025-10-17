@@ -1,5 +1,6 @@
 <?php
 require_once(__DIR__ . '/../vendor/autoload.php');
+require_once(__DIR__ . '/../controler/functions/i18n.php');
 
 /**
  * Convertit une ou plusieurs images PNG en PDF avec le format choisi (A3/A4)
