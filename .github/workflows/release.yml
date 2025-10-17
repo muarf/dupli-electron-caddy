@@ -1,0 +1,182 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Se déclenche uniquement sur les tags v1.3.30, v1.3.31, etc.
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Download Caddy for Linux
+        run: |
+          echo "Téléchargement de Caddy pour Linux..."
+          wget -q https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_linux_amd64.tar.gz
+          tar -xzf caddy_2.7.6_linux_amd64.tar.gz -C caddy/
+          rm caddy_2.7.6_linux_amd64.tar.gz
+          chmod +x caddy/caddy
+          echo "✅ Caddy téléchargé"
+      
+      - name: Build Linux AppImage
+        run: npm run build:caddy
+      
+      - name: Verify build output
+        run: |
+          echo "Vérification des fichiers générés..."
+          ls -lh dist/
+          if [ -f dist/*.AppImage ]; then
+            echo "✅ AppImage créée"
+          fi
+          if [ -f dist/latest-linux.yml ]; then
+            echo "✅ latest-linux.yml créé"
+          fi
+      
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-build
+          path: |
+            dist/*.AppImage
+            dist/latest-linux.yml
+          retention-days: 1
+  
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Download Caddy for Windows
+        run: |
+          echo "Téléchargement de Caddy pour Windows..."
+          Invoke-WebRequest -Uri "https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_windows_amd64.zip" -OutFile "caddy_windows.zip"
+          Expand-Archive -Path "caddy_windows.zip" -DestinationPath "caddy" -Force
+          Remove-Item "caddy_windows.zip"
+          echo "✅ Caddy téléchargé"
+      
+      - name: Build Windows
+        run: npm run build:caddy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Verify build output
+        run: |
+          echo "Vérification des fichiers générés..."
+          Get-ChildItem dist/ | Format-Table Name, Length
+          if (Test-Path "dist/*.exe") {
+            echo "✅ Exécutable Windows créé"
+          }
+          if (Test-Path "dist/latest.yml") {
+            echo "✅ latest.yml créé"
+          }
+      
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-build
+          path: |
+            dist/*.exe
+            dist/latest.yml
+          retention-days: 1
+  
+  create-release:
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: linux-build
+          path: ./release-files/linux
+      
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: windows-build
+          path: ./release-files/windows
+      
+      - name: Display downloaded files
+        run: |
+          echo "Fichiers Linux:"
+          ls -lh ./release-files/linux/
+          echo ""
+          echo "Fichiers Windows:"
+          ls -lh ./release-files/windows/
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ./release-files/linux/*.AppImage
+            ./release-files/linux/latest-linux.yml
+            ./release-files/windows/*.exe
+            ./release-files/windows/latest.yml
+          body: |
+            ## 🎉 Release ${{ github.ref_name }}
+            
+            ### 📦 Fichiers disponibles
+            
+            **Linux:**
+            - `Duplicator-*.AppImage` - Application Linux (AppImage)
+            - `latest-linux.yml` - Fichier de mise à jour automatique Linux
+            
+            **Windows:**
+            - `Duplicator-Setup-*.exe` - Installateur Windows
+            - `Duplicator-*.exe` - Version portable Windows
+            - `latest.yml` - Fichier de mise à jour automatique Windows
+            
+            ### ⚙️ Installation
+            
+            **Linux:**
+            ```bash
+            chmod +x Duplicator-*.AppImage
+            ./Duplicator-*.AppImage
+            ```
+            
+            **Windows:**
+            Double-cliquer sur `Duplicator-Setup-*.exe`
+            
+            ### 🔄 Mise à jour automatique
+            
+            L'application vérifiera automatiquement les mises à jour au démarrage et toutes les 4 heures.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
