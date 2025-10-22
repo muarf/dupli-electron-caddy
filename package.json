@@ -27,7 +27,7 @@
   "description": "Duplicator - Application de duplication de documents",
   "devDependencies": {
     "@types/jest": "^29.5.14",
-    "electron": "^28.3.3",
+    "electron": "^22.3.27",
     "electron-builder": "^26.0.12",
     "jest": "^29.7.0",
     "spectron": "^19.0.0",
