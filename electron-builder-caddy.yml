@@ -17,6 +17,7 @@ files:
   - app/**/*
   - ghostscript/**/*
   - caddy/**/*
+  - utils/**/*
   # PHP sera inclus spécifiquement par plateforme (Windows/macOS oui, Linux non)
 # asarUnpack configuré spécifiquement par plateforme pour éviter les erreurs de chemins longs
 # Plus besoin d'exclure les liens symboliques car ils ont été supprimés
@@ -52,6 +53,7 @@ mac:
     - app/**/*
     - ghostscript/**/*
     - caddy/**/*
+    - utils/**/*
     - "php/**/*"  # Inclure PHP pour macOS
   asarUnpack:
     - "php/**/*"
@@ -84,6 +86,7 @@ win:
     - app/**/*
     - ghostscript/**/*
     - caddy/**/*
+    - utils/**/*
     - "php/**/*"  # Inclure PHP pour Windows
 nsis:
   oneClick: false
