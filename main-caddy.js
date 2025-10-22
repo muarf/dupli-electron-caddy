@@ -4,6 +4,10 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { checkWindowsCompatibility, applyCompatibilitySettings } = require('./utils/windows-compatibility');
+
+// Vérifier la compatibilité Windows avant tout
+checkWindowsCompatibility();
 
 let mainWindow;
 let caddyProcess;
@@ -736,6 +740,9 @@ app.disableHardwareAcceleration();
 
 // Cette méthode sera appelée quand Electron aura fini de s'initialiser
 app.whenReady().then(() => {
+    // Appliquer les paramètres de compatibilité Windows
+    applyCompatibilitySettings();
+    
     createWindow();
     
     // Initialiser la base de données dans userData

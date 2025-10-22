@@ -71,6 +71,14 @@ win:
   forceCodeSigning: false
   # Désactiver ASAR sur Windows pour éviter l'erreur "pattern is too long"
   asar: false
+  # Configuration pour la compatibilité Windows 8.1
+  requestedExecutionLevel: asInvoker
+  # Forcer l'utilisation d'APIs compatibles Windows 8.1
+  env:
+    ELECTRON_DISABLE_SANDBOX: true
+    ELECTRON_DISABLE_GPU: true
+  # Paramètres de compatibilité pour Windows 8.1
+  executableArgs: ["--no-sandbox", "--disable-gpu", "--disable-web-security"]
   # Configuration spécifique Windows - inclut PHP embarqué
   files:
     - main-caddy.js
