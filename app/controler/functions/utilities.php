@@ -254,26 +254,42 @@ function template($template_file, $variables = array())
     if (is_array($variables)) {
         extract($variables);
     }
-    
+
     // Démarrer la capture de sortie
     ob_start();
-    
-    // Inclure le fichier template
-    if (file_exists($template_file)) {
-        include $template_file;
-    } else {
-        // Essayer avec un chemin relatif depuis le répertoire courant
-        $relative_path = __DIR__ . '/../../' . $template_file;
-        if (file_exists($relative_path)) {
-            include $relative_path;
+
+    try {
+        // Inclure le fichier template
+        if (file_exists($template_file)) {
+            include $template_file;
         } else {
-            throw new Exception("Template file not found: " . $template_file);
+            // Essayer avec un chemin relatif depuis le répertoire courant (cross-platform)
+            $relative_path = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . $template_file;
+
+            // Normaliser le chemin pour Windows
+            $relative_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $relative_path);
+
+            if (file_exists($relative_path)) {
+                include $relative_path;
+            } else {
+                // Essayer une approche différente pour Windows
+                $alt_path = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'view' . DIRECTORY_SEPARATOR . basename($template_file);
+                if (file_exists($alt_path)) {
+                    include $alt_path;
+                } else {
+                    throw new Exception("Template file not found: " . $template_file . " (tried: " . $relative_path . " and " . $alt_path . ")");
+                }
+            }
         }
+
+        // Récupérer le contenu et nettoyer le buffer
+        $content = ob_get_clean();
+        return $content;
+
+    } catch (Exception $e) {
+        // En cas d'erreur dans template(), retourner une erreur simple au lieu de planter
+        ob_end_clean();
+        return "<!DOCTYPE html><html><head><title>Erreur</title></head><body><h1>Erreur système</h1><p>Une erreur s'est produite lors du chargement de la page.</p><p>Détails: " . htmlspecialchars($e->getMessage()) . "</p></body></html>";
     }
-    
-    // Récupérer le contenu et nettoyer le buffer
-    $content = ob_get_clean();
-    
-    return $content;
 }
 ?>

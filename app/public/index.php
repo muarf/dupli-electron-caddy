@@ -21,33 +21,43 @@ ini_set('upload_tmp_dir', $temp_dir);
 
 session_start();
 
-// Charger les fonctions de base et i18n AVANT les gestionnaires d'erreurs
+// Charger les fonctions de base AVANT les gestionnaires d'erreurs
 include(__DIR__ . '/../controler/func.php');
-require_once __DIR__ . '/../controler/functions/i18n.php';
 
 // Gestionnaire d'erreur global pour éviter les pages blanches
 set_error_handler(function($severity, $message, $file, $line) {
     if (error_reporting() & $severity) {
         $error = "Erreur PHP [$severity]: $message dans $file ligne $line";
         error_log($error);
-        
+
+        // Éviter les boucles infinies si l'erreur vient de template()
+        if (strpos($message, 'template') !== false || strpos($file, 'utilities.php') !== false) {
+            return false; // Ne pas essayer d'utiliser template() si l'erreur vient de là
+        }
+
         // Déterminer la page actuelle
         $currentPage = key($_GET) ?? 'accueil';
-        
+
         // Créer un tableau d'erreur standardisé
         $errorArray = [
             'errors' => ["Erreur système : " . $message],
             'page' => $currentPage,
             'timestamp' => date('Y-m-d H:i:s')
         ];
-        
+
         // Rediriger vers la page d'erreur ou la page actuelle avec erreur
-        if ($currentPage === 'imposition') {
-            return template(__DIR__ . "/../view/imposition.html.php", $errorArray);
-        } elseif ($currentPage === 'unimpose') {
-            return template(__DIR__ . "/../view/unimpose.html.php", $errorArray);
-        } else {
-            return template(__DIR__ . "/../view/accueil.html.php", $errorArray);
+        try {
+            if ($currentPage === 'imposition') {
+                return template(__DIR__ . "/../view/imposition.html.php", $errorArray);
+            } elseif ($currentPage === 'unimpose') {
+                return template(__DIR__ . "/../view/unimpose.html.php", $errorArray);
+            } else {
+                return template(__DIR__ . "/../view/accueil.html.php", $errorArray);
+            }
+        } catch (Exception $e) {
+            // Si template() plante, afficher une erreur simple
+            echo "<!DOCTYPE html><html><head><title>Erreur système</title></head><body><h1>Erreur système</h1><p>Une erreur critique s'est produite.</p><p>Détails: " . htmlspecialchars($message) . "</p></body></html>";
+            exit;
         }
     }
     return false;
@@ -57,22 +67,37 @@ set_error_handler(function($severity, $message, $file, $line) {
 set_exception_handler(function($exception) {
     $error = "Exception non capturée : " . $exception->getMessage() . " dans " . $exception->getFile() . " ligne " . $exception->getLine();
     error_log($error);
-    
+
+    // Éviter les boucles infinies si l'exception vient de template()
+    if (strpos($exception->getMessage(), 'template') !== false || strpos($exception->getFile(), 'utilities.php') !== false) {
+        echo "<!DOCTYPE html><html><head><title>Erreur système</title></head><body><h1>Erreur système</h1><p>Une erreur critique s'est produite.</p><p>Détails: " . htmlspecialchars($exception->getMessage()) . "</p></body></html>";
+        exit;
+    }
+
     $currentPage = key($_GET) ?? 'accueil';
     $errorArray = [
         'errors' => ["Erreur critique : " . $exception->getMessage()],
         'page' => $currentPage,
         'timestamp' => date('Y-m-d H:i:s')
     ];
-    
-    if ($currentPage === 'imposition') {
-        return template(__DIR__ . "/../view/imposition.html.php", $errorArray);
-    } elseif ($currentPage === 'unimpose') {
-        return template(__DIR__ . "/../view/unimpose.html.php", $errorArray);
-    } else {
-        return template(__DIR__ . "/../view/accueil.html.php", $errorArray);
+
+    try {
+        if ($currentPage === 'imposition') {
+            return template(__DIR__ . "/../view/imposition.html.php", $errorArray);
+        } elseif ($currentPage === 'unimpose') {
+            return template(__DIR__ . "/../view/unimpose.html.php", $errorArray);
+        } else {
+            return template(__DIR__ . "/../view/accueil.html.php", $errorArray);
+        }
+    } catch (Exception $e) {
+        // Si template() plante, afficher une erreur simple
+        echo "<!DOCTYPE html><html><head><title>Erreur système</title></head><body><h1>Erreur système</h1><p>Une erreur critique s'est produite.</p><p>Détails: " . htmlspecialchars($exception->getMessage()) . "</p></body></html>";
+        exit;
     }
 });
+
+// Charger i18n APRÈS les gestionnaires d'erreurs pour éviter les erreurs non capturées
+require_once __DIR__ . '/../controler/functions/i18n.php';
 
 // conf.php sera inclus après l'exécution du modèle pour avoir la bonne base active
 
