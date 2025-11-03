@@ -6,7 +6,8 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 // Détecter automatiquement l'environnement (Electron vs XAMPP)
-$isElectron = strpos($_SERVER['SCRIPT_FILENAME'] ?? '', 'resources/app') !== false ||
+$scriptPath = str_replace('\\', '/', $_SERVER['SCRIPT_FILENAME'] ?? '');
+$isElectron = strpos($scriptPath, 'resources/app') !== false ||
               isset($_SERVER['ELECTRON_RUN_AS_NODE']) ||
               defined('ELECTRON_APP');
 
