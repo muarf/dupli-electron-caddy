@@ -257,7 +257,7 @@
                 <div class="subtitle"><?php _e('imposition.subtitle'); ?></div>
             </div>
 
-            <?php if ($success): ?>
+            <?php if (isset($success) && $success): ?>
                 <div class="result-section">
                     <div class="alert alert-success">
                         <h4><i class="fa fa-check-circle"></i> <?php _e('imposition.success_title'); ?></h4>
