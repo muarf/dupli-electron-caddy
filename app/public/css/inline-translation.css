@@ -1,0 +1,275 @@
+/* Styles pour l'édition inline des traductions */
+
+/* Éléments éditables - par défaut visibles mais sans style */
+.translation-editable {
+    position: relative;
+    display: inline-block;
+    padding: 2px 6px;
+    margin: 0 2px;
+    border: none;
+    border-radius: 4px;
+    cursor: default;
+    transition: all 0.3s ease;
+    background: transparent;
+    opacity: 1;
+    /* Masquer l'icône d'édition par défaut */
+}
+
+/* État désactivé */
+.translation-editable.editing-disabled {
+    opacity: 1 !important;
+    cursor: default !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+.translation-editable.editing-disabled:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+/* Masquer l'icône d'édition quand désactivé */
+.translation-editable.editing-disabled .edit-icon {
+    display: none !important;
+}
+
+/* État activé */
+.translation-editable.editing-enabled {
+    opacity: 1 !important;
+    cursor: pointer !important;
+    border: 2px dashed rgba(0, 123, 255, 0.3);
+    background: rgba(0, 123, 255, 0.05);
+}
+
+.translation-editable.editing-enabled:hover {
+    border-color: #007bff;
+    background: rgba(0, 123, 255, 0.1);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+}
+
+.translation-editable.editing-enabled:hover .edit-icon {
+    opacity: 1;
+    color: #007bff;
+}
+
+.edit-icon {
+    margin-left: 5px;
+    font-size: 0.8em;
+    opacity: 0.6;
+    transition: all 0.3s ease;
+    color: #6c757d;
+    /* Masquer par défaut pour éviter le flash */
+    display: none;
+}
+
+/* Mode édition */
+.translation-editable.editing {
+    border-color: #28a745;
+    background: rgba(40, 167, 69, 0.1);
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+}
+
+.translation-editable.editing .edit-icon {
+    color: #28a745;
+    opacity: 1;
+}
+
+/* Input d'édition */
+.translation-input-inline {
+    border: 2px solid #28a745;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: inherit;
+    font-family: inherit;
+    background: white;
+    min-width: 100px;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+}
+
+.translation-input-inline:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+}
+
+/* Boutons d'action */
+.translation-actions-inline {
+    display: inline-flex;
+    gap: 5px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+.btn-translation {
+    padding: 2px 8px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.8em;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.btn-save-translation {
+    background: #28a745;
+    color: white;
+}
+
+.btn-save-translation:hover {
+    background: #218838;
+    transform: translateY(-1px);
+}
+
+.btn-cancel-translation {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-cancel-translation:hover {
+    background: #5a6268;
+    transform: translateY(-1px);
+}
+
+.btn-save-translation:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-save-translation.saving {
+    background: #ffc107;
+    color: #212529;
+}
+
+.btn-save-translation.success {
+    background: #28a745;
+    color: white;
+}
+
+.btn-save-translation.error {
+    background: #dc3545;
+    color: white;
+}
+
+/* Indicateur de chargement */
+.translation-loading {
+    position: relative;
+}
+
+.translation-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Messages de feedback */
+.translation-feedback {
+    position: absolute;
+    top: -30px;
+    left: 0;
+    background: #28a745;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    white-space: nowrap;
+    z-index: 1000;
+    animation: fadeInOut 2s ease-in-out;
+}
+
+.translation-feedback.error {
+    background: #dc3545;
+}
+
+.translation-feedback.success {
+    background: #28a745;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(10px); }
+    20% { opacity: 1; transform: translateY(0); }
+    80% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-10px); }
+}
+
+/* Mode admin - indicateur visuel */
+body.admin-mode .translation-editable {
+    border-color: rgba(0, 123, 255, 0.3);
+    background: rgba(0, 123, 255, 0.05);
+}
+
+body.admin-mode .translation-editable:hover {
+    border-color: #007bff;
+    background: rgba(0, 123, 255, 0.15);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .translation-editable {
+        padding: 1px 4px;
+        margin: 0 1px;
+    }
+    
+    .edit-icon {
+        font-size: 0.7em;
+        margin-left: 3px;
+    }
+    
+    .translation-actions-inline {
+        gap: 3px;
+        margin-left: 5px;
+    }
+    
+    .btn-translation {
+        padding: 1px 6px;
+        font-size: 0.7em;
+    }
+}
+
+/* Animation d'apparition */
+.translation-editable {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Style pour les éléments non-éditables en mode admin */
+body.admin-mode .translation-non-editable {
+    opacity: 0.7;
+    position: relative;
+}
+
+body.admin-mode .translation-non-editable::after {
+    content: '🔒';
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    font-size: 0.6em;
+    opacity: 0.5;
+}
