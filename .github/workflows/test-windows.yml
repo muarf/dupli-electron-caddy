@@ -66,45 +66,12 @@ jobs:
             }
           }
         
-      - name: Update package.json version
+      - name: Check package.json version
         run: |
-          echo "=== Mise à jour de la version dans package.json ==="
-          
-          # Calculer la nouvelle version depuis Git tags
-          echo "Recherche du dernier tag..."
-          $lastTag = git tag --list "v*" --sort=-version:refname | Select-Object -First 1
-          
-          if ($lastTag) {
-            echo "Dernier tag trouvé: $lastTag"
-            
-            # Extraire la version sans le 'v' et incrémenter
-            $currentVersion = $lastTag -replace '^v', ''
-            $versionParts = $currentVersion -split '\.'
-            
-            if ($versionParts.Length -eq 3) {
-              $patchNumber = [int]$versionParts[2] + 1
-              $newVersion = "$($versionParts[0]).$($versionParts[1]).$patchNumber"
-              echo "Nouvelle version calculée: $newVersion"
-              
-              # Modifier package.json
-              echo "Mise à jour package.json..."
-              $packageJson = Get-Content "package.json" | ConvertFrom-Json
-              $packageJson.version = $newVersion
-              $packageJson | ConvertTo-Json -Depth 100 | Set-Content "package.json"
-              
-              echo "✅ package.json mis à jour avec version: $newVersion"
-              echo "Nouveau contenu package.json version:"
-              (Get-Content "package.json" | ConvertFrom-Json).version
-              
-            } else {
-              echo "⚠️ Format de version inattendu: $currentVersion"
-              exit 1
-            }
-          } else {
-            echo "⚠️ Aucun tag Git trouvé, garder la version actuelle"
-            echo "Version actuelle:" 
-            (Get-Content "package.json" | ConvertFrom-Json).version
-          }
+          echo "=== Vérification de la version dans package.json ==="
+          $currentVersion = (Get-Content "package.json" | ConvertFrom-Json).version
+          echo "Version actuelle: $currentVersion"
+          echo "✅ Utilisation de la version actuelle pour le build"
         
       - name: Build Windows app
         run: npm run build:caddy -- --win --publish=always
