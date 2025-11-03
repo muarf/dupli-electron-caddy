@@ -5,8 +5,17 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+// Détecter automatiquement l'environnement (Electron vs XAMPP)
+$scriptPath = str_replace('\\', '/', $_SERVER['SCRIPT_FILENAME'] ?? '');
+$isElectron = strpos($scriptPath, 'resources/app') !== false ||
+              isset($_SERVER['ELECTRON_RUN_AS_NODE']) ||
+              defined('ELECTRON_APP');
+
+// Définir le répertoire racine selon l'environnement
+$rootDir = $isElectron ? dirname(__DIR__) : __DIR__;
+
 // Charger le gestionnaire d'erreurs personnalisé
-require_once __DIR__ . '/controler/functions/error_handler.php';
+require_once $rootDir . '/controler/functions/error_handler.php';
 
 // Définir un gestionnaire d'erreur personnalisé pour toutes les erreurs
 set_error_handler(function($severity, $message, $file, $line) {
@@ -32,10 +41,10 @@ set_error_handler(function($severity, $message, $file, $line) {
         session_start();
     }
     if (!function_exists('show_error_page')) {
-        require_once __DIR__ . '/controler/functions/error_handler.php';
+        require_once $rootDir . '/controler/functions/error_handler.php';
     }
     if (!function_exists('template')) {
-        require_once __DIR__ . '/controler/func.php';
+        require_once $rootDir . '/controler/func.php';
     }
     
     // Mapper les types d'erreurs
@@ -60,10 +69,10 @@ set_exception_handler(function($exception) {
         session_start();
     }
     if (!function_exists('show_error_page')) {
-        require_once __DIR__ . '/controler/functions/error_handler.php';
+        require_once $rootDir . '/controler/functions/error_handler.php';
     }
     if (!function_exists('template')) {
-        require_once __DIR__ . '/controler/func.php';
+        require_once $rootDir . '/controler/func.php';
     }
     
     echo show_error_page(
@@ -84,10 +93,10 @@ register_shutdown_function(function() {
             session_start();
         }
         if (!function_exists('show_error_page')) {
-            require_once __DIR__ . '/controler/functions/error_handler.php';
+            require_once $rootDir . '/controler/functions/error_handler.php';
         }
         if (!function_exists('template')) {
-            require_once __DIR__ . '/controler/func.php';
+            require_once $rootDir . '/controler/func.php';
         }
         
         echo show_error_page(
@@ -271,11 +280,11 @@ ini_set('upload_tmp_dir', $temp_dir);
 
 session_start();
 
-include(__DIR__ . '/controler/func.php');
+include($rootDir . '/controler/func.php');
 // conf.php sera inclus après l'exécution du modèle pour avoir la bonne base active
 
 // Initialiser le système d'internationalisation
-require_once __DIR__ . '/controler/functions/i18n.php';
+require_once $rootDir . '/controler/functions/i18n.php';
 I18nManager::getInstance();
 
 // Gérer le changement de langue
@@ -349,11 +358,11 @@ if ($page === 'ajax_delete_machine') {
     
     try {
         // Inclure les fichiers nécessaires
-        require_once __DIR__ . '/controler/func.php';
-        require_once __DIR__ . '/models/admin/MachineManager.php';
+        require_once $rootDir . '/controler/func.php';
+        require_once $rootDir . '/models/admin/MachineManager.php';
         
         // Configuration de la base de données
-        require_once __DIR__ . '/controler/conf.php';
+        require_once $rootDir . '/controler/conf.php';
         
         // Créer l'instance du gestionnaire de machines
         $machineManager = new AdminMachineManager($conf);
@@ -395,9 +404,9 @@ if(in_array($page, $page_secure,true)){
     }
     
     // Inclure la configuration APRÈS l'exécution du modèle pour avoir la bonne base active
-    include(__DIR__ . '/controler/conf.php');
+    include($rootDir . '/controler/conf.php');
     
-    include(__DIR__ . '/models/'.$page.'.php');
+    include($rootDir . '/models/'.$page.'.php');
     
     // Pages spéciales qui n'utilisent pas le template standard
     if ($page == 'installation' || $page == 'setup') {
@@ -405,8 +414,8 @@ if(in_array($page, $page_secure,true)){
         echo $content;
     } else {
         // Pages normales avec header/footer
-        include(__DIR__ . '/models/header.php');
-        include(__DIR__ . '/models/footer.php');
+        include($rootDir . '/models/header.php');
+        include($rootDir . '/models/footer.php');
         $header = headerAction($page);
         $footer = footerAction($page);
         
@@ -423,7 +432,7 @@ if(in_array($page, $page_secure,true)){
             $array = array_merge($GLOBALS['model_variables'], $array);
     }
         
-        echo template(__DIR__ . "/view/base.html.php", $array);
+        echo template($rootDir . "/view/base.html.php", $array);
     }
 } 
 else {
@@ -507,4 +516,3 @@ else {
 } 
 
 ?>
-                                                                                                                                                                                                                                                                    
