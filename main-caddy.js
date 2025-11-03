@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const { spawn } = require('child_process');
 const path = require('path');
@@ -360,6 +360,11 @@ function startPhpFpm() {
         }
     }
     
+    console.log('=== Démarrage PHP ===');
+    console.log('Commande:', phpPath);
+    console.log('Arguments:', phpArgs.join(' '));
+    console.log('Environnement DB_PATH:', getDatabasePath());
+    
     phpFpmProcess = spawn(phpPath, phpArgs, {
         stdio: ['pipe', 'pipe', 'pipe'],
         env: {
@@ -369,20 +374,53 @@ function startPhpFpm() {
     });
     
     phpFpmProcess.stdout.on('data', (data) => {
-        console.log('PHP Server:', data.toString());
+        const output = data.toString();
+        console.log('📥 PHP stdout:', output.trim());
+        // Logger aussi dans un fichier pour debug
+        if (process.platform === 'win32') {
+            const logFile = path.join(os.tmpdir(), 'duplicator_php.log');
+            fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${output}`);
+        }
     });
     
     phpFpmProcess.stderr.on('data', (data) => {
-        console.error('PHP Error:', data.toString());
+        const output = data.toString();
+        console.error('❌ PHP stderr:', output.trim());
+
+        // Envoyer les erreurs PHP à la console Electron pour visibilité
+        if (mainWindow && mainWindow.webContents) {
+            mainWindow.webContents.executeJavaScript(`
+                console.error('[PHP ERROR]', ${JSON.stringify(output.trim())});
+            `).catch(() => {
+                // Ignore les erreurs d'exécution JavaScript
+            });
+        }
+
+        // Logger aussi dans un fichier pour debug
+        if (process.platform === 'win32') {
+            const logFile = path.join(os.tmpdir(), 'duplicator_php_errors.log');
+            fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${output}`);
+        }
     });
     
     phpFpmProcess.on('close', (code) => {
-        console.log(`Serveur PHP fermé avec le code ${code}`);
+        console.log(`⚠️ Serveur PHP fermé avec le code ${code}`);
     });
     
     phpFpmProcess.on('error', (error) => {
-        console.error('Erreur serveur PHP:', error.message);
+        console.error('❌ Erreur serveur PHP:', error.message);
+        console.error('   Code:', error.code);
+        console.error('   Stack:', error.stack);
     });
+    
+    // Vérifier si le processus démarre correctement
+    setTimeout(() => {
+        if (phpFpmProcess && phpFpmProcess.pid) {
+            console.log('✅ PHP démarré avec PID:', phpFpmProcess.pid);
+        } else {
+            console.error('❌ PHP n\'a pas démarré - pas de PID');
+        }
+    }, 1000);
     
     // Attendre que le serveur soit prêt
     return new Promise((resolve) => {
@@ -432,17 +470,48 @@ function startPhpServer() {
         }
     });
     
+    console.log('=== Démarrage PHP (fallback) ===');
+    console.log('Commande:', phpPath);
+    console.log('Arguments:', '-S 127.0.0.1:8001 -t', appPath);
+    
     phpFpmProcess.stdout.on('data', (data) => {
-        console.log('PHP Server:', data.toString());
+        const output = data.toString();
+        console.log('📥 PHP stdout (fallback):', output.trim());
+        // Logger aussi dans un fichier pour debug
+        if (process.platform === 'win32') {
+            const logFile = path.join(os.tmpdir(), 'duplicator_php.log');
+            fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${output}`);
+        }
     });
     
     phpFpmProcess.stderr.on('data', (data) => {
-        console.error('PHP Error:', data.toString());
+        const output = data.toString();
+        console.error('❌ PHP stderr (fallback):', output.trim());
+        // Logger aussi dans un fichier pour debug
+        if (process.platform === 'win32') {
+            const logFile = path.join(os.tmpdir(), 'duplicator_php_errors.log');
+            fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${output}`);
+        }
     });
     
     phpFpmProcess.on('close', (code) => {
-        console.log(`Serveur PHP fermé avec le code ${code}`);
+        console.log(`⚠️ Serveur PHP (fallback) fermé avec le code ${code}`);
     });
+    
+    phpFpmProcess.on('error', (error) => {
+        console.error('❌ Erreur serveur PHP (fallback):', error.message);
+        console.error('   Code:', error.code);
+        console.error('   Stack:', error.stack);
+    });
+    
+    // Vérifier si le processus démarre correctement
+    setTimeout(() => {
+        if (phpFpmProcess && phpFpmProcess.pid) {
+            console.log('✅ PHP (fallback) démarré avec PID:', phpFpmProcess.pid);
+        } else {
+            console.error('❌ PHP (fallback) n\'a pas démarré - pas de PID');
+        }
+    }, 1000);
 }
 
 // Démarrer Caddy
@@ -492,6 +561,11 @@ function startCaddy() {
     console.log('Caddy App Path:', appPath);
     console.log('Caddy App Path exists:', fs.existsSync(appPath));
     
+    console.log('=== Démarrage Caddy ===');
+    console.log('Commande:', caddyPath);
+    console.log('Arguments: run --config', caddyfile, '--adapter caddyfile');
+    console.log('Environnement CADDY_ROOT:', appPath);
+    
     caddyProcess = spawn(caddyPath, [
         'run',
         '--config', caddyfile,
@@ -506,16 +580,53 @@ function startCaddy() {
     });
     
     caddyProcess.stdout.on('data', (data) => {
-        console.log('Caddy:', data.toString());
+        const output = data.toString();
+        console.log('📥 Caddy stdout:', output.trim());
+        // Logger aussi dans un fichier pour debug
+        if (process.platform === 'win32') {
+            const logFile = path.join(os.tmpdir(), 'duplicator_caddy.log');
+            fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${output}`);
+        }
     });
     
     caddyProcess.stderr.on('data', (data) => {
-        console.error('Caddy Error:', data.toString());
+        const output = data.toString();
+        console.error('❌ Caddy stderr:', output.trim());
+
+        // Envoyer les erreurs Caddy à la console Electron pour visibilité
+        if (mainWindow && mainWindow.webContents) {
+            mainWindow.webContents.executeJavaScript(`
+                console.error('[CADDY ERROR]', ${JSON.stringify(output.trim())});
+            `).catch(() => {
+                // Ignore les erreurs d'exécution JavaScript
+            });
+        }
+
+        // Logger aussi dans un fichier pour debug
+        if (process.platform === 'win32') {
+            const logFile = path.join(os.tmpdir(), 'duplicator_caddy_errors.log');
+            fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${output}`);
+        }
     });
     
     caddyProcess.on('close', (code) => {
-        console.log(`Caddy fermé avec le code ${code}`);
+        console.log(`⚠️ Caddy fermé avec le code ${code}`);
     });
+    
+    caddyProcess.on('error', (error) => {
+        console.error('❌ Erreur Caddy:', error.message);
+        console.error('   Code:', error.code);
+        console.error('   Stack:', error.stack);
+    });
+    
+    // Vérifier si le processus démarre correctement
+    setTimeout(() => {
+        if (caddyProcess && caddyProcess.pid) {
+            console.log('✅ Caddy démarré avec PID:', caddyProcess.pid);
+        } else {
+            console.error('❌ Caddy n\'a pas démarré - pas de PID');
+        }
+    }, 1000);
     
     // Attendre que Caddy soit prêt
     return new Promise((resolve) => {
@@ -536,9 +647,79 @@ function stopProcesses() {
     }
 }
 
+// Créer le menu avec la version
+function createMenu() {
+    const template = [
+        {
+            label: 'Aide',
+            submenu: [
+                {
+                    label: 'À propos de Duplicator',
+                    click: () => {
+                        const { dialog } = require('electron');
+                        dialog.showMessageBox(mainWindow, {
+                            type: 'info',
+                            title: 'À propos de Duplicator',
+                            message: 'Duplicator',
+                            detail: `Version ${app.getVersion()}\n\nApplication de duplication de documents\n\n© Collectif Duplicator`
+                        });
+                    }
+                },
+                { type: 'separator' },
+                {
+                    label: 'Visiter le site GitHub',
+                    click: () => {
+                        shell.openExternal('https://github.com/muarf/dupli-electron-caddy');
+                    }
+                },
+                { type: 'separator' },
+                {
+                    label: 'Quitter',
+                    accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
+                    click: () => {
+                        app.quit();
+                    }
+                }
+            ]
+        }
+    ];
+    
+    const menu = Menu.buildFromTemplate(template);
+    Menu.setApplicationMenu(menu);
+}
+
 function createWindow() {
     // Nettoyer les fichiers temporaires au démarrage
     cleanupTmpFiles();
+    
+    // Déterminer le chemin du preload selon la plateforme
+    let preloadPath;
+    if (process.platform === 'win32') {
+        // Windows : vérifier plusieurs chemins possibles
+        const possiblePaths = [
+            path.join(process.resourcesPath, 'app', 'preload.js'),
+            path.join(process.resourcesPath, 'preload.js'),
+            path.join(__dirname, 'preload.js')
+        ];
+        
+        for (const p of possiblePaths) {
+            if (fs.existsSync(p)) {
+                preloadPath = p;
+                console.log('Preload trouvé:', preloadPath);
+                break;
+            }
+        }
+        
+        if (!preloadPath) {
+            console.error('⚠️ Preload.js non trouvé, utilisation du chemin par défaut');
+            preloadPath = path.join(__dirname, 'preload.js');
+        }
+    } else {
+        preloadPath = path.join(__dirname, 'preload.js');
+    }
+    
+    console.log('Chemin preload utilisé:', preloadPath);
+    console.log('Preload existe:', fs.existsSync(preloadPath));
     
     // Créer la fenêtre du navigateur
     mainWindow = new BrowserWindow({
@@ -549,12 +730,24 @@ function createWindow() {
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
-            preload: path.join(__dirname, 'preload.js'),
+            preload: preloadPath,
             sandbox: false,
-            offscreen: false
+            offscreen: false,
+            // Désactiver la politique de sécurité de contenu pour debug
+            webSecurity: false, // TEMPORAIRE pour debug - à réactiver après
+            allowRunningInsecureContent: true
         },
-        show: false
+        show: false,
+        autoHideMenuBar: true  // Cacher le menu par défaut mais accessible avec Alt
     });
+    
+    // Ouvrir DevTools automatiquement pour debug
+    if (process.env.NODE_ENV === 'development' || process.platform === 'win32') {
+        mainWindow.webContents.openDevTools();
+    }
+    
+    // Maximiser la fenêtre au démarrage
+    mainWindow.maximize();
     
     // Démarrer les serveurs
     async function startServers() {
@@ -610,30 +803,254 @@ function createWindow() {
             await startPhpFpm();
             await startCaddy();
             
+            // Attendre un peu pour que Caddy soit bien prêt
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
             // Charger l'application
+            console.log('Chargement de http://127.0.0.1:8000/');
             mainWindow.loadURL('http://127.0.0.1:8000/');
             mainWindow.show();
             
             console.log('Serveurs démarrés avec succès');
+            
+            // Ajouter des listeners de debug pour comprendre les erreurs
+            mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+                console.error('❌ Erreur de chargement page principale:', errorCode, errorDescription, validatedURL);
+                if (isMainFrame) {
+                    console.error('Page principale en échec, tentative fallback...');
+                    setTimeout(() => {
+                        mainWindow.loadURL('http://127.0.0.1:8001/');
+                    }, 2000);
+                }
+            });
+            
+            // Debug pour voir le contenu de la page chargée
+            mainWindow.webContents.on('did-finish-load', async () => {
+                const url = mainWindow.webContents.getURL();
+                console.log('✅ Page chargée avec succès:', url);
+                
+                // Attendre un peu pour que le DOM soit stable
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Capturer le title de la page
+                const title = await mainWindow.webContents.executeJavaScript('document.title').catch(() => 'ERREUR TITLE');
+                console.log('Title de la page:', title);
+                
+                // Vérifier si le body existe et a du contenu
+                const bodyInfo = await mainWindow.webContents.executeJavaScript(`
+                    (() => {
+                        if (!document.body) return {exists: false, length: 0, html: 'NO BODY'};
+                        const html = document.body.innerHTML || '';
+                        return {
+                            exists: true,
+                            length: html.length,
+                            html: html.substring(0, 300)
+                        };
+                    })()
+                `).catch(() => ({exists: false, length: 0, html: 'ERREUR BODY'}));
+                
+                console.log('Body existe:', bodyInfo.exists, '| Longueur HTML:', bodyInfo.length);
+                if (bodyInfo.length > 0) {
+                    console.log('Début du body HTML:', bodyInfo.html);
+                } else {
+                    console.error('⚠️ Body HTML VIDE !');
+                }
+                
+                // Vérifier les erreurs réseau
+                const errors = await mainWindow.webContents.executeJavaScript(`
+                    (() => {
+                        const resources = performance.getEntriesByType('resource');
+                        const failed = resources.filter(r => !r.fromCache && (r.transferSize === 0 || r.decodedBodySize === 0));
+                        return {
+                            failed: failed.map(r => ({name: r.name, status: r.responseStatus, size: r.transferSize})),
+                            all: resources.map(r => ({name: r.name, status: r.responseStatus || 'OK', size: r.transferSize}))
+                        };
+                    })()
+                `).catch(() => ({failed: [], all: []}));
+                
+                if (errors.failed.length > 0) {
+                    console.error('Ressources en échec:', JSON.stringify(errors.failed, null, 2));
+                }
+                
+                // Vérifier les erreurs JavaScript
+                const jsErrors = await mainWindow.webContents.executeJavaScript(`
+                    (() => {
+                        const errors = [];
+                        if (window.onerror) {
+                            window.addEventListener('error', (e) => {
+                                errors.push({message: e.message, filename: e.filename, lineno: e.lineno});
+                            });
+                        }
+                        return errors;
+                    })()
+                `).catch(() => []);
+                
+                if (jsErrors.length > 0) {
+                    console.error('Erreurs JavaScript:', JSON.stringify(jsErrors, null, 2));
+                }
+                
+                // Capturer le HTML source brut
+                try {
+                    const source = await mainWindow.webContents.executeJavaScript('document.documentElement.outerHTML').catch(() => '');
+                    const sourceLength = source ? source.length : 0;
+                    console.log('📄 HTML source brut longueur:', sourceLength);
+                    if (sourceLength > 0 && sourceLength < 500) {
+                        console.log('📄 HTML source (premiers 500 chars):', source.substring(0, 500));
+                    } else if (sourceLength === 0) {
+                        console.error('⚠️ HTML source complètement vide !');
+                    }
+                } catch (err) {
+                    console.error('Erreur capture HTML source:', err);
+                }
+            });
+            
+            mainWindow.webContents.on('did-start-loading', () => {
+                console.log('🔄 Début de chargement');
+                
+                // Injecter le script de debug AVANT que la page charge son JavaScript
+                mainWindow.webContents.executeJavaScript(`
+                    (function() {
+                        // Capturer le HTML dès DOMContentLoaded (AVANT tout autre script)
+                        if (document.readyState === 'loading') {
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const htmlBefore = document.body ? document.body.innerHTML : '';
+                                const htmlLength = htmlBefore.length;
+                                window.__htmlBefore = htmlBefore;
+                                window.__htmlLength = htmlLength;
+                                console.log('[DEBUG] HTML capturé au DOMContentLoaded - Longueur:', htmlLength);
+                                if (htmlLength > 0) {
+                                    console.log('[DEBUG] Début HTML:', htmlBefore.substring(0, 300));
+                                } else {
+                                    console.error('[DEBUG] ⚠️ HTML déjà vide au DOMContentLoaded !');
+                                }
+                            }, {once: true, capture: true});
+                        }
+                        
+                        // Observer les mutations du body pour détecter quand il est vidé
+                        function setupObserver() {
+                            if (document.body) {
+                                const observer = new MutationObserver(function(mutations) {
+                                    mutations.forEach(function(mutation) {
+                                        if (mutation.type === 'childList') {
+                                            const currentLength = document.body.innerHTML.length;
+                                            if (currentLength === 0 && window.__htmlLength > 0) {
+                                                console.error('[DEBUG] ⚠️ BODY VIDÉ !');
+                                                console.error('[DEBUG] HTML avant (premiers 500 chars):', window.__htmlBefore ? window.__htmlBefore.substring(0, 500) : 'N/A');
+                                                // Essayer de capturer la stack trace
+                                                try {
+                                                    throw new Error('Body vidé');
+                                                } catch (e) {
+                                                    console.error('[DEBUG] Stack:', e.stack);
+                                                }
+                                            }
+                                        }
+                                    });
+                                });
+                                observer.observe(document.body, { childList: true, subtree: true });
+                                console.log('[DEBUG] MutationObserver installé sur body');
+                            } else {
+                                // Retry si body n'existe pas encore
+                                setTimeout(setupObserver, 100);
+                            }
+                        }
+                        
+                        if (document.body) {
+                            setupObserver();
+                        } else {
+                            // Si le body n'existe pas encore, attendre
+                            if (document.readyState === 'loading') {
+                                document.addEventListener('DOMContentLoaded', setupObserver);
+                            } else {
+                                setTimeout(setupObserver, 100);
+                            }
+                        }
+                    })();
+                `).catch(err => console.error('Erreur injection script debug:', err));
+            });
+            
+            // Debug pour les ressources bloquées
+            mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+                if (level >= 2) { // warning ou error
+                    const prefix = level === 3 ? '❌ Console ERROR' : '⚠️ Console WARNING';
+                    console.log(`${prefix}:`, message, `[${sourceId}:${line}]`);
+                }
+            });
+            
+            // Debug pour voir ce qui est bloqué par la politique de sécurité
+            mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame, frameProcessId, frameRoutingId) => {
+                console.error('❌ did-fail-load:', {
+                    errorCode,
+                    errorDescription,
+                    validatedURL,
+                    isMainFrame
+                });
+            });
+            
+            // Debug pour les requêtes réseau
+            mainWindow.webContents.session.webRequest.onBeforeRequest((details, callback) => {
+                if (details.resourceType === 'mainFrame') {
+                    console.log('📥 Requête principale:', details.url);
+                }
+                callback({});
+            });
+            
+            // Intercepter les réponses pour voir les headers
+            mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+                if (details.resourceType === 'mainFrame') {
+                    console.log('📥 Headers reçus pour:', details.url);
+                    console.log('   Status:', details.statusCode, details.statusLine);
+                    console.log('   Content-Type:', details.responseHeaders['content-type'] || details.responseHeaders['Content-Type']);
+                    console.log('   Tous headers:', JSON.stringify(details.responseHeaders, null, 2));
+                }
+                callback({});
+            });
+            
+            // Le listener did-finish-load est déjà défini plus haut, on n'en ajoute pas un deuxième
         } catch (error) {
             console.error('Erreur lors du démarrage des serveurs:', error);
+            console.error('Stack:', error.stack);
             // Fallback : utiliser le serveur PHP intégré uniquement
             console.log('Tentative de démarrage avec le serveur PHP intégré uniquement...');
             try {
                 startPhpServer();
+                console.log('Chargement fallback vers http://127.0.0.1:8001/');
                 mainWindow.loadURL('http://127.0.0.1:8001/');
                 mainWindow.show();
                 console.log('Serveur PHP intégré démarré avec succès');
             } catch (fallbackError) {
                 console.error('Erreur serveur PHP intégré:', fallbackError);
+                console.error('Stack:', fallbackError.stack);
                 // Afficher une page d'erreur
-                mainWindow.loadFile('error.html');
+                mainWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>Erreur de démarrage</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; padding: 40px; background: #f5f5f5; }
+                            h1 { color: #e53e3e; }
+                            p { color: #4a5568; }
+                            code { background: #2d3748; color: #a0ff00; padding: 10px; display: block; margin: 10px 0; }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>❌ Erreur de démarrage</h1>
+                        <p>Impossible de démarrer les serveurs nécessaires.</p>
+                        <code>${error.message}</code>
+                        <p>Veuillez vérifier les logs dans la console.</p>
+                    </body>
+                    </html>
+                `));
                 mainWindow.show();
             }
         }
     }
     
     startServers();
+    
+    // Créer le menu avec la version
+    createMenu();
     
     // Ouvrir les DevTools en développement
     if (process.env.NODE_ENV === 'development') {
@@ -647,13 +1064,20 @@ function setupAutoUpdater() {
     autoUpdater.autoDownload = false; // Ne pas télécharger automatiquement (demander d'abord)
     autoUpdater.autoInstallOnAppQuit = true; // Installer automatiquement au redémarrage
     
+    console.log('🔧 Configuration autoUpdater:');
+    console.log('  - Version actuelle:', app.getVersion());
+    console.log('  - AutoDownload:', autoUpdater.autoDownload);
+    console.log('  - AutoInstallOnAppQuit:', autoUpdater.autoInstallOnAppQuit);
+    console.log('  - Channel:', autoUpdater.channel || 'default');
+    
     // Événements de mise à jour
     autoUpdater.on('checking-for-update', () => {
-        console.log('Vérification des mises à jour...');
+        console.log('🔄 Vérification des mises à jour...');
     });
     
     autoUpdater.on('update-available', (info) => {
-        console.log('Mise à jour disponible:', info.version);
+        console.log('✅ Mise à jour disponible:', info.version);
+        console.log('   Détails:', JSON.stringify(info, null, 2));
         
         // Envoyer une notification à l'interface
         if (mainWindow && mainWindow.webContents) {
@@ -662,7 +1086,9 @@ function setupAutoUpdater() {
     });
     
     autoUpdater.on('update-not-available', (info) => {
-        console.log('Aucune mise à jour disponible');
+        console.log('ℹ️  Aucune mise à jour disponible');
+        console.log('   Version demandée:', info.version || 'N/A');
+        console.log('   Version actuelle:', app.getVersion());
         
         if (mainWindow && mainWindow.webContents) {
             mainWindow.webContents.send('update-not-available', info);
@@ -670,9 +1096,7 @@ function setupAutoUpdater() {
     });
     
     autoUpdater.on('error', (err) => {
-        console.error('Erreur lors de la mise à jour:', err);
-        
-        // Ne pas afficher d'erreur si c'est un problème de réseau (pas d'internet)
+        // Détecter si c'est une erreur critique ou juste informatif
         const isNetworkError = err.message && (
             err.message.includes('net::') ||
             err.message.includes('ENOTFOUND') ||
@@ -682,11 +1106,19 @@ function setupAutoUpdater() {
             err.message.includes('404')
         );
         
-        if (!isNetworkError && mainWindow && mainWindow.webContents) {
-            // Afficher l'erreur uniquement si ce n'est pas un problème de réseau
-            mainWindow.webContents.send('update-error', err);
+        if (!isNetworkError) {
+            // Erreur critique - afficher dans la console ET dans l'interface
+            console.error('❌ ERREUR CRITIQUE lors de la mise à jour:', err);
+            console.error('   Message:', err.message);
+            console.error('   Stack:', err.stack);
+            
+            if (mainWindow && mainWindow.webContents) {
+                mainWindow.webContents.send('update-error', err);
+            }
         } else {
-            console.log('Vérification des mises à jour ignorée (pas de connexion internet ou release non disponible)');
+            // Erreur non-critique (réseau/release inexistant) - juste dans la console
+            console.log('⚠️  Vérification des mises à jour ignorée (pas de connexion internet ou release non disponible)');
+            console.log('   Raison:', err.message);
         }
     });
     
@@ -710,26 +1142,29 @@ function setupAutoUpdater() {
     
     // Vérifier les mises à jour au démarrage (après 10 secondes)
     setTimeout(() => {
-        console.log('Lancement de la vérification des mises à jour...');
-        autoUpdater.checkForUpdates().catch(err => {
+        console.log('🚀 Lancement de la vérification des mises à jour initiale...');
+        autoUpdater.checkForUpdates().then(result => {
+            console.log('✅ checkForUpdates terminé:', result);
+        }).catch(err => {
             // Erreur silencieuse si pas de connexion
             if (err.message && (err.message.includes('net::') || err.message.includes('ENOTFOUND'))) {
-                console.log('Pas de connexion internet, vérification des mises à jour ignorée');
+                console.log('⚠️  Pas de connexion internet, vérification des mises à jour ignorée');
             } else {
-                console.error('Erreur vérification mise à jour:', err.message);
+                console.error('❌ Erreur vérification mise à jour:', err.message);
+                console.error('   Stack:', err.stack);
             }
         });
     }, 10000);
     
     // Vérifier toutes les 4 heures
     setInterval(() => {
-        console.log('Vérification périodique des mises à jour...');
+        console.log('🔄 Vérification périodique des mises à jour...');
         autoUpdater.checkForUpdates().catch(err => {
             // Erreur silencieuse si pas de connexion
             if (err.message && (err.message.includes('net::') || err.message.includes('ENOTFOUND'))) {
-                console.log('Pas de connexion internet, vérification des mises à jour ignorée');
+                console.log('⚠️  Pas de connexion internet, vérification des mises à jour ignorée');
             } else {
-                console.error('Erreur vérification mise à jour:', err.message);
+                console.error('❌ Erreur vérification mise à jour:', err.message);
             }
         });
     }, 4 * 60 * 60 * 1000);
@@ -812,11 +1247,15 @@ ipcMain.handle('cleanup-tmp-files', async () => {
 
 // Vérifier les mises à jour
 ipcMain.handle('check-for-updates', async () => {
+    console.log('🔍 IPC check-for-updates appelé manuellement');
     try {
         const result = await autoUpdater.checkForUpdates();
+        console.log('✅ IPC check-for-updates résultat:', result);
         return { success: true, updateInfo: result ? result.updateInfo : null };
     } catch (error) {
-        console.error('Erreur vérification mise à jour:', error);
+        console.error('❌ IPC Erreur vérification mise à jour:', error);
+        console.error('   Message:', error.message);
+        console.error('   Stack:', error.stack);
         return { success: false, error: error.message };
     }
 });

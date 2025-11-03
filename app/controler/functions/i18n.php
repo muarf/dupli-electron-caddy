@@ -310,7 +310,7 @@ function generateLanguageSelector() {
         $html .= '<li' . $active . '>';
         
         // Construire l'URL en préservant la page actuelle
-        $currentUrl = $_SERVER['REQUEST_URI'];
+        $currentUrl = $_SERVER['REQUEST_URI'] ?? '/';
         $parsedUrl = parse_url($currentUrl);
         $queryParams = [];
         
