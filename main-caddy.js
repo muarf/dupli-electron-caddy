@@ -665,6 +665,70 @@ function createMenu() {
                         });
                     }
                 },
+                {
+                    label: 'Vérifier les mises à jour',
+                    click: async () => {
+                        const { dialog } = require('electron');
+                        try {
+                            dialog.showMessageBox(mainWindow, {
+                                type: 'info',
+                                title: 'Vérification des mises à jour',
+                                message: 'Vérification en cours...',
+                                detail: 'Recherche de mises à jour disponibles...'
+                            });
+
+                            const result = await autoUpdater.checkForUpdates();
+
+                            if (result && result.updateInfo) {
+                                const updateInfo = result.updateInfo;
+                                const currentVersion = app.getVersion();
+
+                                if (updateInfo.version !== currentVersion) {
+                                    const choice = await dialog.showMessageBox(mainWindow, {
+                                        type: 'question',
+                                        buttons: ['Télécharger', 'Plus tard'],
+                                        defaultId: 0,
+                                        title: 'Mise à jour disponible',
+                                        message: `Version ${updateInfo.version} disponible`,
+                                        detail: `Vous utilisez la version ${currentVersion}.\nVoulez-vous télécharger la mise à jour ?`
+                                    });
+
+                                    if (choice.response === 0) {
+                                        autoUpdater.downloadUpdate();
+                                        dialog.showMessageBox(mainWindow, {
+                                            type: 'info',
+                                            title: 'Téléchargement',
+                                            message: 'Téléchargement en cours...',
+                                            detail: 'Vous serez notifié quand le téléchargement sera terminé.'
+                                        });
+                                    }
+                                } else {
+                                    dialog.showMessageBox(mainWindow, {
+                                        type: 'info',
+                                        title: 'À jour',
+                                        message: 'Vous utilisez la dernière version',
+                                        detail: `Version ${currentVersion}`
+                                    });
+                                }
+                            } else {
+                                dialog.showMessageBox(mainWindow, {
+                                    type: 'info',
+                                    title: 'Vérification terminée',
+                                    message: 'Impossible de vérifier les mises à jour',
+                                    detail: 'Vérifiez votre connexion internet ou réessayez plus tard.'
+                                });
+                            }
+                        } catch (error) {
+                            console.error('Erreur vérification mise à jour:', error);
+                            dialog.showMessageBox(mainWindow, {
+                                type: 'error',
+                                title: 'Erreur',
+                                message: 'Erreur lors de la vérification',
+                                detail: error.message
+                            });
+                        }
+                    }
+                },
                 { type: 'separator' },
                 {
                     label: 'Visiter le site GitHub',
@@ -741,8 +805,8 @@ function createWindow() {
         autoHideMenuBar: true  // Cacher le menu par défaut mais accessible avec Alt
     });
     
-    // Ouvrir DevTools automatiquement pour debug
-    if (process.env.NODE_ENV === 'development' || process.platform === 'win32') {
+    // Ouvrir les DevTools en développement uniquement
+    if (process.env.NODE_ENV === 'development') {
         mainWindow.webContents.openDevTools();
     }
     
