@@ -45,7 +45,7 @@ $title = __("unimpose.title");
             <!-- Messages d'erreur -->
             <?php if (!empty($errors)): ?>
                 <div class="alert alert-danger">
-                    <h4><i class="fa fa-exclamation-triangle"></i> Erreurs détectées :</h4>
+                    <h4><i class="fa fa-exclamation-triangle"></i> <?php _e('unimpose.errors_detected'); ?></h4>
                     <ul class="mb-3">
                         <?php foreach ($errors as $error): ?>
                             <li><?= htmlspecialchars($error) ?></li>

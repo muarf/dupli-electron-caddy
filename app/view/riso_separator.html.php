@@ -205,15 +205,15 @@ canvas {
                                 <div class="layer-controls">
                                     <label><?php _e('riso_separator.drum'); ?></label>
                                     <select class="form-control tambour-select" data-channel="green">
-                                        <option value="green">Vert</option>
-                                        <option value="black">Noir</option>
-                                        <option value="blue">Bleu</option>
-                                        <option value="yellow">Jaune</option>
-                                        <option value="red">Rouge</option>
-                                        <option value="violet">Violet</option>
-                                        <option value="none">Aucun</option>
+                                        <option value="green"><?php _e('riso_separator.green'); ?></option>
+                                        <option value="black"><?php _e('riso_separator.black'); ?></option>
+                                        <option value="blue"><?php _e('riso_separator.blue'); ?></option>
+                                        <option value="yellow"><?php _e('riso_separator.yellow'); ?></option>
+                                        <option value="red"><?php _e('riso_separator.red'); ?></option>
+                                        <option value="violet"><?php _e('riso_separator.violet'); ?></option>
+                                        <option value="none"><?php _e('riso_separator.none'); ?></option>
                                     </select>
-                                    <label style="margin-top: 10px;">Opacité: <span id="greenOpacity">100</span>%</label>
+                                    <label style="margin-top: 10px;"><?php _e('riso_separator.opacity_label'); ?> <span id="greenOpacity">100</span>%</label>
                                     <input type="range" class="form-control" id="greenOpacitySlider" min="0" max="100" value="100">
                                     <button class="btn btn-sm btn-success btn-block" style="margin-top: 10px;" onclick="exportChannel('green')">
                                         <i class="fa fa-download"></i> <?php _e('riso_separator.export_png'); ?>
@@ -230,7 +230,7 @@ canvas {
                                 <div class="layer-controls">
                                     <label><?php _e('riso_separator.drum'); ?></label>
                                     <select class="form-control tambour-select" data-channel="blue">
-                                        <option value="blue">Bleu</option>
+                                        <option value="blue"><?php _e('riso_separator.blue'); ?></option>
                                         <option value="black">Noir</option>
                                         <option value="red">Rouge</option>
                                         <option value="yellow">Jaune</option>
@@ -257,7 +257,7 @@ canvas {
                                     <select class="form-control tambour-select" data-channel="black">
                                         <option value="black">Noir</option>
                                         <option value="red">Rouge</option>
-                                        <option value="blue">Bleu</option>
+                                        <option value="blue"><?php _e('riso_separator.blue'); ?></option>
                                         <option value="yellow">Jaune</option>
                                         <option value="green">Vert</option>
                                         <option value="violet">Violet</option>

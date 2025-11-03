@@ -39,10 +39,44 @@ jobs:
           ref: main
           fetch-depth: 0
     
-      - name: Copy files to app/
+      - name: Get commit message from source
+        id: commit_msg
+        run: |
+          cd source
+          COMMIT_MSG=$(git log -1 --pretty=format:'%s')
+          echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
+    
+      - name: Get version from package.json
+        id: get_version
         run: |
           cd target
-          # Exclure les fichiers spécifiques
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $VERSION"
+    
+      - name: Sync files using Git (clone and copy)
+        run: |
+          cd target
+          
+          # Configurer Git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          TOKEN="${{ secrets.ELECTRON_CADDY_TOKEN || secrets.GITHUB_TOKEN }}"
+          git remote set-url origin https://x-access-token:$TOKEN@github.com/MuArF/dupli-electron-caddy.git
+          
+          # S'assurer d'avoir la dernière version de main
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
+          
+          # Supprimer l'ancien dossier app/ pour repartir à zéro
+          rm -rf app/
+          
+          # Cloner dupli-php-dev dans un dossier temporaire
+          git clone --depth 1 https://github.com/MuArF/dupli-php-dev.git temp-source
+          
+          # Copier les fichiers en excluant ce qu'il faut
+          mkdir -p app
           rsync -av --delete \
             --exclude='.git' \
             --exclude='node_modules' \
@@ -63,50 +97,35 @@ jobs:
             --exclude='.gitignore' \
             --exclude='PROMPT_NEXT_ASSISTANT.md' \
             --exclude='DIFF_ANALYSIS.md' \
-            ../source/ app/
-    
-      - name: Get version from package.json
-        id: get_version
-        run: |
-          cd target
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Current version: $VERSION"
-    
-      - name: Get commit message from source
-        id: commit_msg
-        run: |
-          cd source
-          COMMIT_MSG=$(git log -1 --pretty=format:'%s')
-          echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
+            temp-source/ app/
+          
+          # Nettoyer
+          rm -rf temp-source
+          
+          # Afficher un résumé
+          echo "Files synced to app/:"
+          find app/ -type f | wc -l | xargs echo "Total files:"
     
       - name: Commit and push to dupli-electron-caddy
         run: |
           cd target
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Utiliser ELECTRON_CADDY_TOKEN si disponible, sinon GITHUB_TOKEN
-          TOKEN="${{ secrets.ELECTRON_CADDY_TOKEN || secrets.GITHUB_TOKEN }}"
-          git remote set-url origin https://x-access-token:$TOKEN@github.com/MuArF/dupli-electron-caddy.git
-          
-          # S'assurer d'avoir la dernière version de main
-          git fetch origin main
-          git checkout main
-          git reset --hard origin/main
           
           git add app/
           
-          # Vérifier s'il y a des changements
-          if ! git diff --staged --quiet; then
-            git commit -m "Sync from dupli-php-dev: ${{ steps.commit_msg.outputs.message }}
-            
-            Auto-sync triggered by: ${{ github.sha }}"
-            git push origin main
-            echo "HAS_CHANGES=true" >> $GITHUB_ENV
-          else
-            echo "No changes to sync"
-            echo "HAS_CHANGES=false" >> $GITHUB_ENV
+          # Toucher un fichier pour forcer un changement si aucun changement détecté
+          if git diff --staged --quiet; then
+            # Forcer un changement en modifiant un timestamp dans un fichier .sync
+            echo "# Last sync: $(date -u +"%Y-%m-%d %H:%M:%S UTC") - Commit: ${{ github.sha }}" > app/.sync-timestamp
+            git add app/.sync-timestamp
+            echo "No file changes detected, forcing sync with timestamp file"
           fi
+          
+          # Créer le commit avec tous les changements
+          git commit -m "Sync from dupli-php-dev: ${{ steps.commit_msg.outputs.message }}
+          
+          Auto-sync triggered by: ${{ github.sha }}"
+          git push origin main
+          echo "HAS_CHANGES=true" >> $GITHUB_ENV
     
       - name: Trigger release workflow
         if: env.HAS_CHANGES == 'true'

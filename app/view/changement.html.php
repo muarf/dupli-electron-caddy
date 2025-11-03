@@ -48,10 +48,10 @@ if(isset($success_message)): ?>
                         
                         <!-- Sélection de la machine -->
                         <div class="form-group">
-                            <label class="col-md-4 control-label" for="machine">Machine :</label>
+                            <label class="col-md-4 control-label" for="machine"><?php _e('changement.machine_label'); ?></label>
                             <div class="col-md-4">
                                 <select name="machine" id="machine" class="form-control" required>
-                                    <option value="">Sélectionnez une machine</option>
+                                    <option value=""><?php _e('changement.select_machine_placeholder'); ?></option>
                                     
                                     <!-- Duplicopieurs -->
                                     <?php if(isset($duplicopieurs) && count($duplicopieurs) > 0): ?>
@@ -76,40 +76,40 @@ if(isset($success_message)): ?>
                         
                         <!-- Type de consommable -->
                         <div class="form-group">
-                            <label class="col-md-4 control-label" for="type">Type de consommable :</label>
+                            <label class="col-md-4 control-label" for="type"><?php _e('changement.consumable_type_label'); ?></label>
                             <div class="col-md-4">
                                 <select name="type" id="type" class="form-control" required>
-                                    <option value="">Sélectionnez un type</option>
+                                    <option value=""><?php _e('changement.select_type_placeholder'); ?></option>
                                 </select>
                             </div>
                         </div>
                         
                         <!-- Nombre de passages -->
                         <div class="form-group">
-                            <label class="col-md-4 control-label" for="nb_p">Nombre de passages :</label>
+                            <label class="col-md-4 control-label" for="nb_p"><?php _e('changement.passages_count_label'); ?></label>
                             <div class="col-md-4">
                                 <input id="nb_p" name="nb_p" class="form-control input-md" required type="number" placeholder="Ex: 12345">
-                                <span class="help-block">Nombre total de copies depuis le dernier changement</span>
+                                <span class="help-block"><?php _e('changement.passages_help'); ?></span>
                             </div>
                         </div>
                         
                         <!-- Nombre de masters (pour duplicopieurs) -->
                         <div class="form-group" id="masters-group" style="display: none;">
-                            <label class="col-md-4 control-label" for="nb_m">Nombre de masters :</label>
+                            <label class="col-md-4 control-label" for="nb_m"><?php _e('changement.masters_count_label'); ?></label>
                             <div class="col-md-4">
                                 <input id="nb_m" name="nb_m" class="form-control input-md" type="number" placeholder="Ex: 67890">
-                                <span class="help-block">Nombre de masters actuels</span>
+                                <span class="help-block"><?php _e('changement.masters_help'); ?></span>
                             </div>
                         </div>
                         
                         <!-- Sélection du tambour (pour duplicopieurs) -->
                         <div class="form-group" id="tambour-group" style="display: none;">
-                            <label class="col-md-4 control-label" for="tambour">Tambour :</label>
+                            <label class="col-md-4 control-label" for="tambour"><?php _e('changement.drum_label'); ?></label>
                             <div class="col-md-4">
                                 <select name="tambour" id="tambour" class="form-control">
-                                    <option value="">Sélectionnez un tambour</option>
+                                    <option value=""><?php _e('changement.select_drum_placeholder'); ?></option>
                                 </select>
-                                <span class="help-block">encre qui a été changé</span>
+                                <span class="help-block"><?php _e('changement.drum_help'); ?></span>
                             </div>
                         </div>
                         
@@ -129,7 +129,7 @@ if(isset($success_message)): ?>
                     <div class="col-md-12">
                         <div id="aide-container">
                             <div class="alert alert-info">
-                                <h4><i class="fa fa-info-circle"></i> Instructions</h4>
+                                <h4><i class="fa fa-info-circle"></i> <?php _e('changement.instructions_title'); ?></h4>
                                 <p>Sélectionnez une machine pour voir les instructions spécifiques.</p>
                             </div>
                         </div>

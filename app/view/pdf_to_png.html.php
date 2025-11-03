@@ -33,9 +33,9 @@
                             <?php foreach ($download_urls as $index => $url): ?>
                                 <div class="col-md-4 col-sm-6" style="margin-bottom: 15px;">
                                     <div class="thumbnail" style="text-align: center;">
-                                        <img src="<?= htmlspecialchars($url) ?>" alt="Page <?= ($index + 1) ?>" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px;">
+                                        <img src="<?= htmlspecialchars($url) ?>" alt="<?php _e('pdf_to_png.page'); ?> <?= ($index + 1) ?>" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px;">
                                         <div class="caption">
-                                            <p><strong>Page <?= ($index + 1) ?></strong></p>
+                                            <p><strong><?php _e('pdf_to_png.page'); ?> <?= ($index + 1) ?></strong></p>
                                             <a href="<?= htmlspecialchars($url) ?>" class="btn btn-sm btn-success" download>
                                                 <i class="fa fa-download"></i> <?php _e('common.download'); ?>
                                             </a>
@@ -63,7 +63,7 @@
             <!-- Messages d'erreur -->
             <?php if (!empty($errors)): ?>
                 <div class="alert alert-danger">
-                    <h4><i class="fa fa-exclamation-triangle"></i> Erreurs détectées :</h4>
+                    <h4><i class="fa fa-exclamation-triangle"></i> <?php _e('pdf_to_png.errors_detected'); ?></h4>
                     <ul class="mb-3">
                         <?php foreach ($errors as $error): ?>
                             <li><?= htmlspecialchars($error) ?></li>

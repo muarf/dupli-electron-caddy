@@ -183,7 +183,7 @@ ob_start();
             <!-- Zone d'erreur -->
             <?php if (!empty($error)): ?>
                 <div class="alert alert-danger" style="margin-top: 30px;">
-                    <h4><i class="fa fa-exclamation-triangle"></i> Erreur</h4>
+                    <h4><i class="fa fa-exclamation-triangle"></i> <?php _e('imposition_tracts.error_title'); ?></h4>
                     <p><?= htmlspecialchars($error) ?></p>
                 </div>
             <?php endif; ?>
@@ -441,9 +441,9 @@ $(document).ready(function() {
                     pageCountEl.textContent = `${data.page_count} page(s) détectée(s)`;
                     
                     if (data.format === 'unknown') {
-                        tractType.innerHTML = `<strong>Format non standard (${data.dimensions.width}×${data.dimensions.height}mm)</strong><br><small style="color: #ff9800;">Sélectionnez manuellement le format</small>`;
+                        tractType.innerHTML = `<strong><?php _e('imposition_tracts.non_standard_format'); ?> (${data.dimensions.width}×${data.dimensions.height}mm)</strong><br><small style="color: #ff9800;"><?php _e('imposition_tracts.select_manually'); ?></small>`;
                     } else {
-                        tractType.innerHTML = `<strong>Tract ${data.format} (${data.page_count} page${data.page_count > 1 ? 's' : ''})</strong><br><small style="color: #28a745;">Détection automatique</small>`;
+                        tractType.innerHTML = `<strong><?php _e('imposition_tracts.tract_format'); ?> ${data.format} (${data.page_count} <?php _e('imposition_tracts.pages'); ?>${data.page_count > 1 ? 's' : ''})</strong><br><small style="color: #28a745;"><?php _e('imposition_tracts.automatic_detection'); ?></small>`;
                     }
                     
                     // Configurer le mode automatique
@@ -455,18 +455,18 @@ $(document).ready(function() {
                     // Activer le bouton de soumission
                     submitBtn.prop('disabled', false);
                 } else {
-                    tractType.innerHTML = `<strong style="color: #dc3545;">Erreur d'analyse</strong><br><small style="color: #dc3545;">${data.error}</small>`;
+                    tractType.innerHTML = `<strong style="color: #dc3545;"><?php _e('imposition_tracts.analysis_error'); ?></strong><br><small style="color: #dc3545;">${data.error}</small>`;
                     submitBtn.prop('disabled', true);
                 }
             } catch (parseError) {
                 console.error('JSON parse error:', parseError);
-                tractType.innerHTML = `<strong style="color: #dc3545;">Erreur de format de réponse</strong><br><small style="color: #dc3545;">Réponse serveur invalide</small>`;
+                tractType.innerHTML = `<strong style="color: #dc3545;"><?php _e('imposition_tracts.server_response_error'); ?></strong><br><small style="color: #dc3545;"><?php _e('imposition_tracts.invalid_server_response'); ?></small>`;
                 submitBtn.prop('disabled', true);
             }
         })
         .catch(error => {
             console.error('Fetch error:', error);
-            tractType.innerHTML = `<strong style="color: #dc3545;">Erreur de connexion</strong><br><small style="color: #dc3545;">Impossible d'analyser le PDF</small>`;
+            tractType.innerHTML = `<strong style="color: #dc3545;"><?php _e('imposition_tracts.connection_error'); ?></strong><br><small style="color: #dc3545;"><?php _e('imposition_tracts.unable_to_analyze'); ?></small>`;
             submitBtn.prop('disabled', true);
         });
     }

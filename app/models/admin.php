@@ -782,6 +782,20 @@ function handlePostActions($array, $dbManager, $backupManager, $siteManager, $pr
         }
     }
     
+    // Gestion du marquage comme payé de plusieurs tirages
+    if(isset($_POST['action']) && $_POST['action'] === 'mark_as_paid') {
+        if(isset($_POST['pay_ids']) && isset($_POST['pay_machines'])) {
+            $tirageManager = new TirageManager($conf);
+            $result = $tirageManager->markSelectedAsPaid($_POST['pay_ids'], $_POST['pay_machines']);
+            
+            if (count($result['errors']) > 0) {
+                $array['payment_error'] = implode(' ', $result['errors']);
+            } else {
+                $array['payment_success'] = $result['paid_count'] . ' tirage(s) marqué(s) comme payé(s) avec succès.';
+            }
+        }
+    }
+    
     // Gestion des aides
     if(isset($_POST['action'])) {
         $action = $_POST['action'];

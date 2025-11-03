@@ -1,4 +1,7 @@
 
+<!-- CSS pour l'édition inline des traductions -->
+<link rel="stylesheet" href="css/inline-translation.css">
+
 <style>
 .navbar-brand {
     white-space: nowrap !important;
@@ -173,3 +176,6 @@
 
 <!-- Auto-updater UI (Electron uniquement - ne s'active pas en mode PHP standalone) -->
 <script src="js/updater-ui.js"></script>
+
+<!-- JavaScript pour l'édition inline des traductions -->
+<script src="js/inline-translation.js"></script>

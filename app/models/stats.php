@@ -33,8 +33,8 @@ function Action(){
       $result['stat']['duplicopieurs'][$machine_name] = stats_by_machine_duplicopieur($duplicop['id'], $current_page);
   }
   
-  // Récupérer les photocopieurs installés
-  $query = $db->query("SELECT DISTINCT marque FROM photocop WHERE marque IS NOT NULL AND marque != '' ORDER BY marque");
+  // Récupérer les photocopieurs installés depuis la table photocopieurs
+  $query = $db->query("SELECT marque FROM photocopieurs WHERE actif = 1 ORDER BY marque");
   $photocopiers = $query->fetchAll(PDO::FETCH_COLUMN);
   $result['photocopiers_installes'] = $photocopiers;
   

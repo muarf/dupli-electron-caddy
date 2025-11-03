@@ -14,12 +14,13 @@
     <link rel="preload" href="css/bootstrap.css" as="style">
     <link rel="preload" href="css/font-awesome.min.css" as="style">
     
-    <!-- CSS non-bloquant avec media="print" puis activation JS -->
+    <!-- CSS critique bloquant pour éviter le FOUC -->
+    <link href="css/bootstrap.css" rel="stylesheet" type="text/css">
+    
+    <!-- CSS non-bloquant pour les ressources non-critiques -->
     <link href="css/font-awesome.min.css" rel="stylesheet" type="text/css" media="print" onload="this.media='all'">
-    <link href="css/bootstrap.css" rel="stylesheet" type="text/css" media="print" onload="this.media='all'">
     <noscript>
         <link href="css/font-awesome.min.css" rel="stylesheet" type="text/css">
-        <link href="css/bootstrap.css" rel="stylesheet" type="text/css">
     </noscript>
     <script>
       $(document).ready(function(){
@@ -30,7 +31,7 @@
     </script>
 
   </head>
-  <body style="padding-bottom: 60px;">
+  <body style="padding-bottom: 60px;" <?php if(isset($_SESSION['admin']) && $_SESSION['admin'] === true): ?>class="admin-mode"<?php endif; ?>>
 
 <?= $header  ?>
  <div class="section">

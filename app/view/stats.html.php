@@ -6,13 +6,13 @@
         <?php 
         $stats_text = get_site_setting('stats_intro_text', __('stats.intro_text'));
         
-        $stats_text = str_replace('{nb_f}', '<strong>' . ceil($stats['nb_f'] ?? 0) . ' pages</strong>', $stats_text);
-        $stats_text = str_replace('{nb_t}', '<strong>' . ($stats['nb_t'] ?? 0) . ' fois</strong>', $stats_text);
-        $stats_text = str_replace('{nb_t_par_mois}', '<strong>' . ($stats['nb_t_par_mois'] ?? 0) . ' tirages</strong>', $stats_text);
-        $stats_text = str_replace('{nbf_par_mois}', '<strong>' . ceil($stats['nbf_par_mois'] ?? 0) . ' feuilles</strong>', $stats_text);
-        $stats_text = str_replace('{nb_moy_par_mois}', '<strong>' . ($stats['nb_moy_par_mois'] ?? 0) . ' copies</strong>', $stats_text);
+        $stats_text = str_replace('{nb_f}', '<strong>' . ceil($stats['nb_f'] ?? 0) . ' ' . __('stats.pages') . '</strong>', $stats_text);
+        $stats_text = str_replace('{nb_t}', '<strong>' . ($stats['nb_t'] ?? 0) . ' ' . __('stats.times') . '</strong>', $stats_text);
+        $stats_text = str_replace('{nb_t_par_mois}', '<strong>' . ($stats['nb_t_par_mois'] ?? 0) . ' ' . __('stats.printings') . '</strong>', $stats_text);
+        $stats_text = str_replace('{nbf_par_mois}', '<strong>' . ceil($stats['nbf_par_mois'] ?? 0) . ' ' . __('stats.sheets') . '</strong>', $stats_text);
+        $stats_text = str_replace('{nb_moy_par_mois}', '<strong>' . ($stats['nb_moy_par_mois'] ?? 0) . ' ' . __('stats.copies') . '</strong>', $stats_text);
         $stats_text = str_replace('{ca}', round($stats['ca'] ?? 0) . ' euros', $stats_text);
-        $stats_text = str_replace('{doit}', '<strong><font style="color:red;">' . round($stats['doit'] ?? 0) . ' euros</font></strong>', $stats_text);
+        $stats_text = str_replace('{doit}', '<strong><font style="color:red;">' . round($stats['doit'] ?? 0) . ' ' . __('stats.euros') . '</font></strong>', $stats_text);
         $stats_text = str_replace('{ca2}', round($stats['ca2'] ?? 0) . ' euros', $stats_text);
         $stats_text = str_replace('{ca1}', round($stats['ca1'] ?? 0) . ' euros', $stats_text);
         $stats_text = str_replace('{benf}', ($stats['benf'] ?? 0) . '€', $stats_text);
@@ -41,9 +41,9 @@
           <table class="table table-striped table-hover table-bordered">
         <thead class="thead-dark">
           <tr>
-            <th><i class="fa fa-calendar"></i> Date</th>
-            <th><i class="fa fa-file-o"></i> Feuilles</th>
-            <th><i class="fa fa-print"></i> Tirages</th>
+            <th><i class="fa fa-calendar"></i> <?php _e('stats.date'); ?></th>
+            <th><i class="fa fa-file-o"></i> <?php _e('stats.sheets_column'); ?></th>
+            <th><i class="fa fa-print"></i> <?php _e('stats.printings_column'); ?></th>
             <th><i class="fa fa-calculator"></i> Moyenne</th>
             <th><i class="fa fa-euro"></i> Prix</th>
             <th><i class="fa fa-money"></i> Prix payé</th>
@@ -136,9 +136,9 @@
           <table class="table table-striped table-hover table-bordered">
         <thead class="thead-dark">
           <tr>
-            <th><i class="fa fa-calendar"></i> Date</th>
-            <th><i class="fa fa-file-o"></i> Feuilles</th>
-            <th><i class="fa fa-print"></i> Tirages</th>
+            <th><i class="fa fa-calendar"></i> <?php _e('stats.date'); ?></th>
+            <th><i class="fa fa-file-o"></i> <?php _e('stats.sheets_column'); ?></th>
+            <th><i class="fa fa-print"></i> <?php _e('stats.printings_column'); ?></th>
             <th><i class="fa fa-calculator"></i> Moyenne</th>
             <th><i class="fa fa-euro"></i> Prix</th>
             <th><i class="fa fa-money"></i> Prix payé</th>
