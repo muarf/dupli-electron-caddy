@@ -1,5 +1,5 @@
 
-            <h1 class="text-center"><?php _e('accueil.welcome'); ?></h1>
+            <h1 class="text-center"><?php _e('accueil.welcome', [], true); ?></h1>
             <hr>
 
           </div>
@@ -15,8 +15,8 @@
                 <div style="font-size: 48px; color: #007bff; margin-bottom: 20px;">
                   <i class="fa fa-print"></i>
                 </div>
-                <h2 style="color: #007bff; margin-bottom: 15px; font-weight: bold;"><?php _e('accueil.multi_machine_print'); ?></h2>
-                <p style="font-size: 16px; color: #6c757d; margin-bottom: 0;"><?php _e('accueil.multi_machine_print_desc'); ?></p>
+                <h2 style="color: #007bff; margin-bottom: 15px; font-weight: bold;"><?php _e('accueil.multi_machine_print', [], true); ?></h2>
+                <p style="font-size: 16px; color: #6c757d; margin-bottom: 0;"><?php _e('accueil.multi_machine_print_desc', [], true); ?></p>
               </div>
             </a>
           </div>
@@ -27,7 +27,7 @@
       <div class="container">
         <div class="row">
           <div class="col-md-12" id="info">
-            <h1 class="text-center"><?php _e('accueil.useful_info'); ?></h1>
+            <h1 class="text-center"><?php _e('accueil.useful_info', [], true); ?></h1>
             <hr>
             <?php 
             if (isset($news) && is_array($news)) {

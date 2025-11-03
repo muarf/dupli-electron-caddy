@@ -271,7 +271,7 @@ if (isset($_GET['debug']) && $_SERVER['REQUEST_METHOD'] === 'POST'): ?>
 
 <?php if (isset($_GET['debug']) && isset($debug)): ?>
     <div class="alert alert-info">
-        <h4>Debug complet:</h4>
+        <h4><?php _e('tirage_multimachines.debug_full'); ?></h4>
         <pre><?php var_dump($debug); ?></pre>
     </div>
 <?php elseif (isset($_GET['debug'])): ?>
@@ -286,7 +286,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
     ?>
     
     <div class="alert-modern alert alert-success">
-        <strong><i class="fa fa-check-circle"></i> Succès!</strong> Votre tirage multi-machines a été enregistré !
+        <strong><i class="fa fa-check-circle"></i> <?php _e('tirage_multimachines.success_message'); ?></strong> <?php _e('tirage_multimachines.success_description'); ?>
     </div>
     
     <!-- Récapitulatif après soumission -->
@@ -294,7 +294,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
     <div class="summary-card">
         <h3 class="text-center"><i class="fa fa-calculator"></i> <?php _e('tirage_multimachines.summary'); ?></h3>
         <div class="total-price text-center"><?= number_format($prix_total, 2) ?> <?php _e('tirage_multimachines.currency'); ?></div>
-        <p class="mb-0 text-center">Contact: <strong><?= htmlspecialchars($contact) ?></strong></p>
+        <p class="mb-0 text-center"><?php _e('tirage_multimachines.contact_label'); ?> <strong><?= htmlspecialchars($contact) ?></strong></p>
     </div>
     
             <div class="row">
@@ -302,7 +302,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
             <?php foreach ($machines as $index => $machine): ?>
                 <div class="col-md-6 col-lg-4 mb-4">
                     <div class="machine-card">
-                        <h5 class="text-center"><i class="fa fa-print"></i> Tirage #<?= ($index + 1) ?></h5>
+                        <h5 class="text-center"><i class="fa fa-print"></i> <?php _e('tirage_multimachines.tirage_number_prefix'); ?><?= ($index + 1) ?></h5>
                         <p class="text-center"><strong><?= ucfirst($machine['type']) ?></strong></p>
                         <div class="text-center" style="margin-top: 15px;">
                             <h3 style="color: #337ab7; margin: 0;">
@@ -316,13 +316,13 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
     </div>
     
     <div class="alert-modern alert alert-warning">
-        <strong><i class="fa fa-exclamation-triangle"></i> Attention!</strong> Ni les locaux, ni l'entretien des machines ne sont comptés dans ce chiffre. Merci de donner un peu plus que demandé, si possible
+        <strong><i class="fa fa-exclamation-triangle"></i> <?php _e('tirage_multimachines.warning_title'); ?></strong> <?php _e('tirage_multimachines.warning_message'); ?>
     </div>
     <?php endif; ?>
     
     <div class="text-center">
         <a href="?accueil" class="btn btn-modern btn-success-modern btn-lg">
-            <i class="fa fa-home"></i> Retour à l'accueil
+            <i class="fa fa-home"></i> <?php _e('accueil.back_to_home'); ?>
         </a>
     </div>
     <?php 
@@ -330,8 +330,8 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
     ?>
     <!-- Page de confirmation améliorée -->
     <div class="alert-modern alert alert-success">
-        <h3><i class="fa fa-check-circle"></i> Confirmation de votre tirage multi-machines</h3>
-        <p><strong>Contact :</strong> <?= htmlspecialchars($contact) ?></p>
+        <h3><i class="fa fa-check-circle"></i> <?php _e('tirage_multimachines.confirmation_title'); ?></h3>
+        <p><strong><?php _e('tirage_multimachines.contact_label'); ?></strong> <?= htmlspecialchars($contact) ?></p>
     </div>
     
     <?php if (isset($machines) && !empty($machines)): ?>
@@ -339,21 +339,21 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
             <?php foreach ($machines as $index => $machine): ?>
                 <div class="col-md-6">
                     <div class="machine-card">
-                        <h4 class="text-center"><i class="fa fa-print"></i> Tirage #<?= ($index + 1) ?> - <?= ucfirst($machine['type']) ?></h4>
+                        <h4 class="text-center"><i class="fa fa-print"></i> <?php _e('tirage_multimachines.tirage_number_prefix'); ?><?= ($index + 1) ?> - <?= ucfirst($machine['type']) ?></h4>
                             <?php if ($machine['type'] === 'duplicopieur'): ?>
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <h5><i class="fa fa-cogs"></i> Configuration</h5>
+                                        <h5><i class="fa fa-cogs"></i> <?php _e('tirage_multimachines.configuration_title'); ?></h5>
                                         <ul class="list-unstyled">
                                             <li><strong><?php _e('tirage_multimachines.masters'); ?> :</strong> <?= $machine['nb_masters'] ?? 0 ?></li>
                                             <li><strong><?php _e('tirage_multimachines.passes'); ?> :</strong> <?= $machine['nb_passages'] ?? 0 ?></li>
                                             <?php if (isset($machine['rv']) && $machine['rv'] == 'oui'): ?>
-                                                <li><i class="fa fa-check text-success"></i> Recto/Verso</li>
+                                                <li><i class="fa fa-check text-success"></i> <?php _e('tirage_multimachines.recto_verso_enabled'); ?></li>
                                             <?php endif; ?>
                                             <?php if (isset($machine['A4']) && $machine['A4'] == 'A4'): ?>
-                                                <li><i class="fa fa-check text-success"></i> Format A4</li>
+                                                <li><i class="fa fa-check text-success"></i> <?php _e('tirage_multimachines.format_a4_enabled'); ?></li>
                                             <?php else: ?>
-                                                <li><i class="fa fa-check text-info"></i> Format A3</li>
+                                                <li><i class="fa fa-check text-info"></i> <?php _e('tirage_multimachines.format_a3_enabled'); ?></li>
                                             <?php endif; ?>
                                             <?php if (isset($machine['feuilles_payees']) && $machine['feuilles_payees'] == 'oui'): ?>
                                                 <li><i class="fa fa-check text-warning"></i> <?php _e('tirage_multimachines.sheets_already_paid'); ?></li>
@@ -421,22 +421,22 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                             <?php else: ?>
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <h5><i class="fa fa-print"></i> Machine</h5>
+                                        <h5><i class="fa fa-print"></i> <?php _e('tirage_multimachines.machine_title'); ?></h5>
                                         <p><strong><?= htmlspecialchars($machine['machine']) ?></strong></p>
                                         
                                         <?php if (isset($machine['brochures']) && is_array($machine['brochures'])): ?>
-                                            <h5><i class="fa fa-file-text"></i> Brochures</h5>
+                                            <h5><i class="fa fa-file-text"></i> <?php _e('tirage_multimachines.brochures'); ?></h5>
                                             <?php foreach ($machine['brochures'] as $brochure_index => $brochure): ?>
                                                 <div class="well well-sm">
-                                                    <strong>Brochure #<?= ($brochure_index + 1) ?></strong><br>
+                                                    <strong><?php _e('tirage_multimachines.brochure'); ?> #<?= ($brochure_index + 1) ?></strong><br>
                                                     • <?= $brochure['nb_exemplaires'] ?> <?php _e('tirage_multimachines.exemplaires'); ?><br>
                                                     • <?= $brochure['nb_feuilles'] ?> <?php _e('tirage_multimachines.feuilles_per_exemplaire'); ?><br>
                                                     • <?php _e('tirage_multimachines.format'); ?> : <?= $brochure['taille'] ?><br>
                                                     <?php if (isset($brochure['rv']) && $brochure['rv'] == 'oui'): ?>
-                                                        • <i class="fa fa-check text-success"></i> Recto/Verso<br>
+                                                        • <i class="fa fa-check text-success"></i> <?php _e('tirage_multimachines.recto_verso'); ?><br>
                                                     <?php endif; ?>
                                                     <?php if (isset($brochure['couleur']) && $brochure['couleur'] == 'oui'): ?>
-                                                        • <i class="fa fa-check text-success"></i> Couleur<br>
+                                                        • <i class="fa fa-check text-success"></i> <?php _e('tirage_multimachines.color'); ?><br>
                                                     <?php endif; ?>
                                                     <?php if (isset($brochure['feuilles_payees']) && $brochure['feuilles_payees'] == 'oui'): ?>
                                                         • <i class="fa fa-check text-warning"></i> <?php _e('tirage_multimachines.sheets_paid'); ?><br>
@@ -594,7 +594,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
         </div>
         
         <div class="alert alert-info text-center">
-            <h3><i class="fa fa-calculator"></i> TOTAL GLOBAL</h3>
+            <h3><i class="fa fa-calculator"></i> <?php _e('tirage_multimachines.total_global'); ?></h3>
             <h2 class="text-primary">
                 <strong><?= number_format($prix_total, 2) ?> <?php _e('tirage_multimachines.currency'); ?></strong>
             </h2>

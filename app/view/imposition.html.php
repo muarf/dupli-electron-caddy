@@ -260,15 +260,15 @@
             <?php if ($success): ?>
                 <div class="result-section">
                     <div class="alert alert-success">
-                        <h4><i class="fa fa-check-circle"></i> Succès !</h4>
+                        <h4><i class="fa fa-check-circle"></i> <?php _e('imposition.success_title'); ?></h4>
                         <p class="mb-0"><?= htmlspecialchars($result) ?></p>
                     </div>
 
                     <?php if ($page_count > 0): ?>
                         <div class="result-card">
-                            <h3><i class="fa fa-info-circle"></i> Informations du PDF</h3>
-                            <p><strong>Nombre de pages :</strong> <?= $page_count ?></p>
-                            <p><strong>Ordre des pages réorganisées :</strong></p>
+                            <h3><i class="fa fa-info-circle"></i> <?php _e('imposition.pdf_info_title'); ?></h3>
+                            <p><strong><?php _e('imposition.page_count_label'); ?></strong> <?= $page_count ?></p>
+                            <p><strong><?php _e('imposition.page_order_label'); ?></strong></p>
                             <div class="page-sequence-container" style="background: white; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-top: 15px;">
                                 <?php 
                                 // Diviser la séquence en groupes selon le type d'imposition
@@ -299,7 +299,7 @@
                                 <div class="sheet-info" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px; text-align: center;">
                                     <h4 style="margin: 0; color: #495057;">
                                         <i class="fa fa-info-circle"></i> 
-                                        <?= $num_sheets ?> feuille<?= $num_sheets > 1 ? 's' : '' ?> A3 nécessaire<?= $num_sheets > 1 ? 's' : '' ?>
+                                        <?= $num_sheets ?> <?php _e('imposition.sheets_needed' . ($num_sheets > 1 ? '_plural' : '')); ?> A3 <?php _e('imposition.a3_needed' . ($num_sheets > 1 ? '_plural' : '')); ?>
                                         (<?= $total_pages ?> pages au total)
                                     </h4>
                                 </div>
@@ -351,7 +351,7 @@
 
                     <?php if ($preview_url): ?>
                         <div class="result-card">
-                            <h3><i class="fa fa-eye"></i> Prévisualisation</h3>
+                            <h3><i class="fa fa-eye"></i> <?php _e('imposition.preview_title'); ?></h3>
                             <div class="pdf-preview">
                                 <iframe src="<?= htmlspecialchars($preview_url) ?>" width="100%" height="600px" style="border: none;"></iframe>
                             </div>
@@ -371,7 +371,7 @@
             <div class="form-section">
                 <?php if (!empty($errors)): ?>
                     <div class="alert alert-danger">
-                        <h4><i class="fa fa-exclamation-triangle"></i> Erreurs détectées :</h4>
+                        <h4><i class="fa fa-exclamation-triangle"></i> <?php _e('imposition.errors_detected'); ?></h4>
                         <ul class="mb-3">
                             <?php foreach ($errors as $error): ?>
                                 <li><?= htmlspecialchars($error) ?></li>

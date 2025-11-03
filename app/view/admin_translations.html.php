@@ -492,8 +492,8 @@
     
     <!-- Import/Export -->
     <div class="import-export">
-        <h4><i class="fa fa-download"></i> Import/Export des Traductions</h4>
-        <p>Importez ou exportez les traductions au format CSV pour faciliter la traduction en masse.</p>
+        <h4><i class="fa fa-download"></i> <?php _e('admin.import_export_translations'); ?></h4>
+        <p><?php _e('admin.import_export_description'); ?></p>
         
         <form method="post" style="display: inline-block;">
             <input type="hidden" name="action" value="export_csv">
