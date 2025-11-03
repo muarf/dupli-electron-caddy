@@ -1,5 +1,8 @@
 <?php
-require_once(__DIR__ . '/../vendor/autoload.php');
+// Charger autoload seulement si disponible (pour compatibilité)
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require_once(__DIR__ . '/../vendor/autoload.php');
+}
 require_once(__DIR__ . '/unimpose_logic.php');
 require_once(__DIR__ . '/../controler/functions/i18n.php');
 require_once(__DIR__ . '/../controler/functions/utilities.php');

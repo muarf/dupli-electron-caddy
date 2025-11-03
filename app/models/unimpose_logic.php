@@ -5,7 +5,10 @@
  * Version utilisant smalot/pdfparser pour manipuler directement les objets PDF
  */
 
-require_once(__DIR__ . '/../vendor/autoload.php');
+// Charger autoload seulement si disponible (pour compatibilité)
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require_once(__DIR__ . '/../vendor/autoload.php');
+}
 
 use Smalot\PdfParser\Parser;
 
