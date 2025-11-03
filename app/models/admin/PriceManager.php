@@ -77,27 +77,21 @@ class PriceManager {
     public function getConsommables($machine) {
         $db = pdo_connect();
         
-        // Cas spécial : Duplicopieur utilise toujours les données "dupli" pour compatibilité
-        if ($machine === 'Duplicopieur') {
-            $machine = 'dupli';
-        }
+        // CORRECTION : Ne plus convertir arbitrairement, utiliser le nom réel passé en paramètre
+        // La fonction get_cons() se chargera de chercher le nom réel dans la base de données
         
-        // Vérifier si c'est un duplicopieur
+        // Vérifier si c'est un duplicopieur (optionnel, juste pour info)
         if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
-            $query = $db->prepare('SELECT id, tambours FROM duplicopieurs WHERE (marque || " " || modele = ? OR marque = ?) AND actif = 1 LIMIT 1');
+            $query = $db->prepare('SELECT id, tambours FROM duplicopieurs WHERE ((marque || " " || modele) = ? OR marque = ? OR LOWER(marque) = LOWER(?)) AND actif = 1 LIMIT 1');
         } else {
-            $query = $db->prepare('SELECT id, tambours FROM duplicopieurs WHERE (CONCAT(marque, " ", modele) = ? OR marque = ?) AND actif = 1 LIMIT 1');
+            $query = $db->prepare('SELECT id, tambours FROM duplicopieurs WHERE (CONCAT(marque, " ", modele) = ? OR marque = ? OR LOWER(marque) = LOWER(?)) AND actif = 1 LIMIT 1');
         }
-        $query->execute([$machine, $machine]);
+        $query->execute([$machine, $machine, $machine]);
         $duplicopieur = $query->fetch(PDO::FETCH_ASSOC);
         
-        if ($duplicopieur) {
-            // C'est un duplicopieur - utiliser toujours l'ancienne fonction avec les bons noms
-            return get_cons($machine);
-        } else {
-            // Ce n'est pas un duplicopieur, utiliser l'ancienne fonction
-            return get_cons($machine);
-        }
+        // Utiliser get_cons() qui se charge maintenant de chercher le nom réel dans la base
+        // Elle utilisera le nom réel trouvé dans duplicopieurs pour chercher dans cons
+        return get_cons($machine);
     }
     
     /**
@@ -122,19 +116,20 @@ class PriceManager {
         // Si pas d'ID fourni, chercher dans la base de données
         // SQLite n'a pas CONCAT, on utilise l'opérateur ||
         if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
-            $query = $db->prepare('SELECT id FROM duplicopieurs WHERE (marque || " " || modele = ? OR marque = ?) AND actif = 1 LIMIT 1');
+            $query = $db->prepare('SELECT id FROM duplicopieurs WHERE ((marque || " " || modele) = ? OR marque = ? OR LOWER(marque) = LOWER(?)) AND actif = 1 LIMIT 1');
         } else {
-            $query = $db->prepare('SELECT id FROM duplicopieurs WHERE (CONCAT(marque, " ", modele) = ? OR marque = ?) AND actif = 1 LIMIT 1');
+            $query = $db->prepare('SELECT id FROM duplicopieurs WHERE (CONCAT(marque, " ", modele) = ? OR marque = ? OR LOWER(marque) = LOWER(?)) AND actif = 1 LIMIT 1');
         }
-        $query->execute([$machine_name, $machine_name]);
+        $query->execute([$machine_name, $machine_name, $machine_name]);
         $result = $query->fetch(PDO::FETCH_ASSOC);
         
         if ($result) {
             return 'dupli_' . $result['id'];
         }
         
-        // Fallback sur dupli_1 si pas trouvé
-        return 'dupli_1';
+        // CORRECTION : Ne plus utiliser dupli_1 en dur, retourner une clé générique si pas trouvé
+        // L'appelant devra gérer ce cas
+        return 'dupli_unknown';
     }
     
     /**

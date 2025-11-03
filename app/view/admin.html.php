@@ -96,7 +96,7 @@
         <!-- Sécurité -->
         <div class="panel panel-warning">
           <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-shield"></i> Sécurité</h3>
+            <h3 class="panel-title"><i class="fa fa-shield"></i> <?php _e('admin.security'); ?></h3>
           </div>
           <div class="panel-body">
             <div class="row">
@@ -104,13 +104,13 @@
                 <a href="?admin&mots" class="btn btn-warning btn-block">
                   <i class="fa fa-key"></i> Gestion des mots de passe
                 </a>
-                <small class="text-muted">Sécurité et accès</small>
+                <small class="text-muted"><?php _e('admin.security_access'); ?></small>
               </div>
               <div class="col-md-6">
                 <a href="?admin&bdd" class="btn btn-danger btn-block">
                   <i class="fa fa-database"></i> Gestion des BDD
                 </a>
-                <small class="text-muted">Création, sauvegarde, restauration</small>
+                <small class="text-muted"><?php _e('admin.creation_backup_restore'); ?></small>
               </div>
             </div>
           </div>

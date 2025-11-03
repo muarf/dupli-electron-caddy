@@ -95,19 +95,50 @@ function get_cons($machine)
     $ii_encre = 0;
     $ii = 0; // Initialiser $ii pour éviter les erreurs
 
+    // CORRECTION : Chercher le nom réel de la machine dans la base de données au lieu d'utiliser des noms en dur
+    $machine_for_cons = $machine;
+    $duplicopieur_id = null;
+    $table_name = 'dupli'; // Par défaut pour les duplicopieurs
+    $nb = array('master_av' => 0, 'passage_av' => 0); // Initialiser par défaut
+    
     if($machine != 'photocop')
     {
-    	// Pour les duplicopieurs, utiliser 'dupli' au lieu du nom de la machine
-    	$table_name = ($machine === 'dx4545' || $machine === 'A3' || $machine === 'dupli') ? 'dupli' : $machine;
-    	$nb = get_last_number($table_name);
-    }
-    // CORRECTION : Cas spécial pour "Duplicopieur" et recherche insensible à la casse
-    $machine_for_cons = $machine;
-    if ($machine === 'Duplicopieur') {
-        $machine_for_cons = 'dupli';
+        // Chercher dans la table duplicopieurs pour obtenir le nom réel utilisé dans cons
+        if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
+            $query_dup = $db->prepare('SELECT id, marque, modele FROM duplicopieurs WHERE ((marque || " " || modele) = ? OR marque = ? OR LOWER(marque) = LOWER(?)) AND actif = 1 LIMIT 1');
+        } else {
+            $query_dup = $db->prepare('SELECT id, marque, modele FROM duplicopieurs WHERE (CONCAT(marque, " ", modele) = ? OR marque = ? OR LOWER(marque) = LOWER(?)) AND actif = 1 LIMIT 1');
+        }
+        $query_dup->execute([$machine, $machine, $machine]);
+        $dup_result = $query_dup->fetch(PDO::FETCH_ASSOC);
+        
+        if ($dup_result) {
+            // Trouvé dans duplicopieurs : utiliser le nom réel (marque ou marque + modele)
+            $duplicopieur_id = $dup_result['id'];
+            if ($dup_result['marque'] === $dup_result['modele']) {
+                $machine_for_cons = $dup_result['marque'];
+            } else {
+                $machine_for_cons = $dup_result['marque'] . ' ' . $dup_result['modele'];
+            }
+            $table_name = 'dupli';
+            $nb = get_last_number($table_name);
+        } else {
+            // Pas trouvé dans duplicopieurs : utiliser le nom tel quel (pour compatibilité avec anciens noms)
+            $machine_for_cons = $machine;
+            // Essayer de deviner la table : si ce n'est pas un nom connu, utiliser le nom directement
+            $known_names = ['dx4545', 'A3', 'A4', 'dupli'];
+            if (in_array(strtolower($machine), array_map('strtolower', $known_names))) {
+                $table_name = 'dupli';
+            } else {
+                $table_name = $machine;
+            }
+            $nb = get_last_number($table_name);
+        }
     }
     
-    $query =$db->query('SELECT * FROM cons where LOWER(machine) = LOWER("'.$machine_for_cons.'")');
+    // Rechercher dans cons avec le nom réel de la machine (insensible à la casse)
+    $query = $db->prepare('SELECT * FROM cons WHERE LOWER(machine) = LOWER(?)');
+    $query->execute([$machine_for_cons]);
     $i=0;
     while ($result = $query->fetch(PDO::FETCH_OBJ))
     {
@@ -115,6 +146,7 @@ function get_cons($machine)
       $res[$i]['type'] = $result->type;
       $res[$i]['nb_p'] = $result->nb_p;
       $res[$i]['nb_m'] = $result->nb_m;
+      $res[$i]['tambour'] = $result->tambour ?? null; // Récupérer le champ tambour pour identifier le type de tambour
       $i++;
     }
     $max = count($res) ;
@@ -182,6 +214,7 @@ function get_cons($machine)
           if(!isset($i_encre)){$i_encre = 0;}
           $res['encre'][$i_encre]['temps'] =  $res[$i]['date'];
           $res['encre'][$i_encre]['nb_p'] = $res[$i]['nb_p'];
+          $res['encre'][$i_encre]['tambour'] = $res[$i]['tambour'] ?? null; // Stocker le tambour associé à chaque changement
           if( $i_encre >0 )
           { 
           	$ii_encre = $i_encre -1;
@@ -246,34 +279,75 @@ function get_cons($machine)
       $res['encre']['temps_jusqua'] = $res['encre']['moyenne_totale']['temps'] - $res['encre']['temps_depuis'];
       $res['master']['temps_jusqua'] = $res['master']['moyenne_totale']['temps'] - $res['master']['temps_depuis'];
       
-      // CORRECTION : Chercher l'ID réel du duplicopieur dans la base de données au lieu d'utiliser dupli_1 en dur
+      // CORRECTION : Utiliser l'ID du duplicopieur trouvé précédemment ou chercher dynamiquement
       $machine_key = '';
-      // Pour les anciennes machines, utiliser dupli_1 comme fallback
-      $machine_lower = strtolower($machine);
-      if ($machine_lower === 'dx4545' || $machine_lower === 'a3' || $machine_lower === 'dupli' || $machine_lower === 'duplicopieur') {
-          $machine_key = 'dupli_1';
+      if ($duplicopieur_id !== null) {
+          // Utiliser l'ID trouvé au début de la fonction
+          $machine_key = 'dupli_' . $duplicopieur_id;
       } else {
-          // Pour les nouvelles machines, chercher l'ID réel dans la table duplicopieurs
-          // SQLite utilise || pour la concaténation, pas CONCAT
+          // Si pas trouvé au début, chercher maintenant dans duplicopieurs
           if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
-              $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE (marque = ? OR (marque || " " || modele) = ? OR LOWER(marque) = ?) AND actif = 1 LIMIT 1');
+              $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE ((marque || " " || modele) = ? OR marque = ? OR LOWER(marque) = LOWER(?)) AND actif = 1 LIMIT 1');
           } else {
-              $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE (marque = ? OR CONCAT(marque, " ", modele) = ? OR LOWER(marque) = ?) AND actif = 1 LIMIT 1');
+              $query_dup = $db->prepare('SELECT id FROM duplicopieurs WHERE (CONCAT(marque, " ", modele) = ? OR marque = ? OR LOWER(marque) = LOWER(?)) AND actif = 1 LIMIT 1');
           }
-          $query_dup->execute([$machine, $machine, strtolower($machine)]);
+          $query_dup->execute([$machine, $machine, $machine]);
           $dup_result = $query_dup->fetch(PDO::FETCH_ASSOC);
           if ($dup_result) {
               $machine_key = 'dupli_' . $dup_result['id'];
           } else {
-              // Fallback : utiliser le nom de la machine en uppercase
+              // Fallback : si vraiment pas trouvé, essayer avec le nom d'origine
+              // Mais ne pas utiliser dupli_1 en dur
               $machine_key = strtoupper($machine);
           }
       }
       
+      // Calcul du prix master (inchangé)
       $res['master']['prix_calcule'] = ($res['master']['moyenne_totale']['nb_m'] > 0) ? ($prix[$machine_key]['master']['pack'] ?? 0) / $res['master']['moyenne_totale']['nb_m'] : 0;
-      $res['encre']['prix_calcule'] = ($res['encre']['moyenne_totale']['nb_p'] > 0) ? ($prix[$machine_key]['encre']['pack'] ?? 0) / $res['encre']['moyenne_totale']['nb_p'] : 0;
       
-      ($res['encre']['prix_calcule']< ($prix[$machine_key]['encre']['unite'] ?? 0)) ? $res['encre']['color'] = "green": $res['encre']['color'] = "red";
+      // CORRECTION : Calcul du prix encre avec détection du tambour
+      // Déterminer quel tambour est utilisé (chercher dans les données encre récupérées)
+      $tambour_utilise = null;
+      if (isset($res['encre']) && is_array($res['encre'])) {
+          // Prendre le premier tambour trouvé (ou le plus fréquent si plusieurs)
+          foreach ($res['encre'] as $encre_data) {
+              if (isset($encre_data['tambour']) && !empty($encre_data['tambour'])) {
+                  $tambour_utilise = $encre_data['tambour'];
+                  break; // Utiliser le premier trouvé
+              }
+          }
+      }
+      
+      // Chercher le prix pack : d'abord avec le tambour spécifique, puis fallback sur 'encre'
+      $prix_pack_encre = 0;
+      if ($tambour_utilise && isset($prix[$machine_key][$tambour_utilise]['pack'])) {
+          // Utiliser le prix du tambour spécifique trouvé dans cons
+          $prix_pack_encre = $prix[$machine_key][$tambour_utilise]['pack'];
+      } elseif (isset($prix[$machine_key]['tambour_noir']['pack'])) {
+          // Fallback sur tambour_noir (le plus commun)
+          $prix_pack_encre = $prix[$machine_key]['tambour_noir']['pack'];
+      } elseif (isset($prix[$machine_key]['encre']['pack'])) {
+          // Fallback sur 'encre' (ancienne structure de compatibilité)
+          $prix_pack_encre = $prix[$machine_key]['encre']['pack'];
+      }
+      
+      $res['encre']['prix_calcule'] = ($res['encre']['moyenne_totale']['nb_p'] > 0) 
+          ? $prix_pack_encre / $res['encre']['moyenne_totale']['nb_p'] 
+          : 0;
+      
+      // Chercher le prix unitaire avec la même logique
+      $prix_unite_encre = 0;
+      if ($tambour_utilise && isset($prix[$machine_key][$tambour_utilise]['unite'])) {
+          $prix_unite_encre = $prix[$machine_key][$tambour_utilise]['unite'];
+      } elseif (isset($prix[$machine_key]['tambour_noir']['unite'])) {
+          $prix_unite_encre = $prix[$machine_key]['tambour_noir']['unite'];
+      } elseif (isset($prix[$machine_key]['encre']['unite'])) {
+          $prix_unite_encre = $prix[$machine_key]['encre']['unite'];
+      }
+      
+      ($res['encre']['prix_calcule'] < $prix_unite_encre) 
+          ? $res['encre']['color'] = "green" 
+          : $res['encre']['color'] = "red";
       ($res['master']['prix_calcule']< ($prix[$machine_key]['master']['unite'] ?? 0)) ? $res['master']['color'] = "green": $res['master']['color'] = "red";
       
       if(($res['encre']['temps_jusqua']/86400) < -30){ $res['encre']['class'] = "danger" ;}

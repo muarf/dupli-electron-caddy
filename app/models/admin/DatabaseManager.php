@@ -583,6 +583,18 @@ class AdminDatabaseManager {
                 `date_modification` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (`id`),
                 UNIQUE KEY `machine` (`machine`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+            
+            'aide_machines_qa' => "CREATE TABLE IF NOT EXISTS `aide_machines_qa` (
+                `id` int NOT NULL AUTO_INCREMENT,
+                `machine` varchar(100) NOT NULL,
+                `question` text NOT NULL,
+                `reponse` text NOT NULL,
+                `ordre` int DEFAULT 0,
+                `categorie` varchar(50) DEFAULT 'general',
+                `date_creation` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+                `date_modification` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci"
         );
         

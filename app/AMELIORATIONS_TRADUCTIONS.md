@@ -103,3 +103,9 @@ Nouvelles méthodes ajoutées :
 ## 📱 Responsive Design
 L'interface s'adapte automatiquement aux écrans mobiles et tablettes pour une utilisation optimale sur tous les appareils.
 
+
+
+
+
+
+
