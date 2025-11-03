@@ -22,7 +22,26 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-      
+
+      - name: Update package.json version
+        run: |
+          echo "Mise à jour de package.json avec la version du tag..."
+          # Extraire la version du tag (supprimer le 'v' du début)
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "Version extraite: $VERSION"
+
+          # Utiliser Node.js pour mettre à jour package.json
+          node -e "
+            const fs = require('fs');
+            const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            packageJson.version = '$VERSION';
+            fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2) + '\n');
+            console.log('✅ package.json mis à jour vers version', '$VERSION');
+          "
+
+          # Vérifier la mise à jour
+          grep '\"version\"' package.json
+
       - name: Install dependencies
         run: npm install
       
@@ -76,7 +95,26 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-      
+
+      - name: Update package.json version
+        run: |
+          echo "Mise à jour de package.json avec la version du tag..."
+          # Extraire la version du tag (supprimer le 'v' du début)
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "Version extraite: $VERSION"
+
+          # Utiliser Node.js pour mettre à jour package.json
+          node -e "
+            const fs = require('fs');
+            const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            packageJson.version = '$VERSION';
+            fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2) + '\n');
+            console.log('✅ package.json mis à jour vers version', '$VERSION');
+          "
+
+          # Vérifier la mise à jour
+          grep '\"version\"' package.json
+
       - name: Install dependencies
         run: npm install
       
