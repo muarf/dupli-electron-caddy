@@ -126,3 +126,4 @@ Les releases sont automatiquement créées avec :
 Dites moi !
 
 
+# Test auto-release
