@@ -4,12 +4,48 @@ on:
   push:
     tags:
       - 'v*'  # Se déclenche sur les tags v1.3.30, v1.3.31, etc.
+  workflow_run:
+    workflows: ["Auto Tag on Push"]
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: write
 
 jobs:
+  get-tag:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.workflow_run.conclusion == 'success'
+    outputs:
+      tag: ${{ steps.get-tag.outputs.tag }}
+      version: ${{ steps.get-tag.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get latest tag
+        id: get-tag
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            # Tag créé manuellement via push
+            TAG="${{ github.ref_name }}"
+            VERSION="${TAG#v}"
+          else
+            # Tag créé par workflow auto-tag
+            git fetch --tags
+            TAG=$(git describe --tags --abbrev=0)
+            VERSION="${TAG#v}"
+          fi
+          
+          echo "Tag trouvé: $TAG"
+          echo "Version extraite: $VERSION"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
   build-linux:
+    needs: get-tag
     runs-on: ubuntu-latest
     timeout-minutes: 30
     
@@ -29,7 +65,7 @@ jobs:
       - name: Update package.json version
         run: |
           echo "Mise à jour de package.json avec la version du tag..."
-          VERSION=${GITHUB_REF_NAME#v}
+          VERSION="${{ needs.get-tag.outputs.version }}"
           echo "Version extraite: $VERSION"
 
           node -e "
@@ -71,6 +107,7 @@ jobs:
           fi
   
   build-windows:
+    needs: get-tag
     runs-on: windows-latest
     timeout-minutes: 30
 
@@ -90,15 +127,15 @@ jobs:
       - name: Update package.json version
         run: |
           echo "Mise à jour de package.json avec la version du tag..."
-          $VERSION = $env:GITHUB_REF_NAME -replace '^v', ''
+          $VERSION = '${{ needs.get-tag.outputs.version }}'
           echo "Version extraite: $VERSION"
 
           node -e "
             const fs = require('fs');
             const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            packageJson.version = '$VERSION';
+            packageJson.version = '${{ needs.get-tag.outputs.version }}';
             fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2) + '\n');
-            console.log('✅ package.json mis à jour vers version', '$VERSION');
+            console.log('✅ package.json mis à jour vers version', '${{ needs.get-tag.outputs.version }}');
           "
 
           Get-Content package.json | Select-String '"version"'
