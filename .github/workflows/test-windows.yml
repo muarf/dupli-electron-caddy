@@ -74,7 +74,7 @@ jobs:
           echo "✅ Utilisation de la version actuelle pour le build"
         
       - name: Build Windows app
-        run: npm run build:caddy -- --win --publish=always
+        run: npm run build:caddy -- --win --publish=never
         
       - name: Verify build output
         run: |
