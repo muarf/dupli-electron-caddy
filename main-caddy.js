@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, Menu, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu, dialog, screen } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const { spawn } = require('child_process');
 const path = require('path');
@@ -618,13 +618,18 @@ function createWindow() {
     // Nettoyer les fichiers temporaires au démarrage
     cleanupTmpFiles();
     
+    // Obtenir les dimensions de l'écran principal
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width, height } = primaryDisplay.workAreaSize;
+    
     // Créer la fenêtre du navigateur
     mainWindow = new BrowserWindow({
-        width: 1200,
-        height: 800,
+        width: width,
+        height: height,
+        x: 0,
+        y: 0,
         minWidth: 800,
         minHeight: 600,
-        maximized: true,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
@@ -634,6 +639,9 @@ function createWindow() {
         },
         show: false
     });
+    
+    // Maximiser la fenêtre pour prendre tout l'écran disponible
+    mainWindow.maximize();
 
     // Créer le menu personnalisé
     createMenu();
