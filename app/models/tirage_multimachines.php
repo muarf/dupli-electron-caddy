@@ -1054,7 +1054,7 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
                     <h4 class="panel-title" style="margin: 0;">
                         <i class="fa fa-chevron-down toggle-icon" id="toggle-icon-' . $index . '"></i>
                         <strong>' . $__('tirage_multimachines.tirage_number') . ($index + 1) . '</strong>
-                        <span class="machine-type-badge badge" id="type-badge-' . $index . '">' . $__('tirage_multimachines.duplicopieur') . '</span>
+                        <span class="machine-type-badge badge" id="type-badge-' . $index . '">' . $__('tirage_multimachines.photocopieur') . '</span>
                     </h4>
                 </div>
                 <div class="col-xs-4 col-sm-3 text-right">
@@ -1070,25 +1070,25 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
         <div class="form-group">
             <div class="col-md-12">
                 <ul class="nav nav-tabs" role="tablist" style="margin-bottom: 20px;">
-                    <li role="presentation" class="active" id="tab-duplicopieur-' . $index . '">
+                    <li role="presentation" id="tab-duplicopieur-' . $index . '">
                         <a href="#" onclick="selectMachineTypeTab(' . $index . ', \'duplicopieur\'); return false;" style="font-size: 16px;">
                             <i class="fa fa-print" style="margin-right: 5px;"></i> ' . $__('tirage_multimachines.duplicopieur') . '
                         </a>
                     </li>
-                    <li role="presentation" id="tab-photocopieur-' . $index . '">
+                    <li role="presentation" class="active" id="tab-photocopieur-' . $index . '">
                         <a href="#" onclick="selectMachineTypeTab(' . $index . ', \'photocopieur\'); return false;" style="font-size: 16px;">
                             <i class="fa fa-copy" style="margin-right: 5px;"></i> ' . $__('tirage_multimachines.photocopieur') . '
                         </a>
                     </li>
                 </ul>
                 <!-- Inputs cachés pour les valeurs -->
-                <input type="radio" name="machines[' . $index . '][type]" value="duplicopieur" checked onchange="toggleMachineType(' . $index . ')" style="display: none;" id="radio-duplicopieur-' . $index . '">
-                <input type="radio" name="machines[' . $index . '][type]" value="photocopieur" onchange="toggleMachineType(' . $index . ')" style="display: none;" id="radio-photocopieur-' . $index . '">
+                <input type="radio" name="machines[' . $index . '][type]" value="duplicopieur" onchange="toggleMachineType(' . $index . ')" style="display: none;" id="radio-duplicopieur-' . $index . '">
+                <input type="radio" name="machines[' . $index . '][type]" value="photocopieur" checked onchange="toggleMachineType(' . $index . ')" style="display: none;" id="radio-photocopieur-' . $index . '">
             </div>
         </div>
         
             <!-- Interface duplicopieur -->
-            <div id="duplicopieur-interface-' . $index . '" class="machine-interface" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #17a2b8;">
+            <div id="duplicopieur-interface-' . $index . '" class="machine-interface" style="display:none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #17a2b8;">
             <div class="form-group">
                 <label class="col-md-3 control-label">
                     <i class="fa fa-cog" style="margin-right: 5px;"></i> Duplicopieur
@@ -1262,7 +1262,7 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
         </div><!-- Fin duplicopieur-interface -->
         
             <!-- Interface photocopieur -->
-            <div id="photocopieur-interface-' . $index . '" class="machine-interface" style="display:none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #e83e8c;">
+            <div id="photocopieur-interface-' . $index . '" class="machine-interface" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #e83e8c;">
             <div class="form-group">
                 <label class="col-md-3 control-label" for="marque_' . $index . '">
                     <i class="fa fa-desktop" style="margin-right: 5px;"></i> Photocopieuse
