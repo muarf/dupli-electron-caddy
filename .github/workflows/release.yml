@@ -82,14 +82,14 @@ jobs:
   build-windows:
     runs-on: windows-latest
     timeout-minutes: 30
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -100,7 +100,7 @@ jobs:
         run: |
           echo "Mise à jour de package.json avec la version du tag..."
           # Extraire la version du tag (supprimer le 'v' du début)
-          VERSION=${GITHUB_REF_NAME#v}
+          $VERSION = $env:GITHUB_REF_NAME -replace '^v', ''
           echo "Version extraite: $VERSION"
 
           # Utiliser Node.js pour mettre à jour package.json
@@ -113,7 +113,7 @@ jobs:
           "
 
           # Vérifier la mise à jour
-          grep '\"version\"' package.json
+          Get-Content package.json | Select-String '"version"'
 
       - name: Install dependencies
         run: npm install
