@@ -3,13 +3,7 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*'  # Se déclenche uniquement sur les tags v1.3.30, v1.3.31, etc.
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to release (e.g., 1.4.2)'
-        required: true
-        default: '1.4.2'
+      - 'v*'  # Se déclenche sur les tags v1.3.30, v1.3.31, etc.
 
 permissions:
   contents: write
@@ -35,11 +29,9 @@ jobs:
       - name: Update package.json version
         run: |
           echo "Mise à jour de package.json avec la version du tag..."
-          # Extraire la version du tag (supprimer le 'v' du début)
           VERSION=${GITHUB_REF_NAME#v}
           echo "Version extraite: $VERSION"
 
-          # Utiliser Node.js pour mettre à jour package.json
           node -e "
             const fs = require('fs');
             const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
@@ -48,7 +40,6 @@ jobs:
             console.log('✅ package.json mis à jour vers version', '$VERSION');
           "
 
-          # Vérifier la mise à jour
           grep '\"version\"' package.json
 
       - name: Install dependencies
@@ -64,7 +55,7 @@ jobs:
           echo "✅ Caddy téléchargé"
       
       - name: Build Linux AppImage
-        run: npm run build:caddy
+        run: npm run build:caddy -- --linux
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
@@ -78,15 +69,6 @@ jobs:
           if [ -f dist/latest-linux.yml ]; then
             echo "✅ latest-linux.yml créé"
           fi
-      
-      - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-build
-          path: |
-            dist/*.AppImage
-            dist/latest-linux.yml
-          retention-days: 1
   
   build-windows:
     runs-on: windows-latest
@@ -108,11 +90,9 @@ jobs:
       - name: Update package.json version
         run: |
           echo "Mise à jour de package.json avec la version du tag..."
-          # Extraire la version du tag (supprimer le 'v' du début)
           $VERSION = $env:GITHUB_REF_NAME -replace '^v', ''
           echo "Version extraite: $VERSION"
 
-          # Utiliser Node.js pour mettre à jour package.json
           node -e "
             const fs = require('fs');
             const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
@@ -121,7 +101,6 @@ jobs:
             console.log('✅ package.json mis à jour vers version', '$VERSION');
           "
 
-          # Vérifier la mise à jour
           Get-Content package.json | Select-String '"version"'
 
       - name: Install dependencies
@@ -136,7 +115,7 @@ jobs:
           echo "✅ Caddy téléchargé"
       
       - name: Build Windows
-        run: npm run build:caddy
+        run: npm run build:caddy -- --win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
@@ -150,84 +129,3 @@ jobs:
           if (Test-Path "dist/latest.yml") {
             echo "✅ latest.yml créé"
           }
-      
-      - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-build
-          path: |
-            dist/*.exe
-            dist/latest.yml
-          retention-days: 1
-  
-  create-release:
-    needs: [build-linux, build-windows]
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Download Linux artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: linux-build
-          path: ./release-files/linux
-      
-      - name: Download Windows artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: windows-build
-          path: ./release-files/windows
-      
-      - name: Display downloaded files
-        run: |
-          echo "Fichiers Linux:"
-          ls -lh ./release-files/linux/
-          echo ""
-          echo "Fichiers Windows:"
-          ls -lh ./release-files/windows/
-      
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            ./release-files/linux/*.AppImage
-            ./release-files/linux/latest-linux.yml
-            ./release-files/windows/*.exe
-            ./release-files/windows/latest.yml
-          body: |
-            ## 🎉 Release ${{ github.ref_name }}
-            
-            ### 📦 Fichiers disponibles
-            
-            **Linux:**
-            - `Duplicator-*.AppImage` - Application Linux (AppImage)
-            - `latest-linux.yml` - Fichier de mise à jour automatique Linux
-            
-            **Windows:**
-            - `Duplicator-Setup-*.exe` - Installateur Windows
-            - `Duplicator-*.exe` - Version portable Windows
-            - `latest.yml` - Fichier de mise à jour automatique Windows
-            
-            ### ⚙️ Installation
-            
-            **Linux:**
-            ```bash
-            chmod +x Duplicator-*.AppImage
-            ./Duplicator-*.AppImage
-            ```
-            
-            **Windows:**
-            Double-cliquer sur `Duplicator-Setup-*.exe`
-            
-            ### 🔄 Mise à jour automatique
-            
-            L'application vérifiera automatiquement les mises à jour au démarrage et toutes les 4 heures.
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-
-
-
