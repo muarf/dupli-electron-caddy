@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu, dialog } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -103,16 +104,96 @@ function stopPhpServer() {
     }
 }
 
+// Créer le menu personnalisé
+function createMenu() {
+    const template = [
+        {
+            label: 'Application',
+            submenu: [
+                {
+                    label: 'À propos',
+                    click: () => {
+                        dialog.showMessageBox(mainWindow, {
+                            type: 'info',
+                            title: 'À propos de Duplicator',
+                            message: 'Duplicator',
+                            detail: `Version ${app.getVersion()}\n\nApplication de duplication de documents\n\nGitHub: https://github.com/votre-repo/duplicator`,
+                            buttons: ['OK', 'Ouvrir GitHub'],
+                            defaultId: 0,
+                            cancelId: 0
+                        }).then(result => {
+                            if (result.response === 1) {
+                                shell.openExternal('https://github.com/votre-repo/duplicator');
+                            }
+                        });
+                    }
+                },
+                {
+                    label: 'Rechercher des mises à jour',
+                    click: () => {
+                        autoUpdater.checkForUpdatesAndNotify();
+                        dialog.showMessageBox(mainWindow, {
+                            type: 'info',
+                            title: 'Recherche de mises à jour',
+                            message: 'Recherche en cours...',
+                            detail: 'La recherche de mises à jour peut prendre quelques instants.'
+                        });
+                    }
+                },
+                { type: 'separator' },
+                {
+                    label: 'Quitter',
+                    accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
+                    click: () => {
+                        app.quit();
+                    }
+                }
+            ]
+        },
+        {
+            label: 'Affichage',
+            submenu: [
+                {
+                    label: 'Recharger',
+                    accelerator: 'F5',
+                    click: () => {
+                        mainWindow.reload();
+                    }
+                },
+                {
+                    label: 'Forcer le rechargement',
+                    accelerator: 'Ctrl+F5',
+                    click: () => {
+                        mainWindow.webContents.reloadIgnoringCache();
+                    }
+                },
+                {
+                    label: 'Outils de développement',
+                    accelerator: 'F12',
+                    click: () => {
+                        mainWindow.webContents.openDevTools();
+                    }
+                }
+            ]
+        }
+    ];
+
+    const menu = Menu.buildFromTemplate(template);
+    Menu.setApplicationMenu(menu);
+}
+
 function createWindow() {
     // Nettoyer les fichiers temporaires au démarrage
     cleanupTmpFiles();
-    
+
     // Créer la fenêtre du navigateur
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
         minWidth: 800,
         minHeight: 600,
+        fullscreen: true,
+        fullscreenable: true,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
@@ -122,7 +203,55 @@ function createWindow() {
         },
         show: false
     });
-    
+
+    // Créer le menu personnalisé
+    createMenu();
+
+    // Configurer les mises à jour automatiques
+    autoUpdater.checkForUpdatesAndNotify();
+
+    // Gestionnaires d'événements pour les mises à jour
+    autoUpdater.on('checking-for-update', () => {
+        console.log('Vérification des mises à jour...');
+    });
+
+    autoUpdater.on('update-available', (info) => {
+        console.log('Mise à jour disponible:', info.version);
+        dialog.showMessageBox(mainWindow, {
+            type: 'info',
+            title: 'Mise à jour disponible',
+            message: 'Une nouvelle version est disponible !',
+            detail: `Version ${info.version} est maintenant disponible. Elle sera téléchargée en arrière-plan.`
+        });
+    });
+
+    autoUpdater.on('update-not-available', () => {
+        console.log('Aucune mise à jour disponible');
+    });
+
+    autoUpdater.on('error', (err) => {
+        console.error('Erreur lors de la vérification des mises à jour:', err);
+    });
+
+    autoUpdater.on('download-progress', (progressObj) => {
+        let log_message = "Téléchargement: " + progressObj.percent + '%';
+        console.log(log_message);
+    });
+
+    autoUpdater.on('update-downloaded', (info) => {
+        console.log('Mise à jour téléchargée:', info.version);
+        dialog.showMessageBox(mainWindow, {
+            type: 'info',
+            title: 'Mise à jour prête',
+            message: 'La mise à jour a été téléchargée',
+            detail: `Version ${info.version} est prête à être installée. L'application va redémarrer.`,
+            buttons: ['Redémarrer maintenant'],
+            defaultId: 0
+        }).then(() => {
+            autoUpdater.quitAndInstall();
+        });
+    });
+
     // Démarrer le serveur PHP
     startPhpServer();
     
