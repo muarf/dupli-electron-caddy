@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const { spawn } = require('child_process');
 const path = require('path');
@@ -536,6 +536,84 @@ function stopProcesses() {
     }
 }
 
+// Créer le menu personnalisé
+function createMenu() {
+    const template = [
+        {
+            label: 'Application',
+            submenu: [
+                {
+                    label: 'À propos',
+                    click: () => {
+                        dialog.showMessageBox(mainWindow, {
+                            type: 'info',
+                            title: 'À propos de Duplicator',
+                            message: 'Duplicator',
+                            detail: `Version ${app.getVersion()}\n\nApplication de duplication de documents\n\nGitHub: https://github.com/muarf/dupli-electron-caddy`,
+                            buttons: ['OK', 'Ouvrir GitHub'],
+                            defaultId: 0,
+                            cancelId: 0
+                        }).then(result => {
+                            if (result.response === 1) {
+                                shell.openExternal('https://github.com/muarf/dupli-electron-caddy');
+                            }
+                        });
+                    }
+                },
+                {
+                    label: 'Rechercher des mises à jour',
+                    click: () => {
+                        autoUpdater.checkForUpdatesAndNotify();
+                        dialog.showMessageBox(mainWindow, {
+                            type: 'info',
+                            title: 'Recherche de mises à jour',
+                            message: 'Recherche en cours...',
+                            detail: 'La recherche de mises à jour peut prendre quelques instants.'
+                        });
+                    }
+                },
+                { type: 'separator' },
+                {
+                    label: 'Quitter',
+                    accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
+                    click: () => {
+                        app.quit();
+                    }
+                }
+            ]
+        },
+        {
+            label: 'Affichage',
+            submenu: [
+                {
+                    label: 'Recharger',
+                    accelerator: 'F5',
+                    click: () => {
+                        mainWindow.reload();
+                    }
+                },
+                {
+                    label: 'Forcer le rechargement',
+                    accelerator: 'Ctrl+F5',
+                    click: () => {
+                        mainWindow.webContents.reloadIgnoringCache();
+                    }
+                },
+                {
+                    label: 'Outils de développement',
+                    accelerator: 'F12',
+                    click: () => {
+                        mainWindow.webContents.openDevTools();
+                    }
+                }
+            ]
+        }
+    ];
+
+    const menu = Menu.buildFromTemplate(template);
+    Menu.setApplicationMenu(menu);
+}
+
 function createWindow() {
     // Nettoyer les fichiers temporaires au démarrage
     cleanupTmpFiles();
@@ -546,6 +624,8 @@ function createWindow() {
         height: 800,
         minWidth: 800,
         minHeight: 600,
+        fullscreen: true,
+        fullscreenable: true,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
@@ -555,6 +635,9 @@ function createWindow() {
         },
         show: false
     });
+
+    // Créer le menu personnalisé
+    createMenu();
     
     // Démarrer les serveurs
     async function startServers() {
