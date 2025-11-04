@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'  # Se déclenche uniquement sur les tags v1.3.30, v1.3.31, etc.
 
+permissions:
+  contents: write
+
 jobs:
   build-linux:
     runs-on: ubuntu-latest
