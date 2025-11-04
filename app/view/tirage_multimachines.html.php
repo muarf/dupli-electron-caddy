@@ -845,7 +845,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                             <h4 class="panel-title" style="margin: 0;">
                                 <i class="fa fa-chevron-down toggle-icon" id="toggle-icon-0"></i>
                                 <strong><?php _e('tirage_multimachines.tirage_number'); ?>1</strong>
-                                <span class="machine-type-badge badge" id="type-badge-0"><?php _e('tirage_multimachines.duplicopieur'); ?></span>
+                                <span class="machine-type-badge badge" id="type-badge-0"><?php _e('tirage_multimachines.photocopieur'); ?></span>
                             </h4>
                         </div>
                         <div class="col-xs-4 col-sm-3 text-right">
@@ -861,25 +861,25 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                 <div class="form-group">
                     <div class="col-md-12">
                         <ul class="nav nav-tabs" role="tablist" style="margin-bottom: 20px;">
-                            <li role="presentation" class="active" id="tab-duplicopieur-0">
+                            <li role="presentation" id="tab-duplicopieur-0">
                                 <a href="#" onclick="selectMachineTypeTab(0, 'duplicopieur'); return false;" style="font-size: 16px;">
                                     <i class="fa fa-print" style="margin-right: 5px;"></i> <?php _e('tirage_multimachines.duplicopieur'); ?>
                                 </a>
                             </li>
-                            <li role="presentation" id="tab-photocopieur-0">
+                            <li role="presentation" class="active" id="tab-photocopieur-0">
                                 <a href="#" onclick="selectMachineTypeTab(0, 'photocopieur'); return false;" style="font-size: 16px;">
                                     <i class="fa fa-copy" style="margin-right: 5px;"></i> <?php _e('tirage_multimachines.photocopieur'); ?>
                                 </a>
                             </li>
                         </ul>
                         <!-- Inputs cachés pour les valeurs -->
-                        <input type="radio" name="machines[0][type]" value="duplicopieur" checked onchange="toggleMachineType(0)" style="display: none;" id="radio-duplicopieur-0">
-                        <input type="radio" name="machines[0][type]" value="photocopieur" onchange="toggleMachineType(0)" style="display: none;" id="radio-photocopieur-0">
+                        <input type="radio" name="machines[0][type]" value="duplicopieur" onchange="toggleMachineType(0)" style="display: none;" id="radio-duplicopieur-0">
+                        <input type="radio" name="machines[0][type]" value="photocopieur" checked onchange="toggleMachineType(0)" style="display: none;" id="radio-photocopieur-0">
                     </div>
                 </div>
                 
                 <!-- Interface duplicopieur -->
-                <div id="duplicopieur-interface-0" class="machine-interface" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #17a2b8;">
+                <div id="duplicopieur-interface-0" class="machine-interface" style="display:none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #17a2b8;">
                     <!-- Affichage du duplicopieur -->
                     <div class="form-group">
                         <label class="col-md-3 control-label">
@@ -1052,7 +1052,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                 </div>
                 
                 <!-- Interface photocopieur -->
-                <div id="photocopieur-interface-0" class="machine-interface" style="display:none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #e83e8c;">
+                <div id="photocopieur-interface-0" class="machine-interface" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #e83e8c;">
                     <!-- Sélection photocopieuse -->
                     <div class="form-group">
                         <label class="col-md-3 control-label" for="marque_0">
@@ -1360,7 +1360,7 @@ function addMachineAsync(index) {
             return;
         }
         
-        fetch(`./get-machine-template.php?index=${index}`)
+        fetch(`?get-machine-template&index=${index}`)
             .then(response => response.json())
             .then(data => {
                 if (data.error) {
@@ -2338,7 +2338,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const newIndex = machineCount;
     
     // Faire une requête AJAX pour récupérer le HTML de la machine
-    fetch(`./get-machine-template.php?index=${newIndex}`)
+    fetch(`?get-machine-template&index=${newIndex}`)
         .then(response => response.json())
         .then(data => {
             if (data.error) {
