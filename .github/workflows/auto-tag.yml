@@ -1,0 +1,62 @@
+name: Auto Tag on Push
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  auto-tag:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Get latest tag
+      run: |
+        git fetch --tags
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.3.96")
+        echo "Dernier tag trouvé: $LATEST_TAG"
+        echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
+
+    - name: Increment version
+      run: |
+        VERSION=${LATEST_TAG#v}
+        IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+        NEW_PATCH=$((PATCH + 1))
+        NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+        NEW_TAG="v$NEW_VERSION"
+
+        echo "Version actuelle: $VERSION"
+        echo "Nouvelle version: $NEW_VERSION"
+        echo "Nouveau tag: $NEW_TAG"
+
+        echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
+        echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+    - name: Update package.json
+      run: |
+        echo "Mise à jour de package.json vers $NEW_VERSION"
+        npm version ${{ env.NEW_VERSION }} --no-git-tag-version
+
+    - name: Create and push tag
+      run: |
+        echo "Configuration Git pour le commit automatique"
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
+        echo "Création du commit de version"
+        git add package.json
+        git commit -m "chore: bump version to ${{ env.NEW_VERSION }}"
+
+        echo "Création du tag ${{ env.NEW_TAG }}"
+        git tag ${{ env.NEW_TAG }}
+
+        echo "Push du commit et du tag"
+        git push
+        git push origin ${{ env.NEW_TAG }}
+
+        echo "✅ Version automatiquement incrémentée à ${{ env.NEW_VERSION }}"
+        echo "✅ Tag ${{ env.NEW_TAG }} créé et poussé"
