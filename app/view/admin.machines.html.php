@@ -893,7 +893,7 @@ $(document).on('submit', '#edit-tambours-form', function(e) {
         <form id="edit-tambours-form">
           <div class="form-group">
             <label>Tambours :</label>
-            <div id="edit-tambours-container">
+           <div id="edit-tambours-container">
               <!-- Les tambours seront ajoutés ici dynamiquement -->
             </div>
             <button type="button" class="btn btn-info btn-sm" id="add-edit-tambour">

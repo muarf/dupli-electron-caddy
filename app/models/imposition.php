@@ -857,7 +857,7 @@ function Action($conf)
             $pdfFinal->Output($output_pdf_path_final, 'F');
             
             // Utiliser l'endpoint de téléchargement pour les fichiers temporaires
-            $array['download_url'] = 'download_pdf.php?file=' . $final_filename;
+            $array['download_url'] = '?download_pdf&file=' . $final_filename;
             
             if ($previewMode) {
                 
@@ -868,7 +868,7 @@ function Action($conf)
                 
                 
                 // Utiliser l'endpoint d'affichage pour la prévisualisation avec timestamp pour éviter le cache
-                $array['preview_url'] = 'view_pdf.php?file=' . $preview_filename . '&t=' . time();
+                $array['preview_url'] = '?view_pdf&file=' . $preview_filename . '&t=' . time();
             }
             
             $array['success'] = true;
@@ -1366,7 +1366,7 @@ function Action($conf)
                     $pdfPreview->Output($output_pdf_path_preview, 'F');
                     
                     // Utiliser l'endpoint d'affichage pour la prévisualisation avec timestamp pour éviter le cache
-                    $array['preview_url'] = 'view_pdf.php?file=' . $preview_filename . '&t=' . time();
+                    $array['preview_url'] = '?view_pdf&file=' . $preview_filename . '&t=' . time();
                 }
 
                 // Utiliser le nom du fichier original avec suffixe
@@ -1375,7 +1375,7 @@ function Action($conf)
                 $pdfFinal->Output($output_pdf_path_final, 'F');
                 
                 // Utiliser l'endpoint de téléchargement pour les fichiers temporaires
-                $array['download_url'] = 'download_pdf.php?file=' . $final_filename;
+                $array['download_url'] = '?download_pdf&file=' . $final_filename;
                 
                 $array['success'] = true;
                 $array['result'] = "PDF imposé généré avec succès ! Le PDF contient $pageCount pages. (Nettoyé avec Ghostscript)";

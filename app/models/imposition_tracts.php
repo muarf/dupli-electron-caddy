@@ -315,8 +315,8 @@ function processImpositionTracts()
         if (file_exists($resultFile)) unlink($resultFile);
         
         // Utiliser le même système de téléchargement et prévisualisation que impose/unimpose
-        $array['download_url'] = 'download_pdf.php?file=' . $finalFileName;
-        $array['preview_url'] = 'view_pdf.php?file=' . $finalFileName;
+        $array['download_url'] = '?download_pdf&file=' . $finalFileName;
+        $array['preview_url'] = '?view_pdf&file=' . $finalFileName;
         $array['success'] = true;
         $array['result'] = "PDF imposé généré avec succès ! Le PDF contient {$pdfInfo['page_count']} page(s).";
         
