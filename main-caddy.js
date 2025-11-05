@@ -4,6 +4,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const net = require('net');
 const { checkWindowsCompatibility, applyCompatibilitySettings } = require('./utils/windows-compatibility');
 
 // Vérifier la compatibilité Windows avant tout
@@ -12,6 +13,8 @@ checkWindowsCompatibility();
 let mainWindow;
 let caddyProcess;
 let phpFpmProcess;
+let serverPort = 8000; // Port par défaut
+let tempCaddyfilePath = null; // Chemin du Caddyfile temporaire si créé
 
 // Obtenir le chemin de la base de données (dans userData pour la persistance lors des mises à jour)
 function getDatabasePath() {
@@ -191,6 +194,24 @@ function getConfigPath() {
     } else {
         return __dirname;
     }
+}
+
+// Trouver un port libre
+function findFreePort() {
+    return new Promise((resolve, reject) => {
+        const server = net.createServer();
+        
+        server.listen(0, () => {
+            const port = server.address().port;
+            server.close(() => {
+                resolve(port);
+            });
+        });
+        
+        server.on('error', (err) => {
+            reject(err);
+        });
+    });
 }
 
 // Obtenir le chemin du Caddyfile
@@ -446,9 +467,8 @@ function startPhpServer() {
 }
 
 // Démarrer Caddy
-function startCaddy() {
+async function startCaddy() {
     const caddyPath = getCaddyPath();
-    const caddyfile = getCaddyfilePath();
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
@@ -461,8 +481,42 @@ function startCaddy() {
     console.log('process.resourcesPath:', process.resourcesPath);
     console.log('Caddy Path:', caddyPath);
     console.log('Caddy Path exists:', fs.existsSync(caddyPath));
-    console.log('Caddyfile:', caddyfile);
-    console.log('Caddyfile existe:', fs.existsSync(caddyfile));
+    
+    // Sur Windows, trouver un port libre au hasard
+    if (isWindows) {
+        try {
+            serverPort = await findFreePort();
+            console.log(`Port libre trouvé sur Windows: ${serverPort}`);
+        } catch (error) {
+            console.error('Erreur lors de la recherche d\'un port libre, utilisation du port par défaut:', error);
+            serverPort = 8000;
+        }
+    }
+    
+    // Obtenir le Caddyfile original
+    const originalCaddyfile = getCaddyfilePath();
+    console.log('Caddyfile original:', originalCaddyfile);
+    console.log('Caddyfile existe:', fs.existsSync(originalCaddyfile));
+    
+    // Lire le contenu du Caddyfile original
+    let caddyfileContent = fs.readFileSync(originalCaddyfile, 'utf8');
+    
+    // Remplacer le port dans le contenu (remplacer :8000 par le port choisi)
+    caddyfileContent = caddyfileContent.replace(/:8000/g, `:${serverPort}`);
+    
+    // Si on Windows, créer un Caddyfile temporaire avec le bon port et les bons chemins
+    let caddyfile = originalCaddyfile;
+    if (isWindows) {
+        // Remplacer le chemin de log /tmp/ par un chemin Windows temporaire
+        const tempDir = os.tmpdir();
+        const logPath = path.join(tempDir, 'caddy_duplicator.log').replace(/\\/g, '/');
+        caddyfileContent = caddyfileContent.replace(/\/tmp\/caddy_duplicator\.log/g, logPath);
+        
+        tempCaddyfilePath = path.join(tempDir, `caddyfile_${Date.now()}.tmp`);
+        fs.writeFileSync(tempCaddyfilePath, caddyfileContent, 'utf8');
+        caddyfile = tempCaddyfilePath;
+        console.log('Caddyfile temporaire créé:', caddyfile);
+    }
     
     // Obtenir le bon appPath pour Caddy
     let appPath;
@@ -491,6 +545,7 @@ function startCaddy() {
     
     console.log('Caddy App Path:', appPath);
     console.log('Caddy App Path exists:', fs.existsSync(appPath));
+    console.log('Port d\'écoute:', serverPort);
     
     caddyProcess = spawn(caddyPath, [
         'run',
@@ -515,6 +570,15 @@ function startCaddy() {
     
     caddyProcess.on('close', (code) => {
         console.log(`Caddy fermé avec le code ${code}`);
+        // Nettoyer le fichier temporaire si créé
+        if (tempCaddyfilePath && fs.existsSync(tempCaddyfilePath)) {
+            try {
+                fs.unlinkSync(tempCaddyfilePath);
+                console.log('Caddyfile temporaire supprimé');
+            } catch (error) {
+                console.error('Erreur suppression Caddyfile temporaire:', error);
+            }
+        }
     });
     
     // Attendre que Caddy soit prêt
@@ -533,6 +597,17 @@ function stopProcesses() {
     if (caddyProcess) {
         caddyProcess.kill();
         caddyProcess = null;
+    }
+    
+    // Nettoyer le fichier temporaire si créé
+    if (tempCaddyfilePath && fs.existsSync(tempCaddyfilePath)) {
+        try {
+            fs.unlinkSync(tempCaddyfilePath);
+            console.log('Caddyfile temporaire supprimé');
+        } catch (error) {
+            console.error('Erreur suppression Caddyfile temporaire:', error);
+        }
+        tempCaddyfilePath = null;
     }
 }
 
@@ -700,11 +775,11 @@ function createWindow() {
             await startPhpFpm();
             await startCaddy();
             
-            // Charger l'application
-            mainWindow.loadURL('http://127.0.0.1:8000/');
+            // Charger l'application avec le port choisi
+            mainWindow.loadURL(`http://127.0.0.1:${serverPort}/`);
             mainWindow.show();
             
-            console.log('Serveurs démarrés avec succès');
+            console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
         } catch (error) {
             console.error('Erreur lors du démarrage des serveurs:', error);
             // Fallback : utiliser le serveur PHP intégré uniquement
