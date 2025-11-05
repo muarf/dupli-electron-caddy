@@ -526,6 +526,10 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                                                         $prix_encre_brochure = 0;
                                                         $machine_name = $machine['machine'];
                                                         
+                                                        // Récupérer le taux de remplissage (valeur par défaut 0.5 = 50%)
+                                                        $fill_rate = isset($machine['fill_rate']) ? floatval($machine['fill_rate']) : 0.5;
+                                                        $fill_rate_multiplier = $couleur ? ($fill_rate / 0.5) : 1.0; // 50% = ×1, 100% = ×2
+                                                        
                                                         // Déterminer la clé de la machine dynamiquement
                                                         $machine_key = null;
                                                         
@@ -560,24 +564,29 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                                                             if (strtolower($machine_name) === 'comcolor') {
                                                                 // Photocopieur à encre
                                                                 if ($couleur) {
-                                                                    $prix_encre_brochure += ($machine_prices['bleue']['unite'] ?? 0);
-                                                                    $prix_encre_brochure += ($machine_prices['couleur']['unite'] ?? 0);
-                                                                    $prix_encre_brochure += ($machine_prices['jaune']['unite'] ?? 0);
-                                                                    $prix_encre_brochure += ($machine_prices['noire']['unite'] ?? 0);
-                                                                    $prix_encre_brochure += ($machine_prices['rouge']['unite'] ?? 0);
+                                                                    // Couleur : bleue + couleur + jaune + noire + rouge (avec taux de remplissage)
+                                                                    $prix_encre_brochure += (($machine_prices['bleue']['unite'] ?? 0) * $fill_rate_multiplier);
+                                                                    $prix_encre_brochure += (($machine_prices['couleur']['unite'] ?? 0) * $fill_rate_multiplier);
+                                                                    $prix_encre_brochure += (($machine_prices['jaune']['unite'] ?? 0) * $fill_rate_multiplier);
+                                                                    $prix_encre_brochure += (($machine_prices['noire']['unite'] ?? 0) * $fill_rate_multiplier);
+                                                                    $prix_encre_brochure += (($machine_prices['rouge']['unite'] ?? 0) * $fill_rate_multiplier);
                                                                 } else {
+                                                                    // Noir et blanc : seulement noire (pas de taux de remplissage)
                                                                     $prix_encre_brochure += ($machine_prices['noire']['unite'] ?? 0);
                                                                 }
                                                             } else {
                                                                 // Photocopieur à toner
                                                                 if ($couleur) {
-                                                                    $prix_encre_brochure += ($machine_prices['cyan']['unite'] ?? 0);
-                                                                    $prix_encre_brochure += ($machine_prices['jaune']['unite'] ?? 0);
-                                                                    $prix_encre_brochure += ($machine_prices['magenta']['unite'] ?? 0);
-                                                                    $prix_encre_brochure += ($machine_prices['noir']['unite'] ?? 0);
+                                                                    // Couleur : cyan + jaune + magenta + noir (avec taux de remplissage) + tambour + dev (sans taux)
+                                                                    $prix_encre_brochure += (($machine_prices['cyan']['unite'] ?? 0) * $fill_rate_multiplier);
+                                                                    $prix_encre_brochure += (($machine_prices['jaune']['unite'] ?? 0) * $fill_rate_multiplier);
+                                                                    $prix_encre_brochure += (($machine_prices['magenta']['unite'] ?? 0) * $fill_rate_multiplier);
+                                                                    $prix_encre_brochure += (($machine_prices['noir']['unite'] ?? 0) * $fill_rate_multiplier);
+                                                                    // Tambour et dev ne sont pas affectés par le taux de remplissage
                                                                     $prix_encre_brochure += ($machine_prices['tambour']['unite'] ?? 0);
                                                                     $prix_encre_brochure += ($machine_prices['dev']['unite'] ?? 0);
                                                                 } else {
+                                                                    // Noir et blanc : noir + tambour + dev (pas de taux de remplissage)
                                                                     $prix_encre_brochure += ($machine_prices['noir']['unite'] ?? 0);
                                                                     $prix_encre_brochure += ($machine_prices['tambour']['unite'] ?? 0);
                                                                     $prix_encre_brochure += ($machine_prices['dev']['unite'] ?? 0);
@@ -1170,7 +1179,12 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                                         </div>
                                     </div>
                                     <input type="hidden" id="fill_rate_photocop_0" name="machines[0][fill_rate]" value="0.5">
-                                    <span class="help-block">Ajustez le taux de remplissage des couleurs (0% = très léger, 100% = très foncé)</span>
+                                    <span class="help-block">
+                                        Ajustez le taux de remplissage des couleurs (0% = très léger, 100% = très rempli). 
+                                        <a href="/index.php?taux_remplissage" target="_blank" title="Calculez le taux de remplissage">
+                                            <i class="fa fa-info-circle"></i> Calculez le taux de remplissage
+                                        </a>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -1582,6 +1596,21 @@ function restoreFormData() {
                             console.error('❌ Erreur lors du déclenchement de l\'événement change:', e);
                         }
                     }, 100);
+                }
+            });
+            
+            // Vérifier et afficher le slider de taux de remplissage pour chaque machine si la couleur est cochée
+            form.querySelectorAll('input[id^="couleur_"][type="checkbox"]').forEach(checkbox => {
+                const match = checkbox.id.match(/couleur_(\d+)_\d+/);
+                if (match) {
+                    const machineIndex = match[1];
+                    if (checkbox.checked) {
+                        setTimeout(() => {
+                            if (typeof toggleFillRateDisplay === 'function') {
+                                toggleFillRateDisplay(machineIndex);
+                            }
+                        }, 100);
+                    }
                 }
             });
             
@@ -2127,6 +2156,11 @@ function calculateMachinePrice(machineIndex) {
             
             var photocopName = machineElement.querySelector('select[name*="[machine]"]').value;
             
+            // Récupérer le taux de remplissage (comme dans la première boucle)
+            var fillRateElement = machineElement.querySelector('#fill_rate_photocop_' + machineIndex);
+            var fillRate = fillRateElement ? parseFloat(fillRateElement.value) : 0.5;
+            var fillRateMultiplier = couleur ? (fillRate / 0.5) : 1.0; // 50% = ×1, 100% = ×2
+            
             // NOUVELLE STRUCTURE : Utiliser la fonction pour trouver la clé dynamique
             var machineKey = findMachinePriceKey(photocopName);
             console.log('🔑 Clé trouvée pour le détail', photocopName, ':', machineKey);
@@ -2137,35 +2171,35 @@ function calculateMachinePrice(machineIndex) {
                 if (photocopName.toLowerCase() === 'comcolor') {
                     // Photocopieur à encre : additionner toutes les encres
                     if (couleur) {
-                        // Couleur : bleue + couleur + jaune + noire + rouge
-                        var bleue = machinePrices['bleue']?.unite || 0;
-                        var couleurPrice = machinePrices['couleur']?.unite || 0;
-                        var jaune = machinePrices['jaune']?.unite || 0;
-                        var noire = machinePrices['noire']?.unite || 0;
-                        var rouge = machinePrices['rouge']?.unite || 0;
+                        // Couleur : bleue + couleur + jaune + noire + rouge (avec taux de remplissage)
+                        var bleue = (machinePrices['bleue']?.unite || 0) * fillRateMultiplier;
+                        var couleurPrice = (machinePrices['couleur']?.unite || 0) * fillRateMultiplier;
+                        var jaune = (machinePrices['jaune']?.unite || 0) * fillRateMultiplier;
+                        var noire = (machinePrices['noire']?.unite || 0) * fillRateMultiplier;
+                        var rouge = (machinePrices['rouge']?.unite || 0) * fillRateMultiplier;
                         
                         prixEncre = bleue + couleurPrice + jaune + noire + rouge;
                         detailEncreBrochure = `Bleue: ${bleue.toFixed(4)}€ + Couleur: ${couleurPrice.toFixed(4)}€ + Jaune: ${jaune.toFixed(4)}€ + Noire: ${noire.toFixed(4)}€ + Rouge: ${rouge.toFixed(4)}€ = ${prixEncre.toFixed(4)}€`;
                     } else {
-                        // Noir et blanc : seulement noire
+                        // Noir et blanc : seulement noire (pas de taux de remplissage)
                         prixEncre = machinePrices['noire']?.unite || 0;
                         detailEncreBrochure = `Noire: ${prixEncre.toFixed(4)}€`;
                     }
                 } else if (photocopName.toLowerCase() === 'konika') {
                     // Photocopieur à toner : additionner tous les toners + tambour + developer
                     if (couleur) {
-                        // Couleur : cyan + jaune + magenta + noir + tambour + dev
-                        var cyan = machinePrices['cyan']?.unite || 0;
-                        var jaune = machinePrices['jaune']?.unite || 0;
-                        var magenta = machinePrices['magenta']?.unite || 0;
-                        var noir = machinePrices['noir']?.unite || 0;
+                        // Couleur : cyan + jaune + magenta + noir (avec taux de remplissage) + tambour + dev (sans taux)
+                        var cyan = (machinePrices['cyan']?.unite || 0) * fillRateMultiplier;
+                        var jaune = (machinePrices['jaune']?.unite || 0) * fillRateMultiplier;
+                        var magenta = (machinePrices['magenta']?.unite || 0) * fillRateMultiplier;
+                        var noir = (machinePrices['noir']?.unite || 0) * fillRateMultiplier;
                         var tambour = machinePrices['tambour']?.unite || 0;
                         var dev = machinePrices['dev']?.unite || 0;
                         
                         prixEncre = cyan + jaune + magenta + noir + tambour + dev;
                         detailEncreBrochure = `Cyan: ${cyan.toFixed(4)}€ + Jaune: ${jaune.toFixed(4)}€ + Magenta: ${magenta.toFixed(4)}€ + Noir: ${noir.toFixed(4)}€ + Tambour: ${tambour.toFixed(4)}€ + Dev: ${dev.toFixed(4)}€ = ${prixEncre.toFixed(4)}€`;
                     } else {
-                        // Noir et blanc : noir + tambour + dev
+                        // Noir et blanc : noir + tambour + dev (pas de taux de remplissage)
                         var noir = machinePrices['noir']?.unite || 0;
                         var tambour = machinePrices['tambour']?.unite || 0;
                         var dev = machinePrices['dev']?.unite || 0;

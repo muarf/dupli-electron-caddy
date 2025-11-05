@@ -142,7 +142,7 @@ function getMachinePrices($db, $machine_name) {
  * Fonction optimisée pour calculer le prix d'une brochure photocopieur
  * Évite les requêtes DB répétées et les logs excessifs
  */
-function calculateBrochurePriceOptimized($brochure, $prix_papier_a3, $prix_papier_a4, $machine_prices, $machine_type_detected, $machine_name) {
+function calculateBrochurePriceOptimized($brochure, $prix_papier_a3, $prix_papier_a4, $machine_prices, $machine_type_detected, $machine_name, $fill_rate = 0.5) {
     $nb_exemplaires = intval($brochure['nb_exemplaires']);
     $nb_feuilles = intval($brochure['nb_feuilles']);
     $nb_f_total = $nb_exemplaires * $nb_feuilles;
@@ -156,9 +156,9 @@ function calculateBrochurePriceOptimized($brochure, $prix_papier_a3, $prix_papie
     $prix_papier = ($taille == 'A4') ? $prix_papier_a4 : $prix_papier_a3;
     $prix_papier_total = $feuilles_payees ? 0 : ($nb_f_total * $prix_papier);
     
-    // Calcul coût par page optimisé
+    // Calcul coût par page optimisé avec taux de remplissage
     try {
-        $cost_per_page = calculatePageCost($machine_name, $machine_type_detected, $machine_prices, $couleur, $rv);
+        $cost_per_page = calculatePageCost($machine_name, $machine_type_detected, $machine_prices, $couleur, $rv, $fill_rate);
     } catch (Exception $e) {
         $cost_per_page = 0.01; // Prix de secours
     }
@@ -196,35 +196,52 @@ function determineMachineType($db, $machine_name) {
     }
 }
 
-function calculatePageCost($machine_name, $machine_type, $prices, $is_color, $is_duplex) {
-    error_log("DEBUG calculatePageCost - ENTREE avec prix fixes");
+function calculatePageCost($machine_name, $machine_type, $prices, $is_color, $is_duplex, $fill_rate = 0.5) {
+    error_log("DEBUG calculatePageCost - ENTREE avec prix fixes, fill_rate=$fill_rate, is_color=" . ($is_color ? 'OUI' : 'NON'));
     
     $cost_per_page = 0;
+    
+    // Calculer le multiplicateur de taux de remplissage (50% = ×1, 100% = ×2)
+    $fill_rate_multiplier = $is_color ? ($fill_rate / 0.5) : 1.0;
     
     try {
         if ($machine_type === 'toner') {
             error_log("DEBUG calculatePageCost - BRANCHE TONER");
             if ($is_color) {
-                $cost_per_page += ($prices['cyan']['unite'] ?? 0);
-                $cost_per_page += ($prices['magenta']['unite'] ?? 0);
-                $cost_per_page += ($prices['yellow']['unite'] ?? 0);
-                $cost_per_page += ($prices['noir']['unite'] ?? 0);
+                // Couleur : cyan + jaune + magenta + noir (avec taux de remplissage) + tambour + dev (sans taux)
+                $cost_per_page += (($prices['cyan']['unite'] ?? 0) * $fill_rate_multiplier);
+                $cost_per_page += (($prices['magenta']['unite'] ?? 0) * $fill_rate_multiplier);
+                $cost_per_page += (($prices['yellow']['unite'] ?? 0) * $fill_rate_multiplier);
+                $cost_per_page += (($prices['noir']['unite'] ?? 0) * $fill_rate_multiplier);
+                // Tambour et dev ne sont pas affectés par le taux de remplissage
+                $cost_per_page += ($prices['tambour']['unite'] ?? 0);
+                $cost_per_page += ($prices['dev']['unite'] ?? 0);
+                error_log("DEBUG calculatePageCost - COULEUR : fill_rate=$fill_rate, multiplier=$fill_rate_multiplier");
             } else {
+                // Noir et blanc : noir + tambour + dev (pas de taux de remplissage)
                 $cost_per_page += ($prices['noir']['unite'] ?? 0);
+                $cost_per_page += ($prices['tambour']['unite'] ?? 0);
+                $cost_per_page += ($prices['dev']['unite'] ?? 0);
+                error_log("DEBUG calculatePageCost - NOIR ET BLANC : multiplicateur=1.0 (prix BDD normal)");
             }
         } else {
             error_log("DEBUG calculatePageCost - BRANCHE ENCRE");
             if ($is_color) {
-                $cost_per_page += ($prices['bleue']['unite'] ?? 0);
-                $cost_per_page += ($prices['jaune']['unite'] ?? 0);
-                $cost_per_page += ($prices['noire']['unite'] ?? 0);
-                $cost_per_page += ($prices['rouge']['unite'] ?? 0);
+                // Couleur : bleue + couleur + jaune + noire + rouge (avec taux de remplissage)
+                $cost_per_page += (($prices['bleue']['unite'] ?? 0) * $fill_rate_multiplier);
+                $cost_per_page += (($prices['couleur']['unite'] ?? 0) * $fill_rate_multiplier);
+                $cost_per_page += (($prices['jaune']['unite'] ?? 0) * $fill_rate_multiplier);
+                $cost_per_page += (($prices['noire']['unite'] ?? 0) * $fill_rate_multiplier);
+                $cost_per_page += (($prices['rouge']['unite'] ?? 0) * $fill_rate_multiplier);
+                error_log("DEBUG calculatePageCost - COULEUR : fill_rate=$fill_rate, multiplier=$fill_rate_multiplier");
             } else {
+                // Noir et blanc : seulement noire (pas de taux de remplissage)
                 $cost_per_page += ($prices['noire']['unite'] ?? 0);
+                error_log("DEBUG calculatePageCost - NOIR ET BLANC : multiplicateur=1.0 (prix BDD normal)");
             }
         }
         
-        error_log("DEBUG calculatePageCost - COÛT FINAL: $cost_per_page");
+        error_log("DEBUG calculatePageCost - COÛT FINAL avec fill_rate_multiplier: $cost_per_page");
         return $cost_per_page;
         
     } catch (Exception $e) {
@@ -557,8 +574,11 @@ function Action($conf = null) {
                             $couleur = isset($brochure['couleur']) && $brochure['couleur'] == 'oui';
                             $feuilles_payees = isset($brochure['feuilles_payees']) && $brochure['feuilles_payees'] == 'oui';
                             
+                            // Récupérer le taux de remplissage (valeur par défaut 0.5 = 50%)
+                            $fill_rate = isset($machine['fill_rate']) ? floatval($machine['fill_rate']) : 0.5;
+                            
                             if (isset($_GET['debug'])) {
-                                $array['debug']['photocopieur_' . $index] .= " - Calcul pour: " . $nb_exemplaires . " exemplaires, " . $nb_feuilles . " feuilles, " . $taille . ", rv=" . ($rv ? 'oui' : 'non') . ", couleur=" . ($couleur ? 'oui' : 'non') . ", feuilles_payees=" . ($feuilles_payees ? 'oui' : 'non');
+                                $array['debug']['photocopieur_' . $index] .= " - Calcul pour: " . $nb_exemplaires . " exemplaires, " . $nb_feuilles . " feuilles, " . $taille . ", rv=" . ($rv ? 'oui' : 'non') . ", couleur=" . ($couleur ? 'oui' : 'non') . ", feuilles_payees=" . ($feuilles_payees ? 'oui' : 'non') . ", fill_rate=" . $fill_rate;
                             }
                             
                             // Calculer le prix comme le JavaScript
@@ -566,8 +586,8 @@ function Action($conf = null) {
                             $prixPapier = $array['prix_data']['papier'][$taille] ?? 0;
                             $coutPapier = $feuilles_payees ? 0 : ($nbPages * $prixPapier);
                             
-                            // Calculer le coût par page selon le type de machine et les couleurs
-                            $cost_per_page = calculatePageCost($machine['machine'], $machine_type_detected, $machine_prices, $couleur, $rv);
+                            // Calculer le coût par page selon le type de machine et les couleurs (avec taux de remplissage)
+                            $cost_per_page = calculatePageCost($machine['machine'], $machine_type_detected, $machine_prices, $couleur, $rv, $fill_rate);
                             
                             // Ajuster selon la taille (A3 = prix normal, A4 = prix/2)
                             if ($taille === 'A4') $cost_per_page = $cost_per_page / 2;
@@ -757,13 +777,17 @@ function Action($conf = null) {
                     foreach ($machine['brochures'] as $brochure_index => $brochure) {
                         if (!empty($brochure['nb_exemplaires']) && !empty($brochure['nb_feuilles']) && !empty($brochure['taille'])) {
                             // Utilisation de la fonction optimisée
+                            // Récupérer le taux de remplissage (valeur par défaut 0.5 = 50%)
+                            $fill_rate = isset($machine['fill_rate']) ? floatval($machine['fill_rate']) : 0.5;
+                            
                             $prix_brochure = calculateBrochurePriceOptimized(
                                 $brochure, 
                                 $prix_papier_a3, 
                                 $prix_papier_a4, 
                                 $machine_prices, 
-                                $machine_type_detected, 
-                                $machine['machine']
+                                $machine_type_detected,
+                                $machine['machine'],
+                                $fill_rate
                             );
                             $prix_machine += $prix_brochure;
                             
@@ -1348,7 +1372,12 @@ function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, 
                                     </div>
                                 </div>
                                 <input type="hidden" id="fill_rate_photocop_' . $index . '" name="machines[' . $index . '][fill_rate]" value="0.5">
-                                <span class="help-block">Ajustez le taux de remplissage des couleurs (0% = très léger, 100% = très foncé)</span>
+                                <span class="help-block">
+                                    Ajustez le taux de remplissage des couleurs (0% = très léger, 100% = très rempli). 
+                                    <a href="/index.php?taux_remplissage" target="_blank" title="Calculez le taux de remplissage">
+                                        <i class="fa fa-info-circle"></i> Calculez le taux de remplissage
+                                    </a>
+                                </span>
                             </div>
                         </div>
                 </div><!-- Fin brochure-item -->
