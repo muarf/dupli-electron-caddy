@@ -127,24 +127,11 @@ jobs:
           git push origin main
           echo "HAS_CHANGES=true" >> $GITHUB_ENV
     
-      - name: Trigger release workflow
+      - name: Wait for auto-tag workflow to complete
         if: env.HAS_CHANGES == 'true'
-        uses: actions/github-script@v7
-        continue-on-error: true
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            // Déclencher le workflow de release dans dupli-electron-caddy
-            try {
-              await github.rest.actions.createWorkflowDispatch({
-                owner: 'MuArF',
-                repo: 'dupli-electron-caddy',
-                workflow_id: 'release.yml',
-                ref: 'main'
-              });
-              console.log('Release workflow triggered in dupli-electron-caddy');
-            } catch (error) {
-              console.log('Could not trigger release workflow:', error.message);
-              console.log('This is not critical, the sync was successful.');
-            }
+        run: |
+          echo "Attente de la création automatique du tag par le workflow auto-tag..."
+          echo "Le workflow auto-tag va automatiquement créer un nouveau tag après le push."
+          echo "Le workflow release.yml sera automatiquement déclenché par le tag."
+          echo "Vous pouvez suivre la progression sur: https://github.com/MuArF/dupli-electron-caddy/actions"
 
