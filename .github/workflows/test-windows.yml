@@ -29,6 +29,26 @@ jobs:
       - name: Install dependencies
         run: npm install
         
+      - name: Install Composer and PHP dependencies
+        run: |
+          echo "Installation de Composer..."
+          # Télécharger Composer
+          Invoke-WebRequest -Uri "https://getcomposer.org/download/latest-stable/composer.phar" -OutFile "composer.phar"
+          php composer.phar --version
+          
+          echo "Installation des dépendances PHP..."
+          cd app
+          php ../composer.phar install --no-dev --optimize-autoloader
+          cd ..
+          
+          echo "Vérification de vendor/..."
+          if (Test-Path "app/vendor/autoload.php") {
+            echo "✅ vendor/autoload.php créé avec succès"
+          } else {
+            echo "❌ ERREUR: vendor/autoload.php introuvable"
+            exit 1
+          }
+        
       - name: Download Caddy for Windows
         run: |
           echo "Téléchargement de Caddy pour Windows..."

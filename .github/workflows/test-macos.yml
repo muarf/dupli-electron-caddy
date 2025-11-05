@@ -29,6 +29,25 @@ jobs:
       - name: Install dependencies
         run: npm install
         
+      - name: Install Composer and PHP dependencies
+        run: |
+          echo "Installation de Composer..."
+          curl -sS https://getcomposer.org/installer | php
+          php composer.phar --version
+          
+          echo "Installation des dépendances PHP..."
+          cd app
+          php ../composer.phar install --no-dev --optimize-autoloader
+          cd ..
+          
+          echo "Vérification de vendor/..."
+          if [ -f "app/vendor/autoload.php" ]; then
+            echo "✅ vendor/autoload.php créé avec succès"
+          else
+            echo "❌ ERREUR: vendor/autoload.php introuvable"
+            exit 1
+          fi
+        
       - name: Install Caddy and PHP via Homebrew
         run: |
           echo "Installation de Caddy et PHP via Homebrew..."
@@ -71,7 +90,7 @@ jobs:
         run: |
           echo "=== Vérification de la version dans package.json ==="
           CURRENT_VERSION=$(node -p "require('./package.json').version")
-          echo "Version actuelle: $CURRENT_VERSION"
+            echo "Version actuelle: $CURRENT_VERSION"
           echo "✅ Utilisation de la version actuelle pour le build"
         
       - name: Build application

@@ -42,6 +42,7 @@ app/duplinew.sqlite
 app/sessions/
 app/public/tmp/*
 app/public/sauvegarde/*
+app/vendor/  # PHP dependencies (installed via Composer in CI/CD)
 squashfs-root/
 
 # Test coverage
