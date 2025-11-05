@@ -37,7 +37,7 @@ jobs:
           
           echo "Installation des dépendances PHP..."
           cd app
-          php ../composer.phar install --no-dev --optimize-autoloader
+          php ../composer.phar install --no-dev --optimize-autoloader --ignore-platform-reqs
           cd ..
           
           echo "Vérification de vendor/..."
