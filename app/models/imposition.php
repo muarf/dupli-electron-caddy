@@ -268,6 +268,98 @@ function addPageNumber($pdf, $page_num, $x, $y, $new_width, $new_height, $rotati
     }
 }
 
+/**
+ * Ajoute les numéros de pages au PDF original dans le coin bas-gauche
+ * Texte petit, noir, sans fond, proche des bords mais dans la zone imprimable
+ * 
+ * @param string $pdfFilePath Chemin vers le fichier PDF source
+ * @return string|null Chemin vers le PDF modifié ou null en cas d'erreur
+ */
+function addPageNumbersToPdf($pdfFilePath) {
+    try {
+        // Créer un nouveau PDF pour le résultat
+        $pdf = new TCPDI();
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->setAutoPageBreak(false); // Désactiver l'ajout automatique de pages
+        
+        // Ouvrir le PDF source
+        $pageCount = $pdf->setSourceFile($pdfFilePath);
+        
+        if ($pageCount <= 0) {
+            throw new Exception("Impossible de lire le PDF ou PDF vide.");
+        }
+        
+        // Parcourir toutes les pages
+        for ($pageNum = 1; $pageNum <= $pageCount; $pageNum++) {
+            try {
+                // Importer la page (toutes les pages y compris celles avec rotation)
+                $templateId = $pdf->importPage($pageNum);
+                
+                // Obtenir les dimensions de la page originale
+                $size = $pdf->getTemplateSize($templateId);
+                if (!$size || !isset($size['width']) || !isset($size['height'])) {
+                    error_log("Page $pageNum : dimensions invalides");
+                    continue; // Passer à la page suivante
+                }
+                
+                $pageWidth = $size['width'];
+                $pageHeight = $size['height'];
+                
+                // Déterminer l'orientation
+                $orientation = ($pageWidth > $pageHeight) ? 'L' : 'P';
+                
+                // Créer une nouvelle page avec les mêmes dimensions que l'originale
+                $pdf->AddPage($orientation, [$pageWidth, $pageHeight]);
+                
+                // Utiliser le template - placer la page originale sur la nouvelle page
+                // Les paramètres sont : templateId, x, y, width, height
+                $pdf->useTemplate($templateId, 0, 0, $pageWidth, $pageHeight);
+                
+                // Position: bas à gauche, proche des bords mais dans la zone imprimable
+                // Position en bas à gauche avec un petit offset (3mm) pour être proche mais imprimable
+                $x = 3; // 3mm depuis le bord gauche
+                $y = $pageHeight - 8; // 8mm depuis le bas (pour avoir assez de place pour le texte)
+                
+                // Configurer la police : petit, noir
+                $pdf->SetFont('helvetica', '', 8); // Taille 8 = petit
+                $pdf->SetTextColor(0, 0, 0); // Noir
+                
+                // Ajouter le numéro de page
+                $pdf->SetXY($x, $y);
+                $pdf->Cell(10, 5, (string)$pageNum, 0, 0, 'L', false, '', 0, false, 'T', 'M');
+                
+            } catch (Exception $pageException) {
+                error_log("Erreur lors du traitement de la page $pageNum : " . $pageException->getMessage());
+                // Continuer avec les autres pages même si une page échoue
+                continue;
+            }
+        }
+        
+        // Vérifier qu'au moins une page a été créée
+        if ($pdf->getNumPages() == 0) {
+            throw new Exception("Aucune page n'a pu être créée dans le PDF résultat.");
+        }
+        
+        // Sauvegarder le PDF modifié dans un fichier temporaire
+        $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
+        if (!file_exists($tmp_dir)) {
+            mkdir($tmp_dir, 0755, true);
+        }
+        
+        $timestamp = date('YmdHis');
+        $outputPath = $tmp_dir . 'numbered_' . $timestamp . '_' . uniqid() . '.pdf';
+        $pdf->Output($outputPath, 'F');
+        
+        return $outputPath;
+        
+    } catch (Exception $e) {
+        error_log("Erreur lors de l'ajout des numéros de pages: " . $e->getMessage());
+        error_log("Stack trace: " . $e->getTraceAsString());
+        return null;
+    }
+}
+
 function drawCropMarks($pdf, $x, $y, $width, $height, $bleed_size = 3) {
     // Dessiner les traits de coupe aux 4 coins À L'INTÉRIEUR de la zone
     // Ligne noire plus épaisse pour les traits de coupe (0.5mm)
@@ -388,6 +480,25 @@ function Action($conf)
             
             if ($pageCount <= 0) {
                 throw new Exception("Impossible de lire le PDF ou PDF vide.");
+            }
+
+            // Optionnel: Ajouter les numéros de pages au PDF original avant l'imposition
+            $add_page_numbers = isset($_POST['add_page_numbers']) && $_POST['add_page_numbers'] == '1';
+            $numberedPdfFile = null;
+            
+            if ($add_page_numbers) {
+                $numberedPdfPath = addPageNumbersToPdf($pdfFile);
+                if ($numberedPdfPath !== null && file_exists($numberedPdfPath)) {
+                    // Utiliser le PDF avec numéros au lieu du PDF original
+                    $numberedPdfFile = $numberedPdfPath;
+                    $pdfFile = $numberedPdfPath;
+                    // Réinitialiser avec le nouveau fichier
+                    $pdf = new TCPDI();
+                    $pageCount = $pdf->setSourceFile($pdfFile);
+                    $array['page_count'] = $pageCount;
+                } else {
+                    $array['errors'][] = "Erreur lors de l'ajout des numéros de pages. Le PDF original sera utilisé.";
+                }
             }
 
             // Récupérer le type d'imposition
@@ -874,6 +985,11 @@ function Action($conf)
             $array['success'] = true;
             $array['result'] = "PDF imposé généré avec succès ! Le PDF contient $pageCount pages.";
             
+            // Nettoyer le fichier temporaire avec numéros si créé
+            if (isset($numberedPdfFile) && $numberedPdfFile !== null && file_exists($numberedPdfFile)) {
+                @unlink($numberedPdfFile);
+            }
+            
             // Marquer que le traitement principal a réussi pour éviter le fallback
             $mainProcessingSuccess = true;
             error_log("DEBUG: Traitement principal réussi, flag mainProcessingSuccess = true");
@@ -931,6 +1047,25 @@ function Action($conf)
                 
                 $usedGhostscript = true;
                 $pdfFile = $cleanedPdfFile; // Utiliser le fichier nettoyé
+                
+                // Optionnel: Ajouter les numéros de pages au PDF nettoyé avant l'imposition
+                $add_page_numbers = isset($_POST['add_page_numbers']) && $_POST['add_page_numbers'] == '1';
+                $numberedPdfFile = null;
+                
+                if ($add_page_numbers) {
+                    $numberedPdfPath = addPageNumbersToPdf($pdfFile);
+                    if ($numberedPdfPath !== null && file_exists($numberedPdfPath)) {
+                        // Utiliser le PDF avec numéros au lieu du PDF nettoyé
+                        $numberedPdfFile = $numberedPdfPath;
+                        $pdfFile = $numberedPdfPath;
+                        // Réinitialiser avec le nouveau fichier
+                        $pdf = new TCPDI();
+                        $pageCount = $pdf->setSourceFile($pdfFile);
+                        $array['page_count'] = $pageCount;
+                    } else {
+                        $array['errors'][] = "Erreur lors de l'ajout des numéros de pages. Le PDF nettoyé sera utilisé.";
+                    }
+                }
                 
                 // Récupérer le nom du fichier original pour le nom de sortie
                 $originalFileName = isset($_FILES["pdf"]["name"]) ? $_FILES["pdf"]["name"] : "document.pdf";
@@ -1380,6 +1515,11 @@ function Action($conf)
                 $array['success'] = true;
                 $array['result'] = "PDF imposé généré avec succès ! Le PDF contient $pageCount pages. (Nettoyé avec Ghostscript)";
                 
+                // Nettoyer le fichier temporaire avec numéros si créé
+                if (isset($numberedPdfFile) && $numberedPdfFile !== null && file_exists($numberedPdfFile)) {
+                    @unlink($numberedPdfFile);
+                }
+                
                 // Nettoyer le fichier temporaire nettoyé
                 if (file_exists($cleanedPdfFile)) {
                     unlink($cleanedPdfFile);
@@ -1394,6 +1534,11 @@ function Action($conf)
                 // Message d'erreur final
                 $array['errors'][] = "Impossible de traiter ce PDF avec les outils disponibles.";
                 $array['fallback_url'] = null;
+                
+                // Nettoyer le fichier temporaire avec numéros si créé
+                if (isset($numberedPdfFile) && $numberedPdfFile !== null && file_exists($numberedPdfFile)) {
+                    @unlink($numberedPdfFile);
+                }
                 
                 // Nettoyer le fichier temporaire en cas d'erreur
                 if ($cleanedPdfFile && file_exists($cleanedPdfFile)) {

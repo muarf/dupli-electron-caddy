@@ -415,16 +415,22 @@
 
                     <div class="checkbox-group">
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label for="preview">
                                     <input type="checkbox" name="preview" id="preview">
                                     <i class="fa fa-eye"></i> <?php _e('imposition.preview_pages'); ?>
                                 </label>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label for="force_resize">
                                     <input type="checkbox" name="force_resize" id="force_resize">
                                     <i class="fa fa-expand"></i> <?php _e('imposition.force_resize'); ?>
+                                </label>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="add_page_numbers">
+                                    <input type="checkbox" name="add_page_numbers" id="add_page_numbers" value="1">
+                                    <i class="fa fa-sort-numeric-asc"></i> Ajouter les numéros de pages
                                 </label>
                             </div>
                         </div>
