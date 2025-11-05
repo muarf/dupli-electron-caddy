@@ -220,7 +220,7 @@ jobs:
           } else {
             echo "❌ ERREUR: vendor/autoload.php introuvable"
             exit 1
-          fi
+          }
       
       - name: Download Caddy for Windows
         run: |
