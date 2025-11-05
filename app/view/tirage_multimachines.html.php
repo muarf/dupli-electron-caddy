@@ -291,6 +291,53 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
     
     <!-- Récapitulatif après soumission -->
     <?php if (isset($contact) && isset($machines) && ($contact != "")): ?>
+    <!-- Script pour sauvegarder les données de la confirmation dans sessionStorage -->
+    <script>
+    (function() {
+        // Sauvegarder les données depuis PHP vers sessionStorage pour permettre le retour
+        try {
+            const formData = {
+                contact: <?= json_encode($contact ?? '') ?>,
+                machines: <?= json_encode($machines ?? []) ?>
+            };
+            
+            // Convertir les données PHP en format compatible avec le formulaire
+            const savedData = {};
+            savedData['contact'] = formData.contact;
+            
+            // Convertir les machines en format formulaire
+            if (formData.machines && Array.isArray(formData.machines)) {
+                formData.machines.forEach((machine, index) => {
+                    Object.keys(machine).forEach(key => {
+                        if (key === 'brochures' && Array.isArray(machine[key])) {
+                            // Gérer les brochures
+                            machine[key].forEach((brochure, brochureIndex) => {
+                                Object.keys(brochure).forEach(brochureKey => {
+                                    savedData[`machines[${index}][brochures][${brochureIndex}][${brochureKey}]`] = brochure[brochureKey];
+                                });
+                            });
+                        } else {
+                            savedData[`machines[${index}][${key}]`] = machine[key];
+                        }
+                    });
+                });
+            }
+            
+            // Sauvegarder le nombre de machines dans les métadonnées
+            savedData['_machine_count'] = formData.machines ? formData.machines.length : 0;
+            
+            // Sauvegarder dans sessionStorage
+            sessionStorage.setItem('tirage_multimachines_form_data', JSON.stringify(savedData));
+            console.log('✅ Données de confirmation sauvegardées pour retour possible:', {
+                nombreMachines: savedData['_machine_count'],
+                cles: Object.keys(savedData).filter(k => k.startsWith('machines[')).length
+            });
+        } catch (e) {
+            console.error('❌ Erreur lors de la sauvegarde des données de confirmation:', e);
+        }
+    })();
+    </script>
+    
     <div class="summary-card">
         <h3 class="text-center"><i class="fa fa-calculator"></i> <?php _e('tirage_multimachines.summary'); ?></h3>
         <div class="total-price text-center"><?= number_format($prix_total, 2) ?> <?php _e('tirage_multimachines.currency'); ?></div>
@@ -676,7 +723,14 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
             <div class="section">
                 <div class="container">
                     <div class="row">
-                        <div class="col-md-12"><button id="singlebutton" name="enregistrer" value="1" class="btn btn-success btn-block">Enregistrer !</button></div>
+                        <div class="col-md-6">
+                            <button type="button" id="btn-retour" class="btn btn-warning btn-block" onclick="returnToForm()">
+                                <i class="fa fa-arrow-left"></i> Retour au formulaire
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button id="singlebutton" name="enregistrer" value="1" class="btn btn-success btn-block">Enregistrer !</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -791,7 +845,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                             <h4 class="panel-title" style="margin: 0;">
                                 <i class="fa fa-chevron-down toggle-icon" id="toggle-icon-0"></i>
                                 <strong><?php _e('tirage_multimachines.tirage_number'); ?>1</strong>
-                                <span class="machine-type-badge badge" id="type-badge-0"><?php _e('tirage_multimachines.duplicopieur'); ?></span>
+                                <span class="machine-type-badge badge" id="type-badge-0"><?php _e('tirage_multimachines.photocopieur'); ?></span>
                             </h4>
                         </div>
                         <div class="col-xs-4 col-sm-3 text-right">
@@ -807,25 +861,25 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                 <div class="form-group">
                     <div class="col-md-12">
                         <ul class="nav nav-tabs" role="tablist" style="margin-bottom: 20px;">
-                            <li role="presentation" class="active" id="tab-duplicopieur-0">
+                            <li role="presentation" id="tab-duplicopieur-0">
                                 <a href="#" onclick="selectMachineTypeTab(0, 'duplicopieur'); return false;" style="font-size: 16px;">
                                     <i class="fa fa-print" style="margin-right: 5px;"></i> <?php _e('tirage_multimachines.duplicopieur'); ?>
                                 </a>
                             </li>
-                            <li role="presentation" id="tab-photocopieur-0">
+                            <li role="presentation" class="active" id="tab-photocopieur-0">
                                 <a href="#" onclick="selectMachineTypeTab(0, 'photocopieur'); return false;" style="font-size: 16px;">
                                     <i class="fa fa-copy" style="margin-right: 5px;"></i> <?php _e('tirage_multimachines.photocopieur'); ?>
                                 </a>
                             </li>
                         </ul>
                         <!-- Inputs cachés pour les valeurs -->
-                        <input type="radio" name="machines[0][type]" value="duplicopieur" checked onchange="toggleMachineType(0)" style="display: none;" id="radio-duplicopieur-0">
-                        <input type="radio" name="machines[0][type]" value="photocopieur" onchange="toggleMachineType(0)" style="display: none;" id="radio-photocopieur-0">
+                        <input type="radio" name="machines[0][type]" value="duplicopieur" onchange="toggleMachineType(0)" style="display: none;" id="radio-duplicopieur-0">
+                        <input type="radio" name="machines[0][type]" value="photocopieur" checked onchange="toggleMachineType(0)" style="display: none;" id="radio-photocopieur-0">
                     </div>
                 </div>
                 
                 <!-- Interface duplicopieur -->
-                <div id="duplicopieur-interface-0" class="machine-interface" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #17a2b8;">
+                <div id="duplicopieur-interface-0" class="machine-interface" style="display:none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #17a2b8;">
                     <!-- Affichage du duplicopieur -->
                     <div class="form-group">
                         <label class="col-md-3 control-label">
@@ -998,7 +1052,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                 </div>
                 
                 <!-- Interface photocopieur -->
-                <div id="photocopieur-interface-0" class="machine-interface" style="display:none; background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #e83e8c;">
+                <div id="photocopieur-interface-0" class="machine-interface" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #e83e8c;">
                     <!-- Sélection photocopieuse -->
                     <div class="form-group">
                         <label class="col-md-3 control-label" for="marque_0">
@@ -1211,6 +1265,422 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
 
 <script>
 let machineCount = 1;
+
+// ========================================
+// GESTION DE LA SAUVEGARDE/RESTAURATION DES DONNÉES DU FORMULAIRE
+// ========================================
+
+/**
+ * Sauvegarder toutes les données du formulaire dans sessionStorage
+ */
+function saveFormData() {
+    const form = document.getElementById('multimachines-form');
+    if (!form) {
+        console.log('Formulaire multimachines-form non trouvé - probablement sur la page de confirmation');
+        return;
+    }
+    
+    try {
+        const formData = new FormData(form);
+        const data = {};
+        
+        // Convertir FormData en objet, gérer les arrays
+        for (let [key, value] of formData.entries()) {
+            if (data[key]) {
+                // Si la clé existe déjà, convertir en array
+                if (!Array.isArray(data[key])) {
+                    data[key] = [data[key]];
+                }
+                data[key].push(value);
+            } else {
+                data[key] = value;
+            }
+        }
+        
+        // Sauvegarder aussi les radios/checkboxes non sélectionnés pour connaître l'état
+        form.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(input => {
+            const name = input.name;
+            if (input.type === 'checkbox') {
+                if (!data[name]) data[name] = [];
+                if (input.checked && !data[name].includes(input.value)) {
+                    data[name].push(input.value);
+                }
+            } else if (input.type === 'radio' && input.checked) {
+                data[name] = input.value;
+            }
+        });
+        
+        // Sauvegarder le nombre de machines pour pouvoir les recréer si nécessaire
+        // Compter les indices des machines trouvés dans les inputs
+        const machineIndicesInForm = new Set();
+        form.querySelectorAll('input[name^="machines["], select[name^="machines["]').forEach(input => {
+            const match = input.name.match(/machines\[(\d+)\]/);
+            if (match) {
+                machineIndicesInForm.add(parseInt(match[1]));
+            }
+        });
+        const maxIndex = machineIndicesInForm.size > 0 ? Math.max(...machineIndicesInForm) : 0;
+        const machineCountFromIndices = maxIndex + 1;
+        
+        const machineItems = form.querySelectorAll('.machine-item, [class*="machine-item"]').length;
+        const machinePanels = form.querySelectorAll('[id^="duplicopieur-interface-"], [id^="photocopieur-interface-"]').length;
+        
+        // Utiliser le maximum entre les différentes méthodes de comptage
+        data['_machine_count'] = Math.max(machineCountFromIndices, machineItems, machinePanels, machineCount, 1);
+        
+        console.log('💾 Sauvegarde - Nombre de machines détecté:', data['_machine_count'], {
+            machineCountFromIndices,
+            machineItems,
+            machinePanels,
+            machineCount,
+            indices: Array.from(machineIndicesInForm)
+        });
+        
+        // Sauvegarder l'état des interfaces masquées/affichées
+        data['_ui_state'] = {};
+        form.querySelectorAll('[id*="interface"]').forEach(el => {
+            data['_ui_state'][el.id] = el.style.display !== 'none';
+        });
+        
+        sessionStorage.setItem('tirage_multimachines_form_data', JSON.stringify(data));
+        console.log('✅ Données du formulaire sauvegardées');
+    } catch (e) {
+        console.error('❌ Erreur lors de la sauvegarde:', e);
+    }
+}
+
+/**
+ * Ajouter une machine de manière asynchrone (retourne une Promise)
+ */
+function addMachineAsync(index) {
+    return new Promise((resolve, reject) => {
+        const container = document.getElementById('machines-container');
+        if (!container) {
+            reject('Container machines-container non trouvé');
+            return;
+        }
+        
+        fetch(`?get-machine-template&index=${index}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    reject(data.error);
+                    return;
+                }
+                
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = data.html;
+                const newMachineContainer = tempDiv.firstElementChild;
+                
+                if (!newMachineContainer) {
+                    reject('Aucun élément trouvé dans le HTML généré');
+                    return;
+                }
+                
+                const addButtonContainer = container.querySelector('div.text-center:last-child');
+                
+                if (addButtonContainer && container.contains(addButtonContainer)) {
+                    container.insertBefore(newMachineContainer, addButtonContainer);
+                } else {
+                    container.appendChild(newMachineContainer);
+                }
+                
+                // Mettre à jour machineCount pour qu'il soit supérieur ou égal à l'index créé + 1
+                machineCount = Math.max(machineCount, index + 1);
+                
+                // Ajouter l'événement pour supprimer
+                const removeBtn = newMachineContainer.querySelector('.remove-machine');
+                if (removeBtn) {
+                    removeBtn.addEventListener('click', function() {
+                        newMachineContainer.remove();
+                        machineCount = Math.max(1, machineCount - 1);
+                        calculateTotalPrice();
+                        saveFormData();
+                    });
+                }
+                
+                // Initialiser la validation pour cette machine
+                setTimeout(() => {
+                    try {
+                        toggleMachineType(index);
+                        
+                        const duplicopieurIdField = document.querySelector(`select[name="machines[${index}][duplicopieur_id]"]`) || document.querySelector(`input[name="machines[${index}][duplicopieur_id]"]`);
+                        if (duplicopieurIdField && duplicopieurIdField.value) {
+                            const duplicopieurId = duplicopieurIdField.value;
+                            if (typeof updateDuplicopieurCounters === 'function') {
+                                updateDuplicopieurCounters(duplicopieurId, index);
+                            } else if (typeof loadTamboursForDuplicopieur === 'function') {
+                                loadTamboursForDuplicopieur(duplicopieurId, index);
+                            }
+                        }
+                        
+                        console.log(`✅ Machine ${index} initialisée complètement`);
+                        resolve(newMachineContainer);
+                    } catch (e) {
+                        console.error(`❌ Erreur lors de l'initialisation de la machine ${index}:`, e);
+                        resolve(newMachineContainer); // Résoudre quand même pour ne pas bloquer
+                    }
+                }, 150);
+            })
+            .catch(error => {
+                reject(error);
+            });
+    });
+}
+
+/**
+ * Restaurer les données du formulaire depuis sessionStorage
+ */
+function restoreFormData() {
+    const saved = sessionStorage.getItem('tirage_multimachines_form_data');
+    if (!saved) {
+        console.log('Aucune donnée sauvegardée à restaurer');
+        return false;
+    }
+    
+    const form = document.getElementById('multimachines-form');
+    if (!form) {
+        console.log('Formulaire non trouvé pour restauration');
+        return false;
+    }
+    
+    try {
+        const data = JSON.parse(saved);
+        console.log('🔄 Restauration des données du formulaire...');
+        
+        // Déterminer les indices des machines sauvegardées
+        const savedMachineIndices = new Set();
+        Object.keys(data).forEach(key => {
+            if (key.startsWith('_')) return;
+            const match = key.match(/machines\[(\d+)\]/);
+            if (match) {
+                savedMachineIndices.add(parseInt(match[1]));
+            }
+        });
+        
+        // Convertir en tableau trié
+        const savedIndicesArray = Array.from(savedMachineIndices).sort((a, b) => a - b);
+        const maxMachineIndex = savedIndicesArray.length > 0 ? Math.max(...savedIndicesArray) : 0;
+        
+        // Déterminer les indices des machines existantes dans le DOM
+        const existingMachineIndices = new Set();
+        form.querySelectorAll('input[name^="machines["], select[name^="machines["]').forEach(input => {
+            const match = input.name.match(/machines\[(\d+)\]/);
+            if (match) {
+                existingMachineIndices.add(parseInt(match[1]));
+            }
+        });
+        const existingIndicesArray = Array.from(existingMachineIndices).sort((a, b) => a - b);
+        
+        // Trouver les indices manquants (sauvegardés mais pas présents dans le DOM)
+        const missingIndices = savedIndicesArray.filter(idx => !existingMachineIndices.has(idx));
+        
+        console.log(`🔍 Machines sauvegardées: indices ${savedIndicesArray.join(', ')}`, {
+            savedIndices: savedIndicesArray,
+            existingIndices: existingIndicesArray,
+            missingIndices: missingIndices,
+            maxIndex: maxMachineIndex
+        });
+        
+        // Fonction pour restaurer les données une fois que toutes les machines sont créées
+        const restoreFields = () => {
+            console.log('🔄 Début de la restauration des champs...');
+            let restoredCount = 0;
+            let missingCount = 0;
+            
+            // Restaurer chaque champ
+            Object.keys(data).forEach(key => {
+                // Ignorer les métadonnées
+                if (key.startsWith('_')) return;
+                
+                const inputs = form.querySelectorAll(`[name="${key}"]`);
+                if (inputs.length === 0) {
+                    // Si le champ n'existe pas, c'est peut-être une brochure ou un champ pas encore créé
+                    const brochureMatch = key.match(/machines\[(\d+)\]\[brochures\]\[(\d+)\]\[(\w+)\]/);
+                    if (brochureMatch) {
+                        // Les brochures seront restaurées après - pour l'instant on ignore
+                        missingCount++;
+                        return;
+                    }
+                    // Autre champ manquant - log pour debug
+                    if (!key.includes('brochures')) {
+                        console.log(`⚠️ Champ non trouvé: ${key}`);
+                        missingCount++;
+                    }
+                    return;
+                }
+                
+                inputs.forEach(input => {
+                    try {
+                        if (input.type === 'checkbox') {
+                            const value = Array.isArray(data[key]) ? data[key] : [data[key]];
+                            input.checked = value.includes(input.value);
+                        } else if (input.type === 'radio') {
+                            input.checked = input.value === data[key];
+                        } else {
+                            input.value = data[key];
+                        }
+                        restoredCount++;
+                    } catch (e) {
+                        console.error(`❌ Erreur lors de la restauration de ${key}:`, e);
+                    }
+                });
+            });
+            
+            console.log(`✅ Champs restaurés: ${restoredCount}, champs manquants: ${missingCount}`);
+            
+            // Restaurer l'état des interfaces
+            if (data['_ui_state']) {
+                Object.keys(data['_ui_state']).forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.style.display = data['_ui_state'][id] ? '' : 'none';
+                    }
+                });
+            }
+            
+            // Déclencher les événements pour mettre à jour l'UI
+            form.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+                const name = radio.name;
+                const match = name.match(/machines\[(\d+)\]\[type\]/);
+                if (match) {
+                    const index = match[1];
+                    setTimeout(() => {
+                        toggleMachineType(index);
+                        // Si c'est un duplicopieur, charger les tambours et les compteurs
+                        const duplicopieurSelect = document.querySelector(`select[name="machines[${index}][duplicopieur_id]"]`);
+                        if (duplicopieurSelect && duplicopieurSelect.value) {
+                            // Déclencher l'événement change pour charger les tambours et compteurs
+                            if (typeof updateDuplicopieurCounters === 'function') {
+                                updateDuplicopieurCounters(duplicopieurSelect.value, index);
+                            } else if (typeof loadTamboursForDuplicopieur === 'function') {
+                                loadTamboursForDuplicopieur(duplicopieurSelect.value, index);
+                            }
+                            // Déclencher aussi l'événement change natif
+                            const event = new Event('change', { bubbles: true });
+                            duplicopieurSelect.dispatchEvent(event);
+                        }
+                    }, 50);
+                }
+                
+                const modeMatch = name.match(/machines\[(\d+)\]\[mode_saisie\]/);
+                if (modeMatch) {
+                    const index = modeMatch[1];
+                    setTimeout(() => toggleSaisieMode(index), 50);
+                }
+            });
+            
+            // Déclencher les événements change sur les selects pour charger les données dépendantes
+            form.querySelectorAll('select').forEach(select => {
+                if (select.value) {
+                    // Déclencher l'événement change pour charger les données dépendantes
+                    const event = new Event('change', { bubbles: true });
+                    setTimeout(() => {
+                        try {
+                            select.dispatchEvent(event);
+                        } catch (e) {
+                            console.error('❌ Erreur lors du déclenchement de l\'événement change:', e);
+                        }
+                    }, 100);
+                }
+            });
+            
+            // Attendre un peu plus avant de recalculer le prix pour être sûr que tout est prêt
+            setTimeout(() => {
+                if (typeof calculateTotalPrice === 'function') {
+                    console.log('💰 Recalcul du prix total...');
+                    calculateTotalPrice();
+                }
+            }, 500);
+            
+            console.log('✅ Restauration des données terminée');
+        };
+        
+        // Si des machines manquent, les créer avec les bons indices
+        if (missingIndices.length > 0) {
+            console.log(`🔨 Création de ${missingIndices.length} machine(s) manquante(s) avec indices: ${missingIndices.join(', ')}...`);
+            
+            // Créer les machines une par une (séquentiellement) avec les bons indices
+            const createMachinesSequentially = async () => {
+                for (const machineIndex of missingIndices) {
+                    try {
+                        console.log(`🔨 Création machine avec index ${machineIndex}...`);
+                        
+                        // Créer la machine avec l'index spécifique
+                        await addMachineAsync(machineIndex);
+                        console.log(`✅ Machine ${machineIndex} créée et initialisée`);
+                        
+                        // Attendre un peu entre chaque création pour laisser le temps au DOM de se mettre à jour
+                        await new Promise(resolve => setTimeout(resolve, 300));
+                    } catch (error) {
+                        console.error(`❌ Erreur lors de la création de la machine ${machineIndex}:`, error);
+                        // Continuer même en cas d'erreur pour ne pas bloquer
+                    }
+                }
+                
+                // Vérifier que toutes les machines sont bien présentes avant de restaurer
+                const finalIndices = new Set();
+                form.querySelectorAll('input[name^="machines["], select[name^="machines["]').forEach(input => {
+                    const match = input.name.match(/machines\[(\d+)\]/);
+                    if (match) {
+                        finalIndices.add(parseInt(match[1]));
+                    }
+                });
+                console.log(`🔍 Vérification finale: machines avec indices ${Array.from(finalIndices).sort((a, b) => a - b).join(', ')}`);
+                
+                console.log('✅ Toutes les machines créées, restauration des données...');
+                // Attendre un peu plus avant de restaurer pour être sûr que tout est prêt
+                setTimeout(restoreFields, 600);
+            };
+            
+            createMachinesSequentially();
+        } else {
+            // Pas besoin de créer de machines supplémentaires, restaurer directement
+            console.log('✅ Toutes les machines sont déjà présentes, restauration directe...');
+            restoreFields();
+        }
+        
+        return true;
+    } catch (e) {
+        console.error('❌ Erreur lors de la restauration:', e);
+        return false;
+    }
+}
+
+/**
+ * Fonction pour retourner au formulaire depuis la page de confirmation
+ */
+function returnToForm() {
+    // Les données sont déjà sauvegardées dans sessionStorage
+    // Recharger la page principale avec un paramètre pour déclencher la restauration
+    window.location.href = '?tirage_multimachines&retour=1';
+}
+
+/**
+ * Initialiser la sauvegarde automatique du formulaire
+ */
+function initAutoSave() {
+    const form = document.getElementById('multimachines-form');
+    if (!form) return;
+    
+    // Sauvegarder à chaque changement dans le formulaire
+    form.addEventListener('input', function(e) {
+        // Délai pour éviter trop de sauvegardes
+        clearTimeout(window.autoSaveTimeout);
+        window.autoSaveTimeout = setTimeout(saveFormData, 500);
+    });
+    
+    form.addEventListener('change', function(e) {
+        saveFormData();
+    });
+    
+    // Sauvegarder avant la soumission du formulaire
+    form.addEventListener('submit', function(e) {
+        saveFormData();
+    });
+    
+    console.log('✅ Auto-sauvegarde activée');
+}
 
 // Prix depuis la base de données
 const prixData = <?= json_encode($prix_data ?? []) ?>;
@@ -1827,7 +2297,35 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialiser le cache des mappings machine -> price_key
     initializeMachinePriceCache();
     
-    calculateTotalPrice();
+    // Initialiser l'auto-sauvegarde du formulaire
+    initAutoSave();
+    
+    // Vérifier si on doit restaurer les données
+    // Seulement si on vient de la page de confirmation (paramètre retour=1)
+    const urlParams = new URLSearchParams(window.location.search);
+    const shouldRestore = urlParams.get('retour') === '1' && sessionStorage.getItem('tirage_multimachines_form_data');
+    
+    if (shouldRestore) {
+        console.log('🔄 Restauration des données du formulaire depuis la page de confirmation...');
+        setTimeout(() => {
+            const restored = restoreFormData();
+            if (restored) {
+                console.log('✅ Données restaurées, recalcul du prix...');
+                // Attendre un peu pour que tous les éléments soient restaurés
+                setTimeout(() => {
+                    calculateTotalPrice();
+                    // Nettoyer l'URL pour retirer le paramètre retour
+                    if (window.history && window.history.replaceState) {
+                        window.history.replaceState({}, '', '?tirage_multimachines');
+                    }
+                }, 300);
+            } else {
+                calculateTotalPrice();
+            }
+        }, 200);
+    } else {
+        calculateTotalPrice();
+    }
     
     const addMachineBtn = document.getElementById('add-machine');
     if (!addMachineBtn) {
@@ -1840,7 +2338,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const newIndex = machineCount;
     
     // Faire une requête AJAX pour récupérer le HTML de la machine
-    fetch(`./get-machine-template.php?index=${newIndex}`)
+    fetch(`?get-machine-template&index=${newIndex}`)
         .then(response => response.json())
         .then(data => {
             if (data.error) {
@@ -1899,8 +2397,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Bouton remove-machine trouvé:', removeBtn);
                 removeBtn.addEventListener('click', function() {
                     newMachineContainer.remove();
-        calculateTotalPrice();
-    });
+                    machineCount = Math.max(1, machineCount - 1);
+                    calculateTotalPrice();
+                    saveFormData(); // Sauvegarder après suppression
+                });
             } else {
                 console.error('Bouton remove-machine non trouvé dans le HTML généré');
                 console.log('Tous les boutons dans newMachineContainer:', newMachineContainer.querySelectorAll('button'));
@@ -1918,7 +2418,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 toggleMachineType(newIndex);
                 
                 // Charger les tambours du duplicopieur si un duplicopieur est sélectionné
-                const duplicopieurIdField = document.querySelector(`input[name="machines[${newIndex}][duplicopieur_id]"]`);
+                const duplicopieurIdField = document.querySelector(`select[name="machines[${newIndex}][duplicopieur_id]"]`) || document.querySelector(`input[name="machines[${newIndex}][duplicopieur_id]"]`);
                 if (duplicopieurIdField && duplicopieurIdField.value) {
                     const duplicopieurId = duplicopieurIdField.value;
                     console.log('🎯 Chargement des tambours pour machine', newIndex, ', duplicopieur ID:', duplicopieurId);
@@ -1926,6 +2426,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     console.log('⚠️ Pas de duplicopieur sélectionné pour machine', newIndex);
                 }
+                
+                // Sauvegarder après l'ajout d'une machine
+                saveFormData();
             }, 100);
     
     calculateTotalPrice();
@@ -1969,14 +2472,19 @@ document.addEventListener('DOMContentLoaded', function() {
     calculateTotalPrice();
     
     // S'assurer que le champ cb1 est rempli avant la soumission
-    document.getElementById('multimachines-form').addEventListener('submit', function() {
-        var payeOui = document.getElementById('payeoui');
-        var cbField = document.getElementById('cb1');
-        if (payeOui && payeOui.checked && cbField) {
-            var total = calculateTotalPrice();
-            cbField.value = total.toFixed(2);
-        }
-    });
+    const multimachinesForm = document.getElementById('multimachines-form');
+    if (multimachinesForm) {
+        multimachinesForm.addEventListener('submit', function() {
+            var payeOui = document.getElementById('payeoui');
+            var cbField = document.getElementById('cb1');
+            if (payeOui && payeOui.checked && cbField) {
+                var total = calculateTotalPrice();
+                cbField.value = total.toFixed(2);
+            }
+            // Sauvegarder une dernière fois avant la soumission
+            saveFormData();
+        });
+    }
 });
 </script>
 
