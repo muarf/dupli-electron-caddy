@@ -50,16 +50,20 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
 
-        echo "Création du commit de version"
+        echo "Création du tag ${{ env.NEW_TAG }} sur le commit actuel (sync)"
+        echo "Ce tag pointera vers le commit qui contient tous les fichiers app/"
+        git tag ${{ env.NEW_TAG }}
+
+        echo "Push du tag AVANT le commit pour garantir que le tag pointe vers le bon commit"
+        git push origin ${{ env.NEW_TAG }}
+
+        echo "Création du commit de version (après le tag)"
         git add package.json
         git commit -m "chore: bump version to ${{ env.NEW_VERSION }}"
 
-        echo "Création du tag ${{ env.NEW_TAG }}"
-        git tag ${{ env.NEW_TAG }}
-
-        echo "Push du commit et du tag"
+        echo "Push du commit de version"
         git push
-        git push origin ${{ env.NEW_TAG }}
 
-        echo "✅ Version automatiquement incrémentée à ${{ env.NEW_VERSION }}"
-        echo "✅ Tag ${{ env.NEW_TAG }} créé et poussé"
+        echo "✅ Tag ${{ env.NEW_TAG }} créé sur le commit sync (avec tous les fichiers)"
+        echo "✅ Version incrémentée à ${{ env.NEW_VERSION }}"
+        echo "✅ Tag ${{ env.NEW_TAG }} et commit poussés"
