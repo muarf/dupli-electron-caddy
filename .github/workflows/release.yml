@@ -44,8 +44,45 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+  create-release:
+    needs: get-tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create empty GitHub Release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = '${{ needs.get-tag.outputs.tag }}';
+            const version = '${{ needs.get-tag.outputs.version }}';
+            
+            // Vérifier si la release existe déjà
+            try {
+              const release = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: tag
+              });
+              console.log(`✅ Release ${tag} existe déjà`);
+            } catch (error) {
+              if (error.status === 404) {
+                // Créer une release vide (pas draft, publiée directement)
+                await github.rest.repos.createRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  tag_name: tag,
+                  name: `Duplicator v${version}`,
+                  body: `## 🎉 Release v${version}\n\n### 📦 Fichiers disponibles\n\nLes fichiers seront automatiquement uploadés par les builds.`,
+                  draft: false,
+                  prerelease: false
+                });
+                console.log(`✅ Release ${tag} créée (vide, prête pour les uploads)`);
+              } else {
+                throw error;
+              }
+            }
+
   build-linux:
-    needs: [get-tag]
+    needs: [get-tag, create-release]
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -138,10 +175,21 @@ jobs:
           echo "✅ Caddy téléchargé"
       
       - name: Build Linux AppImage
-        run: npm run build:caddy -- --linux --publish=always
+        run: npm run build:caddy -- --linux --publish=never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REF: refs/tags/${{ needs.get-tag.outputs.tag }}
+      
+      - name: Upload Linux artifacts to release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.get-tag.outputs.tag }}
+          files: |
+            dist/*.AppImage
+            dist/latest-linux.yml
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Verify build output
         run: |
@@ -175,7 +223,7 @@ jobs:
           echo "✅ Vérification ASAR terminée avec succès"
   
   build-windows:
-    needs: [get-tag, build-linux]
+    needs: [get-tag, create-release, build-linux]
     runs-on: windows-latest
     timeout-minutes: 30
 
@@ -241,10 +289,22 @@ jobs:
           echo "✅ Caddy téléchargé"
       
       - name: Build Windows
-        run: npm run build:caddy -- --win --publish=always
+        run: npm run build:caddy -- --win --publish=never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REF: refs/tags/${{ needs.get-tag.outputs.tag }}
+      
+      - name: Upload Windows artifacts to release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.get-tag.outputs.tag }}
+          files: |
+            dist/*.exe
+            dist/*.zip
+            dist/latest.yml
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Verify build output
         run: |
