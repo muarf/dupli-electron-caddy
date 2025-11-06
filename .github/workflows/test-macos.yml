@@ -64,6 +64,51 @@ jobs:
           php --version
           echo "PHP version: $(php --version | head -1)"
         
+      - name: Copy PHP binaries to php/ directory
+        run: |
+          echo "=== Copie des binaires PHP vers php/ ==="
+          
+          # Créer le dossier php/ s'il n'existe pas
+          mkdir -p php
+          
+          # Trouver le chemin PHP (Homebrew peut être dans /opt/homebrew ou /usr/local)
+          PHP_BIN=$(which php)
+          PHP_FPM_BIN=$(which php-fpm || echo "")
+          
+          if [ -z "$PHP_BIN" ]; then
+            echo "❌ PHP non trouvé dans le PATH"
+            exit 1
+          fi
+          
+          echo "Chemin PHP système: $PHP_BIN"
+          
+          # Copier le binaire PHP
+          cp "$PHP_BIN" php/php
+          chmod +x php/php
+          echo "✅ PHP copié vers php/php"
+          
+          # Copier php-fpm si disponible
+          if [ -n "$PHP_FPM_BIN" ] && [ -f "$PHP_FPM_BIN" ]; then
+            cp "$PHP_FPM_BIN" php/php-fpm
+            chmod +x php/php-fpm
+            echo "✅ php-fpm copié vers php/php-fpm"
+          else
+            echo "⚠️  php-fpm non disponible, utilisation du serveur PHP intégré"
+          fi
+          
+          # Vérifier les fichiers copiés
+          echo "📁 Contenu du dossier php/:"
+          ls -la php/
+          
+          # Vérifier que les binaires sont exécutables
+          if [ -x php/php ]; then
+            echo "✅ php/php est exécutable"
+            php/php --version
+          else
+            echo "❌ php/php n'est pas exécutable"
+            exit 1
+          fi
+        
       - name: Verify PHP installation
         run: |
           echo "Vérification de l'installation PHP..."
@@ -84,6 +129,15 @@ jobs:
             php-fpm --version
           else
             echo "⚠️  php-fpm non disponible, utilisation du serveur PHP intégré"
+          fi
+          
+          # Vérifier que PHP est copié dans php/
+          if [ -f "php/php" ]; then
+            echo "✅ PHP copié dans php/php"
+            php/php --version
+          else
+            echo "❌ PHP non copié dans php/"
+            exit 1
           fi
         
       - name: Check package.json version
