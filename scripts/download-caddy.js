@@ -140,21 +140,33 @@ async function downloadPhp() {
                 throw new Error('PHP système non disponible');
             }
             
-            // Créer des liens symboliques vers le PHP système
+            // Copier les binaires PHP système vers le dossier php/
             if (platform === 'win32') {
                 // Sur Windows, on garde les binaires existants
                 console.log('Binaires Windows déjà présents');
             } else {
-                // Sur Unix, créer des liens symboliques
-                if (!fs.existsSync(binaryPath)) {
-                    fs.symlinkSync('/usr/bin/php', binaryPath);
-                }
-                if (!fs.existsSync(fpmPath)) {
+                // Sur Unix/macOS, trouver le chemin PHP système et copier les binaires
+                try {
+                    // Trouver le chemin PHP système avec 'which'
+                    const phpSystemPath = execSync('which php', { encoding: 'utf8' }).trim();
+                    console.log(`PHP système trouvé à: ${phpSystemPath}`);
+                    
+                    // Copier le binaire PHP (pas de lien symbolique pour compatibilité avec l'app packagée)
+                    if (!fs.existsSync(binaryPath)) {
+                        fs.copyFileSync(phpSystemPath, binaryPath);
+                        fs.chmodSync(binaryPath, '755');
+                        console.log(`PHP copié vers: ${binaryPath}`);
+                    }
+                    
+                    // Essayer de trouver et copier php-fpm
                     try {
-                        // Vérifier si php-fpm existe avant de créer le lien
-                        if (fs.existsSync('/usr/bin/php-fpm')) {
-                            fs.symlinkSync('/usr/bin/php-fpm', fpmPath);
-                            console.log('php-fpm lié avec succès');
+                        const phpFpmSystemPath = execSync('which php-fpm', { encoding: 'utf8' }).trim();
+                        if (fs.existsSync(phpFpmSystemPath)) {
+                            if (!fs.existsSync(fpmPath)) {
+                                fs.copyFileSync(phpFpmSystemPath, fpmPath);
+                                fs.chmodSync(fpmPath, '755');
+                                console.log(`php-fpm copié vers: ${fpmPath}`);
+                            }
                         } else {
                             console.log('php-fpm non disponible, utilisation du serveur PHP intégré');
                         }
@@ -162,6 +174,9 @@ async function downloadPhp() {
                         // php-fpm peut ne pas être disponible, on continue sans
                         console.log('php-fpm non disponible, utilisation du serveur PHP intégré');
                     }
+                } catch (error) {
+                    console.error('Erreur lors de la copie de PHP:', error.message);
+                    throw new Error('Impossible de copier PHP système');
                 }
             }
             
