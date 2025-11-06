@@ -43,18 +43,8 @@ mac:
       arch: [x64]
   category: public.app-category.productivity
   # Configuration spécifique macOS - inclut PHP
-  files:
-    - main-caddy.js
-    - main.js
-    - preload.js
-    - Caddyfile
-    - php-fpm.conf
-    - php-install-guide.html
-    - app/**/*
-    - ghostscript/**/*
-    - caddy/**/*
-    - utils/**/*
-    - "php/**/*"  # Inclure PHP pour macOS
+  # Note: Les fichiers dans asarUnpack sont automatiquement inclus dans files
+  # Ne pas dupliquer les patterns ici pour éviter les conflits de liens symboliques
   asarUnpack:
     - "php/**/*"
     - "app/**/*"
@@ -62,6 +52,7 @@ mac:
     - "caddy/**/*"
     - "Caddyfile"
     - "php-fpm.conf"
+    - "php-install-guide.html"
 win:
   target:
     - target: nsis
