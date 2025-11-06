@@ -731,7 +731,19 @@ function createWindow() {
     // Écouter les mises à jour du titre de la page pour synchroniser le titre de la fenêtre
     mainWindow.webContents.on('page-title-updated', (event, title) => {
         // Mettre à jour le titre de la fenêtre avec le titre de la page
+        console.log('Titre de la page mis à jour:', title);
         mainWindow.setTitle(title);
+    });
+    
+    // Écouter aussi le chargement complet de la page pour forcer la mise à jour du titre
+    // (nécessaire car les redirections meta refresh peuvent ne pas déclencher page-title-updated)
+    mainWindow.webContents.on('did-finish-load', () => {
+        // Récupérer le titre actuel de la page et mettre à jour la fenêtre
+        const currentTitle = mainWindow.webContents.getTitle();
+        if (currentTitle) {
+            console.log('Chargement terminé, titre actuel:', currentTitle);
+            mainWindow.setTitle(currentTitle);
+        }
     });
 
     // Créer le menu personnalisé
