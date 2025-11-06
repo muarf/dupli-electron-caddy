@@ -20,12 +20,17 @@ function Action($conf) {
             switch ($_POST['action']) {
                 case 'add_qa':
                     if (!empty($_POST['machine']) && !empty($_POST['question']) && !empty($_POST['reponse'])) {
+                        // Décoder d'abord pour éviter le double encodage sous Electron
+                        $question = html_entity_decode($_POST['question'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                        $machine = html_entity_decode($_POST['machine'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                        $categorie = html_entity_decode($_POST['categorie'] ?? 'general', ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                        
                         $result = $aideManager->addQA(
-                            htmlspecialchars($_POST['machine']),
-                            htmlspecialchars($_POST['question']),
+                            htmlspecialchars($machine, ENT_QUOTES, 'UTF-8'),
+                            htmlspecialchars($question, ENT_QUOTES, 'UTF-8'),
                             $_POST['reponse'], // Ne pas échapper le HTML pour permettre le formatage
                             intval($_POST['ordre'] ?? 0),
-                            htmlspecialchars($_POST['categorie'] ?? 'general')
+                            htmlspecialchars($categorie, ENT_QUOTES, 'UTF-8')
                         );
                         
                         if (isset($result['success'])) {
@@ -40,13 +45,18 @@ function Action($conf) {
                     
                 case 'edit_qa':
                     if (!empty($_POST['id']) && !empty($_POST['machine']) && !empty($_POST['question']) && !empty($_POST['reponse'])) {
+                        // Décoder d'abord pour éviter le double encodage sous Electron
+                        $question = html_entity_decode($_POST['question'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                        $machine = html_entity_decode($_POST['machine'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                        $categorie = html_entity_decode($_POST['categorie'] ?? 'general', ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                        
                         $result = $aideManager->updateQA(
                             $_POST['id'],
-                            htmlspecialchars($_POST['machine']),
-                            htmlspecialchars($_POST['question']),
+                            htmlspecialchars($machine, ENT_QUOTES, 'UTF-8'),
+                            htmlspecialchars($question, ENT_QUOTES, 'UTF-8'),
                             $_POST['reponse'],
                             intval($_POST['ordre'] ?? 0),
-                            htmlspecialchars($_POST['categorie'] ?? 'general')
+                            htmlspecialchars($categorie, ENT_QUOTES, 'UTF-8')
                         );
                         
                         if (isset($result['success'])) {
