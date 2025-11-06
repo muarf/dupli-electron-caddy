@@ -31,7 +31,7 @@
     </script>
 
   </head>
-  <body style="padding-bottom: 60px;" <?php if(isset($_SESSION['admin']) && $_SESSION['admin'] === true): ?>class="admin-mode"<?php if(isset($_SESSION['disable_inline_editing']) && $_SESSION['disable_inline_editing'] === true): ?> data-disable-inline-editing="true"<?php endif; ?><?php endif; ?>>
+  <body style="padding-bottom: 60px;" <?php if(isset($_SESSION['admin']) && $_SESSION['admin'] === true): ?>class="admin-mode" data-disable-inline-editing="true"<?php endif; ?>>
 
 <?= $header  ?>
  <div class="section">

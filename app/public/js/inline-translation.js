@@ -9,29 +9,20 @@ class InlineTranslationEditor {
         this.currentElement = null;
         this.originalValue = '';
         
-        // Vérifier si l'édition inline doit être désactivée par défaut (pour l'utilisateur "quinoa")
-        const disableByDefault = document.body.getAttribute('data-disable-inline-editing') === 'true';
-        
-        // Par défaut, l'édition est activée pour les admins sauf si désactivée par défaut
+        // Par défaut, l'édition est désactivée pour tous les admins à la connexion
         const savedState = localStorage.getItem('inline-editing-enabled');
         
         if (savedState === null) {
-            // Pas encore défini : utiliser la valeur par défaut selon l'utilisateur
-            if (disableByDefault) {
-                this.editingEnabled = false;
-                localStorage.setItem('inline-editing-enabled', 'false');
-                console.log('Édition inline désactivée par défaut pour cet utilisateur');
-            } else {
-                this.editingEnabled = true;
-                localStorage.setItem('inline-editing-enabled', 'true');
-                console.log('Activé editingEnabled par défaut pour admin');
-            }
+            // Pas encore défini : désactiver par défaut
+            this.editingEnabled = false;
+            localStorage.setItem('inline-editing-enabled', 'false');
+            console.log('Édition inline désactivée par défaut pour tous les admins');
         } else {
             // Utiliser l'état sauvegardé
             this.editingEnabled = savedState !== 'false';
         }
         
-        console.log('Constructor: savedState =', savedState, 'editingEnabled =', this.editingEnabled, 'disableByDefault =', disableByDefault);
+        console.log('Constructor: savedState =', savedState, 'editingEnabled =', this.editingEnabled);
         this.init();
     }
 
@@ -111,30 +102,40 @@ class InlineTranslationEditor {
     }
 
     initToggleButton() {
-        const toggleBtn = document.getElementById('toggle-edit-btn');
-        const toggleText = document.getElementById('toggle-edit-text');
-        
-        if (!toggleBtn || !toggleText) {
-            return;
-        }
-
-        // Récupérer l'état depuis localStorage ou utiliser true par défaut
-        this.editingEnabled = localStorage.getItem('inline-editing-enabled') !== 'false';
-        this.updateToggleButton(toggleBtn, toggleText);
-
-        // Événement de clic
-        toggleBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.editingEnabled = !this.editingEnabled;
+        // Attendre que le footer soit chargé dans le DOM
+        const tryInit = () => {
+            const toggleBtn = document.getElementById('toggle-edit-btn');
+            const toggleText = document.getElementById('toggle-edit-text');
             
-            // Sauvegarder l'état dans localStorage
-            localStorage.setItem('inline-editing-enabled', this.editingEnabled);
-            
+            if (!toggleBtn || !toggleText) {
+                // Réessayer après un court délai si le bouton n'existe pas encore
+                setTimeout(tryInit, 50);
+                return;
+            }
+
+            // Utiliser l'état déjà initialisé dans le constructeur
             this.updateToggleButton(toggleBtn, toggleText);
-            this.toggleEditingMode();
-            console.log('Bouton cliqué, édition activée:', this.editingEnabled);
-        });
+
+            // Événement de clic (une seule fois)
+            if (!toggleBtn.hasAttribute('data-listener-attached')) {
+                toggleBtn.setAttribute('data-listener-attached', 'true');
+                toggleBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.editingEnabled = !this.editingEnabled;
+                    
+                    // Sauvegarder l'état dans localStorage
+                    localStorage.setItem('inline-editing-enabled', this.editingEnabled);
+                    
+                    this.updateToggleButton(toggleBtn, toggleText);
+                    this.toggleEditingMode();
+                    console.log('Bouton cliqué, édition activée:', this.editingEnabled);
+                });
+            }
+        };
+        
+        // Commencer immédiatement
+        tryInit();
     }
 
     updateToggleButton(btn, text) {
