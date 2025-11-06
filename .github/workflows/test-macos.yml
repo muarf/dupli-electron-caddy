@@ -29,25 +29,6 @@ jobs:
       - name: Install dependencies
         run: npm install
         
-      - name: Install Composer and PHP dependencies
-        run: |
-          echo "Installation de Composer..."
-          curl -sS https://getcomposer.org/installer | php
-          php composer.phar --version
-          
-          echo "Installation des dépendances PHP..."
-          cd app
-          php ../composer.phar install --no-dev --optimize-autoloader --ignore-platform-reqs
-          cd ..
-          
-          echo "Vérification de vendor/..."
-          if [ -f "app/vendor/autoload.php" ]; then
-            echo "✅ vendor/autoload.php créé avec succès"
-          else
-            echo "❌ ERREUR: vendor/autoload.php introuvable"
-            exit 1
-          fi
-        
       - name: Install Caddy and PHP via Homebrew
         run: |
           echo "Installation de Caddy et PHP via Homebrew..."
@@ -137,6 +118,25 @@ jobs:
             php/php --version
           else
             echo "❌ PHP non copié dans php/"
+            exit 1
+          fi
+        
+      - name: Install Composer and PHP dependencies
+        run: |
+          echo "Installation de Composer..."
+          curl -sS https://getcomposer.org/installer | php
+          php composer.phar --version
+          
+          echo "Installation des dépendances PHP..."
+          cd app
+          php ../composer.phar install --no-dev --optimize-autoloader --ignore-platform-reqs
+          cd ..
+          
+          echo "Vérification de vendor/..."
+          if [ -f "app/vendor/autoload.php" ]; then
+            echo "✅ vendor/autoload.php créé avec succès"
+          else
+            echo "❌ ERREUR: vendor/autoload.php introuvable"
             exit 1
           fi
         
