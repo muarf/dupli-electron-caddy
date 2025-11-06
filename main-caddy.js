@@ -174,8 +174,18 @@ function getPhpPath() {
             console.error('PHP.exe non trouvé ni avec ASAR ni sans ASAR');
             return 'php.exe'; // Fallback système
         }
+    } else if (isMacOS) {
+        // macOS : chercher PHP dans l'app packagée
+        const phpPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php');
+        if (fs.existsSync(phpPath)) {
+            console.log('PHP trouvé dans l\'app packagée:', phpPath);
+            return phpPath;
+        } else {
+            console.warn('PHP non trouvé dans l\'app packagée, utilisation du PHP système');
+            return 'php'; // Fallback système
+        }
     } else {
-        // Linux/macOS : utiliser le PHP système
+        // Linux : utiliser le PHP système
         return 'php';
     }
 }
@@ -717,6 +727,12 @@ function createWindow() {
     
     // Maximiser la fenêtre pour prendre tout l'écran disponible
     mainWindow.maximize();
+
+    // Écouter les mises à jour du titre de la page pour synchroniser le titre de la fenêtre
+    mainWindow.webContents.on('page-title-updated', (event, title) => {
+        // Mettre à jour le titre de la fenêtre avec le titre de la page
+        mainWindow.setTitle(title);
+    });
 
     // Créer le menu personnalisé
     createMenu();
