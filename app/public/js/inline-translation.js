@@ -8,17 +8,30 @@ class InlineTranslationEditor {
         this.isEditing = false;
         this.currentElement = null;
         this.originalValue = '';
-        // Par défaut, l'édition est activée pour les admins
-        const savedState = localStorage.getItem('inline-editing-enabled');
-        this.editingEnabled = savedState !== 'false';
-        console.log('Constructor: savedState =', savedState, 'editingEnabled =', this.editingEnabled);
         
-        // Si pas encore défini, activer l'édition par défaut pour les admins
+        // Vérifier si l'édition inline doit être désactivée par défaut (pour l'utilisateur "quinoa")
+        const disableByDefault = document.body.getAttribute('data-disable-inline-editing') === 'true';
+        
+        // Par défaut, l'édition est activée pour les admins sauf si désactivée par défaut
+        const savedState = localStorage.getItem('inline-editing-enabled');
+        
         if (savedState === null) {
-            this.editingEnabled = true;
-            localStorage.setItem('inline-editing-enabled', 'true');
-            console.log('Activé editingEnabled par défaut pour admin');
+            // Pas encore défini : utiliser la valeur par défaut selon l'utilisateur
+            if (disableByDefault) {
+                this.editingEnabled = false;
+                localStorage.setItem('inline-editing-enabled', 'false');
+                console.log('Édition inline désactivée par défaut pour cet utilisateur');
+            } else {
+                this.editingEnabled = true;
+                localStorage.setItem('inline-editing-enabled', 'true');
+                console.log('Activé editingEnabled par défaut pour admin');
+            }
+        } else {
+            // Utiliser l'état sauvegardé
+            this.editingEnabled = savedState !== 'false';
         }
+        
+        console.log('Constructor: savedState =', savedState, 'editingEnabled =', this.editingEnabled, 'disableByDefault =', disableByDefault);
         this.init();
     }
 

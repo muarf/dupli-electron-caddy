@@ -177,6 +177,10 @@ function Action($conf = null)
             if ($result && password_verify($_POST['password'], $result['password_hash'])) {
                 $_SESSION['user'] = "1";
                 $_SESSION['admin'] = true;
+                // Désactiver l'édition inline par défaut pour l'utilisateur "quinoa"
+                if ($_POST['password'] === 'quinoa') {
+                    $_SESSION['disable_inline_editing'] = true;
+                }
             } else {
                 $array['login_error'] = 'Mot de passe incorrect. Veuillez réessayer.';
             }
@@ -186,6 +190,10 @@ function Action($conf = null)
             if (password_verify($_POST['password'], $hash)) {
                 $_SESSION['user'] = "1";
                 $_SESSION['admin'] = true;
+                // Désactiver l'édition inline par défaut pour l'utilisateur "quinoa"
+                if ($_POST['password'] === 'quinoa') {
+                    $_SESSION['disable_inline_editing'] = true;
+                }
             } else {
                 $array['login_error'] = 'Mot de passe incorrect. Veuillez réessayer.';
             }
