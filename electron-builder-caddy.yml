@@ -72,6 +72,7 @@ win:
     - preload.js
     - Caddyfile
     - php-fpm.conf
+    - app/php.ini  # Inclure explicitement php.ini pour Windows (nécessaire pour les extensions SQLite)
     - php-install-guide.html
     - app/**/*
     - ghostscript/**/*
