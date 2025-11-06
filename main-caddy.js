@@ -118,32 +118,13 @@ function getPhpFpmPath() {
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
     
-    if (isAppImage) {
-        // AppImage : vérifier si php-fpm existe, sinon retourner null
+    if (isAppImage || isMacOS) {
+        // AppImage ou macOS : vérifier si php-fpm existe, sinon retourner null
         const phpFpmPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php-fpm');
         return fs.existsSync(phpFpmPath) ? phpFpmPath : null;
     } else if (isWindows) {
-        // Windows : détecter si ASAR est utilisé ou non
-        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php-fpm.exe');
-        const noAsarPath = path.join(process.resourcesPath, 'app', 'php', 'php-fpm.exe');
-        
-        if (fs.existsSync(noAsarPath)) {
-            return noAsarPath;
-        } else if (fs.existsSync(asarPath)) {
-            return asarPath;
-        }
-        return null;
-    } else if (isMacOS) {
-        // macOS : détecter si ASAR est utilisé ou non
-        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php-fpm');
-        const noAsarPath = path.join(process.resourcesPath, 'app', 'php', 'php-fpm');
-        
-        if (fs.existsSync(noAsarPath)) {
-            return noAsarPath;
-        } else if (fs.existsSync(asarPath)) {
-            return asarPath;
-        }
-        return null;
+        // Windows : utiliser le PHP-FPM inclus
+        return path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php-fpm.exe');
     } else {
         // Développement : utiliser le PHP-FPM inclus
         const phpFpmPath = path.join(__dirname, 'php', 'php-fpm');
@@ -194,21 +175,12 @@ function getPhpPath() {
             return 'php.exe'; // Fallback système
         }
     } else if (isMacOS) {
-        // macOS : détecter si ASAR est utilisé ou non
-        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php');
-        const noAsarPath = path.join(process.resourcesPath, 'app', 'php', 'php');
-        
-        // Essayer d'abord sans ASAR (configuration actuelle: resources/app/)
-        if (fs.existsSync(noAsarPath)) {
-            console.log('PHP trouvé (sans ASAR):', noAsarPath);
-            return noAsarPath;
-        }
-        // Fallback avec ASAR si nécessaire (resources/app.asar.unpacked/)
-        else if (fs.existsSync(asarPath)) {
-            console.log('PHP trouvé (avec ASAR):', asarPath);
-            return asarPath;
-        }
-        else {
+        // macOS : chercher PHP dans l'app packagée
+        const phpPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php');
+        if (fs.existsSync(phpPath)) {
+            console.log('PHP trouvé dans l\'app packagée:', phpPath);
+            return phpPath;
+        } else {
             console.warn('PHP non trouvé dans l\'app packagée, utilisation du PHP système');
             return 'php'; // Fallback système
         }
@@ -258,31 +230,12 @@ function getCaddyfilePath() {
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
     
-    if (isAppImage) {
-        // Dans l'AppImage, le Caddyfile est dans app.asar.unpacked/
+    if (isAppImage || isMacOS) {
+        // Dans l'AppImage ou macOS, le Caddyfile est dans app.asar.unpacked/
         return path.join(process.resourcesPath, 'app.asar.unpacked', 'Caddyfile');
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
         // Même avec asar: false, les fichiers sont dans resources/app/
-        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'Caddyfile');
-        const noAsarPath = path.join(process.resourcesPath, 'app', 'Caddyfile');
-        
-        // Essayer d'abord sans ASAR (configuration actuelle: resources/app/)
-        if (fs.existsSync(noAsarPath)) {
-            console.log('Caddyfile trouvé (sans ASAR):', noAsarPath);
-            return noAsarPath;
-        }
-        // Fallback avec ASAR si nécessaire (resources/app.asar.unpacked/)
-        else if (fs.existsSync(asarPath)) {
-            console.log('Caddyfile trouvé (avec ASAR):', asarPath);
-            return asarPath;
-        }
-        else {
-            console.error('Caddyfile non trouvé ni avec ASAR ni sans ASAR');
-            return path.join(__dirname, 'Caddyfile'); // Fallback développement
-        }
-    } else if (isMacOS) {
-        // macOS : détecter si ASAR est utilisé ou non
         const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'Caddyfile');
         const noAsarPath = path.join(process.resourcesPath, 'app', 'Caddyfile');
         
@@ -315,30 +268,11 @@ function startPhpFpm() {
     const isMacOS = process.platform === 'darwin';
     
     let appPath;
-    if (isAppImage) {
+    if (isAppImage || isMacOS) {
         appPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
         // Même avec asar: false, les fichiers sont dans resources/app/
-        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
-        const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
-        
-        // Essayer d'abord sans ASAR (configuration actuelle: resources/app/app/public)
-        if (fs.existsSync(noAsarPath)) {
-            appPath = noAsarPath;
-            console.log('App Path trouvé (sans ASAR):', appPath);
-        }
-        // Fallback avec ASAR si nécessaire (resources/app.asar.unpacked/app/public)
-        else if (fs.existsSync(asarPath)) {
-            appPath = asarPath;
-            console.log('App Path trouvé (avec ASAR):', appPath);
-        }
-        else {
-            console.error('App Path non trouvé ni avec ASAR ni sans ASAR');
-            appPath = path.join(__dirname, 'app', 'public'); // Fallback développement
-        }
-    } else if (isMacOS) {
-        // macOS : détecter si ASAR est utilisé ou non
         const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
         const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
         
@@ -797,25 +731,7 @@ function createWindow() {
     // Écouter les mises à jour du titre de la page pour synchroniser le titre de la fenêtre
     mainWindow.webContents.on('page-title-updated', (event, title) => {
         // Mettre à jour le titre de la fenêtre avec le titre de la page
-        // Ne pas mettre à jour si le titre est une URL (problème avec certaines pages)
-        if (title && !title.startsWith('http://') && !title.startsWith('https://') && !title.includes('://')) {
-            console.log('Titre de la page mis à jour:', title);
-            mainWindow.setTitle(title);
-        }
-    });
-    
-    // Écouter aussi le chargement complet de la page pour forcer la mise à jour du titre
-    // (nécessaire car les redirections meta refresh peuvent ne pas déclencher page-title-updated)
-    mainWindow.webContents.on('did-finish-load', () => {
-        // Récupérer le titre actuel de la page via JavaScript dans le DOM
-        mainWindow.webContents.executeJavaScript('document.title').then((title) => {
-            if (title && title.trim() && !title.startsWith('http://') && !title.startsWith('https://') && !title.includes('://')) {
-                console.log('Chargement terminé, titre actuel:', title);
-                mainWindow.setTitle(title);
-            }
-        }).catch((error) => {
-            console.error('Erreur lors de la récupération du titre:', error);
-        });
+        mainWindow.setTitle(title);
     });
 
     // Créer le menu personnalisé
