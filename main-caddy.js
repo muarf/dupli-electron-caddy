@@ -731,19 +731,25 @@ function createWindow() {
     // Écouter les mises à jour du titre de la page pour synchroniser le titre de la fenêtre
     mainWindow.webContents.on('page-title-updated', (event, title) => {
         // Mettre à jour le titre de la fenêtre avec le titre de la page
-        console.log('Titre de la page mis à jour:', title);
-        mainWindow.setTitle(title);
+        // Ne pas mettre à jour si le titre est une URL (problème avec certaines pages)
+        if (title && !title.startsWith('http://') && !title.startsWith('https://') && !title.includes('://')) {
+            console.log('Titre de la page mis à jour:', title);
+            mainWindow.setTitle(title);
+        }
     });
     
     // Écouter aussi le chargement complet de la page pour forcer la mise à jour du titre
     // (nécessaire car les redirections meta refresh peuvent ne pas déclencher page-title-updated)
     mainWindow.webContents.on('did-finish-load', () => {
-        // Récupérer le titre actuel de la page et mettre à jour la fenêtre
-        const currentTitle = mainWindow.webContents.getTitle();
-        if (currentTitle) {
-            console.log('Chargement terminé, titre actuel:', currentTitle);
-            mainWindow.setTitle(currentTitle);
-        }
+        // Récupérer le titre actuel de la page via JavaScript dans le DOM
+        mainWindow.webContents.executeJavaScript('document.title').then((title) => {
+            if (title && title.trim() && !title.startsWith('http://') && !title.startsWith('https://') && !title.includes('://')) {
+                console.log('Chargement terminé, titre actuel:', title);
+                mainWindow.setTitle(title);
+            }
+        }).catch((error) => {
+            console.error('Erreur lors de la récupération du titre:', error);
+        });
     });
 
     // Créer le menu personnalisé
