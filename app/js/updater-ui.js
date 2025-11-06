@@ -347,6 +347,7 @@
     }
     
 })();
+<<<<<<< HEAD
 
 
 
@@ -354,3 +355,5 @@
 
 
 
+=======
+>>>>>>> style: Nettoyage du formatage des fichiers
