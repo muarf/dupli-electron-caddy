@@ -263,3 +263,4 @@ Les sauvegardes manuelles sont stockées dans `app/public/sauvegarde/` et peuven
 - **FrankenPHP pour Linux** : Intégrer FrankenPHP pour simplifier le déploiement Linux AppImage (binaire statique)
 - **Support macOS** : Vérifier et tester le fonctionnement complet sous macOS
 - **Statistiques de remplissage** : Statistique de remplissage de la page
+# Test synchronisation - Wed 05 Nov 2025 05:44:01 PM EST
