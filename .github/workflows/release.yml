@@ -85,15 +85,42 @@ jobs:
     needs: [get-tag, create-release]
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          clean: true
           submodules: recursive
           fetch-depth: 0
           ref: ${{ needs.get-tag.outputs.tag }}
-      
+
+      - name: Clean cache and prepare
+        run: |
+          echo "🧹 Nettoyage du cache et préparation..."
+          npm cache clean --force
+          rm -rf node_modules/.cache ~/.electron* ~/.cache/electron* dist/
+
+      - name: Verify critical files
+        run: |
+          echo "🔍 Vérification des fichiers PHP critiques..."
+          if [ ! -f 'app/view/partials/machine_item.html.php' ]; then
+            echo "❌ machine_item.html.php manquant"
+            exit 1
+          fi
+          if grep -q 'duplicopieur_active.*active' app/view/partials/machine_item.html.php; then
+            echo "❌ machine_item.html.php contient les mauvaises valeurs (duplicopieur actif)"
+            exit 1
+          fi
+          if grep -q 'photocopieur_active.*active' app/view/partials/machine_item.html.php; then
+            echo "✅ machine_item.html.php a les bonnes valeurs (photocopieur actif)"
+          else
+            echo "❌ machine_item.html.php n'a pas les bonnes valeurs"
+            grep -A2 -B2 "photocopieur_active" app/view/partials/machine_item.html.php || echo "Variable non trouvée"
+            exit 1
+          fi
+          echo "✅ Tous les fichiers PHP critiques vérifiés"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -117,7 +144,7 @@ jobs:
           grep '\"version\"' package.json
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
       
       - name: Install Composer and PHP dependencies
         run: |
@@ -163,6 +190,26 @@ jobs:
           if [ -f dist/latest-linux.yml ]; then
             echo "✅ latest-linux.yml créé"
           fi
+
+      - name: Verify ASAR content
+        run: |
+          echo "🔍 Vérification du contenu ASAR..."
+          APPIMAGE_FILE=$(ls dist/*.AppImage | head -1)
+          if [ -z "$APPIMAGE_FILE" ]; then
+            echo "❌ Aucune AppImage trouvée"
+            exit 1
+          fi
+          echo "Extraction de $APPIMAGE_FILE..."
+          $APPIMAGE_FILE --appimage-extract >/dev/null 2>&1
+          if grep -q 'photocopieur_active.*active' squashfs-root/resources/app.asar.unpacked/app/view/partials/machine_item.html.php; then
+            echo "✅ ASAR contient les bonnes valeurs PHP"
+          else
+            echo "❌ ASAR contient les mauvaises valeurs PHP"
+            echo "Contenu trouvé dans machine_item.html.php:"
+            grep -A2 -B2 "photocopieur_active\|duplicopieur_active" squashfs-root/resources/app.asar.unpacked/app/view/partials/machine_item.html.php || echo "Variables non trouvées"
+            exit 1
+          fi
+          echo "✅ Vérification ASAR terminée avec succès"
   
   build-windows:
     needs: [get-tag, create-release]
@@ -200,7 +247,7 @@ jobs:
           Get-Content package.json | Select-String '"version"'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
       
       - name: Install Composer and PHP dependencies
         run: |
