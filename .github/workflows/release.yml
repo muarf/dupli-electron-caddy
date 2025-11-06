@@ -44,45 +44,8 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-  create-release:
-    needs: get-tag
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create GitHub Release
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const tag = '${{ needs.get-tag.outputs.tag }}';
-            const version = '${{ needs.get-tag.outputs.version }}';
-            
-            // Vérifier si la release existe déjà
-            try {
-              await github.rest.repos.getReleaseByTag({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag: tag
-              });
-              console.log(`✅ Release ${tag} existe déjà`);
-            } catch (error) {
-              if (error.status === 404) {
-                // Créer la release draft
-                await github.rest.repos.createRelease({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  tag_name: tag,
-                  name: `Duplicator v${version}`,
-                  body: `## 🎉 Release v${version}\n\n### 📦 Fichiers disponibles\n\nLes fichiers seront automatiquement uploadés par electron-builder.`,
-                  draft: true,
-                  prerelease: false
-                });
-                console.log(`✅ Release draft ${tag} créée`);
-              } else {
-                throw error;
-              }
-            }
-
   build-linux:
-    needs: [get-tag, create-release]
+    needs: [get-tag]
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -212,7 +175,7 @@ jobs:
           echo "✅ Vérification ASAR terminée avec succès"
   
   build-windows:
-    needs: [get-tag, create-release]
+    needs: [get-tag]
     runs-on: windows-latest
     timeout-minutes: 30
 
@@ -293,30 +256,3 @@ jobs:
           if (Test-Path "dist/latest.yml") {
             echo "✅ latest.yml créé"
           }
-
-  publish-release:
-    needs: [get-tag, build-linux, build-windows]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Publish GitHub Release
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const tag = '${{ needs.get-tag.outputs.tag }}';
-            
-            // Récupérer la release
-            const release = await github.rest.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag: tag
-            });
-            
-            // Publier la release (passer de draft à published)
-            await github.rest.repos.updateRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.data.id,
-              draft: false
-            });
-            
-            console.log(`✅ Release ${tag} publiée`);
