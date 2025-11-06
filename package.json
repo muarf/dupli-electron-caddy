@@ -1,6 +1,6 @@
 {
   "name": "dupli-electron",
-  "version": "1.4.30",
+  "version": "1.4.31",
   "main": "main-caddy.js",
   "scripts": {
     "start": "electron . --no-sandbox --disable-gpu",
