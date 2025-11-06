@@ -18,7 +18,7 @@ files:
   - ghostscript/**/*
   - caddy/**/*
   - utils/**/*
-  # PHP sera inclus spécifiquement par plateforme (Windows/macOS oui, Linux non)
+  - "php/**/*"  # Inclure PHP pour Windows/macOS (exclu pour Linux)
 # asarUnpack configuré spécifiquement par plateforme pour éviter les erreurs de chemins longs
 # Plus besoin d'exclure les liens symboliques car ils ont été supprimés
 linux:
@@ -30,6 +30,8 @@ linux:
   executableArgs: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"]
   # Configuration spécifique Linux - utilise PHP système, pas de binaires embarqués
   # Le dossier php/ est vidé avant le build dans le workflow (économie d'espace)
+  files:
+    - "!php/**/*"  # Exclure PHP pour Linux (utilise PHP système)
   asarUnpack:
     - "app/**/*"
     - "ghostscript/**/*"
@@ -44,19 +46,6 @@ mac:
   category: public.app-category.productivity
   # Désactiver ASAR sur macOS pour éviter l'erreur "pattern is too long"
   asar: false
-  # Configuration spécifique macOS - inclut PHP
-  files:
-    - main-caddy.js
-    - main.js
-    - preload.js
-    - Caddyfile
-    - php-fpm.conf
-    - php-install-guide.html
-    - app/**/*
-    - ghostscript/**/*
-    - caddy/**/*
-    - utils/**/*
-    - "php/**/*"  # Inclure PHP pour macOS
 win:
   target:
     - target: nsis
