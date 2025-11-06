@@ -227,7 +227,7 @@
                     <div class="qa-question" onclick="toggleQA('qa-<?= $qa['id'] ?>')">
                       <h4>
                         <i class="fa fa-question-circle"></i>
-                        <?= htmlspecialchars($qa['question']) ?>
+                        <?= htmlspecialchars($qa['question'], ENT_COMPAT, 'UTF-8') ?>
                       </h4>
                       <i class="fa fa-chevron-down"></i>
                     </div>
@@ -274,7 +274,7 @@
                       <div class="qa-question" onclick="toggleQA('qa-<?= $qa['id'] ?>')">
                         <h4>
                           <i class="fa fa-question-circle"></i>
-                          <?= htmlspecialchars($qa['question']) ?>
+                          <?= htmlspecialchars($qa['question'], ENT_COMPAT, 'UTF-8') ?>
                         </h4>
                         <i class="fa fa-chevron-down"></i>
                       </div>
