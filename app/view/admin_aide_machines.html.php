@@ -291,6 +291,31 @@
   </div>
 </div>
 
+<!-- Modal de suppression -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">
+          <i class="fa fa-trash"></i> <?php _e('admin_aide_machines.delete'); ?>
+        </h4>
+      </div>
+      <div class="modal-body">
+        <p><?php _e('admin_aide_machines.confirm_delete'); ?></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">
+          <?php _e('admin_aide_machines.cancel'); ?>
+        </button>
+        <button type="button" class="btn btn-danger" id="confirm-delete">
+          <i class="fa fa-trash"></i> <?php _e('admin_aide_machines.delete'); ?>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/lang/summernote-fr-FR.min.js"></script>
@@ -364,17 +389,37 @@ $(document).ready(function() {
     });
     
     // Gestion de la suppression
+    var qaToDelete = null;
+    
     $('.delete-qa').click(function() {
-        if (confirm('<?php _e('admin_aide_machines.confirm_delete'); ?>')) {
-            var id = $(this).data('id');
-            
-            $.post('?admin_aide_machines', {
-                action: 'delete_qa',
-                id: id
-            }).done(function(response) {
-                location.reload();
-            });
+        qaToDelete = $(this).data('id');
+        $('#deleteModal').modal('show');
+    });
+    
+    $('#confirm-delete').click(function() {
+        if (!qaToDelete) {
+            return;
         }
+        
+        var id = qaToDelete;
+        qaToDelete = null;
+        $('#confirm-delete').prop('disabled', true);
+        
+        $.post('?admin_aide_machines', {
+            action: 'delete_qa',
+            id: id
+        }).done(function(response) {
+            location.reload();
+        }).fail(function(xhr, status, error) {
+            $('#deleteModal').modal('hide');
+            $('#confirm-delete').prop('disabled', false);
+            alert('<?php _e('admin_aide_machines.error'); ?>: ' + (xhr.responseText || error));
+        });
+    });
+    
+    $('#deleteModal').on('hidden.bs.modal', function () {
+        qaToDelete = null;
+        $('#confirm-delete').prop('disabled', false);
     });
     
     // Soumission du formulaire d'ajout

@@ -27,7 +27,7 @@ function Action($conf) {
                         
                         $result = $aideManager->addQA(
                             htmlspecialchars($machine, ENT_QUOTES, 'UTF-8'),
-                            htmlspecialchars($question, ENT_QUOTES, 'UTF-8'),
+                            $question, // Conserver la question telle quelle pour éviter le double encodage
                             $_POST['reponse'], // Ne pas échapper le HTML pour permettre le formatage
                             intval($_POST['ordre'] ?? 0),
                             htmlspecialchars($categorie, ENT_QUOTES, 'UTF-8')
@@ -53,7 +53,7 @@ function Action($conf) {
                         $result = $aideManager->updateQA(
                             $_POST['id'],
                             htmlspecialchars($machine, ENT_QUOTES, 'UTF-8'),
-                            htmlspecialchars($question, ENT_QUOTES, 'UTF-8'),
+                            $question, // Conserver la question telle quelle pour éviter le double encodage
                             $_POST['reponse'],
                             intval($_POST['ordre'] ?? 0),
                             htmlspecialchars($categorie, ENT_QUOTES, 'UTF-8')
