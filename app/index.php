@@ -98,6 +98,16 @@ register_shutdown_function(function() {
         if (!function_exists('template')) {
             require_once $rootDir . '/controler/func.php';
         }
+
+        if (function_exists('store_last_error')) {
+            store_last_error([
+                'type' => 'Erreur Fatale',
+                'message' => $error['message'],
+                'file' => $error['file'],
+                'line' => $error['line'],
+                'trace' => null
+            ]);
+        }
         
         echo show_error_page(
             $error['message'], 
@@ -279,6 +289,11 @@ ini_set('error_log', $error_log_path);
 ini_set('upload_tmp_dir', $temp_dir);
 
 session_start();
+
+if (isset($_SESSION['last_error'])) {
+    $GLOBALS['last_error'] = $_SESSION['last_error'];
+    unset($_SESSION['last_error']);
+}
 
 include($rootDir . '/controler/func.php');
 // conf.php sera inclus après l'exécution du modèle pour avoir la bonne base active

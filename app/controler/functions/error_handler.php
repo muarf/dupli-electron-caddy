@@ -6,6 +6,21 @@
 /**
  * Afficher une page d'erreur élégante
  */
+function store_last_error(array $errorData): void {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    $_SESSION['last_error'] = array_merge([
+        'type' => 'Erreur',
+        'message' => '',
+        'file' => null,
+        'line' => null,
+        'trace' => null,
+        'timestamp' => date('Y-m-d H:i:s')
+    ], $errorData);
+}
+
 function show_error_page($error_message, $error_type = 'Erreur', $error_file = null, $error_line = null, $error_trace = null, $error_help = null) {
     // Préparer les variables pour la vue
     $error_title = $error_type;
@@ -85,6 +100,14 @@ function custom_error_handler($errno, $errstr, $errfile, $errline) {
     }
     
     // Afficher la page d'erreur
+    store_last_error([
+        'type' => $error_type,
+        'message' => $errstr,
+        'file' => $errfile,
+        'line' => $errline,
+        'trace' => $trace_string
+    ]);
+
     echo show_error_page($errstr, $error_type, $errfile, $errline, $trace_string);
     exit;
 }
@@ -98,6 +121,14 @@ function custom_exception_handler($exception) {
     $error_line = $exception->getLine();
     $error_trace = $exception->getTraceAsString();
     
+    store_last_error([
+        'type' => 'Exception',
+        'message' => $error_message,
+        'file' => $error_file,
+        'line' => $error_line,
+        'trace' => $error_trace
+    ]);
+
     echo show_error_page($error_message, 'Exception', $error_file, $error_line, $error_trace);
     exit;
 }

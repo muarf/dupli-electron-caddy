@@ -377,6 +377,27 @@
                                 <li><?= htmlspecialchars($error) ?></li>
                             <?php endforeach; ?>
                         </ul>
+                        <?php if (isset($last_error_details) && is_array($last_error_details)): ?>
+                            <div class="result-card" style="margin-top: 15px;">
+                                <h5><i class="fa fa-bug"></i> Détails techniques</h5>
+                                <p>
+                                    <strong>Type :</strong> <?= htmlspecialchars($last_error_details['type'] ?? '') ?><br>
+                                    <strong>Date :</strong> <?= htmlspecialchars($last_error_details['timestamp'] ?? '') ?><br>
+                                    <?php if (!empty($last_error_details['file'])): ?>
+                                        <strong>Fichier :</strong> <?= htmlspecialchars($last_error_details['file']) ?>
+                                        <?php if (!empty($last_error_details['line'])): ?>
+                                            (ligne <?= htmlspecialchars($last_error_details['line']) ?>)
+                                        <?php endif; ?>
+                                        <br>
+                                    <?php endif; ?>
+                                </p>
+                                <?php if (!empty($last_error_details['trace'])): ?>
+                                    <pre style="background: #f8f9fa; padding: 15px; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+<?= htmlspecialchars($last_error_details['trace']) ?>
+                                    </pre>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
                         <div class="mt-3">
                             <button onclick="history.back()" class="btn btn-secondary me-2">
                                 <i class="fa fa-arrow-left"></i> Retour
