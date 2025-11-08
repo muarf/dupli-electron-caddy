@@ -1064,7 +1064,9 @@ function createWindow() {
             await startCaddy();
             
             // Charger l'application avec le port choisi
-            mainWindow.loadURL(`http://127.0.0.1:${serverPort}/`);
+    const appUrl = `http://127.0.0.1:${serverPort}/`;
+    console.log(`Chargement de l'URL principale: ${appUrl}`);
+    mainWindow.loadURL(appUrl);
             mainWindow.show();
             
             console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
