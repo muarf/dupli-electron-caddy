@@ -19,6 +19,18 @@ function store_last_error(array $errorData): void {
         'trace' => null,
         'timestamp' => date('Y-m-d H:i:s')
     ], $errorData);
+
+    $logMessage = sprintf(
+        '[LAST_ERROR] %s : %s (fichier %s, ligne %s)',
+        $_SESSION['last_error']['type'],
+        $_SESSION['last_error']['message'],
+        $_SESSION['last_error']['file'] ?? 'N/A',
+        $_SESSION['last_error']['line'] ?? 'N/A'
+    );
+    error_log($logMessage);
+    if (!empty($_SESSION['last_error']['trace'])) {
+        error_log('[LAST_ERROR_TRACE] ' . $_SESSION['last_error']['trace']);
+    }
 }
 
 function show_error_page($error_message, $error_type = 'Erreur', $error_file = null, $error_line = null, $error_trace = null, $error_help = null) {
@@ -107,6 +119,7 @@ function custom_error_handler($errno, $errstr, $errfile, $errline) {
         'line' => $errline,
         'trace' => $trace_string
     ]);
+    error_log(sprintf('[ERROR_HANDLER] %s : %s in %s:%s', $error_type, $errstr, $errfile, $errline));
 
     echo show_error_page($errstr, $error_type, $errfile, $errline, $trace_string);
     exit;
@@ -128,6 +141,7 @@ function custom_exception_handler($exception) {
         'line' => $error_line,
         'trace' => $error_trace
     ]);
+    error_log(sprintf('[EXCEPTION_HANDLER] %s in %s:%s', $error_message, $error_file, $error_line));
 
     echo show_error_page($error_message, 'Exception', $error_file, $error_line, $error_trace);
     exit;
