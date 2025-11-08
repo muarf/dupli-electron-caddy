@@ -74,6 +74,14 @@
             white-space: pre-wrap;
             word-break: break-word;
         }
+        .php-monitor-ports {
+            display: none;
+            font-size: 13px;
+            color: #334155;
+            background: #e2e8f0;
+            border-radius: 6px;
+            padding: 8px 10px;
+        }
         .php-monitor-status {
             font-size: 14px;
             padding: 10px 12px;
@@ -142,6 +150,7 @@
                         Le serveur PHP embarqué ne répond plus. Les actions peuvent être temporairement indisponibles.
                     </p>
                     <pre class="php-monitor-detail"></pre>
+                    <div class="php-monitor-ports"></div>
                     <div class="php-monitor-status">Analyse en cours…</div>
                 </div>
                 <div class="php-monitor-actions">
@@ -157,6 +166,7 @@
         const detailEl = overlay.querySelector('.php-monitor-detail');
         const statusEl = overlay.querySelector('.php-monitor-status');
         const messageEl = overlay.querySelector('.php-monitor-message');
+        const portsEl = overlay.querySelector('.php-monitor-ports');
         const closeButtons = overlay.querySelectorAll('.php-monitor-close');
         const homeButton = overlay.querySelector('.php-monitor-home');
         const restartButton = overlay.querySelector('.php-monitor-restart');
@@ -173,6 +183,34 @@
                 statusEl.classList.add('php-monitor-status--success');
             } else if (tone === 'warning') {
                 statusEl.classList.add('php-monitor-status--warning');
+            }
+        }
+
+        function updatePortInfo(payload) {
+            if (!portsEl) {
+                return;
+            }
+            if (!payload) {
+                portsEl.style.display = 'none';
+                portsEl.textContent = '';
+                return;
+            }
+            const parts = [];
+            if (typeof payload.port !== 'undefined' && payload.port !== null) {
+                parts.push(`Port frontal: ${payload.port}`);
+            }
+            if (typeof payload.proxyPort !== 'undefined' && payload.proxyPort !== null && payload.proxyPort !== payload.port) {
+                parts.push(`Proxy: ${payload.proxyPort}`);
+            }
+            if (typeof payload.phpPort !== 'undefined' && payload.phpPort !== null && payload.phpPort !== payload.port) {
+                parts.push(`PHP direct: ${payload.phpPort}`);
+            }
+            if (parts.length) {
+                portsEl.textContent = parts.join(' · ');
+                portsEl.style.display = 'block';
+            } else {
+                portsEl.style.display = 'none';
+                portsEl.textContent = '';
             }
         }
 
@@ -195,6 +233,7 @@
             detailEl.textContent = detailLines.join(' ');
             messageEl.textContent = 'Le moteur PHP a rencontré une erreur critique et a été interrompu.';
             setStatus('Serveur PHP arrêté', 'error');
+            updatePortInfo(payload);
             restartButton.disabled = false;
             appButton.disabled = false;
             showOverlay();
@@ -206,8 +245,21 @@
             }
 
             const status = payload.status;
+            updatePortInfo(payload);
+
             if (status === 'running') {
                 setStatus('Serveur PHP opérationnel', 'success');
+                restartButton.disabled = false;
+                appButton.disabled = false;
+                if (lastFatal) {
+                    hideOverlay();
+                }
+                return;
+            }
+
+            if (status === 'proxy-ready') {
+                const portInfo = payload.port ? ` (port ${payload.port})` : '';
+                setStatus(`Proxy HTTP opérationnel${portInfo}`, 'success');
                 restartButton.disabled = false;
                 appButton.disabled = false;
                 if (lastFatal) {
@@ -227,6 +279,13 @@
                     ? ` (tentative ${payload.attempt}${payload.total ? `/${payload.total}` : ''})`
                     : '';
                 setStatus(`Redémarrage du serveur PHP${attemptInfo}…`, 'warning');
+                showOverlay();
+                return;
+            }
+
+            if (status === 'proxy-timeout') {
+                const portInfo = payload.phpPort ? ` (port ${payload.phpPort})` : '';
+                setStatus(`Proxy indisponible – bascule sur le serveur direct${portInfo}`, 'warning');
                 showOverlay();
                 return;
             }
