@@ -439,6 +439,20 @@ function Action($conf)
     $array['page_count'] = 0;
     $array['ordered_pages'] = '';
 
+    if (isset($GLOBALS['last_error']) && is_array($GLOBALS['last_error'])) {
+        $lastError = $GLOBALS['last_error'];
+        $errorSummary = $lastError['type'] . ' : ' . $lastError['message'];
+        if (!empty($lastError['file'])) {
+            $errorSummary .= ' (fichier ' . $lastError['file'];
+            if (!empty($lastError['line'])) {
+                $errorSummary .= ', ligne ' . $lastError['line'];
+            }
+            $errorSummary .= ')';
+        }
+        $array['errors'][] = $errorSummary;
+        $array['last_error_details'] = $lastError;
+    }
+
     // Traitement du fichier PDF uploadé
     if (isset($_SERVER["REQUEST_METHOD"]) && $_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["pdf"])) {
         $pdfFile = $_FILES["pdf"]["tmp_name"];
