@@ -28,7 +28,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     onUpdateError: (callback) => {
         ipcRenderer.on('update-error', (event, error) => callback(error));
-    }
+    },
+    
+    // Supervision du backend PHP
+    onPhpLog: (callback) => {
+        ipcRenderer.on('php-log', (event, payload) => callback(payload));
+    },
+    onPhpFatal: (callback) => {
+        ipcRenderer.on('php-fatal', (event, payload) => callback(payload));
+    },
+    onPhpStatus: (callback) => {
+        ipcRenderer.on('php-process-status', (event, payload) => callback(payload));
+    },
+    restartPhp: () => ipcRenderer.invoke('restart-php')
 });
 
 

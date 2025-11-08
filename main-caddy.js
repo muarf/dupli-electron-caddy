@@ -15,6 +15,257 @@ let caddyProcess;
 let phpFpmProcess;
 let serverPort = 8000; // Port par défaut
 let tempCaddyfilePath = null; // Chemin du Caddyfile temporaire si créé
+const PHP_LOG_CHANNEL = 'php-log';
+const PHP_FATAL_CHANNEL = 'php-fatal';
+const PHP_STATUS_CHANNEL = 'php-process-status';
+let phpFatalNotified = false;
+let phpRestartInProgress = false;
+let phpRestartAttempts = 0;
+let phpRestartTimeout = null;
+let phpStopRequested = false;
+const MAX_PHP_RESTART_ATTEMPTS = 3;
+const PHP_RESTART_DELAY = 3000;
+const PHP_FATAL_PATTERNS = [
+    /PHP Fatal error/i,
+    /Uncaught Exception/i,
+    /Call to undefined function/i,
+    /Uncaught Error/i
+];
+
+function sendToRenderer(channel, payload) {
+    try {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send(channel, payload);
+        }
+    } catch (error) {
+        console.log(`Erreur en envoyant un message au renderer (${channel}): ${error.message}`);
+    }
+}
+
+function normalizePhpMessage(message) {
+    if (!message) {
+        return '';
+    }
+    if (Buffer.isBuffer(message)) {
+        return message.toString('utf8');
+    }
+    return String(message);
+}
+
+function handlePhpOutput(source, data) {
+    const rawMessage = normalizePhpMessage(data);
+    const message = rawMessage.trim();
+    
+    if (!message) {
+        return;
+    }
+    
+    const timestamp = new Date().toISOString();
+    const logLine = `[${timestamp}] [PHP ${source}] ${message}`;
+    console[source === 'STDERR' ? 'error' : 'log'](`[PHP ${source}]`, message);
+    
+    sendToRenderer(PHP_LOG_CHANNEL, {
+        source,
+        message,
+        timestamp
+    });
+    
+    if (PHP_FATAL_PATTERNS.some(pattern => pattern.test(message))) {
+        handlePhpFatal(message, source);
+    }
+}
+
+function handlePhpFatal(message, source = 'STDERR') {
+    if (phpFatalNotified) {
+        return;
+    }
+    
+    phpFatalNotified = true;
+    const timestamp = new Date().toISOString();
+    console.error(`[PHP FATAL - ${source}]`, message);
+    
+    sendToRenderer(PHP_FATAL_CHANNEL, {
+        message,
+        source,
+        timestamp
+    });
+    
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        dialog.showMessageBox(mainWindow, {
+            type: 'error',
+            title: 'Erreur critique PHP',
+            message: 'Le moteur PHP a rencontré une erreur critique.',
+            detail: message,
+            defaultId: 0,
+            cancelId: 0,
+            buttons: ['Retour à l’accueil', 'Ignorer']
+        }).then(result => {
+            if (result.response === 0) {
+                attemptRendererRecovery();
+            }
+        }).catch(() => {});
+    } else {
+        dialog.showErrorBox('Erreur critique PHP', message);
+    }
+    
+    schedulePhpRestart('fatal-detected');
+}
+
+function attemptRendererRecovery() {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+        return;
+    }
+    
+    const accueilUrl = `http://127.0.0.1:${serverPort}/?accueil`;
+    mainWindow.loadURL(accueilUrl).catch(error => {
+        console.log(`Échec du rechargement de la page d’accueil: ${error.message}`);
+        try {
+            mainWindow.reload();
+        } catch (reloadError) {
+            console.log(`Échec du reload de la fenêtre: ${reloadError.message}`);
+        }
+    });
+}
+
+function handlePhpProcessExit(code, signal) {
+    const exitInfo = `Processus PHP terminé (code: ${code !== null ? code : 'null'}, signal: ${signal || 'aucun'})`;
+    console.warn(exitInfo);
+    
+    sendToRenderer(PHP_STATUS_CHANNEL, {
+        status: 'stopped',
+        code,
+        signal,
+        timestamp: new Date().toISOString(),
+        expected: phpStopRequested
+    });
+    
+    const wasExpected = phpStopRequested;
+    phpStopRequested = false;
+    phpFpmProcess = null;
+    
+    if (!wasExpected) {
+        schedulePhpRestart('unexpected-exit');
+    }
+}
+
+function schedulePhpRestart(reason) {
+    if (phpRestartInProgress) {
+        return;
+    }
+    
+    if (phpRestartAttempts >= MAX_PHP_RESTART_ATTEMPTS) {
+        sendToRenderer(PHP_STATUS_CHANNEL, {
+            status: 'failed',
+            reason: 'max-retries',
+            timestamp: new Date().toISOString()
+        });
+        return;
+    }
+    
+    if (phpRestartTimeout) {
+        return;
+    }
+    
+    phpRestartTimeout = setTimeout(() => {
+        phpRestartTimeout = null;
+        restartPhpProcess(reason).catch(error => {
+            console.log(`Erreur lors du redémarrage planifié PHP: ${error.message}`);
+        });
+    }, PHP_RESTART_DELAY);
+}
+
+function stopPhpFpmProcess(signal = 'SIGTERM') {
+    if (!phpFpmProcess) {
+        return Promise.resolve();
+    }
+    
+    phpStopRequested = true;
+    
+    return new Promise((resolve) => {
+        const processToStop = phpFpmProcess;
+        let resolved = false;
+        
+        const cleanup = () => {
+            if (!resolved) {
+                resolved = true;
+                resolve();
+            }
+        };
+        
+        const killTimeout = setTimeout(() => {
+            if (processToStop && !processToStop.killed) {
+                try {
+                    processToStop.kill('SIGKILL');
+                } catch (error) {
+                    console.log(`Impossible de tuer le processus PHP avec SIGKILL: ${error.message}`);
+                }
+            }
+            cleanup();
+        }, 5000);
+        
+        processToStop.once('close', () => {
+            clearTimeout(killTimeout);
+            cleanup();
+        });
+        
+        try {
+            processToStop.kill(signal);
+        } catch (error) {
+            clearTimeout(killTimeout);
+            console.log(`Erreur lors de l’envoi du signal ${signal} au processus PHP: ${error.message}`);
+            cleanup();
+        }
+    });
+}
+
+async function restartPhpProcess(reason = 'manual') {
+    if (phpRestartInProgress) {
+        return;
+    }
+    
+    if (phpRestartTimeout) {
+        clearTimeout(phpRestartTimeout);
+        phpRestartTimeout = null;
+    }
+    
+    phpRestartInProgress = true;
+    phpRestartAttempts += 1;
+    
+    const timestamp = new Date().toISOString();
+    sendToRenderer(PHP_STATUS_CHANNEL, {
+        status: 'restarting',
+        reason,
+        attempt: phpRestartAttempts,
+        timestamp
+    });
+    
+    try {
+        await stopPhpFpmProcess();
+        phpFatalNotified = false;
+        await startPhpFpm();
+        phpRestartAttempts = 0;
+        sendToRenderer(PHP_STATUS_CHANNEL, {
+            status: 'running',
+            reason: 'restart-success',
+            timestamp: new Date().toISOString()
+        });
+        console.log('Redémarrage du processus PHP réussi.');
+    } catch (error) {
+        console.log(`Échec du redémarrage du processus PHP: ${error.message}`);
+        sendToRenderer(PHP_STATUS_CHANNEL, {
+            status: 'error',
+            reason: 'restart-failed',
+            message: error.message,
+            timestamp: new Date().toISOString()
+        });
+        
+        if (phpRestartAttempts < MAX_PHP_RESTART_ATTEMPTS) {
+            schedulePhpRestart('retry-after-failure');
+        }
+    } finally {
+        phpRestartInProgress = false;
+    }
+}
 
 // Obtenir le chemin de la base de données (dans userData pour la persistance lors des mises à jour)
 function getDatabasePath() {
@@ -311,6 +562,13 @@ function startPhpFpm() {
         fs.mkdirSync(sessionPath, { recursive: true });
     }
     
+    phpFatalNotified = false;
+    
+    sendToRenderer(PHP_STATUS_CHANNEL, {
+        status: 'starting',
+        timestamp: new Date().toISOString()
+    });
+    
     // Préparer les arguments PHP selon la plateforme
     let phpArgs;
     
@@ -399,20 +657,22 @@ function startPhpFpm() {
         }
     });
     
-    phpFpmProcess.stdout.on('data', (data) => {
-        console.log('PHP Server:', data.toString());
-    });
+    phpFpmProcess.stdout.on('data', (data) => handlePhpOutput('STDOUT', data));
+    phpFpmProcess.stderr.on('data', (data) => handlePhpOutput('STDERR', data));
     
-    phpFpmProcess.stderr.on('data', (data) => {
-        console.error('PHP Error:', data.toString());
-    });
-    
-    phpFpmProcess.on('close', (code) => {
-        console.log(`Serveur PHP fermé avec le code ${code}`);
-    });
+    phpFpmProcess.on('close', handlePhpProcessExit);
     
     phpFpmProcess.on('error', (error) => {
         console.error('Erreur serveur PHP:', error.message);
+    });
+    
+    phpFpmProcess.on('spawn', () => {
+        console.log(`✅ Processus PHP lancé avec succès (PID: ${phpFpmProcess.pid})`);
+        sendToRenderer(PHP_STATUS_CHANNEL, {
+            status: 'running',
+            timestamp: new Date().toISOString(),
+            pid: phpFpmProcess.pid
+        });
     });
     
     // Attendre que le serveur soit prêt
@@ -445,6 +705,14 @@ function startPhpServer() {
         fs.mkdirSync(sessionPath, { recursive: true });
     }
     
+    phpFatalNotified = false;
+    
+    sendToRenderer(PHP_STATUS_CHANNEL, {
+        status: 'starting',
+        context: 'fallback',
+        timestamp: new Date().toISOString()
+    });
+    
     // Pas de php.ini pour éviter les erreurs d'extensions
     phpFpmProcess = spawn(phpPath, [
         '-S', '127.0.0.1:8001',
@@ -463,16 +731,19 @@ function startPhpServer() {
         }
     });
     
-    phpFpmProcess.stdout.on('data', (data) => {
-        console.log('PHP Server:', data.toString());
-    });
+    phpFpmProcess.stdout.on('data', (data) => handlePhpOutput('STDOUT', data));
+    phpFpmProcess.stderr.on('data', (data) => handlePhpOutput('STDERR', data));
     
-    phpFpmProcess.stderr.on('data', (data) => {
-        console.error('PHP Error:', data.toString());
-    });
+    phpFpmProcess.on('close', handlePhpProcessExit);
     
-    phpFpmProcess.on('close', (code) => {
-        console.log(`Serveur PHP fermé avec le code ${code}`);
+    phpFpmProcess.on('spawn', () => {
+        console.log(`✅ Processus PHP (fallback) lancé avec succès (PID: ${phpFpmProcess.pid})`);
+        sendToRenderer(PHP_STATUS_CHANNEL, {
+            status: 'running',
+            context: 'fallback',
+            timestamp: new Date().toISOString(),
+            pid: phpFpmProcess.pid
+        });
     });
 }
 
@@ -600,8 +871,9 @@ async function startCaddy() {
 // Arrêter les processus
 function stopProcesses() {
     if (phpFpmProcess) {
-        phpFpmProcess.kill();
-        phpFpmProcess = null;
+        stopPhpFpmProcess().catch(error => {
+            console.log(`Erreur lors de l'arrêt du processus PHP: ${error.message}`);
+        });
     }
     
     if (caddyProcess) {
@@ -987,6 +1259,11 @@ ipcMain.handle('cleanup-tmp-files', async () => {
         console.error('Erreur nettoyage:', error);
         return { success: false, error: error.message };
     }
+});
+
+ipcMain.handle('restart-php', async () => {
+    await restartPhpProcess('renderer-request');
+    return { success: true };
 });
 
 // ============ Handlers pour les mises à jour ============
