@@ -176,6 +176,8 @@
 
 <!-- Auto-updater UI (Electron uniquement - ne s'active pas en mode PHP standalone) -->
 <script src="js/updater-ui.js"></script>
+<!-- Supervision du backend PHP (Electron uniquement) -->
+<script src="js/php-monitor.js"></script>
 
 <!-- JavaScript pour l'édition inline des traductions -->
 <script src="js/inline-translation.js"></script>

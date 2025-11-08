@@ -1266,6 +1266,17 @@ ipcMain.handle('restart-php', async () => {
     return { success: true };
 });
 
+ipcMain.handle('restart-app', () => {
+    try {
+        app.relaunch();
+        app.exit(0);
+        return { success: true };
+    } catch (error) {
+        console.error('Erreur lors du redémarrage de l’application:', error);
+        return { success: false, error: error.message };
+    }
+});
+
 // ============ Handlers pour les mises à jour ============
 
 // Vérifier les mises à jour
