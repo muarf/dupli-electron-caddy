@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const net = require('net');
+const http = require('http');
 const { checkWindowsCompatibility, applyCompatibilitySettings } = require('./utils/windows-compatibility');
 
 // Vérifier la compatibilité Windows avant tout
@@ -14,6 +15,8 @@ let mainWindow;
 let caddyProcess;
 let phpFpmProcess;
 let serverPort = 8000; // Port par défaut
+const PHP_SERVER_PORT = 8001;
+let frontendPort = serverPort;
 let tempCaddyfilePath = null; // Chemin du Caddyfile temporaire si créé
 const PHP_LOG_CHANNEL = 'php-log';
 const PHP_FATAL_CHANNEL = 'php-fatal';
@@ -116,7 +119,8 @@ function attemptRendererRecovery() {
         return;
     }
     
-    const accueilUrl = `http://127.0.0.1:${serverPort}/?accueil`;
+    const targetPort = frontendPort || serverPort || PHP_SERVER_PORT;
+    const accueilUrl = `http://127.0.0.1:${targetPort}/?accueil`;
     mainWindow.loadURL(accueilUrl).catch(error => {
         console.log(`Échec du rechargement de la page d’accueil: ${error.message}`);
         try {
@@ -136,7 +140,10 @@ function handlePhpProcessExit(code, signal) {
         code,
         signal,
         timestamp: new Date().toISOString(),
-        expected: phpStopRequested
+        expected: phpStopRequested,
+        port: frontendPort,
+        proxyPort: serverPort,
+        phpPort: PHP_SERVER_PORT
     });
     
     const wasExpected = phpStopRequested;
@@ -157,7 +164,10 @@ function schedulePhpRestart(reason) {
         sendToRenderer(PHP_STATUS_CHANNEL, {
             status: 'failed',
             reason: 'max-retries',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            port: frontendPort,
+            proxyPort: serverPort,
+            phpPort: PHP_SERVER_PORT
         });
         return;
     }
@@ -236,7 +246,10 @@ async function restartPhpProcess(reason = 'manual') {
         status: 'restarting',
         reason,
         attempt: phpRestartAttempts,
-        timestamp
+        timestamp,
+        port: frontendPort,
+        proxyPort: serverPort,
+        phpPort: PHP_SERVER_PORT
     });
     
     try {
@@ -247,7 +260,10 @@ async function restartPhpProcess(reason = 'manual') {
         sendToRenderer(PHP_STATUS_CHANNEL, {
             status: 'running',
             reason: 'restart-success',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            port: frontendPort,
+            proxyPort: serverPort,
+            phpPort: PHP_SERVER_PORT
         });
         console.log('Redémarrage du processus PHP réussi.');
     } catch (error) {
@@ -256,7 +272,10 @@ async function restartPhpProcess(reason = 'manual') {
             status: 'error',
             reason: 'restart-failed',
             message: error.message,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            port: frontendPort,
+            proxyPort: serverPort,
+            phpPort: PHP_SERVER_PORT
         });
         
         if (phpRestartAttempts < MAX_PHP_RESTART_ATTEMPTS) {
@@ -475,6 +494,51 @@ function findFreePort() {
     });
 }
 
+function waitForServer(url, timeout = 5000, interval = 250) {
+    return new Promise((resolve) => {
+        const deadline = Date.now() + timeout;
+        
+        const attempt = () => {
+            let handled = false;
+            
+            const finalize = (success) => {
+                if (handled) {
+                    return;
+                }
+                handled = true;
+                
+                if (success) {
+                    resolve(true);
+                } else if (Date.now() >= deadline) {
+                    resolve(false);
+                } else {
+                    setTimeout(attempt, interval);
+                }
+            };
+            
+            try {
+                const request = http.get(url, { timeout: Math.min(interval, 2000) }, (response) => {
+                    response.destroy();
+                    finalize(true);
+                });
+                
+                request.on('timeout', () => {
+                    request.destroy();
+                    finalize(false);
+                });
+                
+                request.on('error', () => {
+                    finalize(false);
+                });
+            } catch (error) {
+                finalize(false);
+            }
+        };
+        
+        attempt();
+    });
+}
+
 // Obtenir le chemin du Caddyfile
 function getCaddyfilePath() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
@@ -566,7 +630,10 @@ function startPhpFpm() {
     
     sendToRenderer(PHP_STATUS_CHANNEL, {
         status: 'starting',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        port: frontendPort,
+        proxyPort: serverPort,
+        phpPort: PHP_SERVER_PORT
     });
     
     // Préparer les arguments PHP selon la plateforme
@@ -577,7 +644,7 @@ function startPhpFpm() {
         // Le PHP système a déjà ses extensions configurées
         console.log('Configuration PHP pour AppImage (PHP système)');
         phpArgs = [
-            '-S', '127.0.0.1:8001',
+            '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
             '-t', appPath,
             '-d', 'display_errors=1',
             '-d', 'log_errors=1',
@@ -602,7 +669,7 @@ function startPhpFpm() {
         
         phpArgs = [
             '-c', phpIniPath,
-            '-S', '127.0.0.1:8001',
+            '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
             '-t', appPath,
             '-d', 'display_errors=1',
             '-d', 'log_errors=1',
@@ -623,7 +690,7 @@ function startPhpFpm() {
         if (fs.existsSync(phpIniPath)) {
             phpArgs = [
                 '-c', phpIniPath,
-                '-S', '127.0.0.1:8001',
+                '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
                 '-t', appPath,
                 '-d', 'display_errors=1',
                 '-d', 'log_errors=1',
@@ -636,7 +703,7 @@ function startPhpFpm() {
             ];
         } else {
             phpArgs = [
-                '-S', '127.0.0.1:8001',
+                '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
                 '-t', appPath,
                 '-d', 'display_errors=1',
                 '-d', 'log_errors=1',
@@ -671,7 +738,10 @@ function startPhpFpm() {
         sendToRenderer(PHP_STATUS_CHANNEL, {
             status: 'running',
             timestamp: new Date().toISOString(),
-            pid: phpFpmProcess.pid
+            pid: phpFpmProcess.pid,
+            port: frontendPort,
+            proxyPort: serverPort,
+            phpPort: PHP_SERVER_PORT
         });
     });
     
@@ -706,16 +776,20 @@ function startPhpServer() {
     }
     
     phpFatalNotified = false;
+    frontendPort = PHP_SERVER_PORT;
     
     sendToRenderer(PHP_STATUS_CHANNEL, {
         status: 'starting',
         context: 'fallback',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        port: frontendPort,
+        proxyPort: null,
+        phpPort: PHP_SERVER_PORT
     });
     
     // Pas de php.ini pour éviter les erreurs d'extensions
     phpFpmProcess = spawn(phpPath, [
-        '-S', '127.0.0.1:8001',
+        '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
         '-t', appPath,
         '-d', 'display_errors=1',
         '-d', 'upload_max_filesize=50M',
@@ -742,7 +816,10 @@ function startPhpServer() {
             status: 'running',
             context: 'fallback',
             timestamp: new Date().toISOString(),
-            pid: phpFpmProcess.pid
+            pid: phpFpmProcess.pid,
+            port: frontendPort,
+            proxyPort: null,
+            phpPort: PHP_SERVER_PORT
         });
     });
 }
@@ -1063,20 +1140,45 @@ function createWindow() {
             await startPhpFpm();
             await startCaddy();
             
-            // Charger l'application avec le port choisi
-    const appUrl = `http://127.0.0.1:${serverPort}/`;
-    console.log(`Chargement de l'URL principale: ${appUrl}`);
-    mainWindow.loadURL(appUrl);
-            mainWindow.show();
+            const appUrl = `http://127.0.0.1:${serverPort}/`;
+            console.log(`Chargement de l'URL principale: ${appUrl}`);
             
-            console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
+            const proxyReady = await waitForServer(appUrl, 5000);
+            
+            if (!proxyReady) {
+                const fallbackUrl = `http://127.0.0.1:${PHP_SERVER_PORT}/`;
+                console.warn(`Caddy n'a pas répondu à temps sur ${appUrl}, fallback vers ${fallbackUrl}`);
+                frontendPort = PHP_SERVER_PORT;
+                sendToRenderer(PHP_STATUS_CHANNEL, {
+                    status: 'proxy-timeout',
+                    timestamp: new Date().toISOString(),
+                    port: frontendPort,
+                    proxyPort: serverPort,
+                    phpPort: PHP_SERVER_PORT
+                });
+                mainWindow.loadURL(fallbackUrl);
+                mainWindow.show();
+            } else {
+                frontendPort = serverPort;
+                sendToRenderer(PHP_STATUS_CHANNEL, {
+                    status: 'proxy-ready',
+                    timestamp: new Date().toISOString(),
+                    port: frontendPort,
+                    proxyPort: serverPort,
+                    phpPort: PHP_SERVER_PORT
+                });
+                mainWindow.loadURL(appUrl);
+                mainWindow.show();
+                console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
+            }
         } catch (error) {
             console.error('Erreur lors du démarrage des serveurs:', error);
             // Fallback : utiliser le serveur PHP intégré uniquement
             console.log('Tentative de démarrage avec le serveur PHP intégré uniquement...');
             try {
                 startPhpServer();
-                mainWindow.loadURL('http://127.0.0.1:8001/');
+                frontendPort = PHP_SERVER_PORT;
+                mainWindow.loadURL(`http://127.0.0.1:${PHP_SERVER_PORT}/`);
                 mainWindow.show();
                 console.log('Serveur PHP intégré démarré avec succès');
             } catch (fallbackError) {
