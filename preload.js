@@ -40,7 +40,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onPhpStatus: (callback) => {
         ipcRenderer.on('php-process-status', (event, payload) => callback(payload));
     },
-    restartPhp: () => ipcRenderer.invoke('restart-php')
+    restartPhp: () => ipcRenderer.invoke('restart-php'),
+    restartApp: () => ipcRenderer.invoke('restart-app')
 });
 
 
