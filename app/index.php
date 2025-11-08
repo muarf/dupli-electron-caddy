@@ -109,6 +109,16 @@ register_shutdown_function(function() {
             ]);
         }
         
+        error_log('[SHUTDOWN] ' . print_r($error, true));
+        echo '<div style="max-width:600px;margin:40px auto;font-family:sans-serif;background:#fff3f3;border:1px solid #ffcdd2;padding:24px;border-radius:8px;">
+                <h2 style="color:#b71c1c;margin-top:0;">Erreur fatale</h2>
+                <p style="color:#555;">' . htmlspecialchars($error['message']) . '</p>
+                <p style="color:#777;font-size:13px;">' . htmlspecialchars($error['file']) . ' : ' . (int)$error['line'] . '</p>
+                <p style="margin-top:20px;">
+                    <a href="?accueil" style="display:inline-block;padding:10px 22px;background:#1976d2;color:#fff;border-radius:4px;text-decoration:none;">Retour à l\'accueil</a>
+                </p>
+              </div>';
+
         echo show_error_page(
             $error['message'], 
             'Erreur Fatale', 
