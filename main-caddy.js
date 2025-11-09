@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const net = require('net');
+const http = require('http');
 const { checkWindowsCompatibility, applyCompatibilitySettings } = require('./utils/windows-compatibility');
 
 // Vérifier la compatibilité Windows avant tout
@@ -14,7 +15,540 @@ let mainWindow;
 let caddyProcess;
 let phpFpmProcess;
 let serverPort = 8000; // Port par défaut
+const PHP_SERVER_PORT = 8001;
+let frontendPort = serverPort;
 let tempCaddyfilePath = null; // Chemin du Caddyfile temporaire si créé
+const PHP_LOG_CHANNEL = 'php-log';
+const PHP_FATAL_CHANNEL = 'php-fatal';
+const PHP_STATUS_CHANNEL = 'php-process-status';
+let phpFatalNotified = false;
+let phpRestartInProgress = false;
+let phpRestartAttempts = 0;
+let phpRestartTimeout = null;
+let phpStopRequested = false;
+const MAX_PHP_RESTART_ATTEMPTS = 3;
+const PHP_RESTART_DELAY = 3000;
+const PHP_FATAL_PATTERNS = [
+    /PHP Fatal error/i,
+    /Uncaught Exception/i,
+    /Call to undefined function/i,
+    /Uncaught Error/i
+];
+const PHP_LOG_MONITOR_PATTERNS = [
+    { pattern: /PHP Fatal error/i, severity: 'fatal' },
+    { pattern: /Uncaught Exception/i, severity: 'fatal' },
+    { pattern: /Exception non captur[ée]e?/i, severity: 'fatal' },
+    { pattern: /Call to undefined function/i, severity: 'fatal' },
+    { pattern: /Uncaught Error/i, severity: 'fatal' }
+];
+const PHP_WARNING_PATTERNS = [
+    { pattern: /PHP Warning/i, severity: 'warning' },
+    { pattern: /Undefined variable/i, severity: 'warning' },
+    { pattern: /PHP Notice/i, severity: 'warning' }
+];
+const PHP_ERROR_LOG_CANDIDATES = ['duplicator_errors.log', 'duplicator_error.log'];
+const PHP_ERROR_LOG_DIRECTORY_HINTS = ['dupli', 'duplicator'];
+let phpErrorLogWatcher = null;
+let phpErrorLogPath = null;
+let phpErrorLogLastSize = 0;
+let phpErrorLogRetryTimeout = null;
+
+function sendToRenderer(channel, payload) {
+    try {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send(channel, payload);
+        }
+    } catch (error) {
+        console.log(`Erreur en envoyant un message au renderer (${channel}): ${error.message}`);
+    }
+}
+
+function normalizePhpMessage(message) {
+    if (!message) {
+        return '';
+    }
+    if (Buffer.isBuffer(message)) {
+        return message.toString('utf8');
+    }
+    return String(message);
+}
+
+function handlePhpOutput(source, data) {
+    const rawMessage = normalizePhpMessage(data);
+    const message = rawMessage.trim();
+    
+    if (!message) {
+        return;
+    }
+    
+    const timestamp = new Date().toISOString();
+    const logLine = `[${timestamp}] [PHP ${source}] ${message}`;
+    console[source === 'STDERR' ? 'error' : 'log'](`[PHP ${source}]`, message);
+    
+    sendToRenderer(PHP_LOG_CHANNEL, {
+        source,
+        message,
+        timestamp
+    });
+    
+    if (PHP_FATAL_PATTERNS.some(pattern => pattern.test(message))) {
+        handlePhpFatal(message, source);
+    }
+}
+
+function getPhpTempDir() {
+    try {
+        return os.tmpdir();
+    } catch (error) {
+        console.log(`Impossible de déterminer le répertoire temporaire système: ${error.message}`);
+        return null;
+    }
+}
+
+function getCandidateLogDirectories() {
+    const directories = new Set();
+    
+    const safelyAdd = (dir) => {
+        if (!dir) {
+            return;
+        }
+        try {
+            const normalized = path.resolve(dir);
+            directories.add(normalized);
+        } catch (error) {
+            console.log(`Chemin invalide ignoré (${dir}): ${error.message}`);
+        }
+    };
+    
+    safelyAdd(getPhpTempDir());
+    
+    try {
+        safelyAdd(app.getPath('temp'));
+    } catch (error) {
+        console.log(`Impossible de récupérer app.getPath('temp'): ${error.message}`);
+    }
+    
+    try {
+        const userData = app.getPath('userData');
+        safelyAdd(userData);
+        safelyAdd(path.join(userData, 'temp'));
+    } catch (error) {
+        console.log(`Impossible de récupérer app.getPath('userData'): ${error.message}`);
+    }
+    
+    try {
+        const appData = app.getPath('appData');
+        PHP_ERROR_LOG_DIRECTORY_HINTS.forEach((hint) => {
+            safelyAdd(path.join(appData, hint));
+            safelyAdd(path.join(appData, hint, 'temp'));
+        });
+    } catch (error) {
+        console.log(`Impossible de récupérer app.getPath('appData'): ${error.message}`);
+    }
+    
+    const envCandidates = [
+        process.env.APPDATA,
+        process.env.LOCALAPPDATA,
+        process.env.TEMP,
+        process.env.TMP
+    ];
+    
+    envCandidates.forEach((base) => {
+        if (!base) {
+            return;
+        }
+        safelyAdd(base);
+        PHP_ERROR_LOG_DIRECTORY_HINTS.forEach((hint) => {
+            safelyAdd(path.join(base, hint));
+            safelyAdd(path.join(base, hint, 'temp'));
+        });
+    });
+    
+    return Array.from(directories).filter((dir) => {
+        try {
+            return fs.existsSync(dir);
+        } catch (error) {
+            console.log(`Impossible de vérifier ${dir}: ${error.message}`);
+            return false;
+        }
+    });
+}
+
+function resolvePhpErrorLogPath() {
+    const directories = getCandidateLogDirectories();
+    
+    for (const dir of directories) {
+        for (const name of PHP_ERROR_LOG_CANDIDATES) {
+            const candidatePath = path.join(dir, name);
+            try {
+                if (fs.existsSync(candidatePath)) {
+                    return candidatePath;
+                }
+            } catch (error) {
+                console.log(`Erreur lors de la vérification du journal PHP (${candidatePath}): ${error.message}`);
+            }
+        }
+    }
+    
+    return null;
+}
+
+function stopPhpErrorLogWatcher() {
+    if (phpErrorLogWatcher) {
+        try {
+            phpErrorLogWatcher.close();
+        } catch (error) {
+            console.log(`Erreur lors de l'arrêt du watcher de log PHP: ${error.message}`);
+        }
+        phpErrorLogWatcher = null;
+    }
+    
+    if (phpErrorLogRetryTimeout) {
+        clearTimeout(phpErrorLogRetryTimeout);
+        phpErrorLogRetryTimeout = null;
+    }
+    
+    phpErrorLogPath = null;
+    phpErrorLogLastSize = 0;
+}
+
+function analysePhpLogLine(line) {
+    if (!line) {
+        return;
+    }
+    
+    const trimmed = line.trim();
+    if (!trimmed) {
+        return;
+    }
+    
+    const fatalMatch = PHP_LOG_MONITOR_PATTERNS.find(entry => entry.pattern.test(trimmed));
+    if (fatalMatch) {
+        handlePhpFatal(trimmed, 'LOG');
+        return;
+    }
+    
+    const warningMatch = PHP_WARNING_PATTERNS.find(entry => entry.pattern.test(trimmed));
+    if (warningMatch) {
+        sendToRenderer(PHP_LOG_CHANNEL, {
+            source: 'LOG',
+            message: trimmed,
+            timestamp: new Date().toISOString()
+        });
+    }
+}
+
+function readPhpErrorLogUpdates(initialRead = false) {
+    if (!phpErrorLogPath) {
+        return;
+    }
+    
+    fs.stat(phpErrorLogPath, (err, stats) => {
+        if (err) {
+            if (err.code === 'ENOENT' && !initialRead) {
+                schedulePhpErrorLogMonitorRestart();
+            }
+            return;
+        }
+        
+        const currentSize = stats.size;
+        let readFrom = phpErrorLogLastSize;
+        
+        if (currentSize < phpErrorLogLastSize) {
+            readFrom = 0;
+        }
+        
+        if (!initialRead && currentSize === readFrom) {
+            return;
+        }
+        
+        const stream = fs.createReadStream(phpErrorLogPath, {
+            start: initialRead ? Math.max(0, currentSize - 32768) : readFrom,
+            end: currentSize,
+            encoding: 'utf8'
+        });
+        
+        let buffer = '';
+        
+        stream.on('data', (chunk) => {
+            buffer += chunk;
+        });
+        
+        stream.on('end', () => {
+            phpErrorLogLastSize = currentSize;
+            if (!buffer) {
+                return;
+            }
+            
+            const lines = buffer.split(/\r?\n/).filter(Boolean);
+            if (initialRead) {
+                return;
+            }
+            lines.forEach(analysePhpLogLine);
+        });
+        
+        stream.on('error', (streamErr) => {
+            console.log(`Erreur de lecture du log PHP: ${streamErr.message}`);
+        });
+    });
+}
+
+function schedulePhpErrorLogMonitorRestart(delay = 5000) {
+    if (phpErrorLogRetryTimeout) {
+        return;
+    }
+    
+    phpErrorLogRetryTimeout = setTimeout(() => {
+        phpErrorLogRetryTimeout = null;
+        startPhpErrorLogWatcher();
+    }, delay);
+}
+
+function startPhpErrorLogWatcher() {
+    stopPhpErrorLogWatcher();
+    
+    const logPath = resolvePhpErrorLogPath();
+    if (!logPath) {
+        console.log('Journal PHP introuvable pour l’instant, nouvelle tentative bientôt.');
+        schedulePhpErrorLogMonitorRestart(2000);
+        return;
+    }
+    
+    phpErrorLogPath = logPath;
+    
+    try {
+        const stats = fs.statSync(logPath);
+        phpErrorLogLastSize = stats.size;
+    } catch (error) {
+        phpErrorLogLastSize = 0;
+    }
+    
+    readPhpErrorLogUpdates(true);
+    
+    try {
+        phpErrorLogWatcher = fs.watch(logPath, { persistent: false }, () => {
+            readPhpErrorLogUpdates();
+        });
+        phpErrorLogWatcher.on('error', (error) => {
+            console.log(`Erreur du watcher de log PHP: ${error.message}`);
+            schedulePhpErrorLogMonitorRestart();
+        });
+        console.log(`Surveillance du journal PHP: ${logPath}`);
+    } catch (error) {
+        console.log(`Impossible de surveiller le journal PHP (${logPath}): ${error.message}`);
+        schedulePhpErrorLogMonitorRestart();
+    }
+}
+
+function handlePhpFatal(message, source = 'STDERR') {
+    if (phpFatalNotified) {
+        return;
+    }
+    
+    phpFatalNotified = true;
+    const timestamp = new Date().toISOString();
+    console.error(`[PHP FATAL - ${source}]`, message);
+    
+    sendToRenderer(PHP_FATAL_CHANNEL, {
+        message,
+        source,
+        timestamp
+    });
+    
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        dialog.showMessageBox(mainWindow, {
+            type: 'error',
+            title: 'Erreur critique PHP',
+            message: 'Le moteur PHP a rencontré une erreur critique.',
+            detail: message,
+            defaultId: 0,
+            cancelId: 0,
+            buttons: ['Retour à l’accueil', 'Ignorer']
+        }).then(result => {
+            if (result.response === 0) {
+                attemptRendererRecovery();
+            }
+        }).catch(() => {});
+    } else {
+        dialog.showErrorBox('Erreur critique PHP', message);
+    }
+    
+    schedulePhpRestart('fatal-detected');
+}
+
+function attemptRendererRecovery() {
+    if (!mainWindow || mainWindow.isDestroyed()) {
+        return;
+    }
+    
+    const targetPort = frontendPort || serverPort || PHP_SERVER_PORT;
+    const accueilUrl = `http://127.0.0.1:${targetPort}/?accueil`;
+    mainWindow.loadURL(accueilUrl).catch(error => {
+        console.log(`Échec du rechargement de la page d’accueil: ${error.message}`);
+        try {
+            mainWindow.reload();
+        } catch (reloadError) {
+            console.log(`Échec du reload de la fenêtre: ${reloadError.message}`);
+        }
+    });
+}
+
+function handlePhpProcessExit(code, signal) {
+    const exitInfo = `Processus PHP terminé (code: ${code !== null ? code : 'null'}, signal: ${signal || 'aucun'})`;
+    console.warn(exitInfo);
+    
+    stopPhpErrorLogWatcher();
+    
+    sendToRenderer(PHP_STATUS_CHANNEL, {
+        status: 'stopped',
+        code,
+        signal,
+        timestamp: new Date().toISOString(),
+        expected: phpStopRequested,
+        port: frontendPort,
+        proxyPort: serverPort,
+        phpPort: PHP_SERVER_PORT
+    });
+    
+    const wasExpected = phpStopRequested;
+    phpStopRequested = false;
+    phpFpmProcess = null;
+    
+    if (!wasExpected) {
+        schedulePhpRestart('unexpected-exit');
+    }
+}
+
+function schedulePhpRestart(reason) {
+    if (phpRestartInProgress) {
+        return;
+    }
+    
+    if (phpRestartAttempts >= MAX_PHP_RESTART_ATTEMPTS) {
+        sendToRenderer(PHP_STATUS_CHANNEL, {
+            status: 'failed',
+            reason: 'max-retries',
+            timestamp: new Date().toISOString(),
+            port: frontendPort,
+            proxyPort: serverPort,
+            phpPort: PHP_SERVER_PORT
+        });
+        return;
+    }
+    
+    if (phpRestartTimeout) {
+        return;
+    }
+    
+    phpRestartTimeout = setTimeout(() => {
+        phpRestartTimeout = null;
+        restartPhpProcess(reason).catch(error => {
+            console.log(`Erreur lors du redémarrage planifié PHP: ${error.message}`);
+        });
+    }, PHP_RESTART_DELAY);
+}
+
+function stopPhpFpmProcess(signal = 'SIGTERM') {
+    if (!phpFpmProcess) {
+        return Promise.resolve();
+    }
+    
+    phpStopRequested = true;
+    
+    return new Promise((resolve) => {
+        const processToStop = phpFpmProcess;
+        let resolved = false;
+        
+        const cleanup = () => {
+            if (!resolved) {
+                resolved = true;
+                resolve();
+            }
+        };
+        
+        const killTimeout = setTimeout(() => {
+            if (processToStop && !processToStop.killed) {
+                try {
+                    processToStop.kill('SIGKILL');
+                } catch (error) {
+                    console.log(`Impossible de tuer le processus PHP avec SIGKILL: ${error.message}`);
+                }
+            }
+            cleanup();
+        }, 5000);
+        
+        processToStop.once('close', () => {
+            clearTimeout(killTimeout);
+            cleanup();
+        });
+        
+        try {
+            processToStop.kill(signal);
+        } catch (error) {
+            clearTimeout(killTimeout);
+            console.log(`Erreur lors de l’envoi du signal ${signal} au processus PHP: ${error.message}`);
+            cleanup();
+        }
+    });
+}
+
+async function restartPhpProcess(reason = 'manual') {
+    if (phpRestartInProgress) {
+        return;
+    }
+    
+    if (phpRestartTimeout) {
+        clearTimeout(phpRestartTimeout);
+        phpRestartTimeout = null;
+    }
+    
+    phpRestartInProgress = true;
+    phpRestartAttempts += 1;
+    
+    const timestamp = new Date().toISOString();
+    sendToRenderer(PHP_STATUS_CHANNEL, {
+        status: 'restarting',
+        reason,
+        attempt: phpRestartAttempts,
+        timestamp,
+        port: frontendPort,
+        proxyPort: serverPort,
+        phpPort: PHP_SERVER_PORT
+    });
+    
+    try {
+        await stopPhpFpmProcess();
+        phpFatalNotified = false;
+        await startPhpFpm();
+        phpRestartAttempts = 0;
+        sendToRenderer(PHP_STATUS_CHANNEL, {
+            status: 'running',
+            reason: 'restart-success',
+            timestamp: new Date().toISOString(),
+            port: frontendPort,
+            proxyPort: serverPort,
+            phpPort: PHP_SERVER_PORT
+        });
+        console.log('Redémarrage du processus PHP réussi.');
+    } catch (error) {
+        console.log(`Échec du redémarrage du processus PHP: ${error.message}`);
+        sendToRenderer(PHP_STATUS_CHANNEL, {
+            status: 'error',
+            reason: 'restart-failed',
+            message: error.message,
+            timestamp: new Date().toISOString(),
+            port: frontendPort,
+            proxyPort: serverPort,
+            phpPort: PHP_SERVER_PORT
+        });
+        
+        if (phpRestartAttempts < MAX_PHP_RESTART_ATTEMPTS) {
+            schedulePhpRestart('retry-after-failure');
+        }
+    } finally {
+        phpRestartInProgress = false;
+    }
+}
 
 // Obtenir le chemin de la base de données (dans userData pour la persistance lors des mises à jour)
 function getDatabasePath() {
@@ -224,6 +758,51 @@ function findFreePort() {
     });
 }
 
+function waitForServer(url, timeout = 5000, interval = 250) {
+    return new Promise((resolve) => {
+        const deadline = Date.now() + timeout;
+        
+        const attempt = () => {
+            let handled = false;
+            
+            const finalize = (success) => {
+                if (handled) {
+                    return;
+                }
+                handled = true;
+                
+                if (success) {
+                    resolve(true);
+                } else if (Date.now() >= deadline) {
+                    resolve(false);
+                } else {
+                    setTimeout(attempt, interval);
+                }
+            };
+            
+            try {
+                const request = http.get(url, { timeout: Math.min(interval, 2000) }, (response) => {
+                    response.destroy();
+                    finalize(true);
+                });
+                
+                request.on('timeout', () => {
+                    request.destroy();
+                    finalize(false);
+                });
+                
+                request.on('error', () => {
+                    finalize(false);
+                });
+            } catch (error) {
+                finalize(false);
+            }
+        };
+        
+        attempt();
+    });
+}
+
 // Obtenir le chemin du Caddyfile
 function getCaddyfilePath() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
@@ -311,6 +890,16 @@ function startPhpFpm() {
         fs.mkdirSync(sessionPath, { recursive: true });
     }
     
+    phpFatalNotified = false;
+    
+    sendToRenderer(PHP_STATUS_CHANNEL, {
+        status: 'starting',
+        timestamp: new Date().toISOString(),
+        port: frontendPort,
+        proxyPort: serverPort,
+        phpPort: PHP_SERVER_PORT
+    });
+    
     // Préparer les arguments PHP selon la plateforme
     let phpArgs;
     
@@ -319,7 +908,7 @@ function startPhpFpm() {
         // Le PHP système a déjà ses extensions configurées
         console.log('Configuration PHP pour AppImage (PHP système)');
         phpArgs = [
-            '-S', '127.0.0.1:8001',
+            '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
             '-t', appPath,
             '-d', 'display_errors=1',
             '-d', 'log_errors=1',
@@ -344,7 +933,7 @@ function startPhpFpm() {
         
         phpArgs = [
             '-c', phpIniPath,
-            '-S', '127.0.0.1:8001',
+            '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
             '-t', appPath,
             '-d', 'display_errors=1',
             '-d', 'log_errors=1',
@@ -365,7 +954,7 @@ function startPhpFpm() {
         if (fs.existsSync(phpIniPath)) {
             phpArgs = [
                 '-c', phpIniPath,
-                '-S', '127.0.0.1:8001',
+                '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
                 '-t', appPath,
                 '-d', 'display_errors=1',
                 '-d', 'log_errors=1',
@@ -378,7 +967,7 @@ function startPhpFpm() {
             ];
         } else {
             phpArgs = [
-                '-S', '127.0.0.1:8001',
+                '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
                 '-t', appPath,
                 '-d', 'display_errors=1',
                 '-d', 'log_errors=1',
@@ -399,20 +988,26 @@ function startPhpFpm() {
         }
     });
     
-    phpFpmProcess.stdout.on('data', (data) => {
-        console.log('PHP Server:', data.toString());
-    });
+    phpFpmProcess.stdout.on('data', (data) => handlePhpOutput('STDOUT', data));
+    phpFpmProcess.stderr.on('data', (data) => handlePhpOutput('STDERR', data));
     
-    phpFpmProcess.stderr.on('data', (data) => {
-        console.error('PHP Error:', data.toString());
-    });
-    
-    phpFpmProcess.on('close', (code) => {
-        console.log(`Serveur PHP fermé avec le code ${code}`);
-    });
+    phpFpmProcess.on('close', handlePhpProcessExit);
     
     phpFpmProcess.on('error', (error) => {
         console.error('Erreur serveur PHP:', error.message);
+    });
+    
+    phpFpmProcess.on('spawn', () => {
+        console.log(`✅ Processus PHP lancé avec succès (PID: ${phpFpmProcess.pid})`);
+        startPhpErrorLogWatcher();
+        sendToRenderer(PHP_STATUS_CHANNEL, {
+            status: 'running',
+            timestamp: new Date().toISOString(),
+            pid: phpFpmProcess.pid,
+            port: frontendPort,
+            proxyPort: serverPort,
+            phpPort: PHP_SERVER_PORT
+        });
     });
     
     // Attendre que le serveur soit prêt
@@ -445,9 +1040,21 @@ function startPhpServer() {
         fs.mkdirSync(sessionPath, { recursive: true });
     }
     
+    phpFatalNotified = false;
+    frontendPort = PHP_SERVER_PORT;
+    
+    sendToRenderer(PHP_STATUS_CHANNEL, {
+        status: 'starting',
+        context: 'fallback',
+        timestamp: new Date().toISOString(),
+        port: frontendPort,
+        proxyPort: null,
+        phpPort: PHP_SERVER_PORT
+    });
+    
     // Pas de php.ini pour éviter les erreurs d'extensions
     phpFpmProcess = spawn(phpPath, [
-        '-S', '127.0.0.1:8001',
+        '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
         '-t', appPath,
         '-d', 'display_errors=1',
         '-d', 'upload_max_filesize=50M',
@@ -463,16 +1070,23 @@ function startPhpServer() {
         }
     });
     
-    phpFpmProcess.stdout.on('data', (data) => {
-        console.log('PHP Server:', data.toString());
-    });
+    phpFpmProcess.stdout.on('data', (data) => handlePhpOutput('STDOUT', data));
+    phpFpmProcess.stderr.on('data', (data) => handlePhpOutput('STDERR', data));
     
-    phpFpmProcess.stderr.on('data', (data) => {
-        console.error('PHP Error:', data.toString());
-    });
+    phpFpmProcess.on('close', handlePhpProcessExit);
     
-    phpFpmProcess.on('close', (code) => {
-        console.log(`Serveur PHP fermé avec le code ${code}`);
+    phpFpmProcess.on('spawn', () => {
+        console.log(`✅ Processus PHP (fallback) lancé avec succès (PID: ${phpFpmProcess.pid})`);
+        startPhpErrorLogWatcher();
+        sendToRenderer(PHP_STATUS_CHANNEL, {
+            status: 'running',
+            context: 'fallback',
+            timestamp: new Date().toISOString(),
+            pid: phpFpmProcess.pid,
+            port: frontendPort,
+            proxyPort: null,
+            phpPort: PHP_SERVER_PORT
+        });
     });
 }
 
@@ -600,9 +1214,12 @@ async function startCaddy() {
 // Arrêter les processus
 function stopProcesses() {
     if (phpFpmProcess) {
-        phpFpmProcess.kill();
-        phpFpmProcess = null;
+        stopPhpFpmProcess().catch(error => {
+            console.log(`Erreur lors de l'arrêt du processus PHP: ${error.message}`);
+        });
     }
+    
+    stopPhpErrorLogWatcher();
     
     if (caddyProcess) {
         caddyProcess.kill();
@@ -791,18 +1408,45 @@ function createWindow() {
             await startPhpFpm();
             await startCaddy();
             
-            // Charger l'application avec le port choisi
-            mainWindow.loadURL(`http://127.0.0.1:${serverPort}/`);
-            mainWindow.show();
+            const appUrl = `http://127.0.0.1:${serverPort}/`;
+            console.log(`Chargement de l'URL principale: ${appUrl}`);
             
-            console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
+            const proxyReady = await waitForServer(appUrl, 5000);
+            
+            if (!proxyReady) {
+                const fallbackUrl = `http://127.0.0.1:${PHP_SERVER_PORT}/`;
+                console.warn(`Caddy n'a pas répondu à temps sur ${appUrl}, fallback vers ${fallbackUrl}`);
+                frontendPort = PHP_SERVER_PORT;
+                sendToRenderer(PHP_STATUS_CHANNEL, {
+                    status: 'proxy-timeout',
+                    timestamp: new Date().toISOString(),
+                    port: frontendPort,
+                    proxyPort: serverPort,
+                    phpPort: PHP_SERVER_PORT
+                });
+                mainWindow.loadURL(fallbackUrl);
+                mainWindow.show();
+            } else {
+                frontendPort = serverPort;
+                sendToRenderer(PHP_STATUS_CHANNEL, {
+                    status: 'proxy-ready',
+                    timestamp: new Date().toISOString(),
+                    port: frontendPort,
+                    proxyPort: serverPort,
+                    phpPort: PHP_SERVER_PORT
+                });
+                mainWindow.loadURL(appUrl);
+                mainWindow.show();
+                console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
+            }
         } catch (error) {
             console.error('Erreur lors du démarrage des serveurs:', error);
             // Fallback : utiliser le serveur PHP intégré uniquement
             console.log('Tentative de démarrage avec le serveur PHP intégré uniquement...');
             try {
                 startPhpServer();
-                mainWindow.loadURL('http://127.0.0.1:8001/');
+                frontendPort = PHP_SERVER_PORT;
+                mainWindow.loadURL(`http://127.0.0.1:${PHP_SERVER_PORT}/`);
                 mainWindow.show();
                 console.log('Serveur PHP intégré démarré avec succès');
             } catch (fallbackError) {
@@ -985,6 +1629,22 @@ ipcMain.handle('cleanup-tmp-files', async () => {
         return { success: true };
     } catch (error) {
         console.error('Erreur nettoyage:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+ipcMain.handle('restart-php', async () => {
+    await restartPhpProcess('renderer-request');
+    return { success: true };
+});
+
+ipcMain.handle('restart-app', () => {
+    try {
+        app.relaunch();
+        app.exit(0);
+        return { success: true };
+    } catch (error) {
+        console.error('Erreur lors du redémarrage de l’application:', error);
         return { success: false, error: error.message };
     }
 });
