@@ -1702,7 +1702,6 @@ function calculateMachinePrice(machineIndex) {
         // Calcul pour photocopieur
         var brochures = machineElement.querySelectorAll('.brochure-item');
         var totalExemplaires = 0;
-        var totalFeuilles = 0;
         
         brochures.forEach(function(brochure) {
             var nbExemplaires = parseFloat(brochure.querySelector('input[name*="[nb_exemplaires]"]').value) || 0;
@@ -1778,7 +1777,6 @@ function calculateMachinePrice(machineIndex) {
             price += coutBrochure;
             
             totalExemplaires += nbExemplaires;
-            totalFeuilles += nbExemplaires * nbFeuilles;
         });
         
         // Détail du calcul pour photocopieur
@@ -1885,10 +1883,13 @@ function calculateMachinePrice(machineIndex) {
             prixEncreMoyen = prixEncreMoyen / brochures.length;
         }
         
+        const feuillesParExemplaire = totalExemplaires > 0 ? totalPages / totalExemplaires : 0;
+        const feuillesParExemplaireText = Number.isInteger(feuillesParExemplaire) ? feuillesParExemplaire : feuillesParExemplaire.toFixed(2);
+        const totalPagesText = Number.isInteger(totalPages) ? totalPages : totalPages.toFixed(2);
         detailCalcul = `
             <div class="price-detail" style="font-size: 0.9em; color: #666; margin-top: 5px;">
                 <strong>Détail du calcul :</strong><br>
-                • ${totalExemplaires} exemplaires × ${totalFeuilles} feuilles = ${totalPages} pages<br>
+                • ${totalExemplaires} exemplaires × ${feuillesParExemplaireText} feuilles = ${totalPagesText} pages<br>
                 • Papier : ${totalPages} feuilles × ${prixPapierMoyen.toFixed(3)}€ = ${coutPapierTotal.toFixed(2)}€<br>
                 • Encre : ${totalPagesEncre} pages × ${prixEncreMoyen.toFixed(4)}€ = ${coutEncreTotal.toFixed(2)}€${detailEncre}<br>
                 <strong>Total : ${price.toFixed(2)}€</strong>
@@ -2195,11 +2196,10 @@ function updatePaymentAmount() {
         var prixTotalElement = document.getElementById('prix-total');
         if (prixTotalElement) {
             var totalText = prixTotalElement.textContent;
-            var match = totalText.match(/(\d+\.?\d*)/);
-            if (match) {
-                var total = parseFloat(match[1]);
-                cbField.value = total.toFixed(2);
-                console.log("Prix total trouvé dans #prix-total:", total);
+            var cleanedTotal = cleanNumberString(totalText);
+            if (!isNaN(cleanedTotal)) {
+                cbField.value = cleanedTotal.toFixed(2);
+                console.log("Prix total trouvé dans #prix-total:", cleanedTotal);
                 return;
             }
         }
@@ -2210,11 +2210,10 @@ function updatePaymentAmount() {
         if (totalPriceElement) {
             var totalText = totalPriceElement.textContent;
             console.log("Prix trouvé dans h2.text-primary strong:", totalText);
-            var match = totalText.match(/(\d+\.\d{2})€/);
-            if (match) {
-                var total = parseFloat(match[1]);
-                console.log("Prix total extrait:", total);
-                cbField.value = total.toFixed(2);
+            var cleanedTotal = cleanNumberString(totalText);
+            if (!isNaN(cleanedTotal)) {
+                console.log("Prix total extrait:", cleanedTotal);
+                cbField.value = cleanedTotal.toFixed(2);
                 return;
             }
         }
@@ -2225,6 +2224,13 @@ function updatePaymentAmount() {
         cbField.value = '';
         console.log("cbField.value vidé");
     }
+}
+
+function cleanNumberString(value) {
+    if (!value) return NaN;
+    var normalized = value.replace(/\s+/g, '').replace(',', '.');
+    var match = normalized.match(/-?\d+(\.\d+)?/);
+    return match ? parseFloat(match[0]) : NaN;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
