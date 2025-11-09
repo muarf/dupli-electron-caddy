@@ -171,6 +171,15 @@ function getTableForMachine($machine) {
 // Variables globales pour stocker les tirages sélectionnés
 let selectedTirages = [];
 
+// Traductions sans balises HTML pour les popups
+const translations = {
+    selectAtLeastOne: <?php echo json_encode(__('admin_tirage.select_at_least_one')); ?>,
+    noPrintsSelected: <?php echo json_encode(__('admin_tirage.no_prints_selected')); ?>,
+    selectAtLeastOnePay: <?php echo json_encode(__('admin_tirage.select_at_least_one_pay')); ?>,
+    confirmPaymentPrints: <?php echo json_encode(__('admin_tirage.confirm_payment_prints')); ?>,
+    printsForTotal: <?php echo json_encode(__('admin_tirage.prints_for_total')); ?>
+};
+
 // Fonction pour supprimer les tirages sélectionnés
 function deleteSelected() {
     selectedTirages = [];
@@ -179,7 +188,7 @@ function deleteSelected() {
     const checkboxes = document.querySelectorAll('input[name="chkbox[]"]:checked');
     
     if (checkboxes.length === 0) {
-        alert('<?php _e('admin_tirage.select_at_least_one'); ?>');
+        alert(translations.selectAtLeastOne);
         return;
     }
     
@@ -199,7 +208,7 @@ function deleteSelected() {
 // Fonction pour confirmer la suppression
 function confirmDelete() {
     if (selectedTirages.length === 0) {
-        alert('<?php _e('admin_tirage.no_prints_selected'); ?>');
+        alert(translations.noPrintsSelected);
         return;
     }
     
@@ -254,7 +263,7 @@ function pay() {
     const checkboxes = document.querySelectorAll('input[name="chkbox[]"]:checked');
     
     if (checkboxes.length === 0) {
-        alert('<?php _e('admin_tirage.select_at_least_one_pay'); ?>');
+        alert(translations.selectAtLeastOnePay);
         return;
     }
     
@@ -270,7 +279,7 @@ function pay() {
     
     // Confirmer le paiement
     const total = selectedTirages.reduce((sum, tirage) => sum + parseFloat(tirage.prix), 0);
-    if (!confirm(`<?php _e('admin_tirage.confirm_payment_prints'); ?> ${selectedTirages.length} <?php _e('admin_tirage.prints_for_total'); ?> ${total.toFixed(2)}€ ?`)) {
+    if (!confirm(`${translations.confirmPaymentPrints} ${selectedTirages.length} ${translations.printsForTotal} ${total.toFixed(2)}€ ?`)) {
         return;
     }
     
