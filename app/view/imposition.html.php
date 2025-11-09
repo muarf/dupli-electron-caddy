@@ -360,7 +360,7 @@
 
                     <?php if ($download_url): ?>
                         <div class="text-center">
-                            <a href="<?= htmlspecialchars($download_url) ?>" target="_blank" class="btn btn-download" onclick="openPdfInApp('<?= htmlspecialchars($download_url) ?>')">
+                            <a href="<?= htmlspecialchars($download_url) ?>" class="btn btn-download">
                                 <i class="fa fa-download"></i> <?php _e('imposition.download_imposed'); ?>
                             </a>
                         </div>
