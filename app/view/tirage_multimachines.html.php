@@ -362,9 +362,6 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
         <?php endif; ?>
     </div>
     
-    <div class="alert-modern alert alert-warning">
-        <strong><i class="fa fa-exclamation-triangle"></i> <?php _e('tirage_multimachines.warning_title'); ?></strong> <?php _e('tirage_multimachines.warning_message'); ?>
-    </div>
     <?php endif; ?>
     
     <div class="text-center">
