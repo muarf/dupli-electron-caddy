@@ -15,10 +15,9 @@ files:
   - php-fpm.conf
   - php-install-guide.html
   - app/**/*
-  - ghostscript/**/*
   - caddy/**/*
   - utils/**/*
-  # PHP sera inclus spécifiquement par plateforme (Windows/macOS oui, Linux non)
+# PHP sera inclus spécifiquement par plateforme (Windows/macOS oui, Linux non)
 # asarUnpack configuré spécifiquement par plateforme pour éviter les erreurs de chemins longs
 # Plus besoin d'exclure les liens symboliques car ils ont été supprimés
 linux:
@@ -33,7 +32,6 @@ linux:
   # Le dossier php/ est vidé avant le build dans le workflow (économie d'espace)
   asarUnpack:
     - "app/**/*"
-    - "ghostscript/**/*"
     - "caddy/**/*"
     - "Caddyfile"
     - "php-fpm.conf"
@@ -52,14 +50,12 @@ mac:
     - php-fpm.conf
     - php-install-guide.html
     - app/**/*
-    - ghostscript/**/*
     - caddy/**/*
     - utils/**/*
     - "php/**/*"  # Inclure PHP pour macOS
   asarUnpack:
     - "php/**/*"
     - "app/**/*"
-    - "ghostscript/**/*"
     - "caddy/**/*"
     - "Caddyfile"
     - "php-fpm.conf"
@@ -86,7 +82,6 @@ win:
     - app/php.ini  # Inclure explicitement php.ini pour Windows (nécessaire pour les extensions SQLite)
     - php-install-guide.html
     - app/**/*
-    - ghostscript/**/*
     - caddy/**/*
     - utils/**/*
     - "php/**/*"  # Inclure PHP pour Windows
