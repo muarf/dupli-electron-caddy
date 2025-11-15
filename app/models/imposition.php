@@ -188,6 +188,81 @@ function reordering_pages_a6($number_of_pages) {
     return $result;
 }
 
+/**
+ * Génére un PDF temporaire complété de pages blanches afin d'obtenir
+ * un nombre total de pages multiple de $multiple.
+ *
+ * @param string $pdfFilePath Chemin du PDF source
+ * @param int    $multiple    Multiple souhaité (8 pour A5, 16 pour A6)
+ * @return array{file:string,page_count:int,temp_file:?string}
+ * @throws Exception
+ */
+function padPdfToMultiple($pdfFilePath, $multiple) {
+    $pdf = new TCPDI();
+    $pageCount = $pdf->setSourceFile($pdfFilePath);
+
+    if ($multiple <= 0) {
+        throw new Exception("Le multiple doit être strictement positif.");
+    }
+
+    if ($pageCount % $multiple === 0) {
+        return [
+            'file' => $pdfFilePath,
+            'page_count' => $pageCount,
+            'temp_file' => null
+        ];
+    }
+
+    $pagesToAdd = $multiple - ($pageCount % $multiple);
+
+    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
+    if (!file_exists($tmp_dir)) {
+        mkdir($tmp_dir, 0755, true);
+    }
+
+    $outputPath = $tmp_dir . 'padded_' . date('YmdHis') . '_' . uniqid() . '.pdf';
+
+    $pdfPadded = new TCPDI();
+    $pdfPadded->setPrintHeader(false);
+    $pdfPadded->setPrintFooter(false);
+    $pdfPadded->setSourceFile($pdfFilePath);
+
+    $defaultWidth = 210;
+    $defaultHeight = 297;
+    $defaultOrientation = 'P';
+
+    for ($pageNum = 1; $pageNum <= $pageCount; $pageNum++) {
+        $templateId = $pdfPadded->importPage($pageNum);
+        $size = $pdfPadded->getTemplateSize($templateId);
+        if ($size && isset($size['width']) && isset($size['height'])) {
+            $width = $size['width'];
+            $height = $size['height'];
+            $defaultWidth = $width;
+            $defaultHeight = $height;
+            $defaultOrientation = ($width > $height) ? 'L' : 'P';
+        } else {
+            $width = $defaultWidth;
+            $height = $defaultHeight;
+        }
+
+        $orientation = ($width > $height) ? 'L' : 'P';
+        $pdfPadded->AddPage($orientation, [$width, $height]);
+        $pdfPadded->useTemplate($templateId, 0, 0, $width, $height);
+    }
+
+    for ($i = 0; $i < $pagesToAdd; $i++) {
+        $pdfPadded->AddPage($defaultOrientation, [$defaultWidth, $defaultHeight]);
+    }
+
+    $pdfPadded->Output($outputPath, 'F');
+
+    return [
+        'file' => $outputPath,
+        'page_count' => $pageCount + $pagesToAdd,
+        'temp_file' => $outputPath
+    ];
+}
+
 function resizeToA5($pdf, $template_id, $a5_width, $a5_height, $forceResize = false) {
     $size = $pdf->getTemplateSize($template_id);
     $orig_width = $size["width"];
@@ -483,6 +558,7 @@ function Action($conf)
 
         // Traitement principal avec gestion d'erreur globale et fallback Ghostscript
         $cleanedPdfFile = null;
+        $paddedPdfFile = null;
         $usedGhostscript = false;
         $mainProcessingSuccess = false; // Flag pour éviter l'exécution du bloc de fallback
         
@@ -496,13 +572,32 @@ function Action($conf)
                 throw new Exception("Impossible de lire le PDF ou PDF vide.");
             }
 
-            // Optionnel: Ajouter les numéros de pages au PDF original avant l'imposition
+            // Récupérer le type d'imposition
+            $imposition_type = isset($_POST['imposition_type']) ? $_POST['imposition_type'] : 'a5';
+            $requiredMultiple = ($imposition_type === 'a6') ? 16 : 8;
+
+            // Ajouter des pages blanches si nécessaire avant toute autre transformation
+            $paddingResult = padPdfToMultiple($pdfFile, $requiredMultiple);
+            if ($paddingResult['temp_file'] !== null) {
+                $paddedPdfFile = $paddingResult['temp_file'];
+            }
+            $pdfFile = $paddingResult['file'];
+            $pageCount = $paddingResult['page_count'];
+            $array['page_count'] = $pageCount;
+            $pdf = new TCPDI();
+            $pdf->setSourceFile($pdfFile);
+
+            // Optionnel: Ajouter les numéros de pages une fois le PDF complété
             $add_page_numbers = isset($_POST['add_page_numbers']) && $_POST['add_page_numbers'] == '1';
             $numberedPdfFile = null;
             
             if ($add_page_numbers) {
                 $numberedPdfPath = addPageNumbersToPdf($pdfFile);
                 if ($numberedPdfPath !== null && file_exists($numberedPdfPath)) {
+                    if ($paddedPdfFile !== null && file_exists($paddedPdfFile)) {
+                        @unlink($paddedPdfFile);
+                    }
+                    $paddedPdfFile = null;
                     // Utiliser le PDF avec numéros au lieu du PDF original
                     $numberedPdfFile = $numberedPdfPath;
                     $pdfFile = $numberedPdfPath;
@@ -511,12 +606,9 @@ function Action($conf)
                     $pageCount = $pdf->setSourceFile($pdfFile);
                     $array['page_count'] = $pageCount;
                 } else {
-                    $array['errors'][] = "Erreur lors de l'ajout des numéros de pages. Le PDF original sera utilisé.";
+                    $array['errors'][] = "Erreur lors de l'ajout des numéros de pages. Le PDF complété sera utilisé sans numérotation.";
                 }
             }
-
-            // Récupérer le type d'imposition
-            $imposition_type = isset($_POST['imposition_type']) ? $_POST['imposition_type'] : 'a5';
             
             // Récupérer les options des traits de coupe
             $add_crop_marks = isset($_POST['add_crop_marks']);
@@ -1004,6 +1096,10 @@ function Action($conf)
                 @unlink($numberedPdfFile);
             }
             
+            if ($paddedPdfFile !== null && file_exists($paddedPdfFile)) {
+                @unlink($paddedPdfFile);
+            }
+            
             // Marquer que le traitement principal a réussi pour éviter le fallback
             $mainProcessingSuccess = true;
             error_log("DEBUG: Traitement principal réussi, flag mainProcessingSuccess = true");
@@ -1012,6 +1108,10 @@ function Action($conf)
             // Première tentative échouée, essayer avec Ghostscript
             // Mais seulement si le traitement principal n'a pas réussi
             error_log("DEBUG: EXCEPTION CAPTURÉE - Dans le catch, mainProcessingSuccess = " . ($mainProcessingSuccess ? 'true' : 'false'));
+            if ($paddedPdfFile !== null && file_exists($paddedPdfFile)) {
+                @unlink($paddedPdfFile);
+                $paddedPdfFile = null;
+            }
             if (isset($mainProcessingSuccess) && $mainProcessingSuccess) {
                 // Le traitement principal a réussi, ne pas exécuter le fallback
                 error_log("DEBUG: Traitement principal réussi, sortie du bloc de fallback");
@@ -1062,13 +1162,33 @@ function Action($conf)
                 $usedGhostscript = true;
                 $pdfFile = $cleanedPdfFile; // Utiliser le fichier nettoyé
                 
-                // Optionnel: Ajouter les numéros de pages au PDF nettoyé avant l'imposition
+                // Récupérer le type d'imposition et compléter le PDF si besoin
+                $imposition_type = isset($_POST['imposition_type']) ? $_POST['imposition_type'] : 'a5';
+                $requiredMultiple = ($imposition_type === 'a6') ? 16 : 8;
+
+                $paddingResult = padPdfToMultiple($pdfFile, $requiredMultiple);
+                if ($paddingResult['temp_file'] !== null) {
+                    $paddedPdfFile = $paddingResult['temp_file'];
+                } else {
+                    $paddedPdfFile = null;
+                }
+                $pdfFile = $paddingResult['file'];
+                $pageCount = $paddingResult['page_count'];
+                $array['page_count'] = $pageCount;
+                $pdf = new TCPDI();
+                $pdf->setSourceFile($pdfFile);
+
+                // Optionnel: Ajouter les numéros de pages après padding
                 $add_page_numbers = isset($_POST['add_page_numbers']) && $_POST['add_page_numbers'] == '1';
                 $numberedPdfFile = null;
                 
                 if ($add_page_numbers) {
                     $numberedPdfPath = addPageNumbersToPdf($pdfFile);
                     if ($numberedPdfPath !== null && file_exists($numberedPdfPath)) {
+                        if ($paddedPdfFile !== null && file_exists($paddedPdfFile)) {
+                            @unlink($paddedPdfFile);
+                        }
+                        $paddedPdfFile = null;
                         // Utiliser le PDF avec numéros au lieu du PDF nettoyé
                         $numberedPdfFile = $numberedPdfPath;
                         $pdfFile = $numberedPdfPath;
@@ -1077,7 +1197,7 @@ function Action($conf)
                         $pageCount = $pdf->setSourceFile($pdfFile);
                         $array['page_count'] = $pageCount;
                     } else {
-                        $array['errors'][] = "Erreur lors de l'ajout des numéros de pages. Le PDF nettoyé sera utilisé.";
+                        $array['errors'][] = "Erreur lors de l'ajout des numéros de pages. Le PDF complété sera utilisé sans numérotation.";
                     }
                 }
                 
@@ -1085,10 +1205,7 @@ function Action($conf)
                 $originalFileName = isset($_FILES["pdf"]["name"]) ? $_FILES["pdf"]["name"] : "document.pdf";
                 $originalFileNameWithoutExt = pathinfo($originalFileName, PATHINFO_FILENAME);
                 $safe_filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $originalFileNameWithoutExt);
-                
-                // Récupérer le type d'imposition
-                $imposition_type = isset($_POST['imposition_type']) ? $_POST['imposition_type'] : 'a5';
-                
+
                 // Récupérer les options des traits de coupe
                 $add_crop_marks = isset($_POST['add_crop_marks']);
                 $crop_marks_type = isset($_POST['crop_marks_type']) ? $_POST['crop_marks_type'] : 'normal';
@@ -1534,6 +1651,10 @@ function Action($conf)
                     @unlink($numberedPdfFile);
                 }
                 
+                if ($paddedPdfFile !== null && file_exists($paddedPdfFile)) {
+                    @unlink($paddedPdfFile);
+                }
+                
                 // Nettoyer le fichier temporaire nettoyé
                 if (file_exists($cleanedPdfFile)) {
                     unlink($cleanedPdfFile);
@@ -1552,6 +1673,10 @@ function Action($conf)
                 // Nettoyer le fichier temporaire avec numéros si créé
                 if (isset($numberedPdfFile) && $numberedPdfFile !== null && file_exists($numberedPdfFile)) {
                     @unlink($numberedPdfFile);
+                }
+                
+                if ($paddedPdfFile !== null && file_exists($paddedPdfFile)) {
+                    @unlink($paddedPdfFile);
                 }
                 
                 // Nettoyer le fichier temporaire en cas d'erreur
