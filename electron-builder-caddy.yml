@@ -25,6 +25,7 @@ linux:
   target: 
     - target: AppImage
       arch: [x64]
+  icon: icons/icon.png
   category: Office
   executableName: Duplicator
   executableArgs: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"]
