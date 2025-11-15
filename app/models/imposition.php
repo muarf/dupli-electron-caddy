@@ -343,6 +343,34 @@ function addPageNumber($pdf, $page_num, $x, $y, $new_width, $new_height, $rotati
     }
 }
 
+function drawTrimZonePageNumber($pdf, $page_num, $label_x, $label_y) {
+    $previousAutoBreak = method_exists($pdf, 'getAutoPageBreak') ? $pdf->getAutoPageBreak() : true;
+    $previousBreakMargin = method_exists($pdf, 'getBreakMargin') ? $pdf->getBreakMargin() : 0;
+    $pdf->setAutoPageBreak(false, 0);
+    
+    $pdf->SetFont('helvetica', '', 8);
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->SetXY($label_x, $label_y);
+    $pdf->Cell(8, 4, (string)$page_num, 0, 0, 'C', false, '', 0, false, 'T', 'M');
+    
+    $pdf->setAutoPageBreak($previousAutoBreak, $previousBreakMargin);
+}
+
+function computeTrimZonePosition($x, $y, $page_width, $page_height, $page_row, $total_rows, $sheet_width, $sheet_height, $offset = 4) {
+    $label_x = $x + ($page_width / 2) - 4;
+    $label_x = max(2, min($sheet_width - 10, $label_x));
+    
+    if ($page_row <= 0) {
+        $label_y = max(2, $y - $offset - 4);
+    } elseif ($page_row >= $total_rows - 1) {
+        $label_y = min($sheet_height - 6, $y + $page_height + $offset);
+    } else {
+        $label_y = $y + ($page_height / 2) - 2;
+    }
+    
+    return [$label_x, $label_y];
+}
+
 /**
  * Ajoute les numéros de pages au PDF original dans le coin bas-gauche
  * Texte petit, noir, sans fond, proche des bords mais dans la zone imprimable
@@ -393,8 +421,9 @@ function addPageNumbersToPdf($pdfFilePath) {
                 
                 // Position: bas à gauche, proche des bords mais dans la zone imprimable
                 // Position en bas à gauche avec un petit offset (3mm) pour être proche mais imprimable
-                $x = 3; // 3mm depuis le bord gauche
-                $y = $pageHeight - 8; // 8mm depuis le bas (pour avoir assez de place pour le texte)
+                // Décaler encore plus vers l'extérieur (≈1mm du bord gauche, 6mm du bas)
+                $x = max(1, 3 - 2); // 3mm - 2mm = 1mm
+                $y = $pageHeight - 6; // 6mm depuis le bas
                 
                 // Configurer la police : petit, noir
                 $pdf->SetFont('helvetica', '', 8); // Taille 8 = petit
@@ -436,28 +465,28 @@ function addPageNumbersToPdf($pdfFilePath) {
 }
 
 function drawCropMarks($pdf, $x, $y, $width, $height, $bleed_size = 3) {
-    // Dessiner les traits de coupe aux 4 coins À L'INTÉRIEUR de la zone
+    // Dessiner les traits de coupe aux 4 coins vers l'extérieur de la zone
     // Ligne noire plus épaisse pour les traits de coupe (0.5mm)
     $pdf->SetLineWidth(0.5);
     $pdf->SetDrawColor(0, 0, 0); // Noir
     
     $mark_length = 10; // Longueur fixe de 10mm pour bien voir les marques
     
-    // Coin supérieur gauche - lignes À L'INTÉRIEUR
-    $pdf->Line($x, $y, $x + $mark_length, $y); // Horizontale vers la droite
-    $pdf->Line($x, $y, $x, $y + $mark_length); // Verticale vers le bas
+    // Coin supérieur gauche - lignes vers l'extérieur
+    $pdf->Line($x, $y, $x - $mark_length, $y); // Horizontale vers la gauche
+    $pdf->Line($x, $y, $x, $y - $mark_length); // Verticale vers le haut
     
-    // Coin supérieur droit - lignes À L'INTÉRIEUR
-    $pdf->Line($x + $width, $y, $x + $width - $mark_length, $y); // Horizontale vers la gauche
-    $pdf->Line($x + $width, $y, $x + $width, $y + $mark_length); // Verticale vers le bas
+    // Coin supérieur droit - lignes vers l'extérieur
+    $pdf->Line($x + $width, $y, $x + $width + $mark_length, $y); // Horizontale vers la droite
+    $pdf->Line($x + $width, $y, $x + $width, $y - $mark_length); // Verticale vers le haut
     
-    // Coin inférieur gauche - lignes À L'INTÉRIEUR
-    $pdf->Line($x, $y + $height, $x + $mark_length, $y + $height); // Horizontale vers la droite
-    $pdf->Line($x, $y + $height, $x, $y + $height - $mark_length); // Verticale vers le haut
+    // Coin inférieur gauche - lignes vers l'extérieur
+    $pdf->Line($x, $y + $height, $x - $mark_length, $y + $height); // Horizontale vers la gauche
+    $pdf->Line($x, $y + $height, $x, $y + $height + $mark_length); // Verticale vers le bas
     
-    // Coin inférieur droit - lignes À L'INTÉRIEUR
-    $pdf->Line($x + $width, $y + $height, $x + $width - $mark_length, $y + $height); // Horizontale vers la gauche
-    $pdf->Line($x + $width, $y + $height, $x + $width, $y + $height - $mark_length); // Verticale vers le haut
+    // Coin inférieur droit - lignes vers l'extérieur
+    $pdf->Line($x + $width, $y + $height, $x + $width + $mark_length, $y + $height); // Horizontale vers la droite
+    $pdf->Line($x + $width, $y + $height, $x + $width, $y + $height + $mark_length); // Verticale vers le bas
 }
 
 function drawCentralCropMarks($pdf, $x, $y, $width, $height) {
@@ -474,21 +503,21 @@ function drawCentralCropMarks($pdf, $x, $y, $width, $height) {
         $center_x = 210; // 21cm = 210mm
         $mark_length = 8; // Plus court
         
-        // Trait haut
-        $pdf->Line($center_x, 5, $center_x, 5 + $mark_length);
+        // Trait haut (vers l'extérieur)
+        $pdf->Line($center_x, 5, $center_x, max(0, 5 - $mark_length));
         
-        // Trait bas - utiliser la hauteur de la page
-        $pdf->Line($center_x, $page_height - 5 - $mark_length, $center_x, $page_height - 5);
+        // Trait bas (vers l'extérieur) - utiliser la hauteur de la page
+        $pdf->Line($center_x, $page_height - 5, $center_x, $page_height - 5 + $mark_length);
     } else {
         // Portrait : trait horizontal à 21cm (210mm) - gauche et droite
         $center_y = 210; // 21cm = 210mm
         $mark_length = 8; // Plus court
         
-        // Trait gauche
-        $pdf->Line(5, $center_y, 5 + $mark_length, $center_y);
+        // Trait gauche (vers l'extérieur)
+        $pdf->Line(5, $center_y, max(0, 5 - $mark_length), $center_y);
         
-        // Trait droite - utiliser la largeur de la page
-        $pdf->Line($page_width - 5 - $mark_length, $center_y, $page_width - 5, $center_y);
+        // Trait droite (vers l'extérieur) - utiliser la largeur de la page
+        $pdf->Line($page_width - 5, $center_y, $page_width - 5 + $mark_length, $center_y);
     }
 }
 
@@ -591,17 +620,23 @@ function Action($conf)
             $add_page_numbers = isset($_POST['add_page_numbers']) && $_POST['add_page_numbers'] == '1';
             $numberedPdfFile = null;
             
-            if ($add_page_numbers) {
+            // Récupérer les options des traits de coupe
+            $add_crop_marks = isset($_POST['add_crop_marks']);
+            $crop_marks_type = isset($_POST['crop_marks_type']) ? $_POST['crop_marks_type'] : 'normal';
+            $imposition_mode = isset($_POST['imposition_mode']) ? $_POST['imposition_mode'] : 'brochure';
+            $bleed_mode = isset($_POST['bleed_mode']) ? $_POST['bleed_mode'] : 'fullsize';
+            $bleed_size = isset($_POST['bleed_size']) ? floatval($_POST['bleed_size']) : 3;
+            $render_trim_numbers = $add_page_numbers && $add_crop_marks;
+            
+            if ($add_page_numbers && !$render_trim_numbers) {
                 $numberedPdfPath = addPageNumbersToPdf($pdfFile);
                 if ($numberedPdfPath !== null && file_exists($numberedPdfPath)) {
                     if ($paddedPdfFile !== null && file_exists($paddedPdfFile)) {
                         @unlink($paddedPdfFile);
                     }
                     $paddedPdfFile = null;
-                    // Utiliser le PDF avec numéros au lieu du PDF original
                     $numberedPdfFile = $numberedPdfPath;
                     $pdfFile = $numberedPdfPath;
-                    // Réinitialiser avec le nouveau fichier
                     $pdf = new TCPDI();
                     $pageCount = $pdf->setSourceFile($pdfFile);
                     $array['page_count'] = $pageCount;
@@ -609,13 +644,6 @@ function Action($conf)
                     $array['errors'][] = "Erreur lors de l'ajout des numéros de pages. Le PDF complété sera utilisé sans numérotation.";
                 }
             }
-            
-            // Récupérer les options des traits de coupe
-            $add_crop_marks = isset($_POST['add_crop_marks']);
-            $crop_marks_type = isset($_POST['crop_marks_type']) ? $_POST['crop_marks_type'] : 'normal';
-            $imposition_mode = isset($_POST['imposition_mode']) ? $_POST['imposition_mode'] : 'brochure';
-            $bleed_mode = isset($_POST['bleed_mode']) ? $_POST['bleed_mode'] : 'fullsize';
-            $bleed_size = isset($_POST['bleed_size']) ? floatval($_POST['bleed_size']) : 3;
             
             
             // Réorganiser les pages selon le type d'imposition
@@ -745,6 +773,36 @@ function Action($conf)
                         if ($add_crop_marks && $imposition_mode === 'livre') {
                             drawAllCropMarks($pdfFinal, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
                         }
+                        
+                        if ($render_trim_numbers) {
+                            list($label_x, $label_y) = computeTrimZonePosition(
+                                $x,
+                                $y,
+                                $new_width,
+                                $new_height,
+                                $page_row,
+                                2,
+                                $a3_width,
+                                $a3_height,
+                                max(4, $bleed_size + 1)
+                            );
+                            drawTrimZonePageNumber($pdfFinal, $page_num, $label_x, $label_y);
+                        }
+                        
+                        if ($render_trim_numbers) {
+                            list($label_x, $label_y) = computeTrimZonePosition(
+                                $x,
+                                $y,
+                                $new_width,
+                                $new_height,
+                                $page_row,
+                                2,
+                                $a3_width,
+                                $a3_height,
+                                max(4, $bleed_size + 1)
+                            );
+                            drawTrimZonePageNumber($pdfFinal, $page_num, $label_x, $label_y);
+                        }
                     }
                     
                     // Hirondelles en mode brochure sur le RECTO A6 - 1 par A4 paysage (par ligne)
@@ -816,6 +874,36 @@ function Action($conf)
                         // Dessiner les traits de coupe si activées (mode livre)
                         if ($add_crop_marks && $imposition_mode === 'livre') {
                             drawAllCropMarks($pdfFinal, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
+                        }
+                        
+                        if ($render_trim_numbers) {
+                            list($label_x, $label_y) = computeTrimZonePosition(
+                                $x,
+                                $y,
+                                $new_width,
+                                $new_height,
+                                $page_row,
+                                2,
+                                $a3_width,
+                                $a3_height,
+                                max(4, $bleed_size + 1)
+                            );
+                            drawTrimZonePageNumber($pdfFinal, $page_num, $label_x, $label_y);
+                        }
+                        
+                        if ($render_trim_numbers) {
+                            list($label_x, $label_y) = computeTrimZonePosition(
+                                $x,
+                                $y,
+                                $new_width,
+                                $new_height,
+                                $page_row,
+                                2,
+                                $a3_width,
+                                $a3_height,
+                                max(4, $bleed_size + 1)
+                            );
+                            drawTrimZonePageNumber($pdfFinal, $page_num, $label_x, $label_y);
                         }
                     }
                     
@@ -909,8 +997,22 @@ function Action($conf)
                             drawAllCropMarks($pdfFinal, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
                         }
                         
+                        if ($render_trim_numbers) {
+                            list($label_x, $label_y) = computeTrimZonePosition(
+                                $x,
+                                $y,
+                                $new_width,
+                                $new_height,
+                                $page_row,
+                                2,
+                                $a3_width,
+                                $a3_height,
+                                max(4, $bleed_size + 1)
+                            );
+                            drawTrimZonePageNumber($pdfFinal, $page_num, $label_x, $label_y);
+                        }
+                        
                         if ($previewMode) {
-                            // Rotation de 180° pour la deuxième ligne (tête-bêche)
                             if ($page_row == 1) {
                                 $pdfPreview->StartTransform();
                                 $pdfPreview->Rotate(180, $x + ($new_width / 2), $y + ($new_height / 2));
@@ -923,12 +1025,10 @@ function Action($conf)
                                 $pdfPreview->StopTransform();
                             }
                             
-                            // Dessiner les traits de coupe dans le preview aussi
                             if ($add_crop_marks && $imposition_mode === 'livre') {
                                 drawAllCropMarks($pdfPreview, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
                             }
                             
-                            // Ajouter le numéro de page (avec rotation si nécessaire)
                             addPageNumber($pdfPreview, $page_num, $x, $y, $new_width, $new_height, $page_row == 1 ? 180 : 0);
                         }
                     }
@@ -1004,8 +1104,22 @@ function Action($conf)
                             drawAllCropMarks($pdfFinal, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
                         }
                         
+                        if ($render_trim_numbers) {
+                            list($label_x, $label_y) = computeTrimZonePosition(
+                                $x,
+                                $y,
+                                $new_width,
+                                $new_height,
+                                $page_row,
+                                2,
+                                $a3_width,
+                                $a3_height,
+                                max(4, $bleed_size + 1)
+                            );
+                            drawTrimZonePageNumber($pdfFinal, $page_num, $label_x, $label_y);
+                        }
+                        
                         if ($previewMode) {
-                            // Rotation de 180° pour la deuxième ligne (tête-bêche)
                             if ($page_row == 1) {
                                 $pdfPreview->StartTransform();
                                 $pdfPreview->Rotate(180, $x + ($new_width / 2), $y + ($new_height / 2));
@@ -1018,12 +1132,10 @@ function Action($conf)
                                 $pdfPreview->StopTransform();
                             }
                             
-                            // Dessiner les traits de coupe dans le preview aussi
                             if ($add_crop_marks && $imposition_mode === 'livre') {
                                 drawAllCropMarks($pdfPreview, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
                             }
                             
-                            // Ajouter le numéro de page (avec rotation si nécessaire)
                             addPageNumber($pdfPreview, $page_num, $x, $y, $new_width, $new_height, $page_row == 1 ? 180 : 0);
                         }
                     }
@@ -1316,16 +1428,30 @@ function Action($conf)
                             $x = $global_x_offset + $page_col * ($page_width + $gutter_width) + $x_offset;
                             $y = $global_y_offset + $page_row * ($page_height + $gutter_width) + $y_offset;
                             
-                            $pdfFinal->useTemplate($template_id, $x, $y, $new_width, $new_height);
-                            if ($previewMode) {
-                                // Importer la page au moment de l'utiliser
-                                if (!isset($template_ids_preview[$page_num])) {
-                                    $template_ids_preview[$page_num] = $pdfPreview->importPage($page_num);
-                                }
-                                $template_id_preview = $template_ids_preview[$page_num];
-                                $pdfPreview->useTemplate($template_id_preview, $x, $y, $new_width, $new_height);
-                                addPageNumber($pdfPreview, $page_num, $x, $y, $new_width, $new_height, 0);
+                        $pdfFinal->useTemplate($template_id, $x, $y, $new_width, $new_height);
+                        if ($previewMode) {
+                            if (!isset($template_ids_preview[$page_num])) {
+                                $template_ids_preview[$page_num] = $pdfPreview->importPage($page_num);
                             }
+                            $template_id_preview = $template_ids_preview[$page_num];
+                            $pdfPreview->useTemplate($template_id_preview, $x, $y, $new_width, $new_height);
+                            addPageNumber($pdfPreview, $page_num, $x, $y, $new_width, $new_height, 0);
+                        }
+                        
+                        if ($render_trim_numbers) {
+                            list($label_x, $label_y) = computeTrimZonePosition(
+                                $x,
+                                $y,
+                                $new_width,
+                                $new_height,
+                                $page_row,
+                                2,
+                                $a3_width,
+                                $a3_height,
+                                max(4, $bleed_size + 1)
+                            );
+                            drawTrimZonePageNumber($pdfFinal, $page_num, $label_x, $label_y);
+                        }
                         }
                         
                         // Créer la page verso
@@ -1363,15 +1489,28 @@ function Action($conf)
                             drawAllCropMarks($pdfFinal, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
                         }
                         
+                        if ($render_trim_numbers) {
+                            list($label_x, $label_y) = computeTrimZonePosition(
+                                $x,
+                                $y,
+                                $new_width,
+                                $new_height,
+                                $page_row,
+                                2,
+                                $a3_width,
+                                $a3_height,
+                                max(4, $bleed_size + 1)
+                            );
+                            drawTrimZonePageNumber($pdfFinal, $page_num, $label_x, $label_y);
+                        }
+                        
                         if ($previewMode) {
-                            // Importer la page au moment de l'utiliser
                             if (!isset($template_ids_preview[$page_num])) {
                                 $template_ids_preview[$page_num] = $pdfPreview->importPage($page_num);
                             }
                             $template_id_preview = $template_ids_preview[$page_num];
                             $pdfPreview->useTemplate($template_id_preview, $x, $y, $new_width, $new_height);
                             
-                            // Dessiner les traits de coupe dans le preview aussi
                             if ($add_crop_marks && $imposition_mode === 'livre') {
                                 drawAllCropMarks($pdfPreview, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
                             }
