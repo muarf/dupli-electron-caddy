@@ -1391,6 +1391,8 @@ function createWindow() {
     // Définir explicitement le titre pour Linux (aide à la correspondance WMClass)
     if (process.platform === 'linux') {
         mainWindow.setTitle('Duplicator');
+        // S'assurer que le WMClass est cohérent (déjà défini via app.setName() plus haut)
+        // Le WMClass par défaut d'Electron est basé sur app.getName()
     }
     
     // Maximiser la fenêtre pour prendre tout l'écran disponible
@@ -1534,21 +1536,31 @@ function setupAutoUpdater() {
         console.log('Vérification des mises à jour...');
     });
     
+    // Fonction helper pour envoyer des messages à la fenêtre de manière sécurisée
+    const safeSendToWindow = (channel, data) => {
+        try {
+            if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+                mainWindow.webContents.send(channel, data);
+                return true;
+            }
+        } catch (e) {
+            // Fenêtre déjà détruite, ignorer silencieusement
+            console.log(`Fenêtre détruite, message ${channel} ignoré`);
+        }
+        return false;
+    };
+    
     autoUpdater.on('update-available', (info) => {
         console.log('Mise à jour disponible:', info.version);
         
         // Envoyer une notification à l'interface
-        if (mainWindow && mainWindow.webContents) {
-            mainWindow.webContents.send('update-available', info);
-        }
+        safeSendToWindow('update-available', info);
     });
     
     autoUpdater.on('update-not-available', (info) => {
         console.log('Aucune mise à jour disponible');
         
-        if (mainWindow && mainWindow.webContents) {
-            mainWindow.webContents.send('update-not-available', info);
-        }
+        safeSendToWindow('update-not-available', info);
     });
     
     autoUpdater.on('error', (err) => {
@@ -1564,9 +1576,9 @@ function setupAutoUpdater() {
             err.message.includes('404')
         );
         
-        if (!isNetworkError && mainWindow && mainWindow.webContents) {
+        if (!isNetworkError) {
             // Afficher l'erreur uniquement si ce n'est pas un problème de réseau
-            mainWindow.webContents.send('update-error', err);
+            safeSendToWindow('update-error', err);
         } else {
             console.log('Vérification des mises à jour ignorée (pas de connexion internet ou release non disponible)');
         }
@@ -1576,18 +1588,14 @@ function setupAutoUpdater() {
         console.log(`Téléchargement: ${progressObj.percent.toFixed(2)}%`);
         
         // Envoyer la progression à l'interface
-        if (mainWindow && mainWindow.webContents) {
-            mainWindow.webContents.send('download-progress', progressObj);
-        }
+        safeSendToWindow('download-progress', progressObj);
     });
     
     autoUpdater.on('update-downloaded', (info) => {
         console.log('Mise à jour téléchargée, installation au redémarrage');
         
         // Notifier l'utilisateur
-        if (mainWindow && mainWindow.webContents) {
-            mainWindow.webContents.send('update-downloaded', info);
-        }
+        safeSendToWindow('update-downloaded', info);
     });
     
     // Vérifier les mises à jour au démarrage (après 10 secondes)
@@ -1619,6 +1627,11 @@ function setupAutoUpdater() {
 
 // Désactiver l'accélération GPU pour éviter les erreurs GLX
 app.disableHardwareAcceleration();
+
+// Définir le nom de l'application pour Linux (WMClass) - doit correspondre au StartupWMClass dans .desktop
+if (process.platform === 'linux') {
+    app.setName('Duplicator');
+}
 
 // Cette méthode sera appelée quand Electron aura fini de s'initialiser
 app.whenReady().then(() => {
