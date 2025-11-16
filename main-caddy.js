@@ -1238,6 +1238,22 @@ function stopProcesses() {
     }
 }
 
+// Arrêt synchronisé de tous les processus enfants avant redémarrage/maj
+async function stopAllChildrenGracefully() {
+    try {
+        await stopPhpFpmProcess().catch(() => {});
+    } catch {}
+    try {
+        if (caddyProcess && !caddyProcess.killed) {
+            caddyProcess.kill('SIGTERM');
+            await new Promise((r) => setTimeout(r, 2000));
+            if (caddyProcess && !caddyProcess.killed) {
+                try { caddyProcess.kill('SIGKILL'); } catch {}
+            }
+        }
+    } catch {}
+    try { stopPhpErrorLogWatcher(); } catch {}
+}
 // Créer le menu personnalisé
 function createMenu() {
     const template = [
@@ -1472,6 +1488,12 @@ function setupAutoUpdater() {
     autoUpdater.autoDownload = false; // Ne pas télécharger automatiquement (demander d'abord)
     autoUpdater.autoInstallOnAppQuit = true; // Installer automatiquement au redémarrage
     
+    // Avant de quitter pour installer, arrêter proprement Caddy/PHP
+    autoUpdater.on('before-quit-for-update', async () => {
+        console.log('before-quit-for-update: arrêt des processus enfants...');
+        await stopAllChildrenGracefully();
+    });
+
     // Événements de mise à jour
     autoUpdater.on('checking-for-update', () => {
         console.log('Vérification des mises à jour...');
@@ -1594,6 +1616,12 @@ app.on('window-all-closed', () => {
     }
 });
 
+// Toujours tenter un arrêt propre avant de quitter (y compris via maj)
+app.on('before-quit', async (event) => {
+    try {
+        await stopAllChildrenGracefully();
+    } catch {}
+});
 app.on('activate', () => {
     // Sur macOS, il est courant de recréer une fenêtre dans l'app quand l'icône
     // du dock est cliquée et qu'il n'y a pas d'autres fenêtres d'ouvertes
@@ -1676,7 +1704,13 @@ ipcMain.handle('download-update', async () => {
 // Installer la mise à jour (redémarre l'application)
 ipcMain.handle('install-update', () => {
     try {
-        autoUpdater.quitAndInstall();
+        // Arrêt propre puis installation avec relance forcée
+        Promise.resolve()
+            .then(() => stopAllChildrenGracefully())
+            .then(() => {
+                // isSilent=false, isForceRunAfter=true pour forcer la relance de l'app
+                autoUpdater.quitAndInstall(false, true);
+            });
         return { success: true };
     } catch (error) {
         console.error('Erreur installation mise à jour:', error);

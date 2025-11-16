@@ -186,11 +186,22 @@ function createWindow() {
     // Nettoyer les fichiers temporaires au démarrage
     cleanupTmpFiles();
 
-    // Résoudre le chemin de l'icône (Linux requiert une icône de fenêtre explicite)
+    // Résoudre de manière robuste le chemin de l'icône (Linux a besoin d'une icône explicite)
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
-    const iconPath = isAppImage
-        ? path.join(process.resourcesPath, 'app.asar', 'icons', 'icon.png')
-        : path.join(__dirname, 'icons', 'icon.png');
+    const candidateIconPaths = [
+        // Icône décompressée lors du build
+        path.join(process.resourcesPath, 'app.asar.unpacked', 'icons', 'icon.png'),
+        // Icône à la racine des resources
+        path.join(process.resourcesPath, 'icons', 'icon.png'),
+        // Icône dans l'archive asar (souvent non résolue par les libs natives)
+        path.join(process.resourcesPath, 'app.asar', 'icons', 'icon.png'),
+        // Icône en développement
+        path.join(__dirname, 'icons', 'icon.png'),
+    ];
+    const iconPath = candidateIconPaths.find(p => {
+        try { return fs.existsSync(p); } catch { return false; }
+    }) || candidateIconPaths[0];
+    console.log('Chemin icône sélectionné:', iconPath, ' (AppImage:', !!isAppImage, ')');
 
     // Créer la fenêtre du navigateur
     mainWindow = new BrowserWindow({
@@ -301,6 +312,12 @@ app.on('window-all-closed', () => {
     }
 });
 
+// S'assurer d'arrêter proprement les processus avant de quitter (mises à jour incluses)
+app.on('before-quit', () => {
+    try {
+        stopPhpServer();
+    } catch {}
+});
 app.on('activate', () => {
     // Sur macOS, il est courant de recréer une fenêtre dans l'app quand l'icône
     // du dock est cliquée et qu'il n'y a pas d'autres fenêtres d'ouvertes

@@ -36,6 +36,7 @@ linux:
     - "app/**/*"
     - "ghostscript/**/*"
     - "caddy/**/*"
+    - "icons/**/*"
     - "Caddyfile"
     - "php-fpm.conf"
     - "php-install-guide.html"
