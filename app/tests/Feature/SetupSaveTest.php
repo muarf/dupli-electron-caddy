@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../../models/admin/MachineManager.php';
 
-function run_setup_with_payload(string $dbPath, array $post): int
+function run_setup_and_get_db_used(string $dbPath, array $post): array
 {
     $runner = realpath(__DIR__ . '/../helpers/run_setup_action.php');
     $payload = [
@@ -15,7 +15,20 @@ function run_setup_with_payload(string $dbPath, array $post): int
     $output = [];
     $exitCode = 0;
     exec($cmd, $output, $exitCode);
-    return $exitCode;
+    $dbUsed = null;
+    $status = null;
+    // Parser le JSON final
+    $joined = implode("\n", $output);
+    $lines = explode("\n", trim($joined));
+    foreach (array_reverse($lines) as $line) {
+        $decoded = json_decode($line, true);
+        if (is_array($decoded) && isset($decoded['db_used'])) {
+            $dbUsed = $decoded['db_used'];
+            $status = $decoded['status'] ?? null;
+            break;
+        }
+    }
+    return [$exitCode, $dbUsed, $status];
 }
 
 beforeEach(function () {
@@ -24,14 +37,28 @@ beforeEach(function () {
     if (file_exists($this->dbPath)) {
         unlink($this->dbPath);
     }
+    // Supprimer également un éventuel duplinew.sqlite dans le même dossier temp
+    $dir = dirname($this->dbPath);
+    $dupliNew = $dir . DIRECTORY_SEPARATOR . 'duplinew.sqlite';
+    if (file_exists($dupliNew)) {
+        unlink($dupliNew);
+    }
 });
 
 afterEach(function () {
     if (isset($this->pdo)) {
         $this->pdo = null;
     }
-    if (isset($this->dbPath) && file_exists($this->dbPath)) {
-        unlink($this->dbPath);
+    if (isset($this->dbPath)) {
+        if (file_exists($this->dbPath)) {
+            unlink($this->dbPath);
+        }
+        // Nettoyer duplinew.sqlite généré par le setup dans ce répertoire
+        $dir = dirname($this->dbPath);
+        $dupliNew = $dir . DIRECTORY_SEPARATOR . 'duplinew.sqlite';
+        if (file_exists($dupliNew)) {
+            unlink($dupliNew);
+        }
     }
 });
 
@@ -56,11 +83,14 @@ it('crée la base et insère les machines lors du setup', function () {
         'prix_papier_A3' => 1.0,
     ];
 
-    $code = run_setup_with_payload($this->dbPath, $post);
+    [$code, $dbFile, $status] = run_setup_and_get_db_used($this->dbPath, $post);
     expect($code)->toBe(0);
-    expect(file_exists($this->dbPath))->toBeTrue();
+    expect($status)->toBe('setup_success');
+    expect($dbFile)->not->toBeNull();
+    expect(file_exists($dbFile))->toBeTrue();
 
-    $pdo = new PDO('sqlite:' . $this->dbPath);
+    // Ouvrir la base retournée par le runner
+    $pdo = new PDO('sqlite:' . $dbFile);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // Les machines devraient être présentes
@@ -95,14 +125,17 @@ it('insère le mot de passe admin lors du setup (test de comportement attendu)',
         'prix_papier_A3' => 1.0,
     ];
 
-    $code = run_setup_with_payload($this->dbPath, $post);
+    [$code, $dbFile, $status] = run_setup_and_get_db_used($this->dbPath, $post);
     expect($code)->toBe(0);
+    expect($status)->toBe('setup_success');
+    expect($dbFile)->not->toBeNull();
+    expect(file_exists($dbFile))->toBeTrue();
 
-    $pdo = new PDO('sqlite:' . $this->dbPath);
+    // Ouvrir la base retournée par le runner
+    $pdo = new PDO('sqlite:' . $dbFile);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // Comportement attendu: une entrée active doit exister
-    // NOTE: Ce test échouera actuellement à cause d'incompatibilités SQL dans setup_save (diagnostic).
     $hasTable = (int)$pdo->query("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='admin_passwords'")->fetchColumn();
     expect($hasTable)->toBe(1);
     $count = (int)$pdo->query("SELECT COUNT(*) FROM admin_passwords WHERE is_active = 1")->fetchColumn();
