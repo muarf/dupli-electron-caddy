@@ -182,8 +182,16 @@ function Action($conf = null){
                         error_log("[SETUP] Insertion prix papier: A3={$prix_A3}, A4={$prix_A4}");
                         try {
                             $db = pdo_connect();
-                            $query = $db->prepare('INSERT INTO papier (prix) VALUES (?) ON DUPLICATE KEY UPDATE prix = VALUES(prix)');
-                            $query->execute(array($prix_A4));
+                            $driver = $db->getAttribute(PDO::ATTR_DRIVER_NAME);
+                            if ($driver === 'sqlite') {
+                                // UPSERT compatible SQLite sur la clé primaire id=1
+                                $query = $db->prepare('INSERT INTO papier (id, prix) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET prix=excluded.prix');
+                                $query->execute([$prix_A4]);
+                            } else {
+                                // MySQL
+                                $query = $db->prepare('INSERT INTO papier (id, prix) VALUES (1, ?) ON DUPLICATE KEY UPDATE prix = VALUES(prix)');
+                                $query->execute([$prix_A4]);
+                            }
                             error_log("[SETUP] Insertion prix papier OK");
                         } catch (Throwable $t) {
                             error_log("[SETUP] Insertion prix papier EXCEPTION: " . $t->getMessage());
@@ -244,8 +252,13 @@ function configure_prices($db) {
         
         error_log("DEBUG: Tentative INSERT/UPDATE dans table papier");
         // Insérer/MAJ prix papier
-        $query = $db->prepare('INSERT INTO papier (prix) VALUES (?) ON DUPLICATE KEY UPDATE prix = VALUES(prix)');
-        $query->execute(array($prix_A4)); // On stocke le prix A4, A3 sera calculé
+        if ($db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+            $query = $db->prepare('INSERT INTO papier (id, prix) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET prix=excluded.prix');
+            $query->execute([$prix_A4]); // On stocke le prix A4, A3 sera calculé
+        } else {
+            $query = $db->prepare('INSERT INTO papier (id, prix) VALUES (1, ?) ON DUPLICATE KEY UPDATE prix = VALUES(prix)');
+            $query->execute([$prix_A4]); // On stocke le prix A4, A3 sera calculé
+        }
     }
     
     // Prix des consommables A3
