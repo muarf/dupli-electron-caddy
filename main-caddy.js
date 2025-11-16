@@ -1569,6 +1569,25 @@ function setupAutoUpdater() {
     autoUpdater.on('update-available', (info) => {
         console.log('Mise à jour disponible:', info.version);
         
+        // Vérifier si on est en AppImage et si la mise à jour pointe vers un .deb
+        const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+        if (isAppImage) {
+            // Vérifier l'URL ou le chemin du fichier de mise à jour
+            const updateUrl = info.url || info.path || '';
+            const isDebFile = updateUrl.includes('.deb') || updateUrl.endsWith('.deb');
+            
+            if (isDebFile) {
+                console.log('Conflit détecté : AppImage trouve un .deb dans les métadonnées');
+                const userFriendlyError = {
+                    message: 'Mise à jour non compatible',
+                    detail: 'Les métadonnées pointent vers un fichier .deb au lieu d\'un AppImage.\n\nVeuillez télécharger manuellement la nouvelle version AppImage depuis GitHub :\nhttps://github.com/muarf/dupli-electron-caddy/releases\n\nOu utilisez la version .deb pour bénéficier des mises à jour automatiques.',
+                    version: info.version
+                };
+                safeSendToWindow('update-error', userFriendlyError);
+                return; // Ne pas envoyer update-available
+            }
+        }
+        
         // Envoyer une notification à l'interface
         safeSendToWindow('update-available', info);
     });
@@ -1787,6 +1806,23 @@ ipcMain.handle('check-for-updates', async () => {
 // Télécharger une mise à jour
 ipcMain.handle('download-update', async () => {
     try {
+        const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+        if (isAppImage) {
+            // Vérifier d'abord quelle mise à jour est disponible
+            const updateInfo = await autoUpdater.checkForUpdates();
+            if (updateInfo && updateInfo.updateInfo) {
+                const updateUrl = updateInfo.updateInfo.url || updateInfo.updateInfo.path || '';
+                const isDebFile = updateUrl.includes('.deb') || updateUrl.endsWith('.deb');
+                
+                if (isDebFile) {
+                    return { 
+                        success: false, 
+                        error: 'Mise à jour non compatible',
+                        detail: 'Les métadonnées pointent vers un fichier .deb au lieu d\'un AppImage.\n\nVeuillez télécharger manuellement la nouvelle version AppImage depuis GitHub :\nhttps://github.com/muarf/dupli-electron-caddy/releases'
+                    };
+                }
+            }
+        }
         await autoUpdater.downloadUpdate();
         return { success: true };
     } catch (error) {
