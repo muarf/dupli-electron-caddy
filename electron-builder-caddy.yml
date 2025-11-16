@@ -69,8 +69,9 @@ deb:
     - libasound2
     - libgbm1
     - libxshmfence1
+  # Définir explicitement productName pour éviter l'erreur de macro
+  productName: Duplicator
   # Script de post-installation pour installer les icônes
-  # Utiliser un chemin relatif et s'assurer que productName est défini
   afterInstall: build/deb/postinst
 mac:
   target:
