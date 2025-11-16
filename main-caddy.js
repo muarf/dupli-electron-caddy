@@ -1336,6 +1336,23 @@ function createWindow() {
     // Nettoyer les fichiers temporaires au démarrage
     cleanupTmpFiles();
     
+    // Résoudre de manière robuste le chemin de l'icône (Linux a besoin d'une icône explicite)
+    const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const candidateIconPaths = [
+        // Icône décompressée lors du build
+        path.join(process.resourcesPath, 'app.asar.unpacked', 'icons', 'icon.png'),
+        // Icône à la racine des resources (via extraResources)
+        path.join(process.resourcesPath, 'icons', 'icon.png'),
+        // Icône dans l'archive asar (fallback)
+        path.join(process.resourcesPath, 'app.asar', 'icons', 'icon.png'),
+        // Icône en développement
+        path.join(__dirname, 'icons', 'icon.png'),
+    ];
+    const iconPath = candidateIconPaths.find(p => {
+        try { return fs.existsSync(p); } catch { return false; }
+    }) || candidateIconPaths[0];
+    console.log('Chemin icône sélectionné:', iconPath, ' (AppImage:', !!isAppImage, ')');
+    
     // Obtenir les dimensions de l'écran principal
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width, height } = primaryDisplay.workAreaSize;
@@ -1348,6 +1365,7 @@ function createWindow() {
         y: 0,
         minWidth: 800,
         minHeight: 600,
+        icon: iconPath,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,

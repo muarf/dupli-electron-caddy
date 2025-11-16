@@ -19,6 +19,10 @@ files:
   - ghostscript/**/*
   - caddy/**/*
   - utils/**/*
+
+extraResources:
+  - from: icons/icon.png
+    to: icons/icon.png
   # PHP sera inclus spécifiquement par plateforme (Windows/macOS oui, Linux non)
 # asarUnpack configuré spécifiquement par plateforme pour éviter les erreurs de chemins longs
 # Plus besoin d'exclure les liens symboliques car ils ont été supprimés
