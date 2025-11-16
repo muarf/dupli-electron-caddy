@@ -14,7 +14,7 @@ if [ ! -d "$ICON_DIR" ]; then
     # Essayer un autre chemin possible
     ICON_DIR="$APP_DIR/resources/icons"
     if [ ! -d "$ICON_DIR" ]; then
-        # Essayer avec le nom de l'appId
+        # Essayer un autre chemin d'installation possible
         APP_DIR="/opt/com.dupli.app"
         ICON_DIR="$APP_DIR/resources/app.asar.unpacked/icons"
     fi
