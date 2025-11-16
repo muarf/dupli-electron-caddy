@@ -11,12 +11,17 @@ class BackupManager {
     public function __construct($conf) {
         $this->conf = $conf;
         
-        // Utiliser le répertoire public/sauvegarde pour l'accessibilité web
-        $this->backup_dir = __DIR__ . '/../../public/sauvegarde' . DIRECTORY_SEPARATOR;
+        // Résoudre un répertoire de sauvegarde portable et configurable
+        $this->backup_dir = rtrim($this->resolveBackupDir($conf), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
         
         // Créer le dossier de sauvegarde s'il n'existe pas
         if (!is_dir($this->backup_dir)) {
             mkdir($this->backup_dir, 0755, true);
+        }
+        
+        // Optionnel: journaliser si non inscriptible
+        if (!is_writable($this->backup_dir)) {
+             error_log('Backup dir not writable: ' . $this->backup_dir);
         }
     }
     
@@ -209,6 +214,52 @@ class BackupManager {
         }
         
         return round($size, 1) . ' ' . $units[$i];
+    }
+
+    private function resolveBackupDir(array $conf) {
+        // 1) Priorité config explicite
+        if (!empty($conf['backup_dir'])) {
+            return $this->normalizePath($conf['backup_dir']);
+        }
+        
+        // 2) Variable d'environnement
+        $envDir = getenv('DUPLI_BACKUP_DIR');
+        if (!empty($envDir)) {
+            return $this->normalizePath($envDir);
+        }
+        
+        // 3) Défaut selon OS
+        if (stripos(PHP_OS_FAMILY, 'Windows') !== false) {
+            $appData = getenv('APPDATA');
+            if (!empty($appData)) {
+                return $this->normalizePath($appData . DIRECTORY_SEPARATOR . 'dupli-electron' . DIRECTORY_SEPARATOR . 'sauvegarde');
+            }
+            $userProfile = getenv('USERPROFILE');
+            if (!empty($userProfile)) {
+                return $this->normalizePath($userProfile . DIRECTORY_SEPARATOR . 'dupli-electron' . DIRECTORY_SEPARATOR . 'sauvegarde');
+            }
+            // Dernier recours Windows: utiliser un dossier local au projet
+            return $this->normalizePath(__DIR__ . '/../../sauvegarde');
+        }
+        
+        // Linux/Unix: utiliser XDG_CONFIG_HOME ou ~/.config
+        $xdg = getenv('XDG_CONFIG_HOME');
+        if (!empty($xdg)) {
+            return $this->normalizePath($xdg . DIRECTORY_SEPARATOR . 'dupli-electron' . DIRECTORY_SEPARATOR . 'sauvegarde');
+        }
+        $home = getenv('HOME');
+        if (!empty($home)) {
+            return $this->normalizePath($home . DIRECTORY_SEPARATOR . '.config' . DIRECTORY_SEPARATOR . 'dupli-electron' . DIRECTORY_SEPARATOR . 'sauvegarde');
+        }
+        
+        // Dernier recours Unix: dossier local au projet
+        return $this->normalizePath(__DIR__ . '/../../sauvegarde');
+    }
+
+    private function normalizePath($path) {
+        $path = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $path);
+        $path = trim($path);
+        return rtrim($path, DIRECTORY_SEPARATOR);
     }
 }
 ?>
