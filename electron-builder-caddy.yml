@@ -40,8 +40,12 @@ linux:
     entry:
       Name: Duplicator
       Comment: Application de duplication de documents
-      StartupWMClass: Duplicator
+      StartupWMClass: duplicator
       Icon: duplicator
+      Exec: duplicator
+      Terminal: false
+      Type: Application
+      Categories: Office;
   maintainer: "Duplicator <support@duplicator.app>"
   # Configuration spécifique Linux - utilise PHP système, pas de binaires embarqués
   # Le dossier php/ est vidé avant le build dans le workflow (économie d'espace)
