@@ -179,7 +179,7 @@ jobs:
           echo "🛠️ Build AppImage..."
           npm run build:caddy -- --linux --publish=never
           echo "🛠️ Build deb..."
-          npx --yes electron-builder -l deb --publish=never
+          npx --yes electron-builder --config electron-builder-caddy.yml -l deb --publish=never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REF: refs/tags/${{ needs.get-tag.outputs.tag }}
