@@ -1273,6 +1273,7 @@ function createMenu() {
             submenu: [
                 {
                     label: 'À propos',
+                    accelerator: 'F1',
                     click: () => {
                         dialog.showMessageBox(mainWindow, {
                             type: 'info',
@@ -1291,6 +1292,7 @@ function createMenu() {
                 },
                 {
                     label: 'Rechercher des mises à jour',
+                    accelerator: 'F3',
                     click: () => {
                         autoUpdater.checkForUpdatesAndNotify();
                         dialog.showMessageBox(mainWindow, {
@@ -1576,7 +1578,21 @@ function setupAutoUpdater() {
             err.message.includes('404')
         );
         
-        if (!isNetworkError) {
+        // Gestion spécifique de l'erreur pkexec sur Linux (code 127 = commande non trouvée)
+        const isPkexecError = err.message && (
+            err.message.includes('pkexec') ||
+            err.message.includes('exited with code 127')
+        );
+        
+        if (isPkexecError && process.platform === 'linux') {
+            // Sur Linux, si pkexec échoue, suggérer une installation manuelle
+            console.log('Erreur pkexec détectée, installation automatique non disponible');
+            const userFriendlyError = {
+                message: 'Installation automatique non disponible',
+                detail: 'Veuillez installer manuellement le package .deb téléchargé avec :\nsudo dpkg -i /path/to/Duplicator-*.deb\n\nOu téléchargez la nouvelle version depuis GitHub.'
+            };
+            safeSendToWindow('update-error', userFriendlyError);
+        } else if (!isNetworkError) {
             // Afficher l'erreur uniquement si ce n'est pas un problème de réseau
             safeSendToWindow('update-error', err);
         } else {
