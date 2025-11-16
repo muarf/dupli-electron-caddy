@@ -1388,13 +1388,9 @@ function createWindow() {
         show: false
     });
     
-    // Définir explicitement le WMClass pour Linux (correspond au StartupWMClass dans .desktop)
+    // Définir explicitement le titre pour Linux (aide à la correspondance WMClass)
     if (process.platform === 'linux') {
         mainWindow.setTitle('Duplicator');
-        // Forcer le WMClass via le processus
-        if (mainWindow.setSkipTaskbar) {
-            // Ne pas utiliser setSkipTaskbar, mais définir le WMClass
-        }
     }
     
     // Maximiser la fenêtre pour prendre tout l'écran disponible
