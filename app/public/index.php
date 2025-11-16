@@ -181,6 +181,97 @@ if ($page === 'upload_aide_pdf') {
     }
 }
 
+if ($page === 'view_aide_pdf') {
+    // Servir les PDFs d'aide depuis le répertoire résolu
+    // Inclure les fonctions nécessaires sans vérification d'authentification
+    require_once __DIR__ . '/../controler/conf.php';
+    require_once __DIR__ . '/../controler/func.php';
+    
+    // Définir les fonctions de résolution de répertoire (copie depuis upload_aide_pdf.php)
+    if (!function_exists('resolveAidePdfDir')) {
+        function normalizePath($path) {
+            $path = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $path);
+            $path = trim($path);
+            return rtrim($path, DIRECTORY_SEPARATOR);
+        }
+        
+        function resolveAidePdfDir() {
+            // Priorité 1 : Variable d'environnement
+            $envDir = getenv('DUPLI_AIDE_PDF_DIR');
+            if (!empty($envDir)) {
+                return normalizePath($envDir);
+            }
+            
+            // Priorité 2 : Variable d'environnement Electron (comme pour la DB)
+            $electronDbPath = getenv('DUPLICATOR_DB_PATH');
+            if (!empty($electronDbPath)) {
+                $dbDir = dirname($electronDbPath);
+                return normalizePath($dbDir . DIRECTORY_SEPARATOR . 'aide_pdfs');
+            }
+            
+            // Priorité 3 : Détection AppImage
+            $current_dir = getcwd();
+            if (strpos($current_dir, '.mount') !== false || strpos($current_dir, 'AppDir') !== false) {
+                $home_dir = $_SERVER['HOME'] ?? getenv('HOME') ?? '/tmp';
+                return normalizePath($home_dir . '/.config/Duplicator/aide_pdfs');
+            }
+            
+            // Priorité 4 : Linux/Unix avec XDG_CONFIG_HOME
+            if (stripos(PHP_OS_FAMILY, 'Windows') === false) {
+                $xdg = getenv('XDG_CONFIG_HOME');
+                if (!empty($xdg)) {
+                    return normalizePath($xdg . DIRECTORY_SEPARATOR . 'Duplicator' . DIRECTORY_SEPARATOR . 'aide_pdfs');
+                }
+                $home = getenv('HOME');
+                if (!empty($home) && is_dir($home)) {
+                    return normalizePath($home . DIRECTORY_SEPARATOR . '.config' . DIRECTORY_SEPARATOR . 'Duplicator' . DIRECTORY_SEPARATOR . 'aide_pdfs');
+                }
+                
+                // Pour les utilisateurs système (www-data, etc.) sur Linux, utiliser /tmp ou /var/tmp
+                $tmpDir = getenv('TMPDIR');
+                if (empty($tmpDir)) {
+                    $tmpDir = '/tmp';
+                }
+                if (is_dir($tmpDir) && is_writable($tmpDir)) {
+                    return normalizePath($tmpDir . DIRECTORY_SEPARATOR . 'duplicator-aide-pdfs');
+                }
+            }
+            
+            // Dernier recours : répertoire public/uploads/aide_pdfs (pour développement/web)
+            return normalizePath(__DIR__ . '/../public/uploads/aide_pdfs');
+        }
+    }
+    
+    $filename = $_GET['file'] ?? '';
+    if (empty($filename)) {
+        http_response_code(400);
+        die('Nom de fichier manquant');
+    }
+    
+    // Sécuriser le nom de fichier
+    $filename = basename($filename);
+    $filePath = resolveAidePdfDir() . DIRECTORY_SEPARATOR . $filename;
+    
+    if (!file_exists($filePath) || !is_file($filePath)) {
+        http_response_code(404);
+        die('Fichier non trouvé');
+    }
+    
+    // Vérifier que c'est bien un PDF
+    $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+    if ($extension !== 'pdf') {
+        http_response_code(403);
+        die('Type de fichier non autorisé');
+    }
+    
+    // Servir le fichier PDF
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: inline; filename="' . basename($filePath) . '"');
+    header('Content-Length: ' . filesize($filePath));
+    readfile($filePath);
+    exit;
+}
+
 if ($page === 'ajax_delete_machine') {
     // Vérifier l'authentification admin
     if (!isset($_SESSION['user'])) {
@@ -247,7 +338,7 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','view_pdf','get-machine-template','upload_aide_pdf');
+$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','view_pdf','get-machine-template','upload_aide_pdf','view_aide_pdf');
 
 error_log("[PASSWORD_CHECK] ===== DEBUT VERIFICATION =====");
 error_log("[PASSWORD_CHECK] Page demandée (avant vérification): " . $page);

@@ -4,6 +4,10 @@
  * Ce fichier gère l'upload, la suppression et la récupération des PDFs d'aide
  */
 
+// Inclure la configuration AVANT les fonctions pour qu'elles soient disponibles
+require_once __DIR__ . '/../controler/conf.php';
+require_once __DIR__ . '/../controler/func.php';
+
 // La session est déjà démarrée par public/index.php
 // Ne pas redémarrer la session si elle est déjà active
 if (session_status() === PHP_SESSION_NONE) {
@@ -23,23 +27,19 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Initialiser le système de traduction
+require_once __DIR__ . '/../controler/functions/i18n.php';
+I18nManager::getInstance();
 
 // Vérifier l'authentification admin
 // Accepter soit $_SESSION['admin'] === true soit $_SESSION['user'] === "1" (admin)
 if ((!isset($_SESSION['admin']) || $_SESSION['admin'] !== true) && 
     (!isset($_SESSION['user']) || $_SESSION['user'] !== "1")) {
     http_response_code(401);
+    header('Content-Type: application/json; charset=utf-8');
     echo json_encode(['success' => false, 'error' => 'Non autorisé', 'debug' => $_SESSION]);
     exit;
 }
-
-// Inclure la configuration
-require_once __DIR__ . '/../controler/conf.php';
-require_once __DIR__ . '/../controler/func.php';
-
-// Initialiser le système de traduction
-require_once __DIR__ . '/../controler/functions/i18n.php';
-I18nManager::getInstance();
 
 // Définir les headers pour JSON
 header('Content-Type: application/json; charset=utf-8');
@@ -68,9 +68,64 @@ function sanitizeFileName($filename) {
     return $name;
 }
 
+// Fonction pour résoudre le répertoire de stockage des PDFs d'aide
+function resolveAidePdfDir() {
+    // Priorité 1 : Variable d'environnement
+    $envDir = getenv('DUPLI_AIDE_PDF_DIR');
+    if (!empty($envDir)) {
+        return normalizePath($envDir);
+    }
+    
+    // Priorité 2 : Variable d'environnement Electron (comme pour la DB)
+    $electronDbPath = getenv('DUPLICATOR_DB_PATH');
+    if (!empty($electronDbPath)) {
+        $dbDir = dirname($electronDbPath);
+        return normalizePath($dbDir . DIRECTORY_SEPARATOR . 'aide_pdfs');
+    }
+    
+    // Priorité 3 : Détection AppImage
+    $current_dir = getcwd();
+    if (strpos($current_dir, '.mount') !== false || strpos($current_dir, 'AppDir') !== false) {
+        // AppImage : utiliser le répertoire home de l'utilisateur
+        $home_dir = $_SERVER['HOME'] ?? getenv('HOME') ?? '/tmp';
+        return normalizePath($home_dir . '/.config/Duplicator/aide_pdfs');
+    }
+    
+    // Priorité 4 : Linux/Unix avec XDG_CONFIG_HOME
+    if (stripos(PHP_OS_FAMILY, 'Windows') === false) {
+        $xdg = getenv('XDG_CONFIG_HOME');
+        if (!empty($xdg)) {
+            return normalizePath($xdg . DIRECTORY_SEPARATOR . 'Duplicator' . DIRECTORY_SEPARATOR . 'aide_pdfs');
+        }
+        $home = getenv('HOME');
+        if (!empty($home) && is_dir($home)) {
+            return normalizePath($home . DIRECTORY_SEPARATOR . '.config' . DIRECTORY_SEPARATOR . 'Duplicator' . DIRECTORY_SEPARATOR . 'aide_pdfs');
+        }
+        
+        // Pour les utilisateurs système (www-data, etc.) sur Linux, utiliser /tmp ou /var/tmp
+        $tmpDir = getenv('TMPDIR');
+        if (empty($tmpDir)) {
+            $tmpDir = '/tmp';
+        }
+        if (is_dir($tmpDir) && is_writable($tmpDir)) {
+            return normalizePath($tmpDir . DIRECTORY_SEPARATOR . 'duplicator-aide-pdfs');
+        }
+    }
+    
+    // Dernier recours : répertoire public/uploads/aide_pdfs (pour développement/web)
+    return normalizePath(__DIR__ . '/../public/uploads/aide_pdfs');
+}
+
+// Fonction pour normaliser un chemin
+function normalizePath($path) {
+    $path = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $path);
+    $path = trim($path);
+    return rtrim($path, DIRECTORY_SEPARATOR);
+}
+
 // Fonction pour récupérer la liste des PDFs
 function getUploadedPdfs() {
-    $pdfDir = __DIR__ . '/../public/uploads/aide_pdfs/';
+    $pdfDir = resolveAidePdfDir() . DIRECTORY_SEPARATOR;
     $pdfs = [];
     
     if (is_dir($pdfDir)) {
@@ -83,7 +138,7 @@ function getUploadedPdfs() {
                     'name' => sanitizeFileName($file),
                     'size' => formatFileSize(filesize($filePath)),
                     'upload_date' => date('d/m/Y H:i', filemtime($filePath)),
-                    'url' => 'uploads/aide_pdfs/' . $file
+                    'url' => '?view_aide_pdf&file=' . urlencode($file)
                 ];
             }
         }
@@ -118,10 +173,7 @@ try {
                 throw new Exception('Le fichier doit être un PDF.');
             }
             
-            // Vérifier la taille (max 20MB)
-            if ($file['size'] > 20 * 1024 * 1024) {
-                throw new Exception('Le fichier est trop volumineux (maximum 20MB).');
-            }
+            // Pas de limite de taille pour les PDFs d'aide
             
             // Créer un nom de fichier unique
             $originalName = pathinfo($file['name'], PATHINFO_FILENAME);
@@ -129,8 +181,8 @@ try {
             $timestamp = date('Y-m-d_H-i-s');
             $uniqueFilename = $sanitizedName . '_' . $timestamp . '.pdf';
             
-            // Chemin de destination
-            $uploadDir = __DIR__ . '/../public/uploads/aide_pdfs/';
+            // Chemin de destination (utiliser le répertoire résolu)
+            $uploadDir = resolveAidePdfDir() . DIRECTORY_SEPARATOR;
             $uploadPath = $uploadDir . $uniqueFilename;
             
             // Créer le répertoire s'il n'existe pas
@@ -150,7 +202,7 @@ try {
                 'success' => true,
                 'message' => _e('admin_aide.upload_success'),
                 'filename' => $uniqueFilename,
-                'url' => 'uploads/aide_pdfs/' . $uniqueFilename
+                'url' => '?view_aide_pdf&file=' . urlencode($uniqueFilename)
             ]);
             break;
             
@@ -172,7 +224,7 @@ try {
             
             // Sécuriser le nom de fichier
             $filename = basename($filename);
-            $filePath = __DIR__ . '/../public/uploads/aide_pdfs/' . $filename;
+            $filePath = resolveAidePdfDir() . DIRECTORY_SEPARATOR . $filename;
             
             if (!file_exists($filePath)) {
                 throw new Exception('Fichier non trouvé.');
