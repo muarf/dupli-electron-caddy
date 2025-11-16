@@ -1294,13 +1294,29 @@ function createMenu() {
                     label: 'Rechercher des mises à jour',
                     accelerator: 'F3',
                     click: () => {
-                        autoUpdater.checkForUpdatesAndNotify();
-                        dialog.showMessageBox(mainWindow, {
-                            type: 'info',
-                            title: 'Recherche de mises à jour',
-                            message: 'Recherche en cours...',
-                            detail: 'La recherche de mises à jour peut prendre quelques instants.'
-                        });
+                        const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+                        if (isAppImage) {
+                            dialog.showMessageBox(mainWindow, {
+                                type: 'info',
+                                title: 'Mises à jour AppImage',
+                                message: 'Mises à jour automatiques non disponibles',
+                                detail: 'Pour les versions AppImage, veuillez télécharger manuellement la nouvelle version depuis GitHub :\nhttps://github.com/muarf/dupli-electron-caddy/releases\n\nLes mises à jour automatiques fonctionnent uniquement avec la version .deb installée.',
+                                buttons: ['OK', 'Ouvrir GitHub'],
+                                defaultId: 0
+                            }).then(result => {
+                                if (result.response === 1) {
+                                    shell.openExternal('https://github.com/muarf/dupli-electron-caddy/releases');
+                                }
+                            });
+                        } else {
+                            autoUpdater.checkForUpdatesAndNotify();
+                            dialog.showMessageBox(mainWindow, {
+                                type: 'info',
+                                title: 'Recherche de mises à jour',
+                                message: 'Recherche en cours...',
+                                detail: 'La recherche de mises à jour peut prendre quelques instants.'
+                            });
+                        }
                     }
                 },
                 { type: 'separator' },
@@ -1527,6 +1543,17 @@ function setupAutoUpdater() {
     autoUpdater.autoDownload = false; // Ne pas télécharger automatiquement (demander d'abord)
     autoUpdater.autoInstallOnAppQuit = true; // Installer automatiquement au redémarrage
     
+    // Pour AppImage, forcer l'utilisation du provider AppImage
+    // car electron-updater peut confondre avec les fichiers .deb
+    const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    if (isAppImage) {
+        // Désactiver les mises à jour automatiques pour AppImage
+        // car il y a un conflit entre AppImage et .deb dans latest-linux.yml
+        // L'utilisateur devra télécharger manuellement la nouvelle AppImage
+        console.log('AppImage détectée - mises à jour automatiques désactivées (conflit avec .deb)');
+        return; // Ne pas configurer l'auto-updater pour AppImage
+    }
+    
     // Avant de quitter pour installer, arrêter proprement Caddy/PHP
     autoUpdater.on('before-quit-for-update', async () => {
         console.log('before-quit-for-update: arrêt des processus enfants...');
@@ -1615,30 +1642,35 @@ function setupAutoUpdater() {
     });
     
     // Vérifier les mises à jour au démarrage (après 10 secondes)
-    setTimeout(() => {
-        console.log('Lancement de la vérification des mises à jour...');
-        autoUpdater.checkForUpdates().catch(err => {
-            // Erreur silencieuse si pas de connexion
-            if (err.message && (err.message.includes('net::') || err.message.includes('ENOTFOUND'))) {
-                console.log('Pas de connexion internet, vérification des mises à jour ignorée');
-            } else {
-                console.error('Erreur vérification mise à jour:', err.message);
-            }
-        });
-    }, 10000);
-    
-    // Vérifier toutes les 4 heures
-    setInterval(() => {
-        console.log('Vérification périodique des mises à jour...');
-        autoUpdater.checkForUpdates().catch(err => {
-            // Erreur silencieuse si pas de connexion
-            if (err.message && (err.message.includes('net::') || err.message.includes('ENOTFOUND'))) {
-                console.log('Pas de connexion internet, vérification des mises à jour ignorée');
-            } else {
-                console.error('Erreur vérification mise à jour:', err.message);
-            }
-        });
-    }, 4 * 60 * 60 * 1000);
+    const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    if (!isAppImage) {
+        setTimeout(() => {
+            console.log('Lancement de la vérification des mises à jour...');
+            autoUpdater.checkForUpdates().catch(err => {
+                // Erreur silencieuse si pas de connexion
+                if (err.message && (err.message.includes('net::') || err.message.includes('ENOTFOUND'))) {
+                    console.log('Pas de connexion internet, vérification des mises à jour ignorée');
+                } else {
+                    console.error('Erreur vérification mise à jour:', err.message);
+                }
+            });
+        }, 10000);
+        
+        // Vérifier toutes les 4 heures
+        setInterval(() => {
+            console.log('Vérification périodique des mises à jour...');
+            autoUpdater.checkForUpdates().catch(err => {
+                // Erreur silencieuse si pas de connexion
+                if (err.message && (err.message.includes('net::') || err.message.includes('ENOTFOUND'))) {
+                    console.log('Pas de connexion internet, vérification des mises à jour ignorée');
+                } else {
+                    console.error('Erreur vérification mise à jour:', err.message);
+                }
+            });
+        }, 4 * 60 * 60 * 1000);
+    } else {
+        console.log('AppImage détectée - vérifications automatiques des mises à jour désactivées');
+    }
 }
 
 // Désactiver l'accélération GPU pour éviter les erreurs GLX
@@ -1747,6 +1779,17 @@ ipcMain.handle('restart-app', () => {
 // Vérifier les mises à jour
 ipcMain.handle('check-for-updates', async () => {
     try {
+        const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+        if (isAppImage) {
+            // Pour AppImage, les mises à jour automatiques ne fonctionnent pas
+            // car electron-updater confond avec les fichiers .deb
+            return { 
+                success: false, 
+                error: 'Mises à jour automatiques non disponibles pour AppImage',
+                detail: 'Veuillez télécharger manuellement la nouvelle version AppImage depuis GitHub : https://github.com/muarf/dupli-electron-caddy/releases',
+                isAppImage: true
+            };
+        }
         const result = await autoUpdater.checkForUpdates();
         return { success: true, updateInfo: result ? result.updateInfo : null };
     } catch (error) {
@@ -1758,6 +1801,16 @@ ipcMain.handle('check-for-updates', async () => {
 // Télécharger une mise à jour
 ipcMain.handle('download-update', async () => {
     try {
+        const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+        if (isAppImage) {
+            // Pour AppImage, les mises à jour automatiques ne fonctionnent pas
+            // car electron-updater confond avec les fichiers .deb
+            return { 
+                success: false, 
+                error: 'Mises à jour automatiques non disponibles pour AppImage',
+                detail: 'Veuillez télécharger manuellement la nouvelle version AppImage depuis GitHub : https://github.com/muarf/dupli-electron-caddy/releases'
+            };
+        }
         await autoUpdater.downloadUpdate();
         return { success: true };
     } catch (error) {
