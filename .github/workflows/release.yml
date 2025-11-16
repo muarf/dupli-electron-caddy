@@ -28,19 +28,57 @@ jobs:
       - name: Get latest tag
         id: get-tag
         run: |
+          # Toujours récupérer les tags pour être sûr d'avoir les derniers
+          git fetch --tags --force
+          
           if [ "${{ github.event_name }}" == "push" ]; then
             # Tag créé manuellement via push
             TAG="${{ github.ref_name }}"
+            
+            # Vérifier que le tag existe bien dans le repo
+            if ! git rev-parse "$TAG" >/dev/null 2>&1; then
+              echo "❌ ERREUR: Le tag $TAG n'existe pas dans le repository"
+              echo "Vérification des tags disponibles:"
+              git tag --list | tail -10
+              exit 1
+            fi
+            
             VERSION="${TAG#v}"
           else
             # Tag créé par workflow auto-tag
-            git fetch --tags
-            TAG=$(git describe --tags --abbrev=0)
+            # Attendre un peu pour que le tag soit disponible (workflow auto-tag vient de le créer)
+            sleep 2
+            
+            # Récupérer à nouveau les tags
+            git fetch --tags --force
+            
+            # Essayer de récupérer le dernier tag
+            TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+            
+            if [ -z "$TAG" ]; then
+              echo "❌ ERREUR: Aucun tag trouvé dans le repository"
+              echo "Vérification des tags disponibles:"
+              git tag --list || echo "Aucun tag disponible"
+              exit 1
+            fi
+            
+            # Vérifier que le tag existe bien
+            if ! git rev-parse "$TAG" >/dev/null 2>&1; then
+              echo "❌ ERREUR: Le tag $TAG n'existe pas dans le repository"
+              exit 1
+            fi
+            
             VERSION="${TAG#v}"
           fi
           
-          echo "Tag trouvé: $TAG"
-          echo "Version extraite: $VERSION"
+          # Valider le format de version (doit être X.Y.Z)
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "❌ ERREUR: Format de version invalide: $VERSION (attendu: X.Y.Z)"
+            exit 1
+          fi
+          
+          echo "✅ Tag trouvé: $TAG"
+          echo "✅ Version extraite: $VERSION"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
@@ -174,8 +212,12 @@ jobs:
           chmod +x caddy/caddy
           echo "✅ Caddy téléchargé"
       
-      - name: Build Linux AppImage
-        run: npm run build:caddy -- --linux --publish=never
+      - name: Build Linux (AppImage + deb)
+        run: |
+          echo "🛠️ Build AppImage..."
+          npm run build:caddy -- --linux --publish=never
+          echo "🛠️ Build deb..."
+          npx --yes electron-builder --config electron-builder-caddy.yml -l deb --publish=never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REF: refs/tags/${{ needs.get-tag.outputs.tag }}
@@ -186,6 +228,7 @@ jobs:
           tag_name: ${{ needs.get-tag.outputs.tag }}
           files: |
             dist/*.AppImage
+            dist/*.deb
             dist/latest-linux.yml
           fail_on_unmatched_files: false
         env:
@@ -194,9 +237,12 @@ jobs:
       - name: Verify build output
         run: |
           echo "Vérification des fichiers générés..."
-          ls -lh dist/
+          ls -lh dist/ || true
           if [ -f dist/*.AppImage ]; then
             echo "✅ AppImage créée"
+          fi
+          if ls dist/*.deb >/dev/null 2>&1; then
+            echo "✅ Paquet .deb créé"
           fi
           if [ -f dist/latest-linux.yml ]; then
             echo "✅ latest-linux.yml créé"
