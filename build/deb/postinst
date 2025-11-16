@@ -1,7 +1,7 @@
 #!/bin/bash
 # Script de post-installation pour installer les icônes
 
-# Déterminer le chemin d'installation (electron-builder utilise /opt/${productName})
+# Déterminer le chemin d'installation (electron-builder utilise /opt/Duplicator)
 APP_DIR="/opt/Duplicator"
 ICON_DIR="$APP_DIR/resources/app.asar.unpacked/icons"
 
