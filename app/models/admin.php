@@ -177,26 +177,15 @@ function Action($conf = null)
             if ($result && password_verify($_POST['password'], $result['password_hash'])) {
                 $_SESSION['user'] = "1";
                 $_SESSION['admin'] = true;
-                // Désactiver l'édition inline par défaut pour l'utilisateur "quinoa"
-                if ($_POST['password'] === 'quinoa') {
-                    $_SESSION['disable_inline_editing'] = true;
-                }
+                $_SESSION['disable_inline_editing'] = true;
+                
             } else {
                 $array['login_error'] = 'Mot de passe incorrect. Veuillez réessayer.';
             }
         } catch (Exception $e) {
-            // Fallback vers l'ancien système en cas d'erreur
-            $hash = '$2y$10$WVQNZ603f.6GpQSmITk1wOMztCPwzHXZyGKANw1q3dwVSuMVch7B.';
-            if (password_verify($_POST['password'], $hash)) {
-                $_SESSION['user'] = "1";
-                $_SESSION['admin'] = true;
-                // Désactiver l'édition inline par défaut pour l'utilisateur "quinoa"
-                if ($_POST['password'] === 'quinoa') {
-                    $_SESSION['disable_inline_editing'] = true;
-                }
-            } else {
-                $array['login_error'] = 'Mot de passe incorrect. Veuillez réessayer.';
-            }
+            // En cas d'erreur de base de données, afficher une erreur
+            $array['login_error'] = 'Erreur de connexion à la base de données. Veuillez réessayer.';
+            error_log('Erreur authentification admin: ' . $e->getMessage());
         }
     }
     
