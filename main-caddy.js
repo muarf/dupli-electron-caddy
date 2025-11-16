@@ -587,9 +587,10 @@ function getDatabasePath() {
 // Nettoyer les fichiers temporaires
 function cleanupTmpFiles() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isPackaged = app.isPackaged;
     let tmpPath;
     
-    if (isAppImage) {
+    if (isAppImage || isPackaged) {
         tmpPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public', 'tmp');
     } else {
         tmpPath = path.join(__dirname, 'app', 'public', 'tmp');
@@ -609,9 +610,11 @@ function cleanupTmpFiles() {
 // Obtenir le chemin de Caddy selon la plateforme
 function getCaddyPath() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isPackaged = app.isPackaged;
+    const isLinux = process.platform === 'linux';
     const isWindows = process.platform === 'win32';
     
-    if (isAppImage) {
+    if (isAppImage || (isLinux && isPackaged)) {
         // AppImage : utiliser le Caddy inclus
         const caddyPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'caddy', 'caddy');
         console.log('Chemin Caddy AppImage:', caddyPath);
@@ -649,10 +652,12 @@ function getCaddyPath() {
 // Obtenir le chemin de PHP-FPM selon la plateforme
 function getPhpFpmPath() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isPackaged = app.isPackaged;
+    const isLinux = process.platform === 'linux';
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
     
-    if (isAppImage || isMacOS) {
+    if (isAppImage || (isLinux && isPackaged) || isMacOS) {
         // AppImage ou macOS : vérifier si php-fpm existe, sinon retourner null
         const phpFpmPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php-fpm');
         return fs.existsSync(phpFpmPath) ? phpFpmPath : null;
@@ -727,10 +732,11 @@ function getPhpPath() {
 // Obtenir le chemin de la configuration
 function getConfigPath() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isPackaged = app.isPackaged;
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
     
-    if (isAppImage || isMacOS) {
+    if (isAppImage || isMacOS || isPackaged) {
         return process.resourcesPath;
     } else if (isWindows) {
         // Windows portable : utiliser resources/
@@ -806,10 +812,11 @@ function waitForServer(url, timeout = 5000, interval = 250) {
 // Obtenir le chemin du Caddyfile
 function getCaddyfilePath() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isPackaged = app.isPackaged;
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
     
-    if (isAppImage || isMacOS) {
+    if (isAppImage || isMacOS || isPackaged) {
         // Dans l'AppImage ou macOS, le Caddyfile est dans app.asar.unpacked/
         return path.join(process.resourcesPath, 'app.asar.unpacked', 'Caddyfile');
     } else if (isWindows) {
@@ -841,13 +848,15 @@ function getCaddyfilePath() {
 function startPhpFpm() {
     const phpPath = getPhpPath();
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isPackaged = app.isPackaged;
+    const isLinux = process.platform === 'linux';
     
     // Le chemin de l'app dépend si on est en AppImage, Windows, macOS ou développement
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
     
     let appPath;
-    if (isAppImage || isMacOS) {
+    if (isAppImage || isMacOS || (isLinux && isPackaged)) {
         appPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
@@ -903,10 +912,10 @@ function startPhpFpm() {
     // Préparer les arguments PHP selon la plateforme
     let phpArgs;
     
-    if (isAppImage) {
-        // AppImage Linux : utiliser PHP système sans php.ini personnalisé
+    if (isAppImage || (isLinux && isPackaged)) {
+        // AppImage ou Linux packagé (.deb) : utiliser PHP système sans php.ini personnalisé
         // Le PHP système a déjà ses extensions configurées
-        console.log('Configuration PHP pour AppImage (PHP système)');
+        console.log('Configuration PHP pour Linux packagé/AppImage (PHP système)');
         phpArgs = [
             '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
             '-t', appPath,
@@ -1094,6 +1103,8 @@ function startPhpServer() {
 async function startCaddy() {
     const caddyPath = getCaddyPath();
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isPackaged = app.isPackaged;
+    const isLinux = process.platform === 'linux';
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
     
@@ -1144,7 +1155,7 @@ async function startCaddy() {
     
     // Obtenir le bon appPath pour Caddy
     let appPath;
-    if (isAppImage || isMacOS) {
+    if (isAppImage || isMacOS || (isLinux && isPackaged)) {
         appPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
@@ -1652,9 +1663,10 @@ app.on('activate', () => {
 ipcMain.handle('open-file', async (event, filePath) => {
     try {
         const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+        const isPackaged = app.isPackaged;
         let fullPath;
         
-        if (isAppImage) {
+        if (isAppImage || isPackaged) {
             fullPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public', filePath);
         } else {
             fullPath = path.join(__dirname, 'app', 'public', filePath);
