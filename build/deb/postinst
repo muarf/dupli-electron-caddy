@@ -10,8 +10,8 @@ fi
 ICON_DIR="/opt/Duplicator/resources/app.asar.unpacked/icons"
 if [ -d "$ICON_DIR" ]; then
     for size in 16 32 48 64 128 256 512 1024; do
-        ICON_FILE="$ICON_DIR/${size}x${size}.png"
-        TARGET_DIR="/usr/share/icons/hicolor/${size}x${size}/apps"
+        ICON_FILE="$ICON_DIR/$${size}x$${size}.png"
+        TARGET_DIR="/usr/share/icons/hicolor/$${size}x$${size}/apps"
         if [ -f "$ICON_FILE" ]; then
             install -Dm644 "$ICON_FILE" "$TARGET_DIR/duplicator.png"
         fi
