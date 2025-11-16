@@ -19,15 +19,44 @@ jobs:
 
     - name: Get latest tag
       run: |
-        git fetch --tags
-        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.3.96")
+        git fetch --tags --force
+        
+        # Récupérer le dernier tag, avec fallback si aucun tag n'existe
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        
+        if [ -z "$LATEST_TAG" ]; then
+          echo "⚠️ Aucun tag existant trouvé, utilisation du tag initial v1.3.96"
+          LATEST_TAG="v1.3.96"
+        else
+          # Vérifier que le tag existe bien
+          if ! git rev-parse "$LATEST_TAG" >/dev/null 2>&1; then
+            echo "❌ ERREUR: Le tag $LATEST_TAG n'existe pas dans le repository"
+            exit 1
+          fi
+        fi
+        
         echo "Dernier tag trouvé: $LATEST_TAG"
         echo "LATEST_TAG=$LATEST_TAG" >> $GITHUB_ENV
 
     - name: Increment version
       run: |
         VERSION=${LATEST_TAG#v}
+        
+        # Valider le format de version
+        if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+          echo "❌ ERREUR: Format de version invalide: $VERSION (attendu: X.Y.Z)"
+          echo "Tag source: $LATEST_TAG"
+          exit 1
+        fi
+        
         IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+        
+        # Vérifier que les valeurs sont numériques
+        if ! [[ "$MAJOR" =~ ^[0-9]+$ ]] || ! [[ "$MINOR" =~ ^[0-9]+$ ]] || ! [[ "$PATCH" =~ ^[0-9]+$ ]]; then
+          echo "❌ ERREUR: Les composants de version ne sont pas numériques: MAJOR=$MAJOR MINOR=$MINOR PATCH=$PATCH"
+          exit 1
+        fi
+        
         NEW_PATCH=$((PATCH + 1))
         NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
         NEW_TAG="v$NEW_VERSION"
@@ -50,19 +79,43 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
 
-        echo "Création du tag ${{ env.NEW_TAG }} sur le commit actuel (sync)"
-        echo "Ce tag pointera vers le commit qui contient tous les fichiers app/"
-        git tag ${{ env.NEW_TAG }}
+        # Vérifier que le tag n'existe pas déjà
+        if git rev-parse "${{ env.NEW_TAG }}" >/dev/null 2>&1; then
+          echo "⚠️ Le tag ${{ env.NEW_TAG }} existe déjà, vérification..."
+          TAG_COMMIT=$(git rev-parse "${{ env.NEW_TAG }}")
+          HEAD_COMMIT=$(git rev-parse HEAD)
+          if [ "$TAG_COMMIT" = "$HEAD_COMMIT" ]; then
+            echo "✅ Le tag ${{ env.NEW_TAG }} pointe déjà vers le commit actuel"
+          else
+            echo "❌ ERREUR: Le tag ${{ env.NEW_TAG }} existe mais pointe vers un autre commit"
+            echo "Tag pointe vers: $TAG_COMMIT"
+            echo "HEAD pointe vers: $HEAD_COMMIT"
+            exit 1
+          fi
+        else
+          echo "Création du tag ${{ env.NEW_TAG }} sur le commit actuel (sync)"
+          echo "Ce tag pointera vers le commit qui contient tous les fichiers app/"
+          git tag ${{ env.NEW_TAG }}
+        fi
 
         echo "Push du tag AVANT le commit pour garantir que le tag pointe vers le bon commit"
-        git push origin ${{ env.NEW_TAG }}
+        if git push origin ${{ env.NEW_TAG }} 2>&1 | grep -q "already exists"; then
+          echo "⚠️ Le tag ${{ env.NEW_TAG }} existe déjà sur le remote, c'est OK"
+        else
+          echo "✅ Tag ${{ env.NEW_TAG }} poussé avec succès"
+        fi
 
         echo "Création du commit de version (après le tag)"
         git add package.json
-        git commit -m "chore: bump version to ${{ env.NEW_VERSION }}"
-
-        echo "Push du commit de version"
-        git push
+        
+        # Vérifier s'il y a des changements à commiter
+        if git diff --staged --quiet; then
+          echo "⚠️ Aucun changement dans package.json à commiter"
+        else
+          git commit -m "chore: bump version to ${{ env.NEW_VERSION }}"
+          echo "Push du commit de version"
+          git push
+        fi
 
         echo "✅ Tag ${{ env.NEW_TAG }} créé sur le commit sync (avec tous les fichiers)"
         echo "✅ Version incrémentée à ${{ env.NEW_VERSION }}"

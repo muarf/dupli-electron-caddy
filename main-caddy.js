@@ -587,9 +587,10 @@ function getDatabasePath() {
 // Nettoyer les fichiers temporaires
 function cleanupTmpFiles() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isPackaged = app.isPackaged;
     let tmpPath;
     
-    if (isAppImage) {
+    if (isAppImage || isPackaged) {
         tmpPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public', 'tmp');
     } else {
         tmpPath = path.join(__dirname, 'app', 'public', 'tmp');
@@ -609,9 +610,11 @@ function cleanupTmpFiles() {
 // Obtenir le chemin de Caddy selon la plateforme
 function getCaddyPath() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isPackaged = app.isPackaged;
+    const isLinux = process.platform === 'linux';
     const isWindows = process.platform === 'win32';
     
-    if (isAppImage) {
+    if (isAppImage || (isLinux && isPackaged)) {
         // AppImage : utiliser le Caddy inclus
         const caddyPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'caddy', 'caddy');
         console.log('Chemin Caddy AppImage:', caddyPath);
@@ -649,10 +652,12 @@ function getCaddyPath() {
 // Obtenir le chemin de PHP-FPM selon la plateforme
 function getPhpFpmPath() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isPackaged = app.isPackaged;
+    const isLinux = process.platform === 'linux';
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
     
-    if (isAppImage || isMacOS) {
+    if (isAppImage || (isLinux && isPackaged) || isMacOS) {
         // AppImage ou macOS : vérifier si php-fpm existe, sinon retourner null
         const phpFpmPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php-fpm');
         return fs.existsSync(phpFpmPath) ? phpFpmPath : null;
@@ -727,10 +732,11 @@ function getPhpPath() {
 // Obtenir le chemin de la configuration
 function getConfigPath() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isPackaged = app.isPackaged;
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
     
-    if (isAppImage || isMacOS) {
+    if (isAppImage || isMacOS || isPackaged) {
         return process.resourcesPath;
     } else if (isWindows) {
         // Windows portable : utiliser resources/
@@ -806,10 +812,11 @@ function waitForServer(url, timeout = 5000, interval = 250) {
 // Obtenir le chemin du Caddyfile
 function getCaddyfilePath() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isPackaged = app.isPackaged;
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
     
-    if (isAppImage || isMacOS) {
+    if (isAppImage || isMacOS || isPackaged) {
         // Dans l'AppImage ou macOS, le Caddyfile est dans app.asar.unpacked/
         return path.join(process.resourcesPath, 'app.asar.unpacked', 'Caddyfile');
     } else if (isWindows) {
@@ -841,13 +848,15 @@ function getCaddyfilePath() {
 function startPhpFpm() {
     const phpPath = getPhpPath();
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isPackaged = app.isPackaged;
+    const isLinux = process.platform === 'linux';
     
     // Le chemin de l'app dépend si on est en AppImage, Windows, macOS ou développement
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
     
     let appPath;
-    if (isAppImage || isMacOS) {
+    if (isAppImage || isMacOS || (isLinux && isPackaged)) {
         appPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
@@ -903,10 +912,10 @@ function startPhpFpm() {
     // Préparer les arguments PHP selon la plateforme
     let phpArgs;
     
-    if (isAppImage) {
-        // AppImage Linux : utiliser PHP système sans php.ini personnalisé
+    if (isAppImage || (isLinux && isPackaged)) {
+        // AppImage ou Linux packagé (.deb) : utiliser PHP système sans php.ini personnalisé
         // Le PHP système a déjà ses extensions configurées
-        console.log('Configuration PHP pour AppImage (PHP système)');
+        console.log('Configuration PHP pour Linux packagé/AppImage (PHP système)');
         phpArgs = [
             '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
             '-t', appPath,
@@ -1094,6 +1103,8 @@ function startPhpServer() {
 async function startCaddy() {
     const caddyPath = getCaddyPath();
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isPackaged = app.isPackaged;
+    const isLinux = process.platform === 'linux';
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
     
@@ -1144,7 +1155,7 @@ async function startCaddy() {
     
     // Obtenir le bon appPath pour Caddy
     let appPath;
-    if (isAppImage || isMacOS) {
+    if (isAppImage || isMacOS || (isLinux && isPackaged)) {
         appPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
@@ -1366,6 +1377,7 @@ function createWindow() {
         minWidth: 800,
         minHeight: 600,
         icon: iconPath,
+        title: 'Duplicator',
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
@@ -1375,6 +1387,13 @@ function createWindow() {
         },
         show: false
     });
+    
+    // Définir explicitement le titre pour Linux (aide à la correspondance WMClass)
+    if (process.platform === 'linux') {
+        mainWindow.setTitle('Duplicator');
+        // S'assurer que le WMClass est cohérent (déjà défini via app.setName() plus haut)
+        // Le WMClass par défaut d'Electron est basé sur app.getName()
+    }
     
     // Maximiser la fenêtre pour prendre tout l'écran disponible
     mainWindow.maximize();
@@ -1517,21 +1536,31 @@ function setupAutoUpdater() {
         console.log('Vérification des mises à jour...');
     });
     
+    // Fonction helper pour envoyer des messages à la fenêtre de manière sécurisée
+    const safeSendToWindow = (channel, data) => {
+        try {
+            if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+                mainWindow.webContents.send(channel, data);
+                return true;
+            }
+        } catch (e) {
+            // Fenêtre déjà détruite, ignorer silencieusement
+            console.log(`Fenêtre détruite, message ${channel} ignoré`);
+        }
+        return false;
+    };
+    
     autoUpdater.on('update-available', (info) => {
         console.log('Mise à jour disponible:', info.version);
         
         // Envoyer une notification à l'interface
-        if (mainWindow && mainWindow.webContents) {
-            mainWindow.webContents.send('update-available', info);
-        }
+        safeSendToWindow('update-available', info);
     });
     
     autoUpdater.on('update-not-available', (info) => {
         console.log('Aucune mise à jour disponible');
         
-        if (mainWindow && mainWindow.webContents) {
-            mainWindow.webContents.send('update-not-available', info);
-        }
+        safeSendToWindow('update-not-available', info);
     });
     
     autoUpdater.on('error', (err) => {
@@ -1547,9 +1576,9 @@ function setupAutoUpdater() {
             err.message.includes('404')
         );
         
-        if (!isNetworkError && mainWindow && mainWindow.webContents) {
+        if (!isNetworkError) {
             // Afficher l'erreur uniquement si ce n'est pas un problème de réseau
-            mainWindow.webContents.send('update-error', err);
+            safeSendToWindow('update-error', err);
         } else {
             console.log('Vérification des mises à jour ignorée (pas de connexion internet ou release non disponible)');
         }
@@ -1559,18 +1588,14 @@ function setupAutoUpdater() {
         console.log(`Téléchargement: ${progressObj.percent.toFixed(2)}%`);
         
         // Envoyer la progression à l'interface
-        if (mainWindow && mainWindow.webContents) {
-            mainWindow.webContents.send('download-progress', progressObj);
-        }
+        safeSendToWindow('download-progress', progressObj);
     });
     
     autoUpdater.on('update-downloaded', (info) => {
         console.log('Mise à jour téléchargée, installation au redémarrage');
         
         // Notifier l'utilisateur
-        if (mainWindow && mainWindow.webContents) {
-            mainWindow.webContents.send('update-downloaded', info);
-        }
+        safeSendToWindow('update-downloaded', info);
     });
     
     // Vérifier les mises à jour au démarrage (après 10 secondes)
@@ -1602,6 +1627,11 @@ function setupAutoUpdater() {
 
 // Désactiver l'accélération GPU pour éviter les erreurs GLX
 app.disableHardwareAcceleration();
+
+// Définir le nom de l'application pour Linux (WMClass) - doit correspondre au StartupWMClass dans .desktop
+if (process.platform === 'linux') {
+    app.setName('Duplicator');
+}
 
 // Cette méthode sera appelée quand Electron aura fini de s'initialiser
 app.whenReady().then(() => {
@@ -1652,9 +1682,10 @@ app.on('activate', () => {
 ipcMain.handle('open-file', async (event, filePath) => {
     try {
         const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+        const isPackaged = app.isPackaged;
         let fullPath;
         
-        if (isAppImage) {
+        if (isAppImage || isPackaged) {
             fullPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public', filePath);
         } else {
             fullPath = path.join(__dirname, 'app', 'public', filePath);

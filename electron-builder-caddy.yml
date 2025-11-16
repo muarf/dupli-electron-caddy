@@ -30,10 +30,22 @@ linux:
   target: 
     - target: AppImage
       arch: [x64]
-  icon: icons/icon.png
+    - target: deb
+      arch: [x64]
+  icon: icons
   category: Office
   executableName: Duplicator
   executableArgs: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"]
+  desktop:
+    entry:
+      Name: Duplicator
+      Comment: Application de duplication de documents
+      StartupWMClass: Duplicator
+      Icon: duplicator
+      Terminal: false
+      Type: Application
+      Categories: Office;
+  maintainer: "Duplicator <support@duplicator.app>"
   # Configuration spécifique Linux - utilise PHP système, pas de binaires embarqués
   # Le dossier php/ est vidé avant le build dans le workflow (économie d'espace)
   asarUnpack:
@@ -44,6 +56,21 @@ linux:
     - "Caddyfile"
     - "php-fpm.conf"
     - "php-install-guide.html"
+  artifactName: Duplicator-${version}-${arch}.${ext}
+
+deb:
+  synopsis: Outil de duplication, génération et impression de documents
+  priority: optional
+  depends:
+    - libc6
+    - libgtk-3-0
+    - libnss3
+    - libxss1
+    - libasound2
+    - libgbm1
+    - libxshmfence1
+  # Script de post-installation pour installer les icônes
+  afterInstall: build/deb/postinst
 mac:
   target:
     - target: dmg
