@@ -11,5 +11,17 @@
         "setasign/fpdi-tcpdf": "^2.3",
         "smalot/pdfparser": "^2.12",
         "setasign/fpdf": "^1.8"
+    },
+    "require-dev": {
+        "pestphp/pest": "^1.23",
+        "pestphp/pest-plugin": "^1.1"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "scripts": {
+        "test": "pest"
     }
 }

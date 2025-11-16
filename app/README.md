@@ -93,6 +93,12 @@ npm run test:e2e
 npm test
 ```
 
+#### Tests PHP (Pest)
+
+```bash
+composer test
+```
+
 ## 🏗️ Build
 
 ### Build pour toutes les plateformes
