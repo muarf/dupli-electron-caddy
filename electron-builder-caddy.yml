@@ -41,6 +41,7 @@ linux:
       Name: Duplicator
       Comment: Application de duplication de documents
       StartupWMClass: Duplicator
+  maintainer: "Duplicator <support@duplicator.app>"
   # Configuration spécifique Linux - utilise PHP système, pas de binaires embarqués
   # Le dossier php/ est vidé avant le build dans le workflow (économie d'espace)
   asarUnpack:
@@ -56,7 +57,6 @@ linux:
 deb:
   synopsis: Outil de duplication, génération et impression de documents
   priority: optional
-  maintainer: "Duplicator <support@duplicator.app>"
   depends:
     - libc6
     - libgtk-3-0
