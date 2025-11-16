@@ -1,21 +1,6 @@
 <?php
 require_once __DIR__ . '/../controler/functions/database.php';
 
-// Logging simple des erreurs du setup (fichier + STDERR en CLI)
-function setup_log_error(string $message): void {
-    // Utiliser la même stratégie cross-platform que public/index.php
-    $temp_dir = sys_get_temp_dir();
-    $logFile = $temp_dir . DIRECTORY_SEPARATOR . 'duplicator_errors.log';
-    $timestamp = date('c');
-    $line = "[$timestamp] SETUP: " . $message . PHP_EOL;
-    // Fichier
-    @error_log($line, 3, $logFile);
-    // STDERR en CLI
-    if (PHP_SAPI === 'cli') {
-        fwrite(STDERR, $line);
-    }
-}
-
 function Action($conf = null){
     // Initialiser la configuration si elle n'est pas fournie
     if ($conf === null) {
@@ -27,13 +12,13 @@ function Action($conf = null){
         $db = pdo_connect();
     } catch (PDOException $e) {
         // Base de données n'existe pas, la créer
-        setup_log_error("PDOException pdo_connect (première tentative): " . $e->getMessage());
+        error_log("[SETUP] PDOException pdo_connect (première tentative): " . $e->getMessage());
         require_once __DIR__ . '/admin/SQLiteDatabaseManager.php';
         $dbManager = new SQLiteDatabaseManager($conf);
         $result = $dbManager->createDatabase('duplinew', 'sqlite', '');
         
         if (isset($result['error'])) {
-            setup_log_error("Erreur création BDD via SQLiteDatabaseManager: " . $result['error']);
+            error_log("[SETUP] Erreur création BDD via SQLiteDatabaseManager: " . $result['error']);
             die('Erreur création BDD: ' . $result['error']);
         }
         
@@ -41,7 +26,7 @@ function Action($conf = null){
         try {
             $db = pdo_connect();
         } catch (PDOException $e2) {
-            setup_log_error("PDOException pdo_connect (après création): " . $e2->getMessage());
+            error_log("[SETUP] PDOException pdo_connect (après création): " . $e2->getMessage());
             die('Erreur connexion après création: ' . $e2->getMessage());
         }
     }
@@ -51,12 +36,19 @@ function Action($conf = null){
     
     if ($has_machines) {
         // Des machines existent déjà, rediriger vers l'accueil
+        error_log("[SETUP] Redirection: des machines existent déjà, setup ignoré");
         header('Location: ?accueil');
         exit;
     }
     
     // Traitement du formulaire POST
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        error_log("[SETUP] POST reçu: " . json_encode([
+            'has_admin_password' => isset($_POST['admin_password']),
+            'has_admin_password_confirm' => isset($_POST['admin_password_confirm']),
+            'has_machines' => isset($_POST['machines']),
+            'has_prix_papier_A3' => isset($_POST['prix_papier_A3']) && $_POST['prix_papier_A3'] !== '',
+        ], JSON_UNESCAPED_UNICODE));
         $errors = array();
         $success = true;
         
@@ -76,6 +68,12 @@ function Action($conf = null){
         if (empty($_POST['machines'])) {
             $errors[] = "Veuillez sélectionner au moins une machine.";
             $success = false;
+        }
+        
+        if (!$success) {
+            error_log("[SETUP] Validations échouées: " . json_encode($errors, JSON_UNESCAPED_UNICODE));
+        } else {
+            error_log("[SETUP] Validations OK");
         }
         
         // Si pas d'erreurs, créer la structure de la base de données puis enregistrer les machines
@@ -98,6 +96,7 @@ function Action($conf = null){
                 
                 $machines = $_POST['machines'];
                 $added_machines = 0;
+                error_log("[SETUP] Début ajout machines, nombre=" . count($machines));
                 
                 foreach ($machines as $machine_data) {
                     // Préparer les données pour MachineManager
@@ -165,9 +164,11 @@ function Action($conf = null){
                     $result = $machineManager->addMachine($data);
                     
                     if (isset($result['error'])) {
+                        error_log("[SETUP] addMachine ERREUR: " . $result['error']);
                         $errors[] = $result['error'];
                         $success = false;
                     } else {
+                        error_log("[SETUP] addMachine OK: " . ($data['machine_name'] ?? $data['machine_type']));
                         $added_machines++;
                     }
                 }
@@ -178,26 +179,42 @@ function Action($conf = null){
                         $prix_A3 = floatval($_POST['prix_papier_A3']);
                         $prix_A4 = $prix_A3 / 2;
                         
-                        $db = pdo_connect();
-                        $query = $db->prepare('INSERT INTO papier (prix) VALUES (?) ON DUPLICATE KEY UPDATE prix = VALUES(prix)');
-                        $query->execute(array($prix_A4));
+                        error_log("[SETUP] Insertion prix papier: A3={$prix_A3}, A4={$prix_A4}");
+                        try {
+                            $db = pdo_connect();
+                            $query = $db->prepare('INSERT INTO papier (prix) VALUES (?) ON DUPLICATE KEY UPDATE prix = VALUES(prix)');
+                            $query->execute(array($prix_A4));
+                            error_log("[SETUP] Insertion prix papier OK");
+                        } catch (Throwable $t) {
+                            error_log("[SETUP] Insertion prix papier EXCEPTION: " . $t->getMessage());
+                            // On continue malgré tout pour observer la suite (password)
+                        }
                     }
                     
                     // Créer le mot de passe administrateur
                     $admin_password = $_POST['admin_password'];
                     $password_hash = password_hash($admin_password, PASSWORD_DEFAULT);
                     
-                    $db = pdo_connect();
-                    $query = $db->prepare('INSERT INTO admin_passwords (password_hash, is_active) VALUES (?, 1)');
-                    $query->execute(array($password_hash));
+                    error_log("[SETUP] Insertion mot de passe admin (hashé)...");
+                    try {
+                        $db = pdo_connect();
+                        $query = $db->prepare('INSERT INTO admin_passwords (password_hash, is_active) VALUES (?, 1)');
+                        $query->execute(array($password_hash));
+                        error_log("[SETUP] Insertion mot de passe admin OK");
+                    } catch (Throwable $t) {
+                        error_log("[SETUP] Insertion mot de passe admin EXCEPTION: " . $t->getMessage());
+                        throw $t;
+                    }
                     
                     // Rediriger vers l'accueil avec un message de succès
                     header('Location: ?accueil&setup=success');
                     exit;
+                } else {
+                    error_log("[SETUP] Bloc final non atteint: success=" . ($success ? 'true' : 'false') . ", added_machines=" . $added_machines);
                 }
                 
             } catch (Exception $e) {
-                setup_log_error("Exception pendant setup (enregistrement): " . $e->getMessage());
+                error_log("[SETUP] Exception pendant setup (enregistrement): " . $e->getMessage());
                 $errors[] = "Erreur lors de l'enregistrement : " . $e->getMessage();
                 $success = false;
             }
@@ -209,7 +226,7 @@ function Action($conf = null){
     if (!empty($errors)) {
         $_SESSION['setup_errors'] = $errors;
         // Tracer aussi la liste des erreurs utilisateur côté log
-        setup_log_error("Erreurs setup: " . json_encode($errors, JSON_UNESCAPED_UNICODE));
+        error_log("[SETUP] Erreurs setup: " . json_encode($errors, JSON_UNESCAPED_UNICODE));
     }
     
     header('Location: ?setup');
