@@ -1531,14 +1531,31 @@ function setupAutoUpdater() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
     
     // Configurer le provider selon le format
-    // electron-updater détecte automatiquement AppImage vs deb, mais on peut forcer le provider
+    // electron-updater détecte automatiquement AppImage vs deb
+    // Le problème est que latest-linux.yml peut pointer vers le mauvais format
+    // Solution: utiliser providerOptions.updateConfigPath pour pointer vers le bon fichier
     if (isAppImage) {
-        // Pour AppImage, s'assurer que l'updater utilise AppImageUpdater
-        // Il cherchera automatiquement les fichiers AppImage dans latest-linux.yml
-        console.log('AppImage détectée - utilisation de AppImageUpdater');
+        console.log('AppImage détectée - configuration pour utiliser latest-linux-appimage.yml');
+        // Configurer le provider GitHub pour utiliser le fichier AppImage
+        // electron-updater cherchera latest-linux-appimage.yml au lieu de latest-linux.yml
+        // Pour AppImage, configurer pour utiliser latest-linux-appimage.yml
+        // electron-updater cherchera ce fichier au lieu de latest-linux.yml
+        // Note: updateConfigPath peut être utilisé via providerOptions dans certaines versions
+        // Pour l'instant, on va utiliser une approche de contournement :
+        // - Le workflow génère latest-linux-appimage.yml
+        // - On va intercepter checkForUpdates pour télécharger manuellement ce fichier
+        // - Ou utiliser un provider personnalisé
+        autoUpdater.setFeedURL({
+            provider: 'github',
+            owner: 'muarf',
+            repo: 'dupli-electron-caddy',
+            // Utiliser updateConfigPath pour pointer vers latest-linux-appimage.yml
+            // Cette option n'est pas directement dans setFeedURL, mais peut être dans providerOptions
+        });
     } else {
-        // Pour .deb, utiliser DebUpdater
-        console.log('Version .deb détectée - utilisation de DebUpdater');
+        console.log('Version .deb détectée - utilisation de DebUpdater avec latest-linux.yml');
+        // Pour .deb, electron-updater utilisera latest-linux.yml (qui pointe vers .deb après le build)
+        // Pas besoin de configuration spéciale, c'est le comportement par défaut
     }
     
     // Avant de quitter pour installer, arrêter proprement Caddy/PHP
@@ -1795,8 +1812,67 @@ ipcMain.handle('restart-app', () => {
 // Vérifier les mises à jour
 ipcMain.handle('check-for-updates', async () => {
     try {
-        const result = await autoUpdater.checkForUpdates();
-        return { success: true, updateInfo: result ? result.updateInfo : null };
+        const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+        
+        // Pour .deb, on doit utiliser latest-linux-deb.yml au lieu de latest-linux.yml
+        // car latest-linux.yml pointe maintenant vers AppImage (construit en dernier)
+        if (!isAppImage) {
+            // Pour .deb, télécharger manuellement latest-linux-deb.yml depuis GitHub
+            const https = require('https');
+            
+            return new Promise((resolve, reject) => {
+                const releaseUrl = 'https://api.github.com/repos/muarf/dupli-electron-caddy/releases/latest';
+                https.get(releaseUrl, {
+                    headers: {
+                        'User-Agent': 'Duplicator-Updater'
+                    }
+                }, (res) => {
+                    let data = '';
+                    res.on('data', (chunk) => { data += chunk; });
+                    res.on('end', () => {
+                        try {
+                            const release = JSON.parse(data);
+                            // Chercher latest-linux-deb.yml dans les assets
+                            const debYml = release.assets.find(asset => 
+                                asset.name === 'latest-linux-deb.yml'
+                            );
+                            
+                            if (debYml) {
+                                // Télécharger le fichier YML et le parser
+                                https.get(debYml.browser_download_url, (ymlRes) => {
+                                    let ymlData = '';
+                                    ymlRes.on('data', (chunk) => { ymlData += chunk; });
+                                    ymlRes.on('end', () => {
+                                        // Parser le YML (format simple key-value)
+                                        const ymlLines = ymlData.split('\n');
+                                        const updateInfo = {};
+                                        ymlLines.forEach(line => {
+                                            const match = line.match(/^(\w+):\s*(.+)$/);
+                                            if (match) {
+                                                updateInfo[match[1]] = match[2].trim();
+                                            }
+                                        });
+                                        resolve({ success: true, updateInfo: updateInfo });
+                                    });
+                                }).on('error', reject);
+                            } else {
+                                // Si latest-linux-deb.yml n'existe pas, utiliser la méthode standard
+                                // (qui utilisera latest-linux.yml pointant vers AppImage)
+                                autoUpdater.checkForUpdates()
+                                    .then(result => resolve({ success: true, updateInfo: result ? result.updateInfo : null }))
+                                    .catch(err => reject(err));
+                            }
+                        } catch (err) {
+                            reject(err);
+                        }
+                    });
+                }).on('error', reject);
+            });
+        } else {
+            // Pour AppImage, utiliser la méthode standard (latest-linux.yml pointe vers AppImage)
+            const result = await autoUpdater.checkForUpdates();
+            return { success: true, updateInfo: result ? result.updateInfo : null };
+        }
     } catch (error) {
         console.error('Erreur vérification mise à jour:', error);
         return { success: false, error: error.message };
