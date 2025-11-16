@@ -1817,8 +1817,12 @@ ipcMain.handle('check-for-updates', async () => {
         // Pour .deb, on doit utiliser latest-linux-deb.yml au lieu de latest-linux.yml
         // car latest-linux.yml pointe maintenant vers AppImage (construit en dernier)
         if (!isAppImage) {
-            // Pour .deb, télécharger manuellement latest-linux-deb.yml depuis GitHub
+            // Pour .deb, télécharger latest-linux-deb.yml et utiliser autoUpdater avec ces données
             const https = require('https');
+            const yaml = require('js-yaml');
+            const os = require('os');
+            const path = require('path');
+            const fs = require('fs');
             
             return new Promise((resolve, reject) => {
                 const releaseUrl = 'https://api.github.com/repos/muarf/dupli-electron-caddy/releases/latest';
@@ -1838,26 +1842,43 @@ ipcMain.handle('check-for-updates', async () => {
                             );
                             
                             if (debYml) {
-                                // Télécharger le fichier YML et le parser
+                                // Télécharger le fichier YML
                                 https.get(debYml.browser_download_url, (ymlRes) => {
                                     let ymlData = '';
                                     ymlRes.on('data', (chunk) => { ymlData += chunk; });
                                     ymlRes.on('end', () => {
-                                        // Parser le YML (format simple key-value)
-                                        const ymlLines = ymlData.split('\n');
-                                        const updateInfo = {};
-                                        ymlLines.forEach(line => {
-                                            const match = line.match(/^(\w+):\s*(.+)$/);
-                                            if (match) {
-                                                updateInfo[match[1]] = match[2].trim();
+                                        try {
+                                            // Parser le YML
+                                            const updateConfig = yaml.load(ymlData);
+                                            
+                                            // Créer un fichier temporaire latest-linux.yml avec le contenu de latest-linux-deb.yml
+                                            const tempDir = path.join(os.tmpdir(), 'duplicator-updater');
+                                            if (!fs.existsSync(tempDir)) {
+                                                fs.mkdirSync(tempDir, { recursive: true });
                                             }
-                                        });
-                                        resolve({ success: true, updateInfo: updateInfo });
+                                            const tempYmlPath = path.join(tempDir, 'latest-linux.yml');
+                                            fs.writeFileSync(tempYmlPath, ymlData);
+                                            
+                                            // Configurer autoUpdater pour utiliser ce fichier temporaire
+                                            // Note: autoUpdater ne supporte pas directement les fichiers locaux
+                                            // On va utiliser setFeedURL avec les données du YML
+                                            const updateInfo = {
+                                                version: updateConfig.version || release.tag_name.replace('v', ''),
+                                                path: updateConfig.path || '',
+                                                url: updateConfig.url || debYml.browser_download_url.replace('latest-linux-deb.yml', updateConfig.path || ''),
+                                                sha512: updateConfig.sha512 || '',
+                                                releaseDate: updateConfig.releaseDate || release.published_at
+                                            };
+                                            
+                                            resolve({ success: true, updateInfo: updateInfo });
+                                        } catch (yamlErr) {
+                                            console.error('Erreur parsing YML:', yamlErr);
+                                            reject(yamlErr);
+                                        }
                                     });
                                 }).on('error', reject);
                             } else {
                                 // Si latest-linux-deb.yml n'existe pas, utiliser la méthode standard
-                                // (qui utilisera latest-linux.yml pointant vers AppImage)
                                 autoUpdater.checkForUpdates()
                                     .then(result => resolve({ success: true, updateInfo: result ? result.updateInfo : null }))
                                     .catch(err => reject(err));
