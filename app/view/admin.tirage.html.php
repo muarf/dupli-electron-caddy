@@ -180,6 +180,22 @@ const translations = {
     printsForTotal: <?php echo json_encode(__('admin_tirage.prints_for_total')); ?>
 };
 
+// Fonction utilitaire pour construire l'URL en préservant les paramètres GET
+function buildActionUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const actionParams = ['admin', 'tirages'];
+    
+    // Préserver les paramètres importants
+    if (urlParams.has('paye')) {
+        actionParams.push('paye');
+    }
+    if (urlParams.has('order')) {
+        actionParams.push('order');
+    }
+    
+    return '?' + actionParams.join('&');
+}
+
 // Fonction pour supprimer les tirages sélectionnés
 function deleteSelected() {
     selectedTirages = [];
@@ -215,7 +231,7 @@ function confirmDelete() {
     // Créer un formulaire pour envoyer les données
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = '?admin&tirages';
+    form.action = buildActionUrl();
     
     // Ajouter les tirages à supprimer
     selectedTirages.forEach((tirage, index) => {
@@ -286,7 +302,7 @@ function pay() {
     // Envoyer la requête de paiement
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = '?admin&tirages';
+    form.action = buildActionUrl();
     
     // Ajouter les tirages à marquer comme payés
     selectedTirages.forEach((tirage, index) => {
