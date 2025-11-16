@@ -4,20 +4,24 @@
  * Ce fichier gère l'upload, la suppression et la récupération des PDFs d'aide
  */
 
-// Configuration cross-platform des chemins temporaires
-$temp_dir = sys_get_temp_dir();
-$session_path = $temp_dir . DIRECTORY_SEPARATOR . 'duplicator_sessions';
-
-// Créer le répertoire de sessions s'il n'existe pas
-if (!is_dir($session_path)) {
-    mkdir($session_path, 0777, true);
+// La session est déjà démarrée par public/index.php
+// Ne pas redémarrer la session si elle est déjà active
+if (session_status() === PHP_SESSION_NONE) {
+    // Configuration cross-platform des chemins temporaires
+    $temp_dir = sys_get_temp_dir();
+    $session_path = $temp_dir . DIRECTORY_SEPARATOR . 'duplicator_sessions';
+    
+    // Créer le répertoire de sessions s'il n'existe pas
+    if (!is_dir($session_path)) {
+        mkdir($session_path, 0777, true);
+    }
+    
+    // Configurer les chemins temporaires
+    session_save_path($session_path);
+    
+    // Démarrer la session
+    session_start();
 }
-
-// Configurer les chemins temporaires
-session_save_path($session_path);
-
-// Démarrer la session
-session_start();
 
 
 // Vérifier l'authentification admin
@@ -66,7 +70,7 @@ function sanitizeFileName($filename) {
 
 // Fonction pour récupérer la liste des PDFs
 function getUploadedPdfs() {
-    $pdfDir = __DIR__ . '/uploads/aide_pdfs/';
+    $pdfDir = __DIR__ . '/../public/uploads/aide_pdfs/';
     $pdfs = [];
     
     if (is_dir($pdfDir)) {
@@ -126,7 +130,7 @@ try {
             $uniqueFilename = $sanitizedName . '_' . $timestamp . '.pdf';
             
             // Chemin de destination
-            $uploadDir = __DIR__ . '/uploads/aide_pdfs/';
+            $uploadDir = __DIR__ . '/../public/uploads/aide_pdfs/';
             $uploadPath = $uploadDir . $uniqueFilename;
             
             // Créer le répertoire s'il n'existe pas
@@ -168,7 +172,7 @@ try {
             
             // Sécuriser le nom de fichier
             $filename = basename($filename);
-            $filePath = __DIR__ . '/uploads/aide_pdfs/' . $filename;
+            $filePath = __DIR__ . '/../public/uploads/aide_pdfs/' . $filename;
             
             if (!file_exists($filePath)) {
                 throw new Exception('Fichier non trouvé.');
