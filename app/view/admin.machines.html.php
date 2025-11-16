@@ -707,7 +707,7 @@ $('.edit-tambours').click(function() {
     // Récupérer les prix existants via AJAX
     console.log('Début de la récupération des prix pour machine ID:', machineId);
     $.ajax({
-        url: 'ajax_get_tambour_prices.php',
+        url: '?ajax_get_tambour_prices',
         type: 'POST',
         data: { machine_id: machineId },
         dataType: 'text',
@@ -857,7 +857,7 @@ $(document).on('submit', '#edit-tambours-form', function(e) {
     
     // Envoyer la requête AJAX
     $.ajax({
-        url: 'ajax_edit_tambours.php',
+        url: '?ajax_edit_tambours',
         type: 'POST',
         data: {
             machine_id: machineId,

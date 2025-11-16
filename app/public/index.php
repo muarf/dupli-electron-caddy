@@ -235,10 +235,18 @@ if ($page === 'ajax_delete_machine') {
 
 $page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','view_pdf','get-machine-template');
 
+error_log("[PASSWORD_CHECK] ===== DEBUT VERIFICATION =====");
+error_log("[PASSWORD_CHECK] Page demandée (avant vérification): " . $page);
+error_log("[PASSWORD_CHECK] Page dans page_secure: " . (in_array($page, $page_secure, true) ? 'OUI' : 'NON'));
+
 if(in_array($page, $page_secure,true)){
+    
+    error_log("[PASSWORD_CHECK] Page est dans page_secure, on continue");
     
     // Inclure la configuration APRÈS l'exécution du modèle pour avoir la bonne base active
     include(__DIR__ . '/../controler/conf.php');
+    
+    error_log("[PASSWORD_CHECK] Conf.php chargé");
     
     // Vérifier s'il faut rediriger vers l'installation ou la création de mot de passe
     error_log("[PASSWORD_CHECK] Page demandée: " . $page);
