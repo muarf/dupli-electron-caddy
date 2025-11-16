@@ -1,26 +1,51 @@
 #!/bin/bash
 # Script de post-installation pour installer les icônes
 
+# Déterminer le chemin d'installation (electron-builder utilise /opt/${productName})
+APP_DIR="/opt/Duplicator"
+ICON_DIR="$APP_DIR/resources/app.asar.unpacked/icons"
+
+# Log pour débogage (peut être supprimé en production)
+# logger "Duplicator postinst: Installation des icônes depuis $ICON_DIR"
+
+# Vérifier si le répertoire existe
+if [ ! -d "$ICON_DIR" ]; then
+    # Essayer un autre chemin possible
+    ICON_DIR="$APP_DIR/resources/icons"
+    if [ ! -d "$ICON_DIR" ]; then
+        # Essayer avec le nom de l'appId
+        APP_DIR="/opt/com.dupli.app"
+        ICON_DIR="$APP_DIR/resources/app.asar.unpacked/icons"
+    fi
+fi
+
 # Installer l'icône principale dans /usr/share/pixmaps
-if [ -f /opt/Duplicator/resources/app.asar.unpacked/icons/512x512.png ]; then
-    install -Dm644 /opt/Duplicator/resources/app.asar.unpacked/icons/512x512.png /usr/share/pixmaps/duplicator.png
+if [ -f "$ICON_DIR/512x512.png" ]; then
+    install -Dm644 "$ICON_DIR/512x512.png" /usr/share/pixmaps/duplicator.png
 fi
 
 # Installer les icônes dans hicolor pour les différentes tailles
-ICON_DIR="/opt/Duplicator/resources/app.asar.unpacked/icons"
 if [ -d "$ICON_DIR" ]; then
-    # Installer chaque taille d'icône individuellement pour éviter les macros electron-builder
-    [ -f "$ICON_DIR/16x16.png" ] && install -Dm644 "$ICON_DIR/16x16.png" "/usr/share/icons/hicolor/16x16/apps/duplicator.png"
-    [ -f "$ICON_DIR/32x32.png" ] && install -Dm644 "$ICON_DIR/32x32.png" "/usr/share/icons/hicolor/32x32/apps/duplicator.png"
-    [ -f "$ICON_DIR/48x48.png" ] && install -Dm644 "$ICON_DIR/48x48.png" "/usr/share/icons/hicolor/48x48/apps/duplicator.png"
-    [ -f "$ICON_DIR/64x64.png" ] && install -Dm644 "$ICON_DIR/64x64.png" "/usr/share/icons/hicolor/64x64/apps/duplicator.png"
-    [ -f "$ICON_DIR/128x128.png" ] && install -Dm644 "$ICON_DIR/128x128.png" "/usr/share/icons/hicolor/128x128/apps/duplicator.png"
-    [ -f "$ICON_DIR/256x256.png" ] && install -Dm644 "$ICON_DIR/256x256.png" "/usr/share/icons/hicolor/256x256/apps/duplicator.png"
-    [ -f "$ICON_DIR/512x512.png" ] && install -Dm644 "$ICON_DIR/512x512.png" "/usr/share/icons/hicolor/512x512/apps/duplicator.png"
-    [ -f "$ICON_DIR/1024x1024.png" ] && install -Dm644 "$ICON_DIR/1024x1024.png" "/usr/share/icons/hicolor/1024x1024/apps/duplicator.png"
+    # Installer chaque taille d'icône individuellement (évite les macros electron-builder)
+    [ -f "$ICON_DIR/16x16.png" ] && mkdir -p /usr/share/icons/hicolor/16x16/apps && install -Dm644 "$ICON_DIR/16x16.png" /usr/share/icons/hicolor/16x16/apps/duplicator.png
+    [ -f "$ICON_DIR/32x32.png" ] && mkdir -p /usr/share/icons/hicolor/32x32/apps && install -Dm644 "$ICON_DIR/32x32.png" /usr/share/icons/hicolor/32x32/apps/duplicator.png
+    [ -f "$ICON_DIR/48x48.png" ] && mkdir -p /usr/share/icons/hicolor/48x48/apps && install -Dm644 "$ICON_DIR/48x48.png" /usr/share/icons/hicolor/48x48/apps/duplicator.png
+    [ -f "$ICON_DIR/64x64.png" ] && mkdir -p /usr/share/icons/hicolor/64x64/apps && install -Dm644 "$ICON_DIR/64x64.png" /usr/share/icons/hicolor/64x64/apps/duplicator.png
+    [ -f "$ICON_DIR/128x128.png" ] && mkdir -p /usr/share/icons/hicolor/128x128/apps && install -Dm644 "$ICON_DIR/128x128.png" /usr/share/icons/hicolor/128x128/apps/duplicator.png
+    [ -f "$ICON_DIR/256x256.png" ] && mkdir -p /usr/share/icons/hicolor/256x256/apps && install -Dm644 "$ICON_DIR/256x256.png" /usr/share/icons/hicolor/256x256/apps/duplicator.png
+    [ -f "$ICON_DIR/512x512.png" ] && mkdir -p /usr/share/icons/hicolor/512x512/apps && install -Dm644 "$ICON_DIR/512x512.png" /usr/share/icons/hicolor/512x512/apps/duplicator.png
+    [ -f "$ICON_DIR/1024x1024.png" ] && mkdir -p /usr/share/icons/hicolor/1024x1024/apps && install -Dm644 "$ICON_DIR/1024x1024.png" /usr/share/icons/hicolor/1024x1024/apps/duplicator.png
+    
     # Mettre à jour le cache des icônes
     if command -v gtk-update-icon-cache >/dev/null 2>&1; then
         gtk-update-icon-cache -f -t /usr/share/icons/hicolor 2>/dev/null || true
+    fi
+    
+    # Mettre à jour aussi le cache utilisateur si disponible
+    if [ -d "$HOME/.local/share/icons/hicolor" ]; then
+        if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+            gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" 2>/dev/null || true
+        fi
     fi
 fi
 
