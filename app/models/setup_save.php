@@ -1,6 +1,21 @@
 <?php
 require_once __DIR__ . '/../controler/functions/database.php';
 
+// Logging simple des erreurs du setup (fichier + STDERR en CLI)
+function setup_log_error(string $message): void {
+    // Utiliser la même stratégie cross-platform que public/index.php
+    $temp_dir = sys_get_temp_dir();
+    $logFile = $temp_dir . DIRECTORY_SEPARATOR . 'duplicator_errors.log';
+    $timestamp = date('c');
+    $line = "[$timestamp] SETUP: " . $message . PHP_EOL;
+    // Fichier
+    @error_log($line, 3, $logFile);
+    // STDERR en CLI
+    if (PHP_SAPI === 'cli') {
+        fwrite(STDERR, $line);
+    }
+}
+
 function Action($conf = null){
     // Initialiser la configuration si elle n'est pas fournie
     if ($conf === null) {
@@ -12,11 +27,13 @@ function Action($conf = null){
         $db = pdo_connect();
     } catch (PDOException $e) {
         // Base de données n'existe pas, la créer
+        setup_log_error("PDOException pdo_connect (première tentative): " . $e->getMessage());
         require_once __DIR__ . '/admin/SQLiteDatabaseManager.php';
         $dbManager = new SQLiteDatabaseManager($conf);
         $result = $dbManager->createDatabase('duplinew', 'sqlite', '');
         
         if (isset($result['error'])) {
+            setup_log_error("Erreur création BDD via SQLiteDatabaseManager: " . $result['error']);
             die('Erreur création BDD: ' . $result['error']);
         }
         
@@ -24,6 +41,7 @@ function Action($conf = null){
         try {
             $db = pdo_connect();
         } catch (PDOException $e2) {
+            setup_log_error("PDOException pdo_connect (après création): " . $e2->getMessage());
             die('Erreur connexion après création: ' . $e2->getMessage());
         }
     }
@@ -179,6 +197,7 @@ function Action($conf = null){
                 }
                 
             } catch (Exception $e) {
+                setup_log_error("Exception pendant setup (enregistrement): " . $e->getMessage());
                 $errors[] = "Erreur lors de l'enregistrement : " . $e->getMessage();
                 $success = false;
             }
@@ -189,6 +208,8 @@ function Action($conf = null){
     // Rediriger vers la page de setup avec les erreurs
     if (!empty($errors)) {
         $_SESSION['setup_errors'] = $errors;
+        // Tracer aussi la liste des erreurs utilisateur côté log
+        setup_log_error("Erreurs setup: " . json_encode($errors, JSON_UNESCAPED_UNICODE));
     }
     
     header('Location: ?setup');
