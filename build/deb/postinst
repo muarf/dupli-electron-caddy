@@ -9,13 +9,15 @@ fi
 # Installer les icônes dans hicolor pour les différentes tailles
 ICON_DIR="/opt/Duplicator/resources/app.asar.unpacked/icons"
 if [ -d "$ICON_DIR" ]; then
-    for size in 16 32 48 64 128 256 512 1024; do
-        ICON_FILE="$ICON_DIR/$${size}x$${size}.png"
-        TARGET_DIR="/usr/share/icons/hicolor/$${size}x$${size}/apps"
-        if [ -f "$ICON_FILE" ]; then
-            install -Dm644 "$ICON_FILE" "$TARGET_DIR/duplicator.png"
-        fi
-    done
+    # Installer chaque taille d'icône individuellement pour éviter les macros electron-builder
+    [ -f "$ICON_DIR/16x16.png" ] && install -Dm644 "$ICON_DIR/16x16.png" "/usr/share/icons/hicolor/16x16/apps/duplicator.png"
+    [ -f "$ICON_DIR/32x32.png" ] && install -Dm644 "$ICON_DIR/32x32.png" "/usr/share/icons/hicolor/32x32/apps/duplicator.png"
+    [ -f "$ICON_DIR/48x48.png" ] && install -Dm644 "$ICON_DIR/48x48.png" "/usr/share/icons/hicolor/48x48/apps/duplicator.png"
+    [ -f "$ICON_DIR/64x64.png" ] && install -Dm644 "$ICON_DIR/64x64.png" "/usr/share/icons/hicolor/64x64/apps/duplicator.png"
+    [ -f "$ICON_DIR/128x128.png" ] && install -Dm644 "$ICON_DIR/128x128.png" "/usr/share/icons/hicolor/128x128/apps/duplicator.png"
+    [ -f "$ICON_DIR/256x256.png" ] && install -Dm644 "$ICON_DIR/256x256.png" "/usr/share/icons/hicolor/256x256/apps/duplicator.png"
+    [ -f "$ICON_DIR/512x512.png" ] && install -Dm644 "$ICON_DIR/512x512.png" "/usr/share/icons/hicolor/512x512/apps/duplicator.png"
+    [ -f "$ICON_DIR/1024x1024.png" ] && install -Dm644 "$ICON_DIR/1024x1024.png" "/usr/share/icons/hicolor/1024x1024/apps/duplicator.png"
     # Mettre à jour le cache des icônes
     if command -v gtk-update-icon-cache >/dev/null 2>&1; then
         gtk-update-icon-cache -f -t /usr/share/icons/hicolor 2>/dev/null || true
