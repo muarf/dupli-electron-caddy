@@ -538,8 +538,7 @@ class SQLiteDatabaseManager {
             }
         }
         
-        // Insérer les données initiales
-        $this->insertInitialData($db);
+        // Pas d'insertion de données initiales par défaut
     }
     
     /**
