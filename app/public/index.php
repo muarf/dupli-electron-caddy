@@ -24,6 +24,7 @@ session_start();
 // Charger les fonctions de base et i18n AVANT les gestionnaires d'erreurs
 include(__DIR__ . '/../controler/func.php');
 require_once __DIR__ . '/../controler/functions/i18n.php';
+require_once __DIR__ . '/../controler/functions/machines.php';
 
 // Gestionnaire d'erreur global pour éviter les pages blanches
 set_error_handler(function($severity, $message, $file, $line) {
@@ -232,33 +233,56 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','stats','imposition','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','view_pdf','get-machine-template');
+$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','view_pdf','get-machine-template');
 
 if(in_array($page, $page_secure,true)){
-    
-    // Vérifier s'il faut rediriger vers l'installation
-    if ($page == 'accueil') {
-        try {
-            $db = pdo_connect();
-            $has_machines = check_machines_exist();
-            if (!$has_machines) {
-                header('Location: ?installation');
-                exit;
-            }
-        } catch (PDOException $e) {
-            // Base de données non trouvée, rediriger vers l'installation
-            header('Location: ?installation');
-            exit;
-        }
-    }
     
     // Inclure la configuration APRÈS l'exécution du modèle pour avoir la bonne base active
     include(__DIR__ . '/../controler/conf.php');
     
+    // Vérifier s'il faut rediriger vers l'installation ou la création de mot de passe
+    if ($page == 'accueil' || ($page != 'create_password' && $page != 'installation' && $page != 'setup' && $page != 'setup_save')) {
+        try {
+            $db = pdo_connect();
+            
+            // Vérifier s'il faut rediriger vers l'installation
+            if ($page == 'accueil') {
+                $has_machines = check_machines_exist();
+                if (!$has_machines) {
+                    header('Location: ?installation');
+                    exit;
+                }
+            }
+            
+            // Vérifier s'il existe un mot de passe admin (sauf pour les pages d'installation/setup)
+            if ($page != 'installation' && $page != 'setup' && $page != 'setup_save') {
+                try {
+                    $query = $db->prepare('SELECT COUNT(*) as count FROM admin_passwords WHERE is_active = 1');
+                    $query->execute();
+                    $result = $query->fetch(PDO::FETCH_ASSOC);
+                    
+                    if (!$result || $result['count'] == 0) {
+                        // Aucun mot de passe admin, rediriger vers la création
+                        header('Location: ?create_password');
+                        exit;
+                    }
+                } catch (PDOException $e) {
+                    // Table n'existe pas encore (base très récente), laisser passer
+                }
+            }
+        } catch (PDOException $e) {
+            // Base de données non trouvée, rediriger vers l'installation
+            if ($page != 'installation' && $page != 'setup' && $page != 'setup_save' && $page != 'create_password') {
+                header('Location: ?installation');
+                exit;
+            }
+        }
+    }
+    
     include(__DIR__ . '/../models/'.$page.'.php');
     
     // Pages spéciales qui n'utilisent pas le template standard
-    if ($page == 'installation' || $page == 'setup') {
+    if ($page == 'installation' || $page == 'setup' || $page == 'create_password') {
         $content = Action($conf);
         echo $content;
     } else {

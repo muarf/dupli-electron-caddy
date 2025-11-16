@@ -5,40 +5,80 @@ function Action($conf = null){
     // Initialiser la configuration si elle n'est pas fournie
     if ($conf === null) {
         include(__DIR__ . '/../controler/conf.php');
+    } else {
+        // S'assurer que la conf passée est bien dans GLOBALS pour pdo_connect()
+        $GLOBALS['conf'] = $conf;
     }
     
     // Vérifier si la base de données existe, sinon la créer
+    $fresh_created = false;
     try {
         $db = pdo_connect();
+        // Vérifier si les tables essentielles existent (cas fichier vide)
+        try {
+            $tables_check = $db->query("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='duplicopieurs'")->fetchColumn();
+            if ($tables_check == 0 && file_exists($conf['db_path']) && filesize($conf['db_path']) < 1000) {
+                // Fichier existe mais pas de tables, créer la structure
+                require_once __DIR__ . '/admin/SQLiteDatabaseManager.php';
+                $dbManager = new SQLiteDatabaseManager($conf);
+                $dbManager->createEssentialTables($db);
+                $fresh_created = true;
+            }
+        } catch (Exception $e) {
+            error_log("[SETUP] Erreur vérification tables: " . $e->getMessage());
+        }
     } catch (PDOException $e) {
         // Base de données n'existe pas, la créer
         error_log("[SETUP] PDOException pdo_connect (première tentative): " . $e->getMessage());
         require_once __DIR__ . '/admin/SQLiteDatabaseManager.php';
         $dbManager = new SQLiteDatabaseManager($conf);
-        $result = $dbManager->createDatabase('duplinew', 'sqlite', '');
         
-        if (isset($result['error'])) {
-            error_log("[SETUP] Erreur création BDD via SQLiteDatabaseManager: " . $result['error']);
-            die('Erreur création BDD: ' . $result['error']);
-        }
-        
-        // Maintenant essayer de se connecter
-        try {
-            $db = pdo_connect();
-        } catch (PDOException $e2) {
-            error_log("[SETUP] PDOException pdo_connect (après création): " . $e2->getMessage());
-            die('Erreur connexion après création: ' . $e2->getMessage());
+        // Si le fichier existe déjà mais est vide (cas test), utiliser ce fichier directement
+        if (file_exists($conf['db_path']) && filesize($conf['db_path']) === 0) {
+            error_log("[SETUP] Fichier vide détecté, création structure dans: " . $conf['db_path']);
+            $db = new PDO('sqlite:' . $conf['db_path']);
+            $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $dbManager->createEssentialTables($db);
+            $fresh_created = true;
+        } else {
+            // Sinon, créer duplinew.sqlite comme avant (comportement production)
+            $result = $dbManager->createDatabase('duplinew', 'sqlite', '');
+            
+            if (isset($result['error'])) {
+                error_log("[SETUP] Erreur création BDD via SQLiteDatabaseManager: " . $result['error']);
+                die('Erreur création BDD: ' . $result['error']);
+            }
+            
+            // Mettre à jour la configuration pour pointer sur la nouvelle base créée
+            $new_db_path = dirname($conf['db_path']) . DIRECTORY_SEPARATOR . 'duplinew.sqlite';
+            $conf['db_path'] = $new_db_path;
+            $conf['dsn'] = 'sqlite:' . $new_db_path;
+            $GLOBALS['conf'] = $conf;
+            error_log("[SETUP] Configuration DB mise à jour vers: " . $new_db_path);
+            
+            // Maintenant essayer de se connecter
+            try {
+                $db = pdo_connect();
+                $fresh_created = true;
+            } catch (PDOException $e2) {
+                error_log("[SETUP] PDOException pdo_connect (après création): " . $e2->getMessage());
+                die('Erreur connexion après création: ' . $e2->getMessage());
+            }
         }
     }
     
     // Vérifier si des machines ont déjà été enregistrées
     $has_machines = check_machines_exist();
     
-    if ($has_machines) {
+    if ($has_machines && $_SERVER['REQUEST_METHOD'] !== 'POST' && !$fresh_created) {
         // Des machines existent déjà, rediriger vers l'accueil
         error_log("[SETUP] Redirection: des machines existent déjà, setup ignoré");
-        header('Location: ?accueil');
-        exit;
+        if (PHP_SAPI === 'cli') {
+            return "machines_exist";
+        } else {
+            header('Location: ?accueil');
+            exit;
+        }
     }
     
     // Traitement du formulaire POST
@@ -215,8 +255,12 @@ function Action($conf = null){
                     }
                     
                     // Rediriger vers l'accueil avec un message de succès
-                    header('Location: ?accueil&setup=success');
-                    exit;
+                    if (PHP_SAPI === 'cli') {
+                        return "setup_success";
+                    } else {
+                        header('Location: ?accueil&setup=success');
+                        exit;
+                    }
                 } else {
                     error_log("[SETUP] Bloc final non atteint: success=" . ($success ? 'true' : 'false') . ", added_machines=" . $added_machines);
                 }
@@ -237,8 +281,12 @@ function Action($conf = null){
         error_log("[SETUP] Erreurs setup: " . json_encode($errors, JSON_UNESCAPED_UNICODE));
     }
     
-    header('Location: ?setup');
-    exit;
+    if (PHP_SAPI === 'cli') {
+        return "setup_error";
+    } else {
+        header('Location: ?setup');
+        exit;
+    }
 }
 
 /**
