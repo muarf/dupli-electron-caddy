@@ -40,9 +40,8 @@ linux:
     entry:
       Name: Duplicator
       Comment: Application de duplication de documents
-      StartupWMClass: duplicator
+      StartupWMClass: Duplicator
       Icon: duplicator
-      Exec: duplicator
       Terminal: false
       Type: Application
       Categories: Office;
