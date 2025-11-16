@@ -11,6 +11,7 @@ files:
   - main-caddy.js
   - main.js
   - preload.js
+  - icons/**/*
   - Caddyfile
   - php-fpm.conf
   - php-install-guide.html
@@ -48,6 +49,7 @@ mac:
     - main-caddy.js
     - main.js
     - preload.js
+    - icons/**/*
     - Caddyfile
     - php-fpm.conf
     - php-install-guide.html
@@ -81,6 +83,7 @@ win:
     - main-caddy.js
     - main.js
     - preload.js
+    - icons/**/*
     - Caddyfile
     - php-fpm.conf
     - app/php.ini  # Inclure explicitement php.ini pour Windows (nécessaire pour les extensions SQLite)

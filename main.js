@@ -186,6 +186,12 @@ function createWindow() {
     // Nettoyer les fichiers temporaires au démarrage
     cleanupTmpFiles();
 
+    // Résoudre le chemin de l'icône (Linux requiert une icône de fenêtre explicite)
+    const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const iconPath = isAppImage
+        ? path.join(process.resourcesPath, 'app.asar', 'icons', 'icon.png')
+        : path.join(__dirname, 'icons', 'icon.png');
+
     // Créer la fenêtre du navigateur
     mainWindow = new BrowserWindow({
         width: 1200,
@@ -194,6 +200,7 @@ function createWindow() {
         minHeight: 600,
         fullscreen: true,
         fullscreenable: true,
+        icon: iconPath,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
