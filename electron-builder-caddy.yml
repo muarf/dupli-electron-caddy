@@ -66,6 +66,8 @@ deb:
     - libasound2
     - libgbm1
     - libxshmfence1
+  # Script de post-installation pour installer les icônes
+  afterInstall: build/deb/postinst
 mac:
   target:
     - target: dmg
