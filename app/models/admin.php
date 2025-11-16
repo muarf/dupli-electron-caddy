@@ -183,9 +183,34 @@ function Action($conf = null)
                 $array['login_error'] = 'Mot de passe incorrect. Veuillez réessayer.';
             }
         } catch (Exception $e) {
-            // En cas d'erreur de base de données, afficher une erreur
-            $array['login_error'] = 'Erreur de connexion à la base de données. Veuillez réessayer.';
             error_log('Erreur authentification admin: ' . $e->getMessage());
+            
+            // Si la table admin_passwords n'existe pas, la créer et rediriger vers create_password
+            if (strpos($e->getMessage(), 'no such table: admin_passwords') !== false || 
+                strpos($e->getMessage(), 'admin_passwords') !== false) {
+                error_log('Table admin_passwords manquante, création...');
+                try {
+                    $db->exec("CREATE TABLE IF NOT EXISTS admin_passwords (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        password_hash TEXT NOT NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        is_active INTEGER DEFAULT 1
+                    )");
+                    error_log('Table admin_passwords créée avec succès');
+                    // Rediriger vers create_password pour créer le mot de passe
+                    header('Location: ?create_password');
+                    exit;
+                } catch (Exception $e2) {
+                    error_log('Erreur lors de la création de la table: ' . $e2->getMessage());
+                    // Si la création échoue aussi, rediriger quand même vers create_password
+                    header('Location: ?create_password');
+                    exit;
+                }
+            } else {
+                // Pour les autres erreurs, afficher une erreur
+                $array['login_error'] = 'Erreur de connexion à la base de données. Veuillez réessayer.';
+            }
         }
     }
     
