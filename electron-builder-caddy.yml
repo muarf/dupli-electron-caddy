@@ -30,6 +30,8 @@ linux:
   target: 
     - target: AppImage
       arch: [x64]
+    - target: deb
+      arch: [x64]
   icon: icons/icon.png
   category: Office
   executableName: Duplicator
@@ -48,6 +50,20 @@ linux:
     - "Caddyfile"
     - "php-fpm.conf"
     - "php-install-guide.html"
+  artifactName: Duplicator-${version}-${arch}.${ext}
+
+deb:
+  synopsis: Outil de duplication, génération et impression de documents
+  priority: optional
+  maintainer: "Duplicator <support@duplicator.app>"
+  depends:
+    - libc6
+    - libgtk-3-0
+    - libnss3
+    - libxss1
+    - libasound2
+    - libgbm1
+    - libxshmfence1
 mac:
   target:
     - target: dmg
