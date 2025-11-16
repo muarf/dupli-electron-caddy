@@ -482,7 +482,7 @@ window.uploadPdf = function() {
     
     showProgress(true);
     
-    fetch('upload_aide_pdf.php?action=upload', {
+    fetch('?upload_aide_pdf&action=upload', {
         method: 'POST',
         body: formData
     })
@@ -524,7 +524,7 @@ function showMessage(message, type) {
 }
 
 function loadPdfList() {
-    fetch('upload_aide_pdf.php?action=list')
+    fetch('?upload_aide_pdf&action=list')
     .then(response => response.json())
     .then(data => {
         var pdfList = document.getElementById('pdf-list');
@@ -609,7 +609,7 @@ function deletePdf(filename) {
         formData.append('filename', filename);
         formData.append('action', 'delete');
         
-        fetch('upload_aide_pdf.php', {
+        fetch('?upload_aide_pdf', {
             method: 'POST',
             body: formData
         })

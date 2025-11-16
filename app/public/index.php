@@ -167,6 +167,20 @@ if ($page === 'get-machine-template') {
     }
 }
 
+if ($page === 'upload_aide_pdf') {
+    // Inclure le fichier API depuis le dossier api/
+    $api_file = __DIR__ . '/../api/upload_aide_pdf.php';
+    if (file_exists($api_file)) {
+        require_once $api_file;
+        exit;
+    } else {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Fichier API non trouvé']);
+        exit;
+    }
+}
+
 if ($page === 'ajax_delete_machine') {
     // Vérifier l'authentification admin
     if (!isset($_SESSION['user'])) {
@@ -233,7 +247,7 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','view_pdf','get-machine-template');
+$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','view_pdf','get-machine-template','upload_aide_pdf');
 
 error_log("[PASSWORD_CHECK] ===== DEBUT VERIFICATION =====");
 error_log("[PASSWORD_CHECK] Page demandée (avant vérification): " . $page);
