@@ -1,5 +1,6 @@
 #!/bin/bash
 # Script de post-installation pour installer les icônes
+# Note: Ce script ne contient pas de macros electron-builder pour éviter les erreurs
 
 # Déterminer le chemin d'installation (electron-builder utilise /opt/Duplicator)
 APP_DIR="/opt/Duplicator"

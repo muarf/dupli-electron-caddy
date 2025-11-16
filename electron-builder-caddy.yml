@@ -70,6 +70,7 @@ deb:
     - libgbm1
     - libxshmfence1
   # Script de post-installation pour installer les icônes
+  # Utiliser un chemin relatif et s'assurer que productName est défini
   afterInstall: build/deb/postinst
 mac:
   target:
