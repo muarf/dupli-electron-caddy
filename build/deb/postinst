@@ -1,0 +1,24 @@
+#!/bin/bash
+# Script de post-installation pour installer les icônes
+
+# Installer l'icône principale dans /usr/share/pixmaps
+if [ -f /opt/Duplicator/resources/app.asar.unpacked/icons/512x512.png ]; then
+    install -Dm644 /opt/Duplicator/resources/app.asar.unpacked/icons/512x512.png /usr/share/pixmaps/duplicator.png
+fi
+
+# Installer les icônes dans hicolor pour les différentes tailles
+ICON_DIR="/opt/Duplicator/resources/app.asar.unpacked/icons"
+if [ -d "$ICON_DIR" ]; then
+    for size in 16 32 48 64 128 256 512 1024; do
+        if [ -f "$ICON_DIR/${size}x${size}.png" ]; then
+            install -Dm644 "$ICON_DIR/${size}x${size}.png" "/usr/share/icons/hicolor/${size}x${size}/apps/duplicator.png"
+        fi
+    done
+    # Mettre à jour le cache des icônes
+    if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+        gtk-update-icon-cache -f -t /usr/share/icons/hicolor 2>/dev/null || true
+    fi
+fi
+
+exit 0
+
