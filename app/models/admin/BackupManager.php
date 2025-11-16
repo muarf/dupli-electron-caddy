@@ -245,11 +245,29 @@ class BackupManager {
         // Linux/Unix: utiliser XDG_CONFIG_HOME ou ~/.config
         $xdg = getenv('XDG_CONFIG_HOME');
         if (!empty($xdg)) {
-            return $this->normalizePath($xdg . DIRECTORY_SEPARATOR . 'dupli-electron' . DIRECTORY_SEPARATOR . 'sauvegarde');
+            $xdgPath = $this->normalizePath($xdg . DIRECTORY_SEPARATOR . 'dupli-electron' . DIRECTORY_SEPARATOR . 'sauvegarde');
+            // Vérifier que le répertoire parent est accessible
+            if (is_dir(dirname($xdgPath)) || @mkdir(dirname($xdgPath), 0755, true)) {
+                return $xdgPath;
+            }
         }
+        
         $home = getenv('HOME');
-        if (!empty($home)) {
-            return $this->normalizePath($home . DIRECTORY_SEPARATOR . '.config' . DIRECTORY_SEPARATOR . 'dupli-electron' . DIRECTORY_SEPARATOR . 'sauvegarde');
+        if (!empty($home) && is_dir($home)) {
+            $homePath = $this->normalizePath($home . DIRECTORY_SEPARATOR . '.config' . DIRECTORY_SEPARATOR . 'dupli-electron' . DIRECTORY_SEPARATOR . 'sauvegarde');
+            // Vérifier que le répertoire parent est accessible
+            if (is_dir(dirname($homePath)) || @mkdir(dirname($homePath), 0755, true)) {
+                return $homePath;
+            }
+        }
+        
+        // Pour les utilisateurs système (www-data, etc.), utiliser /tmp ou /var/tmp
+        $tmpDir = getenv('TMPDIR');
+        if (empty($tmpDir)) {
+            $tmpDir = '/tmp';
+        }
+        if (is_dir($tmpDir) && is_writable($tmpDir)) {
+            return $this->normalizePath($tmpDir . DIRECTORY_SEPARATOR . 'dupli-electron-sauvegarde');
         }
         
         // Dernier recours Unix: dossier local au projet
