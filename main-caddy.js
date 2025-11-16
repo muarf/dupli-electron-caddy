@@ -1294,29 +1294,13 @@ function createMenu() {
                     label: 'Rechercher des mises à jour',
                     accelerator: 'F3',
                     click: () => {
-                        const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
-                        if (isAppImage) {
-                            dialog.showMessageBox(mainWindow, {
-                                type: 'info',
-                                title: 'Mises à jour AppImage',
-                                message: 'Mises à jour automatiques non disponibles',
-                                detail: 'Pour les versions AppImage, veuillez télécharger manuellement la nouvelle version depuis GitHub :\nhttps://github.com/muarf/dupli-electron-caddy/releases\n\nLes mises à jour automatiques fonctionnent uniquement avec la version .deb installée.',
-                                buttons: ['OK', 'Ouvrir GitHub'],
-                                defaultId: 0
-                            }).then(result => {
-                                if (result.response === 1) {
-                                    shell.openExternal('https://github.com/muarf/dupli-electron-caddy/releases');
-                                }
-                            });
-                        } else {
-                            autoUpdater.checkForUpdatesAndNotify();
-                            dialog.showMessageBox(mainWindow, {
-                                type: 'info',
-                                title: 'Recherche de mises à jour',
-                                message: 'Recherche en cours...',
-                                detail: 'La recherche de mises à jour peut prendre quelques instants.'
-                            });
-                        }
+                        autoUpdater.checkForUpdatesAndNotify();
+                        dialog.showMessageBox(mainWindow, {
+                            type: 'info',
+                            title: 'Recherche de mises à jour',
+                            message: 'Recherche en cours...',
+                            detail: 'La recherche de mises à jour peut prendre quelques instants.'
+                        });
                     }
                 },
                 { type: 'separator' },
@@ -1543,15 +1527,18 @@ function setupAutoUpdater() {
     autoUpdater.autoDownload = false; // Ne pas télécharger automatiquement (demander d'abord)
     autoUpdater.autoInstallOnAppQuit = true; // Installer automatiquement au redémarrage
     
-    // Pour AppImage, forcer l'utilisation du provider AppImage
-    // car electron-updater peut confondre avec les fichiers .deb
+    // Détecter le format de l'application
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    
+    // Configurer le provider selon le format
+    // electron-updater détecte automatiquement AppImage vs deb, mais on peut forcer le provider
     if (isAppImage) {
-        // Désactiver les mises à jour automatiques pour AppImage
-        // car il y a un conflit entre AppImage et .deb dans latest-linux.yml
-        // L'utilisateur devra télécharger manuellement la nouvelle AppImage
-        console.log('AppImage détectée - mises à jour automatiques désactivées (conflit avec .deb)');
-        return; // Ne pas configurer l'auto-updater pour AppImage
+        // Pour AppImage, s'assurer que l'updater utilise AppImageUpdater
+        // Il cherchera automatiquement les fichiers AppImage dans latest-linux.yml
+        console.log('AppImage détectée - utilisation de AppImageUpdater');
+    } else {
+        // Pour .deb, utiliser DebUpdater
+        console.log('Version .deb détectée - utilisation de DebUpdater');
     }
     
     // Avant de quitter pour installer, arrêter proprement Caddy/PHP
@@ -1605,13 +1592,28 @@ function setupAutoUpdater() {
             err.message.includes('404')
         );
         
+        // Gestion spécifique pour AppImage qui trouve un .deb au lieu d'un AppImage
+        const isAppImageDebConflict = err.message && (
+            err.message.includes('Cannot read properties of undefined') ||
+            err.message.includes('reading \'info\'')
+        ) && (process.env.APPIMAGE || process.resourcesPath.includes('.mount'));
+        
         // Gestion spécifique de l'erreur pkexec sur Linux (code 127 = commande non trouvée)
         const isPkexecError = err.message && (
             err.message.includes('pkexec') ||
             err.message.includes('exited with code 127')
         );
         
-        if (isPkexecError && process.platform === 'linux') {
+        if (isAppImageDebConflict) {
+            // L'AppImage a trouvé un .deb dans les métadonnées
+            // Cela peut arriver si latest-linux.yml pointe vers le .deb
+            console.log('Conflit détecté : AppImage trouve un .deb dans les métadonnées');
+            const userFriendlyError = {
+                message: 'Erreur de mise à jour AppImage',
+                detail: 'Les métadonnées pointent vers un fichier .deb au lieu d\'un AppImage.\n\nVeuillez télécharger manuellement la nouvelle version AppImage depuis GitHub :\nhttps://github.com/muarf/dupli-electron-caddy/releases\n\nOu utilisez la version .deb pour bénéficier des mises à jour automatiques.'
+            };
+            safeSendToWindow('update-error', userFriendlyError);
+        } else if (isPkexecError && process.platform === 'linux') {
             // Sur Linux, si pkexec échoue, suggérer une installation manuelle
             console.log('Erreur pkexec détectée, installation automatique non disponible');
             const userFriendlyError = {
@@ -1642,35 +1644,30 @@ function setupAutoUpdater() {
     });
     
     // Vérifier les mises à jour au démarrage (après 10 secondes)
-    const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
-    if (!isAppImage) {
-        setTimeout(() => {
-            console.log('Lancement de la vérification des mises à jour...');
-            autoUpdater.checkForUpdates().catch(err => {
-                // Erreur silencieuse si pas de connexion
-                if (err.message && (err.message.includes('net::') || err.message.includes('ENOTFOUND'))) {
-                    console.log('Pas de connexion internet, vérification des mises à jour ignorée');
-                } else {
-                    console.error('Erreur vérification mise à jour:', err.message);
-                }
-            });
-        }, 10000);
-        
-        // Vérifier toutes les 4 heures
-        setInterval(() => {
-            console.log('Vérification périodique des mises à jour...');
-            autoUpdater.checkForUpdates().catch(err => {
-                // Erreur silencieuse si pas de connexion
-                if (err.message && (err.message.includes('net::') || err.message.includes('ENOTFOUND'))) {
-                    console.log('Pas de connexion internet, vérification des mises à jour ignorée');
-                } else {
-                    console.error('Erreur vérification mise à jour:', err.message);
-                }
-            });
-        }, 4 * 60 * 60 * 1000);
-    } else {
-        console.log('AppImage détectée - vérifications automatiques des mises à jour désactivées');
-    }
+    setTimeout(() => {
+        console.log('Lancement de la vérification des mises à jour...');
+        autoUpdater.checkForUpdates().catch(err => {
+            // Erreur silencieuse si pas de connexion
+            if (err.message && (err.message.includes('net::') || err.message.includes('ENOTFOUND'))) {
+                console.log('Pas de connexion internet, vérification des mises à jour ignorée');
+            } else {
+                console.error('Erreur vérification mise à jour:', err.message);
+            }
+        });
+    }, 10000);
+    
+    // Vérifier toutes les 4 heures
+    setInterval(() => {
+        console.log('Vérification périodique des mises à jour...');
+        autoUpdater.checkForUpdates().catch(err => {
+            // Erreur silencieuse si pas de connexion
+            if (err.message && (err.message.includes('net::') || err.message.includes('ENOTFOUND'))) {
+                console.log('Pas de connexion internet, vérification des mises à jour ignorée');
+            } else {
+                console.error('Erreur vérification mise à jour:', err.message);
+            }
+        });
+    }, 4 * 60 * 60 * 1000);
 }
 
 // Désactiver l'accélération GPU pour éviter les erreurs GLX
@@ -1779,17 +1776,6 @@ ipcMain.handle('restart-app', () => {
 // Vérifier les mises à jour
 ipcMain.handle('check-for-updates', async () => {
     try {
-        const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
-        if (isAppImage) {
-            // Pour AppImage, les mises à jour automatiques ne fonctionnent pas
-            // car electron-updater confond avec les fichiers .deb
-            return { 
-                success: false, 
-                error: 'Mises à jour automatiques non disponibles pour AppImage',
-                detail: 'Veuillez télécharger manuellement la nouvelle version AppImage depuis GitHub : https://github.com/muarf/dupli-electron-caddy/releases',
-                isAppImage: true
-            };
-        }
         const result = await autoUpdater.checkForUpdates();
         return { success: true, updateInfo: result ? result.updateInfo : null };
     } catch (error) {
@@ -1801,16 +1787,6 @@ ipcMain.handle('check-for-updates', async () => {
 // Télécharger une mise à jour
 ipcMain.handle('download-update', async () => {
     try {
-        const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
-        if (isAppImage) {
-            // Pour AppImage, les mises à jour automatiques ne fonctionnent pas
-            // car electron-updater confond avec les fichiers .deb
-            return { 
-                success: false, 
-                error: 'Mises à jour automatiques non disponibles pour AppImage',
-                detail: 'Veuillez télécharger manuellement la nouvelle version AppImage depuis GitHub : https://github.com/muarf/dupli-electron-caddy/releases'
-            };
-        }
         await autoUpdater.downloadUpdate();
         return { success: true };
     } catch (error) {
