@@ -1377,6 +1377,7 @@ function createWindow() {
         minWidth: 800,
         minHeight: 600,
         icon: iconPath,
+        title: 'Duplicator',
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
@@ -1386,6 +1387,15 @@ function createWindow() {
         },
         show: false
     });
+    
+    // Définir explicitement le WMClass pour Linux (correspond au StartupWMClass dans .desktop)
+    if (process.platform === 'linux') {
+        mainWindow.setTitle('Duplicator');
+        // Forcer le WMClass via le processus
+        if (mainWindow.setSkipTaskbar) {
+            // Ne pas utiliser setSkipTaskbar, mais définir le WMClass
+        }
+    }
     
     // Maximiser la fenêtre pour prendre tout l'écran disponible
     mainWindow.maximize();
