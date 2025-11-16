@@ -399,7 +399,31 @@ if(in_array($page, $page_secure,true)){
                     }
                 } catch (PDOException $e) {
                     error_log("[PASSWORD_CHECK] Exception lors de la vérification: " . $e->getMessage());
-                    // Table n'existe pas encore (base très récente), laisser passer
+                    
+                    // Si la table admin_passwords n'existe pas, la créer et rediriger vers create_password
+                    if (strpos($e->getMessage(), 'no such table: admin_passwords') !== false || 
+                        strpos($e->getMessage(), 'admin_passwords') !== false) {
+                        error_log("[PASSWORD_CHECK] Table admin_passwords manquante, création...");
+                        try {
+                            $db->exec("CREATE TABLE IF NOT EXISTS admin_passwords (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                password_hash TEXT NOT NULL,
+                                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                                is_active INTEGER DEFAULT 1
+                            )");
+                            error_log("[PASSWORD_CHECK] Table admin_passwords créée avec succès");
+                            // Rediriger vers create_password pour créer le mot de passe
+                            header('Location: ?create_password');
+                            exit;
+                        } catch (PDOException $e2) {
+                            error_log("[PASSWORD_CHECK] Erreur lors de la création de la table: " . $e2->getMessage());
+                            // Si la création échoue aussi, rediriger quand même vers create_password
+                            header('Location: ?create_password');
+                            exit;
+                        }
+                    }
+                    // Pour les autres erreurs, laisser passer (comportement existant)
                 }
             } else {
                 error_log("[PASSWORD_CHECK] Page exclue de la vérification: " . $page);
