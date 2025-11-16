@@ -241,14 +241,20 @@ if(in_array($page, $page_secure,true)){
     include(__DIR__ . '/../controler/conf.php');
     
     // Vérifier s'il faut rediriger vers l'installation ou la création de mot de passe
+    error_log("[PASSWORD_CHECK] Page demandée: " . $page);
+    error_log("[PASSWORD_CHECK] Condition entrée: " . ($page == 'accueil' || ($page != 'create_password' && $page != 'installation' && $page != 'setup' && $page != 'setup_save') ? 'OUI' : 'NON'));
+    
     if ($page == 'accueil' || ($page != 'create_password' && $page != 'installation' && $page != 'setup' && $page != 'setup_save')) {
         try {
             $db = pdo_connect();
+            error_log("[PASSWORD_CHECK] Connexion DB réussie");
             
             // Vérifier s'il faut rediriger vers l'installation
             if ($page == 'accueil') {
                 $has_machines = check_machines_exist();
+                error_log("[PASSWORD_CHECK] Machines existent: " . ($has_machines ? 'OUI' : 'NON'));
                 if (!$has_machines) {
+                    error_log("[PASSWORD_CHECK] Redirection vers installation (pas de machines)");
                     header('Location: ?installation');
                     exit;
                 }
@@ -256,29 +262,46 @@ if(in_array($page, $page_secure,true)){
             
             // Vérifier s'il existe un mot de passe admin (sauf pour les pages d'installation/setup)
             if ($page != 'installation' && $page != 'setup' && $page != 'setup_save') {
+                error_log("[PASSWORD_CHECK] Vérification mot de passe admin pour page: " . $page);
                 try {
                     $query = $db->prepare('SELECT COUNT(*) as count FROM admin_passwords WHERE is_active = 1');
                     $query->execute();
                     $result = $query->fetch(PDO::FETCH_ASSOC);
                     
+                    error_log("[PASSWORD_CHECK] Résultat query: " . print_r($result, true));
+                    error_log("[PASSWORD_CHECK] Type de count: " . gettype($result['count'] ?? 'NULL'));
+                    error_log("[PASSWORD_CHECK] Valeur count: " . ($result['count'] ?? 'NULL'));
+                    error_log("[PASSWORD_CHECK] empty(result): " . (empty($result) ? 'OUI' : 'NON'));
+                    error_log("[PASSWORD_CHECK] (int)count === 0: " . ((int)($result['count'] ?? 0) === 0 ? 'OUI' : 'NON'));
+                    
                     // COUNT(*) retourne toujours une ligne, donc $result n'est jamais null
                     // Vérifier directement la valeur avec un cast explicite
                     if (empty($result) || (int)$result['count'] === 0) {
+                        error_log("[PASSWORD_CHECK] Aucun mot de passe admin détecté - REDIRECTION vers create_password");
                         // Aucun mot de passe admin, rediriger vers la création
                         header('Location: ?create_password');
                         exit;
+                    } else {
+                        error_log("[PASSWORD_CHECK] Mot de passe admin trouvé, continuer normalement");
                     }
                 } catch (PDOException $e) {
+                    error_log("[PASSWORD_CHECK] Exception lors de la vérification: " . $e->getMessage());
                     // Table n'existe pas encore (base très récente), laisser passer
                 }
+            } else {
+                error_log("[PASSWORD_CHECK] Page exclue de la vérification: " . $page);
             }
         } catch (PDOException $e) {
+            error_log("[PASSWORD_CHECK] Exception connexion DB: " . $e->getMessage());
             // Base de données non trouvée, rediriger vers l'installation
             if ($page != 'installation' && $page != 'setup' && $page != 'setup_save' && $page != 'create_password') {
+                error_log("[PASSWORD_CHECK] Redirection vers installation (DB non trouvée)");
                 header('Location: ?installation');
                 exit;
             }
         }
+    } else {
+        error_log("[PASSWORD_CHECK] Condition non remplie, pas de vérification");
     }
     
     include(__DIR__ . '/../models/'.$page.'.php');
