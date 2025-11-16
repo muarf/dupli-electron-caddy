@@ -174,8 +174,12 @@ jobs:
           chmod +x caddy/caddy
           echo "✅ Caddy téléchargé"
       
-      - name: Build Linux AppImage
-        run: npm run build:caddy -- --linux --publish=never
+      - name: Build Linux (AppImage + deb)
+        run: |
+          echo "🛠️ Build AppImage..."
+          npm run build:caddy -- --linux --publish=never
+          echo "🛠️ Build deb..."
+          npx --yes electron-builder -l deb --publish=never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REF: refs/tags/${{ needs.get-tag.outputs.tag }}
@@ -186,6 +190,7 @@ jobs:
           tag_name: ${{ needs.get-tag.outputs.tag }}
           files: |
             dist/*.AppImage
+            dist/*.deb
             dist/latest-linux.yml
           fail_on_unmatched_files: false
         env:
@@ -194,9 +199,12 @@ jobs:
       - name: Verify build output
         run: |
           echo "Vérification des fichiers générés..."
-          ls -lh dist/
+          ls -lh dist/ || true
           if [ -f dist/*.AppImage ]; then
             echo "✅ AppImage créée"
+          fi
+          if ls dist/*.deb >/dev/null 2>&1; then
+            echo "✅ Paquet .deb créé"
           fi
           if [ -f dist/latest-linux.yml ]; then
             echo "✅ latest-linux.yml créé"
