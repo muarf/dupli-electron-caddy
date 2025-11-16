@@ -212,12 +212,24 @@ jobs:
           chmod +x caddy/caddy
           echo "✅ Caddy téléchargé"
       
-      - name: Build Linux (AppImage + deb)
+      - name: Build Linux (deb + AppImage)
         run: |
-          echo "🛠️ Build AppImage..."
-          npm run build:caddy -- --linux --publish=never
           echo "🛠️ Build deb..."
           npx --yes electron-builder --config electron-builder-caddy.yml -l deb --publish=never
+          echo "🛠️ Sauvegarder latest-linux.yml pour deb..."
+          if [ -f dist/latest-linux.yml ]; then
+            cp dist/latest-linux.yml dist/latest-linux-deb.yml
+            echo "✅ latest-linux-deb.yml créé"
+            # Vérifier le contenu pour confirmer qu'il pointe vers .deb
+            if grep -q "\.deb" dist/latest-linux-deb.yml; then
+              echo "✅ latest-linux-deb.yml pointe bien vers .deb"
+            fi
+          fi
+          echo "🛠️ Build AppImage..."
+          npm run build:caddy -- --linux AppImage --publish=never
+          echo "🛠️ latest-linux.yml final pointe vers AppImage (dernier build)"
+          echo "✅ latest-linux.yml pointe vers AppImage (pour auto-update AppImage)"
+          echo "✅ latest-linux-deb.yml pointe vers .deb (pour référence)"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REF: refs/tags/${{ needs.get-tag.outputs.tag }}
@@ -230,6 +242,7 @@ jobs:
             dist/*.AppImage
             dist/*.deb
             dist/latest-linux.yml
+            dist/latest-linux-deb.yml
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
