@@ -1769,12 +1769,30 @@ ipcMain.handle('download-update', async () => {
 // Installer la mise à jour (redémarre l'application)
 ipcMain.handle('install-update', () => {
     try {
+        // Sur Linux, vérifier si pkexec est disponible avant d'essayer l'installation
+        if (process.platform === 'linux') {
+            const { execSync } = require('child_process');
+            try {
+                execSync('which pkexec', { stdio: 'ignore', timeout: 2000 });
+            } catch (e) {
+                // pkexec non disponible, retourner une erreur explicite
+                return { 
+                    success: false, 
+                    error: 'Installation automatique non disponible',
+                    detail: 'pkexec n\'est pas installé. Veuillez installer manuellement le package .deb téléchargé avec : sudo dpkg -i /path/to/Duplicator-*.deb'
+                };
+            }
+        }
+        
         // Arrêt propre puis installation avec relance forcée
         Promise.resolve()
             .then(() => stopAllChildrenGracefully())
             .then(() => {
                 // isSilent=false, isForceRunAfter=true pour forcer la relance de l'app
                 autoUpdater.quitAndInstall(false, true);
+            }).catch(err => {
+                console.error('Erreur lors de quitAndInstall:', err);
+                // Si l'installation échoue, ne pas planter l'app
             });
         return { success: true };
     } catch (error) {
