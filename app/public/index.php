@@ -261,7 +261,9 @@ if(in_array($page, $page_secure,true)){
                     $query->execute();
                     $result = $query->fetch(PDO::FETCH_ASSOC);
                     
-                    if (!$result || $result['count'] == 0) {
+                    // COUNT(*) retourne toujours une ligne, donc $result n'est jamais null
+                    // Vérifier directement la valeur avec un cast explicite
+                    if (empty($result) || (int)$result['count'] === 0) {
                         // Aucun mot de passe admin, rediriger vers la création
                         header('Location: ?create_password');
                         exit;
