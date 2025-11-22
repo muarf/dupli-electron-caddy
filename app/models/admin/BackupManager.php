@@ -16,12 +16,30 @@ class BackupManager {
         
         // Créer le dossier de sauvegarde s'il n'existe pas
         if (!is_dir($this->backup_dir)) {
-            mkdir($this->backup_dir, 0755, true);
+            if (!@mkdir($this->backup_dir, 0755, true)) {
+                $error = error_get_last();
+                error_log('Erreur lors de la création du répertoire de sauvegarde: ' . $this->backup_dir . ' - ' . ($error['message'] ?? 'Erreur inconnue'));
+                // Essayer un répertoire de secours
+                $this->backup_dir = $this->getFallbackBackupDir();
+                if (!is_dir($this->backup_dir)) {
+                    @mkdir($this->backup_dir, 0755, true);
+                }
+            }
         }
         
-        // Optionnel: journaliser si non inscriptible
+        // Vérifier que le répertoire est accessible en écriture
         if (!is_writable($this->backup_dir)) {
-             error_log('Backup dir not writable: ' . $this->backup_dir);
+            error_log('Backup dir not writable: ' . $this->backup_dir);
+            // Essayer un répertoire de secours
+            $fallback = $this->getFallbackBackupDir();
+            if (is_writable(dirname($fallback)) || @mkdir(dirname($fallback), 0755, true)) {
+                $this->backup_dir = $fallback;
+                if (!is_dir($this->backup_dir)) {
+                    @mkdir($this->backup_dir, 0755, true);
+                }
+            } else {
+                error_log('Impossible de créer un répertoire de sauvegarde accessible en écriture');
+            }
         }
     }
     
@@ -32,6 +50,17 @@ class BackupManager {
         $result = array();
         
         try {
+            // Vérifier que le répertoire de sauvegarde est accessible
+            if (!is_dir($this->backup_dir)) {
+                $result['error'] = "Le répertoire de sauvegarde n'existe pas : $this->backup_dir";
+                return $result;
+            }
+            
+            if (!is_writable($this->backup_dir)) {
+                $result['error'] = "Le répertoire de sauvegarde n'est pas accessible en écriture : $this->backup_dir";
+                return $result;
+            }
+            
             // Obtenir le chemin de la base SQLite active
             $current_db_path = $this->conf['db_path'];
             
@@ -52,7 +81,10 @@ class BackupManager {
                 $result['filename'] = $filename;
                 $result['size'] = $this->formatFileSize(filesize($filepath));
             } else {
-                $result['error'] = "Erreur lors de la copie du fichier de base de données";
+                $error = error_get_last();
+                $errorMsg = $error['message'] ?? 'Erreur inconnue';
+                $result['error'] = "Erreur lors de la copie du fichier de base de données : $errorMsg";
+                error_log("Erreur copy() : $errorMsg (source: $current_db_path, dest: $filepath)");
             }
             
         } catch (Exception $e) {
@@ -228,7 +260,11 @@ class BackupManager {
             return $this->normalizePath($envDir);
         }
         
-        // 3) Défaut selon OS
+        // 3) Détecter si on est dans une AppImage (comme dans conf.php)
+        $current_dir = getcwd();
+        $isAppImage = (strpos($current_dir, '.mount') !== false || strpos($current_dir, 'AppDir') !== false);
+        
+        // 4) Défaut selon OS
         if (stripos(PHP_OS_FAMILY, 'Windows') !== false) {
             $appData = getenv('APPDATA');
             if (!empty($appData)) {
@@ -238,26 +274,50 @@ class BackupManager {
             if (!empty($userProfile)) {
                 return $this->normalizePath($userProfile . DIRECTORY_SEPARATOR . 'dupli-electron' . DIRECTORY_SEPARATOR . 'sauvegarde');
             }
-            // Dernier recours Windows: utiliser un dossier local au projet
-            return $this->normalizePath(__DIR__ . '/../../sauvegarde');
-        }
-        
-        // Linux/Unix: utiliser XDG_CONFIG_HOME ou ~/.config
-        $xdg = getenv('XDG_CONFIG_HOME');
-        if (!empty($xdg)) {
-            $xdgPath = $this->normalizePath($xdg . DIRECTORY_SEPARATOR . 'dupli-electron' . DIRECTORY_SEPARATOR . 'sauvegarde');
-            // Vérifier que le répertoire parent est accessible
-            if (is_dir(dirname($xdgPath)) || @mkdir(dirname($xdgPath), 0755, true)) {
-                return $xdgPath;
+            // Dernier recours Windows: utiliser un dossier local au projet (seulement si pas AppImage)
+            if (!$isAppImage) {
+                return $this->normalizePath(__DIR__ . '/../../sauvegarde');
             }
         }
         
-        $home = getenv('HOME');
-        if (!empty($home) && is_dir($home)) {
-            $homePath = $this->normalizePath($home . DIRECTORY_SEPARATOR . '.config' . DIRECTORY_SEPARATOR . 'dupli-electron' . DIRECTORY_SEPARATOR . 'sauvegarde');
-            // Vérifier que le répertoire parent est accessible
-            if (is_dir(dirname($homePath)) || @mkdir(dirname($homePath), 0755, true)) {
-                return $homePath;
+        // Linux/Unix: utiliser XDG_CONFIG_HOME ou ~/.config
+        // Pour AppImage, toujours utiliser le répertoire home de l'utilisateur
+        if ($isAppImage) {
+            $home = getenv('HOME');
+            if (!empty($home) && is_dir($home)) {
+                // Utiliser le même répertoire que la base de données si possible
+                $dbPath = $conf['db_path'] ?? '';
+                if (!empty($dbPath) && strpos($dbPath, $home) === 0) {
+                    $dbDir = dirname($dbPath);
+                    $backupPath = $this->normalizePath($dbDir . DIRECTORY_SEPARATOR . 'sauvegarde');
+                    if (is_writable($dbDir) || @mkdir($dbDir, 0755, true)) {
+                        return $backupPath;
+                    }
+                }
+                // Sinon utiliser ~/.config/Duplicator/sauvegarde (cohérent avec conf.php)
+                $homePath = $this->normalizePath($home . DIRECTORY_SEPARATOR . '.config' . DIRECTORY_SEPARATOR . 'Duplicator' . DIRECTORY_SEPARATOR . 'sauvegarde');
+                if (is_dir(dirname($homePath)) || @mkdir(dirname($homePath), 0755, true)) {
+                    return $homePath;
+                }
+            }
+        } else {
+            // Pas AppImage: utiliser XDG_CONFIG_HOME ou ~/.config
+            $xdg = getenv('XDG_CONFIG_HOME');
+            if (!empty($xdg)) {
+                $xdgPath = $this->normalizePath($xdg . DIRECTORY_SEPARATOR . 'dupli-electron' . DIRECTORY_SEPARATOR . 'sauvegarde');
+                // Vérifier que le répertoire parent est accessible
+                if (is_dir(dirname($xdgPath)) || @mkdir(dirname($xdgPath), 0755, true)) {
+                    return $xdgPath;
+                }
+            }
+            
+            $home = getenv('HOME');
+            if (!empty($home) && is_dir($home)) {
+                $homePath = $this->normalizePath($home . DIRECTORY_SEPARATOR . '.config' . DIRECTORY_SEPARATOR . 'dupli-electron' . DIRECTORY_SEPARATOR . 'sauvegarde');
+                // Vérifier que le répertoire parent est accessible
+                if (is_dir(dirname($homePath)) || @mkdir(dirname($homePath), 0755, true)) {
+                    return $homePath;
+                }
             }
         }
         
@@ -270,8 +330,30 @@ class BackupManager {
             return $this->normalizePath($tmpDir . DIRECTORY_SEPARATOR . 'dupli-electron-sauvegarde');
         }
         
-        // Dernier recours Unix: dossier local au projet
-        return $this->normalizePath(__DIR__ . '/../../sauvegarde');
+        // Dernier recours Unix: dossier local au projet (seulement si pas AppImage)
+        if (!$isAppImage) {
+            return $this->normalizePath(__DIR__ . '/../../sauvegarde');
+        }
+        
+        // Si AppImage et aucun autre répertoire accessible, utiliser /tmp
+        return $this->normalizePath($tmpDir . DIRECTORY_SEPARATOR . 'dupli-electron-sauvegarde');
+    }
+    
+    /**
+     * Obtenir un répertoire de sauvegarde de secours
+     */
+    private function getFallbackBackupDir() {
+        $home = getenv('HOME');
+        if (!empty($home) && is_dir($home)) {
+            $fallbackPath = $this->normalizePath($home . DIRECTORY_SEPARATOR . '.config' . DIRECTORY_SEPARATOR . 'Duplicator' . DIRECTORY_SEPARATOR . 'sauvegarde');
+            return $fallbackPath;
+        }
+        
+        $tmpDir = getenv('TMPDIR');
+        if (empty($tmpDir)) {
+            $tmpDir = '/tmp';
+        }
+        return $this->normalizePath($tmpDir . DIRECTORY_SEPARATOR . 'dupli-electron-sauvegarde');
     }
 
     private function normalizePath($path) {
