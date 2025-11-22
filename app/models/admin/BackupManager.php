@@ -299,6 +299,48 @@ class BackupManager {
     }
 
     private function resolveBackupDir(array $conf) {
+        // 0) Détecter d'abord si on est dans une AppImage (AVANT toute autre résolution)
+        // Si on est dans une AppImage, utiliser directement le fallback pour éviter tout risque
+        $script_dir = __DIR__;
+        $current_dir = getcwd();
+        $isAppImageEarly = (
+            strpos($script_dir, '.mount') !== false || 
+            strpos($script_dir, 'AppDir') !== false ||
+            strpos($current_dir, '.mount') !== false || 
+            strpos($current_dir, 'AppDir') !== false ||
+            strpos($script_dir, 'app.asar.unpacked') !== false ||
+            strpos($current_dir, 'app.asar.unpacked') !== false
+        );
+        
+        // Si on est dans une AppImage, utiliser directement le fallback (sauf si config explicite)
+        if ($isAppImageEarly) {
+            error_log('BackupManager resolveBackupDir: AppImage détectée tôt, utilisation directe du fallback');
+            // Vérifier d'abord la config explicite et l'env (priorité)
+            if (!empty($conf['backup_dir'])) {
+                $explicitPath = $this->normalizePath($conf['backup_dir']);
+                // Vérifier que le chemin explicite n'est pas dans l'AppImage
+                if (strpos($explicitPath, '.mount') === false && 
+                    strpos($explicitPath, 'AppDir') === false && 
+                    strpos($explicitPath, 'app.asar.unpacked') === false) {
+                    return $explicitPath;
+                }
+            }
+            
+            $envDir = getenv('DUPLI_BACKUP_DIR');
+            if (!empty($envDir)) {
+                $envPath = $this->normalizePath($envDir);
+                // Vérifier que le chemin env n'est pas dans l'AppImage
+                if (strpos($envPath, '.mount') === false && 
+                    strpos($envPath, 'AppDir') === false && 
+                    strpos($envPath, 'app.asar.unpacked') === false) {
+                    return $envPath;
+                }
+            }
+            
+            // Sinon, utiliser directement le fallback
+            return $this->getFallbackBackupDir();
+        }
+        
         // 1) Priorité config explicite
         if (!empty($conf['backup_dir'])) {
             return $this->normalizePath($conf['backup_dir']);
