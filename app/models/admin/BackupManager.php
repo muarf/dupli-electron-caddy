@@ -458,13 +458,24 @@ class BackupManager {
     /**
      * Obtenir un répertoire de sauvegarde de secours
      */
+    /**
+     * Obtenir un répertoire de sauvegarde de secours
+     * Garantit toujours un répertoire accessible en écriture, jamais dans l'AppImage
+     */
     private function getFallbackBackupDir() {
-        $home = getenv('HOME');
+        // Essayer d'abord le home de l'utilisateur
+        $home = $_SERVER['HOME'] ?? getenv('HOME');
         if (!empty($home) && is_dir($home)) {
             $fallbackPath = $this->normalizePath($home . DIRECTORY_SEPARATOR . '.config' . DIRECTORY_SEPARATOR . 'Duplicator' . DIRECTORY_SEPARATOR . 'sauvegarde');
-            return $fallbackPath;
+            // Vérifier que le chemin n'est pas dans l'AppImage
+            if (strpos($fallbackPath, '.mount') === false && 
+                strpos($fallbackPath, 'AppDir') === false && 
+                strpos($fallbackPath, 'app.asar.unpacked') === false) {
+                return $fallbackPath;
+            }
         }
         
+        // Sinon utiliser /tmp (toujours accessible en écriture)
         $tmpDir = getenv('TMPDIR');
         if (empty($tmpDir)) {
             $tmpDir = '/tmp';
