@@ -12,15 +12,39 @@ class BackupManager {
         $this->conf = $conf;
         
         // Résoudre un répertoire de sauvegarde portable et configurable
-        $this->backup_dir = rtrim($this->resolveBackupDir($conf), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        $resolved_dir = $this->resolveBackupDir($conf);
+        $this->backup_dir = rtrim($resolved_dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        
+        // Log pour débogage
+        error_log('BackupManager: Répertoire de sauvegarde résolu: ' . $this->backup_dir);
+        
+        // Vérifier que le répertoire n'est pas dans une AppImage (read-only)
+        if (strpos($this->backup_dir, '.mount') !== false || strpos($this->backup_dir, 'AppDir') !== false) {
+            error_log('BackupManager: ATTENTION - Répertoire dans AppImage détecté, utilisation du fallback');
+            $this->backup_dir = $this->getFallbackBackupDir() . DIRECTORY_SEPARATOR;
+        }
         
         // Créer le dossier de sauvegarde s'il n'existe pas
         if (!is_dir($this->backup_dir)) {
+            $parentDir = dirname($this->backup_dir);
+            // Vérifier que le répertoire parent est accessible en écriture
+            if (!is_writable($parentDir) && !@mkdir($parentDir, 0755, true)) {
+                error_log('BackupManager: Impossible de créer le répertoire parent: ' . $parentDir);
+                // Utiliser le fallback
+                $this->backup_dir = $this->getFallbackBackupDir() . DIRECTORY_SEPARATOR;
+                $parentDir = dirname($this->backup_dir);
+            }
+            
+            // Créer le répertoire de sauvegarde
             if (!@mkdir($this->backup_dir, 0755, true)) {
                 $error = error_get_last();
-                error_log('Erreur lors de la création du répertoire de sauvegarde: ' . $this->backup_dir . ' - ' . ($error['message'] ?? 'Erreur inconnue'));
+                error_log('BackupManager: Erreur lors de la création du répertoire: ' . $this->backup_dir . ' - ' . ($error['message'] ?? 'Erreur inconnue'));
                 // Essayer un répertoire de secours
-                $this->backup_dir = $this->getFallbackBackupDir();
+                $this->backup_dir = $this->getFallbackBackupDir() . DIRECTORY_SEPARATOR;
+                $parentDir = dirname($this->backup_dir);
+                if (!is_dir($parentDir)) {
+                    @mkdir($parentDir, 0755, true);
+                }
                 if (!is_dir($this->backup_dir)) {
                     @mkdir($this->backup_dir, 0755, true);
                 }
@@ -29,18 +53,21 @@ class BackupManager {
         
         // Vérifier que le répertoire est accessible en écriture
         if (!is_writable($this->backup_dir)) {
-            error_log('Backup dir not writable: ' . $this->backup_dir);
+            error_log('BackupManager: Répertoire non accessible en écriture: ' . $this->backup_dir);
             // Essayer un répertoire de secours
-            $fallback = $this->getFallbackBackupDir();
-            if (is_writable(dirname($fallback)) || @mkdir(dirname($fallback), 0755, true)) {
+            $fallback = $this->getFallbackBackupDir() . DIRECTORY_SEPARATOR;
+            $fallbackParent = dirname($fallback);
+            if (is_writable($fallbackParent) || @mkdir($fallbackParent, 0755, true)) {
                 $this->backup_dir = $fallback;
                 if (!is_dir($this->backup_dir)) {
                     @mkdir($this->backup_dir, 0755, true);
                 }
             } else {
-                error_log('Impossible de créer un répertoire de sauvegarde accessible en écriture');
+                error_log('BackupManager: Impossible de créer un répertoire de sauvegarde accessible en écriture');
             }
         }
+        
+        error_log('BackupManager: Répertoire de sauvegarde final: ' . $this->backup_dir);
     }
     
     /**
@@ -260,9 +287,25 @@ class BackupManager {
             return $this->normalizePath($envDir);
         }
         
-        // 3) Détecter si on est dans une AppImage (comme dans conf.php)
+        // 3) Détecter si on est dans une AppImage (plus fiable avec __DIR__)
+        // Vérifier __DIR__ (chemin du fichier PHP) et getcwd() pour détecter l'AppImage
+        $script_dir = __DIR__;
         $current_dir = getcwd();
-        $isAppImage = (strpos($current_dir, '.mount') !== false || strpos($current_dir, 'AppDir') !== false);
+        $isAppImage = (
+            strpos($script_dir, '.mount') !== false || 
+            strpos($script_dir, 'AppDir') !== false ||
+            strpos($current_dir, '.mount') !== false || 
+            strpos($current_dir, 'AppDir') !== false
+        );
+        
+        // Vérifier aussi via le chemin de la base de données (si dans AppImage, il devrait être dans ~/.config)
+        if (!$isAppImage && !empty($conf['db_path'])) {
+            $dbPath = $conf['db_path'];
+            // Si la DB est dans un répertoire .mount ou AppDir, on est dans une AppImage
+            if (strpos($dbPath, '.mount') !== false || strpos($dbPath, 'AppDir') !== false) {
+                $isAppImage = true;
+            }
+        }
         
         // 4) Défaut selon OS
         if (stripos(PHP_OS_FAMILY, 'Windows') !== false) {
@@ -283,23 +326,39 @@ class BackupManager {
         // Linux/Unix: utiliser XDG_CONFIG_HOME ou ~/.config
         // Pour AppImage, toujours utiliser le répertoire home de l'utilisateur
         if ($isAppImage) {
-            $home = getenv('HOME');
-            if (!empty($home) && is_dir($home)) {
+            // Pour AppImage, on DOIT utiliser un répertoire dans le home de l'utilisateur
+            // Ne jamais utiliser un répertoire dans l'AppImage (read-only)
+            $home = $_SERVER['HOME'] ?? getenv('HOME');
+            if (empty($home)) {
+                $home = '/tmp';
+            }
+            
+            if (is_dir($home) || @mkdir($home, 0755, true)) {
                 // Utiliser le même répertoire que la base de données si possible
                 $dbPath = $conf['db_path'] ?? '';
-                if (!empty($dbPath) && strpos($dbPath, $home) === 0) {
-                    $dbDir = dirname($dbPath);
-                    $backupPath = $this->normalizePath($dbDir . DIRECTORY_SEPARATOR . 'sauvegarde');
-                    if (is_writable($dbDir) || @mkdir($dbDir, 0755, true)) {
-                        return $backupPath;
+                if (!empty($dbPath)) {
+                    // Si la DB est dans le home, utiliser le même répertoire
+                    if (strpos($dbPath, $home) === 0) {
+                        $dbDir = dirname($dbPath);
+                        $backupPath = $this->normalizePath($dbDir . DIRECTORY_SEPARATOR . 'sauvegarde');
+                        // Essayer de créer le répertoire parent si nécessaire
+                        $parentDir = dirname($backupPath);
+                        if (is_dir($parentDir) || @mkdir($parentDir, 0755, true)) {
+                            return $backupPath;
+                        }
                     }
                 }
                 // Sinon utiliser ~/.config/Duplicator/sauvegarde (cohérent avec conf.php)
                 $homePath = $this->normalizePath($home . DIRECTORY_SEPARATOR . '.config' . DIRECTORY_SEPARATOR . 'Duplicator' . DIRECTORY_SEPARATOR . 'sauvegarde');
-                if (is_dir(dirname($homePath)) || @mkdir(dirname($homePath), 0755, true)) {
+                $parentDir = dirname($homePath);
+                // Essayer de créer le répertoire parent si nécessaire
+                if (is_dir($parentDir) || @mkdir($parentDir, 0755, true)) {
                     return $homePath;
                 }
             }
+            // Si on ne peut pas utiliser le home, utiliser /tmp (jamais l'AppImage)
+            $tmpDir = getenv('TMPDIR') ?: '/tmp';
+            return $this->normalizePath($tmpDir . DIRECTORY_SEPARATOR . 'dupli-electron-sauvegarde');
         } else {
             // Pas AppImage: utiliser XDG_CONFIG_HOME ou ~/.config
             $xdg = getenv('XDG_CONFIG_HOME');
@@ -331,11 +390,15 @@ class BackupManager {
         }
         
         // Dernier recours Unix: dossier local au projet (seulement si pas AppImage)
+        // IMPORTANT: Ne jamais utiliser ce chemin si on est dans une AppImage (read-only)
         if (!$isAppImage) {
-            return $this->normalizePath(__DIR__ . '/../../sauvegarde');
+            // Vérifier que __DIR__ n'est pas dans une AppImage avant d'utiliser ce chemin
+            if (strpos(__DIR__, '.mount') === false && strpos(__DIR__, 'AppDir') === false) {
+                return $this->normalizePath(__DIR__ . '/../../sauvegarde');
+            }
         }
         
-        // Si AppImage et aucun autre répertoire accessible, utiliser /tmp
+        // Si on arrive ici, utiliser /tmp (jamais l'AppImage)
         return $this->normalizePath($tmpDir . DIRECTORY_SEPARATOR . 'dupli-electron-sauvegarde');
     }
     
