@@ -178,9 +178,16 @@ jobs:
         run: |
           echo "=== Vérification de l'AppImage ==="
           VERSION=$(node -p "require('./package.json').version")
-          APPIMAGE_FILE="dist/Duplicator-${VERSION}.AppImage"
+          # Chercher l'AppImage avec le pattern correct (peut être -x86_64 ou autre architecture)
+          APPIMAGE_FILE=$(ls dist/Duplicator-${VERSION}*.AppImage 2>/dev/null | head -1)
+          if [ -z "$APPIMAGE_FILE" ]; then
+            echo "❌ AppImage manquant"
+            echo "Fichiers disponibles dans dist/:"
+            ls -la dist/
+            exit 1
+          fi
           echo "Version: $VERSION"
-          echo "Fichier attendu: $APPIMAGE_FILE"
+          echo "Fichier trouvé: $APPIMAGE_FILE"
           
           if [ -f "$APPIMAGE_FILE" ]; then
             echo "✅ AppImage créé"
@@ -199,7 +206,14 @@ jobs:
         run: |
           echo "=== Extraction de l'AppImage ==="
           VERSION=$(node -p "require('./package.json').version")
-          APPIMAGE_FILE="dist/Duplicator-${VERSION}.AppImage"
+          # Chercher l'AppImage avec le pattern correct (peut être -x86_64 ou autre architecture)
+          APPIMAGE_FILE=$(ls dist/Duplicator-${VERSION}*.AppImage 2>/dev/null | head -1)
+          if [ -z "$APPIMAGE_FILE" ]; then
+            echo "❌ AppImage non trouvé"
+            ls -la dist/
+            exit 1
+          fi
+          echo "Extraction de: $APPIMAGE_FILE"
           ./"$APPIMAGE_FILE" --appimage-extract
           
           echo "Vérification du contenu..."
