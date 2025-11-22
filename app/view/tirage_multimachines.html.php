@@ -682,6 +682,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                     <?php endif; ?>
                 <?php else: ?>
                     <input type="hidden" name="machines[<?= $index ?>][machine]" value="<?= $machine['machine'] ?>" />
+                    <input type="hidden" name="machines[<?= $index ?>][fill_rate]" value="<?= isset($machine['fill_rate']) ? htmlspecialchars($machine['fill_rate']) : '0.5' ?>" />
                     <?php if (isset($machine['brochures'])): ?>
                         <?php foreach ($machine['brochures'] as $brochureIndex => $brochure): ?>
                             <input type="hidden" name="machines[<?= $index ?>][brochures][<?= $brochureIndex ?>][nb_exemplaires]" value="<?= $brochure['nb_exemplaires'] ?>" />
@@ -901,6 +902,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                     <?php endif; ?>
                 <?php else: ?>
                     <input type="hidden" name="machines[<?= $index ?>][machine]" value="<?= $machine['machine'] ?>" />
+                    <input type="hidden" name="machines[<?= $index ?>][fill_rate]" value="<?= isset($machine['fill_rate']) ? htmlspecialchars($machine['fill_rate']) : '0.5' ?>" />
                     <input type="hidden" name="machines[<?= $index ?>][prix]" value="<?= $machine['prix'] ?>" />
                     <input type="hidden" name="machines[<?= $index ?>][rv]" value="<?= isset($machine['rv']) ? $machine['rv'] : 'non' ?>" />
                     <input type="hidden" name="machines[<?= $index ?>][feuilles_payees]" value="<?= isset($machine['feuilles_payees']) ? $machine['feuilles_payees'] : 'non' ?>" />
