@@ -19,14 +19,37 @@ class BackupManager {
         error_log('BackupManager: Répertoire de sauvegarde résolu: ' . $this->backup_dir);
         
         // Vérifier que le répertoire n'est pas dans une AppImage (read-only)
-        if (strpos($this->backup_dir, '.mount') !== false || strpos($this->backup_dir, 'AppDir') !== false) {
-            error_log('BackupManager: ATTENTION - Répertoire dans AppImage détecté, utilisation du fallback');
+        // Vérification stricte : si le chemin contient .mount, AppDir ou app.asar.unpacked, utiliser le fallback
+        if (strpos($this->backup_dir, '.mount') !== false || 
+            strpos($this->backup_dir, 'AppDir') !== false || 
+            strpos($this->backup_dir, 'app.asar.unpacked') !== false) {
+            error_log('BackupManager: ATTENTION - Répertoire dans AppImage détecté: ' . $this->backup_dir . ', utilisation du fallback');
+            $this->backup_dir = $this->getFallbackBackupDir() . DIRECTORY_SEPARATOR;
+            error_log('BackupManager: Nouveau répertoire (fallback): ' . $this->backup_dir);
+        }
+        
+        // Vérifier une dernière fois AVANT de créer le répertoire
+        // Si le chemin est toujours dans une AppImage, forcer l'utilisation du fallback
+        if (strpos($this->backup_dir, '.mount') !== false || 
+            strpos($this->backup_dir, 'AppDir') !== false || 
+            strpos($this->backup_dir, 'app.asar.unpacked') !== false) {
+            error_log('BackupManager: DERNIÈRE VÉRIFICATION - Répertoire toujours dans AppImage, utilisation du fallback');
             $this->backup_dir = $this->getFallbackBackupDir() . DIRECTORY_SEPARATOR;
         }
         
         // Créer le dossier de sauvegarde s'il n'existe pas
         if (!is_dir($this->backup_dir)) {
             $parentDir = dirname($this->backup_dir);
+            
+            // Vérifier que le répertoire parent n'est pas dans une AppImage
+            if (strpos($parentDir, '.mount') !== false || 
+                strpos($parentDir, 'AppDir') !== false || 
+                strpos($parentDir, 'app.asar.unpacked') !== false) {
+                error_log('BackupManager: Répertoire parent dans AppImage, utilisation du fallback');
+                $this->backup_dir = $this->getFallbackBackupDir() . DIRECTORY_SEPARATOR;
+                $parentDir = dirname($this->backup_dir);
+            }
+            
             // Vérifier que le répertoire parent est accessible en écriture
             if (!is_writable($parentDir) && !@mkdir($parentDir, 0755, true)) {
                 error_log('BackupManager: Impossible de créer le répertoire parent: ' . $parentDir);
@@ -295,17 +318,22 @@ class BackupManager {
             strpos($script_dir, '.mount') !== false || 
             strpos($script_dir, 'AppDir') !== false ||
             strpos($current_dir, '.mount') !== false || 
-            strpos($current_dir, 'AppDir') !== false
+            strpos($current_dir, 'AppDir') !== false ||
+            strpos($script_dir, 'app.asar.unpacked') !== false ||
+            strpos($current_dir, 'app.asar.unpacked') !== false
         );
         
         // Vérifier aussi via le chemin de la base de données (si dans AppImage, il devrait être dans ~/.config)
         if (!$isAppImage && !empty($conf['db_path'])) {
             $dbPath = $conf['db_path'];
             // Si la DB est dans un répertoire .mount ou AppDir, on est dans une AppImage
-            if (strpos($dbPath, '.mount') !== false || strpos($dbPath, 'AppDir') !== false) {
+            if (strpos($dbPath, '.mount') !== false || strpos($dbPath, 'AppDir') !== false || strpos($dbPath, 'app.asar.unpacked') !== false) {
                 $isAppImage = true;
             }
         }
+        
+        // Log pour débogage
+        error_log('BackupManager resolveBackupDir: script_dir=' . $script_dir . ', current_dir=' . $current_dir . ', isAppImage=' . ($isAppImage ? 'true' : 'false'));
         
         // 4) Défaut selon OS
         if (stripos(PHP_OS_FAMILY, 'Windows') !== false) {
@@ -328,19 +356,26 @@ class BackupManager {
         if ($isAppImage) {
             // Pour AppImage, on DOIT utiliser un répertoire dans le home de l'utilisateur
             // Ne jamais utiliser un répertoire dans l'AppImage (read-only)
+            error_log('BackupManager resolveBackupDir: AppImage détectée, utilisation du home utilisateur');
+            
             $home = $_SERVER['HOME'] ?? getenv('HOME');
             if (empty($home)) {
-                $home = '/tmp';
+                error_log('BackupManager resolveBackupDir: HOME non défini, utilisation de /tmp');
+                $tmpDir = getenv('TMPDIR') ?: '/tmp';
+                return $this->normalizePath($tmpDir . DIRECTORY_SEPARATOR . 'dupli-electron-sauvegarde');
             }
             
-            if (is_dir($home) || @mkdir($home, 0755, true)) {
-                // Utiliser le même répertoire que la base de données si possible
-                $dbPath = $conf['db_path'] ?? '';
-                if (!empty($dbPath)) {
-                    // Si la DB est dans le home, utiliser le même répertoire
-                    if (strpos($dbPath, $home) === 0) {
-                        $dbDir = dirname($dbPath);
-                        $backupPath = $this->normalizePath($dbDir . DIRECTORY_SEPARATOR . 'sauvegarde');
+            // Utiliser le même répertoire que la base de données si possible
+            $dbPath = $conf['db_path'] ?? '';
+            if (!empty($dbPath)) {
+                // Si la DB est dans le home, utiliser le même répertoire
+                if (strpos($dbPath, $home) === 0) {
+                    $dbDir = dirname($dbPath);
+                    $backupPath = $this->normalizePath($dbDir . DIRECTORY_SEPARATOR . 'sauvegarde');
+                    // Vérifier que le chemin n'est pas dans l'AppImage
+                    if (strpos($backupPath, '.mount') === false && 
+                        strpos($backupPath, 'AppDir') === false && 
+                        strpos($backupPath, 'app.asar.unpacked') === false) {
                         // Essayer de créer le répertoire parent si nécessaire
                         $parentDir = dirname($backupPath);
                         if (is_dir($parentDir) || @mkdir($parentDir, 0755, true)) {
@@ -348,15 +383,23 @@ class BackupManager {
                         }
                     }
                 }
-                // Sinon utiliser ~/.config/Duplicator/sauvegarde (cohérent avec conf.php)
-                $homePath = $this->normalizePath($home . DIRECTORY_SEPARATOR . '.config' . DIRECTORY_SEPARATOR . 'Duplicator' . DIRECTORY_SEPARATOR . 'sauvegarde');
+            }
+            
+            // Sinon utiliser ~/.config/Duplicator/sauvegarde (cohérent avec conf.php)
+            $homePath = $this->normalizePath($home . DIRECTORY_SEPARATOR . '.config' . DIRECTORY_SEPARATOR . 'Duplicator' . DIRECTORY_SEPARATOR . 'sauvegarde');
+            // Vérifier que le chemin n'est pas dans l'AppImage
+            if (strpos($homePath, '.mount') === false && 
+                strpos($homePath, 'AppDir') === false && 
+                strpos($homePath, 'app.asar.unpacked') === false) {
                 $parentDir = dirname($homePath);
                 // Essayer de créer le répertoire parent si nécessaire
                 if (is_dir($parentDir) || @mkdir($parentDir, 0755, true)) {
                     return $homePath;
                 }
             }
-            // Si on ne peut pas utiliser le home, utiliser /tmp (jamais l'AppImage)
+            
+            // Si on arrive ici, utiliser /tmp (jamais l'AppImage)
+            error_log('BackupManager resolveBackupDir: Utilisation de /tmp pour AppImage');
             $tmpDir = getenv('TMPDIR') ?: '/tmp';
             return $this->normalizePath($tmpDir . DIRECTORY_SEPARATOR . 'dupli-electron-sauvegarde');
         } else {
@@ -391,14 +434,24 @@ class BackupManager {
         
         // Dernier recours Unix: dossier local au projet (seulement si pas AppImage)
         // IMPORTANT: Ne jamais utiliser ce chemin si on est dans une AppImage (read-only)
-        if (!$isAppImage) {
-            // Vérifier que __DIR__ n'est pas dans une AppImage avant d'utiliser ce chemin
-            if (strpos(__DIR__, '.mount') === false && strpos(__DIR__, 'AppDir') === false) {
-                return $this->normalizePath(__DIR__ . '/../../sauvegarde');
+        // Vérifier TOUJOURS que __DIR__ n'est pas dans une AppImage avant d'utiliser ce chemin
+        $scriptDirCheck = __DIR__;
+        $isScriptInAppImage = (
+            strpos($scriptDirCheck, '.mount') !== false || 
+            strpos($scriptDirCheck, 'AppDir') !== false ||
+            strpos($scriptDirCheck, 'app.asar.unpacked') !== false
+        );
+        
+        if (!$isAppImage && !$isScriptInAppImage) {
+            $localPath = $this->normalizePath(__DIR__ . '/../../sauvegarde');
+            // Vérifier une dernière fois que le chemin résolu n'est pas dans une AppImage
+            if (strpos($localPath, '.mount') === false && strpos($localPath, 'AppDir') === false && strpos($localPath, 'app.asar.unpacked') === false) {
+                return $localPath;
             }
         }
         
         // Si on arrive ici, utiliser /tmp (jamais l'AppImage)
+        error_log('BackupManager resolveBackupDir: Utilisation de /tmp comme dernier recours');
         return $this->normalizePath($tmpDir . DIRECTORY_SEPARATOR . 'dupli-electron-sauvegarde');
     }
     
