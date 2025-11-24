@@ -69,6 +69,28 @@ $title = __("unimpose.title");
             <div class="panel panel-default">
                 <div class="panel-body">
                     <form method="POST" enctype="multipart/form-data" class="form-horizontal">
+                        <!-- Mode de désimposition -->
+                        <div class="form-group" style="margin-bottom: 25px;">
+                            <label style="display: block; margin-bottom: 10px; font-weight: bold; color: #333;">
+                                <i class="fa fa-cog"></i> Mode de désimposition :
+                            </label>
+                            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                                <label style="display: flex; align-items: center; cursor: pointer; padding: 10px; border: 2px solid #ddd; border-radius: 8px; transition: all 0.3s;">
+                                    <input type="radio" name="unimpose_mode" value="booklet" checked style="margin-right: 8px;">
+                                    <div>
+                                        <strong>Livret classique</strong>
+                                        <small style="display: block; color: #666; margin-top: 3px;">Réorganisation des pages selon le pattern de livret</small>
+                                    </div>
+                                </label>
+                                <label style="display: flex; align-items: center; cursor: pointer; padding: 10px; border: 2px solid #ddd; border-radius: 8px; transition: all 0.3s;">
+                                    <input type="radio" name="unimpose_mode" value="split_double_pages" style="margin-right: 8px;">
+                                    <div>
+                                        <strong>Couverture + doubles pages</strong>
+                                        <small style="display: block; color: #666; margin-top: 3px;">Page 1 intacte, pages suivantes coupées en deux</small>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
                         <div class="file-upload-area" id="fileUploadArea" style="border: 3px dashed #ffb3ba; border-radius: 15px; padding: 40px; text-align: center; background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%); transition: all 0.3s ease; cursor: pointer;">
                             <div class="file-upload-icon" style="font-size: 48px; color: #ffb3ba; margin-bottom: 20px;">
                                 <i class="fa fa-file-pdf-o"></i>
@@ -123,6 +145,27 @@ $title = __("unimpose.title");
         </div>
     </div>
 </div>
+
+<!-- Styles pour les options de mode -->
+<style>
+    label[for], label input[type="radio"] {
+        cursor: pointer;
+    }
+    label input[type="radio"]:checked + div {
+        color: #28a745;
+    }
+    label:hover {
+        border-color: #ffb3ba !important;
+        background-color: #fff5f5;
+    }
+    label input[type="radio"]:checked ~ * {
+        border-color: #28a745;
+    }
+    label:has(input[type="radio"]:checked) {
+        border-color: #28a745 !important;
+        background-color: #f0fff4;
+    }
+</style>
 
 <!-- JavaScript pour le drag & drop -->
 <script>
