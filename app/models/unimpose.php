@@ -4,6 +4,76 @@ require_once(__DIR__ . '/unimpose_logic.php');
 require_once(__DIR__ . '/../controler/functions/i18n.php');
 require_once(__DIR__ . '/../controler/functions/utilities.php');
 
+function unimpose_split_double_pages($input_file, $output_file) {
+    /**Transforme un PDF avec couverture + doubles pages en pages individuelles - avec nettoyage Ghostscript forcé*/
+    
+    // Vérifier d'abord que le fichier existe et est lisible
+    if (!file_exists($input_file) || !is_readable($input_file)) {
+        throw new Exception("Le fichier PDF n'existe pas ou n'est pas lisible.");
+    }
+    
+    // FORCER le nettoyage Ghostscript dans tous les cas
+    $timestamp = date('YmdHis');
+    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
+    
+    if (!file_exists($tmp_dir)) {
+        mkdir($tmp_dir, 0755, true);
+    }
+    
+    $cleanedPdfFile = $tmp_dir . 'cleaned_unimpose_split_' . $timestamp . '.pdf';
+    
+    // Nettoyer le PDF avec Ghostscript - détection automatique de la plateforme
+    if (PHP_OS_FAMILY === 'Windows') {
+        // Chemin complet vers Ghostscript Windows
+        $gs_command = __DIR__ . '/../../ghostscript/gswin64c.exe';
+        if (!file_exists($gs_command)) {
+            throw new Exception("Ghostscript Windows non trouvé : " . $gs_command);
+        }
+    } else {
+        $gs_command = 'gs';
+    }
+    
+    $command = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($input_file) . " 2>&1";
+    $output = shell_exec($command);
+    
+    if (!file_exists($cleanedPdfFile) || filesize($cleanedPdfFile) == 0) {
+        throw new Exception("Échec du nettoyage Ghostscript. Sortie: " . $output);
+    }
+    
+    // Utiliser directement le fichier de sortie
+    $finalOutputFile = $output_file;
+    
+    // Maintenant exécuter le découpage avec le PDF nettoyé
+    try {
+        // Utiliser la méthode splitDoublePages
+        $unimpose = new UnimposeBooklet($cleanedPdfFile, $finalOutputFile);
+        $resultFile = $unimpose->splitDoublePages();
+    
+        // Nettoyer le fichier temporaire
+        if (file_exists($cleanedPdfFile)) {
+            unlink($cleanedPdfFile);
+        }
+        
+        if (!$resultFile) {
+            throw new Exception("Échec du découpage des doubles pages du PDF");
+        }
+        
+        return $resultFile;
+        
+    } catch (Exception $e) {
+        // Nettoyer le fichier temporaire en cas d'erreur
+        if (file_exists($cleanedPdfFile)) {
+            unlink($cleanedPdfFile);
+        }
+        
+        // Afficher l'erreur détaillée pour debug
+        error_log("Erreur détaillée de découpage : " . $e->getMessage());
+        error_log("Trace : " . $e->getTraceAsString());
+        
+        throw new Exception("Erreur lors du découpage : " . $e->getMessage());
+    }
+}
+
 function unimpose_booklet($input_file, $output_file) {
     /**Transforme un livret en PDF page par page - avec nettoyage Ghostscript forcé*/
     
@@ -110,10 +180,19 @@ function Action($conf) {
                 if (move_uploaded_file($_FILES["pdf"]["tmp_name"], $uploadFile)) {
                     // Générer le fichier de sortie avec le nom original + _unimposed
                     $originalName = pathinfo($_FILES["pdf"]["name"], PATHINFO_FILENAME);
-                    $outputFile = $tmpDir . $originalName . '_unimposed.pdf';
                     
-                    // Exécuter la désimposition
-                    $resultFile = unimpose_booklet($uploadFile, $outputFile);
+                    // Déterminer le mode de désimposition
+                    $unimposeMode = isset($_POST['unimpose_mode']) ? $_POST['unimpose_mode'] : 'booklet';
+                    
+                    if ($unimposeMode === 'split_double_pages') {
+                        // Mode : couverture + doubles pages
+                        $outputFile = $tmpDir . $originalName . '_split.pdf';
+                        $resultFile = unimpose_split_double_pages($uploadFile, $outputFile);
+                    } else {
+                        // Mode : livret classique (par défaut)
+                        $outputFile = $tmpDir . $originalName . '_unimposed.pdf';
+                        $resultFile = unimpose_booklet($uploadFile, $outputFile);
+                    }
                     
                     if (file_exists($resultFile)) {
                         $success = true;

@@ -154,6 +154,122 @@ class UnimposeBooklet {
         
         return $finalOutputFile;
     }
+    
+    /**
+     * Désimpose un PDF avec format : couverture (page 1) + doubles pages (pages 2-N)
+     * La page 1 reste intacte, les pages suivantes sont coupées en deux dans l'ordre séquentiel
+     * 
+     * @return string|false Chemin du fichier de sortie ou false en cas d'erreur
+     */
+    public function splitDoublePages() {
+        try {
+            // Vérifier que le fichier d'entrée existe
+            if (!file_exists($this->inputFile)) {
+                throw new Exception("Le fichier d'entrée n'existe pas : " . $this->inputFile);
+            }
+            
+            // Parser le PDF pour obtenir les informations
+            $parser = new Parser();
+            $pdf = $parser->parseFile($this->inputFile);
+            $pages = $pdf->getPages();
+            $pageCount = count($pages);
+            
+            if ($pageCount == 0) {
+                throw new Exception("Le fichier PDF ne contient aucune page");
+            }
+            
+            // Créer un nouveau PDF de sortie avec FPDI
+            $outputPdf = new setasign\Fpdi\Fpdi();
+            $outputPdf->SetCreator('Unimpose PHP Script');
+            $outputPdf->SetTitle('PDF désimposé (doubles pages)');
+            
+            // Ajouter la page 1 (couverture) intacte
+            $outputPdf->setSourceFile($this->inputFile);
+            $templateId1 = $outputPdf->importPage(1);
+            $size1 = $outputPdf->getTemplateSize($templateId1);
+            $outputPdf->AddPage('P', array($size1['width'], $size1['height']));
+            $outputPdf->useTemplate($templateId1);
+            
+            // Pour les pages 2-N, les couper en deux et ajouter séquentiellement
+            for ($i = 2; $i <= $pageCount; $i++) {
+                // Créer des PDF temporaires pour les moitiés gauche et droite
+                $halfPdf = new setasign\Fpdi\Fpdi();
+                $halfPdf->setSourceFile($this->inputFile);
+                
+                $templateId = $halfPdf->importPage($i);
+                $size = $halfPdf->getTemplateSize($templateId);
+                
+                $w = $size['width'];
+                $h = $size['height'];
+                
+                // Vérifier si la page est bien une double page (largeur ≈ 2× hauteur ou > 1.5× la largeur de la page 1)
+                $expectedWidth = $size1['width'] * 2;
+                $widthRatio = $w / $size1['width'];
+                
+                // Si la page n'est pas une double page (ratio < 1.5), la garder telle quelle
+                if ($widthRatio < 1.5) {
+                    // Importer la page dans outputPdf
+                    $outputPdf->setSourceFile($this->inputFile);
+                    $templateIdOutput = $outputPdf->importPage($i);
+                    $outputPdf->AddPage('P', array($w, $h));
+                    $outputPdf->useTemplate($templateIdOutput, 0, 0, $w, null, false);
+                } else {
+                    // Page de gauche
+                    $halfPdfLeft = new setasign\Fpdi\Fpdi();
+                    $halfPdfLeft->setSourceFile($this->inputFile);
+                    $templateIdLeft = $halfPdfLeft->importPage($i);
+                    $halfPdfLeft->AddPage('P', array($w/2, $h));
+                    $halfPdfLeft->useTemplate($templateIdLeft, 0, 0, $w, null, false);
+                    
+                    $tempFileLeft = tempnam(sys_get_temp_dir(), 'pdf_left_');
+                    file_put_contents($tempFileLeft, $halfPdfLeft->Output('S'));
+                    
+                    // Page de droite
+                    $halfPdfRight = new setasign\Fpdi\Fpdi();
+                    $halfPdfRight->setSourceFile($this->inputFile);
+                    $templateIdRight = $halfPdfRight->importPage($i);
+                    $halfPdfRight->AddPage('P', array($w/2, $h));
+                    $halfPdfRight->useTemplate($templateIdRight, -$w/2, 0, $w, null, false);
+                    
+                    $tempFileRight = tempnam(sys_get_temp_dir(), 'pdf_right_');
+                    file_put_contents($tempFileRight, $halfPdfRight->Output('S'));
+                    
+                    // Ajouter la moitié gauche
+                    $outputPdf->setSourceFile($tempFileLeft);
+                    $tplIdxLeft = $outputPdf->importPage(1);
+                    $sizeLeft = $outputPdf->getTemplateSize($tplIdxLeft);
+                    $outputPdf->AddPage('P', array($sizeLeft['width'], $sizeLeft['height']));
+                    $outputPdf->useTemplate($tplIdxLeft);
+                    
+                    // Ajouter la moitié droite
+                    $outputPdf->setSourceFile($tempFileRight);
+                    $tplIdxRight = $outputPdf->importPage(1);
+                    $sizeRight = $outputPdf->getTemplateSize($tplIdxRight);
+                    $outputPdf->AddPage('P', array($sizeRight['width'], $sizeRight['height']));
+                    $outputPdf->useTemplate($tplIdxRight);
+                    
+                    // Nettoyer les fichiers temporaires
+                    if (file_exists($tempFileLeft)) {
+                        unlink($tempFileLeft);
+                    }
+                    if (file_exists($tempFileRight)) {
+                        unlink($tempFileRight);
+                    }
+                }
+            }
+            
+            // Sauvegarder le PDF avec le nom fourni
+            $finalOutputFile = $this->outputFile;
+            $outputPdf->Output($finalOutputFile, 'F');
+            
+        } catch (Exception $e) {
+            error_log("Erreur lors du découpage des doubles pages : " . $e->getMessage());
+            error_log("Trace : " . $e->getTraceAsString());
+            return false;
+        }
+        
+        return $finalOutputFile;
+    }
 }
 
 // Fonction principale
