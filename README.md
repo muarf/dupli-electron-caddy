@@ -2,6 +2,19 @@
 
 Application de gestion de comptabilité pour collectifs de reproduction (duplicopieurs/photocopieurs) avec calcul des prix de revient, packagée en application Electron cross-platform avec serveur Caddy intégré.
 
+## 📥 Télécharger la dernière version
+
+[![Latest Release](https://img.shields.io/github/v/release/muarf/dupli-electron-caddy?label=Dernière%20version&style=for-the-badge)](https://github.com/muarf/dupli-electron-caddy/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/muarf/dupli-electron-caddy/total?label=Téléchargements&style=for-the-badge)](https://github.com/muarf/dupli-electron-caddy/releases)
+
+Téléchargez la dernière release directement depuis GitHub :
+
+- **Windows** : [![Windows Download](https://img.shields.io/badge/Windows-Download-blue?style=flat-square&logo=windows)](https://github.com/muarf/dupli-electron-caddy/releases/latest) - Fichier `Duplicator-Caddy-Setup-*.exe`
+- **Linux** : [![Linux Download](https://img.shields.io/badge/Linux-Download-orange?style=flat-square&logo=linux)](https://github.com/muarf/dupli-electron-caddy/releases/latest) - Fichier `Duplicator-*-x86_64.AppImage`
+- **macOS** : [![macOS Download](https://img.shields.io/badge/macOS-Download-gray?style=flat-square&logo=apple)](https://github.com/muarf/dupli-electron-caddy/releases/latest) - Fichier `Duplicator-*.dmg`
+
+👉 **[Voir toutes les releases et télécharger](https://github.com/muarf/dupli-electron-caddy/releases)**
+
 ## 🚀 Fonctionnalités
 
 ### 📊 Gestion Comptable
@@ -34,7 +47,13 @@ Application de gestion de comptabilité pour collectifs de reproduction (duplico
 - Application Electron cross-platform (Windows, Linux, Macos à venir)
 - Interface utilisateur intuitive ( on essaie ;))
 
+
+
+
 ## 📦 Installation
+
+
+
 
 ### Prérequis
 
@@ -78,18 +97,6 @@ npm run test:e2e
 npm test
 ```
 
-## 📥 Télécharger la dernière version
-
-[![Latest Release](https://img.shields.io/github/v/release/muarf/dupli-electron-caddy?label=Dernière%20version&style=for-the-badge)](https://github.com/muarf/dupli-electron-caddy/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/muarf/dupli-electron-caddy/total?label=Téléchargements&style=for-the-badge)](https://github.com/muarf/dupli-electron-caddy/releases)
-
-Téléchargez la dernière release directement depuis GitHub :
-
-- **Windows** : [![Windows Download](https://img.shields.io/badge/Windows-Download-blue?style=flat-square&logo=windows)](https://github.com/muarf/dupli-electron-caddy/releases/latest) - Fichier `Duplicator-Caddy-Setup-*.exe`
-- **Linux** : [![Linux Download](https://img.shields.io/badge/Linux-Download-orange?style=flat-square&logo=linux)](https://github.com/muarf/dupli-electron-caddy/releases/latest) - Fichier `Duplicator-*-x86_64.AppImage`
-- **macOS** : [![macOS Download](https://img.shields.io/badge/macOS-Download-gray?style=flat-square&logo=apple)](https://github.com/muarf/dupli-electron-caddy/releases/latest) - Fichier `Duplicator-*.dmg`
-
-👉 **[Voir toutes les releases et télécharger](https://github.com/muarf/dupli-electron-caddy/releases)**
 
 ## 🏗️ Build
 
