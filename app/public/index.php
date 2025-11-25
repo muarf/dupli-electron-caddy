@@ -189,6 +189,35 @@ if ($page === 'upload_aide_pdf') {
     }
 }
 
+if ($page === 'download_unimposed') {
+    $file = $_GET['file'] ?? '';
+    // Utiliser le répertoire temporaire système
+    $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_unimpose' . DIRECTORY_SEPARATOR;
+    
+    // Sécuriser le nom de fichier
+    $filename = basename($file);
+    $filePath = $tmpDir . $filename;
+    
+    if (file_exists($filePath) && is_readable($filePath) && strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) === 'pdf') {
+        // Désactiver la compression de sortie pour éviter les problèmes de téléchargement
+        if (ini_get('zlib.output_compression')) {
+            ini_set('zlib.output_compression', 'Off');
+        }
+        
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . filesize($filePath));
+        header('Cache-Control: private, max-age=0, must-revalidate');
+        header('Pragma: public');
+        
+        readfile($filePath);
+        exit;
+    } else {
+        http_response_code(404);
+        die('Fichier non trouvé ou expiré.');
+    }
+}
+
 if ($page === 'view_aide_pdf') {
     // Servir les PDFs d'aide depuis le répertoire résolu
     // Inclure les fonctions nécessaires sans vérification d'authentification

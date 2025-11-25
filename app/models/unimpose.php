@@ -12,14 +12,14 @@ function unimpose_split_double_pages($input_file, $output_file) {
         throw new Exception("Le fichier PDF n'existe pas ou n'est pas lisible.");
     }
     
-    // FORCER le nettoyage Ghostscript dans tous les cas
-    $timestamp = date('YmdHis');
-    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
+    // Utiliser le même dossier temporaire que pour l'upload
+    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_unimpose' . DIRECTORY_SEPARATOR;
     
     if (!file_exists($tmp_dir)) {
         mkdir($tmp_dir, 0755, true);
     }
     
+    $timestamp = date('YmdHis');
     $cleanedPdfFile = $tmp_dir . 'cleaned_unimpose_split_' . $timestamp . '.pdf';
     
     // Nettoyer le PDF avec Ghostscript - détection automatique de la plateforme
@@ -84,7 +84,11 @@ function unimpose_booklet($input_file, $output_file) {
     
     // FORCER le nettoyage Ghostscript dans tous les cas
     $timestamp = date('YmdHis');
-    $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR;
+    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_unimpose' . DIRECTORY_SEPARATOR;
+    
+    if (!file_exists($tmp_dir)) {
+        mkdir($tmp_dir, 0755, true);
+    }
     
     $cleanedPdfFile = $tmp_dir . 'cleaned_unimpose_' . $timestamp . '.pdf';
     
@@ -163,10 +167,12 @@ function Action($conf) {
             } elseif ($_FILES["pdf"]["size"] > 50 * 1024 * 1024) { // 50MB max
                 $errors[] = "Le fichier est trop volumineux (maximum 50MB).";
             } else {
-                // Créer le dossier tmp s'il n'existe pas
-                $tmpDir = __DIR__ . '/../public/tmp/';
+                // Utiliser le répertoire temporaire système pour être compatible AppImage (ReadOnly FS)
+                $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_unimpose' . DIRECTORY_SEPARATOR;
                 if (!is_dir($tmpDir)) {
-                    mkdir($tmpDir, 0777, true);
+                    if (!mkdir($tmpDir, 0777, true)) {
+                        throw new Exception("Impossible de créer le répertoire temporaire : " . $tmpDir);
+                    }
                 }
                 
                 // Sauvegarder le fichier uploadé
@@ -193,7 +199,8 @@ function Action($conf) {
                     if (file_exists($resultFile)) {
                         $success = true;
                         $result = basename($resultFile);
-                        $download_url = "tmp/" . basename($resultFile);
+                        // URL spéciale pour télécharger depuis le dossier temporaire système
+                        $download_url = "?download_unimposed&file=" . urlencode(basename($resultFile));
                         
                         // Nettoyer le fichier d'upload temporaire
                         unlink($uploadFile);
@@ -201,7 +208,7 @@ function Action($conf) {
                         $errors[] = "Erreur lors de la génération du PDF désimposé.";
                     }
                 } else {
-                    $errors[] = "Erreur lors de l'upload du fichier.";
+                    $errors[] = "Erreur lors de l'upload du fichier vers : " . $uploadFile;
                 }
             }
         }
@@ -221,6 +228,4 @@ function Action($conf) {
         'download_url' => $download_url
     ]);
 }
-
-
 ?>

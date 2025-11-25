@@ -1,6 +1,11 @@
 <?php
 require_once __DIR__ . '/../controler/functions/i18n.php';
 $title = __("unimpose.title");
+// Sécurisation des variables pour éviter les warnings
+$success = $success ?? false;
+$errors = $errors ?? [];
+$result = $result ?? '';
+$download_url = $download_url ?? '';
 ?>
 
 <div class="container">
@@ -35,7 +40,7 @@ $title = __("unimpose.title");
                         <p style="color: #666; margin-bottom: 25px;">
                             Le fichier <strong><?= htmlspecialchars($result) ?></strong> est prêt au téléchargement.
                         </p>
-                        <a href="<?= htmlspecialchars($download_url) ?>" class="btn btn-success btn-lg" onclick="openPdfInApp('<?= htmlspecialchars($download_url) ?>')">
+                        <a href="<?= htmlspecialchars($download_url) ?>" class="btn btn-success btn-lg">
                             <i class="fa fa-download"></i> <?php _e('unimpose.download_unimposed'); ?>
                         </a>
                     </div>
@@ -169,29 +174,6 @@ $title = __("unimpose.title");
 
 <!-- JavaScript pour le drag & drop -->
 <script>
-        // Fonction pour ouvrir un PDF dans l'application
-        async function openPdfInApp(pdfUrl) {
-            try {
-                // Vérifier si on est dans Tauri
-                if (window.__TAURI__) {
-                    const { invoke } = window.__TAURI__.tauri;
-                    
-                    // Construire le chemin local du fichier
-                    const localPath = './app/public/' + pdfUrl;
-                    
-                    // Essayer d'ouvrir le fichier avec l'application par défaut
-                    await invoke('open_file', { filePath: localPath });
-                } else {
-                    // Fallback pour navigateur web
-                    window.open(pdfUrl, '_blank');
-                }
-            } catch (error) {
-                console.error('Erreur lors de l\'ouverture du PDF:', error);
-                // Fallback: ouvrir dans un nouvel onglet
-                window.open(pdfUrl, '_blank');
-            }
-        }
-
 document.addEventListener('DOMContentLoaded', function() {
     const fileUploadArea = document.getElementById('fileUploadArea');
     const fileInput = document.getElementById('pdf');
