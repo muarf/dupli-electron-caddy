@@ -84,11 +84,7 @@ function unimpose_booklet($input_file, $output_file) {
     
     // FORCER le nettoyage Ghostscript dans tous les cas
     $timestamp = date('YmdHis');
-    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
-    
-    if (!file_exists($tmp_dir)) {
-        mkdir($tmp_dir, 0755, true);
-    }
+    $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR;
     
     $cleanedPdfFile = $tmp_dir . 'cleaned_unimpose_' . $timestamp . '.pdf';
     

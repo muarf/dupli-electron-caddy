@@ -84,6 +84,21 @@
               </a>
               <ul class="dropdown-menu">
                 <li>
+                  <a href="?imposition_brochure">
+                    <i class="fa fa-book" style="color: #28a745; margin-right: 8px;"></i>
+                    <strong>Imposition Brochure</strong>
+                    <small class="text-muted d-block">Livrets pour impression recto-verso</small>
+                  </a>
+                </li>
+                <li>
+                  <a href="?imposition_livre">
+                    <i class="fa fa-book" style="color: #007bff; margin-right: 8px;"></i>
+                    <strong>Imposition Livre</strong>
+                    <small class="text-muted d-block">Cut & Stack pour découpe</small>
+                  </a>
+                </li>
+                <li role="separator" class="divider"></li>
+                <li>
                   <a href="?imposition">
                     <i class="fa fa-magic" style="color: #a8e6cf; margin-right: 8px;"></i>
                     <strong><?php _e('header.impose'); ?></strong>

@@ -45,6 +45,10 @@ set_error_handler(function($severity, $message, $file, $line) {
         // Rediriger vers la page d'erreur ou la page actuelle avec erreur
         if ($currentPage === 'imposition') {
             return template(__DIR__ . "/../view/imposition.html.php", $errorArray);
+        } elseif ($currentPage === 'imposition_brochure') {
+            return template(__DIR__ . "/../view/imposition_brochure.html.php", $errorArray);
+        } elseif ($currentPage === 'imposition_livre') {
+            return template(__DIR__ . "/../view/imposition_livre.html.php", $errorArray);
         } elseif ($currentPage === 'unimpose') {
             return template(__DIR__ . "/../view/unimpose.html.php", $errorArray);
         } else {
@@ -68,6 +72,10 @@ set_exception_handler(function($exception) {
     
     if ($currentPage === 'imposition') {
         return template(__DIR__ . "/../view/imposition.html.php", $errorArray);
+    } elseif ($currentPage === 'imposition_brochure') {
+        return template(__DIR__ . "/../view/imposition_brochure.html.php", $errorArray);
+    } elseif ($currentPage === 'imposition_livre') {
+        return template(__DIR__ . "/../view/imposition_livre.html.php", $errorArray);
     } elseif ($currentPage === 'unimpose') {
         return template(__DIR__ . "/../view/unimpose.html.php", $errorArray);
     } else {
@@ -338,7 +346,7 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','view_pdf','get-machine-template','upload_aide_pdf','view_aide_pdf');
+$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','imposition_brochure','imposition_livre','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','view_pdf','get-machine-template','upload_aide_pdf','view_aide_pdf');
 
 error_log("[PASSWORD_CHECK] ===== DEBUT VERIFICATION =====");
 error_log("[PASSWORD_CHECK] Page demandée (avant vérification): " . $page);

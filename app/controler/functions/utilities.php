@@ -276,4 +276,111 @@ function template($template_file, $variables = array())
     
     return $content;
 }
+
+/**
+ * Fonction pour normaliser un chemin (séparateurs de répertoire)
+ */
+function normalizePath($path) {
+    $path = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $path);
+    $path = trim($path);
+    return rtrim($path, DIRECTORY_SEPARATOR);
+}
+
+/**
+ * Résout le répertoire temporaire pour les fichiers PDF selon l'environnement
+ * Gère AppImage, Windows, serveur Linux, et Electron
+ * 
+ * @return string Chemin normalisé vers le répertoire temporaire
+ */
+function resolveTempDir() {
+    // Priorité 1 : Variable d'environnement explicite
+    $envDir = getenv('DUPLICATOR_TEMP_DIR');
+    if (!empty($envDir)) {
+        $dir = normalizePath($envDir);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        return $dir;
+    }
+    
+    // Priorité 2 : Variable d'environnement Electron (comme pour la DB)
+    $electronDbPath = getenv('DUPLICATOR_DB_PATH');
+    if (!empty($electronDbPath)) {
+        $dbDir = dirname($electronDbPath);
+        $tempDir = normalizePath($dbDir . DIRECTORY_SEPARATOR . 'temp');
+        if (!is_dir($tempDir)) {
+            @mkdir($tempDir, 0755, true);
+        }
+        return $tempDir;
+    }
+    
+    // Priorité 3 : Détection AppImage
+    $current_dir = getcwd();
+    if (strpos($current_dir, '.mount') !== false || strpos($current_dir, 'AppDir') !== false) {
+        // AppImage : utiliser le répertoire home de l'utilisateur
+        $home_dir = $_SERVER['HOME'] ?? getenv('HOME') ?? '/tmp';
+        $tempDir = normalizePath($home_dir . '/.config/Duplicator/temp');
+        if (!is_dir($tempDir)) {
+            @mkdir($tempDir, 0755, true);
+        }
+        return $tempDir;
+    }
+    
+    // Priorité 4 : Windows
+    if (stripos(PHP_OS_FAMILY, 'Windows') !== false) {
+        $tempBase = getenv('TEMP') ?: getenv('TMP') ?: sys_get_temp_dir();
+        $tempDir = normalizePath($tempBase . DIRECTORY_SEPARATOR . 'Duplicator' . DIRECTORY_SEPARATOR . 'temp');
+        if (!is_dir($tempDir)) {
+            @mkdir($tempDir, 0755, true);
+        }
+        return $tempDir;
+    }
+    
+    // Priorité 5 : Linux/Unix - Utiliser sys_get_temp_dir() comme avant
+    // C'est ce qui fonctionnait dans imposition.php
+    if (stripos(PHP_OS_FAMILY, 'Windows') === false) {
+        $tmpDir = sys_get_temp_dir();
+        if (is_dir($tmpDir) && is_writable($tmpDir)) {
+            $tempDir = normalizePath($tmpDir . DIRECTORY_SEPARATOR . 'duplicator');
+            if (!is_dir($tempDir)) {
+                @mkdir($tempDir, 0755, true);
+            }
+            if (is_dir($tempDir) && is_writable($tempDir)) {
+                return $tempDir;
+            }
+        }
+    }
+    
+    // Dernier recours : sys_get_temp_dir() avec normalisation et résolution du chemin réel
+    $fallbackDir = sys_get_temp_dir();
+    
+    // Pour les systèmes Unix/Linux, forcer /tmp en minuscules si sys_get_temp_dir() retourne /TMP/
+    // TCPDF est sensible à la casse et ne peut pas utiliser /TMP/ en majuscules
+    if (stripos(PHP_OS_FAMILY, 'Windows') === false) {
+        // Normaliser les répertoires système communs en minuscules
+        $fallbackDir = preg_replace_callback('#^/(TMP|VAR|USR|HOME|ROOT)(/|$)#i', function($matches) {
+            return '/' . strtolower($matches[1]) . (isset($matches[2]) ? $matches[2] : '');
+        }, $fallbackDir);
+    }
+    
+    // Utiliser realpath() pour obtenir le chemin réel (résout les liens symboliques)
+    $realPath = realpath($fallbackDir);
+    if ($realPath !== false) {
+        $fallbackDir = $realPath;
+    }
+    
+    $tempDir = normalizePath($fallbackDir . DIRECTORY_SEPARATOR . 'duplicator');
+    if (!is_dir($tempDir)) {
+        @mkdir($tempDir, 0755, true);
+    }
+    
+    // Utiliser realpath() sur le répertoire créé pour obtenir le chemin réel
+    // Cela résout les problèmes de casse (ex: /TMP/ -> /tmp/)
+    $realTempDir = realpath($tempDir);
+    if ($realTempDir !== false) {
+        return $realTempDir;
+    }
+    
+    return $tempDir;
+}
 ?>

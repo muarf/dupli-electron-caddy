@@ -5,8 +5,10 @@ if (!isset($_GET['file'])) {
     die('Fichier non spécifié');
 }
 
+require_once __DIR__ . '/../controler/functions/utilities.php';
+
 $filename = basename($_GET['file']);
-$tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
+$tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR;
 $filepath = $tmp_dir . $filename;
 
 // Vérifier que le fichier existe et est dans le bon répertoire
