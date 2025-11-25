@@ -2,6 +2,8 @@
 require_once(__DIR__ . '/../vendor/autoload.php');
 require_once(__DIR__ . '/../controler/functions/utilities.php');
 require_once(__DIR__ . '/../controler/functions/i18n.php');
+require_once(__DIR__ . '/../controler/functions/CropMarks.php');
+require_once(__DIR__ . '/../controler/functions/ImpositionProcessor.php');
 use setasign\Fpdi\TcpdfFpdi as TCPDI;
 
 function reordering_pages_a5($number_of_pages) {
@@ -52,68 +54,6 @@ function reordering_pages_a5($number_of_pages) {
     return $new_list_pages;
 }
 
-function imposition_for_sheet($group_index, $total_pages) {
-    // Séquences exactes fournies par l'utilisateur
-    $sequences = [
-        16 => [
-            [1, 16, 13, 4, 8, 9, 12, 5, 3, 14, 15, 2, 7, 10, 11, 6]
-        ],
-        32 => [
-            [1, 32, 25, 8, 16, 17, 24, 9, 7, 26, 31, 2, 10, 23, 18, 15],
-            [3, 30, 27, 6, 14, 19, 22, 11, 5, 28, 29, 4, 12, 21, 20, 13]
-        ],
-        48 => [
-            [1, 48, 37, 12, 24, 25, 36, 13, 11, 38, 47, 2, 14, 35, 26, 23],
-            [3, 46, 39, 10, 22, 27, 34, 15, 9, 40, 45, 4, 16, 33, 28, 21],
-            [5, 44, 41, 8, 20, 29, 32, 17, 7, 42, 43, 6, 18, 31, 30, 19]
-        ],
-        64 => [
-            [1, 64, 49, 16, 32, 33, 48, 17, 15, 50, 63, 2, 18, 47, 34, 31],
-            [3, 62, 51, 14, 30, 35, 46, 19, 13, 52, 61, 4, 20, 45, 36, 29],
-            [5, 60, 53, 12, 28, 37, 44, 21, 11, 54, 59, 6, 22, 43, 38, 27],
-            [7, 58, 55, 10, 26, 39, 42, 23, 9, 56, 57, 8, 24, 41, 40, 25]
-        ]
-    ];
-    
-    // Si on a une séquence exacte, l'utiliser
-    if (isset($sequences[$total_pages]) && isset($sequences[$total_pages][$group_index])) {
-        return $sequences[$total_pages][$group_index];
-    }
-    
-    // Sinon, utiliser une logique générique basée sur le pattern de base
-    $base_pattern = [1, 16, 13, 4, 8, 9, 12, 5, 3, 14, 15, 2, 7, 10, 11, 6];
-    $seq = [];
-    
-    foreach ($base_pattern as $pos => $value) {
-        if ($group_index == 0) {
-            // Premier groupe : ajuster selon le nombre total de pages
-            $N = $total_pages;
-            switch ($pos) {
-                case 0: $seq[] = 1; break;
-                case 1: $seq[] = $N; break;
-                case 2: $seq[] = $N - 11; break;
-                case 3: $seq[] = 12; break;
-                case 4: $seq[] = 24; break;
-                case 5: $seq[] = 25; break;
-                case 6: $seq[] = $N - 12; break;
-                case 7: $seq[] = 13; break;
-                case 8: $seq[] = 11; break;
-                case 9: $seq[] = $N - 10; break;
-                case 10: $seq[] = $N - 1; break;
-                case 11: $seq[] = 2; break;
-                case 12: $seq[] = 14; break;
-                case 13: $seq[] = $N - 13; break;
-                case 14: $seq[] = $N - 22; break;
-                case 15: $seq[] = 23; break;
-            }
-        } else {
-            // Groupes suivants : utiliser le pattern de base avec offset
-            $seq[] = $value + ($group_index * 16);
-        }
-    }
-    
-    return $seq;
-}
 
 function reordering_pages_a6($number_of_pages) {
     $total_pages = $number_of_pages;
@@ -122,20 +62,7 @@ function reordering_pages_a6($number_of_pages) {
         throw new Exception("Le nombre de pages doit être strictement positif.");
     }
     
-    // Si on a une séquence exacte codée, l'utiliser
-    $exact_sequences = [16, 32, 48, 64];
-    if (in_array($total_pages, $exact_sequences)) {
-        $result = [];
-        $num_groups = ceil($total_pages / 16);
-        
-        for ($group = 0; $group < $num_groups; $group++) {
-            $sheet_seq = imposition_for_sheet($group, $total_pages);
-            $result = array_merge($result, $sheet_seq);
-        }
-        return $result;
-    }
-    
-    // Logique générique pour les autres cas
+    // Tout est maintenant calculé avec les formules mathématiques
     $result = [];
     
     // Trouver le multiple de 16 le plus proche
@@ -161,24 +88,38 @@ function reordering_pages_a6($number_of_pages) {
         ];
         
         // Première suite verso avec offset
-        $verso = [
+        // L'ordre des 4 dernières pages dépend de l'offset
+        // Pour offset=0: 7, 10, 11, 6
+        // Pour offset>0: l'ordre est inversé
+        $verso_base = [
             $N/4 - 1 - $offset,                    // N/4-1,N/4-3,N/4-5,...
             $N - ($N/4 - 1) + 1 + $offset,        // N-(N/4-1)+1,N-(N/4-1)+3,...
             $N - 1 - $offset,                      // N-1,N-3,N-5,...
-            1 + 1 + $offset,                       // 2,4,6,8,...
-            ($N/4 + 1) + 1 + $offset,             // N/4+2,N/4+4,N/4+6,...
-            ($N/4) * 3 - 1 - $offset,             // (N/4)*3-1,(N/4)*3-3,...
-            ($N/2 + 1) + 1 + $offset,             // N/2+2,N/2+4,N/2+6,...
-            $N/2 - 1 - $offset                     // N/2-1,N/2-3,N/2-5,...
+            1 + 1 + $offset                        // 2,4,6,8,...
         ];
         
-        // Filtrer les pages qui dépassent le nombre total de pages
-        $recto = array_filter($recto, function($page) use ($total_pages) {
+        // Les 4 dernières pages : ordre uniforme pour tous les cas
+        $verso_last4 = [
+            $N/2 - 1 - $offset,                    // N/2-1
+            ($N/2 + 1) + 1 + $offset,             // N/2+2
+            ($N/4) * 3 - 1 - $offset,             // (N/4)*3-1
+            ($N/4 + 1) + 1 + $offset              // N/4+2
+        ];
+        
+        // Inverser pour tous les cas sauf N=16 (qui a déjà le bon ordre)
+        if ($N != 16) {
+            $verso_last4 = array_reverse($verso_last4);
+        }
+        
+        $verso = array_merge($verso_base, $verso_last4);
+        
+        // Filtrer les pages qui dépassent le nombre total de pages et réindexer
+        $recto = array_values(array_filter($recto, function($page) use ($total_pages) {
             return $page <= $total_pages && $page > 0;
-        });
-        $verso = array_filter($verso, function($page) use ($total_pages) {
+        }));
+        $verso = array_values(array_filter($verso, function($page) use ($total_pages) {
             return $page <= $total_pages && $page > 0;
-        });
+        }));
         
         // Combiner recto + verso
         $sheet_seq = array_merge($recto, $verso);
@@ -343,34 +284,6 @@ function addPageNumber($pdf, $page_num, $x, $y, $new_width, $new_height, $rotati
     }
 }
 
-function drawTrimZonePageNumber($pdf, $page_num, $label_x, $label_y) {
-    $previousAutoBreak = method_exists($pdf, 'getAutoPageBreak') ? $pdf->getAutoPageBreak() : true;
-    $previousBreakMargin = method_exists($pdf, 'getBreakMargin') ? $pdf->getBreakMargin() : 0;
-    $pdf->setAutoPageBreak(false, 0);
-    
-    $pdf->SetFont('helvetica', '', 8);
-    $pdf->SetTextColor(0, 0, 0);
-    $pdf->SetXY($label_x, $label_y);
-    $pdf->Cell(8, 4, (string)$page_num, 0, 0, 'C', false, '', 0, false, 'T', 'M');
-    
-    $pdf->setAutoPageBreak($previousAutoBreak, $previousBreakMargin);
-}
-
-function computeTrimZonePosition($x, $y, $page_width, $page_height, $page_row, $total_rows, $sheet_width, $sheet_height, $offset = 4) {
-    $label_x = $x + ($page_width / 2) - 4;
-    $label_x = max(2, min($sheet_width - 10, $label_x));
-    
-    if ($page_row <= 0) {
-        $label_y = max(2, $y - $offset - 4);
-    } elseif ($page_row >= $total_rows - 1) {
-        $label_y = min($sheet_height - 6, $y + $page_height + $offset);
-    } else {
-        $label_y = $y + ($page_height / 2) - 2;
-    }
-    
-    return [$label_x, $label_y];
-}
-
 /**
  * Ajoute les numéros de pages au PDF original dans le coin bas-gauche
  * Texte petit, noir, sans fond, proche des bords mais dans la zone imprimable
@@ -461,74 +374,6 @@ function addPageNumbersToPdf($pdfFilePath) {
         error_log("Erreur lors de l'ajout des numéros de pages: " . $e->getMessage());
         error_log("Stack trace: " . $e->getTraceAsString());
         return null;
-    }
-}
-
-function drawCropMarks($pdf, $x, $y, $width, $height, $bleed_size = 3) {
-    // Dessiner les traits de coupe aux 4 coins vers l'extérieur de la zone
-    // Ligne noire plus épaisse pour les traits de coupe (0.5mm)
-    $pdf->SetLineWidth(0.5);
-    $pdf->SetDrawColor(0, 0, 0); // Noir
-    
-    $mark_length = 10; // Longueur fixe de 10mm pour bien voir les marques
-    
-    // Coin supérieur gauche - lignes vers l'extérieur
-    $pdf->Line($x, $y, $x - $mark_length, $y); // Horizontale vers la gauche
-    $pdf->Line($x, $y, $x, $y - $mark_length); // Verticale vers le haut
-    
-    // Coin supérieur droit - lignes vers l'extérieur
-    $pdf->Line($x + $width, $y, $x + $width + $mark_length, $y); // Horizontale vers la droite
-    $pdf->Line($x + $width, $y, $x + $width, $y - $mark_length); // Verticale vers le haut
-    
-    // Coin inférieur gauche - lignes vers l'extérieur
-    $pdf->Line($x, $y + $height, $x - $mark_length, $y + $height); // Horizontale vers la gauche
-    $pdf->Line($x, $y + $height, $x, $y + $height + $mark_length); // Verticale vers le bas
-    
-    // Coin inférieur droit - lignes vers l'extérieur
-    $pdf->Line($x + $width, $y + $height, $x + $width + $mark_length, $y + $height); // Horizontale vers la droite
-    $pdf->Line($x + $width, $y + $height, $x + $width, $y + $height + $mark_length); // Verticale vers le bas
-}
-
-function drawCentralCropMarks($pdf, $x, $y, $width, $height) {
-    // Dessiner les traits de coupe centraux pour A3→A4 selon l'orientation
-    $pdf->SetLineWidth(0.5);
-    $pdf->SetDrawColor(0, 0, 0); // Noir
-    
-    // Détecter l'orientation de la page
-    $page_width = $pdf->getPageWidth();
-    $page_height = $pdf->getPageHeight();
-    
-    if ($page_width > $page_height) {
-        // Paysage : trait vertical à 21cm (210mm) - haut et bas
-        $center_x = 210; // 21cm = 210mm
-        $mark_length = 8; // Plus court
-        
-        // Trait haut (vers l'extérieur)
-        $pdf->Line($center_x, 5, $center_x, max(0, 5 - $mark_length));
-        
-        // Trait bas (vers l'extérieur) - utiliser la hauteur de la page
-        $pdf->Line($center_x, $page_height - 5, $center_x, $page_height - 5 + $mark_length);
-    } else {
-        // Portrait : trait horizontal à 21cm (210mm) - gauche et droite
-        $center_y = 210; // 21cm = 210mm
-        $mark_length = 8; // Plus court
-        
-        // Trait gauche (vers l'extérieur)
-        $pdf->Line(5, $center_y, max(0, 5 - $mark_length), $center_y);
-        
-        // Trait droite (vers l'extérieur) - utiliser la largeur de la page
-        $pdf->Line($page_width - 5, $center_y, $page_width - 5 + $mark_length, $center_y);
-    }
-}
-
-function drawAllCropMarks($pdf, $x, $y, $width, $height, $bleed_size, $crop_marks_type) {
-    // Dessiner selon le type sélectionné
-    if ($crop_marks_type === 'normal' || $crop_marks_type === 'both') {
-        drawCropMarks($pdf, $x, $y, $width, $height, $bleed_size);
-    }
-    
-    if ($crop_marks_type === 'central' || $crop_marks_type === 'both') {
-        drawCentralCropMarks($pdf, $x, $y, $width, $height);
     }
 }
 
@@ -718,216 +563,27 @@ function Action($conf)
 
             // Traitement de l'imposition
             if ($imposition_type === 'a6') {
-                // Pour A6 : créer recto et verso séparés
-                for ($i = 0; $i < count($ordered_pages_array); $i += $pages_per_sheet) {
-                    $sheet_pages = array_slice($ordered_pages_array, $i, $pages_per_sheet);
-                    $recto_pages = array_slice($sheet_pages, 0, 8);
-                    $verso_pages = array_slice($sheet_pages, 8, 8);
-                    
-                    // Créer la page recto
-                    $pdfFinal->AddPage('L', [$a3_width, $a3_height]);
-                    if ($previewMode) {
-                        $pdfPreview->AddPage('L', [$a3_width, $a3_height]);
-                    }
-                    
-                    // Calculer l'offset pour centrer la grille 2x4 sur la feuille A3
-                    $grid_width = 4 * $page_width + (3 * $gutter_width);   // Largeur totale + 3 gouttières
-                    $grid_height = 2 * $page_height + $gutter_width; // Hauteur totale + 1 gouttière
-                    $global_x_offset = ($a3_width - $grid_width) / 2;
-                    $global_y_offset = ($a3_height - $grid_height) / 2;
-                    
-                    // Placer les 8 pages recto
-                    for ($j = 0; $j < 8; $j++) {
-                        $page_num = $recto_pages[$j];
-                        if ($page_num === "blank_page" || $page_num <= 0 || $page_num > $pageCount) continue;
-                        
-                        $template_id = $pdfFinal->importPage($page_num);
-                        list($x_offset, $y_offset, $new_width, $new_height) = resizeToA6($pdfFinal, $template_id, $page_width, $page_height, $forceResize);
-                        
-                        // Position en grille 2x4 pour le recto
-                        $page_row = intval($j / 4);  // 0, 1 (2 rangées)
-                        $page_col = $j % 4;          // 0, 1, 2, 3 (4 colonnes)
-                        
-                        // Ajouter la gouttière dans le calcul
-                        $x = $global_x_offset + $page_col * ($page_width + $gutter_width) + $x_offset;
-                        $y = $global_y_offset + $page_row * ($page_height + $gutter_width) + $y_offset;
-                        
-                        $pdfFinal->useTemplate($template_id, $x, $y, $new_width, $new_height);
-                        
-                        // Créer le preview en même temps
-                        if ($previewMode) {
-                            // Importer la page au moment de l'utiliser pour éviter les pages supplémentaires
-                            if (!isset($template_ids_preview[$page_num])) {
-                                $template_ids_preview[$page_num] = $pdfPreview->importPage($page_num);
-                            }
-                            $template_id_preview = $template_ids_preview[$page_num];
-                            $pdfPreview->useTemplate($template_id_preview, $x, $y, $new_width, $new_height);
-                            $pages_before = $pdfPreview->getNumPages();
-                            addPageNumber($pdfPreview, $page_num, $x, $y, $new_width, $new_height, 0);
-                            $pages_after = $pdfPreview->getNumPages();
-                            if ($pages_after != $pages_before) {
-                            }
-                        }
-                        
-                        // Dessiner les traits de coupe si activées (mode livre)
-                        if ($add_crop_marks && $imposition_mode === 'livre') {
-                            drawAllCropMarks($pdfFinal, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
-                        }
-                        
-                        if ($render_trim_numbers) {
-                            list($label_x, $label_y) = computeTrimZonePosition(
-                                $x,
-                                $y,
-                                $new_width,
-                                $new_height,
-                                $page_row,
-                                2,
-                                $a3_width,
-                                $a3_height,
-                                max(4, $bleed_size + 1)
-                            );
-                            drawTrimZonePageNumber($pdfFinal, $page_num, $label_x, $label_y);
-                        }
-                        
-                        if ($render_trim_numbers) {
-                            list($label_x, $label_y) = computeTrimZonePosition(
-                                $x,
-                                $y,
-                                $new_width,
-                                $new_height,
-                                $page_row,
-                                2,
-                                $a3_width,
-                                $a3_height,
-                                max(4, $bleed_size + 1)
-                            );
-                            drawTrimZonePageNumber($pdfFinal, $page_num, $label_x, $label_y);
-                        }
-                    }
-                    
-                    // Hirondelles en mode brochure sur le RECTO A6 - 1 par A4 paysage (par ligne)
-                    if ($add_crop_marks && $imposition_mode === 'brochure') {
-                        $crop_offset = ($bleed_mode === 'resize') ? 0 : $bleed_size;
-                        $crop_width_reduction = ($bleed_mode === 'resize') ? 0 : (2 * $bleed_size);
-                        
-                        // A4 paysage du HAUT (4 A6 côte à côte)
-                        $a4_top_x = $global_x_offset + $crop_offset;
-                        $a4_top_y = $global_y_offset + $crop_offset;
-                        $a4_top_width = (4 * $page_width) - $crop_width_reduction;
-                        $a4_top_height = $page_height - $crop_width_reduction;
-                        drawAllCropMarks($pdfFinal, $a4_top_x, $a4_top_y, $a4_top_width, $a4_top_height, $bleed_size, $crop_marks_type);
-                        
-                        // A4 paysage du BAS (4 A6 côte à côte)
-                        $a4_bottom_x = $global_x_offset + $crop_offset;
-                        $a4_bottom_y = $global_y_offset + $page_height + $crop_offset;
-                        $a4_bottom_width = (4 * $page_width) - $crop_width_reduction;
-                        $a4_bottom_height = $page_height - $crop_width_reduction;
-                        drawAllCropMarks($pdfFinal, $a4_bottom_x, $a4_bottom_y, $a4_bottom_width, $a4_bottom_height, $bleed_size, $crop_marks_type);
-                        
-                    }
-                    
-                    // Créer la page verso
-                    $pdfFinal->AddPage('L', [$a3_width, $a3_height]);
-                    if ($previewMode) {
-                        $pdfPreview->AddPage('L', [$a3_width, $a3_height]);
-                    }
-                    
-                    // Calculer l'offset pour centrer la grille 2x4 sur la feuille A3
-                    $grid_width = 4 * $page_width + (3 * $gutter_width);   // Largeur totale + 3 gouttières
-                    $grid_height = 2 * $page_height + $gutter_width; // Hauteur totale + 1 gouttière
-                    $global_x_offset = ($a3_width - $grid_width) / 2;
-                    $global_y_offset = ($a3_height - $grid_height) / 2;
-                    
-                    // Placer les 8 pages verso
-                    for ($j = 0; $j < 8; $j++) {
-                        $page_num = $verso_pages[$j];
-                        if ($page_num === "blank_page" || $page_num <= 0 || $page_num > $pageCount) continue;
-                        
-                        $template_id = $pdfFinal->importPage($page_num);
-                        list($x_offset, $y_offset, $new_width, $new_height) = resizeToA6($pdfFinal, $template_id, $page_width, $page_height, $forceResize);
-                        
-                        // Position en grille 2x4 pour le verso
-                        $page_row = intval($j / 4);  // 0, 1 (2 rangées)
-                        $page_col = $j % 4;          // 0, 1, 2, 3 (4 colonnes)
-                        
-                        // Ajouter la gouttière dans le calcul
-                        $x = $global_x_offset + $page_col * ($page_width + $gutter_width) + $x_offset;
-                        $y = $global_y_offset + $page_row * ($page_height + $gutter_width) + $y_offset;
-                        
-                        $pdfFinal->useTemplate($template_id, $x, $y, $new_width, $new_height);
-                        
-                        // Créer le preview en même temps
-                        if ($previewMode) {
-                            // Importer la page au moment de l'utiliser pour éviter les pages supplémentaires
-                            if (!isset($template_ids_preview[$page_num])) {
-                                $template_ids_preview[$page_num] = $pdfPreview->importPage($page_num);
-                            }
-                            $template_id_preview = $template_ids_preview[$page_num];
-                            $pdfPreview->useTemplate($template_id_preview, $x, $y, $new_width, $new_height);
-                            $pages_before = $pdfPreview->getNumPages();
-                            addPageNumber($pdfPreview, $page_num, $x, $y, $new_width, $new_height, 0);
-                            $pages_after = $pdfPreview->getNumPages();
-                            if ($pages_after != $pages_before) {
-                            }
-                        }
-                        
-                        // Dessiner les traits de coupe si activées (mode livre)
-                        if ($add_crop_marks && $imposition_mode === 'livre') {
-                            drawAllCropMarks($pdfFinal, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
-                        }
-                        
-                        if ($render_trim_numbers) {
-                            list($label_x, $label_y) = computeTrimZonePosition(
-                                $x,
-                                $y,
-                                $new_width,
-                                $new_height,
-                                $page_row,
-                                2,
-                                $a3_width,
-                                $a3_height,
-                                max(4, $bleed_size + 1)
-                            );
-                            drawTrimZonePageNumber($pdfFinal, $page_num, $label_x, $label_y);
-                        }
-                        
-                        if ($render_trim_numbers) {
-                            list($label_x, $label_y) = computeTrimZonePosition(
-                                $x,
-                                $y,
-                                $new_width,
-                                $new_height,
-                                $page_row,
-                                2,
-                                $a3_width,
-                                $a3_height,
-                                max(4, $bleed_size + 1)
-                            );
-                            drawTrimZonePageNumber($pdfFinal, $page_num, $label_x, $label_y);
-                        }
-                    }
-                    
-                    // Hirondelles en mode brochure sur le VERSO A6 - 1 par A4 paysage (par ligne)
-                    if ($add_crop_marks && $imposition_mode === 'brochure') {
-                        $crop_offset = ($bleed_mode === 'resize') ? 0 : $bleed_size;
-                        $crop_width_reduction = ($bleed_mode === 'resize') ? 0 : (2 * $bleed_size);
-                        
-                        // A4 paysage du HAUT (4 A6 côte à côte)
-                        $a4_top_x = $global_x_offset + $crop_offset;
-                        $a4_top_y = $global_y_offset + $crop_offset;
-                        $a4_top_width = (4 * $page_width) - $crop_width_reduction;
-                        $a4_top_height = $page_height - $crop_width_reduction;
-                        drawAllCropMarks($pdfFinal, $a4_top_x, $a4_top_y, $a4_top_width, $a4_top_height, $bleed_size, $crop_marks_type);
-                        
-                        // A4 paysage du BAS (4 A6 côte à côte)
-                        $a4_bottom_x = $global_x_offset + $crop_offset;
-                        $a4_bottom_y = $global_y_offset + $page_height + $crop_offset;
-                        $a4_bottom_width = (4 * $page_width) - $crop_width_reduction;
-                        $a4_bottom_height = $page_height - $crop_width_reduction;
-                        drawAllCropMarks($pdfFinal, $a4_bottom_x, $a4_bottom_y, $a4_bottom_width, $a4_bottom_height, $bleed_size, $crop_marks_type);
-                        
-                    }
-                }
+                ImpositionProcessor::processA6Imposition(
+                    $pdfFinal,
+                    $pdfPreview,
+                    $template_ids_preview,
+                    $ordered_pages_array,
+                    $pageCount,
+                    $pages_per_sheet,
+                    $a3_width,
+                    $a3_height,
+                    $page_width,
+                    $page_height,
+                    $gutter_width,
+                    $forceResize,
+                    $previewMode,
+                    $add_crop_marks,
+                    $imposition_mode,
+                    $bleed_mode,
+                    $bleed_size,
+                    $crop_marks_type,
+                    $render_trim_numbers
+                );
             } else {
                 // Initialiser le preview pour A5 uniquement
                 if ($previewMode) {
@@ -942,240 +598,34 @@ function Action($conf)
                     }
                 }
                 
-                // Pour A5 : créer recto et verso séparés (4 pages par côté)
-                for ($i = 0; $i < count($ordered_pages_array); $i += $pages_per_sheet) {
-                    $sheet_pages = array_slice($ordered_pages_array, $i, $pages_per_sheet);
-                    $recto_pages = array_slice($sheet_pages, 0, 4); // 4 pages recto
-                    $verso_pages = array_slice($sheet_pages, 4, 4); // 4 pages verso
-                    
-                    // Créer la page recto
-                    $pdfFinal->AddPage('P', [$a3_width, $a3_height]);
-                    if ($previewMode) {
-                        $pdfPreview->AddPage('P', [$a3_width, $a3_height]);
-                    }
-                    
-                    // Calculer l'offset pour centrer la grille 2x2 sur la feuille A3
-                    $grid_width = 2 * $page_width + $gutter_width;   // Largeur totale de la grille + gouttière
-                    $grid_height = 2 * $page_height + $gutter_width; // Hauteur totale de la grille + gouttière
-                    $global_x_offset = ($a3_width - $grid_width) / 2;
-                    $global_y_offset = ($a3_height - $grid_height) / 2;
-                    
-                    // Placer les 4 pages recto
-                    for ($j = 0; $j < 4; $j++) {
-                        $page_num = $recto_pages[$j];
-                        if ($page_num === "blank_page" || $page_num <= 0 || $page_num > $pageCount) continue;
-                        
-                        $template_id = $pdfFinal->importPage($page_num);
-                        list($x_offset, $y_offset, $new_width, $new_height) = resizeToA5($pdfFinal, $template_id, $page_width, $page_height, $forceResize);
-                        
-                        // Position en grille 2x2 pour le recto
-                        $page_row = intval($j / 2);  // 0, 1 (2 rangées)
-                        $page_col = $j % 2;          // 0, 1 (2 colonnes)
-                        
-                        // DEBUG: Log pour la première page seulement
-                        if ($j == 0 && $i == 0) {
-                        }
-                        
-                        // Ajouter la gouttière dans le calcul
-                        $x = $global_x_offset + $page_col * ($page_width + $gutter_width) + $x_offset;
-                        $y = $global_y_offset + $page_row * ($page_height + $gutter_width) + $y_offset;
-                        
-                        // Rotation de 180° pour la deuxième ligne (tête-bêche)
-                        if ($page_row == 1) {
-                            $pdfFinal->StartTransform();
-                            $pdfFinal->Rotate(180, $x + ($new_width / 2), $y + ($new_height / 2));
-                        }
-                        
-                        $pdfFinal->useTemplate($template_id, $x, $y, $new_width, $new_height);
-                        
-                        if ($page_row == 1) {
-                            $pdfFinal->StopTransform();
-                        }
-                        
-                        // Dessiner les traits de coupe si activées (mode livre)
-                        if ($add_crop_marks && $imposition_mode === 'livre') {
-                            drawAllCropMarks($pdfFinal, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
-                        }
-                        
-                        if ($render_trim_numbers) {
-                            list($label_x, $label_y) = computeTrimZonePosition(
-                                $x,
-                                $y,
-                                $new_width,
-                                $new_height,
-                                $page_row,
-                                2,
-                                $a3_width,
-                                $a3_height,
-                                max(4, $bleed_size + 1)
-                            );
-                            drawTrimZonePageNumber($pdfFinal, $page_num, $label_x, $label_y);
-                        }
-                        
-                        if ($previewMode) {
-                            if ($page_row == 1) {
-                                $pdfPreview->StartTransform();
-                                $pdfPreview->Rotate(180, $x + ($new_width / 2), $y + ($new_height / 2));
-                            }
-                            
-                            $template_id_preview = $template_ids_preview[$page_num];
-                            $pdfPreview->useTemplate($template_id_preview, $x, $y, $new_width, $new_height);
-                            
-                            if ($page_row == 1) {
-                                $pdfPreview->StopTransform();
-                            }
-                            
-                            if ($add_crop_marks && $imposition_mode === 'livre') {
-                                drawAllCropMarks($pdfPreview, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
-                            }
-                            
-                            addPageNumber($pdfPreview, $page_num, $x, $y, $new_width, $new_height, $page_row == 1 ? 180 : 0);
-                        }
-                    }
-                    
-                    // Hirondelles en mode brochure sur le RECTO - 1 par A4 paysage (par ligne)
-                    if ($add_crop_marks && $imposition_mode === 'brochure') {
-                        // Ajuster le décalage selon le mode bleed
-                        $crop_offset = ($bleed_mode === 'resize') ? 0 : $bleed_size;
-                        $crop_width_reduction = ($bleed_mode === 'resize') ? 0 : (2 * $bleed_size);
-                        
-                        // A4 paysage du HAUT (2 A5 côte à côte)
-                        $a4_top_x = $global_x_offset + $crop_offset;
-                        $a4_top_y = $global_y_offset + $crop_offset;
-                        $a4_top_width = (2 * $page_width) - $crop_width_reduction;
-                        $a4_top_height = $page_height - $crop_width_reduction;
-                        drawAllCropMarks($pdfFinal, $a4_top_x, $a4_top_y, $a4_top_width, $a4_top_height, $bleed_size, $crop_marks_type);
-                        
-                        // A4 paysage du BAS (2 A5 côte à côte)
-                        $a4_bottom_x = $global_x_offset + $crop_offset;
-                        $a4_bottom_y = $global_y_offset + $page_height + $crop_offset;
-                        $a4_bottom_width = (2 * $page_width) - $crop_width_reduction;
-                        $a4_bottom_height = $page_height - $crop_width_reduction;
-                        drawAllCropMarks($pdfFinal, $a4_bottom_x, $a4_bottom_y, $a4_bottom_width, $a4_bottom_height, $bleed_size, $crop_marks_type);
-                        
-                        if ($previewMode) {
-                            drawAllCropMarks($pdfPreview, $a4_top_x, $a4_top_y, $a4_top_width, $a4_top_height, $bleed_size, $crop_marks_type);
-                            drawAllCropMarks($pdfPreview, $a4_bottom_x, $a4_bottom_y, $a4_bottom_width, $a4_bottom_height, $bleed_size, $crop_marks_type);
-                        }
-                    }
-                    
-                    // Créer la page verso
-                    $pdfFinal->AddPage('P', [$a3_width, $a3_height]);
-                    if ($previewMode) {
-                        $pdfPreview->AddPage('P', [$a3_width, $a3_height]);
-                    }
-                    
-                    // Calculer l'offset pour centrer la grille 2x2 sur la feuille A3
-                    $grid_width = 2 * $page_width + $gutter_width;   // Largeur totale de la grille + gouttière
-                    $grid_height = 2 * $page_height + $gutter_width; // Hauteur totale de la grille + gouttière
-                    $global_x_offset = ($a3_width - $grid_width) / 2;
-                    $global_y_offset = ($a3_height - $grid_height) / 2;
-                    
-                    // Placer les 4 pages verso
-                    for ($j = 0; $j < 4; $j++) {
-                        $page_num = $verso_pages[$j];
-                        if ($page_num === "blank_page" || $page_num <= 0 || $page_num > $pageCount) continue;
-                        
-                        $template_id = $pdfFinal->importPage($page_num);
-                        list($x_offset, $y_offset, $new_width, $new_height) = resizeToA5($pdfFinal, $template_id, $page_width, $page_height, $forceResize);
-                        
-                        // Position en grille 2x2 pour le verso
-                        $page_row = intval($j / 2);  // 0, 1 (2 rangées)
-                        $page_col = $j % 2;          // 0, 1 (2 colonnes)
-                        
-                        // Ajouter la gouttière dans le calcul
-                        $x = $global_x_offset + $page_col * ($page_width + $gutter_width) + $x_offset;
-                        $y = $global_y_offset + $page_row * ($page_height + $gutter_width) + $y_offset;
-                        
-                        // Rotation de 180° pour la deuxième ligne (tête-bêche)
-                        if ($page_row == 1) {
-                            $pdfFinal->StartTransform();
-                            $pdfFinal->Rotate(180, $x + ($new_width / 2), $y + ($new_height / 2));
-                        }
-                        
-                        $pdfFinal->useTemplate($template_id, $x, $y, $new_width, $new_height);
-                        
-                        if ($page_row == 1) {
-                            $pdfFinal->StopTransform();
-                        }
-                        
-                        // Dessiner les traits de coupe si activées (mode livre)
-                        if ($add_crop_marks && $imposition_mode === 'livre') {
-                            drawAllCropMarks($pdfFinal, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
-                        }
-                        
-                        if ($render_trim_numbers) {
-                            list($label_x, $label_y) = computeTrimZonePosition(
-                                $x,
-                                $y,
-                                $new_width,
-                                $new_height,
-                                $page_row,
-                                2,
-                                $a3_width,
-                                $a3_height,
-                                max(4, $bleed_size + 1)
-                            );
-                            drawTrimZonePageNumber($pdfFinal, $page_num, $label_x, $label_y);
-                        }
-                        
-                        if ($previewMode) {
-                            if ($page_row == 1) {
-                                $pdfPreview->StartTransform();
-                                $pdfPreview->Rotate(180, $x + ($new_width / 2), $y + ($new_height / 2));
-                            }
-                            
-                            $template_id_preview = $template_ids_preview[$page_num];
-                            $pdfPreview->useTemplate($template_id_preview, $x, $y, $new_width, $new_height);
-                            
-                            if ($page_row == 1) {
-                                $pdfPreview->StopTransform();
-                            }
-                            
-                            if ($add_crop_marks && $imposition_mode === 'livre') {
-                                drawAllCropMarks($pdfPreview, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
-                            }
-                            
-                            addPageNumber($pdfPreview, $page_num, $x, $y, $new_width, $new_height, $page_row == 1 ? 180 : 0);
-                        }
-                    }
-                    
-                    // Hirondelles en mode brochure sur le VERSO - 1 par A4 paysage (par ligne)
-                    if ($add_crop_marks && $imposition_mode === 'brochure') {
-                        // Ajuster le décalage selon le mode bleed
-                        $crop_offset = ($bleed_mode === 'resize') ? 0 : $bleed_size;
-                        $crop_width_reduction = ($bleed_mode === 'resize') ? 0 : (2 * $bleed_size);
-                        
-                        // A4 paysage du HAUT (2 A5 côte à côte)
-                        $a4_top_x = $global_x_offset + $crop_offset;
-                        $a4_top_y = $global_y_offset + $crop_offset;
-                        $a4_top_width = (2 * $page_width) - $crop_width_reduction;
-                        $a4_top_height = $page_height - $crop_width_reduction;
-                        drawAllCropMarks($pdfFinal, $a4_top_x, $a4_top_y, $a4_top_width, $a4_top_height, $bleed_size, $crop_marks_type);
-                        
-                        // A4 paysage du BAS (2 A5 côte à côte)
-                        $a4_bottom_x = $global_x_offset + $crop_offset;
-                        $a4_bottom_y = $global_y_offset + $page_height + $crop_offset;
-                        $a4_bottom_width = (2 * $page_width) - $crop_width_reduction;
-                        $a4_bottom_height = $page_height - $crop_width_reduction;
-                        drawAllCropMarks($pdfFinal, $a4_bottom_x, $a4_bottom_y, $a4_bottom_width, $a4_bottom_height, $bleed_size, $crop_marks_type);
-                        
-                        if ($previewMode) {
-                            drawAllCropMarks($pdfPreview, $a4_top_x, $a4_top_y, $a4_top_width, $a4_top_height, $bleed_size, $crop_marks_type);
-                            drawAllCropMarks($pdfPreview, $a4_bottom_x, $a4_bottom_y, $a4_bottom_width, $a4_bottom_height, $bleed_size, $crop_marks_type);
-                        }
-                    }
-                }
+                // Traitement de l'imposition A5
+                ImpositionProcessor::processA5Imposition(
+                    $pdfFinal,
+                    $pdfPreview,
+                    $template_ids_preview,
+                    $ordered_pages_array,
+                    $pageCount,
+                    $pages_per_sheet,
+                    $a3_width,
+                    $a3_height,
+                    $page_width,
+                    $page_height,
+                    $gutter_width,
+                    $forceResize,
+                    $previewMode,
+                    $add_crop_marks,
+                    $imposition_mode,
+                    $bleed_mode,
+                    $bleed_size,
+                    $crop_marks_type,
+                    $render_trim_numbers
+                );
             }
             
             // Sauvegarde des fichiers résultants
             $timestamp = date('YmdHis');
             // Utiliser un répertoire temporaire système pour Ghostscript
-            $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
-            
-            if (!file_exists($tmp_dir)) {
-                mkdir($tmp_dir, 0755, true);
-            }
+    $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR;
             
             // Nettoyer le nom de fichier pour éviter les problèmes
             $safe_filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $originalFileNameWithoutExt);
@@ -1237,11 +687,7 @@ function Action($conf)
                 // Créer un fichier temporaire nettoyé
                 $timestamp = date('YmdHis');
             // Utiliser le répertoire temporaire système cross-platform
-            $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
-                
-                if (!file_exists($tmp_dir)) {
-                    mkdir($tmp_dir, 0755, true);
-                }
+    $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR;
                 
                 $cleanedPdfFile = $tmp_dir . 'cleaned_' . $timestamp . '.pdf';
                 
@@ -1394,376 +840,69 @@ function Action($conf)
 
                 // Traitement de l'imposition
                 if ($imposition_type === 'a6') {
-                    // Pour A6 : créer recto et verso séparés (même logique que le bloc principal)
-                    for ($i = 0; $i < count($ordered_pages_array); $i += $pages_per_sheet) {
-                        $sheet_pages = array_slice($ordered_pages_array, $i, $pages_per_sheet);
-                        $recto_pages = array_slice($sheet_pages, 0, 8);
-                        $verso_pages = array_slice($sheet_pages, 8, 8);
-                        
-                        // Créer la page recto
-                        $pdfFinal->AddPage('L', [$a3_width, $a3_height]);
-                        if ($previewMode) {
-                            $pdfPreview->AddPage('L', [$a3_width, $a3_height]);
-                        }
-                        
-                        // Calculer l'offset pour centrer la grille 2x4 sur la feuille A3
-                        $grid_width = 4 * $page_width + (3 * $gutter_width);   // Largeur totale + 3 gouttières
-                        $grid_height = 2 * $page_height + $gutter_width; // Hauteur totale + 1 gouttière
-                        $global_x_offset = ($a3_width - $grid_width) / 2;
-                        $global_y_offset = ($a3_height - $grid_height) / 2;
-                        
-                        // Placer les 8 pages recto
-                        for ($j = 0; $j < 8; $j++) {
-                            $page_num = $recto_pages[$j];
-                            if ($page_num === "blank_page" || $page_num <= 0 || $page_num > $pageCount) continue;
-                            
-                            $template_id = $pdfFinal->importPage($page_num);
-                            list($x_offset, $y_offset, $new_width, $new_height) = resizeToA6($pdfFinal, $template_id, $page_width, $page_height, $forceResize);
-                            
-                            // Position en grille 2x4 pour le recto
-                            $page_row = intval($j / 4);  // 0, 1 (2 rangées)
-                            $page_col = $j % 4;          // 0, 1, 2, 3 (4 colonnes)
-                            
-                            // Ajouter la gouttière dans le calcul
-                            $x = $global_x_offset + $page_col * ($page_width + $gutter_width) + $x_offset;
-                            $y = $global_y_offset + $page_row * ($page_height + $gutter_width) + $y_offset;
-                            
-                        $pdfFinal->useTemplate($template_id, $x, $y, $new_width, $new_height);
-                        if ($previewMode) {
-                            if (!isset($template_ids_preview[$page_num])) {
-                                $template_ids_preview[$page_num] = $pdfPreview->importPage($page_num);
-                            }
-                            $template_id_preview = $template_ids_preview[$page_num];
-                            $pdfPreview->useTemplate($template_id_preview, $x, $y, $new_width, $new_height);
-                            addPageNumber($pdfPreview, $page_num, $x, $y, $new_width, $new_height, 0);
-                        }
-                        
-                        if ($render_trim_numbers) {
-                            list($label_x, $label_y) = computeTrimZonePosition(
-                                $x,
-                                $y,
-                                $new_width,
-                                $new_height,
-                                $page_row,
-                                2,
-                                $a3_width,
-                                $a3_height,
-                                max(4, $bleed_size + 1)
-                            );
-                            drawTrimZonePageNumber($pdfFinal, $page_num, $label_x, $label_y);
-                        }
-                        }
-                        
-                        // Créer la page verso
-                        $pdfFinal->AddPage('L', [$a3_width, $a3_height]);
-                        if ($previewMode) {
-                            $pdfPreview->AddPage('L', [$a3_width, $a3_height]);
-                        }
-                        
-                    // Calculer l'offset pour centrer la grille 2x4 sur la feuille A3
-                    $grid_width = 4 * $page_width + (3 * $gutter_width);   // Largeur totale + 3 gouttières
-                    $grid_height = 2 * $page_height + $gutter_width; // Hauteur totale + 1 gouttière
-                    $global_x_offset = ($a3_width - $grid_width) / 2;
-                    $global_y_offset = ($a3_height - $grid_height) / 2;
+                    ImpositionProcessor::processA6Imposition(
+                        $pdfFinal,
+                        $pdfPreview,
+                        $template_ids_preview,
+                        $ordered_pages_array,
+                        $pageCount,
+                        $pages_per_sheet,
+                        $a3_width,
+                        $a3_height,
+                        $page_width,
+                        $page_height,
+                        $gutter_width,
+                        $forceResize,
+                        $previewMode,
+                        $add_crop_marks,
+                        $imposition_mode,
+                        $bleed_mode,
+                        $bleed_size,
+                        $crop_marks_type,
+                        $render_trim_numbers
+                    );
+                } else {
+                    // Initialiser le preview pour A5 dans le bloc Ghostscript
+                if ($previewMode) {
+                    $pdfPreview = new TCPDI();
+                    $pdfPreview->setSourceFile($pdfFile);
+                    $pdfPreview->setPrintHeader(false);
+                    $pdfPreview->setPrintFooter(false);
                     
-                    // Placer les 8 pages verso
-                    for ($j = 0; $j < 8; $j++) {
-                        $page_num = $verso_pages[$j];
-                        if ($page_num === "blank_page" || $page_num <= 0 || $page_num > $pageCount) continue;
-                        
-                        $template_id = $pdfFinal->importPage($page_num);
-                        list($x_offset, $y_offset, $new_width, $new_height) = resizeToA6($pdfFinal, $template_id, $page_width, $page_height, $forceResize);
-                        
-                        // Position en grille 2x4 pour le verso
-                        $page_row = intval($j / 4);  // 0, 1 (2 rangées)
-                        $page_col = $j % 4;          // 0, 1, 2, 3 (4 colonnes)
-                        
-                        // Ajouter la gouttière dans le calcul
-                        $x = $global_x_offset + $page_col * ($page_width + $gutter_width) + $x_offset;
-                        $y = $global_y_offset + $page_row * ($page_height + $gutter_width) + $y_offset;
-                        
-                        $pdfFinal->useTemplate($template_id, $x, $y, $new_width, $new_height);
-                        
-                        // Dessiner les traits de coupe si activées (mode livre)
-                        if ($add_crop_marks && $imposition_mode === 'livre') {
-                            drawAllCropMarks($pdfFinal, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
-                        }
-                        
-                        if ($render_trim_numbers) {
-                            list($label_x, $label_y) = computeTrimZonePosition(
-                                $x,
-                                $y,
-                                $new_width,
-                                $new_height,
-                                $page_row,
-                                2,
-                                $a3_width,
-                                $a3_height,
-                                max(4, $bleed_size + 1)
-                            );
-                            drawTrimZonePageNumber($pdfFinal, $page_num, $label_x, $label_y);
-                        }
-                        
-                        if ($previewMode) {
-                            if (!isset($template_ids_preview[$page_num])) {
-                                $template_ids_preview[$page_num] = $pdfPreview->importPage($page_num);
-                            }
-                            $template_id_preview = $template_ids_preview[$page_num];
-                            $pdfPreview->useTemplate($template_id_preview, $x, $y, $new_width, $new_height);
-                            
-                            if ($add_crop_marks && $imposition_mode === 'livre') {
-                                drawAllCropMarks($pdfPreview, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
-                            }
-                            
-                            addPageNumber($pdfPreview, $page_num, $x, $y, $new_width, $new_height, 0);
-                        }
-                    }
-                    
-                    // Hirondelles en mode brochure sur le VERSO A6 - 1 par A4 paysage (par ligne)
-                    if ($add_crop_marks && $imposition_mode === 'brochure') {
-                        $crop_offset = ($bleed_mode === 'resize') ? 0 : $bleed_size;
-                        $crop_width_reduction = ($bleed_mode === 'resize') ? 0 : (2 * $bleed_size);
-                        
-                        // A4 paysage du HAUT (4 A6 côte à côte)
-                        $a4_top_x = $global_x_offset + $crop_offset;
-                        $a4_top_y = $global_y_offset + $crop_offset;
-                        $a4_top_width = (4 * $page_width) - $crop_width_reduction;
-                        $a4_top_height = $page_height - $crop_width_reduction;
-                        drawAllCropMarks($pdfFinal, $a4_top_x, $a4_top_y, $a4_top_width, $a4_top_height, $bleed_size, $crop_marks_type);
-                        
-                        // A4 paysage du BAS (4 A6 côte à côte)
-                        $a4_bottom_x = $global_x_offset + $crop_offset;
-                        $a4_bottom_y = $global_y_offset + $page_height + $crop_offset;
-                        $a4_bottom_width = (4 * $page_width) - $crop_width_reduction;
-                        $a4_bottom_height = $page_height - $crop_width_reduction;
-                        drawAllCropMarks($pdfFinal, $a4_bottom_x, $a4_bottom_y, $a4_bottom_width, $a4_bottom_height, $bleed_size, $crop_marks_type);
-                        
-                        if ($previewMode) {
-                            drawAllCropMarks($pdfPreview, $a4_top_x, $a4_top_y, $a4_top_width, $a4_top_height, $bleed_size, $crop_marks_type);
-                            drawAllCropMarks($pdfPreview, $a4_bottom_x, $a4_bottom_y, $a4_bottom_width, $a4_bottom_height, $bleed_size, $crop_marks_type);
-                        }
+                    // Pré-importer tous les templates pour A5
+                    for ($page_num = 1; $page_num <= $pageCount; $page_num++) {
+                        $template_ids_preview[$page_num] = $pdfPreview->importPage($page_num);
                     }
                 }
-            } else {
-                    // Initialiser le preview pour A5 dans le bloc Ghostscript
-                    if ($previewMode) {
-                        $pdfPreview = new TCPDI();
-                        $pdfPreview->setSourceFile($pdfFile);
-                        $pdfPreview->setPrintHeader(false);
-                        $pdfPreview->setPrintFooter(false);
-                        
-                        // Pré-importer tous les templates pour A5
-                        for ($page_num = 1; $page_num <= $pageCount; $page_num++) {
-                            $template_ids_preview[$page_num] = $pdfPreview->importPage($page_num);
-                        }
-                    }
-                    
-                    // Pour A5 : créer recto et verso séparés (4 pages par côté)
-                    for ($i = 0; $i < count($ordered_pages_array); $i += $pages_per_sheet) {
-                        $sheet_pages = array_slice($ordered_pages_array, $i, $pages_per_sheet);
-                        $recto_pages = array_slice($sheet_pages, 0, 4); // 4 pages recto
-                        $verso_pages = array_slice($sheet_pages, 4, 4); // 4 pages verso
-                        
-                        // Créer la page recto
-                        $pdfFinal->AddPage('P', [$a3_width, $a3_height]);
-                        if ($previewMode) {
-                            $pdfPreview->AddPage('P', [$a3_width, $a3_height]);
-                        }
-                        
-                        // Calculer l'offset pour centrer la grille 2x2 sur la feuille A3
-                        $grid_width = 2 * $page_width + $gutter_width;   // Largeur totale de la grille + gouttière
-                        $grid_height = 2 * $page_height + $gutter_width; // Hauteur totale de la grille + gouttière
-                        $global_x_offset = ($a3_width - $grid_width) / 2;
-                        $global_y_offset = ($a3_height - $grid_height) / 2;
-                        
-                        // Placer les 4 pages recto
-                        for ($j = 0; $j < 4; $j++) {
-                            $page_num = $recto_pages[$j];
-                            if ($page_num === "blank_page" || $page_num <= 0 || $page_num > $pageCount) continue;
-                            
-                            $template_id = $pdfFinal->importPage($page_num);
-                            list($x_offset, $y_offset, $new_width, $new_height) = resizeToA5($pdfFinal, $template_id, $page_width, $page_height, $forceResize);
-                            
-                            // Position en grille 2x2 pour le recto
-                            $page_row = intval($j / 2);  // 0, 1 (2 rangées)
-                            $page_col = $j % 2;          // 0, 1 (2 colonnes)
-                            
-                            // Ajouter la gouttière dans le calcul
-                            $x = $global_x_offset + $page_col * ($page_width + $gutter_width) + $x_offset;
-                            $y = $global_y_offset + $page_row * ($page_height + $gutter_width) + $y_offset;
-                            
-                            // Rotation de 180° pour la deuxième ligne (tête-bêche)
-                            if ($page_row == 1) {
-                                $pdfFinal->StartTransform();
-                                $pdfFinal->Rotate(180, $x + ($new_width / 2), $y + ($new_height / 2));
-                            }
-                            
-                            $pdfFinal->useTemplate($template_id, $x, $y, $new_width, $new_height);
-                            
-                            if ($page_row == 1) {
-                                $pdfFinal->StopTransform();
-                            }
-                            
-                            // Dessiner les traits de coupe si activées (mode livre)
-                            if ($add_crop_marks && $imposition_mode === 'livre') {
-                                drawAllCropMarks($pdfFinal, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
-                            }
-                            
-                            if ($previewMode) {
-                                // Rotation de 180° pour la deuxième ligne (tête-bêche)
-                                if ($page_row == 1) {
-                                    $pdfPreview->StartTransform();
-                                    $pdfPreview->Rotate(180, $x + ($new_width / 2), $y + ($new_height / 2));
-                                }
-                                
-                                $template_id_preview = $template_ids_preview[$page_num];
-                                $pdfPreview->useTemplate($template_id_preview, $x, $y, $new_width, $new_height);
-                                
-                                if ($page_row == 1) {
-                                    $pdfPreview->StopTransform();
-                                }
-                                
-                                // Dessiner les traits de coupe dans le preview aussi
-                                if ($add_crop_marks && $imposition_mode === 'livre') {
-                                    drawAllCropMarks($pdfPreview, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
-                                }
-                                
-                                // Ajouter le numéro de page (avec rotation si nécessaire)
-                                addPageNumber($pdfPreview, $page_num, $x, $y, $new_width, $new_height, $page_row == 1 ? 180 : 0);
-                            }
-                        }
-                        
-                        // Hirondelles en mode brochure sur le RECTO - 1 par A4 paysage (par ligne)
-                        if ($add_crop_marks && $imposition_mode === 'brochure') {
-                            // Ajuster le décalage selon le mode bleed
-                            $crop_offset = ($bleed_mode === 'resize') ? 0 : $bleed_size;
-                            $crop_width_reduction = ($bleed_mode === 'resize') ? 0 : (2 * $bleed_size);
-                            
-                            // A4 paysage du HAUT (2 A5 côte à côte)
-                            $a4_top_x = $global_x_offset + $crop_offset;
-                            $a4_top_y = $global_y_offset + $crop_offset;
-                            $a4_top_width = (2 * $page_width) - $crop_width_reduction;
-                            $a4_top_height = $page_height - $crop_width_reduction;
-                            drawAllCropMarks($pdfFinal, $a4_top_x, $a4_top_y, $a4_top_width, $a4_top_height, $bleed_size, $crop_marks_type);
-                            
-                            // A4 paysage du BAS (2 A5 côte à côte)
-                            $a4_bottom_x = $global_x_offset + $crop_offset;
-                            $a4_bottom_y = $global_y_offset + $page_height + $crop_offset;
-                            $a4_bottom_width = (2 * $page_width) - $crop_width_reduction;
-                            $a4_bottom_height = $page_height - $crop_width_reduction;
-                            drawAllCropMarks($pdfFinal, $a4_bottom_x, $a4_bottom_y, $a4_bottom_width, $a4_bottom_height, $bleed_size, $crop_marks_type);
-                            
-                            if ($previewMode) {
-                                drawAllCropMarks($pdfPreview, $a4_top_x, $a4_top_y, $a4_top_width, $a4_top_height, $bleed_size, $crop_marks_type);
-                                drawAllCropMarks($pdfPreview, $a4_bottom_x, $a4_bottom_y, $a4_bottom_width, $a4_bottom_height, $bleed_size, $crop_marks_type);
-                            }
-                        }
-                        
-                        // Créer la page verso
-                        $pdfFinal->AddPage('P', [$a3_width, $a3_height]);
-                        if ($previewMode) {
-                            $pdfPreview->AddPage('P', [$a3_width, $a3_height]);
-                        }
-                        
-                        // Calculer l'offset pour centrer la grille 2x2 sur la feuille A3
-                        $grid_width = 2 * $page_width + $gutter_width;   // Largeur totale de la grille + gouttière
-                        $grid_height = 2 * $page_height + $gutter_width; // Hauteur totale de la grille + gouttière
-                        $global_x_offset = ($a3_width - $grid_width) / 2;
-                        $global_y_offset = ($a3_height - $grid_height) / 2;
-                        
-                        // Placer les 4 pages verso
-                        for ($j = 0; $j < 4; $j++) {
-                            $page_num = $verso_pages[$j];
-                            if ($page_num === "blank_page" || $page_num <= 0 || $page_num > $pageCount) continue;
-                            
-                            $template_id = $pdfFinal->importPage($page_num);
-                            list($x_offset, $y_offset, $new_width, $new_height) = resizeToA5($pdfFinal, $template_id, $page_width, $page_height, $forceResize);
-                            
-                            // Position en grille 2x2 pour le verso
-                            $page_row = intval($j / 2);  // 0, 1 (2 rangées)
-                            $page_col = $j % 2;          // 0, 1 (2 colonnes)
-                            
-                            // Ajouter la gouttière dans le calcul
-                            $x = $global_x_offset + $page_col * ($page_width + $gutter_width) + $x_offset;
-                            $y = $global_y_offset + $page_row * ($page_height + $gutter_width) + $y_offset;
-                            
-                            // Rotation de 180° pour la deuxième ligne (tête-bêche)
-                            if ($page_row == 1) {
-                                $pdfFinal->StartTransform();
-                                $pdfFinal->Rotate(180, $x + ($new_width / 2), $y + ($new_height / 2));
-                            }
-                            
-                            $pdfFinal->useTemplate($template_id, $x, $y, $new_width, $new_height);
-                            
-                            if ($page_row == 1) {
-                                $pdfFinal->StopTransform();
-                            }
-                            
-                            // Dessiner les traits de coupe si activées (mode livre)
-                            if ($add_crop_marks && $imposition_mode === 'livre') {
-                                drawAllCropMarks($pdfFinal, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
-                            }
-                            
-                            if ($previewMode) {
-                                // Rotation de 180° pour la deuxième ligne (tête-bêche)
-                                if ($page_row == 1) {
-                                    $pdfPreview->StartTransform();
-                                    $pdfPreview->Rotate(180, $x + ($new_width / 2), $y + ($new_height / 2));
-                                }
-                                
-                                $template_id_preview = $template_ids_preview[$page_num];
-                                $pdfPreview->useTemplate($template_id_preview, $x, $y, $new_width, $new_height);
-                                
-                                if ($page_row == 1) {
-                                    $pdfPreview->StopTransform();
-                                }
-                                
-                                // Dessiner les traits de coupe dans le preview aussi
-                                if ($add_crop_marks && $imposition_mode === 'livre') {
-                                    drawAllCropMarks($pdfPreview, $x, $y, $new_width, $new_height, $bleed_size, $crop_marks_type);
-                                }
-                                
-                                // Ajouter le numéro de page (avec rotation si nécessaire)
-                                addPageNumber($pdfPreview, $page_num, $x, $y, $new_width, $new_height, $page_row == 1 ? 180 : 0);
-                            }
-                        }
-                        
-                        // Hirondelles en mode brochure sur le VERSO - 1 par A4 paysage (par ligne)
-                        if ($add_crop_marks && $imposition_mode === 'brochure') {
-                            // Ajuster le décalage selon le mode bleed
-                            $crop_offset = ($bleed_mode === 'resize') ? 0 : $bleed_size;
-                            $crop_width_reduction = ($bleed_mode === 'resize') ? 0 : (2 * $bleed_size);
-                            
-                            // A4 paysage du HAUT (2 A5 côte à côte)
-                            $a4_top_x = $global_x_offset + $crop_offset;
-                            $a4_top_y = $global_y_offset + $crop_offset;
-                            $a4_top_width = (2 * $page_width) - $crop_width_reduction;
-                            $a4_top_height = $page_height - $crop_width_reduction;
-                            drawAllCropMarks($pdfFinal, $a4_top_x, $a4_top_y, $a4_top_width, $a4_top_height, $bleed_size, $crop_marks_type);
-                            
-                            // A4 paysage du BAS (2 A5 côte à côte)
-                            $a4_bottom_x = $global_x_offset + $crop_offset;
-                            $a4_bottom_y = $global_y_offset + $page_height + $crop_offset;
-                            $a4_bottom_width = (2 * $page_width) - $crop_width_reduction;
-                            $a4_bottom_height = $page_height - $crop_width_reduction;
-                            drawAllCropMarks($pdfFinal, $a4_bottom_x, $a4_bottom_y, $a4_bottom_width, $a4_bottom_height, $bleed_size, $crop_marks_type);
-                            
-                            if ($previewMode) {
-                                drawAllCropMarks($pdfPreview, $a4_top_x, $a4_top_y, $a4_top_width, $a4_top_height, $bleed_size, $crop_marks_type);
-                                drawAllCropMarks($pdfPreview, $a4_bottom_x, $a4_bottom_y, $a4_bottom_width, $a4_bottom_height, $bleed_size, $crop_marks_type);
-                            }
-                        }
-                    }
+                
+                // Traitement de l'imposition A5
+                ImpositionProcessor::processA5Imposition(
+                    $pdfFinal,
+                    $pdfPreview,
+                    $template_ids_preview,
+                    $ordered_pages_array,
+                    $pageCount,
+                    $pages_per_sheet,
+                    $a3_width,
+                    $a3_height,
+                    $page_width,
+                    $page_height,
+                    $gutter_width,
+                    $forceResize,
+                    $previewMode,
+                    $add_crop_marks,
+                    $imposition_mode,
+                    $bleed_mode,
+                    $bleed_size,
+                    $crop_marks_type,
+                    $render_trim_numbers
+                );
                 }
                 
                 // Sauvegarde des fichiers résultants
                 $timestamp = date('YmdHis');
             // Utiliser le répertoire temporaire système cross-platform
-            $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
-                
-                if (!file_exists($tmp_dir)) {
-                    mkdir($tmp_dir, 0755, true);
-                }
+    $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR;
 
                 if ($previewMode) {
                     $preview_filename = $safe_filename . '_preview.pdf';
