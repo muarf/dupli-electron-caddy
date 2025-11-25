@@ -81,10 +81,12 @@ function Action($conf) {
             $format = isset($_POST['format']) && $_POST['format'] === 'A3' ? 'A3' : 'A4';
             $orientation = isset($_POST['orientation']) && $_POST['orientation'] === 'L' ? 'L' : 'P';
             
-            // Créer le dossier tmp s'il n'existe pas (dans public pour accès web)
-            $tmpDir = __DIR__ . '/../public/tmp/';
+            // Utiliser sys_get_temp_dir() pour être compatible AppImage
+            $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_png_to_pdf' . DIRECTORY_SEPARATOR;
             if (!is_dir($tmpDir)) {
-                mkdir($tmpDir, 0777, true);
+                if (!mkdir($tmpDir, 0777, true)) {
+                    throw new Exception("Impossible de créer le répertoire temporaire : " . $tmpDir);
+                }
             }
             
             $uploadedFiles = [];
@@ -120,7 +122,7 @@ function Action($conf) {
                     if (move_uploaded_file($_FILES["images"]["tmp_name"][$key], $uploadFile)) {
                         $uploadedFiles[] = $uploadFile;
                     } else {
-                        $errors[] = "Erreur lors de l'upload du fichier {$name}.";
+                        $errors[] = "Erreur lors de l'upload du fichier {$name} vers : " . $uploadFile;
                     }
                 }
             }
@@ -140,7 +142,8 @@ function Action($conf) {
                 if ($result_ok && file_exists($outputFile)) {
                     $success = true;
                     $result = basename($outputFile);
-                    $download_url = "tmp/" . basename($outputFile);
+                    // Utiliser une route API pour servir le PDF depuis le dossier temporaire
+                    $download_url = "?download_pdf&file=" . urlencode(basename($outputFile)) . "&dir=png_to_pdf";
                     
                     // Nettoyer les fichiers temporaires uploadés
                     foreach ($uploadedFiles as $file) {

@@ -87,8 +87,14 @@ function resolveAidePdfDir() {
     $current_dir = getcwd();
     if (strpos($current_dir, '.mount') !== false || strpos($current_dir, 'AppDir') !== false) {
         // AppImage : utiliser le répertoire home de l'utilisateur
-        $home_dir = $_SERVER['HOME'] ?? getenv('HOME') ?? '/tmp';
-        return normalizePath($home_dir . '/.config/Duplicator/aide_pdfs');
+        $home_dir = $_SERVER['HOME'] ?? getenv('HOME');
+        
+        if (!empty($home_dir) && is_dir($home_dir) && is_writable($home_dir)) {
+            return normalizePath($home_dir . '/.config/Duplicator/aide_pdfs');
+        }
+        
+        // Fallback si HOME n'est pas accessible : dossier temporaire système
+        return normalizePath(sys_get_temp_dir() . '/duplicator_aide_pdfs');
     }
     
     // Priorité 4 : Linux/Unix avec XDG_CONFIG_HOME
