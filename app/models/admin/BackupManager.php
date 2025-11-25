@@ -228,7 +228,25 @@ class BackupManager {
             return $this->normalizePath($envDir);
         }
         
-        // 3) Défaut selon OS
+        // 3) Détection AppImage (avant les autres pour Linux)
+        $current_dir = getcwd();
+        if (strpos($current_dir, '.mount') !== false || strpos($current_dir, 'AppDir') !== false) {
+            // AppImage : utiliser le répertoire home de l'utilisateur
+            $home_dir = $_SERVER['HOME'] ?? getenv('HOME');
+            
+            if (!empty($home_dir) && is_dir($home_dir) && is_writable($home_dir)) {
+                $appImagePath = $this->normalizePath($home_dir . '/.config/dupli-electron/sauvegarde');
+                // Vérifier que le répertoire parent est accessible
+                if (is_dir(dirname($appImagePath)) || @mkdir(dirname($appImagePath), 0755, true)) {
+                    return $appImagePath;
+                }
+            }
+            
+            // Fallback si HOME n'est pas accessible : dossier temporaire système
+            return $this->normalizePath(sys_get_temp_dir() . '/duplicator_backups');
+        }
+        
+        // 4) Défaut selon OS
         if (stripos(PHP_OS_FAMILY, 'Windows') !== false) {
             $appData = getenv('APPDATA');
             if (!empty($appData)) {
@@ -270,8 +288,8 @@ class BackupManager {
             return $this->normalizePath($tmpDir . DIRECTORY_SEPARATOR . 'dupli-electron-sauvegarde');
         }
         
-        // Dernier recours Unix: dossier local au projet
-        return $this->normalizePath(__DIR__ . '/../../sauvegarde');
+        // Dernier recours Unix: dossier temporaire système
+        return $this->normalizePath(sys_get_temp_dir() . '/duplicator_backups');
     }
 
     private function normalizePath($path) {

@@ -182,7 +182,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileName = document.getElementById('fileName');
 
     // Gestion du clic sur la zone d'upload
-    fileUploadArea.addEventListener('click', function() {
+    fileUploadArea.addEventListener('click', function(e) {
+        // Ne pas ouvrir le sélecteur si on clique sur un bouton ou un de ses enfants
+        if (e.target.closest('button')) {
+            return;
+        }
         fileInput.click();
     });
 

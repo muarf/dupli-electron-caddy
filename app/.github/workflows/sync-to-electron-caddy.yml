@@ -2,7 +2,7 @@ name: Sync to dupli-electron-caddy and trigger release
 
 on:
   push:
-    branches: [ main ]
+    branches: ['**']  # Toutes les branches
     paths-ignore:
       - 'test_*.php'
       - '*.md'
@@ -15,6 +15,11 @@ on:
       - 'TAUX_REMPLISSAGE.md'
       - 'GITHUB_SETUP.md'
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch name to sync'
+        required: false
+        default: 'main'
 
 jobs:
   sync:
@@ -29,6 +34,19 @@ jobs:
         with:
           path: source
           token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+    
+      - name: Determine target branch
+        id: branch
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            BRANCH_NAME="${{ github.event.inputs.branch }}"
+          else
+            BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          fi
+          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          echo "Syncing branch: $BRANCH_NAME"
     
       - name: Checkout dupli-electron-caddy
         uses: actions/checkout@v4
@@ -46,6 +64,43 @@ jobs:
           COMMIT_MSG=$(git log -1 --pretty=format:'%s')
           echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
     
+      - name: Setup target branch
+        id: setup_branch
+        run: |
+          cd target
+          
+          # Configurer Git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          TOKEN="${{ secrets.ELECTRON_CADDY_TOKEN || secrets.GITHUB_TOKEN }}"
+          git remote set-url origin https://x-access-token:$TOKEN@github.com/MuArF/dupli-electron-caddy.git
+          
+          BRANCH_NAME="${{ steps.branch.outputs.branch }}"
+          
+          # Récupérer toutes les branches
+          git fetch --all
+          
+          # Vérifier si la branche existe déjà
+          if git ls-remote --heads origin "$BRANCH_NAME" | grep -q "$BRANCH_NAME"; then
+            echo "Branch $BRANCH_NAME already exists, checking it out"
+            git checkout "$BRANCH_NAME"
+            git reset --hard "origin/$BRANCH_NAME"
+            echo "branch_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Branch $BRANCH_NAME does not exist, creating it from main"
+            # Pour main, utiliser main directement
+            if [ "$BRANCH_NAME" == "main" ]; then
+              git checkout main
+              git reset --hard origin/main
+            else
+              # Pour les autres branches, créer depuis main
+              git checkout main
+              git reset --hard origin/main
+              git checkout -b "$BRANCH_NAME"
+            fi
+            echo "branch_exists=false" >> $GITHUB_OUTPUT
+          fi
+    
       - name: Get version from package.json
         id: get_version
         run: |
@@ -58,22 +113,24 @@ jobs:
         run: |
           cd target
           
-          # Configurer Git
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          TOKEN="${{ secrets.ELECTRON_CADDY_TOKEN || secrets.GITHUB_TOKEN }}"
-          git remote set-url origin https://x-access-token:$TOKEN@github.com/MuArF/dupli-electron-caddy.git
-          
-          # S'assurer d'avoir la dernière version de main
-          git fetch origin main
-          git checkout main
-          git reset --hard origin/main
+          BRANCH_NAME="${{ steps.branch.outputs.branch }}"
           
           # Supprimer l'ancien dossier app/ pour repartir à zéro
           rm -rf app/
           
-          # Cloner dupli-php-dev dans un dossier temporaire
+          # Cloner dupli-php-dev dans un dossier temporaire avec la bonne branche
+          git clone --depth 1 --branch "$BRANCH_NAME" https://github.com/MuArF/dupli-php-dev.git temp-source || \
           git clone --depth 1 https://github.com/MuArF/dupli-php-dev.git temp-source
+          
+          # Si la branche n'existe pas dans source, utiliser main
+          cd temp-source
+          if ! git rev-parse --verify "origin/$BRANCH_NAME" >/dev/null 2>&1; then
+            echo "Branch $BRANCH_NAME not found in source, using main instead"
+            git checkout main
+          else
+            git checkout "$BRANCH_NAME"
+          fi
+          cd ..
           
           # Copier les fichiers en excluant ce qu'il faut
           mkdir -p app
@@ -110,6 +167,8 @@ jobs:
         run: |
           cd target
           
+          BRANCH_NAME="${{ steps.branch.outputs.branch }}"
+          
           git add app/
           
           # Toucher un fichier pour forcer un changement si aucun changement détecté
@@ -121,17 +180,76 @@ jobs:
           fi
           
           # Créer le commit avec tous les changements
-          git commit -m "Sync from dupli-php-dev: ${{ steps.commit_msg.outputs.message }}
+          git commit -m "Sync from dupli-php-dev ($BRANCH_NAME): ${{ steps.commit_msg.outputs.message }}
           
           Auto-sync triggered by: ${{ github.sha }}"
-          git push origin main
+          
+          # Push vers la branche correspondante
+          if [ "$BRANCH_NAME" == "main" ]; then
+            git push origin main
+          else
+            git push origin "$BRANCH_NAME" --set-upstream
+          fi
+          
           echo "HAS_CHANGES=true" >> $GITHUB_ENV
+          echo "TARGET_BRANCH=$BRANCH_NAME" >> $GITHUB_ENV
     
-      - name: Wait for auto-tag workflow to complete
+      - name: Trigger builds in dupli-electron-caddy
         if: env.HAS_CHANGES == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ELECTRON_CADDY_TOKEN || secrets.GITHUB_TOKEN }}
+          script: |
+            const branch = process.env.TARGET_BRANCH;
+            const workflows = [
+              'release.yml',           // Build and Release (principal)
+              'test-linux.yml',        // Test Linux Build
+              'test-windows.yml',      // Test Windows Build
+              'test-macos.yml',        // Test macOS Build
+              'build-android.yml'      // Build Android APK
+            ];
+            
+            console.log(`Triggering builds for branch: ${branch}`);
+            
+            for (const workflow of workflows) {
+              try {
+                await github.rest.actions.createWorkflowDispatch({
+                  owner: 'MuArF',
+                  repo: 'dupli-electron-caddy',
+                  workflow_id: workflow,
+                  ref: branch
+                });
+                console.log(`✓ Workflow ${workflow} triggered for branch ${branch}`);
+              } catch (error) {
+                // Le workflow pourrait ne pas supporter workflow_dispatch ou se déclencher automatiquement
+                if (error.status === 404) {
+                  console.log(`⚠ Workflow ${workflow} not found or doesn't support workflow_dispatch`);
+                } else if (error.status === 422) {
+                  console.log(`⚠ Workflow ${workflow} might auto-trigger on push (expected behavior)`);
+                } else {
+                  console.log(`⚠ Error triggering ${workflow}: ${error.message}`);
+                }
+              }
+            }
+            
+            console.log(`\nNote: Some workflows might auto-trigger on push. Check: https://github.com/MuArF/dupli-electron-caddy/actions`)
+    
+      - name: Wait for auto-tag workflow to complete (main only)
+        if: env.HAS_CHANGES == 'true' && env.TARGET_BRANCH == 'main'
         run: |
           echo "Attente de la création automatique du tag par le workflow auto-tag..."
           echo "Le workflow auto-tag va automatiquement créer un nouveau tag après le push."
           echo "Le workflow release.yml sera automatiquement déclenché par le tag."
           echo "Vous pouvez suivre la progression sur: https://github.com/MuArF/dupli-electron-caddy/actions"
-
+    
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Sync Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Source branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target branch**: ${{ env.TARGET_BRANCH }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Changes detected**: ${{ env.HAS_CHANGES }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ env.TARGET_BRANCH }}" != "main" ]; then
+            echo "- **Builds**: Triggered for branch ${{ env.TARGET_BRANCH }}" >> $GITHUB_STEP_SUMMARY
+          fi

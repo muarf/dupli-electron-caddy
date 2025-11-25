@@ -61,7 +61,11 @@ function analyzePDFFormat($pdfFile)
         } catch (Exception $e) {
             // Si TCPDF échoue, essayer de nettoyer avec Ghostscript
             $timestamp = date('YmdHis');
-            $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR;
+            // Utiliser sys_get_temp_dir() pour être compatible AppImage
+            $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
+            if (!file_exists($tmp_dir)) {
+                mkdir($tmp_dir, 0755, true);
+            }
             
             $cleanedPdfFile = $tmp_dir . 'cleaned_tracts_' . $timestamp . '.pdf';
             
@@ -176,7 +180,13 @@ function processImpositionTracts()
     $originalName = $_FILES['pdf_file']['name'];
     $originalNameWithoutExt = pathinfo($originalName, PATHINFO_FILENAME);
     $tempFile = $_FILES['pdf_file']['tmp_name'];
-    $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR;
+    
+    // Utiliser sys_get_temp_dir() pour être compatible AppImage
+    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
+    if (!file_exists($tmp_dir)) {
+        mkdir($tmp_dir, 0755, true);
+    }
+    
     $inputFile = $tmp_dir . 'tracts_input_' . $uniqueId . '.pdf';
     
     // Déplacer le fichier uploadé
@@ -448,7 +458,12 @@ function performImposition($inputFile, $params, $cutMargin = 2)
         }
         
         // Sauvegarder le fichier temporaire
-        $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR;
+        // Utiliser sys_get_temp_dir() pour être compatible AppImage
+        $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
+        if (!file_exists($tmp_dir)) {
+            mkdir($tmp_dir, 0755, true);
+        }
+        
         $tempFile = $tmp_dir . 'tracts_temp_' . uniqid() . '.pdf';
         $pdf->Output($tempFile, 'F');
         

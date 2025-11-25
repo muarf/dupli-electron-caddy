@@ -551,17 +551,11 @@ $(document).ready(function() {
     // Validation du formulaire
     $('#tractsForm').submit(function(e) {
         const file = fileInput.files[0];
-        const mode = impositionMode.val();
+        // suppression de la vérification de mode car la variable n'est plus définie ici
         
         if (!file) {
             e.preventDefault();
             alert('Veuillez sélectionner un fichier PDF.');
-            return false;
-        }
-        
-        if (!mode) {
-            e.preventDefault();
-            alert('Veuillez sélectionner un mode d\'imposition.');
             return false;
         }
         

@@ -87,10 +87,12 @@ function Action($conf) {
             } elseif ($_FILES["pdf"]["size"] > 50 * 1024 * 1024) {
                 $errors[] = "Le fichier est trop volumineux (maximum 50MB).";
             } else {
-                // Créer le dossier tmp s'il n'existe pas (dans public pour accès web)
-                $tmpDir = __DIR__ . '/../public/tmp/';
+                // Utiliser sys_get_temp_dir() pour être compatible AppImage
+                $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_pdf_to_png' . DIRECTORY_SEPARATOR;
                 if (!is_dir($tmpDir)) {
-                    mkdir($tmpDir, 0777, true);
+                    if (!mkdir($tmpDir, 0777, true)) {
+                        throw new Exception("Impossible de créer le répertoire temporaire : " . $tmpDir);
+                    }
                 }
                 
                 $timestamp = date('YmdHis');
@@ -100,7 +102,7 @@ function Action($conf) {
                 
                 if (move_uploaded_file($_FILES["pdf"]["tmp_name"], $uploadFile)) {
                     // Créer un sous-dossier pour les images
-                    $outputDir = $tmpDir . 'pdf_to_png_' . $timestamp . '/';
+                    $outputDir = $tmpDir . 'pdf_to_png_' . $timestamp . DIRECTORY_SEPARATOR;
                     
                     // Exécuter la conversion
                     $created_files = convert_pdf_to_png($uploadFile, $outputDir, $dpi, $safe_filename);
@@ -108,12 +110,12 @@ function Action($conf) {
                     if (!empty($created_files)) {
                         $success = true;
                         
-                        // Préparer les URLs de téléchargement
+                        // Préparer les URLs de téléchargement (via route API)
                         foreach ($created_files as $file) {
                             $basename = basename($file);
-                            $dirname = basename(dirname($file));
                             $result[] = $basename;
-                            $download_urls[] = "tmp/" . $dirname . "/" . $basename;
+                            // Utiliser une route API pour servir les fichiers depuis le dossier temporaire
+                            $download_urls[] = "?download_png&file=" . urlencode($basename) . "&dir=" . urlencode('pdf_to_png_' . $timestamp);
                         }
                         
                         // Créer un fichier ZIP contenant toutes les images
@@ -126,7 +128,7 @@ function Action($conf) {
                                 $zip->addFile($file, basename($file));
                             }
                             $zip->close();
-                            $zip_url = 'tmp/' . $zip_filename;
+                            $zip_url = '?download_png&file=' . urlencode($zip_filename) . '&dir=';
                         } else {
                             $zip_url = '';
                         }
@@ -137,7 +139,7 @@ function Action($conf) {
                         $errors[] = "Erreur lors de la génération des images PNG.";
                     }
                 } else {
-                    $errors[] = "Erreur lors de l'upload du fichier.";
+                    $errors[] = "Erreur lors de l'upload du fichier vers : " . $uploadFile;
                 }
             }
         }

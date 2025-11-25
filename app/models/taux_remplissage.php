@@ -231,11 +231,17 @@ function Action($conf) {
                 } else {
                     error_log("Validation OK, début du traitement...");
                     
-                    // Créer le dossier tmp s'il n'existe pas
-                    $tmpDir = __DIR__ . '/../public/tmp/';
+                    // Créer le dossier tmp système pour l'AppImage
+                    $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_fillrate' . DIRECTORY_SEPARATOR;
                     if (!is_dir($tmpDir)) {
                         error_log("Création du dossier tmp: " . $tmpDir);
-                        mkdir($tmpDir, 0777, true);
+                        if (!mkdir($tmpDir, 0777, true)) {
+                            $errors[] = "Impossible de créer le dossier temporaire.";
+                            error_log("ERREUR: mkdir a échoué pour " . $tmpDir);
+                            // Fallback vers le dossier public/tmp si le dossier système échoue
+                            $tmpDir = __DIR__ . '/../public/tmp/';
+                            if (!is_dir($tmpDir)) mkdir($tmpDir, 0777, true);
+                        }
                     }
                     
                     $timestamp = date('YmdHis');
@@ -265,24 +271,34 @@ function Action($conf) {
                         error_log("Calcul terminé: " . $result['fill_rate'] . "%");
                         $success = true;
                         
-                        // Copier l'image analysée dans tmp pour affichage
-                        if ($mimeType === 'application/pdf') {
-                            $preview_file = 'tmp/analysis_' . $timestamp . '/' . basename($image_to_analyze);
-                        } else {
-                            $preview_file = 'tmp/' . basename($uploadFile);
-                        }
-                        $result['preview_url'] = $preview_file;
+                        // GESTION DE L'IMAGE DE PREVIEW
+                        // Lire le contenu de l'image pour l'encoder en base64
+                        // Cela évite d'avoir à stocker l'image dans public/tmp
+                        $imageData = base64_encode(file_get_contents($image_to_analyze));
+                        $mime = mime_content_type($image_to_analyze);
+                        $preview_url = 'data:' . $mime . ';base64,' . $imageData;
+                        
+                        $result['preview_url'] = $preview_url;
                         $result['filename'] = $_FILES["file"]["name"];
                         $result['tolerance'] = $tolerance;
                         
-                        error_log("Preview URL: " . $preview_file);
+                        error_log("Preview générée en base64");
                         
-                        // Nettoyer le fichier uploadé original si c'était un PDF
-                        if ($mimeType === 'application/pdf') {
+                        // Nettoyer les fichiers temporaires
+                        // 1. L'image analysée (si différente de l'upload)
+                        if ($image_to_analyze !== $uploadFile && file_exists($image_to_analyze)) {
+                            unlink($image_to_analyze);
+                        }
+                        // 2. Le dossier d'analyse si créé
+                        if (isset($outputDir) && is_dir($outputDir)) {
+                            rmdir($outputDir);
+                        }
+                        // 3. Le fichier uploadé original
+                        if (file_exists($uploadFile)) {
                             unlink($uploadFile);
-                            error_log("Fichier PDF original supprimé");
                         }
                         
+                        error_log("Nettoyage effectué");
                         error_log("Traitement terminé avec succès");
                     } else {
                         $errors[] = "Erreur lors de l'upload du fichier (move_uploaded_file a échoué).";
