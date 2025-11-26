@@ -1,48 +1,36 @@
 :8000 {
-	# Logs pour debug
-	log {
-		output file /tmp/caddy_duplicator.log
-		format console
-		level INFO
-	}
+    # Logs pour debug
+    log {
+        output file /tmp/caddy_duplicator.log
+        format console
+        level INFO
+    }
 
-	# Security headers
-	header {
-		X-Content-Type-Options nosniff
-		X-Frame-Options SAMEORIGIN
-		X-XSS-Protection "1; mode=block"
-		Referrer-Policy strict-origin-when-cross-origin
-	}
+    # Security headers
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy strict-origin-when-cross-origin
+    }
 
-	# CORS headers
-	header {
-		Access-Control-Allow-Origin "*"
-		Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-		Access-Control-Allow-Headers "Content-Type, Authorization"
-	}
+    # CORS headers
+    header {
+        Access-Control-Allow-Origin "*"
+        Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        Access-Control-Allow-Headers "Content-Type, Authorization"
+    }
 
-	# Extension zip activée pour Windows
-	# Le file_server standard peut servir des fichiers zip statiques
-	# Pour créer des archives zip à la volée, Caddy doit être compilé avec: xcaddy build --with github.com/mholt/caddy-zip
-	# Configuration pour servir des fichiers zip avec les bons headers
-	@zip {
-		path_regexp \.zip$
-	}
-	header @zip {
-		Content-Type application/zip
-		Content-Disposition "attachment"
-	}
-
-	# Reverse proxy to PHP built-in server with increased timeouts
-	reverse_proxy 127.0.0.1:8001 {
-		# Timeouts augmentés pour les opérations lentes (traitement d'images, PDF)
-		transport http {
-			dial_timeout 10s
-			read_timeout 120s
-			write_timeout 120s
-		}
-
-		# Gestion des erreurs
-		flush_interval -1
-	}
+    # Reverse proxy to PHP built-in server with increased timeouts
+    reverse_proxy 127.0.0.1:8001 {
+        # Timeouts augmentés pour les opérations lentes (traitement d'images, PDF)
+        transport http {
+            dial_timeout 10s
+            read_timeout 120s
+            write_timeout 120s
+        }
+        
+        # Gestion des erreurs
+        flush_interval -1
+    }
 }
