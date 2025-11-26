@@ -276,9 +276,9 @@ jobs:
           fi
           
           # Test de validation si les fichiers existent
-          if [ -f "squashfs-root/resources/app.asar.unpacked/caddy/caddy" ] && [ -f "squashfs-root/resources/Caddyfile" ]; then
+          if [ -f "squashfs-root/resources/app.asar.unpacked/caddy/caddy" ] && [ -f "squashfs-root/resources/app.asar.unpacked/Caddyfile" ]; then
             echo "✅ Validation de la configuration Caddy..."
-            squashfs-root/resources/app.asar.unpacked/caddy/caddy validate --config squashfs-root/resources/Caddyfile
+            squashfs-root/resources/app.asar.unpacked/caddy/caddy validate --config squashfs-root/resources/app.asar.unpacked/Caddyfile
           else
             echo "⚠️  Impossible de valider la configuration Caddy (fichiers manquants)"
           fi
