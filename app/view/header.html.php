@@ -98,6 +98,7 @@
                   </a>
                 </li>
                 <li role="separator" class="divider"></li>
+                <!--
                 <li>
                   <a href="?imposition">
                     <i class="fa fa-magic" style="color: #a8e6cf; margin-right: 8px;"></i>
@@ -106,6 +107,7 @@
                   </a>
                 </li>
                 <li role="separator" class="divider"></li>
+                -->
                 <li>
                   <a href="?unimpose">
                     <i class="fa fa-undo" style="color: #ffb3ba; margin-right: 8px;"></i>
@@ -142,6 +144,13 @@
                     <i class="fa fa-adjust" style="color: #ff6b9d; margin-right: 8px;"></i>
                     <strong><?php _e('header.riso_separator'); ?></strong>
                     <small class="text-muted d-block"><?php _e('header.riso_separator_desc'); ?></small>
+                  </a>
+                </li>
+                <li>
+                  <a href="?image_processor">
+                    <i class="fa fa-sliders" style="color: #667eea; margin-right: 8px;"></i>
+                    <strong>Contraste / Luminosité / Bitmap</strong>
+                    <small class="text-muted d-block">Traitement d'image</small>
                   </a>
                 </li>
                 <li role="separator" class="divider"></li>
