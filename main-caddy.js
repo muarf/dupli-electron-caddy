@@ -7,6 +7,7 @@ const os = require('os');
 const net = require('net');
 const http = require('http');
 const { checkWindowsCompatibility, applyCompatibilitySettings } = require('./utils/windows-compatibility');
+const PrinterMonitor = require('./utils/printer-monitor');
 
 // Vérifier la compatibilité Windows avant tout
 checkWindowsCompatibility();
@@ -14,6 +15,7 @@ checkWindowsCompatibility();
 let mainWindow;
 let caddyProcess;
 let phpFpmProcess;
+let printerMonitor = null; // Moniteur d'imprimantes Windows
 let serverPort = 8000; // Port par défaut
 const PHP_SERVER_PORT = 8001;
 let frontendPort = serverPort;
@@ -1222,7 +1224,7 @@ async function startCaddy() {
     });
 }
 
-// Arrêter les processus
+    // Arrêter les processus
 function stopProcesses() {
     if (phpFpmProcess) {
         stopPhpFpmProcess().catch(error => {
@@ -1235,6 +1237,12 @@ function stopProcesses() {
     if (caddyProcess) {
         caddyProcess.kill();
         caddyProcess = null;
+    }
+    
+    // Arrêter le moniteur d'imprimantes
+    if (printerMonitor) {
+        printerMonitor.stop();
+        printerMonitor = null;
     }
     
     // Nettoyer le fichier temporaire si créé
@@ -1264,6 +1272,65 @@ async function stopAllChildrenGracefully() {
         }
     } catch {}
     try { stopPhpErrorLogWatcher(); } catch {}
+    try {
+        if (printerMonitor) {
+            printerMonitor.stop();
+        }
+    } catch {}
+}
+
+// Démarrer le moniteur d'imprimantes Windows
+function startPrinterMonitor() {
+    if (process.platform !== 'win32') {
+        console.log('Le moniteur d\'imprimantes n\'est disponible que sur Windows');
+        return;
+    }
+    
+    if (printerMonitor) {
+        console.log('Le moniteur d\'imprimantes est déjà démarré');
+        return;
+    }
+    
+    try {
+        printerMonitor = new PrinterMonitor({
+            phpApiUrl: `http://127.0.0.1:${PHP_SERVER_PORT}`,
+            onPrintJob: (printData) => {
+                // Envoyer la notification au renderer
+                sendToRenderer('print-job-detected', printData);
+                console.log('Impression détectée:', printData);
+            },
+            onError: (error) => {
+                console.error('Erreur moniteur d\'imprimantes:', error);
+                sendToRenderer('print-monitor-error', { error: error });
+            }
+        });
+        
+        const started = printerMonitor.start();
+        if (started) {
+            console.log('✅ Moniteur d\'imprimantes Windows démarré avec succès');
+            sendToRenderer('print-monitor-started', { status: 'active' });
+            // Afficher aussi dans la console du renderer
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.executeJavaScript(`
+                    console.log('%c✅ Moniteur d\'imprimantes Windows démarré', 'color: green; font-weight: bold;');
+                `).catch(() => {});
+            }
+        } else {
+            console.warn('⚠️ Impossible de démarrer le moniteur d\'imprimantes');
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.executeJavaScript(`
+                    console.warn('⚠️ Impossible de démarrer le moniteur d\'imprimantes');
+                `).catch(() => {});
+            }
+        }
+    } catch (error) {
+        console.error('❌ Erreur lors du démarrage du moniteur d\'imprimantes:', error);
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.executeJavaScript(`
+                console.error('❌ Erreur moniteur d\'imprimantes:', ${JSON.stringify(error.message)});
+            `).catch(() => {});
+        }
+    }
 }
 // Créer le menu personnalisé
 function createMenu() {
@@ -1510,6 +1577,9 @@ function createWindow() {
                 mainWindow.loadURL(appUrl);
                 mainWindow.show();
                 console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
+                
+                // Démarrer le moniteur d'imprimantes Windows après le démarrage des serveurs
+                startPrinterMonitor();
             }
         } catch (error) {
             console.error('Erreur lors du démarrage des serveurs:', error);
@@ -1996,6 +2066,126 @@ ipcMain.handle('get-database-path', () => {
 // Obtenir la version actuelle de l'application
 ipcMain.handle('get-app-version', () => {
     return { success: true, version: app.getVersion() };
+});
+
+// ============ Handlers pour le moniteur d'imprimantes ============
+
+// Obtenir la liste des imprimantes
+ipcMain.handle('get-printers', async () => {
+    if (process.platform !== 'win32') {
+        return { success: false, error: 'Disponible uniquement sur Windows' };
+    }
+    
+    // Créer un moniteur temporaire si nécessaire pour récupérer les imprimantes
+    let monitorToUse = printerMonitor;
+    if (!monitorToUse) {
+        try {
+            monitorToUse = new PrinterMonitor({
+                phpApiUrl: `http://127.0.0.1:${PHP_SERVER_PORT}`
+            });
+        } catch (error) {
+            return { success: false, error: 'Impossible de créer le moniteur: ' + error.message };
+        }
+    }
+    
+    try {
+        const printers = await monitorToUse.getPrinters();
+        return { success: true, printers: printers };
+    } catch (error) {
+        console.error('Erreur lors de la récupération des imprimantes:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Démarrer/Arrêter le moniteur d'imprimantes
+ipcMain.handle('toggle-printer-monitor', async (event, start) => {
+    if (process.platform !== 'win32') {
+        return { success: false, error: 'Disponible uniquement sur Windows' };
+    }
+    
+    try {
+        if (start) {
+            if (!printerMonitor) {
+                startPrinterMonitor();
+            }
+            return { success: true, status: 'started' };
+        } else {
+            if (printerMonitor) {
+                printerMonitor.stop();
+                printerMonitor = null;
+            }
+            return { success: true, status: 'stopped' };
+        }
+    } catch (error) {
+        console.error('Erreur lors du changement d\'état du moniteur:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Obtenir le statut du moniteur
+ipcMain.handle('get-printer-monitor-status', () => {
+    if (process.platform !== 'win32') {
+        return { available: false, status: 'not_supported' };
+    }
+    
+    return {
+        available: true,
+        status: printerMonitor && printerMonitor.monitoring ? 'active' : 'inactive'
+    };
+});
+
+// Supprimer une imprimante Windows
+ipcMain.handle('delete-printer', async (event, printerName) => {
+    if (process.platform !== 'win32') {
+        return { success: false, error: 'Disponible uniquement sur Windows' };
+    }
+    
+    if (!printerName) {
+        return { success: false, error: 'Nom d\'imprimante non fourni' };
+    }
+    
+    return new Promise((resolve) => {
+        const { spawn } = require('child_process');
+        
+        // Échapper les caractères spéciaux pour PowerShell
+        const escapedName = printerName.replace(/'/g, "''").replace(/"/g, '\\"');
+        
+        // Script PowerShell pour supprimer l'imprimante
+        const psScript = `$printer = Get-WmiObject Win32_Printer -Filter "Name='${escapedName.replace(/'/g, "''")}'" -ErrorAction SilentlyContinue; if ($printer) { $result = $printer.Delete(); if ($result.ReturnValue -eq 0) { Write-Output "SUCCESS" } else { try { Remove-Printer -Name "${escapedName.replace(/"/g, '\\"')}" -ErrorAction Stop; Write-Output "SUCCESS" } catch { Write-Output "ERROR: $($_.Exception.Message)" } } } else { Write-Output "ERROR: Imprimante non trouvée" }`;
+        
+        const ps = spawn('powershell.exe', [
+            '-NoProfile',
+            '-ExecutionPolicy', 'Bypass',
+            '-Command', psScript
+        ], {
+            stdio: ['pipe', 'pipe', 'pipe'],
+            shell: false
+        });
+        
+        let output = '';
+        let errorOutput = '';
+        
+        ps.stdout.on('data', (data) => {
+            output += data.toString();
+        });
+        
+        ps.stderr.on('data', (data) => {
+            errorOutput += data.toString();
+        });
+        
+        ps.on('close', (code) => {
+            if (code === 0 && output.includes('SUCCESS')) {
+                resolve({ success: true });
+            } else {
+                const errorMsg = errorOutput || output || 'Erreur inconnue';
+                resolve({ success: false, error: errorMsg });
+            }
+        });
+        
+        ps.on('error', (error) => {
+            resolve({ success: false, error: error.message });
+        });
+    });
 });
 
 // Gérer l'arrêt propre de l'application
