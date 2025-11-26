@@ -270,6 +270,57 @@ if ($page === 'download_unimposed') {
     }
 }
 
+if ($page === 'download_processed') {
+    $file = $_GET['file'] ?? '';
+    $dir = $_GET['dir'] ?? '';
+    
+    if (empty($file)) {
+        http_response_code(400);
+        die('Fichier non spécifié');
+    }
+    
+    // Déterminer le répertoire temporaire selon le contexte
+    if (!empty($dir)) {
+        $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR;
+    } else {
+        $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
+    }
+    
+    // Sécuriser le nom de fichier
+    $filename = basename($file);
+    $filepath = $tmp_dir . $filename;
+    
+    // Vérifier que le fichier existe et est dans le bon répertoire
+    $real_filepath = realpath($filepath);
+    $real_tmp_dir = realpath($tmp_dir);
+    if (!file_exists($filepath) || !$real_filepath || !$real_tmp_dir || strpos($real_filepath, $real_tmp_dir) !== 0) {
+        http_response_code(404);
+        die('Fichier non trouvé ou expiré');
+    }
+    
+    // Déterminer le type MIME
+    $extension = strtolower(pathinfo($filepath, PATHINFO_EXTENSION));
+    $mime_types = array(
+        'pdf' => 'application/pdf',
+        'png' => 'image/png',
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'gif' => 'image/gif'
+    );
+    
+    $mime_type = isset($mime_types[$extension]) ? $mime_types[$extension] : 'application/octet-stream';
+    
+    // Définir les headers
+    header('Content-Type: ' . $mime_type);
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Length: ' . filesize($filepath));
+    header('Cache-Control: no-cache, must-revalidate');
+    header('Expires: 0');
+    
+    readfile($filepath);
+    exit;
+}
+
 if ($page === 'view_aide_pdf') {
     // Servir les PDFs d'aide depuis le répertoire résolu
     // Inclure les fonctions nécessaires sans vérification d'authentification
@@ -427,7 +478,7 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','imposition_brochure','imposition_livre','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','download_png','download_unimposed','view_pdf','get-machine-template','upload_aide_pdf','view_aide_pdf');
+$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','imposition_brochure','imposition_livre','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','image_processor','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','download_png','download_unimposed','download_processed','view_pdf','get-machine-template','upload_aide_pdf','view_aide_pdf');
 
 error_log("[PASSWORD_CHECK] ===== DEBUT VERIFICATION =====");
 error_log("[PASSWORD_CHECK] Page demandée (avant vérification): " . $page);
