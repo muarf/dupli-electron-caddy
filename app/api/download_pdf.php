@@ -5,6 +5,9 @@ if (!isset($_GET['file'])) {
     die('Fichier non spécifié');
 }
 
+// Inclure la fonction resolveTempDir() pour les impositions
+require_once(__DIR__ . '/../controler/functions/utilities.php');
+
 $filename = basename($_GET['file']);
 $dir = $_GET['dir'] ?? '';
 
@@ -17,8 +20,9 @@ if ($dir === 'png_to_pdf') {
     // PDFs traités par image_processor
     $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR;
 } else {
-    // Par défaut, utiliser le répertoire temporaire système pour les impositions
-    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
+    // Par défaut, utiliser resolveTempDir() pour les impositions (brochure, livre, tracts, imposition)
+    // Cela garantit la cohérence avec le répertoire utilisé pour créer les fichiers
+    $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR;
 }
 
 $filepath = $tmp_dir . $filename;
