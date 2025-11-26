@@ -1317,6 +1317,23 @@ function createMenu() {
             label: 'Affichage',
             submenu: [
                 {
+                    label: 'Accueil',
+                    accelerator: 'Ctrl+H',
+                    click: () => {
+                        const targetPort = frontendPort || serverPort || PHP_SERVER_PORT;
+                        const accueilUrl = `http://127.0.0.1:${targetPort}/?accueil`;
+                        mainWindow.loadURL(accueilUrl).catch(error => {
+                            console.log(`Échec du chargement de la page d'accueil: ${error.message}`);
+                            try {
+                                mainWindow.reload();
+                            } catch (reloadError) {
+                                console.log(`Échec du reload de la fenêtre: ${reloadError.message}`);
+                            }
+                        });
+                    }
+                },
+                { type: 'separator' },
+                {
                     label: 'Recharger',
                     accelerator: 'F5',
                     click: () => {
