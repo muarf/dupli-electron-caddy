@@ -253,9 +253,27 @@ function get_cons($machine)
         if($res['photocop']['temps_depuis'] == 0)   { $res['photocop']['temps_depuis'] =1;}
         if($res['photocop']['moyenne_total']['nb_p']== 0)   { $res['photocop']['moyenne_total']['nb_p'] =1;}
        	$res['photocop']['temps_jusqua'] = $res['photocop']['moyenne_total']['temps'] - $res['photocop']['temps_depuis'];
-    	// Utiliser des valeurs par défaut si les prix ne sont pas définis
-    	$prix_pack = $prix['photocop']['noire']['pack'] ?? 140;
-    	$prix_unite = $prix['photocop']['noire']['unite'] ?? 0.005;
+    	// CORRECTION : Chercher le prix dans la nouvelle structure (photocop_{id} au lieu de photocop)
+    	// Trouver le premier photocopieur actif pour récupérer son ID
+    	$query_photocop = $db->query('SELECT id FROM photocopieurs WHERE actif = 1 ORDER BY id LIMIT 1');
+    	$photocop_result = $query_photocop->fetch(PDO::FETCH_ASSOC);
+    	
+    	$prix_pack = 140; // Valeur par défaut
+    	$prix_unite = 0.005; // Valeur par défaut
+    	
+    	if ($photocop_result) {
+    	    $photocop_id = $photocop_result['id'];
+    	    $machine_key = 'photocop_' . $photocop_id;
+    	
+    	    // Chercher dans la nouvelle structure retournée par get_price()
+    	    if (isset($prix[$machine_key]['noire']['pack'])) {
+    	        $prix_pack = $prix[$machine_key]['noire']['pack'];
+    	    }
+    	    if (isset($prix[$machine_key]['noire']['unite'])) {
+    	        $prix_unite = $prix[$machine_key]['noire']['unite'];
+    	    }
+    	}
+    	
     	$res['photocop']['prix_calcule'] = $prix_pack / $res['photocop']['moyenne_total']['nb_p'];
     	if($res['photocop']['temps_jusqua']  < -30){ $res['photocop']['class'] = "danger" ;}
 		if(($res['photocop']['temps_jusqua']  < 0) AND ($res['photocop']['temps_jusqua']  > -30)){$res['photocop']['class'] = "warning";}
