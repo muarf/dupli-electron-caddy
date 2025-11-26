@@ -1823,11 +1823,27 @@ function calculateMachinePrice(machineIndex) {
                         var rouge = (machinePrices['rouge']?.unite || 0) * fillRateMultiplier;
                         
                         prixEncre = bleue + couleurPrice + jaune + noire + rouge;
-                        detailEncreBrochure = `Bleue: ${bleue.toFixed(4)}€ + Couleur: ${couleurPrice.toFixed(4)}€ + Jaune: ${jaune.toFixed(4)}€ + Noire: ${noire.toFixed(4)}€ + Rouge: ${rouge.toFixed(4)}€ = ${prixEncre.toFixed(4)}€`;
+                        
+                        // Ajuster selon la taille AVANT d'afficher le détail
+                        var prixEncrePourDetail = prixEncre;
+                        if (taille === 'A4') prixEncrePourDetail = prixEncre / 2;
+                        
+                        var bleueDetail = taille === 'A4' ? bleue / 2 : bleue;
+                        var couleurPriceDetail = taille === 'A4' ? couleurPrice / 2 : couleurPrice;
+                        var jauneDetail = taille === 'A4' ? jaune / 2 : jaune;
+                        var noireDetail = taille === 'A4' ? noire / 2 : noire;
+                        var rougeDetail = taille === 'A4' ? rouge / 2 : rouge;
+                        
+                        detailEncreBrochure = `Bleue: ${bleueDetail.toFixed(4)}€ + Couleur: ${couleurPriceDetail.toFixed(4)}€ + Jaune: ${jauneDetail.toFixed(4)}€ + Noire: ${noireDetail.toFixed(4)}€ + Rouge: ${rougeDetail.toFixed(4)}€ = ${prixEncrePourDetail.toFixed(4)}€`;
                     } else {
                         // Noir et blanc : seulement noire (pas de taux de remplissage)
                         prixEncre = machinePrices['noire']?.unite || 0;
-                        detailEncreBrochure = `Noire: ${prixEncre.toFixed(4)}€`;
+                        
+                        // Ajuster selon la taille AVANT d'afficher le détail
+                        var prixEncrePourDetail = prixEncre;
+                        if (taille === 'A4') prixEncrePourDetail = prixEncre / 2;
+                        
+                        detailEncreBrochure = `Noire: ${prixEncrePourDetail.toFixed(4)}€`;
                     }
                 } else if (photocopName.toLowerCase() === 'konika') {
                     // Photocopieur à toner : additionner tous les toners + tambour + developer
@@ -1841,7 +1857,19 @@ function calculateMachinePrice(machineIndex) {
                         var dev = machinePrices['dev']?.unite || 0;
                         
                         prixEncre = cyan + jaune + magenta + noir + tambour + dev;
-                        detailEncreBrochure = `Cyan: ${cyan.toFixed(4)}€ + Jaune: ${jaune.toFixed(4)}€ + Magenta: ${magenta.toFixed(4)}€ + Noir: ${noir.toFixed(4)}€ + Tambour: ${tambour.toFixed(4)}€ + Dev: ${dev.toFixed(4)}€ = ${prixEncre.toFixed(4)}€`;
+                        
+                        // Ajuster selon la taille AVANT d'afficher le détail
+                        var prixEncrePourDetail = prixEncre;
+                        if (taille === 'A4') prixEncrePourDetail = prixEncre / 2;
+                        
+                        var cyanDetail = taille === 'A4' ? cyan / 2 : cyan;
+                        var jauneDetail = taille === 'A4' ? jaune / 2 : jaune;
+                        var magentaDetail = taille === 'A4' ? magenta / 2 : magenta;
+                        var noirDetail = taille === 'A4' ? noir / 2 : noir;
+                        var tambourDetail = taille === 'A4' ? tambour / 2 : tambour;
+                        var devDetail = taille === 'A4' ? dev / 2 : dev;
+                        
+                        detailEncreBrochure = `Cyan: ${cyanDetail.toFixed(4)}€ + Jaune: ${jauneDetail.toFixed(4)}€ + Magenta: ${magentaDetail.toFixed(4)}€ + Noir: ${noirDetail.toFixed(4)}€ + Tambour: ${tambourDetail.toFixed(4)}€ + Dev: ${devDetail.toFixed(4)}€ = ${prixEncrePourDetail.toFixed(4)}€`;
                     } else {
                         // Noir et blanc : noir + tambour + dev (pas de taux de remplissage)
                         var noir = machinePrices['noir']?.unite || 0;
@@ -1849,7 +1877,16 @@ function calculateMachinePrice(machineIndex) {
                         var dev = machinePrices['dev']?.unite || 0;
                         
                         prixEncre = noir + tambour + dev;
-                        detailEncreBrochure = `Noir: ${noir.toFixed(4)}€ + Tambour: ${tambour.toFixed(4)}€ + Dev: ${dev.toFixed(4)}€ = ${prixEncre.toFixed(4)}€`;
+                        
+                        // Ajuster selon la taille AVANT d'afficher le détail
+                        var prixEncrePourDetail = prixEncre;
+                        if (taille === 'A4') prixEncrePourDetail = prixEncre / 2;
+                        
+                        var noirDetail = taille === 'A4' ? noir / 2 : noir;
+                        var tambourDetail = taille === 'A4' ? tambour / 2 : tambour;
+                        var devDetail = taille === 'A4' ? dev / 2 : dev;
+                        
+                        detailEncreBrochure = `Noir: ${noirDetail.toFixed(4)}€ + Tambour: ${tambourDetail.toFixed(4)}€ + Dev: ${devDetail.toFixed(4)}€ = ${prixEncrePourDetail.toFixed(4)}€`;
                     }
                 }
             }
