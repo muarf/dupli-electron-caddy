@@ -241,6 +241,39 @@ if ($page === 'upload_aide_pdf') {
     }
 }
 
+if ($page === 'check_print_jobs') {
+    // Inclure le fichier API depuis le dossier api/
+    $api_file = __DIR__ . '/../api/check-print-jobs.php';
+    error_log("[API] check_print_jobs demandé, fichier: " . $api_file);
+    error_log("[API] Fichier existe: " . (file_exists($api_file) ? 'OUI' : 'NON'));
+    if (file_exists($api_file)) {
+        error_log("[API] Inclusion du fichier API");
+        require_once $api_file;
+        error_log("[API] Fichier API exécuté, exit");
+        exit;
+    } else {
+        error_log("[API] Fichier API non trouvé!");
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Fichier API non trouvé', 'path' => $api_file]);
+        exit;
+    }
+}
+
+if ($page === 'print_notification') {
+    // Inclure le fichier API depuis le dossier api/
+    $api_file = __DIR__ . '/../api/print-notification.php';
+    if (file_exists($api_file)) {
+        require_once $api_file;
+        exit;
+    } else {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Fichier API non trouvé']);
+        exit;
+    }
+}
+
 if ($page === 'download_unimposed') {
     $file = $_GET['file'] ?? '';
     // Utiliser le répertoire temporaire système
@@ -478,7 +511,7 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','imposition_brochure','imposition_livre','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','image_processor','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','download_png','download_unimposed','download_processed','view_pdf','get-machine-template','upload_aide_pdf','view_aide_pdf');
+$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','imposition_brochure','imposition_livre','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','image_processor','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','download_png','download_unimposed','download_processed','view_pdf','get-machine-template','upload_aide_pdf','view_aide_pdf','check_print_jobs','print_notification');
 
 error_log("[PASSWORD_CHECK] ===== DEBUT VERIFICATION =====");
 error_log("[PASSWORD_CHECK] Page demandée (avant vérification): " . $page);
