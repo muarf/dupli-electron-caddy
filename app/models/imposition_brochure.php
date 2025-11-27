@@ -197,6 +197,7 @@ function Action($conf)
             $crop_mark_len = floatval($_POST['crop_mark_len'] ?? 5);
             $crop_mark_width = floatval($_POST['crop_mark_width'] ?? 0.1);
             $resize_mode = $_POST['resize_mode'] ?? 'percent';
+            $add_page_numbers_in_gutters = isset($_POST['add_page_numbers_in_gutters']);
 
             // Si on est en mode dimension cible, on ignore l'échelle %
             if ($resize_mode === 'mm') {
@@ -220,6 +221,7 @@ function Action($conf)
                 'crop_mark_len' => $crop_mark_len,
                 'crop_mark_width' => $crop_mark_width,
                 'preview_mode' => $previewMode,
+                'add_page_numbers_in_gutters' => $add_page_numbers_in_gutters,
                 'addPageNumberCallback' => $previewMode ? function($pdf, $pageNo, $x, $y, $w, $h, $rotation) {
                     return addPageNumber($pdf, $pageNo, $x, $y, $w, $h, $rotation);
                 } : null
@@ -333,6 +335,7 @@ function Action($conf)
                 $crop_mark_len = floatval($_POST['crop_mark_len'] ?? 5);
                 $crop_mark_width = floatval($_POST['crop_mark_width'] ?? 0.1);
                 $resize_mode = $_POST['resize_mode'] ?? 'percent';
+                $add_page_numbers_in_gutters = isset($_POST['add_page_numbers_in_gutters']);
 
                 if ($resize_mode === 'mm') {
                     $scale = 0;
@@ -354,6 +357,7 @@ function Action($conf)
                     'crop_mark_len' => $crop_mark_len,
                     'crop_mark_width' => $crop_mark_width,
                     'preview_mode' => $previewMode,
+                    'add_page_numbers_in_gutters' => $add_page_numbers_in_gutters,
                     'addPageNumberCallback' => $previewMode ? function($pdf, $pageNo, $x, $y, $w, $h, $rotation) {
                         return addPageNumber($pdf, $pageNo, $x, $y, $w, $h, $rotation);
                     } : null
