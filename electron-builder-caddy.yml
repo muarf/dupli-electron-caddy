@@ -50,20 +50,9 @@ linux:
   maintainer: "Duplicator <support@duplicator.app>"
   # Configuration spécifique Linux - utilise PHP système, pas de binaires embarqués
   # Le dossier php/ est vidé avant le build dans le workflow (économie d'espace)
-  # Exclusion des fichiers PDF.js/cmaps de asarUnpack pour éviter l'erreur "pattern is too long"
-  # Ces fichiers JavaScript peuvent rester dans l'asar et être chargés via HTTP
-  asarUnpack:
-    - "!app/.git/**/*"               # Exclure le dossier .git en premier (non nécessaire pour l'app)
-    - "!app/js/web/cmaps/**/*"      # Exclure les cmaps (172 fichiers avec chemins longs)
-    - "!app/js/build/**/*"           # Exclure les builds PDF.js
-    - "!app/public/js/build/**/*"   # Exclure les builds PDF.js publics
-    - "app/**/*"
-    - "ghostscript/**/*"
-    - "caddy/**/*"
-    - "icons/**/*"
-    - "Caddyfile"
-    - "php-fpm.conf"
-    - "php-install-guide.html"
+  # Désactiver ASAR sur Linux pour éviter l'erreur "pattern is too long"
+  # causée par des fichiers avec des chemins très longs dans app/
+  asar: false
   artifactName: Duplicator-${version}-${arch}.${ext}
 
 deb:
