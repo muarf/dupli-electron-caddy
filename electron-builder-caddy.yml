@@ -15,7 +15,9 @@ files:
   - Caddyfile
   - php-fpm.conf
   - php-install-guide.html
-  - app/**/*
+  - "app/**/*"
+  - "!app/.git/**/*"              # Exclure le dossier .git (non nécessaire pour l'app)
+  - "!app/.phpunit.result.cache"   # Exclure le cache PHPUnit
   - ghostscript/**/*
   - caddy/**/*
   - utils/**/*
@@ -50,19 +52,6 @@ linux:
   # Le dossier php/ est vidé avant le build dans le workflow (économie d'espace)
   # Exclusion des fichiers PDF.js/cmaps de asarUnpack pour éviter l'erreur "pattern is too long"
   # Ces fichiers JavaScript peuvent rester dans l'asar et être chargés via HTTP
-  files:
-    - main-caddy.js
-    - main.js
-    - preload.js
-    - icons/**/*
-    - Caddyfile
-    - php-fpm.conf
-    - php-install-guide.html
-    - "app/**/*"
-    - "!app/.git/**/*"              # Exclure le dossier .git (non nécessaire pour l'app)
-    - ghostscript/**/*
-    - caddy/**/*
-    - utils/**/*
   asarUnpack:
     - "!app/.git/**/*"               # Exclure le dossier .git en premier (non nécessaire pour l'app)
     - "!app/js/web/cmaps/**/*"      # Exclure les cmaps (172 fichiers avec chemins longs)
