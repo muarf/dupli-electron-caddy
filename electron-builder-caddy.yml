@@ -52,6 +52,7 @@ linux:
   # Ces fichiers JavaScript peuvent rester dans l'asar et être chargés via HTTP
   asarUnpack:
     - "app/**/*"
+    - "!app/.git/**/*"               # Exclure le dossier .git (non nécessaire pour l'app)
     - "!app/js/web/cmaps/**/*"      # Exclure les cmaps (172 fichiers avec chemins longs)
     - "!app/js/build/**/*"           # Exclure les builds PDF.js
     - "!app/public/js/build/**/*"   # Exclure les builds PDF.js publics
@@ -99,6 +100,7 @@ mac:
   asarUnpack:
     - "php/**/*"
     - "app/**/*"
+    - "!app/.git/**/*"               # Exclure le dossier .git (non nécessaire pour l'app)
     - "ghostscript/**/*"
     - "caddy/**/*"
     - "Caddyfile"
