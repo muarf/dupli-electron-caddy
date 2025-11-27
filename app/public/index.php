@@ -412,6 +412,53 @@ if ($page === 'view_aide_pdf') {
     exit;
 }
 
+if ($page === 'download_backup') {
+    // Servir les fichiers de sauvegarde SQLite depuis le répertoire résolu
+    // Inclure les fonctions nécessaires
+    require_once __DIR__ . '/../controler/conf.php';
+    require_once __DIR__ . '/../controler/func.php';
+    require_once __DIR__ . '/../models/admin/BackupManager.php';
+    
+    $filename = $_GET['file'] ?? '';
+    if (empty($filename)) {
+        http_response_code(400);
+        die('Nom de fichier manquant');
+    }
+    
+    // Sécuriser le nom de fichier
+    $filename = basename($filename);
+    
+    // Vérifier l'extension
+    $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+    if ($extension !== 'sqlite') {
+        http_response_code(400);
+        die('Type de fichier non autorisé. Seuls les fichiers .sqlite sont autorisés.');
+    }
+    
+    // Obtenir le chemin du dossier de sauvegarde via BackupManager
+    $backupManager = new BackupManager($conf);
+    $backup_dir = $backupManager->getBackupDir();
+    
+    $filePath = $backup_dir . $filename;
+    
+    // Vérifier que le fichier existe et est dans le bon répertoire
+    $real_filepath = realpath($filePath);
+    $real_backup_dir = realpath($backup_dir);
+    if (!file_exists($filePath) || !$real_filepath || !$real_backup_dir || strpos($real_filepath, $real_backup_dir) !== 0) {
+        http_response_code(404);
+        die('Fichier non trouvé');
+    }
+    
+    // Servir le fichier SQLite
+    header('Content-Type: application/x-sqlite3');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Length: ' . filesize($filePath));
+    header('Cache-Control: no-cache, must-revalidate');
+    header('Expires: 0');
+    readfile($filePath);
+    exit;
+}
+
 if ($page === 'ajax_delete_machine') {
     // Vérifier l'authentification admin
     if (!isset($_SESSION['user'])) {
@@ -478,7 +525,7 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','imposition_brochure','imposition_livre','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','image_processor','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','download_png','download_unimposed','download_processed','view_pdf','get-machine-template','upload_aide_pdf','view_aide_pdf');
+$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','imposition_brochure','imposition_livre','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','image_processor','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','download_png','download_unimposed','download_processed','download_backup','view_pdf','get-machine-template','upload_aide_pdf','view_aide_pdf');
 
 error_log("[PASSWORD_CHECK] ===== DEBUT VERIFICATION =====");
 error_log("[PASSWORD_CHECK] Page demandée (avant vérification): " . $page);
