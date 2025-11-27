@@ -128,6 +128,13 @@ class BackupManager {
     }
     
     /**
+     * Obtenir le chemin du dossier de sauvegarde
+     */
+    public function getBackupDir() {
+        return $this->backup_dir;
+    }
+    
+    /**
      * Obtenir la liste des sauvegardes disponibles
      */
     public function getBackupsList() {
