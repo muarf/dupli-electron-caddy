@@ -336,6 +336,8 @@ require_once __DIR__ . '/../controler/conf.php';
                 return handleNewsSection($array, $newsManager);
             } elseif(isset($_GET['stats'])) {
                 return handleStatsSection($array, $statsManager);
+            } elseif(isset($_GET['imprimantes'])) {
+                return handleImprimantesSection($array);
             } elseif(isset($_GET['edit'])) {
                 return handleEditSection($array, $editManager);
             } elseif(isset($_GET['changes'])) {
@@ -958,6 +960,16 @@ function handleStatsSection($array, $statsManager) {
     $GLOBALS['model_variables'] = $array;
     
     return template("../view/admin.stats.html.php", $array);
+}
+
+/**
+ * Gérer la section des imprimantes
+ */
+function handleImprimantesSection($array) {
+    // Stocker les variables dans $GLOBALS pour les préserver
+    $GLOBALS['model_variables'] = $array;
+    
+    return template("../view/admin.imprimantes.html.php", $array);
 }
 
 /**

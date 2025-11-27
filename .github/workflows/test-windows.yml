@@ -2,7 +2,7 @@ name: Test Windows Build
 
 on:
   push:
-    branches: [ main, master, fix-linux-appimage ]
+    branches: [ main, master, fix-linux-appimage, feature/printer-monitor-integration ]
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:  # Permet de lancer manuellement
