@@ -67,6 +67,22 @@
                 <small class="text-muted"><?php _e('admin.stats_management_desc'); ?></small>
               </div>
               <div class="col-md-3">
+                <a href="?admin&imprimantes" class="btn btn-primary btn-block">
+                  <i class="fa fa-print"></i> Moniteur d'Imprimantes
+                </a>
+                <small class="text-muted">Surveillance et gestion des impressions Windows</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            <h3 class="panel-title"><i class="fa fa-cog"></i> Configuration</h3>
+          </div>
+          <div class="panel-body">
+            <div class="row">
+              <div class="col-md-3">
                 <a href="?admin&emails" class="btn btn-default btn-block">
                   <i class="fa fa-envelope"></i> <?php _e('admin.email_management_btn'); ?>
                 </a>
