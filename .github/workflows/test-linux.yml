@@ -156,6 +156,17 @@ jobs:
           echo "Dossier php/ existe?"
           ls -la php/ 2>&1 | head -5 || echo "✅ php/ n'existe pas (normal pour Linux)"
         
+      - name: Remove app/.git directory
+        run: |
+          echo "=== Suppression du dossier app/.git ==="
+          if [ -d "app/.git" ]; then
+            echo "Suppression de app/.git (non nécessaire pour le build)..."
+            rm -rf app/.git
+            echo "✅ app/.git supprimé"
+          else
+            echo "✅ app/.git n'existe pas (déjà supprimé ou absent)"
+          fi
+      
       - name: Build Linux AppImage
         run: |
           echo "=== Nettoyage final avant build ==="
