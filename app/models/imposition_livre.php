@@ -192,6 +192,7 @@ function Action($conf)
             $target_height = floatval($_POST['target_height'] ?? 0);
             $gutter_x = floatval($_POST['gutter_x'] ?? 0);
             $gutter_y = floatval($_POST['gutter_y'] ?? 0);
+            $gutter_strategy = $_POST['gutter_strategy'] ?? 'reduce'; // 'reduce' ou 'crop'
             $crop_marks = isset($_POST['crop_marks']);
             $crop_mark_len = floatval($_POST['crop_mark_len'] ?? 2);
             $crop_mark_width = floatval($_POST['crop_mark_width'] ?? 0.1);
@@ -215,6 +216,7 @@ function Action($conf)
                 'target_height' => $target_height,
                 'gutter_x' => $gutter_x,
                 'gutter_y' => $gutter_y,
+                'gutter_strategy' => $gutter_strategy,
                 'crop_marks' => $crop_marks,
                 'crop_mark_len' => $crop_mark_len,
                 'crop_mark_width' => $crop_mark_width,
