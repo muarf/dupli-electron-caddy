@@ -320,16 +320,22 @@
 
                     <div class="checkbox-group">
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label for="preview">
                                     <input type="checkbox" name="preview" id="preview">
                                     <i class="fa fa-eye"></i> Preview avec numéros de pages
                                 </label>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label for="crop_marks">
                                     <input type="checkbox" name="crop_marks" id="crop_marks" value="1">
                                     <i class="fa fa-scissors"></i> Ajouter des traits de coupe
+                                </label>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="add_page_numbers_in_gutters">
+                                    <input type="checkbox" name="add_page_numbers_in_gutters" id="add_page_numbers_in_gutters" value="1">
+                                    <i class="fa fa-sort-numeric-asc"></i> Numéros dans les gouttières
                                 </label>
                             </div>
                         </div>
