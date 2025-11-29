@@ -616,10 +616,26 @@ function getCaddyPath() {
     
     if (isAppImage || (isLinux && isPackaged)) {
         // AppImage : utiliser le Caddy inclus
-        const caddyPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'caddy', 'caddy');
-        console.log('Chemin Caddy AppImage:', caddyPath);
-        console.log('Caddy existe:', fs.existsSync(caddyPath));
-        return caddyPath;
+        // Avec ASAR désactivé, les fichiers sont dans resources/app/ (comme Windows)
+        // Essayer d'abord sans ASAR (resources/app/caddy/caddy)
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'caddy', 'caddy');
+        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'caddy', 'caddy');
+        
+        if (fs.existsSync(noAsarPath)) {
+            console.log('Chemin Caddy AppImage (sans ASAR):', noAsarPath);
+            console.log('Caddy existe:', fs.existsSync(noAsarPath));
+            return noAsarPath;
+        } else if (fs.existsSync(asarPath)) {
+            console.log('Chemin Caddy AppImage (avec ASAR):', asarPath);
+            console.log('Caddy existe:', fs.existsSync(asarPath));
+            return asarPath;
+        } else {
+            console.error('Caddy non trouvé ni avec ASAR ni sans ASAR');
+            console.log('Ressources path:', process.resourcesPath);
+            console.log('Tentative noAsarPath:', noAsarPath);
+            console.log('Tentative asarPath:', asarPath);
+            return 'caddy'; // Fallback système
+        }
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
         // Même avec asar: false, les fichiers sont dans resources/app/
@@ -817,7 +833,20 @@ function getCaddyfilePath() {
     const isMacOS = process.platform === 'darwin';
     
     if (isAppImage || isMacOS || isPackaged) {
-        // Dans l'AppImage ou macOS, le Caddyfile est dans app.asar.unpacked/
+        // Dans l'AppImage ou macOS, le Caddyfile peut être avec ou sans ASAR
+        const isLinux = process.platform === 'linux';
+        if (isAppImage || (isLinux && isPackaged)) {
+            // Linux avec ASAR désactivé : fichiers dans resources/app/
+            const noAsarPath = path.join(process.resourcesPath, 'app', 'Caddyfile');
+            const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'Caddyfile');
+            if (fs.existsSync(noAsarPath)) {
+                return noAsarPath;
+            } else if (fs.existsSync(asarPath)) {
+                return asarPath;
+            }
+            return noAsarPath; // Fallback
+        }
+        // macOS utilise toujours ASAR
         return path.join(process.resourcesPath, 'app.asar.unpacked', 'Caddyfile');
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non

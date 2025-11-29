@@ -217,31 +217,31 @@ jobs:
           ./"$APPIMAGE_FILE" --appimage-extract
           
           echo "Vérification du contenu..."
-          # Avec ASAR désactivé, les fichiers sont directement dans resources/ au lieu de resources/app.asar.unpacked/
-          if [ -f "squashfs-root/resources/caddy/caddy" ]; then
+          # Avec ASAR désactivé, les fichiers sont dans resources/app/ (comme Windows)
+          if [ -f "squashfs-root/resources/app/caddy/caddy" ]; then
             echo "✅ Caddy présent"
-            squashfs-root/resources/caddy/caddy version
+            squashfs-root/resources/app/caddy/caddy version
           else
             echo "❌ Caddy manquant"
             exit 1
           fi
           
           # PHP n'est plus inclus dans l'AppImage Linux - on utilise PHP système
-          if [ -f "squashfs-root/resources/php/php" ]; then
+          if [ -f "squashfs-root/resources/app/php/php" ]; then
             echo "⚠️ PHP présent dans l'AppImage (ne devrait pas être là pour Linux)"
           else
             echo "✅ PHP non inclus (utilisation du PHP système)"
           fi
           
           # Vérifier que la page d'aide PHP est incluse
-          if [ -f "squashfs-root/resources/php-install-guide.html" ]; then
+          if [ -f "squashfs-root/resources/app/php-install-guide.html" ]; then
             echo "✅ Page d'aide PHP présente"
           else
             echo "❌ Page d'aide PHP manquante"
             exit 1
           fi
           
-          if [ -f "squashfs-root/resources/Caddyfile" ]; then
+          if [ -f "squashfs-root/resources/app/Caddyfile" ]; then
             echo "✅ Caddyfile présent"
           else
             echo "❌ Caddyfile manquant"
@@ -261,23 +261,26 @@ jobs:
           echo "📁 Structure du dossier resources:"
           ls -la squashfs-root/resources/ 2>/dev/null || echo "Dossier resources non trouvé"
           
-          # Avec ASAR désactivé, les fichiers sont directement dans resources/
+          # Avec ASAR désactivé, les fichiers sont dans resources/app/
+          echo "📁 Contenu du dossier app:"
+          ls -la squashfs-root/resources/app/ 2>/dev/null || echo "Dossier app non trouvé"
+          
           echo "📁 Contenu du dossier caddy:"
-          ls -la squashfs-root/resources/caddy/ 2>/dev/null || echo "Dossier caddy non trouvé"
+          ls -la squashfs-root/resources/app/caddy/ 2>/dev/null || echo "Dossier caddy non trouvé"
           
           echo "🔍 Vérification des permissions du binaire Caddy:"
-          if [ -f "squashfs-root/resources/caddy/caddy" ]; then
-            ls -la squashfs-root/resources/caddy/caddy
+          if [ -f "squashfs-root/resources/app/caddy/caddy" ]; then
+            ls -la squashfs-root/resources/app/caddy/caddy
             echo "Test d'exécution du binaire Caddy:"
-            squashfs-root/resources/caddy/caddy version 2>&1 || echo "Erreur d'exécution du binaire Caddy"
+            squashfs-root/resources/app/caddy/caddy version 2>&1 || echo "Erreur d'exécution du binaire Caddy"
           else
             echo "❌ Binaire Caddy non trouvé"
           fi
           
           # Test de validation si les fichiers existent
-          if [ -f "squashfs-root/resources/caddy/caddy" ] && [ -f "squashfs-root/resources/Caddyfile" ]; then
+          if [ -f "squashfs-root/resources/app/caddy/caddy" ] && [ -f "squashfs-root/resources/app/Caddyfile" ]; then
             echo "✅ Validation de la configuration Caddy..."
-            squashfs-root/resources/caddy/caddy validate --config squashfs-root/resources/Caddyfile
+            squashfs-root/resources/app/caddy/caddy validate --config squashfs-root/resources/app/Caddyfile
           else
             echo "⚠️  Impossible de valider la configuration Caddy (fichiers manquants)"
           fi
