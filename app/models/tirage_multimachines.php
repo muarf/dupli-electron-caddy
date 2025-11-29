@@ -867,15 +867,14 @@ function Action($conf = null) {
             $contact = addslashes($_POST['contact']);
             $date = time();
             
-            // Générer l'identifiant global pour ce multi-tirage
-            require_once __DIR__ . '/migrations/DatabaseMigrationManager.php';
-            $tirage_global_id = DatabaseMigrationManager::generateTirageGlobalId($date, $contact);
-            
             // Récupérer les valeurs paye et cb depuis les champs globaux du formulaire
             $paye = $_POST['paye'] ?? "non";
             $cb = floatval($_POST['cb'] ?? 0);
             
             $mot = addslashes($_POST['mot'] ?? '');
+            
+            // Charger la classe de migration pour générer les IDs
+            require_once __DIR__ . '/migrations/DatabaseMigrationManager.php';
             
             // Démarrer une transaction
             $db->beginTransaction();
@@ -951,6 +950,9 @@ function Action($conf = null) {
                             }
                         }
                         
+                        // Générer l'identifiant global pour cette machine spécifique
+                        $tirage_global_id = DatabaseMigrationManager::generateTirageGlobalId($date, $contact, $nom_machine);
+                        
                         // Insérer dans la table dupli
                         $sql = 'INSERT INTO dupli (type, contact, master_av, master_ap, passage_av, passage_ap, rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id, tambour, tirage_global_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
                         $params = [$type, $machine['contact'] ?? $contact, $master_av, $master_ap, $passage_av, $passage_ap, $rv, $prix, $paye, $cb, $mot, $date, $nom_machine, $duplicopieur_id, $machine['tambour'] ?? null, $tirage_global_id];
@@ -966,6 +968,9 @@ function Action($conf = null) {
                     } else if ($machine['type'] === 'photocopieur') {
                         // Enregistrement photocopieur dans table photocop
                         $marque = $machine['machine'];
+                        
+                        // Générer l'identifiant global pour cette machine spécifique
+                        $tirage_global_id = DatabaseMigrationManager::generateTirageGlobalId($date, $contact, $marque);
                         
                         // Utiliser le prix calculé pour cette machine
                         $prix_machine_calcule = round(floatval($array['machines'][$index]['prix'] ?? 0), 2);

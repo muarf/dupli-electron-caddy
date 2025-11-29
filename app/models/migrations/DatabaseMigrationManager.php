@@ -196,8 +196,14 @@ class DatabaseMigrationManager {
      */
     private function updateTableTirageGlobalIds($table) {
         try {
-            // Récupérer tous les tirages sans tirage_global_id
-            $query = $this->db->prepare("SELECT id, date, contact FROM $table WHERE tirage_global_id IS NULL OR tirage_global_id = ''");
+            // Récupérer tous les tirages (y compris ceux qui ont déjà un tirage_global_id pour les régénérer avec la machine)
+            // Pour dupli, récupérer nom_machine, pour photocop récupérer marque
+            if ($table === 'dupli') {
+                $query = $this->db->prepare("SELECT id, date, contact, nom_machine FROM $table");
+            } else {
+                // photocop
+                $query = $this->db->prepare("SELECT id, date, contact, marque FROM $table");
+            }
             $query->execute();
             $tirages = $query->fetchAll(PDO::FETCH_ASSOC);
             
@@ -206,7 +212,16 @@ class DatabaseMigrationManager {
             $updateQuery = $this->db->prepare("UPDATE $table SET tirage_global_id = ? WHERE id = ?");
             
             foreach ($tirages as $tirage) {
-                $tirage_global_id = $this->generateTirageGlobalId($tirage['date'], $tirage['contact']);
+                // Récupérer la machine selon la table
+                $machine = null;
+                if ($table === 'dupli') {
+                    $machine = isset($tirage['nom_machine']) ? $tirage['nom_machine'] : null;
+                } else {
+                    // photocop
+                    $machine = isset($tirage['marque']) ? $tirage['marque'] : null;
+                }
+                
+                $tirage_global_id = $this->generateTirageGlobalId($tirage['date'], $tirage['contact'], $machine);
                 $updateQuery->execute([$tirage_global_id, $tirage['id']]);
             }
             
@@ -219,14 +234,23 @@ class DatabaseMigrationManager {
     
     /**
      * Générer un identifiant lisible pour un tirage global
-     * Format: YYYY-MM-DD_HH-MM-SS_ContactNormalise
+     * Format: YYYY-MM-DD_HH-MM-SS_ContactNormalise_MachineNormalisee
      */
-    public static function generateTirageGlobalId($date, $contact) {
+    public static function generateTirageGlobalId($date, $contact, $machine = null) {
         // Normaliser le contact (trim, lowercase, remplacer caractères spéciaux par _)
         $normalizedContact = strtolower(trim($contact));
         $normalizedContact = preg_replace('/[^a-zA-Z0-9]/', '_', $normalizedContact);
         $normalizedContact = preg_replace('/_+/', '_', $normalizedContact); // Remplacer multiples _ par un seul
         $normalizedContact = trim($normalizedContact, '_'); // Enlever les _ en début/fin
+        
+        // Normaliser la machine si fournie
+        $normalizedMachine = '';
+        if ($machine !== null && $machine !== '') {
+            $normalizedMachine = strtolower(trim($machine));
+            $normalizedMachine = preg_replace('/[^a-zA-Z0-9]/', '_', $normalizedMachine);
+            $normalizedMachine = preg_replace('/_+/', '_', $normalizedMachine); // Remplacer multiples _ par un seul
+            $normalizedMachine = trim($normalizedMachine, '_'); // Enlever les _ en début/fin
+        }
         
         // Formater la date
         // $date peut être un timestamp (int) ou une chaîne
@@ -238,7 +262,12 @@ class DatabaseMigrationManager {
             $dateFormatted = date('Y-m-d_H-i-s', $timestamp);
         }
         
-        return $dateFormatted . '_' . $normalizedContact;
+        $result = $dateFormatted . '_' . $normalizedContact;
+        if ($normalizedMachine !== '') {
+            $result .= '_' . $normalizedMachine;
+        }
+        
+        return $result;
     }
 }
 ?>
