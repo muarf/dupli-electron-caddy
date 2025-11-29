@@ -615,6 +615,20 @@ if(in_array($page, $page_secure,true)){
             } else {
                 error_log("[PASSWORD_CHECK] Page exclue de la vérification: " . $page);
             }
+            
+            // Exécuter les migrations de base de données (après vérification password)
+            // Sauf pour les pages d'installation/setup
+            if ($page != 'installation' && $page != 'setup' && $page != 'setup_save' && $page != 'create_password') {
+                try {
+                    require_once __DIR__ . '/../models/migrations/DatabaseMigrationManager.php';
+                    $migrationManager = new DatabaseMigrationManager($conf);
+                    $migrationManager->runMigrations();
+                } catch (Exception $e) {
+                    error_log("[MIGRATION] Erreur lors de l'exécution des migrations: " . $e->getMessage());
+                    // Ne pas bloquer l'application si les migrations échouent
+                }
+            }
+            
         } catch (PDOException $e) {
             error_log("[PASSWORD_CHECK] Exception connexion DB: " . $e->getMessage());
             // Base de données non trouvée, rediriger vers l'installation

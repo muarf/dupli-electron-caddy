@@ -496,7 +496,8 @@ class SQLiteDatabaseManager {
                 date TEXT NOT NULL,
                 nom_machine TEXT DEFAULT 'Duplicopieur',
                 duplicopieur_id INTEGER DEFAULT 1,
-                tambour TEXT DEFAULT NULL
+                tambour TEXT DEFAULT NULL,
+                tirage_global_id TEXT DEFAULT NULL
             )",
             
             'a4' => "CREATE TABLE IF NOT EXISTS a4 (
@@ -526,7 +527,8 @@ class SQLiteDatabaseManager {
                 prix TEXT NOT NULL,
                 cb TEXT NOT NULL,
                 mot TEXT NOT NULL,
-                date TEXT NOT NULL
+                date TEXT NOT NULL,
+                tirage_global_id TEXT DEFAULT NULL
             )"
         );
         

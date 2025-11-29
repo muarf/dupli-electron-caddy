@@ -867,6 +867,10 @@ function Action($conf = null) {
             $contact = addslashes($_POST['contact']);
             $date = time();
             
+            // Générer l'identifiant global pour ce multi-tirage
+            require_once __DIR__ . '/migrations/DatabaseMigrationManager.php';
+            $tirage_global_id = DatabaseMigrationManager::generateTirageGlobalId($date, $contact);
+            
             // Récupérer les valeurs paye et cb depuis les champs globaux du formulaire
             $paye = $_POST['paye'] ?? "non";
             $cb = floatval($_POST['cb'] ?? 0);
@@ -948,8 +952,8 @@ function Action($conf = null) {
                         }
                         
                         // Insérer dans la table dupli
-                        $sql = 'INSERT INTO dupli (type, contact, master_av, master_ap, passage_av, passage_ap, rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id, tambour) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-                        $params = [$type, $machine['contact'] ?? $contact, $master_av, $master_ap, $passage_av, $passage_ap, $rv, $prix, $paye, $cb, $mot, $date, $nom_machine, $duplicopieur_id, $machine['tambour'] ?? null];
+                        $sql = 'INSERT INTO dupli (type, contact, master_av, master_ap, passage_av, passage_ap, rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id, tambour, tirage_global_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+                        $params = [$type, $machine['contact'] ?? $contact, $master_av, $master_ap, $passage_av, $passage_ap, $rv, $prix, $paye, $cb, $mot, $date, $nom_machine, $duplicopieur_id, $machine['tambour'] ?? null, $tirage_global_id];
                         
                         // Debug SQL avec var_dump (seulement si debug dans l'URL)
                         if (isset($_GET['debug'])) {
@@ -995,7 +999,8 @@ function Action($conf = null) {
                                         $cb,
                                         $mot,
                                         $date,
-                                        $db  // CORRECTION DEADLOCK : Passer la connexion de la transaction
+                                        $db,  // CORRECTION DEADLOCK : Passer la connexion de la transaction
+                                        $tirage_global_id  // Identifiant global pour regrouper les tirages
                                     );
                                     error_log("DEBUG ENREGISTREMENT - Insertion photocop réussie");
                                 }
