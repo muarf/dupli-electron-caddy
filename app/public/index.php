@@ -1,5 +1,30 @@
 <?php
 
+// Vérifier download_backup AVANT toute autre chose pour éviter la pollution du buffer
+$page_check = key($_GET) ?? '';
+if ($page_check === 'download_backup') {
+    // Désactiver tout affichage et compression AVANT tout
+    if (ini_get('zlib.output_compression')) {
+        ini_set('zlib.output_compression', 'Off');
+    }
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    ini_set('display_errors', 0);
+    error_reporting(0);
+    
+    // Rediriger vers le fichier API dédié pour éviter toute pollution du buffer
+    $api_file = __DIR__ . '/api/download_backup.php';
+    if (file_exists($api_file)) {
+        require_once $api_file;
+        exit;
+    } else {
+        http_response_code(500);
+        die('Fichier API non trouvé');
+    }
+}
+
+// Configuration normale du script
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -412,52 +437,6 @@ if ($page === 'view_aide_pdf') {
     exit;
 }
 
-if ($page === 'download_backup') {
-    // Servir les fichiers de sauvegarde SQLite depuis le répertoire résolu
-    // Inclure les fonctions nécessaires
-    require_once __DIR__ . '/../controler/conf.php';
-    require_once __DIR__ . '/../controler/func.php';
-    require_once __DIR__ . '/../models/admin/BackupManager.php';
-    
-    $filename = $_GET['file'] ?? '';
-    if (empty($filename)) {
-        http_response_code(400);
-        die('Nom de fichier manquant');
-    }
-    
-    // Sécuriser le nom de fichier
-    $filename = basename($filename);
-    
-    // Vérifier l'extension
-    $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-    if ($extension !== 'sqlite') {
-        http_response_code(400);
-        die('Type de fichier non autorisé. Seuls les fichiers .sqlite sont autorisés.');
-    }
-    
-    // Obtenir le chemin du dossier de sauvegarde via BackupManager
-    $backupManager = new BackupManager($conf);
-    $backup_dir = $backupManager->getBackupDir();
-    
-    $filePath = $backup_dir . $filename;
-    
-    // Vérifier que le fichier existe et est dans le bon répertoire
-    $real_filepath = realpath($filePath);
-    $real_backup_dir = realpath($backup_dir);
-    if (!file_exists($filePath) || !$real_filepath || !$real_backup_dir || strpos($real_filepath, $real_backup_dir) !== 0) {
-        http_response_code(404);
-        die('Fichier non trouvé');
-    }
-    
-    // Servir le fichier SQLite
-    header('Content-Type: application/x-sqlite3');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    header('Content-Length: ' . filesize($filePath));
-    header('Cache-Control: no-cache, must-revalidate');
-    header('Expires: 0');
-    readfile($filePath);
-    exit;
-}
 
 if ($page === 'ajax_delete_machine') {
     // Vérifier l'authentification admin

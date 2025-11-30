@@ -1,5 +1,4 @@
 <?php
-// Ne pas démarrer automatiquement la session - laisser index.php le faire
 // if (session_status() === PHP_SESSION_NONE) {
 //     session_start();
 // }
@@ -55,4 +54,3 @@ $conf['db_path'] = $sqlite_db_path;
 if (function_exists('log_info')) {
     log_info("Configuration SQLite chargée - Base: $sqlite_db_path", 'conf.php');
 }
-?>
