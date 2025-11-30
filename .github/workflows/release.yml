@@ -273,7 +273,12 @@ jobs:
           $APPIMAGE_FILE --appimage-extract >/dev/null 2>&1
           
           # Déterminer le chemin correct selon si ASAR est activé ou non
-          if [ -f "squashfs-root/resources/app/view/partials/machine_item.html.php" ]; then
+          # Chercher le fichier dans les différents emplacements possibles
+          if [ -f "squashfs-root/resources/app/app/view/partials/machine_item.html.php" ]; then
+            # ASAR désactivé - fichiers dans resources/app/app/ (structure avec double app/)
+            FILE_PATH="squashfs-root/resources/app/app/view/partials/machine_item.html.php"
+            echo "✅ Fichier trouvé dans resources/app/app/ (ASAR désactivé)"
+          elif [ -f "squashfs-root/resources/app/view/partials/machine_item.html.php" ]; then
             # ASAR désactivé - fichiers directement dans resources/app/
             FILE_PATH="squashfs-root/resources/app/view/partials/machine_item.html.php"
             echo "✅ Fichier trouvé dans resources/app/ (ASAR désactivé)"
