@@ -390,6 +390,3 @@ class BackupManager {
         return $this->normalizePath(sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_backups');
     }
 }
-?>
-
-
