@@ -144,6 +144,18 @@ ob_start();
                                 </div>
                             </div>
 
+                            <!-- Orientation de la feuille A3 -->
+                            <div class="form-group">
+                                <label class="col-md-4 control-label" for="orientation">Orientation de la feuille A3</label>
+                                <div class="col-md-8">
+                                    <select name="orientation" id="orientation" class="form-control">
+                                        <option value="auto">Automatique (recommandé)</option>
+                                        <option value="portrait">Portrait (297×420 mm)</option>
+                                        <option value="landscape">Paysage (420×297 mm)</option>
+                                    </select>
+                                    <small class="help-block text-muted">Choisissez l'orientation de la feuille A3 pour l'impression</small>
+                                </div>
+                            </div>
 
                             <!-- Informations sur l'imposition -->
                             <div class="form-group">
