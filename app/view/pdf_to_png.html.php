@@ -76,6 +76,7 @@
             <div class="panel panel-default">
                 <div class="panel-body">
                     <form method="POST" enctype="multipart/form-data" id="pdfForm">
+                        <input type="hidden" name="lib_file_id" id="lib_file_id" value="<?= isset($from_lib_file) ? $from_lib_file['id'] : '' ?>">
                         <!-- Options de qualité -->
                         <div class="row" style="margin-bottom: 20px;">
                             <div class="col-md-12">
@@ -138,6 +139,13 @@
                                     <i class="fa fa-times"></i> Annuler
                                 </button>
                             </div>
+                            <?php if (isset($from_lib_file)): ?>
+                            <div class="text-end mb-2">
+                                <a href="?bibliotheque" class="btn btn-outline-primary btn-sm">
+                                    <i class="fa fa-book"></i> Ouvrir la bibliothèque
+                                </a>
+                            </div>
+                            <?php endif; ?>
                         </div>
                     </form>
                 </div>
@@ -255,7 +263,18 @@ document.addEventListener('DOMContentLoaded', function() {
         fileInput.value = '';
         uploadText.style.display = 'block';
         fileInfo.style.display = 'none';
+        document.getElementById('lib_file_id').value = '';
     };
+    
+    <?php if (isset($from_lib_file)): ?>
+    // Pré-remplissage si fichier bibliothèque
+    fileUploadArea.style.borderColor = '#28a745';
+    fileUploadArea.style.backgroundColor = '#f8fff8';
+    uploadText.innerHTML = '<i class="fa fa-file-pdf-o"></i> ' + <?= json_encode($from_lib_file['filename']) ?>;
+    fileInfo.style.display = 'block';
+    fileName.textContent = <?= json_encode($from_lib_file['filename']) ?> + ' (Fichier bibliothèque)';
+    fileInput.removeAttribute('required');
+    <?php endif; ?>
     
     // Protection contre double soumission
     form.addEventListener('submit', function(e) {

@@ -56,6 +56,7 @@
             <div class="panel panel-default">
                 <div class="panel-body">
                     <form method="POST" enctype="multipart/form-data" id="imageForm">
+                        <input type="hidden" name="lib_file_id" id="lib_file_id" value="<?= isset($from_lib_file) ? $from_lib_file['id'] : '' ?>">
                         <!-- Options de format -->
                         <div class="row" style="margin-bottom: 20px;">
                             <div class="col-md-6">
@@ -136,6 +137,13 @@
                                 </button>
                             </div>
                         </div>
+                        <?php if (isset($from_lib_file)): ?>
+                        <div class="text-end mb-2">
+                            <a href="?bibliotheque" class="btn btn-outline-primary btn-sm">
+                                <i class="fa fa-book"></i> Ouvrir la bibliothèque
+                            </a>
+                        </div>
+                        <?php endif; ?>
                     </form>
                 </div>
             </div>
@@ -271,7 +279,19 @@ document.addEventListener('DOMContentLoaded', function() {
         fileInput.value = '';
         uploadText.style.display = 'block';
         fileInfo.style.display = 'none';
+        document.getElementById('lib_file_id').value = '';
     };
+    
+    <?php if (isset($from_lib_file)): ?>
+    // Pré-remplissage si fichier bibliothèque
+    fileUploadArea.style.borderColor = '#28a745';
+    fileUploadArea.style.backgroundColor = '#f8fff8';
+    uploadText.innerHTML = '<i class="fa fa-picture-o"></i> ' + <?= json_encode($from_lib_file['filename']) ?>;
+    fileInfo.style.display = 'block';
+    fileCount.textContent = '1';
+    fileList.innerHTML = '<ul style="text-align: left; display: inline-block; margin: 0;"><li><i class="fa fa-image"></i> ' + <?= json_encode($from_lib_file['filename']) ?> + ' <span class="text-muted">(Fichier bibliothèque)</span></li></ul>';
+    fileInput.removeAttribute('required');
+    <?php endif; ?>
     
     // Protection contre double soumission
     form.addEventListener('submit', function(e) {

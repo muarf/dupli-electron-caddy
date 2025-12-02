@@ -127,41 +127,72 @@ function Action($conf)
         $array['last_error_details'] = $lastError;
     }
 
-    // Traitement du fichier PDF uploadé
-    if (isset($_SERVER["REQUEST_METHOD"]) && $_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["pdf"])) {
-        $pdfFile = $_FILES["pdf"]["tmp_name"];
-        $originalFileName = $_FILES["pdf"]["name"];
-        
-        // Extraire le nom sans extension
-        $originalFileNameWithoutExt = pathinfo($originalFileName, PATHINFO_FILENAME);
-        
-        if ($_FILES["pdf"]["error"] !== UPLOAD_ERR_OK) {
-            $array['errors'][] = "Erreur d'upload : " . $_FILES["pdf"]["error"];
-            return template(__DIR__ . "/../view/imposition_brochure.html.php", $array);
+    // Gestion de la pré-sélection bibliothèque (GET)
+    if (isset($_GET['from_lib'])) {
+        require_once __DIR__ . '/BibliothequeManager.php';
+        $libManager = new BibliothequeManager();
+        $file = $libManager->getFile($_GET['from_lib']);
+        if ($file) {
+            $array['from_lib_file'] = $file;
         }
-        
-        if (!file_exists($pdfFile)) {
-            $array['errors'][] = "Erreur : Fichier introuvable.";
-            return template(__DIR__ . "/../view/imposition_brochure.html.php", $array);
-        }
+    }
 
-        // Vérifier que le fichier est bien un PDF
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mimeType = finfo_file($finfo, $pdfFile);
-        finfo_close($finfo);
+    // Traitement du formulaire (POST)
+    if (isset($_SERVER["REQUEST_METHOD"]) && $_SERVER["REQUEST_METHOD"] == "POST") {
+        $pdfFile = null;
+        $originalFileName = null;
         
-        if ($mimeType !== 'application/pdf') {
-            $array['errors'][] = "Erreur : Le fichier n'est pas un PDF valide (type détecté: $mimeType).";
-            return template(__DIR__ . "/../view/imposition_brochure.html.php", $array);
+        // Cas 1 : Fichier bibliothèque
+        if (isset($_POST['lib_file_id']) && !empty($_POST['lib_file_id'])) {
+            require_once __DIR__ . '/BibliothequeManager.php';
+            $libManager = new BibliothequeManager();
+            $file = $libManager->getFile($_POST['lib_file_id']);
+            if ($file && file_exists($file['filepath'])) {
+                $pdfFile = $file['filepath'];
+                $originalFileName = $file['filename'];
+            } else {
+                $array['errors'][] = "Erreur : Fichier de bibliothèque introuvable.";
+                return template(__DIR__ . "/../view/imposition_brochure.html.php", $array);
+            }
         }
-
-        // Traitement principal avec gestion d'erreur globale et fallback Ghostscript
-        $cleanedPdfFile = null;
-        $paddedPdfFile = null;
-        $usedGhostscript = false;
-        $mainProcessingSuccess = false;
+        // Cas 2 : Fichier uploadé
+        elseif (isset($_FILES["pdf"]) && $_FILES["pdf"]["error"] !== UPLOAD_ERR_NO_FILE) {
+            $pdfFile = $_FILES["pdf"]["tmp_name"];
+            $originalFileName = $_FILES["pdf"]["name"];
+            
+            if ($_FILES["pdf"]["error"] !== UPLOAD_ERR_OK) {
+                $array['errors'][] = "Erreur d'upload : " . $_FILES["pdf"]["error"];
+                return template(__DIR__ . "/../view/imposition_brochure.html.php", $array);
+            }
+        }
         
-        try {
+        // Si on a un fichier à traiter
+        if ($pdfFile) {
+            // Extraire le nom sans extension
+            $originalFileNameWithoutExt = pathinfo($originalFileName, PATHINFO_FILENAME);
+            
+            if (!file_exists($pdfFile)) {
+                $array['errors'][] = "Erreur : Fichier introuvable.";
+                return template(__DIR__ . "/../view/imposition_brochure.html.php", $array);
+            }
+    
+            // Vérifier que le fichier est bien un PDF
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_file($finfo, $pdfFile);
+            finfo_close($finfo);
+            
+            if ($mimeType !== 'application/pdf') {
+                $array['errors'][] = "Erreur : Le fichier n'est pas un PDF valide (type détecté: $mimeType).";
+                return template(__DIR__ . "/../view/imposition_brochure.html.php", $array);
+            }
+    
+            // Traitement principal avec gestion d'erreur globale et fallback Ghostscript
+            $cleanedPdfFile = null;
+            $paddedPdfFile = null;
+            $usedGhostscript = false;
+            $mainProcessingSuccess = false;
+            
+            try {
             // Essayer d'abord avec le PDF original
             $pdf = new TCPDI();
             $pageCount = $pdf->setSourceFile($pdfFile);
@@ -367,7 +398,7 @@ function Action($conf)
                 $timestamp = date('YmdHis');
                 $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR;
 
-                $originalFileName = isset($_FILES["pdf"]["name"]) ? $_FILES["pdf"]["name"] : "document.pdf";
+                $originalFileName = isset($originalFileName) ? $originalFileName : "document.pdf";
                 $originalFileNameWithoutExt = pathinfo($originalFileName, PATHINFO_FILENAME);
                 $safe_filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $originalFileNameWithoutExt);
                 $final_filename = $safe_filename . '_imposed.pdf';
@@ -417,7 +448,8 @@ function Action($conf)
                     unlink($cleanedPdfFile);
                 }
                 
-                error_log("Erreur imposition PDF: " . $e->getMessage() . " - Erreur Ghostscript: " . $e2->getMessage() . " - Fichier: " . ($_FILES["pdf"]["name"] ?? "inconnu"));
+                error_log("Erreur imposition PDF: " . $e->getMessage() . " - Erreur Ghostscript: " . $e2->getMessage() . " - Fichier: " . ($originalFileName ?? "inconnu"));
+            }
             }
         }
     }

@@ -73,6 +73,13 @@ canvas {
 
     <!-- Zone d'upload -->
     <div id="uploadSection">
+        <?php if (isset($from_lib_file)): ?>
+        <div class="text-end mb-2">
+            <a href="?bibliotheque" class="btn btn-outline-primary btn-sm">
+                <i class="fa fa-book"></i> Ouvrir la bibliothèque
+            </a>
+        </div>
+        <?php endif; ?>
         <div class="upload-zone" id="uploadZone">
             <div style="font-size: 64px; color: #ff6b9d; margin-bottom: 20px;">
                 <i class="fa fa-cloud-upload"></i>
@@ -424,6 +431,26 @@ document.addEventListener('DOMContentLoaded', function() {
             loadImage(this.files[0]);
         }
     });
+    
+    <?php if (isset($from_lib_file)): ?>
+    // Charger automatiquement le fichier depuis la bibliothèque
+    (async function() {
+        const fileUrl = '?get_bibliotheque_file&id=' + encodeURIComponent(<?= $from_lib_file['id'] ?>);
+        const fileName = <?= json_encode($from_lib_file['filename']) ?>;
+        
+        try {
+            const response = await fetch(fileUrl);
+            if (!response.ok) throw new Error('Erreur lors du chargement du fichier');
+            
+            const blob = await response.blob();
+            const file = new File([blob], fileName, { type: 'image/png' });
+            loadImage(file);
+        } catch (error) {
+            console.error('Erreur chargement fichier bibliothèque:', error);
+            alert('Erreur lors du chargement du fichier depuis la bibliothèque: ' + error.message);
+        }
+    })();
+    <?php endif; ?>
 
     // Drag & drop
     uploadZone.addEventListener('dragover', (e) => {
