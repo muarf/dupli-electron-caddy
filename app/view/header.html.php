@@ -98,6 +98,14 @@
                   </a>
                 </li>
                 <li role="separator" class="divider"></li>
+                <li>
+                  <a href="?bibliotheque">
+                    <i class="fa fa-book" style="color: #6c757d; margin-right: 8px;"></i>
+                    <strong>Bibliothèque</strong>
+                    <small class="text-muted d-block">Gérer vos fichiers PDF/PNG</small>
+                  </a>
+                </li>
+                <li role="separator" class="divider"></li>
                 <!--
                 <li>
                   <a href="?imposition">

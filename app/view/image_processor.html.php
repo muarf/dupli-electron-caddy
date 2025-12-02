@@ -157,6 +157,13 @@ input[type="range"] {
 
     <!-- Zone d'upload -->
     <div id="uploadSection">
+        <?php if (isset($from_lib_file)): ?>
+        <div class="text-end mb-2">
+            <a href="?bibliotheque" class="btn btn-outline-primary btn-sm">
+                <i class="fa fa-book"></i> Ouvrir la bibliothèque
+            </a>
+        </div>
+        <?php endif; ?>
         <div class="upload-zone" id="uploadZone">
             <div style="font-size: 64px; color: #667eea; margin-bottom: 20px;">
                 <i class="fa fa-cloud-upload"></i>
@@ -273,6 +280,7 @@ input[type="range"] {
 
     <!-- Formulaire caché pour soumission -->
     <form method="POST" enctype="multipart/form-data" id="processForm" style="display: none;">
+        <input type="hidden" name="lib_file_id" id="lib_file_id" value="<?= isset($from_lib_file) ? $from_lib_file['id'] : '' ?>">
         <input type="file" name="file" id="hiddenFileInput">
         <input type="hidden" name="contrast" id="hiddenContrast">
         <input type="hidden" name="brightness" id="hiddenBrightness">
@@ -350,6 +358,27 @@ document.addEventListener('DOMContentLoaded', function() {
             handleFile(e.target.files[0]);
         }
     });
+    
+    <?php if (isset($from_lib_file)): ?>
+    // Charger automatiquement le fichier depuis la bibliothèque
+    (async function() {
+        const fileUrl = '?get_bibliotheque_file&id=' + encodeURIComponent(<?= $from_lib_file['id'] ?>);
+        const fileName = <?= json_encode($from_lib_file['filename']) ?>;
+        const fileType = <?= json_encode($from_lib_file['file_type'] === 'pdf' ? 'application/pdf' : 'image/png') ?>;
+        
+        try {
+            const response = await fetch(fileUrl);
+            if (!response.ok) throw new Error('Erreur lors du chargement du fichier');
+            
+            const blob = await response.blob();
+            const file = new File([blob], fileName, { type: fileType });
+            handleFile(file);
+        } catch (error) {
+            console.error('Erreur chargement fichier bibliothèque:', error);
+            alert('Erreur lors du chargement du fichier depuis la bibliothèque: ' + error.message);
+        }
+    })();
+    <?php endif; ?>
     
     // Sliders
     const sliders = {

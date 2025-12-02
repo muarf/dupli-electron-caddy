@@ -27,6 +27,7 @@ class DatabaseMigrationManager {
             // Liste des migrations à vérifier/appliquer
             $migrations = [
                 'tirage_global_id' => [$this, 'migrateTirageGlobalId'],
+                'bibliotheque_table' => [$this, 'createBibliothequeTable'],
                 // Ajouter d'autres migrations ici à l'avenir
             ];
             
@@ -127,6 +128,34 @@ class DatabaseMigrationManager {
         }
     }
     
+    /**
+     * Migration: Créer la table bibliotheque_files
+     */
+    private function createBibliothequeTable() {
+        error_log("[MIGRATION] Création table bibliotheque_files");
+        
+        $sql = "CREATE TABLE IF NOT EXISTS bibliotheque_files (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT NOT NULL,
+            filepath TEXT NOT NULL,
+            file_type TEXT NOT NULL,
+            thumbnail_path TEXT,
+            file_size INTEGER,
+            page_count INTEGER DEFAULT 0,
+            extracted_text TEXT,
+            is_external INTEGER DEFAULT 0,
+            source_directory TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )";
+        
+        $this->db->exec($sql);
+        
+        // Créer des index pour la recherche
+        $this->db->exec("CREATE INDEX IF NOT EXISTS idx_bibliotheque_filename ON bibliotheque_files(filename)");
+        $this->db->exec("CREATE INDEX IF NOT EXISTS idx_bibliotheque_type ON bibliotheque_files(file_type)");
+    }
+
     /**
      * Migration: Ajouter tirage_global_id aux tables dupli et photocop
      */

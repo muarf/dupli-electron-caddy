@@ -238,6 +238,14 @@
                 <?php endif; ?>
 
                 <form method="POST" enctype="multipart/form-data" class="form-horizontal">
+                    <input type="hidden" name="lib_file_id" id="lib_file_id" value="<?= isset($from_lib_file) ? $from_lib_file['id'] : '' ?>">
+                    
+                    <div class="text-end mb-2">
+                        <a href="?bibliotheque" class="btn btn-outline-primary btn-sm">
+                            <i class="fa fa-book"></i> Ouvrir la bibliothèque
+                        </a>
+                    </div>
+
                     <div class="file-upload-area" id="fileUploadArea">
                         <div class="file-upload-icon">
                             <i class="fa fa-cloud-upload"></i>
@@ -384,6 +392,15 @@
             const fileInput = document.getElementById('pdf');
             const uploadText = document.getElementById('uploadText');
             const uploadSubtext = document.getElementById('uploadSubtext');
+            const libFileId = document.getElementById('lib_file_id');
+
+            <?php if (isset($from_lib_file)): ?>
+            // Pré-remplissage si fichier bibliothèque
+            fileUploadArea.classList.add('file-selected');
+            uploadText.innerHTML = '<i class="fa fa-file-pdf-o"></i> ' + <?= json_encode($from_lib_file['filename']) ?>;
+            uploadSubtext.textContent = 'Fichier sélectionné depuis la bibliothèque';
+            document.getElementById('pdf').removeAttribute('required');
+            <?php endif; ?>
 
             fileUploadArea.addEventListener('click', function() {
                 fileInput.click();
@@ -395,6 +412,9 @@
                     fileUploadArea.classList.add('file-selected');
                     uploadText.innerHTML = '<i class="fa fa-file-pdf-o"></i> ' + fileName;
                     uploadSubtext.textContent = 'Cliquez pour changer de fichier';
+                    
+                    // Reset bibliothèque selection
+                    if (libFileId) libFileId.value = '';
                 }
             });
 

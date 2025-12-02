@@ -66,8 +66,32 @@ function Action($conf) {
     $success = false;
     $result = array();
     $download_urls = array();
+    $from_lib_file = null;
+    
+    // Gestion de la pré-sélection bibliothèque (GET)
+    if (isset($_GET['from_lib'])) {
+        require_once __DIR__ . '/BibliothequeManager.php';
+        $libManager = new BibliothequeManager();
+        $file = $libManager->getFile($_GET['from_lib']);
+        if ($file && $file['file_type'] === 'pdf' && file_exists($file['filepath'])) {
+            $from_lib_file = $file;
+        }
+    }
     
     try {
+        // Cas 1 : Fichier bibliothèque (POST avec lib_file_id)
+        if (isset($_SERVER["REQUEST_METHOD"]) && $_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['lib_file_id']) && !empty($_POST['lib_file_id'])) {
+            require_once __DIR__ . '/BibliothequeManager.php';
+            $libManager = new BibliothequeManager();
+            $file = $libManager->getFile($_POST['lib_file_id']);
+            if ($file && $file['file_type'] === 'pdf' && file_exists($file['filepath'])) {
+                $from_lib_file = $file;
+            } else {
+                $errors[] = "Fichier bibliothèque non trouvé ou invalide.";
+            }
+        }
+        
+        // Cas 2 : Upload classique
         if (isset($_SERVER["REQUEST_METHOD"]) && $_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["pdf"]) && $_FILES["pdf"]["error"] == UPLOAD_ERR_OK) {
             
             // Récupérer la qualité choisie (DPI)
@@ -143,6 +167,61 @@ function Action($conf) {
                 }
             }
         }
+        
+        // Traitement du fichier bibliothèque
+        if ($from_lib_file) {
+            // Récupérer la qualité choisie (DPI)
+            $dpi = isset($_POST['dpi']) ? intval($_POST['dpi']) : 150;
+            if ($dpi < 72) $dpi = 72;
+            if ($dpi > 300) $dpi = 300;
+            
+            // Utiliser sys_get_temp_dir() pour être compatible AppImage
+            $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_pdf_to_png' . DIRECTORY_SEPARATOR;
+            if (!is_dir($tmpDir)) {
+                if (!mkdir($tmpDir, 0777, true)) {
+                    throw new Exception("Impossible de créer le répertoire temporaire : " . $tmpDir);
+                }
+            }
+            
+            $timestamp = date('YmdHis');
+            $originalName = pathinfo($from_lib_file['filename'], PATHINFO_FILENAME);
+            $safe_filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $originalName);
+            
+            // Créer un sous-dossier pour les images
+            $outputDir = $tmpDir . 'pdf_to_png_' . $timestamp . DIRECTORY_SEPARATOR;
+            
+            // Exécuter la conversion directement depuis le fichier bibliothèque
+            $created_files = convert_pdf_to_png($from_lib_file['filepath'], $outputDir, $dpi, $safe_filename);
+            
+            if (!empty($created_files)) {
+                $success = true;
+                
+                // Préparer les URLs de téléchargement (via route API)
+                foreach ($created_files as $file) {
+                    $basename = basename($file);
+                    $result[] = $basename;
+                    // Utiliser une route API pour servir les fichiers depuis le dossier temporaire
+                    $download_urls[] = "?download_png&file=" . urlencode($basename) . "&dir=" . urlencode('pdf_to_png_' . $timestamp);
+                }
+                
+                // Créer un fichier ZIP contenant toutes les images
+                $zip_filename = $safe_filename . '_pages.zip';
+                $zip_path = $tmpDir . $zip_filename;
+                
+                $zip = new ZipArchive();
+                if ($zip->open($zip_path, ZipArchive::CREATE) === TRUE) {
+                    foreach ($created_files as $file) {
+                        $zip->addFile($file, basename($file));
+                    }
+                    $zip->close();
+                    $zip_url = '?download_png&file=' . urlencode($zip_filename) . '&dir=';
+                } else {
+                    $zip_url = '';
+                }
+            } else {
+                $errors[] = "Erreur lors de la génération des images PNG.";
+            }
+        }
     } catch (Exception $e) {
         error_log("Erreur détaillée dans Action : " . $e->getMessage());
         error_log("Trace complète : " . $e->getTraceAsString());
@@ -154,7 +233,8 @@ function Action($conf) {
         'success' => $success,
         'result' => $result,
         'download_urls' => $download_urls,
-        'zip_url' => isset($zip_url) ? $zip_url : ''
+        'zip_url' => isset($zip_url) ? $zip_url : '',
+        'from_lib_file' => $from_lib_file
     ));
 }
 

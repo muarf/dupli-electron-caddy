@@ -85,6 +85,7 @@ ob_start();
             <div class="panel panel-default">
                 <div class="panel-body">
                     <form method="POST" enctype="multipart/form-data" class="form-horizontal" id="tractsForm">
+                        <input type="hidden" name="lib_file_id" id="lib_file_id" value="<?= isset($from_lib_file) ? $from_lib_file['id'] : '' ?>">
                         <div class="file-upload-area" id="fileUploadArea" style="border: 3px dashed #ffd93d; border-radius: 15px; padding: 40px; text-align: center; background: linear-gradient(135deg, #fff8e1 0%, #ffeaa7 100%); transition: all 0.3s ease; cursor: pointer;">
                             <div class="file-upload-icon" style="font-size: 48px; color: #ffd93d; margin-bottom: 20px;">
                                 <i class="fa fa-file-pdf-o"></i>
@@ -349,6 +350,7 @@ $(document).ready(function() {
     const tractType = document.getElementById('tractType');
     const submitBtn = $('#submitBtn'); // Utiliser jQuery
     const impositionResult = document.getElementById('impositionResult');
+    const libFileId = document.getElementById('lib_file_id');
     
     // Drag & drop events
     fileUploadArea.addEventListener('dragover', function(e) {
@@ -559,6 +561,21 @@ $(document).ready(function() {
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
+    
+    <?php if (isset($from_lib_file)): ?>
+    // Pré-remplissage si fichier bibliothèque
+    fileName.textContent = <?= json_encode($from_lib_file['filename']) ?>;
+    fileSize.textContent = formatFileSize(<?= isset($from_lib_file['file_size']) ? $from_lib_file['file_size'] : 0 ?>);
+    if (<?= isset($from_lib_file['page_count']) ? $from_lib_file['page_count'] : 0 ?> > 0) {
+        pageCountEl.textContent = <?= isset($from_lib_file['page_count']) ? $from_lib_file['page_count'] : 0 ?> + ' page(s)';
+    }
+    fileInfo.style.display = 'block';
+    impositionOptions.style.display = 'block';
+    document.getElementById('pdfFile').removeAttribute('required');
+    // Mettre à jour l'affichage de la zone d'upload
+    fileUploadArea.style.borderColor = '#28a745';
+    fileUploadArea.style.background = 'linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%)';
+    <?php endif; ?>
     
     // Validation du formulaire
     $('#tractsForm').submit(function(e) {

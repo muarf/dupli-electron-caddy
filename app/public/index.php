@@ -266,6 +266,53 @@ if ($page === 'upload_aide_pdf') {
     }
 }
 
+if ($page === 'upload_bibliotheque') {
+    $api_file = __DIR__ . '/../api/upload_bibliotheque.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    else { http_response_code(500); echo json_encode(['error' => 'API file not found']); exit; }
+}
+
+if ($page === 'search_bibliotheque') {
+    $api_file = __DIR__ . '/../api/search_bibliotheque.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    else { http_response_code(500); echo json_encode(['error' => 'API file not found']); exit; }
+}
+
+if ($page === 'preview_directory') {
+    $api_file = __DIR__ . '/../api/preview_directory.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    else { http_response_code(500); echo json_encode(['error' => 'API file not found']); exit; }
+}
+
+if ($page === 'index_file') {
+    $api_file = __DIR__ . '/../api/index_file.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    else { http_response_code(500); echo json_encode(['error' => 'API file not found']); exit; }
+}
+
+if ($page === 'delete_bibliotheque_file') {
+    $api_file = __DIR__ . '/../api/delete_bibliotheque_file.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    else { http_response_code(500); echo json_encode(['error' => 'API file not found']); exit; }
+}
+
+if ($page === 'get_bibliotheque_thumbnail') {
+    $api_file = __DIR__ . '/../api/get_bibliotheque_thumbnail.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    else { http_response_code(500); echo json_encode(['error' => 'API file not found']); exit; }
+}
+
+if ($page === 'get_bibliotheque_file') {
+    $api_file = __DIR__ . '/../api/get_bibliotheque_file.php';
+    if (file_exists($api_file)) {
+        require_once $api_file;
+        exit;
+    } else {
+        http_response_code(500);
+        die('Fichier API non trouvé');
+    }
+}
+
 if ($page === 'download_unimposed') {
     $file = $_GET['file'] ?? '';
     // Utiliser le répertoire temporaire système
@@ -504,7 +551,7 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','imposition_brochure','imposition_livre','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','image_processor','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','download_png','download_unimposed','download_processed','download_backup','view_pdf','get-machine-template','upload_aide_pdf','view_aide_pdf');
+$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','imposition_brochure','imposition_livre','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','image_processor','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','download_png','download_unimposed','download_processed','download_backup','view_pdf','get-machine-template','upload_aide_pdf','view_aide_pdf','bibliotheque','upload_bibliotheque','search_bibliotheque','preview_directory','index_file','delete_bibliotheque_file','get_bibliotheque_thumbnail','get_bibliotheque_file');
 
 error_log("[PASSWORD_CHECK] ===== DEBUT VERIFICATION =====");
 error_log("[PASSWORD_CHECK] Page demandée (avant vérification): " . $page);

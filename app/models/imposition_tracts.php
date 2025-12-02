@@ -14,6 +14,16 @@ function Action($conf = null)
     error_log("[IMPOSITION_TRACTS] Action() appelée - FILES: " . print_r($_FILES, true));
     $array = array();
     
+    // Gestion de la pré-sélection bibliothèque (GET)
+    if (isset($_GET['from_lib'])) {
+        require_once __DIR__ . '/BibliothequeManager.php';
+        $libManager = new BibliothequeManager();
+        $file = $libManager->getFile($_GET['from_lib']);
+        if ($file) {
+            $array['from_lib_file'] = $file;
+        }
+    }
+    
     // Gestion AJAX pour l'analyse du PDF
     if (isset($_GET['ajax']) && $_GET['ajax'] === 'analyze_pdf' && isset($_FILES['pdf_file'])) {
         try {
@@ -36,7 +46,7 @@ function Action($conf = null)
     
     // Le formulaire est soumis si on a un fichier ET que c'est une requête POST
     // (pas besoin de vérifier submit car le bouton peut ne pas être dans POST)
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['pdf_file']) && $_FILES['pdf_file']['error'] === UPLOAD_ERR_OK) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && ((isset($_FILES['pdf_file']) && $_FILES['pdf_file']['error'] === UPLOAD_ERR_OK) || (isset($_POST['lib_file_id']) && !empty($_POST['lib_file_id'])))) {
         error_log("[IMPOSITION_TRACTS] Début traitement formulaire");
         error_log("[IMPOSITION_TRACTS] POST submit: " . (isset($_POST['submit']) ? 'OUI' : 'NON'));
         error_log("[IMPOSITION_TRACTS] FILES pdf_file: " . (isset($_FILES['pdf_file']) ? 'OUI' : 'NON'));
@@ -47,6 +57,33 @@ function Action($conf = null)
             error_log("[IMPOSITION_TRACTS] Détails upload - size: " . ($_FILES['pdf_file']['size'] ?? 'N/A'));
         }
         try {
+            // Si fichier bibliothèque, créer un $_FILES temporaire
+            if (isset($_POST['lib_file_id']) && !empty($_POST['lib_file_id'])) {
+                require_once __DIR__ . '/BibliothequeManager.php';
+                $libManager = new BibliothequeManager();
+                $file = $libManager->getFile($_POST['lib_file_id']);
+                if ($file && file_exists($file['filepath'])) {
+                    // Créer un fichier temporaire copié depuis la bibliothèque
+                    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
+                    if (!file_exists($tmp_dir)) {
+                        mkdir($tmp_dir, 0755, true);
+                    }
+                    $tmpFile = $tmp_dir . 'lib_' . uniqid() . '_' . basename($file['filepath']);
+                    copy($file['filepath'], $tmpFile);
+                    
+                    // Simuler $_FILES pour processImpositionTracts
+                    $_FILES['pdf_file'] = [
+                        'name' => $file['filename'],
+                        'type' => 'application/pdf',
+                        'tmp_name' => $tmpFile,
+                        'error' => UPLOAD_ERR_OK,
+                        'size' => filesize($tmpFile)
+                    ];
+                } else {
+                    throw new Exception("Erreur : Fichier de bibliothèque introuvable.");
+                }
+            }
+            
             $array = processImpositionTracts();
         } catch (Exception $e) {
             error_log("[IMPOSITION_TRACTS] Exception capturée: " . $e->getMessage());
