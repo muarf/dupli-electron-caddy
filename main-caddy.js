@@ -83,7 +83,22 @@ function handlePhpOutput(source, data) {
     
     const timestamp = new Date().toISOString();
     const logLine = `[${timestamp}] [PHP ${source}] ${message}`;
-    console[source === 'STDERR' ? 'error' : 'log'](`[PHP ${source}]`, message);
+    
+    // Protéger contre les erreurs EPIPE lors de l'écriture dans console
+    try {
+        console[source === 'STDERR' ? 'error' : 'log'](`[PHP ${source}]`, message);
+    } catch (error) {
+        // Ignorer uniquement les erreurs EPIPE (flux fermé - normal lors de la fermeture)
+        // Les autres erreurs doivent être affichées
+        if (error.code && error.code !== 'EPIPE') {
+            try {
+                process.stderr.write(`[PHP ${source}] Erreur log: ${error.message}\n`);
+            } catch (e) {
+                // Si même ça échoue, ignorer silencieusement
+            }
+        }
+        // Pour EPIPE, on ignore silencieusement (flux fermé normalement)
+    }
     
     sendToRenderer(PHP_LOG_CHANNEL, {
         source,
@@ -347,7 +362,22 @@ function handlePhpFatal(message, source = 'STDERR') {
     
     phpFatalNotified = true;
     const timestamp = new Date().toISOString();
-    console.error(`[PHP FATAL - ${source}]`, message);
+    
+    // Protéger contre les erreurs EPIPE lors de l'écriture dans console
+    try {
+        console.error(`[PHP FATAL - ${source}]`, message);
+    } catch (error) {
+        // Ignorer uniquement les erreurs EPIPE (flux fermé - normal lors de la fermeture)
+        // Les autres erreurs doivent être affichées
+        if (error.code && error.code !== 'EPIPE') {
+            try {
+                process.stderr.write(`[PHP FATAL - ${source}] ${message}\n`);
+            } catch (e) {
+                // Si même ça échoue, ignorer silencieusement
+            }
+        }
+        // Pour EPIPE, on ignore silencieusement (flux fermé normalement)
+    }
     
     sendToRenderer(PHP_FATAL_CHANNEL, {
         message,
@@ -395,7 +425,20 @@ function attemptRendererRecovery() {
 
 function handlePhpProcessExit(code, signal) {
     const exitInfo = `Processus PHP terminé (code: ${code !== null ? code : 'null'}, signal: ${signal || 'aucun'})`;
-    console.warn(exitInfo);
+    
+    // Protéger contre les erreurs EPIPE lors de l'écriture dans console
+    try {
+        console.warn(exitInfo);
+    } catch (error) {
+        // Ignorer uniquement les erreurs EPIPE (flux fermé - normal lors de la fermeture)
+        if (error.code && error.code !== 'EPIPE') {
+            try {
+                process.stderr.write(exitInfo + '\n');
+            } catch (e) {
+                // Si même ça échoue, ignorer silencieusement
+            }
+        }
+    }
     
     stopPhpErrorLogWatcher();
     
@@ -591,7 +634,10 @@ function cleanupTmpFiles() {
     let tmpPath;
     
     if (isAppImage || isPackaged) {
-        tmpPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public', 'tmp');
+        // Pour AppImage, essayer d'abord app/app/public (structure réelle sans ASAR)
+        const noAsarTmpPath = path.join(process.resourcesPath, 'app', 'app', 'public', 'tmp');
+        const asarTmpPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public', 'tmp');
+        tmpPath = fs.existsSync(noAsarTmpPath) ? noAsarTmpPath : asarTmpPath;
     } else {
         tmpPath = path.join(__dirname, 'app', 'public', 'tmp');
     }
@@ -886,7 +932,20 @@ function startPhpFpm() {
     
     let appPath;
     if (isAppImage || isMacOS || (isLinux && isPackaged)) {
-        appPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
+        // Pour AppImage, essayer d'abord app/app/public (structure réelle sans ASAR)
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
+        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
+        
+        if (fs.existsSync(noAsarPath)) {
+            appPath = noAsarPath;
+            console.log('App Path trouvé (sans ASAR):', appPath);
+        } else if (fs.existsSync(asarPath)) {
+            appPath = asarPath;
+            console.log('App Path trouvé (avec ASAR):', appPath);
+        } else {
+            console.error('App Path non trouvé ni avec ASAR ni sans ASAR');
+            appPath = noAsarPath; // Fallback
+        }
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
         // Même avec asar: false, les fichiers sont dans resources/app/
@@ -944,10 +1003,17 @@ function startPhpFpm() {
     if (isAppImage || (isLinux && isPackaged)) {
         // AppImage ou Linux packagé (.deb) : utiliser PHP système sans php.ini personnalisé
         // Le PHP système a déjà ses extensions configurées
+        // Pour que vendor/autoload.php soit accessible, on utilise le répertoire parent de public
+        // car public est le document root mais vendor est au niveau de public
+        const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+        const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
         console.log('Configuration PHP pour Linux packagé/AppImage (PHP système)');
+        console.log('Document root (public):', appPath);
+        console.log('App base path (pour vendor):', appBasePath);
         phpArgs = [
             '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
-            '-t', appPath,
+            '-t', appPath, // Document root = public
+            '-d', `include_path=${appBasePath}:${vendorPath}:.`,
             '-d', 'display_errors=1',
             '-d', 'log_errors=1',
             '-d', 'upload_max_filesize=50M',
@@ -962,17 +1028,22 @@ function startPhpFpm() {
         const noAsarExtPath = path.join(process.resourcesPath, 'app', 'php', 'ext');
         const phpIniPath = path.join(appPath, '..', 'php.ini');
         const phpExtPath = fs.existsSync(noAsarExtPath) ? noAsarExtPath : asarExtPath;
+        // Ajouter le répertoire parent au include_path pour que vendor/autoload.php soit accessible
+        const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+        const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
         
         console.log('Configuration PHP pour Windows');
         console.log('PHP Ini Path:', phpIniPath);
         console.log('PHP Ini exists:', fs.existsSync(phpIniPath));
         console.log('PHP Ext Path:', phpExtPath);
         console.log('PHP Ext exists:', fs.existsSync(phpExtPath));
+        console.log('App base path (pour vendor):', appBasePath);
         
         phpArgs = [
             '-c', phpIniPath,
             '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
             '-t', appPath,
+            '-d', `include_path=${appBasePath};${vendorPath};.`,
             '-d', 'display_errors=1',
             '-d', 'log_errors=1',
             '-d', `extension_dir=${phpExtPath}`,
@@ -989,11 +1060,16 @@ function startPhpFpm() {
         
         console.log('Configuration PHP pour macOS/dev');
         
+        // Ajouter le répertoire parent au include_path pour que vendor/autoload.php soit accessible
+        const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+        const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
+        
         if (fs.existsSync(phpIniPath)) {
             phpArgs = [
                 '-c', phpIniPath,
                 '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
                 '-t', appPath,
+                '-d', `include_path=${appBasePath}:${vendorPath}:.`,
                 '-d', 'display_errors=1',
                 '-d', 'log_errors=1',
                 '-d', `extension_dir=${phpExtPath}`,
@@ -1004,9 +1080,13 @@ function startPhpFpm() {
                 '-d', `session.save_path=${sessionPath}`
             ];
         } else {
+            // Pour macOS/dev, ajouter aussi le répertoire parent au include_path
+            const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+            const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
             phpArgs = [
                 '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
                 '-t', appPath,
+                '-d', `include_path=${appBasePath}:${vendorPath}:.`,
                 '-d', 'display_errors=1',
                 '-d', 'log_errors=1',
                 '-d', 'upload_max_filesize=50M',
@@ -1091,9 +1171,14 @@ function startPhpServer() {
     });
     
     // Pas de php.ini pour éviter les erreurs d'extensions
+    // Ajouter le répertoire parent au include_path pour que vendor/autoload.php soit accessible
+    const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+    const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
+    const pathSeparator = isWindows ? ';' : ':';
     phpFpmProcess = spawn(phpPath, [
         '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
         '-t', appPath,
+        '-d', `include_path=${appBasePath}${pathSeparator}${vendorPath}${pathSeparator}.`,
         '-d', 'display_errors=1',
         '-d', 'upload_max_filesize=50M',
         '-d', 'post_max_size=50M',
@@ -1185,7 +1270,20 @@ async function startCaddy() {
     // Obtenir le bon appPath pour Caddy
     let appPath;
     if (isAppImage || isMacOS || (isLinux && isPackaged)) {
-        appPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
+        // Pour AppImage, essayer d'abord app/app/public (structure réelle sans ASAR)
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
+        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
+        
+        if (fs.existsSync(noAsarPath)) {
+            appPath = noAsarPath;
+            console.log('Caddy App Path trouvé (sans ASAR):', appPath);
+        } else if (fs.existsSync(asarPath)) {
+            appPath = asarPath;
+            console.log('Caddy App Path trouvé (avec ASAR):', appPath);
+        } else {
+            console.error('Caddy App Path non trouvé ni avec ASAR ni sans ASAR');
+            appPath = noAsarPath; // Fallback
+        }
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
         // Même avec asar: false, les fichiers sont dans resources/app/
@@ -1229,7 +1327,21 @@ async function startCaddy() {
     });
     
     caddyProcess.stderr.on('data', (data) => {
-        console.error('Caddy Error:', data.toString());
+        try {
+            console.error('Caddy Error:', data.toString());
+        } catch (error) {
+            // Ignorer uniquement les erreurs EPIPE (flux fermé - normal lors de la fermeture)
+            // Les autres erreurs doivent être affichées
+            if (error.code && error.code !== 'EPIPE') {
+                // Essayer d'afficher l'erreur via un autre moyen si console.error échoue
+                try {
+                    process.stderr.write('Erreur lors de l\'écriture du log Caddy: ' + error.message + '\n');
+                } catch (e) {
+                    // Si même ça échoue, ignorer silencieusement
+                }
+            }
+            // Pour EPIPE, on ignore silencieusement (flux fermé normalement)
+        }
     });
     
     caddyProcess.on('close', (code) => {
