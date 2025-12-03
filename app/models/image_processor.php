@@ -782,21 +782,21 @@ function Action($conf) {
                 $error_code = $_FILES["file"]["error"];
                 $error_msg = isset($error_messages[$error_code]) ? $error_messages[$error_code] : "Erreur inconnue ($error_code)";
                 $errors[] = "Erreur d'upload : " . $error_msg;
-            } else {
-                // Vérifier le type MIME
-                $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                $mimeType = finfo_file($finfo, $_FILES["file"]["tmp_name"]);
-                finfo_close($finfo);
-                
-                $allowed_types = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-                
-                if (!in_array($mimeType, $allowed_types)) {
-                    $errors[] = "Le fichier doit être un PDF ou une image (JPEG, PNG, GIF). Type détecté: " . $mimeType;
-                } elseif ($_FILES["file"]["size"] == 0) {
-                    $errors[] = "Le fichier est vide.";
-                } elseif ($_FILES["file"]["size"] > 50 * 1024 * 1024) {
-                    $errors[] = "Le fichier est trop volumineux (maximum 50MB).";
                 } else {
+                    // Vérifier le type MIME
+                    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                    $mimeType = finfo_file($finfo, $_FILES["file"]["tmp_name"]);
+                    finfo_close($finfo);
+                    
+                    $allowed_types = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                    
+                    if (!in_array($mimeType, $allowed_types)) {
+                        $errors[] = "Le fichier doit être un PDF ou une image (JPEG, PNG, GIF). Type détecté: " . $mimeType;
+                    } elseif ($_FILES["file"]["size"] == 0) {
+                        $errors[] = "Le fichier est vide.";
+                    } elseif ($_FILES["file"]["size"] > 50 * 1024 * 1024) {
+                        $errors[] = "Le fichier est trop volumineux (maximum 50MB).";
+                    } else {
                     // Créer le dossier temporaire
                     $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
                     if (!is_dir($tmpDir)) {
@@ -824,7 +824,22 @@ function Action($conf) {
                     
                     $uploadFile = $tmpDir . "upload_" . $timestamp . "." . $extension;
                     
-                    if (move_uploaded_file($_FILES["file"]["tmp_name"], $uploadFile)) {
+                    // Pour les fichiers de la bibliothèque, utiliser rename au lieu de move_uploaded_file
+                    // car move_uploaded_file() ne fonctionne que pour les fichiers uploadés via HTTP POST
+                    $move_result = false;
+                    if (isset($from_lib_file) && $from_lib_file) {
+                        // Fichier de la bibliothèque : déjà copié, juste renommer/déplacer
+                        if (file_exists($_FILES["file"]["tmp_name"])) {
+                            $move_result = rename($_FILES["file"]["tmp_name"], $uploadFile);
+                        } else {
+                            $move_result = false;
+                        }
+                    } else {
+                        // Fichier uploadé normalement : utiliser move_uploaded_file
+                        $move_result = move_uploaded_file($_FILES["file"]["tmp_name"], $uploadFile);
+                    }
+                    
+                    if ($move_result) {
                         
                         // Préparer la réponse immédiate pour traitement asynchrone
                         $result['progress_key'] = $progress_key;
