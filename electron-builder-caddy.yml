@@ -73,20 +73,14 @@ mac:
     - target: dmg
       arch: [x64]
   category: public.app-category.productivity
+  # Désactiver ASAR sur macOS pour éviter les erreurs de liens symboliques
+  # comme sur Linux et Windows
+  asar: false
   # Configuration spécifique macOS - inclut PHP
-  # Utiliser ASAR mais unpacker les fichiers nécessaires
-  # Ne pas redéfinir files ici - utiliser la config globale pour éviter les conflits de liens symboliques
   # Seulement exclure les fichiers de développement
   files:
     - "!app/.cursor/**/*"  # Exclure les fichiers .cursor
     - "!app/.phpunit.result.cache"  # Exclure le cache PHPUnit
-  asarUnpack:
-    - "php/**/*"
-    - "caddy/**/*"
-    - "ghostscript/**/*"
-    - "Caddyfile"
-    - "php-fpm.conf"
-    # app/**/* est dans la config globale files mais pas dans asarUnpack (pas besoin de l'unpacker)
 win:
   target:
     - target: nsis
