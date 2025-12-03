@@ -221,19 +221,21 @@ jobs:
             echo "Version actuelle: $CURRENT_VERSION"
           echo "� Utilisation de la version actuelle pour le build"
         
+      - name: Clean build directories
+        run: |
+          echo "=== Nettoyage complet avant build ==="
+          # Nettoyer dist
+          rm -rf dist/
+          # Nettoyer les dossiers temporaires d'electron-builder
+          rm -rf /tmp/t-* 2>/dev/null || true
+          rm -rf /private/var/folders/*/T/t-* 2>/dev/null || true
+          # Nettoyer les dossiers Electron.app qui pourraient exister
+          find . -maxdepth 3 -name "Electron.app" -type d -exec rm -rf {} + 2>/dev/null || true
+          echo "Nettoyage terminé"
+      
       - name: Build application
         run: |
           echo "=== Build de l'application macOS ==="
-          # Nettoyer complètement dist avant le build
-          rm -rf dist/
-          rm -rf dist/mac/ 2>/dev/null || true
-          # Supprimer aussi les dossiers Electron.app s'ils existent
-          find . -name "Electron.app" -type d -exec rm -rf {} + 2>/dev/null || true
-          # Supprimer les liens symboliques existants dans dist si le dossier existe
-          if [ -d "dist/mac" ]; then
-            find dist/mac -type l -delete 2>/dev/null || true
-            rm -rf dist/mac/Electron.app 2>/dev/null || true
-          fi
           # Build avec --publish=never pour éviter toute publication
           npm run build:caddy -- --mac --publish=never
           
