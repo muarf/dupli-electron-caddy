@@ -8,6 +8,60 @@ const net = require('net');
 const http = require('http');
 const { checkWindowsCompatibility, applyCompatibilitySettings } = require('./utils/windows-compatibility');
 
+// Vérifier si Ghostscript fonctionne (sous Windows uniquement)
+function checkGhostscript(port = 8000) {
+    return new Promise((resolve, reject) => {
+        // Seulement sous Windows
+        if (process.platform !== 'win32') {
+            resolve();
+            return;
+        }
+        
+        const options = {
+            hostname: '127.0.0.1',
+            port: port,
+            path: '/?check_ghostscript',
+            method: 'GET',
+            timeout: 5000
+        };
+        
+        const req = http.request(options, (res) => {
+            let data = '';
+            
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+            
+            res.on('end', () => {
+                try {
+                    const result = JSON.parse(data);
+                    if (result.available) {
+                        resolve();
+                    } else {
+                        const error = new Error(result.error || 'Ghostscript non disponible');
+                        error.errorCode = result.error_code;
+                        error.returnCode = result.return_code;
+                        reject(error);
+                    }
+                } catch (e) {
+                    reject(new Error(`Erreur parsing réponse Ghostscript: ${e.message}`));
+                }
+            });
+        });
+        
+        req.on('error', (err) => {
+            reject(new Error(`Erreur requête Ghostscript: ${err.message}`));
+        });
+        
+        req.on('timeout', () => {
+            req.destroy();
+            reject(new Error('Timeout lors de la vérification Ghostscript.'));
+        });
+        
+        req.end();
+    });
+}
+
 // Vérifier la compatibilité Windows avant tout
 checkWindowsCompatibility();
 
@@ -1028,17 +1082,29 @@ function startPhpFpm() {
         const noAsarExtPath = path.join(process.resourcesPath, 'app', 'php', 'ext');
         const phpIniPath = path.join(appPath, '..', 'php.ini');
         const phpExtPath = fs.existsSync(noAsarExtPath) ? noAsarExtPath : asarExtPath;
+<<<<<<< HEAD
+=======
+        // Ajouter le répertoire parent au include_path pour que vendor/autoload.php soit accessible
+        const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+        const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
+        
+>>>>>>> bibliotheque-improvement
         console.log('Configuration PHP pour Windows');
         console.log('PHP Ini Path:', phpIniPath);
         console.log('PHP Ini exists:', fs.existsSync(phpIniPath));
         console.log('PHP Ext Path:', phpExtPath);
         console.log('PHP Ext exists:', fs.existsSync(phpExtPath));
+        console.log('App base path (pour vendor):', appBasePath);
         
         phpArgs = [
             '-c', phpIniPath,
             '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
             '-t', appPath,
+<<<<<<< HEAD
             '-d', `extension_dir=${phpExtPath}`,
+=======
+            '-d', `include_path=${appBasePath};${vendorPath};.`,
+>>>>>>> bibliotheque-improvement
             '-d', 'display_errors=1',
             '-d', 'log_errors=1',
             '-d', 'upload_max_filesize=50M',
@@ -1063,7 +1129,10 @@ function startPhpFpm() {
                 '-c', phpIniPath,
                 '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
                 '-t', appPath,
+<<<<<<< HEAD
                 '-d', `extension_dir=${phpExtPath}`,  // extension_dir avant include_path pour cohérence
+=======
+>>>>>>> bibliotheque-improvement
                 '-d', `include_path=${appBasePath}:${vendorPath}:.`,
                 '-d', 'display_errors=1',
                 '-d', 'log_errors=1',
@@ -1631,8 +1700,51 @@ function createWindow() {
                     proxyPort: serverPort,
                     phpPort: PHP_SERVER_PORT
                 });
-                mainWindow.loadURL(fallbackUrl);
-                mainWindow.show();
+                
+                // Vérifier Ghostscript avant de charger l'app (Windows uniquement)
+                if (process.platform === 'win32') {
+                    try {
+                        await checkGhostscript(frontendPort);
+                        mainWindow.loadURL(fallbackUrl);
+                        mainWindow.show();
+                    } catch (ghostscriptError) {
+                        // S'assurer que la fenêtre est visible pour le dialog
+                        if (!mainWindow.isVisible()) {
+                            mainWindow.show();
+                        }
+                        
+                        dialog.showMessageBox(mainWindow, {
+                            type: 'warning',
+                            title: 'Avertissement - Ghostscript non disponible',
+                            message: 'Ghostscript ne peut pas s\'exécuter',
+                            detail: ghostscriptError.message + '\n\n' + 
+                                    'L\'application peut continuer, mais certaines fonctionnalités de traitement PDF ne seront pas disponibles :\n' +
+                                    '• Génération de miniatures pour les fichiers PDF\n' +
+                                    '• Conversion PDF vers PNG\n\n' +
+                                    'Pour activer ces fonctionnalités, installez Visual C++ Redistributable.\n\n' +
+                                    'Souhaitez-vous télécharger Visual C++ Redistributable maintenant ?',
+                            buttons: ['Télécharger Visual C++ Redistributable', 'Continuer sans Ghostscript'],
+                            defaultId: 1,
+                            cancelId: 1
+                        }).then((result) => {
+                            if (result.response === 0) {
+                                shell.openExternal('https://aka.ms/vs/17/release/vc_redist.x64.exe');
+                            }
+                            // Dans tous les cas, continuer le chargement de l'application
+                            mainWindow.loadURL(fallbackUrl);
+                            mainWindow.show();
+                        }).catch((dialogError) => {
+                            console.error('Erreur lors de l\'affichage du dialog:', dialogError);
+                            // Continuer même en cas d'erreur de dialog
+                            mainWindow.loadURL(fallbackUrl);
+                            mainWindow.show();
+                        });
+                        return; // Ne pas charger l'URL ici, c'est fait dans le dialog
+                    }
+                } else {
+                    mainWindow.loadURL(fallbackUrl);
+                    mainWindow.show();
+                }
             } else {
                 frontendPort = serverPort;
                 sendToRenderer(PHP_STATUS_CHANNEL, {
@@ -1642,9 +1754,55 @@ function createWindow() {
                     proxyPort: serverPort,
                     phpPort: PHP_SERVER_PORT
                 });
-                mainWindow.loadURL(appUrl);
-                mainWindow.show();
-                console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
+                
+                // Vérifier Ghostscript avant de charger l'app (Windows uniquement)
+                if (process.platform === 'win32') {
+                    try {
+                        await checkGhostscript(frontendPort);
+                        mainWindow.loadURL(appUrl);
+                        mainWindow.show();
+                        console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
+                    } catch (ghostscriptError) {
+                        // S'assurer que la fenêtre est visible pour le dialog
+                        if (!mainWindow.isVisible()) {
+                            mainWindow.show();
+                        }
+                        
+                        dialog.showMessageBox(mainWindow, {
+                            type: 'warning',
+                            title: 'Avertissement - Ghostscript non disponible',
+                            message: 'Ghostscript ne peut pas s\'exécuter',
+                            detail: ghostscriptError.message + '\n\n' + 
+                                    'L\'application peut continuer, mais certaines fonctionnalités de traitement PDF ne seront pas disponibles :\n' +
+                                    '• Génération de miniatures pour les fichiers PDF\n' +
+                                    '• Conversion PDF vers PNG\n\n' +
+                                    'Pour activer ces fonctionnalités, installez Visual C++ Redistributable.\n\n' +
+                                    'Souhaitez-vous télécharger Visual C++ Redistributable maintenant ?',
+                            buttons: ['Télécharger Visual C++ Redistributable', 'Continuer sans Ghostscript'],
+                            defaultId: 1,
+                            cancelId: 1
+                        }).then((result) => {
+                            if (result.response === 0) {
+                                shell.openExternal('https://aka.ms/vs/17/release/vc_redist.x64.exe');
+                            }
+                            // Dans tous les cas, continuer le chargement de l'application
+                            mainWindow.loadURL(appUrl);
+                            mainWindow.show();
+                            console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
+                        }).catch((dialogError) => {
+                            console.error('Erreur lors de l\'affichage du dialog:', dialogError);
+                            // Continuer même en cas d'erreur de dialog
+                            mainWindow.loadURL(appUrl);
+                            mainWindow.show();
+                            console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
+                        });
+                        return; // Ne pas charger l'URL ici, c'est fait dans le dialog
+                    }
+                } else {
+                    mainWindow.loadURL(appUrl);
+                    mainWindow.show();
+                    console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
+                }
             }
         } catch (error) {
             console.error('Erreur lors du démarrage des serveurs:', error);
@@ -1653,9 +1811,56 @@ function createWindow() {
             try {
                 startPhpServer();
                 frontendPort = PHP_SERVER_PORT;
-                mainWindow.loadURL(`http://127.0.0.1:${PHP_SERVER_PORT}/`);
-                mainWindow.show();
-                console.log('Serveur PHP intégré démarré avec succès');
+                
+                // Attendre que le serveur soit prêt puis vérifier Ghostscript (Windows uniquement)
+                if (process.platform === 'win32') {
+                    setTimeout(async () => {
+                        try {
+                            await checkGhostscript(PHP_SERVER_PORT);
+                            mainWindow.loadURL(`http://127.0.0.1:${PHP_SERVER_PORT}/`);
+                            mainWindow.show();
+                            console.log('Serveur PHP intégré démarré avec succès');
+                        } catch (ghostscriptError) {
+                            // S'assurer que la fenêtre est visible pour le dialog
+                            if (!mainWindow.isVisible()) {
+                                mainWindow.show();
+                            }
+                            
+                            dialog.showMessageBox(mainWindow, {
+                                type: 'warning',
+                                title: 'Avertissement - Ghostscript non disponible',
+                                message: 'Ghostscript ne peut pas s\'exécuter',
+                                detail: ghostscriptError.message + '\n\n' + 
+                                        'L\'application peut continuer, mais certaines fonctionnalités de traitement PDF ne seront pas disponibles :\n' +
+                                        '• Génération de miniatures pour les fichiers PDF\n' +
+                                        '• Conversion PDF vers PNG\n\n' +
+                                        'Pour activer ces fonctionnalités, installez Visual C++ Redistributable.\n\n' +
+                                        'Souhaitez-vous télécharger Visual C++ Redistributable maintenant ?',
+                                buttons: ['Télécharger Visual C++ Redistributable', 'Continuer sans Ghostscript'],
+                                defaultId: 1,
+                                cancelId: 1
+                            }).then((result) => {
+                                if (result.response === 0) {
+                                    shell.openExternal('https://aka.ms/vs/17/release/vc_redist.x64.exe');
+                                }
+                                // Dans tous les cas, continuer le chargement de l'application
+                                mainWindow.loadURL(`http://127.0.0.1:${PHP_SERVER_PORT}/`);
+                                mainWindow.show();
+                                console.log('Serveur PHP intégré démarré avec succès');
+                            }).catch((dialogError) => {
+                                console.error('Erreur lors de l\'affichage du dialog:', dialogError);
+                                // Continuer même en cas d'erreur de dialog
+                                mainWindow.loadURL(`http://127.0.0.1:${PHP_SERVER_PORT}/`);
+                                mainWindow.show();
+                                console.log('Serveur PHP intégré démarré avec succès');
+                            });
+                        }
+                    }, 2000);
+                } else {
+                    mainWindow.loadURL(`http://127.0.0.1:${PHP_SERVER_PORT}/`);
+                    mainWindow.show();
+                    console.log('Serveur PHP intégré démarré avec succès');
+                }
             } catch (fallbackError) {
                 console.error('Erreur serveur PHP intégré:', fallbackError);
                 // Afficher une page d'erreur
