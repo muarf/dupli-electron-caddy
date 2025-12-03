@@ -25,6 +25,11 @@ Téléchargez la dernière release directement depuis GitHub :
 - Rapports de rentabilité
 
 ### 📄 Traitement de Documents
+- **Bibliothèque PDF/PNG**
+  - Gestion centralisée de fichiers PDF et PNG
+  - Recherche full-text dans les documents
+  - Génération automatique de miniatures
+  - Indexation de dossiers externes
 - **Imposition de PDF** (8/16 pages A5/A6 sur un A3 rectoverso)
 - **Unimposition de PDF** (séparation des pages pour un pdf déjà imposé en livret)
 - **Imposition Tracts** (duplication intelligente A4/A5/A6 vers A3 avec orientation optimisée)
