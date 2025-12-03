@@ -75,29 +75,25 @@ mac:
   category: public.app-category.productivity
   # Configuration spécifique macOS - inclut PHP
   # Utiliser ASAR mais unpacker les fichiers nécessaires
-  # Note: app/**/* est inclus automatiquement par ASAR via la config globale files
-  # Ne pas le répéter ici pour éviter les conflits de liens symboliques
+  # Note: Les fichiers dans asarUnpack ne doivent PAS être dans files pour éviter les conflits
   files:
     - main-caddy.js
     - main.js
     - preload.js
     - icons/**/*
-    - php-fpm.conf
     - php-install-guide.html
-    # app/**/* est dans la config globale files, pas besoin de le répéter ici
+    - utils/**/*
+    # app/**/*, caddy/**/*, ghostscript/**/*, php/**/* sont dans la config globale files
+    # mais aussi dans asarUnpack, donc on les exclut ici pour éviter les conflits
     - "!app/.cursor/**/*"  # Exclure les fichiers .cursor
     - "!app/.phpunit.result.cache"  # Exclure le cache PHPUnit
-    - ghostscript/**/*
-    - caddy/**/*
-    - utils/**/*
-    - "php/**/*"  # Inclure PHP pour macOS
   asarUnpack:
     - "php/**/*"
     - "caddy/**/*"
     - "ghostscript/**/*"
-    - "Caddyfile"  # Caddyfile uniquement dans asarUnpack, pas dans files
+    - "Caddyfile"
     - "php-fpm.conf"
-    # Ne pas mettre app/**/* dans asarUnpack car cela crée des conflits de liens symboliques
+    # app/**/* est dans la config globale files mais pas dans asarUnpack (pas besoin de l'unpacker)
 win:
   target:
     - target: nsis
