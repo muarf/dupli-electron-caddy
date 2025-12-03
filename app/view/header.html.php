@@ -77,10 +77,18 @@
         </div>
         <div class="collapse navbar-collapse" id="navbar-ex-collapse">
           <ul class="nav navbar-nav navbar-right">
+            <!-- Bibliothèque en haut -->
+            <li>
+              <a href="?bibliotheque">
+                <i class="fa fa-book" style="margin-right: 5px;"></i>
+                <strong>Bibliothèque</strong>
+              </a>
+            </li>
+            <!-- Menu Impositions -->
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
-                <span class="glyphicon glyphicon-file" aria-hidden="true"></span>
-                <?php _e('header.pdf_tools'); ?> <span class="caret"></span>
+                <i class="fa fa-book" style="margin-right: 5px;"></i>
+                Impositions <span class="caret"></span>
               </a>
               <ul class="dropdown-menu">
                 <li>
@@ -97,33 +105,6 @@
                     <small class="text-muted d-block">Cut & Stack pour découpe</small>
                   </a>
                 </li>
-                <li role="separator" class="divider"></li>
-                <li>
-                  <a href="?bibliotheque">
-                    <i class="fa fa-book" style="color: #6c757d; margin-right: 8px;"></i>
-                    <strong>Bibliothèque</strong>
-                    <small class="text-muted d-block">Gérer vos fichiers PDF/PNG</small>
-                  </a>
-                </li>
-                <li role="separator" class="divider"></li>
-                <!--
-                <li>
-                  <a href="?imposition">
-                    <i class="fa fa-magic" style="color: #a8e6cf; margin-right: 8px;"></i>
-                    <strong><?php _e('header.impose'); ?></strong>
-                    <small class="text-muted d-block"><?php _e('header.impose_desc'); ?></small>
-                  </a>
-                </li>
-                <li role="separator" class="divider"></li>
-                -->
-                <li>
-                  <a href="?unimpose">
-                    <i class="fa fa-undo" style="color: #ffb3ba; margin-right: 8px;"></i>
-                    <strong><?php _e('header.unimpose'); ?></strong>
-                    <small class="text-muted d-block"><?php _e('header.unimpose_desc'); ?></small>
-                  </a>
-                </li>
-                <li role="separator" class="divider"></li>
                 <li>
                   <a href="?imposition_tracts">
                     <i class="fa fa-copy" style="color: #ffd93d; margin-right: 8px;"></i>
@@ -132,6 +113,22 @@
                   </a>
                 </li>
                 <li role="separator" class="divider"></li>
+                <li>
+                  <a href="?unimpose">
+                    <i class="fa fa-undo" style="color: #ffb3ba; margin-right: 8px;"></i>
+                    <strong><?php _e('header.unimpose'); ?></strong>
+                    <small class="text-muted d-block"><?php _e('header.unimpose_desc'); ?></small>
+                  </a>
+                </li>
+              </ul>
+            </li>
+            <!-- Menu PDF Tools (les 5 derniers) -->
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                <span class="glyphicon glyphicon-file" aria-hidden="true"></span>
+                <?php _e('header.pdf_tools'); ?> <span class="caret"></span>
+              </a>
+              <ul class="dropdown-menu">
                 <li>
                   <a href="?png_to_pdf">
                     <i class="fa fa-file-image-o" style="color: #a8e6cf; margin-right: 8px;"></i>
