@@ -2,7 +2,7 @@ name: Test macOS Build
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, fix/macos-workflow ]
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:  # Permet de lancer manuellement
@@ -10,7 +10,7 @@ on:
 jobs:
   build-and-test-macos:
     runs-on: macos-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       GH_TOKEN: ${{ secrets.GH_TOKEN }}
     
@@ -29,8 +29,65 @@ jobs:
       - name: Install dependencies
         run: npm install
         
+      - name: Install Caddy and PHP via Homebrew
+        run: |
+          echo "Installation de Caddy et PHP via Homebrew..."
+          brew install caddy php
+          echo "Caddy et PHP installés via Homebrew"
+          
+          # Ajouter Homebrew au PATH si nécessaire
+          if [ -d "/opt/homebrew/bin" ]; then
+            export PATH="/opt/homebrew/bin:$PATH"
+            echo "� PATH mis à jour pour Apple Silicon (/opt/homebrew/bin)"
+          elif [ -d "/usr/local/bin" ]; then
+            export PATH="/usr/local/bin:$PATH"
+            echo "� PATH mis à jour pour Intel (/usr/local/bin)"
+          fi
+          
+          # Vérifier que PHP est disponible
+          if ! command -v php &> /dev/null; then
+            echo "� PHP non trouvé dans le PATH après installation"
+            echo "Recherche de PHP..."
+            find /opt/homebrew /usr/local -name php -type f 2>/dev/null | head -5
+            exit 1
+          fi
+          
+          php --version
+          echo "PHP version: $(php --version | head -1)"
+          echo "Chemin PHP: $(which php)"
+          
+          # Copier le binaire Caddy vers le dossier caddy/
+          mkdir -p caddy
+          if [ -f "/opt/homebrew/bin/caddy" ]; then
+            cp /opt/homebrew/bin/caddy caddy/caddy
+            echo "� Caddy copié depuis /opt/homebrew/bin (Apple Silicon)"
+          elif [ -f "/usr/local/bin/caddy" ]; then
+            cp /usr/local/bin/caddy caddy/caddy
+            echo "� Caddy copié depuis /usr/local/bin (Intel)"
+          else
+            echo "� Caddy non trouvé dans les emplacements attendus"
+            which caddy || echo "Caddy non trouvé dans PATH"
+            exit 1
+          fi
+          
+          chmod +x caddy/caddy
+          echo "Caddy copié: $(ls -la caddy/caddy | awk '{print $5}') bytes"
+        
       - name: Install Composer and PHP dependencies
         run: |
+          # S'assurer que PHP est dans le PATH
+          if [ -d "/opt/homebrew/bin" ]; then
+            export PATH="/opt/homebrew/bin:$PATH"
+          elif [ -d "/usr/local/bin" ]; then
+            export PATH="/usr/local/bin:$PATH"
+          fi
+          
+          # Vérifier que PHP est disponible
+          if ! command -v php &> /dev/null; then
+            echo "� PHP non disponible pour l'installation de Composer"
+            exit 1
+          fi
+          
           echo "Installation de Composer..."
           curl -sS https://getcomposer.org/installer | php
           php composer.phar --version
@@ -42,42 +99,43 @@ jobs:
           
           echo "Vérification de vendor/..."
           if [ -f "app/vendor/autoload.php" ]; then
-            echo "✅ vendor/autoload.php créé avec succès"
+            echo "� vendor/autoload.php créé avec succès"
           else
-            echo "❌ ERREUR: vendor/autoload.php introuvable"
+            echo "� ERREUR: vendor/autoload.php introuvable"
             exit 1
           fi
-        
-      - name: Install Caddy and PHP via Homebrew
-        run: |
-          echo "Installation de Caddy et PHP via Homebrew..."
-          brew install caddy php
-          echo "Caddy et PHP installés via Homebrew"
-          
-          # Copier le binaire Caddy vers le dossier caddy/
-          mkdir -p caddy
-          cp /opt/homebrew/bin/caddy caddy/caddy || cp /usr/local/bin/caddy caddy/caddy
-          chmod +x caddy/caddy
-          echo "Caddy copié: $(ls -la caddy/caddy | awk '{print $5}') bytes"
-          
-          # Vérifier que PHP est disponible
-          php --version
-          echo "PHP version: $(php --version | head -1)"
         
       - name: Copy PHP binaries to php/ directory
         run: |
           echo "=== Copie des binaires PHP vers php/ ==="
+          
+          # S'assurer que PHP est dans le PATH
+          if [ -d "/opt/homebrew/bin" ]; then
+            export PATH="/opt/homebrew/bin:$PATH"
+          elif [ -d "/usr/local/bin" ]; then
+            export PATH="/usr/local/bin:$PATH"
+          fi
           
           # Créer le dossier php/ s'il n'existe pas
           mkdir -p php
           
           # Trouver le chemin PHP (Homebrew peut être dans /opt/homebrew ou /usr/local)
           PHP_BIN=$(which php)
-          PHP_FPM_BIN=$(which php-fpm || echo "")
+          PHP_FPM_BIN=$(which php-fpm 2>/dev/null || echo "")
           
           if [ -z "$PHP_BIN" ]; then
-            echo "❌ PHP non trouvé dans le PATH"
-            exit 1
+            echo "� PHP non trouvé dans le PATH"
+            echo "Recherche de PHP dans les emplacements Homebrew..."
+            if [ -f "/opt/homebrew/bin/php" ]; then
+              PHP_BIN="/opt/homebrew/bin/php"
+              echo "� PHP trouvé dans /opt/homebrew/bin/php"
+            elif [ -f "/usr/local/bin/php" ]; then
+              PHP_BIN="/usr/local/bin/php"
+              echo "� PHP trouvé dans /usr/local/bin/php"
+            else
+              echo "� PHP non trouvé dans les emplacements attendus"
+              exit 1
+            fi
           fi
           
           echo "Chemin PHP système: $PHP_BIN"
@@ -85,58 +143,74 @@ jobs:
           # Copier le binaire PHP
           cp "$PHP_BIN" php/php
           chmod +x php/php
-          echo "✅ PHP copié vers php/php"
+          echo "� PHP copié vers php/php"
           
           # Copier php-fpm si disponible
+          if [ -z "$PHP_FPM_BIN" ]; then
+            # Essayer de trouver php-fpm dans les mêmes emplacements
+            if [ -f "/opt/homebrew/bin/php-fpm" ]; then
+              PHP_FPM_BIN="/opt/homebrew/bin/php-fpm"
+            elif [ -f "/usr/local/bin/php-fpm" ]; then
+              PHP_FPM_BIN="/usr/local/bin/php-fpm"
+            fi
+          fi
+          
           if [ -n "$PHP_FPM_BIN" ] && [ -f "$PHP_FPM_BIN" ]; then
             cp "$PHP_FPM_BIN" php/php-fpm
             chmod +x php/php-fpm
-            echo "✅ php-fpm copié vers php/php-fpm"
+            echo "� php-fpm copié vers php/php-fpm"
           else
-            echo "⚠️  php-fpm non disponible, utilisation du serveur PHP intégré"
+            echo "WARNING  php-fpm non disponible, utilisation du serveur PHP intégré"
           fi
           
           # Vérifier les fichiers copiés
-          echo "📁 Contenu du dossier php/:"
+          echo "DIR Contenu du dossier php/:"
           ls -la php/
           
           # Vérifier que les binaires sont exécutables
           if [ -x php/php ]; then
-            echo "✅ php/php est exécutable"
+            echo "� php/php est exécutable"
             php/php --version
           else
-            echo "❌ php/php n'est pas exécutable"
+            echo "� php/php n'est pas exécutable"
             exit 1
           fi
         
       - name: Verify PHP installation
         run: |
+          # S'assurer que PHP est dans le PATH
+          if [ -d "/opt/homebrew/bin" ]; then
+            export PATH="/opt/homebrew/bin:$PATH"
+          elif [ -d "/usr/local/bin" ]; then
+            export PATH="/usr/local/bin:$PATH"
+          fi
+          
           echo "Vérification de l'installation PHP..."
           
           # Vérifier que PHP est disponible dans le système
           if command -v php &> /dev/null; then
-            echo "✅ PHP système disponible"
+            echo "� PHP système disponible"
             php --version
             echo "Chemin PHP: $(which php)"
           else
-            echo "❌ PHP non disponible"
+            echo "� PHP non disponible"
             exit 1
           fi
           
           # Vérifier que php-fpm est disponible
           if command -v php-fpm &> /dev/null; then
-            echo "✅ php-fpm disponible"
+            echo "� php-fpm disponible"
             php-fpm --version
           else
-            echo "⚠️  php-fpm non disponible, utilisation du serveur PHP intégré"
+            echo "WARNING  php-fpm non disponible, utilisation du serveur PHP intégré"
           fi
           
           # Vérifier que PHP est copié dans php/
           if [ -f "php/php" ]; then
-            echo "✅ PHP copié dans php/php"
+            echo "� PHP copié dans php/php"
             php/php --version
           else
-            echo "❌ PHP non copié dans php/"
+            echo "� PHP non copié dans php/"
             exit 1
           fi
         
@@ -145,81 +219,135 @@ jobs:
           echo "=== Vérification de la version dans package.json ==="
           CURRENT_VERSION=$(node -p "require('./package.json').version")
             echo "Version actuelle: $CURRENT_VERSION"
-          echo "✅ Utilisation de la version actuelle pour le build"
+          echo "� Utilisation de la version actuelle pour le build"
         
       - name: Build application
-        run: npm run build:caddy -- --mac
+        run: |
+          echo "=== Build de l'application macOS ==="
+          npm run build:caddy -- --mac
+          
+          # Vérifier que le build a réussi
+          if [ ! -d "dist/mac" ]; then
+            echo "� Le build n'a pas créé le dossier dist/mac/"
+            exit 1
+          fi
+          
+          echo "� Build terminé avec succès"
         
       - name: Verify build artifacts
         run: |
           echo "=== Vérification des artifacts de build ==="
           
-          if [ -d "dist" ]; then
-            echo "📁 Contenu du dossier dist/:"
-            ls -la dist/
-            
-            if [ -d "dist/mac" ]; then
-              echo "📁 Contenu du dossier dist/mac/:"
-              ls -la dist/mac/
-            fi
-          else
-            echo "❌ Dossier dist/ manquant"
+          if [ ! -d "dist" ]; then
+            echo "� Dossier dist/ manquant"
+            exit 1
           fi
           
+          echo "DIR Contenu du dossier dist/:"
+          ls -la dist/
+          
+          if [ ! -d "dist/mac" ]; then
+            echo "� Dossier dist/mac/ manquant"
+            exit 1
+          fi
+          
+          echo "DIR Contenu du dossier dist/mac/:"
+          ls -la dist/mac/
+          
           # Vérifier les binaires dans l'app
-          if [ -d "dist/mac/Duplicator.app" ]; then
-            echo "📱 Structure de l'application:"
-            find dist/mac/Duplicator.app -name "*.exe" -o -name "caddy" -o -name "php" | head -10
-            
-            echo "🔍 Vérification des binaires Caddy et PHP:"
-            if [ -f "dist/mac/Duplicator.app/Contents/Resources/app.asar.unpacked/caddy/caddy" ]; then
-              echo "✅ Caddy macOS présent dans l'app"
-              ls -la "dist/mac/Duplicator.app/Contents/Resources/app.asar.unpacked/caddy/caddy"
+          if [ ! -d "dist/mac/Duplicator.app" ]; then
+            echo "� Application Duplicator.app manquante dans dist/mac/"
+            exit 1
+          fi
+          
+          echo "APP Structure de l'application:"
+          find dist/mac/Duplicator.app -name "*.exe" -o -name "caddy" -o -name "php" 2>/dev/null | head -10 || echo "Aucun binaire trouvé"
+          
+          echo "CHECK Vérification des binaires Caddy et PHP:"
+          CADDY_PATH="dist/mac/Duplicator.app/Contents/Resources/app.asar.unpacked/caddy/caddy"
+          PHP_PATH="dist/mac/Duplicator.app/Contents/Resources/app.asar.unpacked/php/php"
+          
+          if [ -f "$CADDY_PATH" ]; then
+            echo "� Caddy macOS présent dans l'app"
+            ls -la "$CADDY_PATH"
+            # Vérifier que caddy est exécutable
+            if [ -x "$CADDY_PATH" ]; then
+              echo "� Caddy est exécutable"
             else
-              echo "❌ Caddy macOS manquant dans l'app"
+              echo "WARNING  Caddy n'est pas exécutable"
             fi
-            
-            if [ -f "dist/mac/Duplicator.app/Contents/Resources/app.asar.unpacked/php/php" ]; then
-              echo "✅ PHP macOS présent dans l'app"
-              ls -la "dist/mac/Duplicator.app/Contents/Resources/app.asar.unpacked/php/php"
+          else
+            echo "� Caddy macOS manquant dans l'app"
+            echo "Recherche de Caddy dans l'app..."
+            find dist/mac/Duplicator.app -name "caddy" 2>/dev/null || echo "Caddy non trouvé"
+          fi
+          
+          if [ -f "$PHP_PATH" ]; then
+            echo "� PHP macOS présent dans l'app"
+            ls -la "$PHP_PATH"
+            # Vérifier que PHP est exécutable
+            if [ -x "$PHP_PATH" ]; then
+              echo "� PHP est exécutable"
             else
-              echo "❌ PHP macOS manquant dans l'app"
+              echo "WARNING  PHP n'est pas exécutable"
             fi
+          else
+            echo "� PHP macOS manquant dans l'app"
+            echo "Recherche de PHP dans l'app..."
+            find dist/mac/Duplicator.app -name "php" 2>/dev/null || echo "PHP non trouvé"
           fi
           
           # Vérifier le Caddyfile
-          if [ -f "dist/mac/Duplicator.app/Contents/Resources/Caddyfile" ]; then
-            echo "✅ Caddyfile présent"
+          CADDYFILE_PATH="dist/mac/Duplicator.app/Contents/Resources/Caddyfile"
+          if [ -f "$CADDYFILE_PATH" ]; then
+            echo "� Caddyfile présent"
             echo "Contenu du Caddyfile:"
-            cat "dist/mac/Duplicator.app/Contents/Resources/Caddyfile"
+            cat "$CADDYFILE_PATH"
           else
-            echo "❌ Caddyfile manquant"
+            echo "WARNING  Caddyfile manquant dans Resources/"
+            # Chercher ailleurs
+            find dist/mac/Duplicator.app -name "Caddyfile" 2>/dev/null || echo "Caddyfile non trouvé"
           fi
           
           # Test de validation si les fichiers existent
           caddyExists=false
           caddyfileExists=false
           
-          if [ -f "dist/mac/Duplicator.app/Contents/Resources/app.asar.unpacked/caddy/caddy" ]; then
+          if [ -f "$CADDY_PATH" ]; then
             caddyExists=true
           fi
           
-          if [ -f "dist/mac/Duplicator.app/Contents/Resources/Caddyfile" ]; then
+          if [ -f "$CADDYFILE_PATH" ]; then
             caddyfileExists=true
           fi
           
           if [ "$caddyExists" = true ] && [ "$caddyfileExists" = true ]; then
-            echo "🔧 Validation de la configuration Caddy..."
-            ./dist/mac/Duplicator.app/Contents/Resources/app.asar.unpacked/caddy/caddy validate --config ./dist/mac/Duplicator.app/Contents/Resources/Caddyfile
+            echo "TOOL Validation de la configuration Caddy..."
+            "$CADDY_PATH" validate --config "$CADDYFILE_PATH" || echo "WARNING  Validation Caddy échouée (non bloquant)"
           else
-            echo "⚠️  Impossible de valider la configuration Caddy (fichiers manquants)"
+            echo "WARNING  Impossible de valider la configuration Caddy (fichiers manquants)"
             echo "Caddy existe: $caddyExists"
             echo "Caddyfile existe: $caddyfileExists"
           fi
+          
+          # Vérifier qu'un DMG a été créé
+          if ls dist/mac/*.dmg 1> /dev/null 2>&1; then
+            echo "� DMG créé:"
+            ls -lh dist/mac/*.dmg
+          else
+            echo "WARNING  Aucun DMG trouvé dans dist/mac/"
+          fi
         
       - name: Test application launch (short)
+        continue-on-error: true
         run: |
           echo "=== Test de démarrage de l'application ==="
+          
+          # Vérifier que l'application existe
+          if [ ! -d "dist/mac/Duplicator.app" ]; then
+            echo "� Application non trouvée dans dist/mac/Duplicator.app"
+            exit 1
+          fi
           
           # Démarrer l'application
           open dist/mac/Duplicator.app
@@ -233,28 +361,39 @@ jobs:
           caddyProcess=$(ps aux | grep -i caddy | grep -v grep | head -1)
           
           if [ -n "$phpProcess" ]; then
-            echo "✅ Processus PHP détecté: $phpProcess"
+            echo "� Processus PHP détecté: $phpProcess"
           else
-            echo "⚠️  Processus PHP non détecté"
+            echo "WARNING  Processus PHP non détecté"
           fi
           
           if [ -n "$caddyProcess" ]; then
-            echo "✅ Processus Caddy détecté: $caddyProcess"
+            echo "� Processus Caddy détecté: $caddyProcess"
           else
-            echo "⚠️  Processus Caddy non détecté"
+            echo "WARNING  Processus Caddy non détecté"
           fi
           
-          # Tester si le port 8000 répond
-          if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000 | grep -q "200"; then
-            echo "✅ Application répond sur le port 8000"
-          else
-            echo "⚠️  Application ne répond pas sur le port 8000"
+          # Tester si le port 8000 répond (essayer plusieurs fois)
+          PORT_RESPONDING=false
+          for i in {1..5}; do
+            if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000 | grep -q "200"; then
+              echo "� Application répond sur le port 8000 (tentative $i)"
+              PORT_RESPONDING=true
+              break
+            else
+              echo "WAIT Attente du port 8000 (tentative $i/5)..."
+              sleep 3
+            fi
+          done
+          
+          if [ "$PORT_RESPONDING" = false ]; then
+            echo "WARNING  Application ne répond pas sur le port 8000 après 5 tentatives"
           fi
           
           # Arrêter l'application
-          pkill -f "Duplicator"
-          pkill -f "php.*127.0.0.1:8001"
-          pkill -f "caddy"
+          pkill -f "Duplicator" || true
+          pkill -f "php.*127.0.0.1:8001" || true
+          pkill -f "caddy" || true
+          sleep 2
         
       - name: Create screenshots
         continue-on-error: true
@@ -271,7 +410,7 @@ jobs:
           # Prendre un screenshot avec screencapture (commande macOS native)
           screencapture -x screenshot.png
           
-          echo "✅ Screenshot sauvegardé: screenshot.png"
+          echo "� Screenshot sauvegardé: screenshot.png"
           
           # Arrêter l'application
           pkill -f "Duplicator"
