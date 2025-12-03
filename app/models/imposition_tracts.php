@@ -58,6 +58,7 @@ function Action($conf = null)
         }
         try {
             // Si fichier bibliothèque, créer un $_FILES temporaire
+            $is_from_lib = false;
             if (isset($_POST['lib_file_id']) && !empty($_POST['lib_file_id'])) {
                 require_once __DIR__ . '/BibliothequeManager.php';
                 $libManager = new BibliothequeManager();
@@ -79,12 +80,13 @@ function Action($conf = null)
                         'error' => UPLOAD_ERR_OK,
                         'size' => filesize($tmpFile)
                     ];
+                    $is_from_lib = true;
                 } else {
                     throw new Exception("Erreur : Fichier de bibliothèque introuvable.");
                 }
             }
             
-            $array = processImpositionTracts();
+            $array = processImpositionTracts($is_from_lib);
         } catch (Exception $e) {
             error_log("[IMPOSITION_TRACTS] Exception capturée: " . $e->getMessage());
             error_log("[IMPOSITION_TRACTS] Stack trace: " . $e->getTraceAsString());
@@ -226,7 +228,7 @@ function determineFormat($widthMm, $heightMm)
     return 'unknown';
 }
 
-function processImpositionTracts()
+function processImpositionTracts($is_from_lib = false)
 {
     error_log("[IMPOSITION_TRACTS] processImpositionTracts() appelée");
     $array = array();
@@ -283,12 +285,27 @@ function processImpositionTracts()
     error_log("[IMPOSITION_TRACTS] Fichier destination: " . $inputFile);
     
     // Déplacer le fichier uploadé
-    error_log("[IMPOSITION_TRACTS] Tentative move_uploaded_file de " . $tempFile . " vers " . $inputFile);
-    $moveResult = move_uploaded_file($tempFile, $inputFile);
-    error_log("[IMPOSITION_TRACTS] Résultat move_uploaded_file: " . ($moveResult ? 'SUCCÈS' : 'ÉCHEC'));
+    // Pour les fichiers de la bibliothèque, utiliser rename() au lieu de move_uploaded_file()
+    // car move_uploaded_file() ne fonctionne que pour les fichiers uploadés via HTTP POST
+    error_log("[IMPOSITION_TRACTS] Tentative déplacement de " . $tempFile . " vers " . $inputFile . " (from_lib: " . ($is_from_lib ? 'OUI' : 'NON') . ")");
+    
+    $moveResult = false;
+    if ($is_from_lib) {
+        // Fichier de la bibliothèque : utiliser rename()
+        if (file_exists($tempFile)) {
+            $moveResult = rename($tempFile, $inputFile);
+        } else {
+            $moveResult = false;
+        }
+    } else {
+        // Fichier uploadé normalement : utiliser move_uploaded_file()
+        $moveResult = move_uploaded_file($tempFile, $inputFile);
+    }
+    
+    error_log("[IMPOSITION_TRACTS] Résultat déplacement: " . ($moveResult ? 'SUCCÈS' : 'ÉCHEC'));
     
     if (!$moveResult) {
-        error_log("[IMPOSITION_TRACTS] ERREUR: move_uploaded_file a échoué");
+        error_log("[IMPOSITION_TRACTS] ERREUR: déplacement a échoué");
         error_log("[IMPOSITION_TRACTS] tempFile existe: " . (file_exists($tempFile) ? 'OUI' : 'NON'));
         error_log("[IMPOSITION_TRACTS] inputFile existe après move: " . (file_exists($inputFile) ? 'OUI' : 'NON'));
         $lastError = error_get_last();
