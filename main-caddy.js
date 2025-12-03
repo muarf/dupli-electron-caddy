@@ -1043,10 +1043,10 @@ function startPhpFpm() {
             '-c', phpIniPath,
             '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
             '-t', appPath,
+            '-d', `extension_dir=${phpExtPath}`,  // extension_dir DOIT être défini AVANT include_path sous Windows
             '-d', `include_path=${appBasePath};${vendorPath};.`,
             '-d', 'display_errors=1',
             '-d', 'log_errors=1',
-            '-d', `extension_dir=${phpExtPath}`,
             '-d', 'upload_max_filesize=50M',
             '-d', 'post_max_size=50M',
             '-d', 'max_execution_time=300',
@@ -1069,10 +1069,10 @@ function startPhpFpm() {
                 '-c', phpIniPath,
                 '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
                 '-t', appPath,
+                '-d', `extension_dir=${phpExtPath}`,  // extension_dir avant include_path pour cohérence
                 '-d', `include_path=${appBasePath}:${vendorPath}:.`,
                 '-d', 'display_errors=1',
                 '-d', 'log_errors=1',
-                '-d', `extension_dir=${phpExtPath}`,
                 '-d', 'upload_max_filesize=50M',
                 '-d', 'post_max_size=50M',
                 '-d', 'max_execution_time=300',
