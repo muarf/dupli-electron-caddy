@@ -1082,13 +1082,10 @@ function startPhpFpm() {
         const noAsarExtPath = path.join(process.resourcesPath, 'app', 'php', 'ext');
         const phpIniPath = path.join(appPath, '..', 'php.ini');
         const phpExtPath = fs.existsSync(noAsarExtPath) ? noAsarExtPath : asarExtPath;
-<<<<<<< HEAD
-=======
         // Ajouter le répertoire parent au include_path pour que vendor/autoload.php soit accessible
         const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
         const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
         
->>>>>>> bibliotheque-improvement
         console.log('Configuration PHP pour Windows');
         console.log('PHP Ini Path:', phpIniPath);
         console.log('PHP Ini exists:', fs.existsSync(phpIniPath));
@@ -1100,11 +1097,8 @@ function startPhpFpm() {
             '-c', phpIniPath,
             '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
             '-t', appPath,
-<<<<<<< HEAD
             '-d', `extension_dir=${phpExtPath}`,
-=======
             '-d', `include_path=${appBasePath};${vendorPath};.`,
->>>>>>> bibliotheque-improvement
             '-d', 'display_errors=1',
             '-d', 'log_errors=1',
             '-d', 'upload_max_filesize=50M',
@@ -1129,10 +1123,7 @@ function startPhpFpm() {
                 '-c', phpIniPath,
                 '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
                 '-t', appPath,
-<<<<<<< HEAD
                 '-d', `extension_dir=${phpExtPath}`,  // extension_dir avant include_path pour cohérence
-=======
->>>>>>> bibliotheque-improvement
                 '-d', `include_path=${appBasePath}:${vendorPath}:.`,
                 '-d', 'display_errors=1',
                 '-d', 'log_errors=1',
