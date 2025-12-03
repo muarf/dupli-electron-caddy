@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // Fonctions de fichiers
     openFile: (filePath) => ipcRenderer.invoke('open-file', filePath),
     cleanupTmpFiles: () => ipcRenderer.invoke('cleanup-tmp-files'),
+    showOpenDialog: (options) => ipcRenderer.invoke('show-open-dialog', options),
     
     // Fonctions de mise à jour
     checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
