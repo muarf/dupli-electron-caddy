@@ -1,12 +1,7 @@
 <div class="container-fluid mt-4">
     <div class="row mb-4">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h1 class="mb-0"><i class="fa fa-book"></i> Bibliothèque</h1>
-                <button class="btn btn-primary" onclick="openIndexModal()">
-                    <i class="fa fa-folder-open"></i> Indexer un dossier
-                </button>
-            </div>
+            <h1 class="mb-0"><i class="fa fa-book"></i> Bibliothèque</h1>
         </div>
     </div>
 
@@ -17,8 +12,18 @@
                 <i class="fa fa-cloud-upload"></i>
                 <span class="drop-zone-text">Glisser-déposer des fichiers PDF ou PNG ici</span>
                 <span class="drop-zone-subtext">ou cliquez pour sélectionner des fichiers</span>
-                <input type="file" id="fileInput" class="d-none" accept=".pdf,.png" multiple>
+                <input type="file" id="fileInput" class="d-none" style="display: none !important;" accept=".pdf,.png" multiple>
             </div>
+        </div>
+    </div>
+
+    <!-- Zone d'indexation de dossier -->
+    <div class="card mb-4">
+        <div class="card-body text-center">
+            <button class="btn btn-primary btn-lg" onclick="openIndexModal()">
+                <i class="fa fa-folder-open"></i> Indexer un dossier
+            </button>
+            <p class="text-muted mt-2 mb-0"><small>Ajoutez des fichiers à la bibliothèque en indexant un dossier externe</small></p>
         </div>
     </div>
 
@@ -350,11 +355,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 300);
     });
     
-    // Check for Tauri
-    if (window.__TAURI__) {
+    // Check for Tauri or Electron
+    const isTauri = typeof window !== 'undefined' && window.__TAURI__;
+    const isElectron = typeof window !== 'undefined' && window.electronAPI;
+    
+    if (isTauri || isElectron) {
         document.getElementById('browseBtn').style.display = 'block';
         document.getElementById('webBrowseInfo').style.display = 'none';
     } else {
+        document.getElementById('browseBtn').style.display = 'none';
         document.getElementById('webBrowseInfo').style.display = 'block';
     }
 });
@@ -572,6 +581,7 @@ function openIndexModal() {
 }
 
 async function browseFolder() {
+    // Tauri
     if (window.__TAURI__) {
         try {
             const selected = await window.__TAURI__.dialog.open({
@@ -584,6 +594,23 @@ async function browseFolder() {
         } catch (e) {
             console.error(e);
         }
+        return;
+    }
+    
+    // Electron
+    if (window.electronAPI) {
+        try {
+            // Utiliser l'API Electron pour ouvrir un dialogue de sélection de dossier
+            const result = await window.electronAPI.showOpenDialog({
+                properties: ['openDirectory']
+            });
+            if (result && !result.canceled && result.filePaths && result.filePaths.length > 0) {
+                document.getElementById('folderPath').value = result.filePaths[0];
+            }
+        } catch (e) {
+            console.error('Erreur lors de la sélection du dossier Electron:', e);
+        }
+        return;
     }
 }
 
