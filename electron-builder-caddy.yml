@@ -83,6 +83,7 @@ mac:
     - php-fpm.conf
     - php-install-guide.html
     - app/**/*
+    - "!app/.cursor/**/*"  # Exclure les fichiers .cursor
     - ghostscript/**/*
     - caddy/**/*
     - utils/**/*
@@ -90,10 +91,11 @@ mac:
   asarUnpack:
     - "php/**/*"
     - "app/**/*"
+    - "!app/.cursor/**/*"  # Exclure les fichiers .cursor de asarUnpack aussi
     - "ghostscript/**/*"
     - "caddy/**/*"
-    - "Caddyfile"
     - "php-fpm.conf"
+    # Caddyfile est dans files mais pas dans asarUnpack pour éviter le conflit de liens
 win:
   target:
     - target: nsis
