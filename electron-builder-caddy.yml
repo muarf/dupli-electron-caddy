@@ -75,6 +75,7 @@ mac:
   category: public.app-category.productivity
   # Configuration spécifique macOS - inclut PHP
   # Utiliser ASAR mais unpacker les fichiers nécessaires
+  # Note: app/**/* est inclus automatiquement par ASAR, pas besoin de le mettre dans files
   files:
     - main-caddy.js
     - main.js
@@ -95,6 +96,7 @@ mac:
     - "ghostscript/**/*"
     - "Caddyfile"  # Caddyfile uniquement dans asarUnpack, pas dans files
     - "php-fpm.conf"
+    # Ne pas mettre app/**/* dans asarUnpack car cela crée des conflits de liens symboliques
 win:
   target:
     - target: nsis
