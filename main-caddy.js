@@ -2128,6 +2128,17 @@ ipcMain.handle('open-file', async (event, filePath) => {
     }
 });
 
+// Gérer la sélection de dossiers/fichiers
+ipcMain.handle('show-open-dialog', async (event, options) => {
+    try {
+        const result = await dialog.showOpenDialog(mainWindow, options);
+        return result;
+    } catch (error) {
+        console.error('Erreur dialog:', error);
+        return { canceled: true, filePaths: [] };
+    }
+});
+
 // Nettoyer les fichiers temporaires
 ipcMain.handle('cleanup-tmp-files', async () => {
     try {
