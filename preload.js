@@ -42,7 +42,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.on('php-process-status', (event, payload) => callback(payload));
     },
     restartPhp: () => ipcRenderer.invoke('restart-php'),
-    restartApp: () => ipcRenderer.invoke('restart-app')
+    restartApp: () => ipcRenderer.invoke('restart-app'),
+    
+    // Impression de fichiers
+    printFile: (fileUrl) => ipcRenderer.invoke('print-file', fileUrl),
+    
+    // Ouvrir un fichier avec l'application système
+    openExternalFile: (fileUrl) => ipcRenderer.invoke('open-external-file', fileUrl)
 });
 
 
