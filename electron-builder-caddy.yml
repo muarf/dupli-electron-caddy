@@ -95,6 +95,8 @@ mac:
     - "ghostscript/**/*"
     - "Caddyfile"
     - "php-fpm.conf"
+    # Ne pas mettre app/**/* dans asarUnpack car il est déjà dans files
+    # et cela crée des conflits de liens symboliques
 win:
   target:
     - target: nsis
