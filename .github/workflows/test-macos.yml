@@ -224,13 +224,21 @@ jobs:
       - name: Clean build directories
         run: |
           echo "=== Nettoyage complet avant build ==="
-          # Nettoyer dist
+          # Nettoyer dist complètement
           rm -rf dist/
+          # Supprimer spécifiquement dist/mac/Electron.app s'il existe
+          rm -rf dist/mac/Electron.app 2>/dev/null || true
+          # Supprimer tous les liens symboliques dans dist si le dossier existe
+          if [ -d "dist" ]; then
+            find dist -type l -delete 2>/dev/null || true
+          fi
           # Nettoyer les dossiers temporaires d'electron-builder
           rm -rf /tmp/t-* 2>/dev/null || true
           rm -rf /private/var/folders/*/T/t-* 2>/dev/null || true
-          # Nettoyer les dossiers Electron.app qui pourraient exister
+          # Nettoyer les dossiers Electron.app qui pourraient exister dans le workspace
           find . -maxdepth 3 -name "Electron.app" -type d -exec rm -rf {} + 2>/dev/null || true
+          # Supprimer aussi Duplicator.app s'il existe
+          find . -maxdepth 3 -name "Duplicator.app" -type d -exec rm -rf {} + 2>/dev/null || true
           echo "Nettoyage terminé"
       
       - name: Build application
