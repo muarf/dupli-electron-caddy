@@ -59,31 +59,18 @@
                         <img id="pdfImageElement" style="max-width: 100%; height: auto; display: block; margin: 0 auto;" alt="Image">
                     </div>
                 </div>
-                <div style="padding: 15px; background: #f8f9fa; border-top: 1px solid #dee2e6;">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <button class="btn btn-sm btn-secondary" id="prevPage" onclick="changePage(-1)">
+                <div style="padding: 15px; background: #f8f9fa; border-top: 1px solid #dee2e6; position: sticky; bottom: 0; z-index: 10;">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2" style="flex-wrap: nowrap;">
+                        <div class="d-flex align-items-center gap-2" style="flex-shrink: 0;">
+                            <button class="btn btn-sm btn-primary" id="prevPage" onclick="changePage(-1)">
                                 <i class="fa fa-chevron-left"></i> Précédent
                             </button>
-                            <span class="mx-2" id="pageInfo">Page 1 / 1</span>
-                            <button class="btn btn-sm btn-secondary" id="nextPage" onclick="changePage(1)">
+                            <span class="mx-2" style="white-space: nowrap; color: #212529; font-weight: 500;">Page <input type="number" id="pageInput" min="1" value="1" style="width: 60px; text-align: center; display: inline-block; padding: 4px 8px; border: 1px solid #ced4da; border-radius: 4px; background: white; color: #212529; font-weight: 600;" onchange="goToPage(parseInt(this.value))"> / <span id="totalPages" style="color: #495057; font-weight: 600;">1</span></span>
+                            <button class="btn btn-sm btn-primary" id="nextPage" onclick="changePage(1)">
                                 Suivant <i class="fa fa-chevron-right"></i>
                             </button>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <input type="number" id="pageInput" min="1" value="1" style="width: 60px; text-align: center;" onchange="goToPage(parseInt(this.value))">
-                            <span class="mx-2">/ <span id="totalPages">1</span></span>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <button class="btn btn-sm btn-primary" onclick="zoomIn()">
-                                <i class="fa fa-search-plus"></i>
-                            </button>
-                            <button class="btn btn-sm btn-primary" onclick="zoomOut()">
-                                <i class="fa fa-search-minus"></i>
-                            </button>
-                            <span class="mx-2" id="zoomInfo">100%</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-2" id="modalActions" style="display: none !important;">
+                        <div class="d-flex align-items-center gap-2" id="modalActions" style="flex-shrink: 0; position: relative; border-left: 2px solid #dee2e6; padding-left: 15px; margin-left: 15px;">
                             <!-- Les boutons d'action seront ajoutés ici dynamiquement -->
                         </div>
                     </div>
@@ -255,10 +242,26 @@
 .file-actions {
     margin-top: auto;
     display: flex;
-    gap: 8px;
+    flex-direction: column;
+    gap: 6px;
     padding-top: 8px;
     position: relative;
     z-index: 1;
+}
+.file-actions-row {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+}
+.file-actions-row .btn {
+    flex: 1;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    white-space: nowrap;
+    min-width: 0;
 }
 .file-actions .btn-group {
     flex: 1;
@@ -282,16 +285,6 @@
 .file-thumb {
     cursor: pointer;
 }
-.file-actions .btn {
-    flex: 1;
-    font-size: 0.85rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 12px;
-    white-space: nowrap;
-    min-width: 80px;
-}
 .file-actions .btn i {
     margin-right: 5px;
 }
@@ -309,7 +302,6 @@ let currentFiles = [];
 let filesToIndex = [];
 let pdfDoc = null;
 let currentPage = 1;
-let currentZoom = 1.0;
 let pdfViewerFileId = null;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -392,8 +384,38 @@ function uploadFile(file) {
     .catch(error => console.error('Error:', error));
 }
 
-function loadFiles(search = '') {
-    fetch('?search_bibliotheque&q=' + encodeURIComponent(search))
+// Variable pour annuler les requêtes en cours
+let currentSearchAbortController = null;
+
+function loadFiles(search = null) {
+    // Si search n'est pas fourni, utiliser la valeur actuelle de la barre de recherche
+    if (search === null || search === undefined) {
+        const searchInput = document.getElementById('searchInput');
+        search = searchInput ? searchInput.value : '';
+    }
+    
+    // Annuler la requête précédente si elle est encore en cours
+    if (currentSearchAbortController) {
+        currentSearchAbortController.abort();
+    }
+    
+    // Créer un nouveau AbortController pour cette requête
+    currentSearchAbortController = new AbortController();
+    
+    // Afficher l'indicateur de progression
+    const grid = document.getElementById('fileGrid');
+    grid.innerHTML = `
+        <div class="col-12">
+            <div class="text-center" style="padding: 50px;">
+                <i class="fa fa-spinner fa-spin fa-3x" style="color: #0d6efd; margin-bottom: 15px;"></i>
+                <p style="color: #6c757d; font-size: 1.1em;">Recherche en cours...</p>
+            </div>
+        </div>
+    `;
+    
+    fetch('?search_bibliotheque&q=' + encodeURIComponent(search), {
+        signal: currentSearchAbortController.signal
+    })
         .then(response => {
             // Vérifier si la réponse est vide
             const contentType = response.headers.get('content-type');
@@ -415,6 +437,15 @@ function loadFiles(search = '') {
             });
         })
         .then(data => {
+            // Vérifier que cette réponse correspond bien à la recherche actuelle
+            const currentSearchInput = document.getElementById('searchInput');
+            const currentSearchValue = currentSearchInput ? currentSearchInput.value : '';
+            
+            // Ignorer les réponses qui ne correspondent pas à la recherche actuelle
+            if (search !== currentSearchValue) {
+                return; // Ignorer cette réponse obsolète
+            }
+            
             if (data.success) {
                 renderGrid(data.files);
             } else {
@@ -424,6 +455,11 @@ function loadFiles(search = '') {
             }
         })
         .catch(error => {
+            // Ignorer les erreurs d'annulation (AbortError)
+            if (error.name === 'AbortError') {
+                return; // Ignorer silencieusement les annulations
+            }
+            
             console.error('Erreur lors du chargement des fichiers:', error);
             const grid = document.getElementById('fileGrid');
             grid.innerHTML = '<div class="col-12"><div class="alert alert-danger text-center"><i class="fa fa-exclamation-triangle"></i> Erreur de connexion: ' + error.message + '</div></div>';
@@ -458,28 +494,51 @@ function renderGrid(files) {
                     <div class="file-meta">
                         ${formatBytes(file.file_size)} • ${file.file_type.toUpperCase()}
                     </div>
+                    ${file.match_contexts && file.match_contexts.length > 0 ? `
+                    <div class="file-match-contexts" style="font-size: 0.8rem; color: #6c757d; margin-top: 8px; margin-bottom: 8px; padding-top: 8px; border-top: 1px solid #e9ecef;">
+                        <div style="font-weight: 600; margin-bottom: 4px; color: #495057;">Résultats trouvés dans :</div>
+                        ${file.match_contexts.map(ctx => `<div style="margin-bottom: 4px; line-height: 1.4;">${ctx}</div>`).join('')}
+                    </div>
+                    ` : ''}
                     <div class="file-actions">
-                        <div class="btn-group btn-group-sm file-actions-menu-trigger" role="group" data-file-id="${file.id}" data-file-type="${file.file_type}">
-                            <button type="button" class="btn btn-success" onclick="showActionsMenu(event, ${file.id}, '${file.file_type}')">
-                                <i class="fa fa-print"></i> Imposer <i class="fa fa-caret-down"></i>
+                        <div class="file-actions-row">
+                            <button class="btn btn-info btn-sm" onclick="downloadFile(${file.id})" title="Télécharger le fichier">
+                                <i class="fa fa-download"></i> Imprimer
+                            </button>
+                            <div class="btn-group btn-group-sm file-actions-menu-trigger" role="group" data-file-id="${file.id}" data-file-type="${file.file_type}">
+                                <button type="button" class="btn btn-success" onclick="showActionsMenu(event, ${file.id}, '${file.file_type}')">
+                                    <i class="fa fa-print"></i> Imposer <i class="fa fa-caret-down"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="file-actions-row">
+                            ${file.file_type === 'pdf' || file.file_type === 'png' ? `
+                            <div class="btn-group btn-group-sm file-actions-menu-trigger" role="group" data-file-id="${file.id}" data-file-type="${file.file_type}">
+                                <button type="button" class="btn btn-warning" onclick="showModifyMenu(event, ${file.id}, '${file.file_type}')">
+                                    <i class="fa fa-edit"></i> Modifier <i class="fa fa-caret-down"></i>
+                                </button>
+                            </div>
+                            ` : '<div style="flex: 1;"></div>'}
+                            <button class="btn btn-danger btn-sm" onclick="deleteFile(${file.id})" title="Supprimer">
+                                <i class="fa fa-trash"></i>
                             </button>
                         </div>
-                        ${file.file_type === 'pdf' || file.file_type === 'png' ? `
-                        <div class="btn-group btn-group-sm file-actions-menu-trigger" role="group" data-file-id="${file.id}" data-file-type="${file.file_type}">
-                            <button type="button" class="btn btn-warning" onclick="showModifyMenu(event, ${file.id}, '${file.file_type}')">
-                                <i class="fa fa-edit"></i> Modifier <i class="fa fa-caret-down"></i>
-                            </button>
-                        </div>
-                        ` : ''}
-                        <button class="btn btn-danger btn-sm" onclick="deleteFile(${file.id})" title="Supprimer">
-                            <i class="fa fa-trash"></i>
-                        </button>
                     </div>
                 </div>
             </div>
         `;
         grid.appendChild(col);
     });
+}
+
+function downloadFile(id) {
+    const fileUrl = '?get_bibliotheque_file&id=' + encodeURIComponent(id);
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = ''; // Le nom du fichier sera déterminé par le serveur
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 function deleteFile(id) {
@@ -492,8 +551,11 @@ function deleteFile(id) {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.success) loadFiles();
-        else alert('Erreur suppression: ' + data.error);
+        if (data.success) {
+            loadFiles();
+        } else {
+            alert('Erreur suppression: ' + data.error);
+        }
     });
 }
 
@@ -643,7 +705,20 @@ function showActionsMenu(event, fileId, fileType) {
     menu.className = 'floating-menu';
     menu.style.position = 'fixed';
     menu.style.left = rect.left + 'px';
-    menu.style.top = (rect.bottom + 5) + 'px';
+    
+    // Calculer la position pour que le menu reste dans la fenêtre
+    const menuHeight = 200; // Estimation de la hauteur du menu
+    const windowHeight = window.innerHeight;
+    const spaceBelow = windowHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    
+    // Si pas assez d'espace en bas, afficher au-dessus
+    if (spaceBelow < menuHeight && spaceAbove > menuHeight) {
+        menu.style.top = (rect.top - menuHeight - 5) + 'px';
+    } else {
+        menu.style.top = (rect.bottom + 5) + 'px';
+    }
+    
     menu.style.zIndex = '10000';
     menu.style.minWidth = '200px';
     menu.style.backgroundColor = 'white';
@@ -651,6 +726,8 @@ function showActionsMenu(event, fileId, fileType) {
     menu.style.borderRadius = '4px';
     menu.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
     menu.style.padding = '5px 0';
+    menu.style.maxHeight = (windowHeight - 20) + 'px';
+    menu.style.overflowY = 'auto';
     
     menu.innerHTML = `
         <a class="dropdown-item" href="?imposition_brochure&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
@@ -684,7 +761,20 @@ function showModifyMenu(event, fileId, fileType) {
     menu.className = 'floating-menu';
     menu.style.position = 'fixed';
     menu.style.left = rect.left + 'px';
-    menu.style.top = (rect.bottom + 5) + 'px';
+    
+    // Calculer la position pour que le menu reste dans la fenêtre
+    const menuHeight = 200; // Estimation de la hauteur du menu
+    const windowHeight = window.innerHeight;
+    const spaceBelow = windowHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    
+    // Si pas assez d'espace en bas, afficher au-dessus
+    if (spaceBelow < menuHeight && spaceAbove > menuHeight) {
+        menu.style.top = (rect.top - menuHeight - 5) + 'px';
+    } else {
+        menu.style.top = (rect.bottom + 5) + 'px';
+    }
+    
     menu.style.zIndex = '10000';
     menu.style.minWidth = '200px';
     menu.style.backgroundColor = 'white';
@@ -692,6 +782,8 @@ function showModifyMenu(event, fileId, fileType) {
     menu.style.borderRadius = '4px';
     menu.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
     menu.style.padding = '5px 0';
+    menu.style.maxHeight = (windowHeight - 20) + 'px';
+    menu.style.overflowY = 'auto';
     
     let items = '';
     if (fileType === 'pdf') {
@@ -757,7 +849,10 @@ function openPdfViewer(fileId, fileType) {
         
         // Ajouter les boutons d'action pour PNG
         const actionsHtml = `
-            <div class="btn-group btn-group-sm">
+            <button type="button" class="btn btn-sm btn-info" onclick="downloadFile(${fileId})" title="Télécharger le fichier" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
+                <i class="fa fa-download"></i> Imprimer
+            </button>
+            <div class="btn-group btn-group-sm" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 8px;">
                 <button type="button" class="btn btn-sm btn-success" onclick="showActionsMenu(event, ${fileId}, '${fileType}')">
                     <i class="fa fa-print"></i> Imposer
                 </button>
@@ -783,7 +878,6 @@ function openPdfViewer(fileId, fileType) {
     
     pdfViewerFileId = fileId;
     currentPage = 1;
-    currentZoom = 1.0;
     pdfDoc = null;
     
     const fileUrl = '?get_bibliotheque_file&id=' + encodeURIComponent(fileId);
@@ -791,7 +885,10 @@ function openPdfViewer(fileId, fileType) {
     
     // Ajouter les boutons d'action pour PDF
     const actionsHtml = `
-        <div class="btn-group btn-group-sm">
+        <button type="button" class="btn btn-sm btn-info" onclick="downloadFile(${fileId})" title="Télécharger le fichier" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
+            <i class="fa fa-download"></i> Imprimer
+        </button>
+        <div class="btn-group btn-group-sm" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 8px;">
             <button type="button" class="btn btn-sm btn-success" onclick="showActionsMenu(event, ${fileId}, '${fileType}')">
                 <i class="fa fa-print"></i> Imposer
             </button>
@@ -869,7 +966,7 @@ function renderPage(pageNum) {
             return;
         }
         const context = canvas.getContext('2d');
-        const viewport = page.getViewport({ scale: currentZoom });
+        const viewport = page.getViewport({ scale: 1.0 });
         
         canvas.height = viewport.height;
         canvas.width = viewport.width;
@@ -880,9 +977,8 @@ function renderPage(pageNum) {
         };
         
         page.render(renderContext).promise.then(function() {
-            document.getElementById('pageInfo').textContent = `Page ${currentPage} / ${pdfDoc.numPages}`;
             document.getElementById('pageInput').value = currentPage;
-            document.getElementById('zoomInfo').textContent = Math.round(currentZoom * 100) + '%';
+            document.getElementById('totalPages').textContent = pdfDoc.numPages;
             
             // Activer/désactiver les boutons
             document.getElementById('prevPage').disabled = currentPage <= 1;
@@ -901,13 +997,4 @@ function goToPage(pageNum) {
     renderPage(pageNum);
 }
 
-function zoomIn() {
-    currentZoom = Math.min(currentZoom * 1.2, 3.0);
-    renderPage(currentPage);
-}
-
-function zoomOut() {
-    currentZoom = Math.max(currentZoom / 1.2, 0.5);
-    renderPage(currentPage);
-}
 </script>
