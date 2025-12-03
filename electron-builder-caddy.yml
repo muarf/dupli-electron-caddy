@@ -76,6 +76,9 @@ mac:
   # Désactiver ASAR sur macOS pour éviter les erreurs de liens symboliques
   # comme sur Linux et Windows
   asar: false
+  # Désactiver les hard links pour forcer la copie des fichiers
+  # Cela évite les erreurs EEXIST avec les liens symboliques
+  hardLinks: false
   # Configuration spécifique macOS - inclut PHP
   # Seulement exclure les fichiers de développement
   files:
