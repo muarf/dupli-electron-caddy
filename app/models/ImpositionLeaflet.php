@@ -94,11 +94,28 @@ class ImpositionLeaflet
             $cols = 2; $rows = 1;
         }
 
-        $a3Width = 420;
-        $a3Height = 297;
-        if ($this->settings['orientation'] == 'P') {
-            $a3Width = 297;
-            $a3Height = 420;
+        // Configuration format sortie selon le format choisi
+        $outputFormat = $this->settings['output_format'] ?? 'A3';
+        
+        if ($outputFormat === 'A4') {
+            // Format A4
+            $sheetWidth = 210;
+            $sheetHeight = 297;
+            if ($this->settings['orientation'] == 'P') {
+                $sheetWidth = 210;
+                $sheetHeight = 297;
+            } else {
+                $sheetWidth = 297;
+                $sheetHeight = 210;
+            }
+        } else {
+            // Format A3 (par défaut)
+            $sheetWidth = 420;
+            $sheetHeight = 297;
+            if ($this->settings['orientation'] == 'P') {
+                $sheetWidth = 297;
+                $sheetHeight = 420;
+            }
         }
 
         // Pre-calculate logical sheets (Leaflet Spreads)
@@ -106,18 +123,18 @@ class ImpositionLeaflet
 
         foreach ($sheetsToPrint as $sheetIdx => $sheetData) {
             // Front Side
-            $this->pdf->AddPage($this->settings['orientation'], 'A3');
+            $this->pdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
             if ($this->previewPdf) {
-                $this->previewPdf->AddPage($this->settings['orientation'], 'A3');
+                $this->previewPdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
             }
-            $this->renderSheetSide($sheetData['front'], $cols, $rows, $a3Width, $a3Height);
+            $this->renderSheetSide($sheetData['front'], $cols, $rows, $sheetWidth, $sheetHeight);
 
             // Back Side
-            $this->pdf->AddPage($this->settings['orientation'], 'A3');
+            $this->pdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
             if ($this->previewPdf) {
-                $this->previewPdf->AddPage($this->settings['orientation'], 'A3');
+                $this->previewPdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
             }
-            $this->renderSheetSide($sheetData['back'], $cols, $rows, $a3Width, $a3Height);
+            $this->renderSheetSide($sheetData['back'], $cols, $rows, $sheetWidth, $sheetHeight);
         }
 
         // S'assurer que le répertoire existe et normaliser le chemin

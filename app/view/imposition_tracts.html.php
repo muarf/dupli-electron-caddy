@@ -145,16 +145,28 @@ ob_start();
                                 </div>
                             </div>
 
-                            <!-- Orientation de la feuille A3 -->
+                            <!-- Format de sortie -->
                             <div class="form-group">
-                                <label class="col-md-4 control-label" for="orientation">Orientation de la feuille A3</label>
+                                <label class="col-md-4 control-label" for="output_format">Format de sortie</label>
+                                <div class="col-md-8">
+                                    <select name="output_format" id="output_format" class="form-control">
+                                        <option value="A3" selected>A3 (420×297 mm / 297×420 mm)</option>
+                                        <option value="A4">A4 (210×297 mm / 297×210 mm)</option>
+                                    </select>
+                                    <small class="help-block text-muted">Choisissez le format de la feuille d'impression</small>
+                                </div>
+                            </div>
+
+                            <!-- Orientation de la feuille -->
+                            <div class="form-group">
+                                <label class="col-md-4 control-label" for="orientation">Orientation de la feuille</label>
                                 <div class="col-md-8">
                                     <select name="orientation" id="orientation" class="form-control">
                                         <option value="auto">Automatique (recommandé)</option>
-                                        <option value="portrait">Portrait (297×420 mm)</option>
-                                        <option value="landscape">Paysage (420×297 mm)</option>
+                                        <option value="portrait">Portrait</option>
+                                        <option value="landscape">Paysage</option>
                                     </select>
-                                    <small class="help-block text-muted">Choisissez l'orientation de la feuille A3 pour l'impression</small>
+                                    <small class="help-block text-muted">Choisissez l'orientation de la feuille pour l'impression</small>
                                 </div>
                             </div>
 
@@ -487,25 +499,42 @@ $(document).ready(function() {
     
     function setupAutomaticMode() {
         if (detectedFormat && pageCount) {
+            const outputFormat = $('#output_format').val() || 'A3';
             let recommendedCopies = 2;
+            let outputFormatName = 'A3';
             
-            switch(detectedFormat) {
-                case 'A4':
-                    recommendedCopies = pageCount === 1 ? 2 : 2;
-                    break;
-                case 'A5':
-                    recommendedCopies = pageCount === 1 ? 4 : 4;
-                    break;
-                case 'A6':
-                    recommendedCopies = pageCount === 1 ? 8 : 8;
-                    break;
+            if (outputFormat === 'A4') {
+                outputFormatName = 'A4';
+                switch(detectedFormat) {
+                    case 'A4':
+                        recommendedCopies = 1;
+                        break;
+                    case 'A5':
+                        recommendedCopies = 2;
+                        break;
+                    case 'A6':
+                        recommendedCopies = 4;
+                        break;
+                }
+            } else {
+                switch(detectedFormat) {
+                    case 'A4':
+                        recommendedCopies = 2;
+                        break;
+                    case 'A5':
+                        recommendedCopies = 4;
+                        break;
+                    case 'A6':
+                        recommendedCopies = 8;
+                        break;
+                }
             }
             
             // Activer le bouton
             submitBtn.prop('disabled', false);
             
             // Afficher le résultat attendu
-            const resultText = `${recommendedCopies} copies de votre tract ${detectedFormat} sur une feuille A3`;
+            const resultText = `${recommendedCopies} copies de votre tract ${detectedFormat} sur une feuille ${outputFormatName}`;
             impositionResult.innerHTML = `<i class="fa fa-check-circle"></i> ${resultText}`;
             impositionResult.style.color = '#28a745';
         }
@@ -513,25 +542,42 @@ $(document).ready(function() {
     
     function setupAutomaticModeForFormat(format) {
         if (format && pageCount) {
+            const outputFormat = $('#output_format').val() || 'A3';
             let recommendedCopies = 2;
+            let outputFormatName = 'A3';
 
-            switch(format) {
-                case 'A4':
-                    recommendedCopies = pageCount === 1 ? 2 : 2;
-                    break;
-                case 'A5':
-                    recommendedCopies = pageCount === 1 ? 4 : 4;
-                    break;
-                case 'A6':
-                    recommendedCopies = pageCount === 1 ? 8 : 8;
-                    break;
+            if (outputFormat === 'A4') {
+                outputFormatName = 'A4';
+                switch(format) {
+                    case 'A4':
+                        recommendedCopies = 1;
+                        break;
+                    case 'A5':
+                        recommendedCopies = 2;
+                        break;
+                    case 'A6':
+                        recommendedCopies = 4;
+                        break;
+                }
+            } else {
+                switch(format) {
+                    case 'A4':
+                        recommendedCopies = 2;
+                        break;
+                    case 'A5':
+                        recommendedCopies = 4;
+                        break;
+                    case 'A6':
+                        recommendedCopies = 8;
+                        break;
+                }
             }
             
             // Activer le bouton
             submitBtn.prop('disabled', false);
             
             // Afficher le résultat attendu avec le format forcé
-            const resultText = `${recommendedCopies} copies de votre tract ${format} sur une feuille A3`;
+            const resultText = `${recommendedCopies} copies de votre tract ${format} sur une feuille ${outputFormatName}`;
             impositionResult.innerHTML = `<i class="fa fa-check-circle"></i> ${resultText}`;
             impositionResult.style.color = '#ff9800'; // Orange pour indiquer que c'est forcé
             
@@ -550,6 +596,16 @@ $(document).ready(function() {
             setupAutomaticModeForFormat(manualFormat);
         } else {
             // Revenir à la détection automatique
+            setupAutomaticMode();
+        }
+    });
+    
+    // Gestion du changement de format de sortie (A3/A4)
+    $('#output_format').change(function() {
+        const manualFormat = $('#manual_format').val();
+        if (manualFormat !== 'auto') {
+            setupAutomaticModeForFormat(manualFormat);
+        } else {
             setupAutomaticMode();
         }
     });
@@ -580,9 +636,10 @@ $(document).ready(function() {
     // Validation du formulaire
     $('#tractsForm').submit(function(e) {
         const file = fileInput.files[0];
-        // suppression de la vérification de mode car la variable n'est plus définie ici
+        const libFileId = document.getElementById('lib_file_id');
         
-        if (!file) {
+        // Vérifier si un fichier est sélectionné OU si on vient de la bibliothèque
+        if (!file && (!libFileId || !libFileId.value)) {
             e.preventDefault();
             alert('Veuillez sélectionner un fichier PDF.');
             return false;
