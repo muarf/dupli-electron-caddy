@@ -160,6 +160,7 @@ class BibliothequeManager {
             
             // 1. Générer la miniature
             $thumbnailPath = $this->generateThumbnail($path, $type);
+            // Si null, continuer sans thumbnail (ne pas bloquer l'upload)
             
             // 2. Extraire les infos (pages, texte)
             $pageCount = 0;
@@ -317,38 +318,50 @@ class BibliothequeManager {
             return $relativePath;
         }
         
+        // S'assurer que le dossier existe
+        $thumbDir = dirname($thumbPath);
+        if (!is_dir($thumbDir)) {
+            @mkdir($thumbDir, 0777, true);
+        }
+        
+        $success = false;
         if ($type === 'pdf') {
-            $this->generatePdfThumbnail($path, $thumbPath);
+            $success = $this->generatePdfThumbnail($path, $thumbPath);
         } else {
-            $this->generatePngThumbnail($path, $thumbPath);
+            $success = $this->generatePngThumbnail($path, $thumbPath);
+        }
+        
+        // Vérifier que le fichier a bien été créé
+        if (!$success || !file_exists($thumbPath)) {
+            return null;
         }
         
         return $relativePath;
     }
     
     private function generatePdfThumbnail($pdfPath, $outPath) {
-        // Détection Ghostscript (comme dans pdf_to_png.php)
+        // Détection Ghostscript (EXACTEMENT comme dans pdf_to_png.php)
+        $gs_command = 'gs';
         if (PHP_OS_FAMILY === 'Windows') {
             $gs_command = __DIR__ . '/../ghostscript/gswin64c.exe';
-            if (!file_exists($gs_command)) $gs_command = 'gswin64c';
-        } else {
-            $gs_command = 'gs';
+            if (!file_exists($gs_command)) {
+                return false;
+            }
         }
         
-        // Commande pour extraire la première page en PNG 200x200 (redimensionné ensuite ou direct)
-        // On utilise -r72 pour une basse résolution suffisante pour une miniature
-        $command = "$gs_command -dNOPAUSE -dBATCH -sDEVICE=png16m -dFirstPage=1 -dLastPage=1 -r72 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($outPath) . " " . escapeshellarg($pdfPath) . " 2>&1";
+        // Commande EXACTEMENT comme dans pdf_to_png.php (concaténation, pas interpolation)
+        $command = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=png16m -dFirstPage=1 -dLastPage=1 -r72 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($outPath) . " " . escapeshellarg($pdfPath) . " 2>&1";
         
         exec($command, $output, $returnVar);
         
         if ($returnVar !== 0 || !file_exists($outPath)) {
-            error_log("Erreur génération miniature PDF: " . implode("\n", $output));
-            // Créer une image vide ou erreur si échec
+            error_log("Erreur génération miniature PDF (code=$returnVar): " . implode("\n", $output));
             return false;
         }
         
         // Redimensionner l'image générée à 200px max
         $this->resizeImage($outPath, 200, 200);
+        return true;
     }
     
     private function generatePngThumbnail($pngPath, $outPath) {
@@ -356,6 +369,7 @@ class BibliothequeManager {
             return false;
         }
         $this->resizeImage($outPath, 200, 200);
+        return true;
     }
     
     private function resizeImage($file, $w, $h) {

@@ -134,6 +134,12 @@ if (empty($_GET) && (isset($_SERVER['REQUEST_URI']) && $_SERVER['REQUEST_URI'] =
 }
 
 // Gestion des endpoints API (doit être avant ajax_delete_machine)
+if ($page === 'check_ghostscript') {
+    $api_file = __DIR__ . '/../api/check_ghostscript.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    else { http_response_code(500); echo json_encode(['error' => 'API file not found']); exit; }
+}
+
 if ($page === 'ajax_edit_tambours') {
     // Inclure le fichier API depuis le dossier api/
     $api_file = __DIR__ . '/../api/ajax_edit_tambours.php';
