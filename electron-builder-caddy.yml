@@ -75,16 +75,9 @@ mac:
   category: public.app-category.productivity
   # Configuration spécifique macOS - inclut PHP
   # Utiliser ASAR mais unpacker les fichiers nécessaires
-  # Note: Les fichiers dans asarUnpack ne doivent PAS être dans files pour éviter les conflits
+  # Ne pas redéfinir files ici - utiliser la config globale pour éviter les conflits de liens symboliques
+  # Seulement exclure les fichiers de développement
   files:
-    - main-caddy.js
-    - main.js
-    - preload.js
-    - icons/**/*
-    - php-install-guide.html
-    - utils/**/*
-    # app/**/*, caddy/**/*, ghostscript/**/*, php/**/* sont dans la config globale files
-    # mais aussi dans asarUnpack, donc on les exclut ici pour éviter les conflits
     - "!app/.cursor/**/*"  # Exclure les fichiers .cursor
     - "!app/.phpunit.result.cache"  # Exclure le cache PHPUnit
   asarUnpack:
