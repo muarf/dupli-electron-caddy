@@ -2340,6 +2340,126 @@ ipcMain.handle('get-app-version', () => {
     return { success: true, version: app.getVersion() };
 });
 
+// Impression de fichiers avec boîte de dialogue système
+ipcMain.handle('print-file', async (event, fileUrl) => {
+    return new Promise((resolve, reject) => {
+        try {
+            console.log('Impression demandée pour:', fileUrl);
+            
+            // Créer une fenêtre invisible pour charger le fichier
+            const printWindow = new BrowserWindow({
+                show: false,
+                webPreferences: {
+                    nodeIntegration: false,
+                    contextIsolation: true,
+                    sandbox: true
+                }
+            });
+            
+            // Charger le fichier
+            printWindow.loadURL(fileUrl);
+            
+            // Attendre que le contenu soit chargé
+            printWindow.webContents.on('did-finish-load', () => {
+                console.log('Fichier chargé, ouverture de la boîte de dialogue d\'impression');
+                
+                // Ouvrir la boîte de dialogue d'impression système
+                printWindow.webContents.print({
+                    silent: false,  // Afficher la boîte de dialogue
+                    printBackground: true,
+                    color: true,
+                    margins: {
+                        marginType: 'printableArea'
+                    }
+                }, (success, errorType) => {
+                    // Fermer la fenêtre après l'impression
+                    printWindow.close();
+                    
+                    if (success) {
+                        console.log('Impression réussie ou annulée par l\'utilisateur');
+                        resolve({ success: true });
+                    } else {
+                        console.error('Erreur d\'impression:', errorType);
+                        resolve({ success: false, error: errorType });
+                    }
+                });
+            });
+            
+            // Gérer les erreurs de chargement
+            printWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+                console.error('Erreur de chargement du fichier:', errorDescription);
+                printWindow.close();
+                reject({ success: false, error: errorDescription });
+            });
+            
+        } catch (error) {
+            console.error('Erreur lors de la préparation de l\'impression:', error);
+            reject({ success: false, error: error.message });
+        }
+    });
+});
+
+// Ouvrir un fichier avec l'application système par défaut
+ipcMain.handle('open-external-file', async (event, fileUrl) => {
+    try {
+        console.log('Ouverture externe demandée pour:', fileUrl);
+        
+        // Si c'est une URL HTTP, on doit d'abord télécharger le fichier
+        if (fileUrl.startsWith('http')) {
+            const http = require('http');
+            const https = require('https');
+            const fs = require('fs');
+            const path = require('path');
+            const os = require('os');
+            
+            return new Promise((resolve, reject) => {
+                // Créer un nom de fichier temporaire
+                const tempFileName = 'temp_' + Date.now() + '.pdf';
+                const tempFilePath = path.join(os.tmpdir(), tempFileName);
+                const file = fs.createWriteStream(tempFilePath);
+                
+                const protocol = fileUrl.startsWith('https') ? https : http;
+                
+                protocol.get(fileUrl, (response) => {
+                    response.pipe(file);
+                    
+                    file.on('finish', () => {
+                        file.close();
+                        console.log('Fichier téléchargé vers:', tempFilePath);
+                        
+                        // Ouvrir le fichier avec l'application par défaut
+                        shell.openPath(tempFilePath).then(error => {
+                            if (error) {
+                                console.error('Erreur lors de l\'ouverture:', error);
+                                resolve({ success: false, error: error });
+                            } else {
+                                console.log('Fichier ouvert avec succès');
+                                resolve({ success: true });
+                            }
+                        });
+                    });
+                }).on('error', (err) => {
+                    fs.unlink(tempFilePath, () => {}); // Supprimer le fichier en cas d'erreur
+                    console.error('Erreur de téléchargement:', err.message);
+                    reject({ success: false, error: err.message });
+                });
+            });
+        } else {
+            // Ouvrir directement le fichier local
+            const error = await shell.openPath(fileUrl);
+            if (error) {
+                console.error('Erreur lors de l\'ouverture:', error);
+                return { success: false, error: error };
+            }
+            console.log('Fichier ouvert avec succès');
+            return { success: true };
+        }
+    } catch (error) {
+        console.error('Erreur lors de l\'ouverture externe:', error);
+        return { success: false, error: error.message };
+    }
+});
+
 // Gérer l'arrêt propre de l'application
 process.on('SIGINT', () => {
     console.log('Arrêt de l\'application...');
