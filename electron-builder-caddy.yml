@@ -16,6 +16,8 @@ files:
   - php-fpm.conf
   - php-install-guide.html
   - app/**/*
+  - "!app/.cursor/**/*"  # Exclure les fichiers .cursor globalement
+  - "!app/.phpunit.result.cache"  # Exclure le cache PHPUnit globalement
   - ghostscript/**/*
   - caddy/**/*
   - utils/**/*
@@ -75,19 +77,9 @@ mac:
   category: public.app-category.productivity
   # Utiliser ASAR avec unpack pour éviter les problèmes de liens symboliques
   # Configuration spécifique macOS - inclut PHP
+  # Ne pas redéfinir files, hériter de la configuration globale
+  # mais ajouter php/**/* qui est spécifique à macOS
   files:
-    - main-caddy.js
-    - main.js
-    - preload.js
-    - icons/**/*
-    - php-fpm.conf
-    - php-install-guide.html
-    - app/**/*
-    - "!app/.cursor/**/*"  # Exclure les fichiers .cursor
-    - "!app/.phpunit.result.cache"  # Exclure le cache PHPUnit
-    - ghostscript/**/*
-    - caddy/**/*
-    - utils/**/*
     - "php/**/*"  # Inclure PHP pour macOS
   asarUnpack:
     - "php/**/*"
@@ -95,7 +87,7 @@ mac:
     - "ghostscript/**/*"
     - "Caddyfile"
     - "php-fpm.conf"
-    # Ne pas mettre app/**/* dans asarUnpack car il est déjà dans files
+    # Ne pas mettre app/**/* dans asarUnpack car il est déjà dans files global
     # et cela crée des conflits de liens symboliques
 win:
   target:
