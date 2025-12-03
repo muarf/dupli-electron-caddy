@@ -80,7 +80,6 @@ mac:
     - main.js
     - preload.js
     - icons/**/*
-    - Caddyfile
     - php-fpm.conf
     - php-install-guide.html
     - app/**/*
@@ -94,7 +93,7 @@ mac:
     - "php/**/*"
     - "caddy/**/*"
     - "ghostscript/**/*"
-    - "Caddyfile"
+    - "Caddyfile"  # Caddyfile uniquement dans asarUnpack, pas dans files
     - "php-fpm.conf"
 win:
   target:
