@@ -1028,23 +1028,17 @@ function startPhpFpm() {
         const noAsarExtPath = path.join(process.resourcesPath, 'app', 'php', 'ext');
         const phpIniPath = path.join(appPath, '..', 'php.ini');
         const phpExtPath = fs.existsSync(noAsarExtPath) ? noAsarExtPath : asarExtPath;
-        // Ajouter le répertoire parent au include_path pour que vendor/autoload.php soit accessible
-        const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
-        const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
-        
         console.log('Configuration PHP pour Windows');
         console.log('PHP Ini Path:', phpIniPath);
         console.log('PHP Ini exists:', fs.existsSync(phpIniPath));
         console.log('PHP Ext Path:', phpExtPath);
         console.log('PHP Ext exists:', fs.existsSync(phpExtPath));
-        console.log('App base path (pour vendor):', appBasePath);
         
         phpArgs = [
             '-c', phpIniPath,
             '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
             '-t', appPath,
-            '-d', `extension_dir=${phpExtPath}`,  // extension_dir DOIT être défini AVANT include_path sous Windows
-            '-d', `include_path=${appBasePath};${vendorPath};.`,
+            '-d', `extension_dir=${phpExtPath}`,
             '-d', 'display_errors=1',
             '-d', 'log_errors=1',
             '-d', 'upload_max_filesize=50M',
