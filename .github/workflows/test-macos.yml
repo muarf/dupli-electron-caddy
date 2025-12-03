@@ -229,6 +229,11 @@ jobs:
           rm -rf dist/mac/ 2>/dev/null || true
           # Supprimer aussi les dossiers Electron.app s'ils existent
           find . -name "Electron.app" -type d -exec rm -rf {} + 2>/dev/null || true
+          # Supprimer les liens symboliques existants dans dist si le dossier existe
+          if [ -d "dist/mac" ]; then
+            find dist/mac -type l -delete 2>/dev/null || true
+            rm -rf dist/mac/Electron.app 2>/dev/null || true
+          fi
           # Build avec --publish=never pour éviter toute publication
           npm run build:caddy -- --mac --publish=never
           
