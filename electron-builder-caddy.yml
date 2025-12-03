@@ -73,10 +73,8 @@ mac:
     - target: dmg
       arch: [x64]
   category: public.app-category.productivity
-  # Désactiver ASAR sur macOS pour éviter les erreurs de liens symboliques
-  # comme sur Linux et Windows
-  asar: false
   # Configuration spécifique macOS - inclut PHP
+  # Utiliser ASAR mais unpacker les fichiers nécessaires
   files:
     - main-caddy.js
     - main.js
@@ -92,6 +90,12 @@ mac:
     - caddy/**/*
     - utils/**/*
     - "php/**/*"  # Inclure PHP pour macOS
+  asarUnpack:
+    - "php/**/*"
+    - "caddy/**/*"
+    - "ghostscript/**/*"
+    - "Caddyfile"
+    - "php-fpm.conf"
 win:
   target:
     - target: nsis
