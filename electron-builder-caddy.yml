@@ -79,23 +79,26 @@ mac:
     - main.js
     - preload.js
     - icons/**/*
-    - Caddyfile
     - php-fpm.conf
     - php-install-guide.html
     - app/**/*
     - "!app/.cursor/**/*"  # Exclure les fichiers .cursor
+    - "!app/.phpunit.result.cache"  # Exclure le cache PHPUnit
     - ghostscript/**/*
     - caddy/**/*
     - utils/**/*
     - "php/**/*"  # Inclure PHP pour macOS
+  extraResources:
+    - from: Caddyfile
+      to: Caddyfile
   asarUnpack:
     - "php/**/*"
     - "app/**/*"
     - "!app/.cursor/**/*"  # Exclure les fichiers .cursor de asarUnpack aussi
+    - "!app/.phpunit.result.cache"  # Exclure le cache PHPUnit
     - "ghostscript/**/*"
     - "caddy/**/*"
     - "php-fpm.conf"
-    # Caddyfile est dans files mais pas dans asarUnpack pour éviter le conflit de liens
 win:
   target:
     - target: nsis
