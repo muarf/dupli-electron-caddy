@@ -224,7 +224,10 @@ jobs:
       - name: Build application
         run: |
           echo "=== Build de l'application macOS ==="
-          npm run build:caddy -- --mac
+          # Nettoyer dist avant le build
+          rm -rf dist/
+          # Build avec --publish=never pour éviter toute publication
+          npm run build:caddy -- --mac --publish=never
           
           # Vérifier que le build a réussi
           if [ ! -d "dist/mac" ]; then
