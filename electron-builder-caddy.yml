@@ -76,13 +76,23 @@ mac:
   # Désactiver ASAR sur macOS pour éviter les erreurs de liens symboliques
   # comme sur Linux et Windows
   asar: false
-  # Désactiver les hard links pour forcer la copie des fichiers
-  # Cela évite les erreurs EEXIST avec les liens symboliques
   # Configuration spécifique macOS - inclut PHP
-  # Seulement exclure les fichiers de développement
+  # Définir explicitement tous les fichiers pour éviter les conflits de liens symboliques
   files:
+    - main-caddy.js
+    - main.js
+    - preload.js
+    - icons/**/*
+    - Caddyfile
+    - php-fpm.conf
+    - php-install-guide.html
+    - app/**/*
     - "!app/.cursor/**/*"  # Exclure les fichiers .cursor
     - "!app/.phpunit.result.cache"  # Exclure le cache PHPUnit
+    - ghostscript/**/*
+    - caddy/**/*
+    - utils/**/*
+    - "php/**/*"  # Inclure PHP pour macOS
 win:
   target:
     - target: nsis
