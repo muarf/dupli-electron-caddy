@@ -76,6 +76,8 @@ mac:
   # Désactiver ASAR sur macOS pour éviter les erreurs de liens symboliques
   # comme sur Linux et Windows
   asar: false
+  # Désactiver les liens symboliques pour forcer la copie des fichiers
+  hardLinks: false
   # Configuration spécifique macOS - inclut PHP
   # Définir explicitement tous les fichiers pour éviter les conflits de liens symboliques
   files:
