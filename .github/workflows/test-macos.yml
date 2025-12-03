@@ -224,8 +224,11 @@ jobs:
       - name: Build application
         run: |
           echo "=== Build de l'application macOS ==="
-          # Nettoyer dist avant le build
+          # Nettoyer complètement dist avant le build
           rm -rf dist/
+          rm -rf dist/mac/ 2>/dev/null || true
+          # Supprimer aussi les dossiers Electron.app s'ils existent
+          find . -name "Electron.app" -type d -exec rm -rf {} + 2>/dev/null || true
           # Build avec --publish=never pour éviter toute publication
           npm run build:caddy -- --mac --publish=never
           
