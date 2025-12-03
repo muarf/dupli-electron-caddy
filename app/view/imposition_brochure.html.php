@@ -260,7 +260,16 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="n_up"><i class="fa fa-cogs"></i> Format de Livret (A3 Output) :</label>
+                        <label for="output_format"><i class="fa fa-file-o"></i> Format de sortie :</label>
+                        <select name="output_format" id="output_format" class="form-control">
+                            <option value="A3" selected>A3 (420×297 mm / 297×420 mm)</option>
+                            <option value="A4">A4 (210×297 mm / 297×210 mm)</option>
+                        </select>
+                        <small class="form-text text-muted">Choisissez le format de la feuille d'impression</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="n_up"><i class="fa fa-cogs"></i> Format de Livret :</label>
                         <select name="n_up" id="n_up" class="form-control">
                             <option value="2" selected>2 poses (Standard 1 pli)</option>
                             <option value="4">4 poses (2 livrets Tête-Bêche)</option>

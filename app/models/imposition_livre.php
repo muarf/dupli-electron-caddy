@@ -157,12 +157,12 @@ function Action($conf)
         }
         // Cas 2 : Fichier uploadé
         elseif (isset($_FILES["pdf"]) && $_FILES["pdf"]["error"] !== UPLOAD_ERR_NO_FILE) {
-            $pdfFile = $_FILES["pdf"]["tmp_name"];
-            $originalFileName = $_FILES["pdf"]["name"];
-            
-            if ($_FILES["pdf"]["error"] !== UPLOAD_ERR_OK) {
-                $array['errors'][] = "Erreur d'upload : " . $_FILES["pdf"]["error"];
-                return template(__DIR__ . "/../view/imposition_livre.html.php", $array);
+        $pdfFile = $_FILES["pdf"]["tmp_name"];
+        $originalFileName = $_FILES["pdf"]["name"];
+        
+        if ($_FILES["pdf"]["error"] !== UPLOAD_ERR_OK) {
+            $array['errors'][] = "Erreur d'upload : " . $_FILES["pdf"]["error"];
+            return template(__DIR__ . "/../view/imposition_livre.html.php", $array);
             }
         }
         
@@ -170,29 +170,29 @@ function Action($conf)
         if ($pdfFile) {
             // Extraire le nom sans extension
             $originalFileNameWithoutExt = pathinfo($originalFileName, PATHINFO_FILENAME);
-            
-            if (!file_exists($pdfFile)) {
-                $array['errors'][] = "Erreur : Fichier introuvable.";
-                return template(__DIR__ . "/../view/imposition_livre.html.php", $array);
-            }
-    
-            // Vérifier que le fichier est bien un PDF
-            $finfo = finfo_open(FILEINFO_MIME_TYPE);
-            $mimeType = finfo_file($finfo, $pdfFile);
-            finfo_close($finfo);
-            
-            if ($mimeType !== 'application/pdf') {
-                $array['errors'][] = "Erreur : Le fichier n'est pas un PDF valide (type détecté: $mimeType).";
-                return template(__DIR__ . "/../view/imposition_livre.html.php", $array);
-            }
-    
-            // Traitement principal avec gestion d'erreur globale et fallback Ghostscript
-            $cleanedPdfFile = null;
-            $paddedPdfFile = null;
-            $usedGhostscript = false;
-            $mainProcessingSuccess = false;
-            
-            try {
+        
+        if (!file_exists($pdfFile)) {
+            $array['errors'][] = "Erreur : Fichier introuvable.";
+            return template(__DIR__ . "/../view/imposition_livre.html.php", $array);
+        }
+
+        // Vérifier que le fichier est bien un PDF
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_file($finfo, $pdfFile);
+        finfo_close($finfo);
+        
+        if ($mimeType !== 'application/pdf') {
+            $array['errors'][] = "Erreur : Le fichier n'est pas un PDF valide (type détecté: $mimeType).";
+            return template(__DIR__ . "/../view/imposition_livre.html.php", $array);
+        }
+
+        // Traitement principal avec gestion d'erreur globale et fallback Ghostscript
+        $cleanedPdfFile = null;
+        $paddedPdfFile = null;
+        $usedGhostscript = false;
+        $mainProcessingSuccess = false;
+        
+        try {
             // Essayer d'abord avec le PDF original
             $pdf = new TCPDI();
             $pageCount = $pdf->setSourceFile($pdfFile);
@@ -229,6 +229,7 @@ function Action($conf)
             $crop_mark_width = floatval($_POST['crop_mark_width'] ?? 0.1);
             $resize_mode = $_POST['resize_mode'] ?? 'percent';
             $add_page_numbers_in_gutters = isset($_POST['add_page_numbers_in_gutters']);
+            $outputFormat = $_POST['output_format'] ?? 'A3'; // Format de sortie (A3 ou A4)
 
             // Si on est en mode dimension cible, on ignore l'échelle %
             if ($resize_mode === 'mm') {
@@ -253,6 +254,7 @@ function Action($conf)
                 'crop_mark_width' => $crop_mark_width,
                 'preview_mode' => $previewMode,
                 'add_page_numbers_in_gutters' => $add_page_numbers_in_gutters,
+                'output_format' => $outputFormat,
                 'addPageNumberCallback' => $previewMode ? function($pdf, $pageNo, $x, $y, $w, $h, $rotation) {
                     return addPageNumber($pdf, $pageNo, $x, $y, $w, $h, $rotation);
                 } : null
@@ -368,6 +370,7 @@ function Action($conf)
                 $crop_mark_width = floatval($_POST['crop_mark_width'] ?? 0.1);
                 $resize_mode = $_POST['resize_mode'] ?? 'percent';
                 $add_page_numbers_in_gutters = isset($_POST['add_page_numbers_in_gutters']);
+                $outputFormat = $_POST['output_format'] ?? 'A3'; // Format de sortie (A3 ou A4)
 
                 if ($resize_mode === 'mm') {
                     $scale = 0;
@@ -391,6 +394,7 @@ function Action($conf)
                     'crop_mark_width' => $crop_mark_width,
                     'preview_mode' => $previewMode,
                     'add_page_numbers_in_gutters' => $add_page_numbers_in_gutters,
+                    'output_format' => $outputFormat,
                     'addPageNumberCallback' => $previewMode ? function($pdf, $pageNo, $x, $y, $w, $h, $rotation) {
                         return addPageNumber($pdf, $pageNo, $x, $y, $w, $h, $rotation);
                     } : null

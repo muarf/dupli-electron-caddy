@@ -79,22 +79,37 @@ class Imposition
         // Le nombre de feuilles PHYSIQUES dans la pile :
         $stackDepth = ceil($pageCount / $pagesPerSheet);
 
-        // Configuration format sortie A3
-        $a3Width = 420;
-        $a3Height = 297;
-
-        if ($this->settings['orientation'] == 'P') {
-            $a3Width = 297;
-            $a3Height = 420;
+        // Configuration format sortie selon le format choisi
+        $outputFormat = $this->settings['output_format'] ?? 'A3';
+        
+        if ($outputFormat === 'A4') {
+            // Format A4
+            $sheetWidth = 210;
+            $sheetHeight = 297;
+            if ($this->settings['orientation'] == 'P') {
+                $sheetWidth = 210;
+                $sheetHeight = 297;
+            } else {
+                $sheetWidth = 297;
+                $sheetHeight = 210;
+            }
+        } else {
+            // Format A3 (par défaut)
+            $sheetWidth = 420;
+            $sheetHeight = 297;
+            if ($this->settings['orientation'] == 'P') {
+                $sheetWidth = 297;
+                $sheetHeight = 420;
+            }
         }
 
         // Boucle sur les feuilles à générer
         for ($i = 1; $i <= $stackDepth; $i++) {
             
             // --- RECTO ---
-            $this->pdf->AddPage($this->settings['orientation'], 'A3');
+            $this->pdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
             if ($this->previewPdf) {
-                $this->previewPdf->AddPage($this->settings['orientation'], 'A3');
+                $this->previewPdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
             }
             
             for ($pos = 0; $pos < $nUp; $pos++) {
@@ -119,15 +134,15 @@ class Imposition
                     $currentRow = floor($pos / $cols);
                     $currentCol = $pos % $cols;
 
-                    $this->placePage($pageNo, $currentCol, $currentRow, $cols, $rows, $a3Width, $a3Height);
+                    $this->placePage($pageNo, $currentCol, $currentRow, $cols, $rows, $sheetWidth, $sheetHeight);
                 }
             }
 
             // --- VERSO (Seulement si Duplex) ---
             if ($duplex) {
-                $this->pdf->AddPage($this->settings['orientation'], 'A3');
+                $this->pdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
                 if ($this->previewPdf) {
-                    $this->previewPdf->AddPage($this->settings['orientation'], 'A3');
+                    $this->previewPdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
                 }
                 
                 for ($pos = 0; $pos < $nUp; $pos++) {
@@ -147,7 +162,7 @@ class Imposition
                         $mirrorCol = ($cols - 1) - $origCol;
                         $mirrorRow = $origRow; // La ligne ne change pas si on tourne la page comme un livre
 
-                        $this->placePage($pageNo, $mirrorCol, $mirrorRow, $cols, $rows, $a3Width, $a3Height);
+                        $this->placePage($pageNo, $mirrorCol, $mirrorRow, $cols, $rows, $sheetWidth, $sheetHeight);
                     }
                 }
             }

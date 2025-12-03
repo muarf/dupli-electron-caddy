@@ -403,6 +403,7 @@ function processImpositionTracts($is_from_lib = false)
         $forceResize = isset($_POST['force_resize']) && $_POST['force_resize'] == '1';
         $cutMargin = intval($_POST['cut_margin'] ?? 2);
         $orientation = $_POST['orientation'] ?? 'auto';
+        $outputFormat = $_POST['output_format'] ?? 'A3'; // Format de sortie (A3 ou A4)
         
         // Appliquer le format manuel si spécifié
         if ($manualFormat !== 'auto') {
@@ -411,12 +412,13 @@ function processImpositionTracts($is_from_lib = false)
         }
         
         // Déterminer les paramètres d'imposition automatiquement
-        $impositionParams = determineAutomaticParams($pdfInfo);
+        $impositionParams = determineAutomaticParams($pdfInfo, $outputFormat);
         
         // Ajouter les options de redimensionnement et orientation
         $impositionParams['force_resize'] = $forceResize;
         $impositionParams['manual_format'] = $manualFormat;
         $impositionParams['orientation'] = $orientation;
+        $impositionParams['output_format'] = $outputFormat;
         
         // Traiter l'imposition
         $resultFile = performImposition($inputFile, $impositionParams, $cutMargin);
@@ -467,29 +469,45 @@ function processImpositionTracts($is_from_lib = false)
     return $array;
 }
 
-function determineAutomaticParams($pdfInfo)
+function determineAutomaticParams($pdfInfo, $outputFormat = 'A3')
 {
     $format = $pdfInfo['format'];
     $pageCount = $pdfInfo['page_count'];
     
-    // Déterminer le nombre de copies selon le format
+    // Déterminer le nombre de copies selon le format de la page source et le format de sortie
     $copiesPerSheet = 2; // Par défaut
     
-    switch ($format) {
-        case 'A4':
-            $copiesPerSheet = 2; // 2 copies A4 sur A3
-            break;
-        case 'A5':
-            $copiesPerSheet = 4; // 4 copies A5 sur A3
-            break;
-        case 'A6':
-            $copiesPerSheet = 8; // 8 copies A6 sur A3
-            break;
+    if ($outputFormat === 'A4') {
+        // Format de sortie A4 : réduire proportionnellement
+        switch ($format) {
+            case 'A4':
+                $copiesPerSheet = 1; // 1 copie A4 sur A4
+                break;
+            case 'A5':
+                $copiesPerSheet = 2; // 2 copies A5 sur A4
+                break;
+            case 'A6':
+                $copiesPerSheet = 4; // 4 copies A6 sur A4
+                break;
+        }
+    } else {
+        // Format de sortie A3 (par défaut)
+        switch ($format) {
+            case 'A4':
+                $copiesPerSheet = 2; // 2 copies A4 sur A3
+                break;
+            case 'A5':
+                $copiesPerSheet = 4; // 4 copies A5 sur A3
+                break;
+            case 'A6':
+                $copiesPerSheet = 8; // 8 copies A6 sur A3
+                break;
+        }
     }
     
     return [
         'copies_per_sheet' => $copiesPerSheet,
-        'paper_format' => 'A3',
+        'paper_format' => $outputFormat,
         'page_count' => $pageCount,
         'format' => $format
     ];
@@ -502,30 +520,60 @@ function performImposition($inputFile, $params, $cutMargin = 2)
         $copiesPerSheet = $params['copies_per_sheet'];
         $format = $params['format'];
         $orientation = $params['orientation'] ?? 'auto';
+        $outputFormat = $params['output_format'] ?? 'A3';
         
-        // Dimensions A3 selon l'orientation choisie ou automatique
-        if ($orientation === 'portrait') {
-            // Orientation portrait forcée
-            $a3_width = 297;  // Largeur A3 en portrait (mm)
-            $a3_height = 420; // Hauteur A3 en portrait (mm)
-            $a3_orientation = 'P'; // Portrait
-        } elseif ($orientation === 'landscape') {
-            // Orientation paysage forcée
-            $a3_width = 420;  // Largeur A3 en paysage (mm)
-            $a3_height = 297; // Hauteur A3 en paysage (mm)
-            $a3_orientation = 'L'; // Paysage
-        } else {
-            // Orientation automatique selon le format
-            if ($format === 'A5') {
-                // A5 : A3 en portrait pour optimiser l'espace
-                $a3_width = 297;  // Largeur A3 en portrait (mm)
-                $a3_height = 420; // Hauteur A3 en portrait (mm)
-                $a3_orientation = 'P'; // Portrait
+        // Dimensions selon le format de sortie et l'orientation choisie ou automatique
+        if ($outputFormat === 'A4') {
+            // Format de sortie A4
+            if ($orientation === 'portrait') {
+                // Orientation portrait forcée
+                $sheet_width = 210;  // Largeur A4 en portrait (mm)
+                $sheet_height = 297; // Hauteur A4 en portrait (mm)
+                $sheet_orientation = 'P'; // Portrait
+            } elseif ($orientation === 'landscape') {
+                // Orientation paysage forcée
+                $sheet_width = 297;  // Largeur A4 en paysage (mm)
+                $sheet_height = 210; // Hauteur A4 en paysage (mm)
+                $sheet_orientation = 'L'; // Paysage
             } else {
-                // A4 et A6 : A3 en paysage
-                $a3_width = 420;  // Largeur A3 en paysage (mm)
-                $a3_height = 297; // Hauteur A3 en paysage (mm)
-                $a3_orientation = 'L'; // Paysage
+                // Orientation automatique selon le format
+                if ($format === 'A5') {
+                    // A5 : A4 en portrait pour optimiser l'espace
+                    $sheet_width = 210;  // Largeur A4 en portrait (mm)
+                    $sheet_height = 297; // Hauteur A4 en portrait (mm)
+                    $sheet_orientation = 'P'; // Portrait
+                } else {
+                    // A4 et A6 : A4 en paysage
+                    $sheet_width = 297;  // Largeur A4 en paysage (mm)
+                    $sheet_height = 210; // Hauteur A4 en paysage (mm)
+                    $sheet_orientation = 'L'; // Paysage
+                }
+            }
+        } else {
+            // Format de sortie A3 (par défaut)
+            if ($orientation === 'portrait') {
+                // Orientation portrait forcée
+                $sheet_width = 297;  // Largeur A3 en portrait (mm)
+                $sheet_height = 420; // Hauteur A3 en portrait (mm)
+                $sheet_orientation = 'P'; // Portrait
+            } elseif ($orientation === 'landscape') {
+                // Orientation paysage forcée
+                $sheet_width = 420;  // Largeur A3 en paysage (mm)
+                $sheet_height = 297; // Hauteur A3 en paysage (mm)
+                $sheet_orientation = 'L'; // Paysage
+            } else {
+                // Orientation automatique selon le format
+                if ($format === 'A5') {
+                    // A5 : A3 en portrait pour optimiser l'espace
+                    $sheet_width = 297;  // Largeur A3 en portrait (mm)
+                    $sheet_height = 420; // Hauteur A3 en portrait (mm)
+                    $sheet_orientation = 'P'; // Portrait
+                } else {
+                    // A4 et A6 : A3 en paysage
+                    $sheet_width = 420;  // Largeur A3 en paysage (mm)
+                    $sheet_height = 297; // Hauteur A3 en paysage (mm)
+                    $sheet_orientation = 'L'; // Paysage
+                }
             }
         }
         
@@ -544,11 +592,15 @@ function performImposition($inputFile, $params, $cutMargin = 2)
                 break;
         }
         
-        // Calculer la disposition sur A3 selon l'orientation et le nombre de copies
+        // Calculer la disposition selon l'orientation et le nombre de copies
         // La disposition doit s'adapter à l'orientation choisie
-        if ($copiesPerSheet == 2) {
-            // 2 copies (A4 sur A3)
-            if ($a3_orientation === 'P') {
+        if ($copiesPerSheet == 1) {
+            // 1 copie (A4 sur A4)
+            $cols = 1;
+            $rows = 1;
+        } elseif ($copiesPerSheet == 2) {
+            // 2 copies (A4 sur A3 ou A5 sur A4)
+            if ($sheet_orientation === 'P') {
                 // Portrait : 1 colonne, 2 lignes
                 $cols = 1;
                 $rows = 2;
@@ -558,12 +610,12 @@ function performImposition($inputFile, $params, $cutMargin = 2)
                 $rows = 1;
             }
         } elseif ($copiesPerSheet == 4) {
-            // 4 copies (A5 sur A3) - toujours 2×2
+            // 4 copies (A5 sur A3 ou A6 sur A4) - toujours 2×2
             $cols = 2;
             $rows = 2;
         } elseif ($copiesPerSheet == 8) {
             // 8 copies (A6 sur A3)
-            if ($a3_orientation === 'P') {
+            if ($sheet_orientation === 'P') {
                 // Portrait : 2 colonnes, 4 lignes
                 $cols = 2;
                 $rows = 4;
@@ -575,8 +627,8 @@ function performImposition($inputFile, $params, $cutMargin = 2)
         }
         
         // Espacement entre les copies
-        $spacingX = ($a3_width - ($cols * $page_width)) / ($cols + 1);
-        $spacingY = ($a3_height - ($rows * $page_height)) / ($rows + 1);
+        $spacingX = ($sheet_width - ($cols * $page_width)) / ($cols + 1);
+        $spacingY = ($sheet_height - ($rows * $page_height)) / ($rows + 1);
         
         // Créer une seule instance TCPDI pour tout le processus
         $pdf = new TCPDI();
@@ -586,8 +638,8 @@ function performImposition($inputFile, $params, $cutMargin = 2)
         
         // Logique simplifiée : traiter chaque page séparément
         for ($pageNum = 1; $pageNum <= $pageCount; $pageNum++) {
-            // Nouvelle feuille A3 avec la bonne orientation
-            $pdf->AddPage($a3_orientation, array($a3_width, $a3_height));
+            // Nouvelle feuille avec la bonne orientation et dimensions
+            $pdf->AddPage($sheet_orientation, array($sheet_width, $sheet_height));
             
             // Importer la page une seule fois
             $templateId = $pdf->importPage($pageNum);
