@@ -140,7 +140,6 @@ function handlePhpOutput(source, data) {
 
     const timestamp = new Date().toISOString();
     const logLine = `[${timestamp}] [PHP ${source}] ${message}`;
-<<<<<<< HEAD
     
     // Protéger contre les erreurs EPIPE lors de l'écriture dans console
     try {
@@ -157,6 +156,7 @@ function handlePhpOutput(source, data) {
         }
         // Pour EPIPE, on ignore silencieusement (flux fermé normalement)
     }
+    
     sendToRenderer(PHP_LOG_CHANNEL, {
         source,
         message,
