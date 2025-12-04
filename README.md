@@ -64,11 +64,38 @@ Téléchargez la dernière release directement depuis GitHub :
 
 - Node.js 18+ 
 - npm ou yarn
+- **Composer** (pour les dépendances PHP)
+
+### Installation de Composer
+
+**Windows (avec Chocolatey) :**
+```powershell
+# Ouvrir PowerShell en tant qu'administrateur
+choco install composer -y
+```
+
+**Windows (manuel) :**
+Téléchargez et installez Composer depuis https://getcomposer.org/download/
+
+**Linux/macOS :**
+```bash
+# Installation globale
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
+```
 
 ### Installation des dépendances
 
+**1. Dépendances Node.js :**
 ```bash
 npm install
+```
+
+**2. Dépendances PHP (dans le dossier app/) :**
+```bash
+cd app
+composer install
+cd ..
 ```
 
 ### Téléchargement des binaires
