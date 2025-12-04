@@ -156,6 +156,17 @@ jobs:
           echo "Dossier php/ existe?"
           ls -la php/ 2>&1 | head -5 || echo "✅ php/ n'existe pas (normal pour Linux)"
         
+      - name: Remove app/.git directory
+        run: |
+          echo "=== Suppression du dossier app/.git ==="
+          if [ -d "app/.git" ]; then
+            echo "Suppression de app/.git (non nécessaire pour le build)..."
+            rm -rf app/.git
+            echo "✅ app/.git supprimé"
+          else
+            echo "✅ app/.git n'existe pas (déjà supprimé ou absent)"
+          fi
+      
       - name: Build Linux AppImage
         run: |
           echo "=== Nettoyage final avant build ==="
@@ -217,7 +228,7 @@ jobs:
           ./"$APPIMAGE_FILE" --appimage-extract
           
           echo "Vérification du contenu..."
-          # Avec ASAR désactivé, les fichiers sont dans resources/app/ (comme Windows)
+          # Sans ASAR, les fichiers sont dans resources/app/ au lieu de resources/app.asar.unpacked/
           if [ -f "squashfs-root/resources/app/caddy/caddy" ]; then
             echo "✅ Caddy présent"
             squashfs-root/resources/app/caddy/caddy version
@@ -261,8 +272,7 @@ jobs:
           echo "📁 Structure du dossier resources:"
           ls -la squashfs-root/resources/ 2>/dev/null || echo "Dossier resources non trouvé"
           
-          # Avec ASAR désactivé, les fichiers sont dans resources/app/
-          echo "📁 Contenu du dossier app:"
+          echo "📁 Structure du dossier app (sans ASAR):"
           ls -la squashfs-root/resources/app/ 2>/dev/null || echo "Dossier app non trouvé"
           
           echo "📁 Contenu du dossier caddy:"

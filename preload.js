@@ -42,7 +42,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.on('php-process-status', (event, payload) => callback(payload));
     },
     restartPhp: () => ipcRenderer.invoke('restart-php'),
-    restartApp: () => ipcRenderer.invoke('restart-app')
+    restartApp: () => ipcRenderer.invoke('restart-app'),
+    
+    // Moniteur d'imprimantes Windows
+    getPrinters: () => ipcRenderer.invoke('get-printers'),
+    togglePrinterMonitor: (start) => ipcRenderer.invoke('toggle-printer-monitor', start),
+    getPrinterMonitorStatus: () => ipcRenderer.invoke('get-printer-monitor-status'),
+    deletePrinter: (printerName) => ipcRenderer.invoke('delete-printer', printerName),
+    onPrintJobDetected: (callback) => {
+        ipcRenderer.on('print-job-detected', (event, payload) => callback(payload));
+    },
+    onPrintMonitorError: (callback) => {
+        ipcRenderer.on('print-monitor-error', (event, payload) => callback(payload));
+    },
+    onPrintMonitorStarted: (callback) => {
+        ipcRenderer.on('print-monitor-started', (event, payload) => callback(payload));
+    }
 });
 
 

@@ -272,6 +272,7 @@ if ($page === 'upload_aide_pdf') {
     }
 }
 
+<<<<<<< HEAD
 if ($page === 'upload_bibliotheque') {
     $api_file = __DIR__ . '/../api/upload_bibliotheque.php';
     if (file_exists($api_file)) { require_once $api_file; exit; }
@@ -310,12 +311,40 @@ if ($page === 'get_bibliotheque_thumbnail') {
 
 if ($page === 'get_bibliotheque_file') {
     $api_file = __DIR__ . '/../api/get_bibliotheque_file.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    else { http_response_code(500); echo json_encode(['error' => 'API file not found']); exit; }
+}
+
+if ($page === 'check_print_jobs') {
+    // Inclure le fichier API depuis le dossier api/
+    $api_file = __DIR__ . '/../api/check-print-jobs.php';
+    error_log("[API] check_print_jobs demandé, fichier: " . $api_file);
+    error_log("[API] Fichier existe: " . (file_exists($api_file) ? 'OUI' : 'NON'));
+    if (file_exists($api_file)) {
+        error_log("[API] Inclusion du fichier API");
+        require_once $api_file;
+        error_log("[API] Fichier API exécuté, exit");
+        exit;
+    } else {
+        error_log("[API] Fichier API non trouvé!");
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Fichier API non trouvé', 'path' => $api_file]);
+        exit;
+    }
+}
+
+if ($page === 'print_notification') {
+    // Inclure le fichier API depuis le dossier api/
+    $api_file = __DIR__ . '/../api/print-notification.php';
     if (file_exists($api_file)) {
         require_once $api_file;
         exit;
     } else {
         http_response_code(500);
-        die('Fichier API non trouvé');
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Fichier API non trouvé']);
+        exit;
     }
 }
 
@@ -557,7 +586,7 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','imposition_brochure','imposition_livre','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','image_processor','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','download_png','download_unimposed','download_processed','download_backup','view_pdf','get-machine-template','upload_aide_pdf','view_aide_pdf','bibliotheque','upload_bibliotheque','search_bibliotheque','preview_directory','index_file','delete_bibliotheque_file','get_bibliotheque_thumbnail','get_bibliotheque_file');
+$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','imposition_brochure','imposition_livre','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','image_processor','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','download_png','download_unimposed','download_processed','download_backup','view_pdf','get-machine-template','upload_aide_pdf','view_aide_pdf','bibliotheque','upload_bibliotheque','search_bibliotheque','preview_directory','index_file','delete_bibliotheque_file','get_bibliotheque_thumbnail','get_bibliotheque_file','check_print_jobs','print_notification');
 
 error_log("[PASSWORD_CHECK] ===== DEBUT VERIFICATION =====");
 error_log("[PASSWORD_CHECK] Page demandée (avant vérification): " . $page);
