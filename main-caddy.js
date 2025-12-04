@@ -481,7 +481,6 @@ function attemptRendererRecovery() {
 
 function handlePhpProcessExit(code, signal) {
     const exitInfo = `Processus PHP terminé (code: ${code !== null ? code : 'null'}, signal: ${signal || 'aucun'})`;
-<<<<<<< HEAD
     
     // Protéger contre les erreurs EPIPE lors de l'écriture dans console
     try {
