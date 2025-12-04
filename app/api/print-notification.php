@@ -64,6 +64,13 @@ try {
             pages_printed INTEGER DEFAULT 0,
             total_pages INTEGER DEFAULT 0,
             size INTEGER DEFAULT 0,
+            duplex INTEGER DEFAULT 0,
+            paper_size TEXT,
+            color_mode TEXT,
+            copies INTEGER DEFAULT 1,
+            orientation TEXT,
+            resolution TEXT,
+            input_slot TEXT,
             time_submitted TEXT,
             event_type TEXT,
             timestamp TEXT NOT NULL,
@@ -72,11 +79,48 @@ try {
         )
     ");
     
+    // Ajouter les colonnes si elles n'existent pas (migration)
+    try {
+        $db->execute("ALTER TABLE print_jobs ADD COLUMN duplex INTEGER DEFAULT 0");
+    } catch (Exception $e) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
+    try {
+        $db->execute("ALTER TABLE print_jobs ADD COLUMN paper_size TEXT");
+    } catch (Exception $e) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
+    try {
+        $db->execute("ALTER TABLE print_jobs ADD COLUMN color_mode TEXT");
+    } catch (Exception $e) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
+    try {
+        $db->execute("ALTER TABLE print_jobs ADD COLUMN copies INTEGER DEFAULT 1");
+    } catch (Exception $e) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
+    try {
+        $db->execute("ALTER TABLE print_jobs ADD COLUMN orientation TEXT");
+    } catch (Exception $e) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
+    try {
+        $db->execute("ALTER TABLE print_jobs ADD COLUMN resolution TEXT");
+    } catch (Exception $e) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
+    try {
+        $db->execute("ALTER TABLE print_jobs ADD COLUMN input_slot TEXT");
+    } catch (Exception $e) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
+    
     // Insérer ou mettre à jour le job d'impression
     $db->execute("
         INSERT OR REPLACE INTO print_jobs 
-        (job_id, document, owner, printer_name, status, pages_printed, total_pages, size, time_submitted, event_type, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (job_id, document, owner, printer_name, status, pages_printed, total_pages, size, duplex, paper_size, color_mode, copies, orientation, resolution, input_slot, time_submitted, event_type, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ", [
         $data['jobId'],
         $data['document'],
@@ -86,6 +130,13 @@ try {
         $data['pagesPrinted'] ?? 0,
         $data['totalPages'] ?? 0,
         $data['size'] ?? 0,
+        isset($data['duplex']) ? ($data['duplex'] ? 1 : 0) : 0,
+        $data['paperSize'] ?? null,
+        $data['colorMode'] ?? null,
+        $data['copies'] ?? 1,
+        $data['orientation'] ?? null,
+        $data['resolution'] ?? null,
+        $data['inputSlot'] ?? null,
         $data['timeSubmitted'] ?? null,
         $data['eventType'] ?? 'unknown',
         $data['timestamp']

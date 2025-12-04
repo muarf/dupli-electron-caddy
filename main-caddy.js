@@ -8,6 +8,7 @@ const net = require('net');
 const http = require('http');
 const { checkWindowsCompatibility, applyCompatibilitySettings } = require('./utils/windows-compatibility');
 const PrinterMonitor = require('./utils/printer-monitor');
+const printEngine = require('./src/print-engine');
 
 // Vérifier la compatibilité Windows avant tout
 checkWindowsCompatibility();
@@ -78,21 +79,21 @@ function normalizePhpMessage(message) {
 function handlePhpOutput(source, data) {
     const rawMessage = normalizePhpMessage(data);
     const message = rawMessage.trim();
-    
+
     if (!message) {
         return;
     }
-    
+
     const timestamp = new Date().toISOString();
     const logLine = `[${timestamp}] [PHP ${source}] ${message}`;
     console[source === 'STDERR' ? 'error' : 'log'](`[PHP ${source}]`, message);
-    
+
     sendToRenderer(PHP_LOG_CHANNEL, {
         source,
         message,
         timestamp
     });
-    
+
     if (PHP_FATAL_PATTERNS.some(pattern => pattern.test(message))) {
         handlePhpFatal(message, source);
     }
@@ -109,7 +110,7 @@ function getPhpTempDir() {
 
 function getCandidateLogDirectories() {
     const directories = new Set();
-    
+
     const safelyAdd = (dir) => {
         if (!dir) {
             return;
@@ -121,15 +122,15 @@ function getCandidateLogDirectories() {
             console.log(`Chemin invalide ignoré (${dir}): ${error.message}`);
         }
     };
-    
+
     safelyAdd(getPhpTempDir());
-    
+
     try {
         safelyAdd(app.getPath('temp'));
     } catch (error) {
         console.log(`Impossible de récupérer app.getPath('temp'): ${error.message}`);
     }
-    
+
     try {
         const userData = app.getPath('userData');
         safelyAdd(userData);
@@ -137,7 +138,7 @@ function getCandidateLogDirectories() {
     } catch (error) {
         console.log(`Impossible de récupérer app.getPath('userData'): ${error.message}`);
     }
-    
+
     try {
         const appData = app.getPath('appData');
         PHP_ERROR_LOG_DIRECTORY_HINTS.forEach((hint) => {
@@ -147,14 +148,14 @@ function getCandidateLogDirectories() {
     } catch (error) {
         console.log(`Impossible de récupérer app.getPath('appData'): ${error.message}`);
     }
-    
+
     const envCandidates = [
         process.env.APPDATA,
         process.env.LOCALAPPDATA,
         process.env.TEMP,
         process.env.TMP
     ];
-    
+
     envCandidates.forEach((base) => {
         if (!base) {
             return;
@@ -165,7 +166,7 @@ function getCandidateLogDirectories() {
             safelyAdd(path.join(base, hint, 'temp'));
         });
     });
-    
+
     return Array.from(directories).filter((dir) => {
         try {
             return fs.existsSync(dir);
@@ -178,7 +179,7 @@ function getCandidateLogDirectories() {
 
 function resolvePhpErrorLogPath() {
     const directories = getCandidateLogDirectories();
-    
+
     for (const dir of directories) {
         for (const name of PHP_ERROR_LOG_CANDIDATES) {
             const candidatePath = path.join(dir, name);
@@ -191,7 +192,7 @@ function resolvePhpErrorLogPath() {
             }
         }
     }
-    
+
     return null;
 }
 
@@ -204,12 +205,12 @@ function stopPhpErrorLogWatcher() {
         }
         phpErrorLogWatcher = null;
     }
-    
+
     if (phpErrorLogRetryTimeout) {
         clearTimeout(phpErrorLogRetryTimeout);
         phpErrorLogRetryTimeout = null;
     }
-    
+
     phpErrorLogPath = null;
     phpErrorLogLastSize = 0;
 }
@@ -218,18 +219,18 @@ function analysePhpLogLine(line) {
     if (!line) {
         return;
     }
-    
+
     const trimmed = line.trim();
     if (!trimmed) {
         return;
     }
-    
+
     const fatalMatch = PHP_LOG_MONITOR_PATTERNS.find(entry => entry.pattern.test(trimmed));
     if (fatalMatch) {
         handlePhpFatal(trimmed, 'LOG');
         return;
     }
-    
+
     const warningMatch = PHP_WARNING_PATTERNS.find(entry => entry.pattern.test(trimmed));
     if (warningMatch) {
         sendToRenderer(PHP_LOG_CHANNEL, {
@@ -244,7 +245,7 @@ function readPhpErrorLogUpdates(initialRead = false) {
     if (!phpErrorLogPath) {
         return;
     }
-    
+
     fs.stat(phpErrorLogPath, (err, stats) => {
         if (err) {
             if (err.code === 'ENOENT' && !initialRead) {
@@ -252,43 +253,43 @@ function readPhpErrorLogUpdates(initialRead = false) {
             }
             return;
         }
-        
+
         const currentSize = stats.size;
         let readFrom = phpErrorLogLastSize;
-        
+
         if (currentSize < phpErrorLogLastSize) {
             readFrom = 0;
         }
-        
+
         if (!initialRead && currentSize === readFrom) {
             return;
         }
-        
+
         const stream = fs.createReadStream(phpErrorLogPath, {
             start: initialRead ? Math.max(0, currentSize - 32768) : readFrom,
             end: currentSize,
             encoding: 'utf8'
         });
-        
+
         let buffer = '';
-        
+
         stream.on('data', (chunk) => {
             buffer += chunk;
         });
-        
+
         stream.on('end', () => {
             phpErrorLogLastSize = currentSize;
             if (!buffer) {
                 return;
             }
-            
+
             const lines = buffer.split(/\r?\n/).filter(Boolean);
             if (initialRead) {
                 return;
             }
             lines.forEach(analysePhpLogLine);
         });
-        
+
         stream.on('error', (streamErr) => {
             console.log(`Erreur de lecture du log PHP: ${streamErr.message}`);
         });
@@ -299,7 +300,7 @@ function schedulePhpErrorLogMonitorRestart(delay = 5000) {
     if (phpErrorLogRetryTimeout) {
         return;
     }
-    
+
     phpErrorLogRetryTimeout = setTimeout(() => {
         phpErrorLogRetryTimeout = null;
         startPhpErrorLogWatcher();
@@ -308,25 +309,25 @@ function schedulePhpErrorLogMonitorRestart(delay = 5000) {
 
 function startPhpErrorLogWatcher() {
     stopPhpErrorLogWatcher();
-    
+
     const logPath = resolvePhpErrorLogPath();
     if (!logPath) {
         console.log('Journal PHP introuvable pour l’instant, nouvelle tentative bientôt.');
         schedulePhpErrorLogMonitorRestart(2000);
         return;
     }
-    
+
     phpErrorLogPath = logPath;
-    
+
     try {
         const stats = fs.statSync(logPath);
         phpErrorLogLastSize = stats.size;
     } catch (error) {
         phpErrorLogLastSize = 0;
     }
-    
+
     readPhpErrorLogUpdates(true);
-    
+
     try {
         phpErrorLogWatcher = fs.watch(logPath, { persistent: false }, () => {
             readPhpErrorLogUpdates();
@@ -346,17 +347,17 @@ function handlePhpFatal(message, source = 'STDERR') {
     if (phpFatalNotified) {
         return;
     }
-    
+
     phpFatalNotified = true;
     const timestamp = new Date().toISOString();
     console.error(`[PHP FATAL - ${source}]`, message);
-    
+
     sendToRenderer(PHP_FATAL_CHANNEL, {
         message,
         source,
         timestamp
     });
-    
+
     if (mainWindow && !mainWindow.isDestroyed()) {
         dialog.showMessageBox(mainWindow, {
             type: 'error',
@@ -370,11 +371,11 @@ function handlePhpFatal(message, source = 'STDERR') {
             if (result.response === 0) {
                 attemptRendererRecovery();
             }
-        }).catch(() => {});
+        }).catch(() => { });
     } else {
         dialog.showErrorBox('Erreur critique PHP', message);
     }
-    
+
     schedulePhpRestart('fatal-detected');
 }
 
@@ -382,7 +383,7 @@ function attemptRendererRecovery() {
     if (!mainWindow || mainWindow.isDestroyed()) {
         return;
     }
-    
+
     const targetPort = frontendPort || serverPort || PHP_SERVER_PORT;
     const accueilUrl = `http://127.0.0.1:${targetPort}/?accueil`;
     mainWindow.loadURL(accueilUrl).catch(error => {
@@ -398,9 +399,9 @@ function attemptRendererRecovery() {
 function handlePhpProcessExit(code, signal) {
     const exitInfo = `Processus PHP terminé (code: ${code !== null ? code : 'null'}, signal: ${signal || 'aucun'})`;
     console.warn(exitInfo);
-    
+
     stopPhpErrorLogWatcher();
-    
+
     sendToRenderer(PHP_STATUS_CHANNEL, {
         status: 'stopped',
         code,
@@ -411,11 +412,11 @@ function handlePhpProcessExit(code, signal) {
         proxyPort: serverPort,
         phpPort: PHP_SERVER_PORT
     });
-    
+
     const wasExpected = phpStopRequested;
     phpStopRequested = false;
     phpFpmProcess = null;
-    
+
     if (!wasExpected) {
         schedulePhpRestart('unexpected-exit');
     }
@@ -425,7 +426,7 @@ function schedulePhpRestart(reason) {
     if (phpRestartInProgress) {
         return;
     }
-    
+
     if (phpRestartAttempts >= MAX_PHP_RESTART_ATTEMPTS) {
         sendToRenderer(PHP_STATUS_CHANNEL, {
             status: 'failed',
@@ -437,11 +438,11 @@ function schedulePhpRestart(reason) {
         });
         return;
     }
-    
+
     if (phpRestartTimeout) {
         return;
     }
-    
+
     phpRestartTimeout = setTimeout(() => {
         phpRestartTimeout = null;
         restartPhpProcess(reason).catch(error => {
@@ -454,20 +455,20 @@ function stopPhpFpmProcess(signal = 'SIGTERM') {
     if (!phpFpmProcess) {
         return Promise.resolve();
     }
-    
+
     phpStopRequested = true;
-    
+
     return new Promise((resolve) => {
         const processToStop = phpFpmProcess;
         let resolved = false;
-        
+
         const cleanup = () => {
             if (!resolved) {
                 resolved = true;
                 resolve();
             }
         };
-        
+
         const killTimeout = setTimeout(() => {
             if (processToStop && !processToStop.killed) {
                 try {
@@ -478,12 +479,12 @@ function stopPhpFpmProcess(signal = 'SIGTERM') {
             }
             cleanup();
         }, 5000);
-        
+
         processToStop.once('close', () => {
             clearTimeout(killTimeout);
             cleanup();
         });
-        
+
         try {
             processToStop.kill(signal);
         } catch (error) {
@@ -498,15 +499,15 @@ async function restartPhpProcess(reason = 'manual') {
     if (phpRestartInProgress) {
         return;
     }
-    
+
     if (phpRestartTimeout) {
         clearTimeout(phpRestartTimeout);
         phpRestartTimeout = null;
     }
-    
+
     phpRestartInProgress = true;
     phpRestartAttempts += 1;
-    
+
     const timestamp = new Date().toISOString();
     sendToRenderer(PHP_STATUS_CHANNEL, {
         status: 'restarting',
@@ -517,7 +518,7 @@ async function restartPhpProcess(reason = 'manual') {
         proxyPort: serverPort,
         phpPort: PHP_SERVER_PORT
     });
-    
+
     try {
         await stopPhpFpmProcess();
         phpFatalNotified = false;
@@ -543,7 +544,7 @@ async function restartPhpProcess(reason = 'manual') {
             proxyPort: serverPort,
             phpPort: PHP_SERVER_PORT
         });
-        
+
         if (phpRestartAttempts < MAX_PHP_RESTART_ATTEMPTS) {
             schedulePhpRestart('retry-after-failure');
         }
@@ -556,12 +557,12 @@ async function restartPhpProcess(reason = 'manual') {
 function getDatabasePath() {
     const userDataPath = app.getPath('userData');
     const dbPath = path.join(userDataPath, 'duplinew.sqlite');
-    
+
     // Si la base de données n'existe pas encore, copier le template depuis l'application
     if (!fs.existsSync(dbPath)) {
         const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
         const isWindows = process.platform === 'win32';
-        
+
         let templatePath;
         if (isAppImage) {
             templatePath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'duplinew.sqlite');
@@ -572,7 +573,7 @@ function getDatabasePath() {
         } else {
             templatePath = path.join(__dirname, 'app', 'duplinew.sqlite');
         }
-        
+
         // Copier le template si il existe
         if (fs.existsSync(templatePath)) {
             console.log('Création de la base de données utilisateur depuis:', templatePath);
@@ -581,7 +582,7 @@ function getDatabasePath() {
             console.log('Aucun template de BDD trouvé, nouvelle BDD sera créée par l\'application');
         }
     }
-    
+
     console.log('Chemin de la base de données:', dbPath);
     return dbPath;
 }
@@ -591,13 +592,13 @@ function cleanupTmpFiles() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
     const isPackaged = app.isPackaged;
     let tmpPath;
-    
+
     if (isAppImage || isPackaged) {
         tmpPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public', 'tmp');
     } else {
         tmpPath = path.join(__dirname, 'app', 'public', 'tmp');
     }
-    
+
     if (fs.existsSync(tmpPath)) {
         const files = fs.readdirSync(tmpPath);
         files.forEach(file => {
@@ -615,7 +616,7 @@ function getCaddyPath() {
     const isPackaged = app.isPackaged;
     const isLinux = process.platform === 'linux';
     const isWindows = process.platform === 'win32';
-    
+
     if (isAppImage || (isLinux && isPackaged)) {
         // AppImage : utiliser le Caddy inclus
         const caddyPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'caddy', 'caddy');
@@ -623,7 +624,16 @@ function getCaddyPath() {
         console.log('Caddy existe:', fs.existsSync(caddyPath));
         return caddyPath;
     } else if (isWindows) {
-        // Windows : détecter si ASAR est utilisé ou non
+        // Mode développement : utiliser le Caddy local
+        if (!isPackaged) {
+            const devCaddyPath = path.join(__dirname, 'caddy', 'caddy.exe');
+            if (fs.existsSync(devCaddyPath)) {
+                console.log('Caddy trouvé (développement):', devCaddyPath);
+                return devCaddyPath;
+            }
+        }
+        
+        // Mode packagé : détecter si ASAR est utilisé ou non
         // Même avec asar: false, les fichiers sont dans resources/app/
         const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'caddy', 'caddy.exe');
         const noAsarPath = path.join(process.resourcesPath, 'app', 'caddy', 'caddy.exe');
@@ -642,10 +652,16 @@ function getCaddyPath() {
         }
         else {
             console.error('Caddy.exe non trouvé ni avec ASAR ni sans ASAR');
+            // Dernier recours : essayer le Caddy local même en mode packagé
+            const devCaddyPath = path.join(__dirname, 'caddy', 'caddy.exe');
+            if (fs.existsSync(devCaddyPath)) {
+                console.log('Caddy trouvé (fallback local):', devCaddyPath);
+                return devCaddyPath;
+            }
             return 'caddy.exe'; // Fallback système
         }
     } else {
-        // Développement : utiliser le Caddy inclus ou système
+        // macOS ou Linux développement : utiliser le Caddy inclus ou système
         const caddyPath = path.join(__dirname, 'caddy', 'caddy');
         return fs.existsSync(caddyPath) ? caddyPath : 'caddy';
     }
@@ -658,7 +674,7 @@ function getPhpFpmPath() {
     const isLinux = process.platform === 'linux';
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
-    
+
     if (isAppImage || (isLinux && isPackaged) || isMacOS) {
         // AppImage ou macOS : vérifier si php-fpm existe, sinon retourner null
         const phpFpmPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php-fpm');
@@ -691,12 +707,22 @@ function checkPhpInstalled() {
 
 // Obtenir le chemin de PHP selon la plateforme
 function getPhpPath() {
-    const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isAppImage = process.env.APPIMAGE || (process.resourcesPath && process.resourcesPath.includes('.mount'));
+    const isPackaged = app.isPackaged;
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
     
     if (isWindows) {
-        // Windows : détecter si ASAR est utilisé ou non
+        // Mode développement : utiliser le PHP local
+        if (!isPackaged) {
+            const devPhpPath = path.join(__dirname, 'php', 'php.exe');
+            if (fs.existsSync(devPhpPath)) {
+                console.log('PHP trouvé (développement):', devPhpPath);
+                return devPhpPath;
+            }
+        }
+        
+        // Mode packagé : détecter si ASAR est utilisé ou non
         // Même avec asar: false, les fichiers sont dans resources/app/
         const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php.exe');
         const noAsarPath = path.join(process.resourcesPath, 'app', 'php', 'php.exe');
@@ -713,6 +739,12 @@ function getPhpPath() {
         }
         else {
             console.error('PHP.exe non trouvé ni avec ASAR ni sans ASAR');
+            // Dernier recours : essayer le PHP local même en mode packagé
+            const devPhpPath = path.join(__dirname, 'php', 'php.exe');
+            if (fs.existsSync(devPhpPath)) {
+                console.log('PHP trouvé (fallback local):', devPhpPath);
+                return devPhpPath;
+            }
             return 'php.exe'; // Fallback système
         }
     } else if (isMacOS) {
@@ -737,7 +769,7 @@ function getConfigPath() {
     const isPackaged = app.isPackaged;
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
-    
+
     if (isAppImage || isMacOS || isPackaged) {
         return process.resourcesPath;
     } else if (isWindows) {
@@ -752,14 +784,14 @@ function getConfigPath() {
 function findFreePort() {
     return new Promise((resolve, reject) => {
         const server = net.createServer();
-        
+
         server.listen(0, () => {
             const port = server.address().port;
             server.close(() => {
                 resolve(port);
             });
         });
-        
+
         server.on('error', (err) => {
             reject(err);
         });
@@ -769,16 +801,16 @@ function findFreePort() {
 function waitForServer(url, timeout = 5000, interval = 250) {
     return new Promise((resolve) => {
         const deadline = Date.now() + timeout;
-        
+
         const attempt = () => {
             let handled = false;
-            
+
             const finalize = (success) => {
                 if (handled) {
                     return;
                 }
                 handled = true;
-                
+
                 if (success) {
                     resolve(true);
                 } else if (Date.now() >= deadline) {
@@ -787,18 +819,18 @@ function waitForServer(url, timeout = 5000, interval = 250) {
                     setTimeout(attempt, interval);
                 }
             };
-            
+
             try {
                 const request = http.get(url, { timeout: Math.min(interval, 2000) }, (response) => {
                     response.destroy();
                     finalize(true);
                 });
-                
+
                 request.on('timeout', () => {
                     request.destroy();
                     finalize(false);
                 });
-                
+
                 request.on('error', () => {
                     finalize(false);
                 });
@@ -806,7 +838,7 @@ function waitForServer(url, timeout = 5000, interval = 250) {
                 finalize(false);
             }
         };
-        
+
         attempt();
     });
 }
@@ -817,7 +849,7 @@ function getCaddyfilePath() {
     const isPackaged = app.isPackaged;
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
-    
+
     if (isAppImage || isMacOS || isPackaged) {
         // Dans l'AppImage ou macOS, le Caddyfile est dans app.asar.unpacked/
         return path.join(process.resourcesPath, 'app.asar.unpacked', 'Caddyfile');
@@ -826,7 +858,7 @@ function getCaddyfilePath() {
         // Même avec asar: false, les fichiers sont dans resources/app/
         const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'Caddyfile');
         const noAsarPath = path.join(process.resourcesPath, 'app', 'Caddyfile');
-        
+
         // Essayer d'abord sans ASAR (configuration actuelle: resources/app/)
         if (fs.existsSync(noAsarPath)) {
             console.log('Caddyfile trouvé (sans ASAR):', noAsarPath);
@@ -852,11 +884,11 @@ function startPhpFpm() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
     const isPackaged = app.isPackaged;
     const isLinux = process.platform === 'linux';
-    
+
     // Le chemin de l'app dépend si on est en AppImage, Windows, macOS ou développement
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
-    
+
     let appPath;
     if (isAppImage || isMacOS || (isLinux && isPackaged)) {
         appPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
@@ -865,7 +897,7 @@ function startPhpFpm() {
         // Même avec asar: false, les fichiers sont dans resources/app/
         const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
         const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
-        
+
         // Essayer d'abord sans ASAR (configuration actuelle: resources/app/app/public)
         if (fs.existsSync(noAsarPath)) {
             appPath = noAsarPath;
@@ -883,7 +915,7 @@ function startPhpFpm() {
     } else {
         appPath = path.join(__dirname, 'app', 'public');
     }
-    
+
     console.log('Démarrage du serveur PHP intégré...');
     console.log('Platform:', process.platform);
     console.log('isAppImage:', isAppImage);
@@ -893,16 +925,16 @@ function startPhpFpm() {
     console.log('PHP Path:', phpPath);
     console.log('App Path:', appPath);
     console.log('App Path exists:', fs.existsSync(appPath));
-    
+
     // Créer le répertoire de sessions s'il n'existe pas (cross-platform)
     const sessionPath = path.join(os.tmpdir(), 'duplicator_sessions');
     console.log('Session Path:', sessionPath);
     if (!fs.existsSync(sessionPath)) {
         fs.mkdirSync(sessionPath, { recursive: true });
     }
-    
+
     phpFatalNotified = false;
-    
+
     sendToRenderer(PHP_STATUS_CHANNEL, {
         status: 'starting',
         timestamp: new Date().toISOString(),
@@ -910,10 +942,10 @@ function startPhpFpm() {
         proxyPort: serverPort,
         phpPort: PHP_SERVER_PORT
     });
-    
+
     // Préparer les arguments PHP selon la plateforme
     let phpArgs;
-    
+
     if (isAppImage || (isLinux && isPackaged)) {
         // AppImage ou Linux packagé (.deb) : utiliser PHP système sans php.ini personnalisé
         // Le PHP système a déjà ses extensions configurées
@@ -933,10 +965,21 @@ function startPhpFpm() {
         // Windows : utiliser le PHP embarqué avec extensions
         const asarExtPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'ext');
         const noAsarExtPath = path.join(process.resourcesPath, 'app', 'php', 'ext');
+        const devExtPath = path.join(__dirname, 'php', 'ext'); // Mode développement
         const phpIniPath = path.join(appPath, '..', 'php.ini');
-        const phpExtPath = fs.existsSync(noAsarExtPath) ? noAsarExtPath : asarExtPath;
+        
+        // Déterminer le chemin des extensions : développement d'abord, puis packagé
+        let phpExtPath;
+        if (!isPackaged && fs.existsSync(devExtPath)) {
+            phpExtPath = path.resolve(devExtPath); // Chemin absolu pour développement
+        } else if (fs.existsSync(noAsarExtPath)) {
+            phpExtPath = path.resolve(noAsarExtPath);
+        } else {
+            phpExtPath = path.resolve(asarExtPath);
+        }
         
         console.log('Configuration PHP pour Windows');
+        console.log('isPackaged:', isPackaged);
         console.log('PHP Ini Path:', phpIniPath);
         console.log('PHP Ini exists:', fs.existsSync(phpIniPath));
         console.log('PHP Ext Path:', phpExtPath);
@@ -948,7 +991,9 @@ function startPhpFpm() {
             '-t', appPath,
             '-d', 'display_errors=1',
             '-d', 'log_errors=1',
-            '-d', `extension_dir=${phpExtPath}`,
+            '-d', `extension_dir=${phpExtPath.replace(/\\/g, '/')}`, // Utiliser des slashes pour Windows
+            '-d', 'extension=php_sqlite3.dll', // Charger explicitement SQLite3
+            '-d', 'extension=php_pdo_sqlite.dll', // Charger explicitement PDO SQLite
             '-d', 'upload_max_filesize=50M',
             '-d', 'post_max_size=50M',
             '-d', 'max_execution_time=300',
@@ -958,10 +1003,18 @@ function startPhpFpm() {
     } else {
         // macOS ou développement : utiliser php.ini si disponible
         const phpIniPath = path.join(appPath, '..', 'php.ini');
-        const phpExtPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'ext');
+        const devExtPath = path.join(__dirname, 'php', 'ext'); // Mode développement
+        const packagedExtPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'ext');
+        
+        // Utiliser le chemin de développement si disponible, sinon le chemin packagé
+        const phpExtPath = (!isPackaged && fs.existsSync(devExtPath)) 
+            ? path.resolve(devExtPath) 
+            : path.resolve(packagedExtPath);
         
         console.log('Configuration PHP pour macOS/dev');
-        
+        console.log('isPackaged:', isPackaged);
+        console.log('PHP Ext Path:', phpExtPath);
+
         if (fs.existsSync(phpIniPath)) {
             phpArgs = [
                 '-c', phpIniPath,
@@ -969,7 +1022,9 @@ function startPhpFpm() {
                 '-t', appPath,
                 '-d', 'display_errors=1',
                 '-d', 'log_errors=1',
-                '-d', `extension_dir=${phpExtPath}`,
+                '-d', `extension_dir=${phpExtPath.replace(/\\/g, '/')}`,
+                '-d', 'extension=php_sqlite3.dll', // Charger explicitement SQLite3
+                '-d', 'extension=php_pdo_sqlite.dll', // Charger explicitement PDO SQLite
                 '-d', 'upload_max_filesize=50M',
                 '-d', 'post_max_size=50M',
                 '-d', 'max_execution_time=300',
@@ -990,24 +1045,35 @@ function startPhpFpm() {
             ];
         }
     }
+
+    // Préparer l'environnement avec le PATH mis à jour pour Windows
+    const phpDir = path.dirname(phpPath);
+    const env = {
+        ...process.env,
+        DUPLICATOR_DB_PATH: getDatabasePath()
+    };
+    
+    // Sur Windows, ajouter le répertoire PHP au PATH pour que les DLL soient accessibles
+    if (process.platform === 'win32') {
+        const pathSeparator = process.platform === 'win32' ? ';' : ':';
+        env.PATH = `${phpDir}${pathSeparator}${env.PATH || ''}`;
+        console.log('PATH mis à jour avec le répertoire PHP:', phpDir);
+    }
     
     phpFpmProcess = spawn(phpPath, phpArgs, {
         stdio: ['pipe', 'pipe', 'pipe'],
-        env: {
-            ...process.env,
-            DUPLICATOR_DB_PATH: getDatabasePath()
-        }
+        env: env
     });
-    
+
     phpFpmProcess.stdout.on('data', (data) => handlePhpOutput('STDOUT', data));
     phpFpmProcess.stderr.on('data', (data) => handlePhpOutput('STDERR', data));
-    
+
     phpFpmProcess.on('close', handlePhpProcessExit);
-    
+
     phpFpmProcess.on('error', (error) => {
         console.error('Erreur serveur PHP:', error.message);
     });
-    
+
     phpFpmProcess.on('spawn', () => {
         console.log(`✅ Processus PHP lancé avec succès (PID: ${phpFpmProcess.pid})`);
         startPhpErrorLogWatcher();
@@ -1020,7 +1086,7 @@ function startPhpFpm() {
             phpPort: PHP_SERVER_PORT
         });
     });
-    
+
     // Attendre que le serveur soit prêt
     return new Promise((resolve) => {
         setTimeout(resolve, 2000);
@@ -1031,29 +1097,29 @@ function startPhpFpm() {
 function startPhpServer() {
     const phpPath = getPhpPath();
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
-    
+
     // Le chemin de l'app dépend si on est en AppImage, Windows ou développement
     const isWindows = process.platform === 'win32';
-    const appPath = isAppImage 
+    const appPath = isAppImage
         ? path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public')
         : isWindows
-        ? path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public')
-        : path.join(__dirname, 'app', 'public');
-    
+            ? path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public')
+            : path.join(__dirname, 'app', 'public');
+
     console.log('Démarrage du serveur PHP intégré (fallback)...');
     console.log('PHP Path:', phpPath);
     console.log('App Path:', appPath);
     console.log('App Path existe:', fs.existsSync(appPath));
-    
+
     // Créer le répertoire de sessions s'il n'existe pas (cross-platform)
     const sessionPath = path.join(os.tmpdir(), 'duplicator_sessions');
     if (!fs.existsSync(sessionPath)) {
         fs.mkdirSync(sessionPath, { recursive: true });
     }
-    
+
     phpFatalNotified = false;
     frontendPort = PHP_SERVER_PORT;
-    
+
     sendToRenderer(PHP_STATUS_CHANNEL, {
         status: 'starting',
         context: 'fallback',
@@ -1062,7 +1128,7 @@ function startPhpServer() {
         proxyPort: null,
         phpPort: PHP_SERVER_PORT
     });
-    
+
     // Pas de php.ini pour éviter les erreurs d'extensions
     phpFpmProcess = spawn(phpPath, [
         '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
@@ -1080,12 +1146,12 @@ function startPhpServer() {
             DUPLICATOR_DB_PATH: getDatabasePath()
         }
     });
-    
+
     phpFpmProcess.stdout.on('data', (data) => handlePhpOutput('STDOUT', data));
     phpFpmProcess.stderr.on('data', (data) => handlePhpOutput('STDERR', data));
-    
+
     phpFpmProcess.on('close', handlePhpProcessExit);
-    
+
     phpFpmProcess.on('spawn', () => {
         console.log(`✅ Processus PHP (fallback) lancé avec succès (PID: ${phpFpmProcess.pid})`);
         startPhpErrorLogWatcher();
@@ -1109,7 +1175,7 @@ async function startCaddy() {
     const isLinux = process.platform === 'linux';
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
-    
+
     console.log('Démarrage de Caddy...');
     console.log('Platform:', process.platform);
     console.log('isAppImage:', isAppImage);
@@ -1118,9 +1184,14 @@ async function startCaddy() {
     console.log('process.resourcesPath:', process.resourcesPath);
     console.log('Caddy Path:', caddyPath);
     console.log('Caddy Path exists:', fs.existsSync(caddyPath));
-    
+
+    // Sur Windows, trouver un port libre au hasard
     // Sur Windows, trouver un port libre au hasard
     if (isWindows) {
+        // Force port 8000 for debugging
+        serverPort = 8000;
+        console.log(`Port forcé sur Windows: ${serverPort}`);
+        /*
         try {
             serverPort = await findFreePort();
             console.log(`Port libre trouvé sur Windows: ${serverPort}`);
@@ -1128,19 +1199,20 @@ async function startCaddy() {
             console.error('Erreur lors de la recherche d\'un port libre, utilisation du port par défaut:', error);
             serverPort = 8000;
         }
+        */
     }
-    
+
     // Obtenir le Caddyfile original
     const originalCaddyfile = getCaddyfilePath();
     console.log('Caddyfile original:', originalCaddyfile);
     console.log('Caddyfile existe:', fs.existsSync(originalCaddyfile));
-    
+
     // Lire le contenu du Caddyfile original
     let caddyfileContent = fs.readFileSync(originalCaddyfile, 'utf8');
-    
+
     // Remplacer le port dans le contenu (remplacer :8000 par le port choisi)
     caddyfileContent = caddyfileContent.replace(/:8000/g, `:${serverPort}`);
-    
+
     // Si on Windows, créer un Caddyfile temporaire avec le bon port et les bons chemins
     let caddyfile = originalCaddyfile;
     if (isWindows) {
@@ -1148,13 +1220,13 @@ async function startCaddy() {
         const tempDir = os.tmpdir();
         const logPath = path.join(tempDir, 'caddy_duplicator.log').replace(/\\/g, '/');
         caddyfileContent = caddyfileContent.replace(/\/tmp\/caddy_duplicator\.log/g, logPath);
-        
+
         tempCaddyfilePath = path.join(tempDir, `caddyfile_${Date.now()}.tmp`);
         fs.writeFileSync(tempCaddyfilePath, caddyfileContent, 'utf8');
         caddyfile = tempCaddyfilePath;
         console.log('Caddyfile temporaire créé:', caddyfile);
     }
-    
+
     // Obtenir le bon appPath pour Caddy
     let appPath;
     if (isAppImage || isMacOS || (isLinux && isPackaged)) {
@@ -1164,7 +1236,7 @@ async function startCaddy() {
         // Même avec asar: false, les fichiers sont dans resources/app/
         const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
         const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
-        
+
         // Essayer d'abord sans ASAR (configuration actuelle: resources/app/app/public)
         if (fs.existsSync(noAsarPath)) {
             appPath = noAsarPath;
@@ -1179,11 +1251,11 @@ async function startCaddy() {
     } else {
         appPath = path.join(__dirname, 'app', 'public');
     }
-    
+
     console.log('Caddy App Path:', appPath);
     console.log('Caddy App Path exists:', fs.existsSync(appPath));
     console.log('Port d\'écoute:', serverPort);
-    
+
     caddyProcess = spawn(caddyPath, [
         'run',
         '--config', caddyfile,
@@ -1196,87 +1268,92 @@ async function startCaddy() {
             CADDY_ROOT: appPath
         }
     });
-    
+
     caddyProcess.stdout.on('data', (data) => {
         console.log('Caddy:', data.toString());
     });
-    
+
     caddyProcess.stderr.on('data', (data) => {
         console.error('Caddy Error:', data.toString());
     });
-    
+
     caddyProcess.on('close', (code) => {
         console.log(`Caddy fermé avec le code ${code}`);
         // Nettoyer le fichier temporaire si créé
         if (tempCaddyfilePath && fs.existsSync(tempCaddyfilePath)) {
             try {
-                fs.unlinkSync(tempCaddyfilePath);
-                console.log('Caddyfile temporaire supprimé');
+                // fs.unlinkSync(tempCaddyfilePath);
+                console.log('Caddyfile temporaire conservé pour debug:', tempCaddyfilePath);
             } catch (error) {
                 console.error('Erreur suppression Caddyfile temporaire:', error);
             }
         }
     });
-    
+
     // Attendre que Caddy soit prêt
     return new Promise((resolve) => {
         setTimeout(resolve, 3000);
     });
 }
 
-    // Arrêter les processus
+// Arrêter les processus
 function stopProcesses() {
     if (phpFpmProcess) {
         stopPhpFpmProcess().catch(error => {
             console.log(`Erreur lors de l'arrêt du processus PHP: ${error.message}`);
         });
     }
-    
+
     stopPhpErrorLogWatcher();
-    
+
+    // Arrêter le moniteur d'imprimantes
+    if (printerMonitor) {
+        try {
+            printerMonitor.stop();
+            printerMonitor = null;
+        } catch (error) {
+            console.error('Erreur lors de l\'arrêt du moniteur d\'imprimantes:', error);
+        }
+    }
+
     if (caddyProcess) {
         caddyProcess.kill();
         caddyProcess = null;
     }
-    
-    // Arrêter le moniteur d'imprimantes
-    if (printerMonitor) {
-        printerMonitor.stop();
-        printerMonitor = null;
-    }
-    
+
     // Nettoyer le fichier temporaire si créé
     if (tempCaddyfilePath && fs.existsSync(tempCaddyfilePath)) {
         try {
-            fs.unlinkSync(tempCaddyfilePath);
-            console.log('Caddyfile temporaire supprimé');
+            // fs.unlinkSync(tempCaddyfilePath);
+            console.log('Caddyfile temporaire conservé pour debug:', tempCaddyfilePath);
         } catch (error) {
             console.error('Erreur suppression Caddyfile temporaire:', error);
         }
-        tempCaddyfilePath = null;
+        // tempCaddyfilePath = null;
     }
 }
 
 // Arrêt synchronisé de tous les processus enfants avant redémarrage/maj
 async function stopAllChildrenGracefully() {
     try {
-        await stopPhpFpmProcess().catch(() => {});
-    } catch {}
+        await stopPhpFpmProcess().catch(() => { });
+    } catch { }
     try {
         if (caddyProcess && !caddyProcess.killed) {
             caddyProcess.kill('SIGTERM');
             await new Promise((r) => setTimeout(r, 2000));
             if (caddyProcess && !caddyProcess.killed) {
-                try { caddyProcess.kill('SIGKILL'); } catch {}
+                try { caddyProcess.kill('SIGKILL'); } catch { }
             }
         }
-    } catch {}
-    try { stopPhpErrorLogWatcher(); } catch {}
+    } catch { }
+    try { stopPhpErrorLogWatcher(); } catch { }
     try {
         if (printerMonitor) {
             printerMonitor.stop();
+            printerMonitor = null;
         }
-    } catch {}
+    } catch { }
 }
 
 // Démarrer le moniteur d'imprimantes Windows
@@ -1316,22 +1393,14 @@ function startPrinterMonitor() {
                 `).catch(() => {});
             }
         } else {
-            console.warn('⚠️ Impossible de démarrer le moniteur d\'imprimantes');
-            if (mainWindow && !mainWindow.isDestroyed()) {
-                mainWindow.webContents.executeJavaScript(`
-                    console.warn('⚠️ Impossible de démarrer le moniteur d\'imprimantes');
-                `).catch(() => {});
-            }
+            console.error('❌ Échec du démarrage du moniteur d\'imprimantes');
         }
     } catch (error) {
-        console.error('❌ Erreur lors du démarrage du moniteur d\'imprimantes:', error);
-        if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.webContents.executeJavaScript(`
-                console.error('❌ Erreur moniteur d\'imprimantes:', ${JSON.stringify(error.message)});
-            `).catch(() => {});
-        }
+        console.error('Erreur lors de l\'initialisation du moniteur d\'imprimantes:', error);
+        sendToRenderer('print-monitor-error', { error: error.message });
     }
 }
+
 // Créer le menu personnalisé
 function createMenu() {
     const template = [
@@ -1432,7 +1501,7 @@ function createMenu() {
 function createWindow() {
     // Nettoyer les fichiers temporaires au démarrage
     cleanupTmpFiles();
-    
+
     // Résoudre de manière robuste le chemin de l'icône (Linux a besoin d'une icône explicite)
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
     const candidateIconPaths = [
@@ -1449,11 +1518,11 @@ function createWindow() {
         try { return fs.existsSync(p); } catch { return false; }
     }) || candidateIconPaths[0];
     console.log('Chemin icône sélectionné:', iconPath, ' (AppImage:', !!isAppImage, ')');
-    
+
     // Obtenir les dimensions de l'écran principal
     const primaryDisplay = screen.getPrimaryDisplay();
     const { width, height } = primaryDisplay.workAreaSize;
-    
+
     // Créer la fenêtre du navigateur
     mainWindow = new BrowserWindow({
         width: width,
@@ -1473,14 +1542,14 @@ function createWindow() {
         },
         show: false
     });
-    
+
     // Définir explicitement le titre pour Linux (aide à la correspondance WMClass)
     if (process.platform === 'linux') {
         mainWindow.setTitle('Duplicator');
         // S'assurer que le WMClass est cohérent (déjà défini via app.setName() plus haut)
         // Le WMClass par défaut d'Electron est basé sur app.getName()
     }
-    
+
     // Maximiser la fenêtre pour prendre tout l'écran disponible
     mainWindow.maximize();
 
@@ -1492,12 +1561,12 @@ function createWindow() {
 
     // Créer le menu personnalisé
     createMenu();
-    
+
     // Démarrer les serveurs
     async function startServers() {
         const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
         const isLinux = process.platform === 'linux';
-        
+
         // Pour Linux AppImage, vérifier si PHP est installé
         if (isLinux && isAppImage) {
             const phpInstalled = await checkPhpInstalled();
@@ -1542,16 +1611,16 @@ function createWindow() {
                 return;
             }
         }
-        
+
         try {
             await startPhpFpm();
             await startCaddy();
-            
+
             const appUrl = `http://127.0.0.1:${serverPort}/`;
             console.log(`Chargement de l'URL principale: ${appUrl}`);
-            
+
             const proxyReady = await waitForServer(appUrl, 5000);
-            
+
             if (!proxyReady) {
                 const fallbackUrl = `http://127.0.0.1:${PHP_SERVER_PORT}/`;
                 console.warn(`Caddy n'a pas répondu à temps sur ${appUrl}, fallback vers ${fallbackUrl}`);
@@ -1599,9 +1668,9 @@ function createWindow() {
             }
         }
     }
-    
+
     startServers();
-    
+
     // Ouvrir les DevTools en développement
     if (process.env.NODE_ENV === 'development') {
         mainWindow.webContents.openDevTools();
@@ -1613,10 +1682,10 @@ function setupAutoUpdater() {
     // Configuration
     autoUpdater.autoDownload = false; // Ne pas télécharger automatiquement (demander d'abord)
     autoUpdater.autoInstallOnAppQuit = true; // Installer automatiquement au redémarrage
-    
+
     // Détecter le format de l'application
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
-    
+
     // Configurer le provider selon le format
     // electron-updater détecte automatiquement AppImage vs deb
     // Le problème est que latest-linux.yml peut pointer vers le mauvais format
@@ -1644,7 +1713,7 @@ function setupAutoUpdater() {
         // Pour .deb, electron-updater utilisera latest-linux.yml (qui pointe vers .deb après le build)
         // Pas besoin de configuration spéciale, c'est le comportement par défaut
     }
-    
+
     // Avant de quitter pour installer, arrêter proprement Caddy/PHP
     autoUpdater.on('before-quit-for-update', async () => {
         console.log('before-quit-for-update: arrêt des processus enfants...');
@@ -1655,7 +1724,7 @@ function setupAutoUpdater() {
     autoUpdater.on('checking-for-update', () => {
         console.log('Vérification des mises à jour...');
     });
-    
+
     // Fonction helper pour envoyer des messages à la fenêtre de manière sécurisée
     const safeSendToWindow = (channel, data) => {
         try {
@@ -1669,17 +1738,17 @@ function setupAutoUpdater() {
         }
         return false;
     };
-    
+
     autoUpdater.on('update-available', (info) => {
         console.log('Mise à jour disponible:', info.version);
-        
+
         // Vérifier si on est en AppImage et si la mise à jour pointe vers un .deb
         const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
         if (isAppImage) {
             // Vérifier l'URL ou le chemin du fichier de mise à jour
             const updateUrl = info.url || info.path || '';
             const isDebFile = updateUrl.includes('.deb') || updateUrl.endsWith('.deb');
-            
+
             if (isDebFile) {
                 console.log('Conflit détecté : AppImage trouve un .deb dans les métadonnées');
                 const userFriendlyError = {
@@ -1691,20 +1760,20 @@ function setupAutoUpdater() {
                 return; // Ne pas envoyer update-available
             }
         }
-        
+
         // Envoyer une notification à l'interface
         safeSendToWindow('update-available', info);
     });
-    
+
     autoUpdater.on('update-not-available', (info) => {
         console.log('Aucune mise à jour disponible');
-        
+
         safeSendToWindow('update-not-available', info);
     });
-    
+
     autoUpdater.on('error', (err) => {
         console.error('Erreur lors de la mise à jour:', err);
-        
+
         // Ne pas afficher d'erreur si c'est un problème de réseau (pas d'internet)
         const isNetworkError = err.message && (
             err.message.includes('net::') ||
@@ -1714,19 +1783,19 @@ function setupAutoUpdater() {
             err.message.includes('Cannot find') ||
             err.message.includes('404')
         );
-        
+
         // Gestion spécifique pour AppImage qui trouve un .deb au lieu d'un AppImage
         const isAppImageDebConflict = err.message && (
             err.message.includes('Cannot read properties of undefined') ||
             err.message.includes('reading \'info\'')
         ) && (process.env.APPIMAGE || process.resourcesPath.includes('.mount'));
-        
+
         // Gestion spécifique de l'erreur pkexec sur Linux (code 127 = commande non trouvée)
         const isPkexecError = err.message && (
             err.message.includes('pkexec') ||
             err.message.includes('exited with code 127')
         );
-        
+
         if (isAppImageDebConflict) {
             // L'AppImage a trouvé un .deb dans les métadonnées
             // Cela peut arriver si latest-linux.yml pointe vers le .deb
@@ -1751,21 +1820,21 @@ function setupAutoUpdater() {
             console.log('Vérification des mises à jour ignorée (pas de connexion internet ou release non disponible)');
         }
     });
-    
+
     autoUpdater.on('download-progress', (progressObj) => {
         console.log(`Téléchargement: ${progressObj.percent.toFixed(2)}%`);
-        
+
         // Envoyer la progression à l'interface
         safeSendToWindow('download-progress', progressObj);
     });
-    
+
     autoUpdater.on('update-downloaded', (info) => {
         console.log('Mise à jour téléchargée, installation au redémarrage');
-        
+
         // Notifier l'utilisateur
         safeSendToWindow('update-downloaded', info);
     });
-    
+
     // Vérifier les mises à jour au démarrage (après 10 secondes)
     setTimeout(() => {
         console.log('Lancement de la vérification des mises à jour...');
@@ -1778,7 +1847,7 @@ function setupAutoUpdater() {
             }
         });
     }, 10000);
-    
+
     // Vérifier toutes les 4 heures
     setInterval(() => {
         console.log('Vérification périodique des mises à jour...');
@@ -1805,12 +1874,12 @@ if (process.platform === 'linux') {
 app.whenReady().then(() => {
     // Appliquer les paramètres de compatibilité Windows
     applyCompatibilitySettings();
-    
+
     createWindow();
-    
+
     // Initialiser la base de données dans userData
     getDatabasePath();
-    
+
     // Configurer l'auto-updater uniquement en production
     if (process.env.NODE_ENV !== 'development') {
         setupAutoUpdater();
@@ -1821,10 +1890,10 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
     // Nettoyer les fichiers temporaires à la fermeture
     cleanupTmpFiles();
-    
+
     // Arrêter les processus
     stopProcesses();
-    
+
     // Sur macOS, il est courant pour les applications et leur barre de menu
     // de rester actives jusqu'à ce que l'utilisateur quitte explicitement avec Cmd + Q
     if (process.platform !== 'darwin') {
@@ -1836,7 +1905,7 @@ app.on('window-all-closed', () => {
 app.on('before-quit', async (event) => {
     try {
         await stopAllChildrenGracefully();
-    } catch {}
+    } catch { }
 });
 app.on('activate', () => {
     // Sur macOS, il est courant de recréer une fenêtre dans l'app quand l'icône
@@ -1852,13 +1921,13 @@ ipcMain.handle('open-file', async (event, filePath) => {
         const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
         const isPackaged = app.isPackaged;
         let fullPath;
-        
+
         if (isAppImage || isPackaged) {
             fullPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public', filePath);
         } else {
             fullPath = path.join(__dirname, 'app', 'public', filePath);
         }
-        
+
         await shell.openPath(fullPath);
         return { success: true };
     } catch (error) {
@@ -1900,7 +1969,7 @@ ipcMain.handle('restart-app', () => {
 ipcMain.handle('check-for-updates', async () => {
     try {
         const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
-        
+
         // Pour .deb, on doit utiliser latest-linux-deb.yml au lieu de latest-linux.yml
         // car latest-linux.yml pointe maintenant vers AppImage (construit en dernier)
         if (!isAppImage) {
@@ -1910,7 +1979,7 @@ ipcMain.handle('check-for-updates', async () => {
             const os = require('os');
             const path = require('path');
             const fs = require('fs');
-            
+
             return new Promise((resolve, reject) => {
                 const releaseUrl = 'https://api.github.com/repos/muarf/dupli-electron-caddy/releases/latest';
                 https.get(releaseUrl, {
@@ -1924,10 +1993,10 @@ ipcMain.handle('check-for-updates', async () => {
                         try {
                             const release = JSON.parse(data);
                             // Chercher latest-linux-deb.yml dans les assets
-                            const debYml = release.assets.find(asset => 
+                            const debYml = release.assets.find(asset =>
                                 asset.name === 'latest-linux-deb.yml'
                             );
-                            
+
                             if (debYml) {
                                 // Télécharger le fichier YML
                                 https.get(debYml.browser_download_url, (ymlRes) => {
@@ -1937,7 +2006,7 @@ ipcMain.handle('check-for-updates', async () => {
                                         try {
                                             // Parser le YML
                                             const updateConfig = yaml.load(ymlData);
-                                            
+
                                             // Créer un fichier temporaire latest-linux.yml avec le contenu de latest-linux-deb.yml
                                             const tempDir = path.join(os.tmpdir(), 'duplicator-updater');
                                             if (!fs.existsSync(tempDir)) {
@@ -1945,7 +2014,7 @@ ipcMain.handle('check-for-updates', async () => {
                                             }
                                             const tempYmlPath = path.join(tempDir, 'latest-linux.yml');
                                             fs.writeFileSync(tempYmlPath, ymlData);
-                                            
+
                                             // Configurer autoUpdater pour utiliser ce fichier temporaire
                                             // Note: autoUpdater ne supporte pas directement les fichiers locaux
                                             // On va utiliser setFeedURL avec les données du YML
@@ -1956,7 +2025,7 @@ ipcMain.handle('check-for-updates', async () => {
                                                 sha512: updateConfig.sha512 || '',
                                                 releaseDate: updateConfig.releaseDate || release.published_at
                                             };
-                                            
+
                                             resolve({ success: true, updateInfo: updateInfo });
                                         } catch (yamlErr) {
                                             console.error('Erreur parsing YML:', yamlErr);
@@ -1991,7 +2060,7 @@ ipcMain.handle('check-for-updates', async () => {
 ipcMain.handle('download-update', async () => {
     try {
         const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
-        
+
         if (isAppImage) {
             // Pour AppImage, utiliser autoUpdater normalement (latest-linux.yml pointe vers AppImage)
             await autoUpdater.downloadUpdate();
@@ -2006,7 +2075,7 @@ ipcMain.handle('download-update', async () => {
             // Le problème est qu'il cherchera latest-linux.yml qui pointe vers AppImage
             // Solution: utiliser setFeedURL pour pointer vers latest-linux-deb.yml temporairement
             // ou télécharger manuellement
-            
+
             // Pour l'instant, on utilise la méthode standard
             // et on détectera le conflit dans update-available
             await autoUpdater.downloadUpdate();
@@ -2028,14 +2097,14 @@ ipcMain.handle('install-update', () => {
                 execSync('which pkexec', { stdio: 'ignore', timeout: 2000 });
             } catch (e) {
                 // pkexec non disponible, retourner une erreur explicite
-                return { 
-                    success: false, 
+                return {
+                    success: false,
                     error: 'Installation automatique non disponible',
                     detail: 'pkexec n\'est pas installé. Veuillez installer manuellement le package .deb téléchargé avec : sudo dpkg -i /path/to/Duplicator-*.deb'
                 };
             }
         }
-        
+
         // Arrêt propre puis installation avec relance forcée
         Promise.resolve()
             .then(() => stopAllChildrenGracefully())
@@ -2145,8 +2214,6 @@ ipcMain.handle('delete-printer', async (event, printerName) => {
     }
     
     return new Promise((resolve) => {
-        const { spawn } = require('child_process');
-        
         // Échapper les caractères spéciaux pour PowerShell
         const escapedName = printerName.replace(/'/g, "''").replace(/"/g, '\\"');
         
@@ -2162,23 +2229,23 @@ ipcMain.handle('delete-printer', async (event, printerName) => {
             shell: false
         });
         
-        let output = '';
-        let errorOutput = '';
+        let stdout = '';
+        let stderr = '';
         
         ps.stdout.on('data', (data) => {
-            output += data.toString();
+            stdout += data.toString();
         });
         
         ps.stderr.on('data', (data) => {
-            errorOutput += data.toString();
+            stderr += data.toString();
         });
         
         ps.on('close', (code) => {
-            if (code === 0 && output.includes('SUCCESS')) {
+            if (code === 0 && stdout.trim() === 'SUCCESS') {
                 resolve({ success: true });
             } else {
-                const errorMsg = errorOutput || output || 'Erreur inconnue';
-                resolve({ success: false, error: errorMsg });
+                const errorMsg = stderr || stdout || 'Erreur inconnue';
+                resolve({ success: false, error: errorMsg.trim() });
             }
         });
         
@@ -2186,6 +2253,133 @@ ipcMain.handle('delete-printer', async (event, printerName) => {
             resolve({ success: false, error: error.message });
         });
     });
+});
+
+// ============ Handlers pour le module d'impression ============
+
+// Obtenir les capacités d'une imprimante
+ipcMain.handle('get-printer-capabilities', async (event, printerName) => {
+    try {
+        if (!printEngine.isAvailable()) {
+            return { success: false, error: 'Module d\'impression non disponible sur cette plateforme' };
+        }
+
+        const capabilities = await printEngine.getPrinterCapabilities(printerName);
+        return { success: true, capabilities: capabilities };
+    } catch (error) {
+        console.error('Erreur lors de la récupération des capacités:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Cache pour stocker les options d'impression récentes (associées par nom de document)
+const printOptionsCache = new Map();
+const PRINT_OPTIONS_CACHE_TIMEOUT = 60000; // 60 secondes
+
+// Nettoyer le cache périodiquement
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, value] of printOptionsCache.entries()) {
+        if (now - value.timestamp > PRINT_OPTIONS_CACHE_TIMEOUT) {
+            printOptionsCache.delete(key);
+        }
+    }
+}, 30000); // Vérifier toutes les 30 secondes
+
+// Fonction pour stocker les options d'impression
+function storePrintOptions(pdfPath, options) {
+    const fileName = path.basename(pdfPath);
+    const timestamp = Date.now();
+    
+    // Extraire le nom de base du fichier (sans extension) pour meilleur matching
+    const baseName = path.basename(pdfPath, path.extname(pdfPath));
+    
+    // Stocker les options avec toutes les informations disponibles
+    const cacheEntry = {
+        timestamp: timestamp,
+        pdfPath: pdfPath,
+        fileName: fileName,
+        baseName: baseName,
+        options: {
+            printer: options.printer || null,
+            copies: options.copies || 1,
+            pageSize: options.pageSize || null,
+            colorMode: options.colorMode || null,
+            duplex: options.duplex || null,
+            inputSlot: options.inputSlot || null,
+            resolution: options.resolution || null
+        }
+    };
+    
+    // Stocker avec plusieurs clés pour faciliter la recherche
+    // Important: stocker avec le nom de fichier (ce que Windows connaît) comme clé principale
+    printOptionsCache.set(fileName, cacheEntry);
+    printOptionsCache.set(baseName, cacheEntry);
+    printOptionsCache.set(pdfPath, cacheEntry);
+    
+    // Stocker aussi avec le nom normalisé (sans espaces/caractères spéciaux)
+    const normalizedFileName = fileName.replace(/[^\w.-]/g, '_').toLowerCase();
+    printOptionsCache.set(normalizedFileName, cacheEntry);
+    
+    console.log('📦 [PRINT_CACHE] Options stockées pour:', fileName);
+    console.log('   Clés utilisées:', [fileName, baseName, normalizedFileName].join(', '));
+    console.log('   Options:', JSON.stringify(cacheEntry.options, null, 2));
+    
+    // Passer au moniteur si disponible
+    if (printerMonitor && printerMonitor.setPrintOptions) {
+        printerMonitor.setPrintOptions(fileName, cacheEntry);
+    }
+    
+    return cacheEntry;
+}
+
+// Fonction pour récupérer les options d'impression
+function getPrintOptions(documentName) {
+    // Essayer plusieurs clés pour trouver les options
+    const keys = [
+        documentName,
+        path.basename(documentName),
+        path.basename(documentName, path.extname(documentName))
+    ];
+    
+    for (const key of keys) {
+        const entry = printOptionsCache.get(key);
+        if (entry && (Date.now() - entry.timestamp) < PRINT_OPTIONS_CACHE_TIMEOUT) {
+            console.log('✅ [PRINT_CACHE] Options trouvées pour:', key);
+            return entry;
+        }
+    }
+    
+    // Recherche partielle (si le nom du document contient le nom de base)
+    for (const [key, entry] of printOptionsCache.entries()) {
+        if (documentName.includes(entry.baseName) || entry.fileName.includes(documentName)) {
+            if ((Date.now() - entry.timestamp) < PRINT_OPTIONS_CACHE_TIMEOUT) {
+                console.log('✅ [PRINT_CACHE] Options trouvées (recherche partielle) pour:', key);
+                return entry;
+            }
+        }
+    }
+    
+    console.log('❌ [PRINT_CACHE] Aucune option trouvée pour:', documentName);
+    return null;
+}
+
+// Lancer un job d'impression
+ipcMain.handle('print-job', async (event, pdfPath, options) => {
+    try {
+        if (!printEngine.isAvailable()) {
+            return { success: false, error: 'Module d\'impression non disponible sur cette plateforme' };
+        }
+
+        // Stocker les options dans le cache AVANT de lancer l'impression
+        storePrintOptions(pdfPath, options);
+
+        const result = await printEngine.printJob(pdfPath, options);
+        return { success: true, result: result };
+    } catch (error) {
+        console.error('Erreur lors de l\'impression:', error);
+        return { success: false, error: error.message };
+    }
 });
 
 // Gérer l'arrêt propre de l'application
