@@ -44,7 +44,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     restartPhp: () => ipcRenderer.invoke('restart-php'),
     restartApp: () => ipcRenderer.invoke('restart-app'),
     
-<<<<<<< HEAD
     // Moniteur d'imprimantes Windows
     getPrinters: () => ipcRenderer.invoke('get-printers'),
     togglePrinterMonitor: (start) => ipcRenderer.invoke('toggle-printer-monitor', start),
