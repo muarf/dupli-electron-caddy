@@ -511,8 +511,11 @@ function renderGrid(files) {
                     ` : ''}
                     <div class="file-actions">
                         <div class="file-actions-row">
-                            <button class="btn btn-info btn-sm" onclick="downloadFile(${file.id})" title="Télécharger le fichier">
-                                <i class="fa fa-download"></i> Imprimer
+                            <button class="btn btn-primary btn-sm" onclick="openFile(${file.id})" title="Ouvrir le fichier">
+                                <i class="fa fa-external-link"></i> Ouvrir
+                            </button>
+                            <button class="btn btn-info btn-sm" onclick="printFile(${file.id})" title="Imprimer le fichier">
+                                <i class="fa fa-print"></i> Imprimer
                             </button>
                             <div class="btn-group btn-group-sm file-actions-menu-trigger" role="group" data-file-id="${file.id}" data-file-type="${file.file_type}">
                                 <button type="button" class="btn btn-success" onclick="showActionsMenu(event, ${file.id}, '${file.file_type}')">
@@ -548,6 +551,68 @@ function downloadFile(id) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+function printFile(id) {
+    // Vérifier si l'API Electron est disponible
+    if (!window.electronAPI || !window.electronAPI.printFile) {
+        alert('L\'impression système n\'est disponible que dans l\'application Electron. Utilisez le téléchargement pour imprimer depuis un navigateur.');
+        // Fallback : télécharger le fichier
+        downloadFile(id);
+        return;
+    }
+    
+    try {
+        // Construire l'URL complète du fichier
+        const fileUrl = window.location.origin + '/?get_bibliotheque_file&id=' + encodeURIComponent(id);
+        console.log('Demande d\'impression pour:', fileUrl);
+        
+        // Appeler l'API Electron pour imprimer
+        window.electronAPI.printFile(fileUrl)
+            .then(result => {
+                if (result.success) {
+                    console.log('Impression lancée avec succès');
+                } else {
+                    console.error('Erreur lors de l\'impression:', result.error);
+                    alert('Erreur lors de l\'impression: ' + (result.error || 'Erreur inconnue'));
+                }
+            })
+            .catch(error => {
+                console.error('Erreur impression:', error);
+                alert('Erreur lors de l\'impression: ' + error.message);
+            });
+    } catch (error) {
+        console.error('Erreur lors de la préparation de l\'impression:', error);
+        alert('Erreur lors de la préparation de l\'impression: ' + error.message);
+    }
+}
+
+function openFile(id) {
+    // Construire l'URL complète du fichier
+    const fileUrl = window.location.origin + '/?get_bibliotheque_file&id=' + encodeURIComponent(id);
+    
+    // Vérifier si l'API Electron est disponible
+    if (window.electronAPI && window.electronAPI.openExternalFile) {
+        // Dans Electron : ouvrir avec l'application système
+        console.log('Ouverture externe pour:', fileUrl);
+        window.electronAPI.openExternalFile(fileUrl)
+            .then(result => {
+                if (result.success) {
+                    console.log('Fichier ouvert avec succès');
+                } else {
+                    console.error('Erreur lors de l\'ouverture:', result.error);
+                    alert('Erreur lors de l\'ouverture du fichier: ' + (result.error || 'Erreur inconnue'));
+                }
+            })
+            .catch(error => {
+                console.error('Erreur ouverture:', error);
+                alert('Erreur lors de l\'ouverture du fichier: ' + error.message);
+            });
+    } else {
+        // Dans un navigateur web : ouvrir dans un nouvel onglet
+        console.log('Ouverture dans un nouvel onglet:', fileUrl);
+        window.open(fileUrl, '_blank');
+    }
 }
 
 function deleteFile(id) {
@@ -876,8 +941,11 @@ function openPdfViewer(fileId, fileType) {
         
         // Ajouter les boutons d'action pour PNG
         const actionsHtml = `
-            <button type="button" class="btn btn-sm btn-info" onclick="downloadFile(${fileId})" title="Télécharger le fichier" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
-                <i class="fa fa-download"></i> Imprimer
+            <button type="button" class="btn btn-sm btn-primary" onclick="openFile(${fileId})" title="Ouvrir le fichier" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
+                <i class="fa fa-external-link"></i> Ouvrir
+            </button>
+            <button type="button" class="btn btn-sm btn-info" onclick="printFile(${fileId})" title="Imprimer le fichier" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
+                <i class="fa fa-print"></i> Imprimer
             </button>
             <div class="btn-group btn-group-sm" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 8px;">
                 <button type="button" class="btn btn-sm btn-success" onclick="showActionsMenu(event, ${fileId}, '${fileType}')">
@@ -912,8 +980,11 @@ function openPdfViewer(fileId, fileType) {
     
     // Ajouter les boutons d'action pour PDF
     const actionsHtml = `
-        <button type="button" class="btn btn-sm btn-info" onclick="downloadFile(${fileId})" title="Télécharger le fichier" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
-            <i class="fa fa-download"></i> Imprimer
+        <button type="button" class="btn btn-sm btn-primary" onclick="openFile(${fileId})" title="Ouvrir le fichier" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
+            <i class="fa fa-external-link"></i> Ouvrir
+        </button>
+        <button type="button" class="btn btn-sm btn-info" onclick="printFile(${fileId})" title="Imprimer le fichier" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
+            <i class="fa fa-print"></i> Imprimer
         </button>
         <div class="btn-group btn-group-sm" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 8px;">
             <button type="button" class="btn btn-sm btn-success" onclick="showActionsMenu(event, ${fileId}, '${fileType}')">

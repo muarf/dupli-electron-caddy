@@ -44,6 +44,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     restartPhp: () => ipcRenderer.invoke('restart-php'),
     restartApp: () => ipcRenderer.invoke('restart-app'),
     
+<<<<<<< HEAD
     // Moniteur d'imprimantes Windows
     getPrinters: () => ipcRenderer.invoke('get-printers'),
     togglePrinterMonitor: (start) => ipcRenderer.invoke('toggle-printer-monitor', start),
@@ -57,7 +58,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     onPrintMonitorStarted: (callback) => {
         ipcRenderer.on('print-monitor-started', (event, payload) => callback(payload));
-    }
+    },
+    // Impression de fichiers
+    printFile: (fileUrl) => ipcRenderer.invoke('print-file', fileUrl),
+    
+    // Ouvrir un fichier avec l'application système
+    openExternalFile: (fileUrl) => ipcRenderer.invoke('open-external-file', fileUrl)
 });
 
 
