@@ -482,7 +482,6 @@
                 });
             }
         });
-<<<<<<< HEAD
 
         // Fonction pour ouvrir le dialogue d'impression depuis une URL
         window.openPrintDialogFromUrl = async function(downloadUrl) {
@@ -585,7 +584,6 @@
                 window.open(fullUrl, '_blank');
             }
         }
->>>>>>> origin/feature/impression-ouverture-systeme
     </script>
 
     <?php
