@@ -372,6 +372,18 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const blob = await response.blob();
             const file = new File([blob], fileName, { type: fileType });
+            
+            // Assigner le fichier au fileInput pour que le formulaire le reconnaisse
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
+            
+            // Aussi assigner au hiddenFileInput pour la soumission
+            const hiddenDataTransfer = new DataTransfer();
+            hiddenDataTransfer.items.add(file);
+            hiddenFileInput.files = hiddenDataTransfer.files;
+            
+            // Charger le fichier pour la prévisualisation
             handleFile(file);
         } catch (error) {
             console.error('Erreur chargement fichier bibliothèque:', error);
@@ -720,20 +732,41 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function applyProcessing() {
-        // Vérifier qu'un fichier est sélectionné
-        if (fileInput.files.length === 0) {
+        // Vérifier qu'un fichier est sélectionné ou chargé depuis la bibliothèque
+        let file = null;
+        let isPDF = false;
+        
+        if (fileInput.files.length > 0) {
+            file = fileInput.files[0];
+            isPDF = file.type === 'application/pdf';
+        } else if (originalPdf || originalImage || fullSizeCanvas) {
+            // Un fichier a été chargé depuis la bibliothèque (prévisualisation visible)
+            // Utiliser le fichier depuis hiddenFileInput ou recréer depuis le blob
+            if (hiddenFileInput.files.length > 0) {
+                file = hiddenFileInput.files[0];
+                isPDF = file.type === 'application/pdf';
+            } else {
+                // Si aucun fichier dans les inputs, on ne peut pas continuer
+                alert('Veuillez sélectionner un fichier.');
+                return;
+            }
+        } else {
             alert('Veuillez sélectionner un fichier.');
             return;
         }
-        
-        const file = fileInput.files[0];
-        const isPDF = file.type === 'application/pdf';
         
         // Pour les PDFs, utiliser le traitement serveur via AJAX
         if (isPDF) {
             // Créer un FormData avec le fichier et les paramètres
             const formData = new FormData();
             formData.append('file', file);
+            
+            // Ajouter lib_file_id si on vient de la bibliothèque
+            const libFileId = document.getElementById('lib_file_id');
+            if (libFileId && libFileId.value) {
+                formData.append('lib_file_id', libFileId.value);
+            }
+            
             formData.append('contrast', document.getElementById('contrastSlider').value);
             formData.append('brightness', document.getElementById('brightnessSlider').value);
             formData.append('gamma', document.getElementById('gammaSlider').value);
@@ -850,6 +883,12 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('processed_image', blob, file.name);
             formData.append('use_canvas', '1'); // Flag pour indiquer qu'on utilise le canvas
             formData.append('original_filename', file.name);
+            
+            // Ajouter lib_file_id si on vient de la bibliothèque
+            const libFileId = document.getElementById('lib_file_id');
+            if (libFileId && libFileId.value) {
+                formData.append('lib_file_id', libFileId.value);
+            }
             
             // Afficher le modal de progression
             showProgressModal();

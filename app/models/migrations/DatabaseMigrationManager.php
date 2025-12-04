@@ -28,6 +28,7 @@ class DatabaseMigrationManager {
             $migrations = [
                 'tirage_global_id' => [$this, 'migrateTirageGlobalId'],
                 'bibliotheque_table' => [$this, 'createBibliothequeTable'],
+                'bibliotheque_fts' => [$this, 'createBibliothequeFTS'],
                 // Ajouter d'autres migrations ici à l'avenir
             ];
             
@@ -154,6 +155,76 @@ class DatabaseMigrationManager {
         // Créer des index pour la recherche
         $this->db->exec("CREATE INDEX IF NOT EXISTS idx_bibliotheque_filename ON bibliotheque_files(filename)");
         $this->db->exec("CREATE INDEX IF NOT EXISTS idx_bibliotheque_type ON bibliotheque_files(file_type)");
+    }
+
+    /**
+     * Migration: Créer la table FTS5 pour la recherche full-text
+     */
+    private function createBibliothequeFTS() {
+        error_log("[MIGRATION] Création table FTS5 bibliotheque_files_fts");
+        
+        // Vérifier que la table bibliotheque_files existe
+        $tableExists = false;
+        try {
+            $checkQuery = $this->db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='bibliotheque_files'");
+            $tableExists = $checkQuery->fetch() !== false;
+        } catch (Exception $e) {
+            error_log("[MIGRATION] Erreur vérification table bibliotheque_files: " . $e->getMessage());
+        }
+        
+        if (!$tableExists) {
+            error_log("[MIGRATION] Table bibliotheque_files n'existe pas, création...");
+            $this->createBibliothequeTable();
+        }
+        
+        // Supprimer la table FTS5 si elle existe déjà (pour réinitialisation)
+        try {
+            $this->db->exec("DROP TABLE IF EXISTS bibliotheque_files_fts");
+        } catch (Exception $e) {
+            error_log("[MIGRATION] Erreur suppression ancienne table FTS5: " . $e->getMessage());
+        }
+        
+        // Créer la table virtuelle FTS5
+        $this->db->exec("CREATE VIRTUAL TABLE bibliotheque_files_fts USING fts5(
+            filename,
+            extracted_text,
+            content='bibliotheque_files',
+            content_rowid='id'
+        )");
+        
+        // Créer le trigger pour INSERT
+        $this->db->exec("CREATE TRIGGER IF NOT EXISTS bibliotheque_files_ai AFTER INSERT ON bibliotheque_files BEGIN
+            INSERT INTO bibliotheque_files_fts(rowid, filename, extracted_text) 
+            VALUES (new.id, new.filename, new.extracted_text);
+        END");
+        
+        // Créer le trigger pour DELETE
+        $this->db->exec("CREATE TRIGGER IF NOT EXISTS bibliotheque_files_ad AFTER DELETE ON bibliotheque_files BEGIN
+            INSERT INTO bibliotheque_files_fts(bibliotheque_files_fts, rowid, filename, extracted_text) 
+            VALUES('delete', old.id, old.filename, old.extracted_text);
+        END");
+        
+        // Créer le trigger pour UPDATE
+        $this->db->exec("CREATE TRIGGER IF NOT EXISTS bibliotheque_files_au AFTER UPDATE ON bibliotheque_files BEGIN
+            INSERT INTO bibliotheque_files_fts(bibliotheque_files_fts, rowid, filename, extracted_text) 
+            VALUES('delete', old.id, old.filename, old.extracted_text);
+            INSERT INTO bibliotheque_files_fts(rowid, filename, extracted_text) 
+            VALUES (new.id, new.filename, new.extracted_text);
+        END");
+        
+        // Remplir la table FTS5 avec les données existantes
+        try {
+            $this->db->exec("INSERT INTO bibliotheque_files_fts(rowid, filename, extracted_text) 
+                SELECT id, filename, extracted_text FROM bibliotheque_files");
+            
+            // Compter les enregistrements insérés
+            $countQuery = $this->db->query("SELECT COUNT(*) FROM bibliotheque_files_fts");
+            $count = $countQuery->fetchColumn();
+            error_log("[MIGRATION] Table FTS5 remplie avec " . $count . " enregistrements");
+        } catch (Exception $e) {
+            error_log("[MIGRATION] Erreur remplissage FTS5: " . $e->getMessage());
+            // Ne pas bloquer si le remplissage échoue, la table est créée
+        }
     }
 
     /**
