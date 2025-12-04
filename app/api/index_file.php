@@ -29,9 +29,19 @@ if (empty($path)) {
     exit;
 }
 
+// Augmenter la limite de mémoire pour l'indexation (1 GB pour gérer les gros PDFs)
+$originalMemoryLimit = ini_get('memory_limit');
+ini_set('memory_limit', '1024M');
+
 try {
     $manager = new BibliothequeManager();
     $result = $manager->addExternalFile($path);
+    
+    // Libérer la mémoire après traitement
+    unset($manager);
+    if (function_exists('gc_collect_cycles')) {
+        gc_collect_cycles();
+    }
     
     echo json_encode([
         'success' => true,
@@ -49,8 +59,11 @@ try {
     error_log("Erreur fatale index_file: " . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'error' => 'Erreur fatale: ' . $e->getMessage()
+        'error' => 'Erreur fatale (mémoire insuffisante ou fichier corrompu): ' . basename($path ?? '')
     ], JSON_UNESCAPED_UNICODE);
+} finally {
+    // Restaurer la limite de mémoire originale
+    ini_set('memory_limit', $originalMemoryLimit);
 }
 
 

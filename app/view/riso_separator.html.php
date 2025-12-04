@@ -437,6 +437,7 @@ document.addEventListener('DOMContentLoaded', function() {
     (async function() {
         const fileUrl = '?get_bibliotheque_file&id=' + encodeURIComponent(<?= $from_lib_file['id'] ?>);
         const fileName = <?= json_encode($from_lib_file['filename']) ?>;
+        const imageInput = document.getElementById('imageInput');
         
         try {
             const response = await fetch(fileUrl);
@@ -444,6 +445,14 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const blob = await response.blob();
             const file = new File([blob], fileName, { type: 'image/png' });
+            
+            // Assigner le fichier au fileInput pour cohérence
+            if (imageInput) {
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                imageInput.files = dataTransfer.files;
+            }
+            
             loadImage(file);
         } catch (error) {
             console.error('Erreur chargement fichier bibliothèque:', error);
