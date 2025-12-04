@@ -220,6 +220,9 @@
                             <a href="<?= htmlspecialchars($download_url) ?>" class="btn btn-download">
                                 <i class="fa fa-download"></i> Télécharger le PDF imposé
                             </a>
+                            <button type="button" class="btn btn-primary" onclick="openPrintDialogFromUrl('<?= htmlspecialchars($download_url) ?>')" style="margin-left: 10px;">
+                                <i class="fa fa-print"></i> Imprimer
+                            </button>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -446,6 +449,46 @@
             }
         });
     </script>
+
+    <script>
+        // Fonction pour ouvrir le dialogue d'impression depuis une URL
+        window.openPrintDialogFromUrl = async function(downloadUrl) {
+            try {
+                const url = new URL(downloadUrl, window.location.href);
+                const file = url.searchParams.get('file');
+                const dir = url.searchParams.get('dir') || '';
+
+                if (!file) {
+                    alert('Impossible de déterminer le fichier PDF');
+                    return;
+                }
+
+                const apiUrl = '?get_pdf_path&file=' + encodeURIComponent(file) + (dir ? '&dir=' + encodeURIComponent(dir) : '');
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                if (!data.success || !data.path) {
+                    throw new Error(data.error || 'Impossible de récupérer le chemin du fichier');
+                }
+
+                if (!window.electronAPI || !window.openPrintDialog) {
+                    alert('La fonctionnalité d\'impression nécessite l\'application Electron. Veuillez utiliser la version desktop.');
+                    return;
+                }
+
+                window.openPrintDialog(data.path);
+            } catch (error) {
+                console.error('Erreur lors de l\'ouverture du dialogue d\'impression:', error);
+                alert('Erreur: ' + error.message);
+            }
+        };
+    </script>
+
+    <?php
+    if (file_exists(__DIR__ . '/print_dialog.html.php')) {
+        include __DIR__ . '/print_dialog.html.php';
+    }
+    ?>
 </body>
 </html>
 
