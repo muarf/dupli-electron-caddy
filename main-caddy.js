@@ -1879,7 +1879,6 @@ function createWindow() {
                     proxyPort: serverPort,
                     phpPort: PHP_SERVER_PORT
                 });
-<<<<<<< HEAD
                 
                 // Vérifier Ghostscript avant de charger l'app (Windows uniquement)
                 if (process.platform === 'win32') {
@@ -2478,7 +2477,6 @@ ipcMain.handle('get-app-version', () => {
     return { success: true, version: app.getVersion() };
 });
 
-<<<<<<< HEAD
 // ============ Handlers pour le moniteur d'imprimantes ============
 
 // Obtenir la liste des imprimantes
@@ -2840,7 +2838,6 @@ ipcMain.handle('open-external-file', async (event, fileUrl) => {
         }
     } catch (error) {
         console.error('Erreur lors de l\'ouverture externe:', error);
->>>>>>> origin/feature/impression-ouverture-systeme
         return { success: false, error: error.message };
     }
 });
