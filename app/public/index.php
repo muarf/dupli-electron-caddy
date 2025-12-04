@@ -272,7 +272,6 @@ if ($page === 'upload_aide_pdf') {
     }
 }
 
-<<<<<<< HEAD
 if ($page === 'upload_bibliotheque') {
     $api_file = __DIR__ . '/../api/upload_bibliotheque.php';
     if (file_exists($api_file)) { require_once $api_file; exit; }
