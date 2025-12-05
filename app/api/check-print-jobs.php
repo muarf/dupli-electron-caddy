@@ -44,7 +44,7 @@ try {
     
     // Récupérer tous les jobs d'impression, triés par date décroissante
     $jobs = $db->select("
-        SELECT 
+        SELECT
             id,
             job_id,
             document,
@@ -54,12 +54,16 @@ try {
             pages_printed,
             total_pages,
             size,
+            paper_size,
+            duplex,
+            color_mode,
+            copies,
             time_submitted,
             event_type,
             timestamp,
             created_at
-        FROM print_jobs 
-        ORDER BY timestamp DESC 
+        FROM print_jobs
+        ORDER BY timestamp DESC
         LIMIT 50
     ");
     

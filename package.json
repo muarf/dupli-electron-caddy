@@ -111,6 +111,10 @@
     }
   },
   "dependencies": {
-    "electron-updater": "^6.6.2"
+    "bcryptjs": "^3.0.3",
+    "electron-updater": "^6.6.2",
+    "pdfjs-dist": "^3.11.174",
+    "pdfkit": "^0.17.2",
+    "sqlite3": "^5.1.7"
   }
 }
