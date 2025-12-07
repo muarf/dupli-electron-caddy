@@ -116,31 +116,60 @@ try {
         // La colonne existe déjà, ignorer l'erreur
     }
     
-    // Insérer ou mettre à jour le job d'impression
-    $db->execute("
-        INSERT OR REPLACE INTO print_jobs 
-        (job_id, document, owner, printer_name, status, pages_printed, total_pages, size, duplex, paper_size, color_mode, copies, orientation, resolution, input_slot, time_submitted, event_type, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ", [
+    // Vérifier si le job existe déjà (dans la dernière heure pour éviter conflits avec job_ids recyclés)
+    $newTotalPages = $data['totalPages'] ?? 0;
+    $oneHourAgo = date('Y-m-d H:i:s', strtotime('-1 hour'));
+    $existing = $db->select("SELECT id, total_pages FROM print_jobs WHERE job_id = ? AND printer_name = ? AND timestamp > ?", [
         $data['jobId'],
-        $data['document'],
-        $data['owner'] ?? null,
         $data['printerName'],
-        $data['status'],
-        $data['pagesPrinted'] ?? 0,
-        $data['totalPages'] ?? 0,
-        $data['size'] ?? 0,
-        isset($data['duplex']) ? ($data['duplex'] ? 1 : 0) : 0,
-        $data['paperSize'] ?? null,
-        $data['colorMode'] ?? null,
-        $data['copies'] ?? 1,
-        $data['orientation'] ?? null,
-        $data['resolution'] ?? null,
-        $data['inputSlot'] ?? null,
-        $data['timeSubmitted'] ?? null,
-        $data['eventType'] ?? 'unknown',
-        $data['timestamp']
+        $oneHourAgo
     ]);
+    
+    if (!empty($existing)) {
+        // Le job existe - mettre à jour seulement si le nouveau total_pages est supérieur
+        $existingPages = (int)($existing[0]['total_pages'] ?? 0);
+        if ($newTotalPages > $existingPages) {
+            $db->execute("
+                UPDATE print_jobs SET 
+                    status = ?,
+                    total_pages = ?,
+                    timestamp = ?
+                WHERE id = ?
+            ", [
+                $data['status'],
+                $newTotalPages,
+                $data['timestamp'],
+                $existing[0]['id']
+            ]);
+        }
+        // Sinon on ne fait rien (on garde la meilleure valeur)
+    } else {
+        // Nouveau job - insérer
+        $db->execute("
+            INSERT INTO print_jobs 
+            (job_id, document, owner, printer_name, status, pages_printed, total_pages, size, duplex, paper_size, color_mode, copies, orientation, resolution, input_slot, time_submitted, event_type, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ", [
+            $data['jobId'],
+            $data['document'],
+            $data['owner'] ?? null,
+            $data['printerName'],
+            $data['status'],
+            $data['pagesPrinted'] ?? 0,
+            $newTotalPages,
+            $data['size'] ?? 0,
+            isset($data['duplex']) ? ($data['duplex'] ? 1 : 0) : 0,
+            $data['paperSize'] ?? null,
+            $data['colorMode'] ?? null,
+            $data['copies'] ?? 1,
+            $data['orientation'] ?? null,
+            $data['resolution'] ?? null,
+            $data['inputSlot'] ?? null,
+            $data['timeSubmitted'] ?? null,
+            $data['eventType'] ?? 'unknown',
+            $data['timestamp']
+        ]);
+    }
     
     // Log pour le débogage (optionnel)
     error_log(sprintf(

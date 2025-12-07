@@ -18,7 +18,7 @@ function checkGhostscript(port = 8000) {
             resolve();
             return;
         }
-        
+
         const options = {
             hostname: '127.0.0.1',
             port: port,
@@ -26,14 +26,14 @@ function checkGhostscript(port = 8000) {
             method: 'GET',
             timeout: 5000
         };
-        
+
         const req = http.request(options, (res) => {
             let data = '';
-            
+
             res.on('data', (chunk) => {
                 data += chunk;
             });
-            
+
             res.on('end', () => {
                 try {
                     const result = JSON.parse(data);
@@ -50,16 +50,16 @@ function checkGhostscript(port = 8000) {
                 }
             });
         });
-        
+
         req.on('error', (err) => {
             reject(new Error(`Erreur requête Ghostscript: ${err.message}`));
         });
-        
+
         req.on('timeout', () => {
             req.destroy();
             reject(new Error('Timeout lors de la vérification Ghostscript.'));
         });
-        
+
         req.end();
     });
 }
@@ -140,7 +140,7 @@ function handlePhpOutput(source, data) {
 
     const timestamp = new Date().toISOString();
     const logLine = `[${timestamp}] [PHP ${source}] ${message}`;
-    
+
     // Protéger contre les erreurs EPIPE lors de l'écriture dans console
     try {
         console[source === 'STDERR' ? 'error' : 'log'](`[PHP ${source}]`, message);
@@ -156,7 +156,7 @@ function handlePhpOutput(source, data) {
         }
         // Pour EPIPE, on ignore silencieusement (flux fermé normalement)
     }
-    
+
     sendToRenderer(PHP_LOG_CHANNEL, {
         source,
         message,
@@ -419,7 +419,7 @@ function handlePhpFatal(message, source = 'STDERR') {
 
     phpFatalNotified = true;
     const timestamp = new Date().toISOString();
-    
+
     // Protéger contre les erreurs EPIPE lors de l'écriture dans console
     try {
         console.error(`[PHP FATAL - ${source}]`, message);
@@ -481,7 +481,7 @@ function attemptRendererRecovery() {
 
 function handlePhpProcessExit(code, signal) {
     const exitInfo = `Processus PHP terminé (code: ${code !== null ? code : 'null'}, signal: ${signal || 'aucun'})`;
-    
+
     // Protéger contre les erreurs EPIPE lors de l'écriture dans console
     try {
         console.warn(exitInfo);
@@ -495,7 +495,7 @@ function handlePhpProcessExit(code, signal) {
             }
         }
     }
-    
+
     stopPhpErrorLogWatcher();
 
     sendToRenderer(PHP_STATUS_CHANNEL, {
@@ -722,7 +722,7 @@ function getCaddyPath() {
         // Essayer d'abord sans ASAR (resources/app/caddy/caddy)
         const noAsarPath = path.join(process.resourcesPath, 'app', 'caddy', 'caddy');
         const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'caddy', 'caddy');
-        
+
         if (fs.existsSync(noAsarPath)) {
             console.log('Chemin Caddy AppImage (sans ASAR):', noAsarPath);
             console.log('Caddy existe:', fs.existsSync(noAsarPath));
@@ -747,12 +747,12 @@ function getCaddyPath() {
                 return devCaddyPath;
             }
         }
-        
+
         // Mode packagé : détecter si ASAR est utilisé ou non
         // Même avec asar: false, les fichiers sont dans resources/app/
         const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'caddy', 'caddy.exe');
         const noAsarPath = path.join(process.resourcesPath, 'app', 'caddy', 'caddy.exe');
-        
+
         // Essayer d'abord sans ASAR (configuration actuelle: resources/app/)
         if (fs.existsSync(noAsarPath)) {
             console.log('Chemin Caddy Windows (sans ASAR):', noAsarPath);
@@ -826,7 +826,7 @@ function getPhpPath() {
     const isPackaged = app.isPackaged;
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
-    
+
     if (isWindows) {
         // Mode développement : utiliser le PHP local
         if (!isPackaged) {
@@ -836,12 +836,12 @@ function getPhpPath() {
                 return devPhpPath;
             }
         }
-        
+
         // Mode packagé : détecter si ASAR est utilisé ou non
         // Même avec asar: false, les fichiers sont dans resources/app/
         const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'php.exe');
         const noAsarPath = path.join(process.resourcesPath, 'app', 'php', 'php.exe');
-        
+
         // Essayer d'abord sans ASAR (configuration actuelle: resources/app/)
         if (fs.existsSync(noAsarPath)) {
             console.log('PHP trouvé (sans ASAR):', noAsarPath);
@@ -1022,7 +1022,7 @@ function startPhpFpm() {
         // Pour AppImage, essayer d'abord app/app/public (structure réelle sans ASAR)
         const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
         const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
-        
+
         if (fs.existsSync(noAsarPath)) {
             appPath = noAsarPath;
             console.log('App Path trouvé (sans ASAR):', appPath);
@@ -1115,7 +1115,7 @@ function startPhpFpm() {
         const noAsarExtPath = path.join(process.resourcesPath, 'app', 'php', 'ext');
         const devExtPath = path.join(__dirname, 'php', 'ext'); // Mode développement
         const phpIniPath = path.join(appPath, '..', 'php.ini');
-        
+
         // Déterminer le chemin des extensions : développement d'abord, puis packagé
         let phpExtPath;
         if (!isPackaged && fs.existsSync(devExtPath)) {
@@ -1125,11 +1125,11 @@ function startPhpFpm() {
         } else {
             phpExtPath = path.resolve(asarExtPath);
         }
-        
+
         // Ajouter le répertoire parent au include_path pour que vendor/autoload.php soit accessible
         const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
         const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
-        
+
         console.log('Configuration PHP pour Windows');
         console.log('isPackaged:', isPackaged);
         console.log('PHP Ini Path:', phpIniPath);
@@ -1137,7 +1137,7 @@ function startPhpFpm() {
         console.log('PHP Ext Path:', phpExtPath);
         console.log('PHP Ext exists:', fs.existsSync(phpExtPath));
         console.log('App base path (pour vendor):', appBasePath);
-        
+
         phpArgs = [
             '-c', phpIniPath,
             '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
@@ -1159,20 +1159,20 @@ function startPhpFpm() {
         const phpIniPath = path.join(appPath, '..', 'php.ini');
         const devExtPath = path.join(__dirname, 'php', 'ext'); // Mode développement
         const packagedExtPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'ext');
-        
+
         // Utiliser le chemin de développement si disponible, sinon le chemin packagé
-        const phpExtPath = (!isPackaged && fs.existsSync(devExtPath)) 
-            ? path.resolve(devExtPath) 
+        const phpExtPath = (!isPackaged && fs.existsSync(devExtPath))
+            ? path.resolve(devExtPath)
             : path.resolve(packagedExtPath);
-        
+
         console.log('Configuration PHP pour macOS/dev');
         console.log('isPackaged:', isPackaged);
         console.log('PHP Ext Path:', phpExtPath);
-        
+
         // Ajouter le répertoire parent au include_path pour que vendor/autoload.php soit accessible
         const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
         const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
-        
+
         if (fs.existsSync(phpIniPath)) {
             phpArgs = [
                 '-c', phpIniPath,
@@ -1213,14 +1213,14 @@ function startPhpFpm() {
         ...process.env,
         DUPLICATOR_DB_PATH: getDatabasePath()
     };
-    
+
     // Sur Windows, ajouter le répertoire PHP au PATH pour que les DLL soient accessibles
     if (process.platform === 'win32') {
         const pathSeparator = process.platform === 'win32' ? ';' : ':';
         env.PATH = `${phpDir}${pathSeparator}${env.PATH || ''}`;
         console.log('PATH mis à jour avec le répertoire PHP:', phpDir);
     }
-    
+
     phpFpmProcess = spawn(phpPath, phpArgs, {
         stdio: ['pipe', 'pipe', 'pipe'],
         env: env
@@ -1399,7 +1399,7 @@ async function startCaddy() {
         // Pour AppImage, essayer d'abord app/app/public (structure réelle sans ASAR)
         const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
         const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
-        
+
         if (fs.existsSync(noAsarPath)) {
             appPath = noAsarPath;
             console.log('Caddy App Path trouvé (sans ASAR):', appPath);
@@ -1555,12 +1555,12 @@ function startPrinterMonitor() {
         console.log('Le moniteur d\'imprimantes n\'est disponible que sur Windows');
         return;
     }
-    
+
     if (printerMonitor) {
         console.log('Le moniteur d\'imprimantes est déjà démarré');
         return;
     }
-    
+
     try {
         printerMonitor = new PrinterMonitor({
             phpApiUrl: `http://127.0.0.1:${PHP_SERVER_PORT}`,
@@ -1568,13 +1568,59 @@ function startPrinterMonitor() {
                 // Envoyer la notification au renderer
                 sendToRenderer('print-job-detected', printData);
                 console.log('Impression détectée:', printData);
+
+                // Envoyer les données à l'API PHP pour enregistrement en base
+                const http = require('http');
+                const postData = JSON.stringify({
+                    jobId: String(printData.JobId),
+                    document: printData.Document,
+                    printerName: printData.PrinterName,
+                    status: printData.Status,
+                    totalPages: printData.TotalPages || 0,
+                    paperSize: printData.PaperSize,
+                    duplex: printData.IsDuplex,
+                    colorMode: printData.ColorMode,
+                    copies: printData.Copies || 1,
+                    timestamp: printData.TimeSubmitted || new Date().toISOString(),
+                    eventType: 'job_detected'
+                });
+
+                const options = {
+                    hostname: '127.0.0.1',
+                    port: PHP_SERVER_PORT,
+                    path: '/index.php?print_notification',
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Content-Length': Buffer.byteLength(postData)
+                    }
+                };
+
+                const req = http.request(options, (res) => {
+                    let data = '';
+                    res.on('data', chunk => data += chunk);
+                    res.on('end', () => {
+                        if (res.statusCode === 200) {
+                            console.log('✅ Notification PHP enregistrée:', data);
+                        } else {
+                            console.error('⚠️ Erreur API PHP:', res.statusCode, data);
+                        }
+                    });
+                });
+
+                req.on('error', (e) => {
+                    console.error('❌ Erreur envoi notification PHP:', e.message);
+                });
+
+                req.write(postData);
+                req.end();
             },
             onError: (error) => {
                 console.error('Erreur moniteur d\'imprimantes:', error);
                 sendToRenderer('print-monitor-error', { error: error });
             }
         });
-        
+
         const started = printerMonitor.start();
         if (started) {
             console.log('✅ Moniteur d\'imprimantes Windows démarré avec succès');
@@ -1583,7 +1629,7 @@ function startPrinterMonitor() {
             if (mainWindow && !mainWindow.isDestroyed()) {
                 mainWindow.webContents.executeJavaScript(`
                     console.log('%c✅ Moniteur d\'imprimantes Windows démarré', 'color: green; font-weight: bold;');
-                `).catch(() => {});
+                `).catch(() => { });
             }
         } else {
             console.error('❌ Échec du démarrage du moniteur d\'imprimantes');
@@ -1825,7 +1871,7 @@ function createWindow() {
                     proxyPort: serverPort,
                     phpPort: PHP_SERVER_PORT
                 });
-                
+
                 // Vérifier Ghostscript avant de charger l'app (Windows uniquement)
                 if (process.platform === 'win32') {
                     try {
@@ -1837,17 +1883,17 @@ function createWindow() {
                         if (!mainWindow.isVisible()) {
                             mainWindow.show();
                         }
-                        
+
                         dialog.showMessageBox(mainWindow, {
                             type: 'warning',
                             title: 'Avertissement - Ghostscript non disponible',
                             message: 'Ghostscript ne peut pas s\'exécuter',
-                            detail: ghostscriptError.message + '\n\n' + 
-                                    'L\'application peut continuer, mais certaines fonctionnalités de traitement PDF ne seront pas disponibles :\n' +
-                                    '• Génération de miniatures pour les fichiers PDF\n' +
-                                    '• Conversion PDF vers PNG\n\n' +
-                                    'Pour activer ces fonctionnalités, installez Visual C++ Redistributable.\n\n' +
-                                    'Souhaitez-vous télécharger Visual C++ Redistributable maintenant ?',
+                            detail: ghostscriptError.message + '\n\n' +
+                                'L\'application peut continuer, mais certaines fonctionnalités de traitement PDF ne seront pas disponibles :\n' +
+                                '• Génération de miniatures pour les fichiers PDF\n' +
+                                '• Conversion PDF vers PNG\n\n' +
+                                'Pour activer ces fonctionnalités, installez Visual C++ Redistributable.\n\n' +
+                                'Souhaitez-vous télécharger Visual C++ Redistributable maintenant ?',
                             buttons: ['Télécharger Visual C++ Redistributable', 'Continuer sans Ghostscript'],
                             defaultId: 1,
                             cancelId: 1
@@ -1879,7 +1925,7 @@ function createWindow() {
                     proxyPort: serverPort,
                     phpPort: PHP_SERVER_PORT
                 });
-                
+
                 // Vérifier Ghostscript avant de charger l'app (Windows uniquement)
                 if (process.platform === 'win32') {
                     try {
@@ -1892,17 +1938,17 @@ function createWindow() {
                         if (!mainWindow.isVisible()) {
                             mainWindow.show();
                         }
-                        
+
                         dialog.showMessageBox(mainWindow, {
                             type: 'warning',
                             title: 'Avertissement - Ghostscript non disponible',
                             message: 'Ghostscript ne peut pas s\'exécuter',
-                            detail: ghostscriptError.message + '\n\n' + 
-                                    'L\'application peut continuer, mais certaines fonctionnalités de traitement PDF ne seront pas disponibles :\n' +
-                                    '• Génération de miniatures pour les fichiers PDF\n' +
-                                    '• Conversion PDF vers PNG\n\n' +
-                                    'Pour activer ces fonctionnalités, installez Visual C++ Redistributable.\n\n' +
-                                    'Souhaitez-vous télécharger Visual C++ Redistributable maintenant ?',
+                            detail: ghostscriptError.message + '\n\n' +
+                                'L\'application peut continuer, mais certaines fonctionnalités de traitement PDF ne seront pas disponibles :\n' +
+                                '• Génération de miniatures pour les fichiers PDF\n' +
+                                '• Conversion PDF vers PNG\n\n' +
+                                'Pour activer ces fonctionnalités, installez Visual C++ Redistributable.\n\n' +
+                                'Souhaitez-vous télécharger Visual C++ Redistributable maintenant ?',
                             buttons: ['Télécharger Visual C++ Redistributable', 'Continuer sans Ghostscript'],
                             defaultId: 1,
                             cancelId: 1
@@ -1928,7 +1974,7 @@ function createWindow() {
                     mainWindow.show();
                     console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
                 }
-                
+
                 // Démarrer le moniteur d'imprimantes Windows après le démarrage des serveurs
                 startPrinterMonitor();
             }
@@ -1939,7 +1985,7 @@ function createWindow() {
             try {
                 startPhpServer();
                 frontendPort = PHP_SERVER_PORT;
-                
+
                 // Attendre que le serveur soit prêt puis vérifier Ghostscript (Windows uniquement)
                 if (process.platform === 'win32') {
                     setTimeout(async () => {
@@ -1953,17 +1999,17 @@ function createWindow() {
                             if (!mainWindow.isVisible()) {
                                 mainWindow.show();
                             }
-                            
+
                             dialog.showMessageBox(mainWindow, {
                                 type: 'warning',
                                 title: 'Avertissement - Ghostscript non disponible',
                                 message: 'Ghostscript ne peut pas s\'exécuter',
-                                detail: ghostscriptError.message + '\n\n' + 
-                                        'L\'application peut continuer, mais certaines fonctionnalités de traitement PDF ne seront pas disponibles :\n' +
-                                        '• Génération de miniatures pour les fichiers PDF\n' +
-                                        '• Conversion PDF vers PNG\n\n' +
-                                        'Pour activer ces fonctionnalités, installez Visual C++ Redistributable.\n\n' +
-                                        'Souhaitez-vous télécharger Visual C++ Redistributable maintenant ?',
+                                detail: ghostscriptError.message + '\n\n' +
+                                    'L\'application peut continuer, mais certaines fonctionnalités de traitement PDF ne seront pas disponibles :\n' +
+                                    '• Génération de miniatures pour les fichiers PDF\n' +
+                                    '• Conversion PDF vers PNG\n\n' +
+                                    'Pour activer ces fonctionnalités, installez Visual C++ Redistributable.\n\n' +
+                                    'Souhaitez-vous télécharger Visual C++ Redistributable maintenant ?',
                                 buttons: ['Télécharger Visual C++ Redistributable', 'Continuer sans Ghostscript'],
                                 defaultId: 1,
                                 cancelId: 1
@@ -2484,7 +2530,7 @@ ipcMain.handle('get-printers', async () => {
     if (process.platform !== 'win32') {
         return { success: false, error: 'Disponible uniquement sur Windows' };
     }
-    
+
     // Créer un moniteur temporaire si nécessaire pour récupérer les imprimantes
     let monitorToUse = printerMonitor;
     if (!monitorToUse) {
@@ -2496,7 +2542,7 @@ ipcMain.handle('get-printers', async () => {
             return { success: false, error: 'Impossible de créer le moniteur: ' + error.message };
         }
     }
-    
+
     try {
         const printers = await monitorToUse.getPrinters();
         return { success: true, printers: printers };
@@ -2511,7 +2557,7 @@ ipcMain.handle('toggle-printer-monitor', async (event, start) => {
     if (process.platform !== 'win32') {
         return { success: false, error: 'Disponible uniquement sur Windows' };
     }
-    
+
     try {
         if (start) {
             if (!printerMonitor) {
@@ -2536,7 +2582,7 @@ ipcMain.handle('get-printer-monitor-status', () => {
     if (process.platform !== 'win32') {
         return { available: false, status: 'not_supported' };
     }
-    
+
     return {
         available: true,
         status: printerMonitor && printerMonitor.monitoring ? 'active' : 'inactive'
@@ -2548,18 +2594,18 @@ ipcMain.handle('delete-printer', async (event, printerName) => {
     if (process.platform !== 'win32') {
         return { success: false, error: 'Disponible uniquement sur Windows' };
     }
-    
+
     if (!printerName) {
         return { success: false, error: 'Nom d\'imprimante non fourni' };
     }
-    
+
     return new Promise((resolve) => {
         // Échapper les caractères spéciaux pour PowerShell
         const escapedName = printerName.replace(/'/g, "''").replace(/"/g, '\\"');
-        
+
         // Script PowerShell pour supprimer l'imprimante
         const psScript = `$printer = Get-WmiObject Win32_Printer -Filter "Name='${escapedName.replace(/'/g, "''")}'" -ErrorAction SilentlyContinue; if ($printer) { $result = $printer.Delete(); if ($result.ReturnValue -eq 0) { Write-Output "SUCCESS" } else { try { Remove-Printer -Name "${escapedName.replace(/"/g, '\\"')}" -ErrorAction Stop; Write-Output "SUCCESS" } catch { Write-Output "ERROR: $($_.Exception.Message)" } } } else { Write-Output "ERROR: Imprimante non trouvée" }`;
-        
+
         const ps = spawn('powershell.exe', [
             '-NoProfile',
             '-ExecutionPolicy', 'Bypass',
@@ -2568,18 +2614,18 @@ ipcMain.handle('delete-printer', async (event, printerName) => {
             stdio: ['pipe', 'pipe', 'pipe'],
             shell: false
         });
-        
+
         let stdout = '';
         let stderr = '';
-        
+
         ps.stdout.on('data', (data) => {
             stdout += data.toString();
         });
-        
+
         ps.stderr.on('data', (data) => {
             stderr += data.toString();
         });
-        
+
         ps.on('close', (code) => {
             if (code === 0 && stdout.trim() === 'SUCCESS') {
                 resolve({ success: true });
@@ -2588,7 +2634,7 @@ ipcMain.handle('delete-printer', async (event, printerName) => {
                 resolve({ success: false, error: errorMsg.trim() });
             }
         });
-        
+
         ps.on('error', (error) => {
             resolve({ success: false, error: error.message });
         });
@@ -2630,10 +2676,10 @@ setInterval(() => {
 function storePrintOptions(pdfPath, options) {
     const fileName = path.basename(pdfPath);
     const timestamp = Date.now();
-    
+
     // Extraire le nom de base du fichier (sans extension) pour meilleur matching
     const baseName = path.basename(pdfPath, path.extname(pdfPath));
-    
+
     // Stocker les options avec toutes les informations disponibles
     const cacheEntry = {
         timestamp: timestamp,
@@ -2650,26 +2696,26 @@ function storePrintOptions(pdfPath, options) {
             resolution: options.resolution || null
         }
     };
-    
+
     // Stocker avec plusieurs clés pour faciliter la recherche
     // Important: stocker avec le nom de fichier (ce que Windows connaît) comme clé principale
     printOptionsCache.set(fileName, cacheEntry);
     printOptionsCache.set(baseName, cacheEntry);
     printOptionsCache.set(pdfPath, cacheEntry);
-    
+
     // Stocker aussi avec le nom normalisé (sans espaces/caractères spéciaux)
     const normalizedFileName = fileName.replace(/[^\w.-]/g, '_').toLowerCase();
     printOptionsCache.set(normalizedFileName, cacheEntry);
-    
+
     console.log('📦 [PRINT_CACHE] Options stockées pour:', fileName);
     console.log('   Clés utilisées:', [fileName, baseName, normalizedFileName].join(', '));
     console.log('   Options:', JSON.stringify(cacheEntry.options, null, 2));
-    
+
     // Passer au moniteur si disponible
     if (printerMonitor && printerMonitor.setPrintOptions) {
         printerMonitor.setPrintOptions(fileName, cacheEntry);
     }
-    
+
     return cacheEntry;
 }
 
@@ -2681,7 +2727,7 @@ function getPrintOptions(documentName) {
         path.basename(documentName),
         path.basename(documentName, path.extname(documentName))
     ];
-    
+
     for (const key of keys) {
         const entry = printOptionsCache.get(key);
         if (entry && (Date.now() - entry.timestamp) < PRINT_OPTIONS_CACHE_TIMEOUT) {
@@ -2689,7 +2735,7 @@ function getPrintOptions(documentName) {
             return entry;
         }
     }
-    
+
     // Recherche partielle (si le nom du document contient le nom de base)
     for (const [key, entry] of printOptionsCache.entries()) {
         if (documentName.includes(entry.baseName) || entry.fileName.includes(documentName)) {
@@ -2699,7 +2745,7 @@ function getPrintOptions(documentName) {
             }
         }
     }
-    
+
     console.log('❌ [PRINT_CACHE] Aucune option trouvée pour:', documentName);
     return null;
 }
@@ -2727,7 +2773,7 @@ ipcMain.handle('print-file', async (event, fileUrl) => {
     return new Promise((resolve, reject) => {
         try {
             console.log('Impression demandée pour:', fileUrl);
-            
+
             // Créer une fenêtre invisible pour charger le fichier
             const printWindow = new BrowserWindow({
                 show: false,
@@ -2737,14 +2783,14 @@ ipcMain.handle('print-file', async (event, fileUrl) => {
                     sandbox: true
                 }
             });
-            
+
             // Charger le fichier
             printWindow.loadURL(fileUrl);
-            
+
             // Attendre que le contenu soit chargé
             printWindow.webContents.on('did-finish-load', () => {
                 console.log('Fichier chargé, ouverture de la boîte de dialogue d\'impression');
-                
+
                 // Ouvrir la boîte de dialogue d'impression système
                 printWindow.webContents.print({
                     silent: false,  // Afficher la boîte de dialogue
@@ -2756,7 +2802,7 @@ ipcMain.handle('print-file', async (event, fileUrl) => {
                 }, (success, errorType) => {
                     // Fermer la fenêtre après l'impression
                     printWindow.close();
-                    
+
                     if (success) {
                         console.log('Impression réussie ou annulée par l\'utilisateur');
                         resolve({ success: true });
@@ -2766,14 +2812,14 @@ ipcMain.handle('print-file', async (event, fileUrl) => {
                     }
                 });
             });
-            
+
             // Gérer les erreurs de chargement
             printWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
                 console.error('Erreur de chargement du fichier:', errorDescription);
                 printWindow.close();
                 reject({ success: false, error: errorDescription });
             });
-            
+
         } catch (error) {
             console.error('Erreur lors de la préparation de l\'impression:', error);
             reject({ success: false, error: error.message });
@@ -2785,7 +2831,7 @@ ipcMain.handle('print-file', async (event, fileUrl) => {
 ipcMain.handle('open-external-file', async (event, fileUrl) => {
     try {
         console.log('Ouverture externe demandée pour:', fileUrl);
-        
+
         // Si c'est une URL HTTP, on doit d'abord télécharger le fichier
         if (fileUrl.startsWith('http')) {
             const http = require('http');
@@ -2793,22 +2839,22 @@ ipcMain.handle('open-external-file', async (event, fileUrl) => {
             const fs = require('fs');
             const path = require('path');
             const os = require('os');
-            
+
             return new Promise((resolve, reject) => {
                 // Créer un nom de fichier temporaire
                 const tempFileName = 'temp_' + Date.now() + '.pdf';
                 const tempFilePath = path.join(os.tmpdir(), tempFileName);
                 const file = fs.createWriteStream(tempFilePath);
-                
+
                 const protocol = fileUrl.startsWith('https') ? https : http;
-                
+
                 protocol.get(fileUrl, (response) => {
                     response.pipe(file);
-                    
+
                     file.on('finish', () => {
                         file.close();
                         console.log('Fichier téléchargé vers:', tempFilePath);
-                        
+
                         // Ouvrir le fichier avec l'application par défaut
                         shell.openPath(tempFilePath).then(error => {
                             if (error) {
@@ -2821,7 +2867,7 @@ ipcMain.handle('open-external-file', async (event, fileUrl) => {
                         });
                     });
                 }).on('error', (err) => {
-                    fs.unlink(tempFilePath, () => {}); // Supprimer le fichier en cas d'erreur
+                    fs.unlink(tempFilePath, () => { }); // Supprimer le fichier en cas d'erreur
                     console.error('Erreur de téléchargement:', err.message);
                     reject({ success: false, error: err.message });
                 });
