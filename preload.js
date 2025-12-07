@@ -56,7 +56,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     onPrintMonitorStarted: (callback) => {
         ipcRenderer.on('print-monitor-started', (event, payload) => callback(payload));
-    }
+    },
+    
+    // Module d'impression (cross-platform)
+    getPrinterCapabilities: (printerName) => ipcRenderer.invoke('get-printer-capabilities', printerName),
+    printJob: (pdfPath, options) => ipcRenderer.invoke('print-job', pdfPath, options)
 });
 
 

@@ -246,11 +246,45 @@ async function loadPrintJobs() {
         }
         
         if (data.success && data.jobs && data.jobs.length > 0) {
-            let html = '<table class="table table-striped table-hover"><thead><tr><th>Date</th><th>Document</th><th>Imprimante</th><th>Utilisateur</th><th>Statut</th><th>Pages</th></tr></thead><tbody>';
+            let html = '<table class="table table-striped table-hover"><thead><tr><th>Date</th><th>Document</th><th>Imprimante</th><th>Utilisateur</th><th>Statut</th><th>Pages</th><th>Format</th><th>Recto-Verso</th><th>Couleur</th></tr></thead><tbody>';
             data.jobs.slice(0, 20).forEach(job => {
                 const date = new Date(job.timestamp).toLocaleString('fr-FR');
                 const pages = (job.pages_printed || 0) + ' / ' + (job.total_pages || 0);
                 const statusClass = job.status === 'Completed' ? 'success' : job.status === 'Printing' ? 'info' : 'warning';
+                
+                // Afficher le format de papier (A3, A4, etc.)
+                let paperSizeText = job.paper_size || 'N/A';
+                if (paperSizeText === 'Unknown' || !paperSizeText) {
+                    paperSizeText = 'N/A';
+                }
+                
+                // Déterminer le recto-verso
+                let duplexText = 'N/A';
+                if (job.duplex !== undefined && job.duplex !== null) {
+                    // Utiliser la valeur de la base de données
+                    duplexText = job.duplex ? '<span class="label label-info">Oui</span>' : '<span class="label label-default">Non</span>';
+                } else if (job.total_pages && job.pages_printed) {
+                    // Déduire du nombre de pages : si pages_printed est environ le double de total_pages, c'est du recto-verso
+                    const ratio = job.pages_printed / job.total_pages;
+                    if (ratio >= 1.8 && ratio <= 2.2) {
+                        duplexText = '<span class="label label-info">Oui</span>';
+                    } else if (ratio >= 0.9 && ratio <= 1.1) {
+                        duplexText = '<span class="label label-default">Non</span>';
+                    }
+                }
+                
+                // Afficher le mode couleur
+                let colorText = 'N/A';
+                if (job.color_mode) {
+                    if (job.color_mode === 'Color' || job.color_mode === 'Couleur') {
+                        colorText = '<span class="label label-danger">Couleur</span>';
+                    } else if (job.color_mode === 'Monochrome' || job.color_mode === 'Noir et blanc') {
+                        colorText = '<span class="label label-default">N&B</span>';
+                    } else {
+                        colorText = job.color_mode;
+                    }
+                }
+                
                 html += `<tr>
                     <td>${date}</td>
                     <td>${job.document || 'N/A'}</td>
@@ -258,6 +292,9 @@ async function loadPrintJobs() {
                     <td>${job.owner || 'N/A'}</td>
                     <td><span class="label label-${statusClass}">${job.status || 'N/A'}</span></td>
                     <td>${pages}</td>
+                    <td><span class="label label-primary">${paperSizeText}</span></td>
+                    <td>${duplexText}</td>
+                    <td>${colorText}</td>
                 </tr>`;
             });
             html += '</tbody></table>';

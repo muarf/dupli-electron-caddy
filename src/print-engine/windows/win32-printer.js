@@ -45,7 +45,7 @@ async function getPrinters() {
     try {
         const addon = loadNativeAddon();
         const printers = addon.getPrinters();
-        
+
         // Convertir en tableau JavaScript standard
         const result = [];
         for (let i = 0; i < printers.length; i++) {
@@ -56,7 +56,7 @@ async function getPrinters() {
                 isDefault: printers[i].isDefault || false
             });
         }
-        
+
         return result;
     } catch (error) {
         throw new Error(`Erreur lors de la récupération des imprimantes: ${error.message}`);
@@ -72,7 +72,7 @@ async function getPrinterCapabilities(printerName) {
     try {
         const addon = loadNativeAddon();
         const capabilities = addon.getPrinterCapabilities(printerName);
-        
+
         // Convertir en objet JavaScript standard
         const result = {
             inputSlots: [],
@@ -82,7 +82,7 @@ async function getPrinterCapabilities(printerName) {
             colorModes: [],
             resolutions: []
         };
-        
+
         // Convertir les bacs
         if (capabilities.inputSlots) {
             for (let i = 0; i < capabilities.inputSlots.length; i++) {
@@ -92,7 +92,7 @@ async function getPrinterCapabilities(printerName) {
                 });
             }
         }
-        
+
         // Convertir les formats papier
         if (capabilities.pageSizes) {
             for (let i = 0; i < capabilities.pageSizes.length; i++) {
@@ -104,14 +104,14 @@ async function getPrinterCapabilities(printerName) {
                 });
             }
         }
-        
+
         // Convertir les modes couleur
         if (capabilities.colorModes) {
             for (let i = 0; i < capabilities.colorModes.length; i++) {
                 result.colorModes.push(capabilities.colorModes[i]);
             }
         }
-        
+
         // Valeurs par défaut si vides
         if (result.inputSlots.length === 0) {
             result.inputSlots.push({ name: 'Auto', value: 'Auto' });
@@ -122,7 +122,7 @@ async function getPrinterCapabilities(printerName) {
         if (result.colorModes.length === 0) {
             result.colorModes.push('Monochrome');
         }
-        
+
         return result;
     } catch (error) {
         throw new Error(`Erreur lors de la récupération des capacités: ${error.message}`);
@@ -137,9 +137,27 @@ async function getPrinterCapabilities(printerName) {
  */
 async function printJob(pdfPath, options = {}) {
     try {
+        // Log détaillé des options envoyées
+        const logData = {
+            timestamp: new Date().toISOString(),
+            pdfPath: pdfPath,
+            printer: options.printer,
+            options: {
+                copies: options.copies || 1,
+                pageSize: options.pageSize || 'Default',
+                colorMode: options.colorMode || 'Default',
+                duplex: options.duplex || 'Default',
+                inputSlot: options.inputSlot || 'Default',
+                resolution: options.resolution || 'Default'
+            }
+        };
+        console.log('🖨️ [PRINT_ENGINE] Options d\'impression envoyées:', JSON.stringify(logData, null, 2));
+
         const addon = loadNativeAddon();
         const result = addon.printJob(pdfPath, options);
-        
+
+        console.log('✅ [PRINT_ENGINE] Résultat de l\'impression:', JSON.stringify(result, null, 2));
+
         return {
             success: result.success || true,
             jobId: result.jobId || null,
@@ -147,13 +165,51 @@ async function printJob(pdfPath, options = {}) {
             printer: result.printer || options.printer
         };
     } catch (error) {
+        console.error('❌ [PRINT_ENGINE] Erreur lors de l\'impression:', error.message);
         throw new Error(`Erreur lors de l'impression: ${error.message}`);
+    }
+}
+
+/**
+ * Démarrer la surveillance des imprimantes
+ * @param {Function} callback - Fonction appelée à chaque changement (job data)
+ * @returns {boolean} Succès
+ */
+function startPrinterMonitor(callback) {
+    try {
+        const addon = loadNativeAddon();
+        if (addon.startPrinterMonitor) {
+            return addon.startPrinterMonitor(callback);
+        }
+        console.warn('⚠️ L\'addon natif ne supporte pas startPrinterMonitor');
+        return false;
+    } catch (error) {
+        console.error('❌ Erreur lors du démarrage du moniteur:', error);
+        return false;
+    }
+}
+
+/**
+ * Arrêter la surveillance des imprimantes
+ * @returns {boolean} Succès
+ */
+function stopPrinterMonitor() {
+    try {
+        const addon = loadNativeAddon();
+        if (addon.stopPrinterMonitor) {
+            return addon.stopPrinterMonitor();
+        }
+        return false;
+    } catch (error) {
+        console.error('❌ Erreur lors de l\'arrêt du moniteur:', error);
+        return false;
     }
 }
 
 module.exports = {
     getPrinters,
     getPrinterCapabilities,
-    printJob
+    printJob,
+    startPrinterMonitor,
+    stopPrinterMonitor
 };
-
