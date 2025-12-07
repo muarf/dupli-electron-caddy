@@ -42,6 +42,23 @@ try {
         exit;
     }
     
+    // Migration : Ajouter les colonnes si elles n'existent pas
+    try {
+        $db->execute("ALTER TABLE print_jobs ADD COLUMN duplex INTEGER DEFAULT 0");
+    } catch (Exception $e) {
+        // La colonne existe déjà, ignorer
+    }
+    try {
+        $db->execute("ALTER TABLE print_jobs ADD COLUMN paper_size TEXT");
+    } catch (Exception $e) {
+        // La colonne existe déjà, ignorer
+    }
+    try {
+        $db->execute("ALTER TABLE print_jobs ADD COLUMN color_mode TEXT");
+    } catch (Exception $e) {
+        // La colonne existe déjà, ignorer
+    }
+    
     // Récupérer tous les jobs d'impression, triés par date décroissante
     $jobs = $db->select("
         SELECT 
@@ -54,6 +71,9 @@ try {
             pages_printed,
             total_pages,
             size,
+            duplex,
+            paper_size,
+            color_mode,
             time_submitted,
             event_type,
             timestamp,

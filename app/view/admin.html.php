@@ -75,7 +75,7 @@
             </div>
           </div>
         </div>
-        
+
         <div class="panel panel-info">
           <div class="panel-heading">
             <h3 class="panel-title"><i class="fa fa-cog"></i> Configuration</h3>

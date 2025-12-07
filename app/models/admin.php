@@ -968,7 +968,7 @@ function handleStatsSection($array, $statsManager) {
 function handleImprimantesSection($array) {
     // Stocker les variables dans $GLOBALS pour les préserver
     $GLOBALS['model_variables'] = $array;
-    
+
     return template("../view/admin.imprimantes.html.php", $array);
 }
 
