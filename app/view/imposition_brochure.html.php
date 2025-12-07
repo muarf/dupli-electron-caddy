@@ -217,6 +217,12 @@
 
                     <?php if (isset($download_url) && $download_url): ?>
                         <div class="text-center">
+                            <button type="button" class="btn btn-primary" onclick="openUrl('<?= htmlspecialchars($download_url) ?>')" style="margin-right: 10px;">
+                                <i class="fa fa-external-link"></i> Ouvrir
+                            </button>
+                            <button type="button" class="btn btn-info" onclick="printUrl('<?= htmlspecialchars($download_url) ?>')" style="margin-right: 10px;">
+                                <i class="fa fa-print"></i> Imprimer
+                            </button>
                             <a href="<?= htmlspecialchars($download_url) ?>" class="btn btn-download">
                                 <i class="fa fa-download"></i> Télécharger le PDF imposé
                             </a>
@@ -241,6 +247,14 @@
                 <?php endif; ?>
 
                 <form method="POST" enctype="multipart/form-data" class="form-horizontal">
+                    <input type="hidden" name="lib_file_id" id="lib_file_id" value="<?= isset($from_lib_file) ? $from_lib_file['id'] : '' ?>">
+                    
+                    <div class="text-end mb-2">
+                        <a href="?bibliotheque" class="btn btn-outline-primary btn-sm">
+                            <i class="fa fa-book"></i> Ouvrir la bibliothèque
+                        </a>
+                    </div>
+
                     <div class="file-upload-area" id="fileUploadArea">
                         <div class="file-upload-icon">
                             <i class="fa fa-cloud-upload"></i>
@@ -255,7 +269,16 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="n_up"><i class="fa fa-cogs"></i> Format de Livret (A3 Output) :</label>
+                        <label for="output_format"><i class="fa fa-file-o"></i> Format de sortie :</label>
+                        <select name="output_format" id="output_format" class="form-control">
+                            <option value="A3" selected>A3 (420×297 mm / 297×420 mm)</option>
+                            <option value="A4">A4 (210×297 mm / 297×210 mm)</option>
+                        </select>
+                        <small class="form-text text-muted">Choisissez le format de la feuille d'impression</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="n_up"><i class="fa fa-cogs"></i> Format de Livret :</label>
                         <select name="n_up" id="n_up" class="form-control">
                             <option value="2" selected>2 poses (Standard 1 pli)</option>
                             <option value="4">4 poses (2 livrets Tête-Bêche)</option>
@@ -323,16 +346,22 @@
 
                     <div class="checkbox-group">
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label for="preview">
                                     <input type="checkbox" name="preview" id="preview">
                                     <i class="fa fa-eye"></i> Preview avec numéros de pages
                                 </label>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label for="crop_marks">
                                     <input type="checkbox" name="crop_marks" id="crop_marks" value="1">
                                     <i class="fa fa-scissors"></i> Ajouter des traits de coupe
+                                </label>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="add_page_numbers_in_gutters">
+                                    <input type="checkbox" name="add_page_numbers_in_gutters" id="add_page_numbers_in_gutters" value="1">
+                                    <i class="fa fa-sort-numeric-asc"></i> Numéros dans les gouttières
                                 </label>
                             </div>
                         </div>
@@ -381,6 +410,15 @@
             const fileInput = document.getElementById('pdf');
             const uploadText = document.getElementById('uploadText');
             const uploadSubtext = document.getElementById('uploadSubtext');
+            const libFileId = document.getElementById('lib_file_id');
+
+            <?php if (isset($from_lib_file)): ?>
+            // Pré-remplissage si fichier bibliothèque
+            fileUploadArea.classList.add('file-selected');
+            uploadText.innerHTML = '<i class="fa fa-file-pdf-o"></i> ' + <?= json_encode($from_lib_file['filename']) ?>;
+            uploadSubtext.textContent = 'Fichier sélectionné depuis la bibliothèque';
+            document.getElementById('pdf').removeAttribute('required');
+            <?php endif; ?>
 
             fileUploadArea.addEventListener('click', function() {
                 fileInput.click();
@@ -392,6 +430,9 @@
                     fileUploadArea.classList.add('file-selected');
                     uploadText.innerHTML = '<i class="fa fa-file-pdf-o"></i> ' + fileName;
                     uploadSubtext.textContent = 'Cliquez pour changer de fichier';
+                    
+                    // Reset bibliothèque selection
+                    if (libFileId) libFileId.value = '';
                 }
             });
 
@@ -448,6 +489,70 @@
                 });
             }
         });
+        
+        // Fonction d'impression pour les fichiers transformés
+        function printUrl(url) {
+            // Vérifier si l'API Electron est disponible
+            if (!window.electronAPI || !window.electronAPI.printFile) {
+                alert('L\'impression système n\'est disponible que dans l\'application Electron. Utilisez le téléchargement pour imprimer depuis un navigateur.');
+                // Fallback : ouvrir l'URL dans un nouvel onglet
+                window.open(url, '_blank');
+                return;
+            }
+            
+            try {
+                // Construire l'URL complète si nécessaire
+                const fullUrl = url.startsWith('http') ? url : window.location.origin + '/' + url;
+                console.log('Demande d\'impression pour:', fullUrl);
+                
+                // Appeler l'API Electron pour imprimer
+                window.electronAPI.printFile(fullUrl)
+                    .then(result => {
+                        if (result.success) {
+                            console.log('Impression lancée avec succès');
+                        } else {
+                            console.error('Erreur lors de l\'impression:', result.error);
+                            alert('Erreur lors de l\'impression: ' + (result.error || 'Erreur inconnue'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur impression:', error);
+                        alert('Erreur lors de l\'impression: ' + error.message);
+                    });
+            } catch (error) {
+                console.error('Erreur lors de la préparation de l\'impression:', error);
+                alert('Erreur lors de la préparation de l\'impression: ' + error.message);
+            }
+        }
+        
+        // Fonction d'ouverture pour les fichiers transformés
+        function openUrl(url) {
+            // Construire l'URL complète si nécessaire
+            const fullUrl = url.startsWith('http') ? url : window.location.origin + '/' + url;
+            
+            // Vérifier si l'API Electron est disponible
+            if (window.electronAPI && window.electronAPI.openExternalFile) {
+                // Dans Electron : ouvrir avec l'application système
+                console.log('Ouverture externe pour:', fullUrl);
+                window.electronAPI.openExternalFile(fullUrl)
+                    .then(result => {
+                        if (result.success) {
+                            console.log('Fichier ouvert avec succès');
+                        } else {
+                            console.error('Erreur lors de l\'ouverture:', result.error);
+                            alert('Erreur lors de l\'ouverture du fichier: ' + (result.error || 'Erreur inconnue'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur ouverture:', error);
+                        alert('Erreur lors de l\'ouverture du fichier: ' + error.message);
+                    });
+            } else {
+                // Dans un navigateur web : ouvrir dans un nouvel onglet
+                console.log('Ouverture dans un nouvel onglet:', fullUrl);
+                window.open(fullUrl, '_blank');
+            }
+        }
     </script>
 
     <script>

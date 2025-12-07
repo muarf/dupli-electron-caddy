@@ -37,13 +37,26 @@ class TirageManager {
      * Obtenir les derniers tirages pour une machine
      */
     public function getLastTirages($machine, $sql, $page = 1, $limit = 20) {
+        // Debug: log l'appel
+        if ($machine == 'comcolor' && $page == 4) {
+            error_log("DEBUG getLastTirages: machine=$machine, page=$page, limit=$limit");
+        }
+        
         // Déterminer si c'est un duplicopieur ou un photocopieur
         if ($this->isDuplicopieur($machine)) {
             // Pour les duplicopieurs, utiliser la table dupli avec le nom spécifique de la machine
-            return last($machine, $sql, $page, $limit);
+            $result = last($machine, $sql, $page, $limit);
+            if ($machine == 'comcolor' && $page == 4) {
+                error_log("DEBUG getLastTirages: après last(), count=" . count($result));
+            }
+            return $result;
         } else {
             // Pour les photocopieurs, utiliser la table photocop avec filtre par marque
-            return last($machine, $sql, $page, $limit);
+            $result = last($machine, $sql, $page, $limit);
+            if ($machine == 'comcolor' && $page == 4) {
+                error_log("DEBUG getLastTirages: après last(), count=" . count($result));
+            }
+            return $result;
         }
     }
     
@@ -215,19 +228,19 @@ class TirageManager {
     public function buildSqlClause() {
         if(!isset($_GET['order']) && !isset($_GET['paye'])){ 
             $phrase = 'Voir seulement les <a href="?admin&tirages&paye">nons-payés</a> ou les classer par <a href="?admin&tirages&order">ordre de prix</a>'; 
-            $sql = "ORDER By id DESC";
+            $sql = "ORDER By date DESC, id DESC";
         }
         if(!isset($_GET['order']) && isset($_GET['paye'])) {  
             $phrase = 'Voir tous les <a href="?admin&tirages">derniers tirages</a> ou classer les nons payés par <a href="?admin&tirages&paye&order">ordre de prix</a>'; 
-            $sql = ' WHERE paye = "non" ORDER By id DESC';
+            $sql = ' WHERE paye = "non" ORDER By date DESC, id DESC';
         }
         if(isset($_GET['order']) && !isset($_GET['paye'])){ 
             $phrase = 'Voir seulement les <a href="?admin&tirages&paye">nons-payés</a>'; 
-            $sql = ' ORDER by prix * 1 DESC'; 
+            $sql = ' ORDER by prix * 1 DESC, date DESC'; 
         }
         if(isset($_GET['order']) && isset($_GET['paye'])){ 
             $phrase = 'Voir tous les <a href="?admin&tirages">derniers tirages</a>';  
-            $sql = ' WHERE paye = "non" ORDER by prix * 1 DESC';
+            $sql = ' WHERE paye = "non" ORDER by prix * 1 DESC, date DESC';
         }
         
         return array('sql' => $sql, 'phrase' => $phrase);
@@ -253,11 +266,203 @@ class TirageManager {
             $page_param = 'page_' . strtolower(str_replace(' ', '_', $machine));
             $current_page = isset($_GET[$page_param]) ? intval($_GET[$page_param]) : 1;
             
-            $data['last'][$machine] = $this->getLastTirages($machine, $sqlData['sql'], $current_page, 20);
+            $tirages = $this->getLastTirages($machine, $sqlData['sql'], $current_page, 20);
+            
+            // Debug: log avant regroupement
+            if ($machine == 'comcolor' && $current_page == 4) {
+                error_log("DEBUG getAllTirageData: machine=$machine, page=$current_page, count(tirages)=" . count($tirages));
+                if (isset($tirages['pagination'])) {
+                    error_log("DEBUG getAllTirageData: pagination=" . json_encode($tirages['pagination']));
+                }
+            }
+            
+            // Regrouper les tirages par tirage_global_id
+            $data['last'][$machine] = $this->groupTiragesByGlobalId($tirages);
+            
+            // Debug: log après regroupement
+            if ($machine == 'comcolor' && $current_page == 4) {
+                $grouped_count = isset($data['last'][$machine]['pagination']) ? count($data['last'][$machine]) - 1 : count($data['last'][$machine]);
+                error_log("DEBUG getAllTirageData: après regroupement, count(grouped)=" . $grouped_count);
+            }
             $data['prix_du'][$machine] = $this->getPrixEnAttente($machine);
         }
         
         return $data;
+    }
+    
+    /**
+     * Regrouper les tirages par tirage_global_id
+     */
+    private function groupTiragesByGlobalId($tirages) {
+        // Debug: log l'entrée de la fonction
+        file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - DEBUG groupTiragesByGlobalId: ENTRY, count(tirages)=' . count($tirages) . "\n", FILE_APPEND);
+        
+        // Extraire la pagination si elle existe
+        $pagination = null;
+        if (isset($tirages['pagination'])) {
+            $pagination = $tirages['pagination'];
+            file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - DEBUG: pagination found: ' . json_encode($pagination) . "\n", FILE_APPEND);
+            unset($tirages['pagination']);
+        } else {
+            file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - DEBUG: no pagination in tirages' . "\n", FILE_APPEND);
+        }
+        
+        // Réindexer le tableau pour s'assurer que les indices sont numériques et séquentiels
+        $tirages = array_values($tirages);
+        file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - DEBUG: after array_values, count(tirages)=' . count($tirages) . "\n", FILE_APPEND);
+        
+        $grouped = array();
+        $groups = array();
+        
+        // Grouper les tirages par tirage_global_id
+        foreach ($tirages as $tirage) {
+            $global_id = isset($tirage['tirage_global_id']) && !empty($tirage['tirage_global_id']) 
+                ? $tirage['tirage_global_id'] 
+                : 'single_' . $tirage['id']; // Tirages sans groupe
+            
+            if (!isset($groups[$global_id])) {
+                $groups[$global_id] = array(
+                    'tirage_global_id' => $global_id,
+                    'tirages' => array(),
+                    'prix_total' => 0,
+                    'count' => 0,
+                    'all_paid' => true
+                );
+            }
+            
+            $groups[$global_id]['tirages'][] = $tirage;
+            $groups[$global_id]['prix_total'] += floatval($tirage['prix'] ?? 0);
+            $groups[$global_id]['count']++;
+            
+            // Vérifier si le tirage est payé
+            $is_paid = isset($tirage['paye']) && ($tirage['paye'] === 'oui' || $tirage['paye'] === 'Oui');
+            if (!isset($groups[$global_id]['all_paid'])) {
+                $groups[$global_id]['all_paid'] = true;
+            }
+            if (!$is_paid) {
+                $groups[$global_id]['all_paid'] = false;
+            }
+        }
+        
+        // Convertir en tableau indexé pour l'affichage et trier par date (plus récent en premier)
+        $i = 0;
+        foreach ($groups as $group) {
+            // Calculer la date max du groupe pour le tri
+            $max_date = 0;
+            foreach ($group['tirages'] as $tirage) {
+                // Utiliser le timestamp si disponible, sinon convertir la date formatée
+                if (isset($tirage['date_timestamp'])) {
+                    $timestamp = intval($tirage['date_timestamp']);
+                } else if (isset($tirage['date'])) {
+                    $date_str = $tirage['date'];
+                    // Convertir 'd.m.y' en timestamp
+                    if (preg_match('/^(\d{2})\.(\d{2})\.(\d{2})$/', $date_str, $matches)) {
+                        $day = intval($matches[1]);
+                        $month = intval($matches[2]);
+                        $year = 2000 + intval($matches[3]); // Année sur 2 chiffres
+                        $timestamp = mktime(0, 0, 0, $month, $day, $year);
+                    } else {
+                        $timestamp = 0;
+                    }
+                } else {
+                    $timestamp = 0;
+                }
+                if ($timestamp > $max_date) {
+                    $max_date = $timestamp;
+                }
+            }
+            $grouped[$i] = $group;
+            $grouped[$i]['_sort_date'] = $max_date; // Stocker la date pour le tri
+            $i++;
+        }
+        
+        // Trier les groupes par date décroissante (plus récent en premier)
+        usort($grouped, function($a, $b) {
+            $date_a = isset($a['_sort_date']) ? $a['_sort_date'] : 0;
+            $date_b = isset($b['_sort_date']) ? $b['_sort_date'] : 0;
+            return $date_b - $date_a; // Décroissant
+        });
+        
+        // Retirer le champ temporaire de tri et réindexer
+        $grouped = array_values($grouped);
+        foreach ($grouped as &$group) {
+            unset($group['_sort_date']);
+        }
+        unset($group);
+        
+        // Calculer le nombre total de groupes (après regroupement)
+        // IMPORTANT: Utiliser le nombre réel après regroupement, pas celui de la BDD
+        $total_groups = count($grouped);
+        
+        // Extraire per_page de la pagination si disponible, sinon utiliser 20
+        $per_page = isset($pagination['per_page']) ? $pagination['per_page'] : 20;
+        
+        // Extraire la page demandée depuis la pagination
+        $requested_page = isset($pagination['current_page']) ? intval($pagination['current_page']) : 1;
+        
+        // Calculer le nombre total de pages basé sur le nombre réel de groupes
+        $total_pages = $total_groups > 0 ? ceil($total_groups / $per_page) : 0;
+        
+        // S'assurer que la page demandée est valide
+        if ($requested_page < 1) {
+            $current_page = 1;
+        } else if ($requested_page > $total_pages && $total_pages > 0) {
+            $current_page = $total_pages; // Aller à la dernière page valide
+        } else {
+            $current_page = $requested_page;
+        }
+        
+        // Calculer l'offset
+        $offset = ($current_page - 1) * $per_page;
+        
+        // Debug: log pour comprendre le problème
+        $pagination_total = isset($pagination['total_entries']) ? $pagination['total_entries'] : 'N/A';
+        $debug_msg = "DEBUG groupTiragesByGlobalId: total_groups=$total_groups (real), pagination_total_entries=$pagination_total (from BDD), requested_page=$requested_page, current_page=$current_page, per_page=$per_page, offset=$offset, total_pages=$total_pages\n";
+        file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - ' . $debug_msg, FILE_APPEND);
+        
+        // Si pas de groupes, retourner un tableau vide
+        if ($total_groups == 0) {
+            $grouped_limited = array();
+            if ($pagination !== null) {
+                $pagination['total_entries'] = 0;
+                $pagination['total_pages'] = 0;
+                $pagination['current_page'] = 1;
+                $grouped_limited['pagination'] = $pagination;
+            }
+            return $grouped_limited;
+        }
+        
+        // Limiter les groupes selon la pagination
+        // S'assurer que $grouped est bien un tableau indexé numériquement avant array_slice
+        $grouped = array_values($grouped);
+        
+        // Debug: vérifier la structure avant array_slice
+        $debug_msg = "DEBUG before array_slice: grouped count=" . count($grouped) . ", offset=$offset, per_page=$per_page, current_page=$current_page\n";
+        file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - ' . $debug_msg, FILE_APPEND);
+        
+        // Limiter les groupes selon la pagination
+        $grouped_limited = array_slice($grouped, $offset, $per_page);
+        
+        // Debug: vérifier le résultat
+        $debug_msg = "DEBUG after array_slice: grouped_limited count=" . count($grouped_limited) . " for page $current_page\n";
+        file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - ' . $debug_msg, FILE_APPEND);
+        
+        // Réindexer pour s'assurer que les indices commencent à 0
+        $grouped_limited = array_values($grouped_limited);
+        
+        // Mettre à jour la pagination avec le nombre réel de groupes
+        // IMPORTANT: Utiliser le nombre réel de groupes après regroupement, pas celui de la BDD
+        if ($pagination !== null) {
+            $pagination['total_entries'] = $total_groups; // Nombre réel après regroupement
+            $pagination['total_pages'] = $total_pages; // Nombre réel de pages
+            $pagination['current_page'] = $current_page; // Page ajustée si nécessaire
+            $grouped_limited['pagination'] = $pagination;
+        }
+        
+        // Debug final
+        file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . " - DEBUG FINAL: returning " . count($grouped_limited) . " groups for page $current_page\n", FILE_APPEND);
+        
+        return $grouped_limited;
     }
 }
 ?>

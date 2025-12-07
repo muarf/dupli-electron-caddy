@@ -25,6 +25,7 @@ class ImpositionLeaflet
             'crop_style' => 'standard', // standard, spreads, booklet
             'gutter_strategy' => 'reduce', // reduce, crop
             'preview_mode' => false,
+            'add_page_numbers_in_gutters' => false,
             'addPageNumberCallback' => null // Callback pour ajouter les numéros de pages
         ], $settings);
 
@@ -93,11 +94,28 @@ class ImpositionLeaflet
             $cols = 2; $rows = 1;
         }
 
-        $a3Width = 420;
-        $a3Height = 297;
-        if ($this->settings['orientation'] == 'P') {
-            $a3Width = 297;
-            $a3Height = 420;
+        // Configuration format sortie selon le format choisi
+        $outputFormat = $this->settings['output_format'] ?? 'A3';
+        
+        if ($outputFormat === 'A4') {
+            // Format A4
+            $sheetWidth = 210;
+            $sheetHeight = 297;
+            if ($this->settings['orientation'] == 'P') {
+                $sheetWidth = 210;
+                $sheetHeight = 297;
+            } else {
+                $sheetWidth = 297;
+                $sheetHeight = 210;
+            }
+        } else {
+            // Format A3 (par défaut)
+            $sheetWidth = 420;
+            $sheetHeight = 297;
+            if ($this->settings['orientation'] == 'P') {
+                $sheetWidth = 297;
+                $sheetHeight = 420;
+            }
         }
 
         // Pre-calculate logical sheets (Leaflet Spreads)
@@ -105,18 +123,18 @@ class ImpositionLeaflet
 
         foreach ($sheetsToPrint as $sheetIdx => $sheetData) {
             // Front Side
-            $this->pdf->AddPage($this->settings['orientation'], 'A3');
+            $this->pdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
             if ($this->previewPdf) {
-                $this->previewPdf->AddPage($this->settings['orientation'], 'A3');
+                $this->previewPdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
             }
-            $this->renderSheetSide($sheetData['front'], $cols, $rows, $a3Width, $a3Height);
+            $this->renderSheetSide($sheetData['front'], $cols, $rows, $sheetWidth, $sheetHeight);
 
             // Back Side
-            $this->pdf->AddPage($this->settings['orientation'], 'A3');
+            $this->pdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
             if ($this->previewPdf) {
-                $this->previewPdf->AddPage($this->settings['orientation'], 'A3');
+                $this->previewPdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
             }
-            $this->renderSheetSide($sheetData['back'], $cols, $rows, $a3Width, $a3Height);
+            $this->renderSheetSide($sheetData['back'], $cols, $rows, $sheetWidth, $sheetHeight);
         }
 
         // S'assurer que le répertoire existe et normaliser le chemin
@@ -151,6 +169,9 @@ class ImpositionLeaflet
 
     private function renderSheetSide($rowsData, $cols, $rows, $sheetWidth, $sheetHeight)
     {
+        // Calculer les métriques une fois pour toutes les pages (nécessaire pour les crop marks de style)
+        $metrics = $this->calculatePageMetrics($cols, $rows, $sheetWidth, $sheetHeight);
+        
         foreach ($rowsData as $rIndex => $rowData) {
             $pages = $rowData['pages'];
             $rotated = $rowData['rotated'];
@@ -165,14 +186,109 @@ class ImpositionLeaflet
             if ($this->settings['crop_marks']) {
                 if ($this->settings['crop_style'] === 'booklet') {
                     // Whole row
-                    $this->drawRowCropMarks($rIndex, $cols, $rows, $sheetWidth, $sheetHeight);
+                    $this->drawRowCropMarks($rIndex, $cols, $rows, $sheetWidth, $sheetHeight, $metrics);
                 } elseif ($this->settings['crop_style'] === 'spreads') {
                     // Spreads (Double Poses)
-                    $this->drawSpreadCropMarks($rIndex, $cols, $rows, $sheetWidth, $sheetHeight);
+                    $this->drawSpreadCropMarks($rIndex, $cols, $rows, $sheetWidth, $sheetHeight, $metrics);
                 }
                 // 'standard' is handled inside placePage
             }
         }
+    }
+    
+    /**
+     * Calcule les métriques communes pour toutes les pages (utilisé pour les crop marks de style)
+     */
+    private function calculatePageMetrics($totalCols, $totalRows, $sheetWidth, $sheetHeight)
+    {
+        // Get size reference (même logique que dans placePage)
+        $tplIdx = $this->pdf->importPage(1);
+        $size = $this->pdf->getTemplateSize($tplIdx);
+        
+        // Calculer le scale factor (même logique que dans placePage)
+        $scaleFactor = 1;
+        if (!empty($this->settings['target_width']) && $this->settings['target_width'] > 0) {
+             $scaleFactor = $this->settings['target_width'] / $size['width'];
+        } elseif (!empty($this->settings['target_height']) && $this->settings['target_height'] > 0) {
+             $scaleFactor = $this->settings['target_height'] / $size['height'];
+        } else {
+            $scaleFactor = $this->settings['scale'] / 100;
+        }
+
+        $rawW = $size['width'] * $scaleFactor;
+        $rawH = $size['height'] * $scaleFactor;
+        
+        $cutGx = floatval($this->settings['gutter_x']);
+        $cutGy = floatval($this->settings['gutter_y']);
+
+        // Appliquer la stratégie de gouttière (même logique que dans placePage)
+        if ($this->settings['gutter_strategy'] === 'reduce') {
+            $reqWidth = ($totalCols * $rawW) + (($totalCols - 1) * $cutGx);
+            $reqHeight = ($totalRows * $rawH) + (($totalRows - 1) * $cutGy);
+            
+            if ($reqWidth <= $sheetWidth && $reqHeight <= $sheetHeight) {
+                $finalW = $rawW;
+                $finalH = $rawH;
+                $posGx = $cutGx;
+                $posGy = $cutGy;
+            } else {
+                $scaleW = 1.0;
+                $scaleH = 1.0;
+                
+                if ($reqWidth > $sheetWidth) {
+                    $availW = $sheetWidth - (($totalCols - 1) * $cutGx);
+                    $scaleW = $availW / ($totalCols * $rawW);
+                }
+                
+                if ($reqHeight > $sheetHeight) {
+                    $availH = $sheetHeight - (($totalRows - 1) * $cutGy);
+                    $scaleH = $availH / ($totalRows * $rawH);
+                }
+                
+                $reductionFactor = min($scaleW, $scaleH);
+                
+                $finalW = $rawW * $reductionFactor;
+                $finalH = $rawH * $reductionFactor;
+                $posGx = $cutGx;
+                $posGy = $cutGy;
+            }
+        } else {
+            // Mode CROP
+            $finalW = $rawW;
+            $finalH = $rawH;
+            
+            if ($totalCols > 1) {
+                $availW = $sheetWidth - ($totalCols * $finalW);
+                $posGx = $availW / ($totalCols - 1);
+                if ($posGx > $cutGx) $posGx = $cutGx;
+            } else {
+                $posGx = 0;
+            }
+            
+            if ($totalRows > 1) {
+                $availH = $sheetHeight - ($totalRows * $finalH);
+                $posGy = $availH / ($totalRows - 1);
+                if ($posGy > $cutGy) $posGy = $cutGy;
+            } else {
+                $posGy = 0;
+            }
+        }
+
+        // Calculer les positions globales
+        $totalContentWidth = ($totalCols * $finalW) + (($totalCols - 1) * $posGx);
+        $totalContentHeight = ($totalRows * $finalH) + (($totalRows - 1) * $posGy);
+
+        $globalStartX = ($sheetWidth - $totalContentWidth) / 2;
+        $globalStartY = ($sheetHeight - $totalContentHeight) / 2;
+        
+        return [
+            'finalW' => $finalW,
+            'finalH' => $finalH,
+            'posGx' => $posGx,
+            'posGy' => $posGy,
+            'globalStartX' => $globalStartX,
+            'globalStartY' => $globalStartY
+        ];
     }
 
     private function placePage($pageNo, $colIndex, $rowIndex, $totalCols, $totalRows, $sheetWidth, $sheetHeight, $rotated)
@@ -208,28 +324,38 @@ class ImpositionLeaflet
         // Appliquer la stratégie de gouttière
         if ($this->settings['gutter_strategy'] === 'reduce') {
             // Mode RÉDUIRE
+            // CORRECTION : Vérifier d'abord si le scale + gouttières rentrent
             $reqWidth = ($totalCols * $rawW) + (($totalCols - 1) * $cutGx);
             $reqHeight = ($totalRows * $rawH) + (($totalRows - 1) * $cutGy);
             
-            $scaleW = 1.0;
-            $scaleH = 1.0;
-            
-            if ($reqWidth > $sheetWidth) {
-                $availW = $sheetWidth - (($totalCols - 1) * $cutGx);
-                $scaleW = $availW / ($totalCols * $rawW);
+            if ($reqWidth <= $sheetWidth && $reqHeight <= $sheetHeight) {
+                // Assez de place, garder le scale exact
+                $finalW = $rawW;
+                $finalH = $rawH;
+                $posGx = $cutGx;
+                $posGy = $cutGy;
+            } else {
+                // Pas assez de place, réduire
+                $scaleW = 1.0;
+                $scaleH = 1.0;
+                
+                if ($reqWidth > $sheetWidth) {
+                    $availW = $sheetWidth - (($totalCols - 1) * $cutGx);
+                    $scaleW = $availW / ($totalCols * $rawW);
+                }
+                
+                if ($reqHeight > $sheetHeight) {
+                    $availH = $sheetHeight - (($totalRows - 1) * $cutGy);
+                    $scaleH = $availH / ($totalRows * $rawH);
+                }
+                
+                $reductionFactor = min($scaleW, $scaleH);
+                
+                $finalW = $rawW * $reductionFactor;
+                $finalH = $rawH * $reductionFactor;
+                $posGx = $cutGx;
+                $posGy = $cutGy;
             }
-            
-            if ($reqHeight > $sheetHeight) {
-                $availH = $sheetHeight - (($totalRows - 1) * $cutGy);
-                $scaleH = $availH / ($totalRows * $rawH);
-            }
-            
-            $reductionFactor = min($scaleW, $scaleH);
-            
-            $finalW = $rawW * $reductionFactor;
-            $finalH = $rawH * $reductionFactor;
-            $posGx = $cutGx;
-            $posGy = $cutGy;
             
         } else {
             // Mode ROGNER (Crop)
@@ -300,13 +426,31 @@ class ImpositionLeaflet
             }
         }
 
-        // Standard individual crop marks ONLY if crop_style is standard
-        if ($this->settings['crop_marks'] && ($this->settings['crop_style'] === 'standard' || empty($this->settings['crop_style']))) {
-            // Calculer le bleed (pour dessiner les traits au bon endroit)
-            $bleedX = ($cutGx - $posGx) / 2;
-            $bleedY = ($cutGy - $posGy) / 2;
-            
-            $this->drawIndividualCropMarks($x, $y, $finalW, $finalH, $bleedX, $bleedY);
+        // Numéros dans les gouttières (pour preview et final si activé)
+        if ($this->settings['add_page_numbers_in_gutters']) {
+            $this->addPageNumberInGutter($pageNo, $x, $y, $finalW, $finalH, $colIndex, $rowIndex, $totalCols, $totalRows, $cutGx, $cutGy, $globalStartX, $globalStartY, $rotated, $sheetWidth, $sheetHeight);
+        }
+
+        // CORRECTION : Dessiner les crop marks individuels pour tous les styles
+        // (les crop marks de style sont dessinés dans renderSheetSide)
+        if ($this->settings['crop_marks']) {
+            // Dessiner les traits individuels SEULEMENT pour le style standard
+            // Pour les styles spreads et booklet, seuls les traits de style sont dessinés
+            if ($this->settings['crop_style'] === 'standard') {
+                // Calculer le bleed selon la stratégie
+                if ($this->settings['gutter_strategy'] === 'crop') {
+                    // En mode CROP, les crop marks doivent être aux bords réels de la page
+                    $bleedX = 0;
+                    $bleedY = 0;
+                } else {
+                    // Mode REDUCE : calculer le bleed normal
+                    $bleedX = ($cutGx - $posGx) / 2;
+                    $bleedY = ($cutGy - $posGy) / 2;
+                }
+                
+                // Dessiner les crop marks individuels pour chaque page
+                $this->drawIndividualCropMarks($x, $y, $finalW, $finalH, $bleedX, $bleedY);
+            }
         }
     }
     
@@ -331,58 +475,193 @@ class ImpositionLeaflet
         $this->pdf->Line($x + $w, $y + $h + $offset, $x + $w, $y + $h + $offset + $len);
     }
 
-    private function drawRowCropMarks($rowIndex, $cols, $rows, $sheetWidth, $sheetHeight)
+    private function drawRowCropMarks($rowIndex, $cols, $rows, $sheetWidth, $sheetHeight, $metrics)
     {
-        $this->drawRectCropMarks($rowIndex, 0, $cols, $cols, $rows, $sheetWidth, $sheetHeight);
+        // Dessiner les traits de coupe aux coins extérieurs de la ligne
+        $this->drawRectCropMarks($rowIndex, 0, $cols, $cols, $rows, $sheetWidth, $sheetHeight, $metrics);
+        
+        // Ajouter un trait séparateur horizontal au milieu vertical (entre les lignes) pour séparer les doubles faces
+        // Ce trait est dessiné seulement pour la première ligne (rowIndex == 0)
+        // car il sépare la ligne du haut de la ligne du bas
+        if ($rowIndex == 0 && $rows > 1) {
+            $finalW = $metrics['finalW'];
+            $finalH = $metrics['finalH'];
+            $posGx = $metrics['posGx'];
+            $posGy = $metrics['posGy'];
+            $globalStartX = $metrics['globalStartX'];
+            $globalStartY = $metrics['globalStartY'];
+            
+            // Position Y du trait séparateur : exactement au milieu vertical entre les 2 lignes (dans la gouttière)
+            // La ligne du haut se termine à : blockY + blockH
+            // La ligne du bas commence à : blockY + blockH + posGy
+            // Le milieu exact est à : blockY + blockH + (posGy / 2)
+            $blockY = $globalStartY + ($rowIndex * ($finalH + $posGy));
+            $blockH = $finalH;
+            $separatorY = $blockY + $blockH + ($posGy / 2);
+            
+            // Position X : de gauche à droite de toute la ligne (à l'intérieur de la zone)
+            $blockStartX = $globalStartX;
+            $blockW = ($cols * $finalW) + (($cols - 1) * $posGx);
+            
+            // Dessiner des traits horizontaux aux extrémités (pas une ligne continue)
+            // Les traits doivent être À L'INTÉRIEUR de la zone de la ligne, pas à l'extérieur
+            $len = $this->settings['crop_mark_len'];
+            $this->pdf->SetLineWidth($this->settings['crop_mark_width']);
+            $this->pdf->SetDrawColor(0, 0, 0);
+            
+            // Trait horizontal à gauche : à l'intérieur du bord gauche (pas de marge)
+            $this->pdf->Line($blockStartX, $separatorY, $blockStartX + $len, $separatorY);
+            // Trait horizontal à droite : à l'intérieur du bord droit
+            $this->pdf->Line($blockStartX + $blockW - $len, $separatorY, $blockStartX + $blockW, $separatorY);
+        }
     }
 
-    private function drawSpreadCropMarks($rowIndex, $cols, $rows, $sheetWidth, $sheetHeight)
+    private function drawSpreadCropMarks($rowIndex, $cols, $rows, $sheetWidth, $sheetHeight, $metrics)
     {
         // Iterate through columns in pairs (0,1), (2,3), etc.
         for ($c = 0; $c < $cols; $c += 2) {
             $colsInBlock = 2;
             if ($c + 2 > $cols) $colsInBlock = 1; 
             
-            $this->drawRectCropMarks($rowIndex, $c, $colsInBlock, $cols, $rows, $sheetWidth, $sheetHeight);
+            $this->drawRectCropMarks($rowIndex, $c, $colsInBlock, $cols, $rows, $sheetWidth, $sheetHeight, $metrics);
         }
     }
 
-    private function drawRectCropMarks($rowIndex, $colStartIndex, $colsInBlock, $totalCols, $totalRows, $sheetWidth, $sheetHeight)
+    /**
+     * Convertit le numéro de page source en numéro de page du livret final
+     * Pour un livret, l'ordre des pages est :
+     * - Page source 8 → Page livret 1
+     * - Page source 1 → Page livret 2
+     * - Page source 2 → Page livret 3
+     * - Page source 7 → Page livret 4
+     * - Page source 6 → Page livret 5
+     * - Page source 3 → Page livret 6
+     * - Page source 4 → Page livret 7
+     * - Page source 5 → Page livret 8
+     */
+    private function getBookletPageNumber($sourcePageNo, $totalPages)
     {
-        // Get size reference
-        $tplIdx = $this->pdf->importPage(1);
-        $size = $this->pdf->getTemplateSize($tplIdx);
+        // Calculer M (nombre de spreads)
+        $M = $totalPages / 4;
         
-        $scaleFactor = 1;
-        if (!empty($this->settings['target_width']) && $this->settings['target_width'] > 0) {
-             $scaleFactor = $this->settings['target_width'] / $size['width'];
-        } elseif (!empty($this->settings['target_height']) && $this->settings['target_height'] > 0) {
-             $scaleFactor = $this->settings['target_height'] / $size['height'];
-        } else {
-            $scaleFactor = $this->settings['scale'] / 100;
+        // Parcourir tous les spreads pour trouver la correspondance
+        for ($i = 1; $i <= $M; $i++) {
+            // Front du spread i
+            $f1 = $totalPages - 2*($i-1);
+            $f2 = 2*($i-1) + 1;
+            // Back du spread i
+            $b1 = 2*($i-1) + 2;
+            $b2 = $totalPages - 2*($i-1) - 1;
+            
+            // Vérifier si la page source correspond
+            if ($sourcePageNo == $f1) {
+                // Première page du front = première page du spread
+                return 4*($i-1) + 1;
+            } elseif ($sourcePageNo == $f2) {
+                // Deuxième page du front = deuxième page du spread
+                return 4*($i-1) + 2;
+            } elseif ($sourcePageNo == $b1) {
+                // Première page du back = troisième page du spread
+                return 4*($i-1) + 3;
+            } elseif ($sourcePageNo == $b2) {
+                // Deuxième page du back = quatrième page du spread
+                return 4*($i-1) + 4;
+            }
         }
-
-        $finalW = $size['width'] * $scaleFactor;
-        $finalH = $size['height'] * $scaleFactor;
         
-        $gutterX = floatval($this->settings['gutter_x']);
-        $gutterY = floatval($this->settings['gutter_y']);
+        // Si non trouvé, retourner le numéro source
+        return $sourcePageNo;
+    }
 
-        $totalContentWidth = ($totalCols * $finalW) + (($totalCols - 1) * $gutterX);
-        $totalContentHeight = ($totalRows * $finalH) + (($totalRows - 1) * $gutterY);
+    private function addPageNumberInGutter($pageNo, $x, $y, $w, $h, $colIndex, $rowIndex, $totalCols, $totalRows, $gutterX, $gutterY, $globalStartX, $globalStartY, $rotated, $sheetWidth, $sheetHeight)
+    {
+        // Utiliser le PDF preview si disponible, sinon le PDF final
+        $targetPdf = $this->previewPdf ? $this->previewPdf : $this->pdf;
         
-        $globalStartX = ($sheetWidth - $totalContentWidth) / 2;
-        $globalStartY = ($sheetHeight - $totalContentHeight) / 2;
+        $targetPdf->setAutoPageBreak(false);
+        $targetPdf->SetFont('helvetica', '', 6); // Police petite (taille 6, comme dans imposition.php)
+        $targetPdf->SetTextColor(0, 0, 0); // Noir
+        
+        // Afficher le numéro de page ORIGINAL du PDF source (pas converti en numéro de livret)
+        // Exemple : sur la feuille recto, ligne 1 : pages 8, 1 → afficher "8" et "1"
+        //           ligne 2 : pages 4, 5 → afficher "4" et "5"
+        $displayPageNo = (string)$pageNo;
+        
+        // Dimensions de la cellule de texte
+        $cellWidth = 10; // mm
+        $cellHeight = 4; // mm
+        
+        // Distance depuis le bord de la gouttière : 1mm (à l'intérieur de la gouttière)
+        $offsetFromGutterEdge = 1; // mm
+        
+        // Calculer la position par rapport à la page individuelle et à la gouttière adjacente
+        // La gouttière est entre les pages, donc :
+        // - Pour une page de gauche : la gouttière est à droite, à x + w
+        // - Pour une page de droite : la gouttière est à gauche, à x
+        // - Pour une ligne du haut : la gouttière est en dessous, à y + h
+        // - Pour une ligne du bas : la gouttière est au-dessus, à y
+        
+        // Position X : par rapport à la gouttière verticale
+        if ($colIndex < $totalCols / 2) {
+            // Page de gauche : numéro dans la gouttière à droite de la page
+            // La gouttière commence à x + w, on place le numéro à 1mm à l'intérieur
+            $posX = $x + $w + $offsetFromGutterEdge - ($cellWidth / 2);
+        } else {
+            // Page de droite : numéro dans la gouttière à gauche de la page
+            // La gouttière se termine à x, on place le numéro à 1mm à l'intérieur (donc à x - 1mm)
+            $posX = $x - $offsetFromGutterEdge - ($cellWidth / 2);
+        }
+        
+        // Position Y : par rapport à la gouttière horizontale
+        if ($rowIndex == 0) {
+            // Ligne du haut : numéro dans la gouttière en dessous de la page
+            // La gouttière commence à y + h, on place le numéro à 1mm à l'intérieur
+            $posY = $y + $h + $offsetFromGutterEdge - ($cellHeight / 2);
+        } else {
+            // Ligne du bas : numéro dans la gouttière au-dessus de la page
+            // La gouttière se termine à y, on place le numéro à 1mm à l'intérieur (donc à y - 1mm)
+            $posY = $y - $offsetFromGutterEdge - ($cellHeight / 2);
+        }
+        
+        // Alignement centré
+        $align = 'C';
+        
+        // Pour les pages tournées (ligne 2), tourner le numéro à 180° (tête-bêche)
+        if ($rotated) {
+            // Calculer le centre de rotation (centre géométrique de la cellule de texte)
+            $rotCenterX = $posX + ($cellWidth / 2);
+            $rotCenterY = $posY + ($cellHeight / 2);
+            
+            $targetPdf->StartTransform();
+            $targetPdf->Rotate(180, $rotCenterX, $rotCenterY);
+            $targetPdf->SetXY($posX, $posY);
+            $targetPdf->Cell($cellWidth, $cellHeight, $displayPageNo, 0, 0, $align, false);
+            $targetPdf->StopTransform();
+        } else {
+            $targetPdf->SetXY($posX, $posY);
+            $targetPdf->Cell($cellWidth, $cellHeight, $displayPageNo, 0, 0, $align, false);
+        }
+    }
+
+    private function drawRectCropMarks($rowIndex, $colStartIndex, $colsInBlock, $totalCols, $totalRows, $sheetWidth, $sheetHeight, $metrics)
+    {
+        // Utiliser les métriques calculées (mêmes valeurs que placePage)
+        $finalW = $metrics['finalW'];
+        $finalH = $metrics['finalH'];
+        $posGx = $metrics['posGx'];
+        $posGy = $metrics['posGy'];
+        $globalStartX = $metrics['globalStartX'];
+        $globalStartY = $metrics['globalStartY'];
         
         // Block Y Position
-        $blockY = $globalStartY + ($rowIndex * ($finalH + $gutterY));
+        $blockY = $globalStartY + ($rowIndex * ($finalH + $posGy));
         $blockH = $finalH;
         
         // Block X Start (Relative to global start, based on start col)
-        $blockStartX = $globalStartX + ($colStartIndex * ($finalW + $gutterX));
+        $blockStartX = $globalStartX + ($colStartIndex * ($finalW + $posGx));
         
         // Block Width: (cols * w) + (cols-1 * gutter)
-        $blockW = ($colsInBlock * $finalW) + (($colsInBlock - 1) * $gutterX);
+        $blockW = ($colsInBlock * $finalW) + (($colsInBlock - 1) * $posGx);
 
         $len = $this->settings['crop_mark_len'];
         $this->pdf->SetLineWidth($this->settings['crop_mark_width']);

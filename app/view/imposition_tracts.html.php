@@ -25,6 +25,12 @@ ob_start();
                     
                     <?php if (!empty($download_url)): ?>
                         <div style="text-align: center; margin-top: 20px;">
+                            <button type="button" class="btn btn-primary btn-lg" onclick="openUrl('<?= htmlspecialchars($download_url) ?>')" style="margin-right: 10px;">
+                                <i class="fa fa-external-link"></i> Ouvrir
+                            </button>
+                            <button type="button" class="btn btn-info btn-lg" onclick="printUrl('<?= htmlspecialchars($download_url) ?>')" style="margin-right: 10px;">
+                                <i class="fa fa-print"></i> Imprimer
+                            </button>
                             <a href="<?= htmlspecialchars($download_url) ?>" class="btn btn-success btn-lg" download>
                                 <i class="fa fa-download"></i> <?php _e('imposition_tracts.download_optimized_pdf'); ?>
                             </a>
@@ -88,6 +94,7 @@ ob_start();
             <div class="panel panel-default">
                 <div class="panel-body">
                     <form method="POST" enctype="multipart/form-data" class="form-horizontal" id="tractsForm">
+                        <input type="hidden" name="lib_file_id" id="lib_file_id" value="<?= isset($from_lib_file) ? $from_lib_file['id'] : '' ?>">
                         <div class="file-upload-area" id="fileUploadArea" style="border: 3px dashed #ffd93d; border-radius: 15px; padding: 40px; text-align: center; background: linear-gradient(135deg, #fff8e1 0%, #ffeaa7 100%); transition: all 0.3s ease; cursor: pointer;">
                             <div class="file-upload-icon" style="font-size: 48px; color: #ffd93d; margin-bottom: 20px;">
                                 <i class="fa fa-file-pdf-o"></i>
@@ -147,6 +154,30 @@ ob_start();
                                 </div>
                             </div>
 
+                            <!-- Format de sortie -->
+                            <div class="form-group">
+                                <label class="col-md-4 control-label" for="output_format">Format de sortie</label>
+                                <div class="col-md-8">
+                                    <select name="output_format" id="output_format" class="form-control">
+                                        <option value="A3" selected>A3 (420×297 mm / 297×420 mm)</option>
+                                        <option value="A4">A4 (210×297 mm / 297×210 mm)</option>
+                                    </select>
+                                    <small class="help-block text-muted">Choisissez le format de la feuille d'impression</small>
+                                </div>
+                            </div>
+
+                            <!-- Orientation de la feuille -->
+                            <div class="form-group">
+                                <label class="col-md-4 control-label" for="orientation">Orientation de la feuille</label>
+                                <div class="col-md-8">
+                                    <select name="orientation" id="orientation" class="form-control">
+                                        <option value="auto">Automatique (recommandé)</option>
+                                        <option value="portrait">Portrait</option>
+                                        <option value="landscape">Paysage</option>
+                                    </select>
+                                    <small class="help-block text-muted">Choisissez l'orientation de la feuille pour l'impression</small>
+                                </div>
+                            </div>
 
                             <!-- Informations sur l'imposition -->
                             <div class="form-group">
@@ -340,6 +371,7 @@ $(document).ready(function() {
     const tractType = document.getElementById('tractType');
     const submitBtn = $('#submitBtn'); // Utiliser jQuery
     const impositionResult = document.getElementById('impositionResult');
+    const libFileId = document.getElementById('lib_file_id');
     
     // Drag & drop events
     fileUploadArea.addEventListener('dragover', function(e) {
@@ -476,25 +508,42 @@ $(document).ready(function() {
     
     function setupAutomaticMode() {
         if (detectedFormat && pageCount) {
+            const outputFormat = $('#output_format').val() || 'A3';
             let recommendedCopies = 2;
+            let outputFormatName = 'A3';
             
-            switch(detectedFormat) {
-                case 'A4':
-                    recommendedCopies = pageCount === 1 ? 2 : 2;
-                    break;
-                case 'A5':
-                    recommendedCopies = pageCount === 1 ? 4 : 4;
-                    break;
-                case 'A6':
-                    recommendedCopies = pageCount === 1 ? 8 : 8;
-                    break;
+            if (outputFormat === 'A4') {
+                outputFormatName = 'A4';
+                switch(detectedFormat) {
+                    case 'A4':
+                        recommendedCopies = 1;
+                        break;
+                    case 'A5':
+                        recommendedCopies = 2;
+                        break;
+                    case 'A6':
+                        recommendedCopies = 4;
+                        break;
+                }
+            } else {
+                switch(detectedFormat) {
+                    case 'A4':
+                        recommendedCopies = 2;
+                        break;
+                    case 'A5':
+                        recommendedCopies = 4;
+                        break;
+                    case 'A6':
+                        recommendedCopies = 8;
+                        break;
+                }
             }
             
             // Activer le bouton
             submitBtn.prop('disabled', false);
             
             // Afficher le résultat attendu
-            const resultText = `${recommendedCopies} copies de votre tract ${detectedFormat} sur une feuille A3`;
+            const resultText = `${recommendedCopies} copies de votre tract ${detectedFormat} sur une feuille ${outputFormatName}`;
             impositionResult.innerHTML = `<i class="fa fa-check-circle"></i> ${resultText}`;
             impositionResult.style.color = '#28a745';
         }
@@ -502,25 +551,42 @@ $(document).ready(function() {
     
     function setupAutomaticModeForFormat(format) {
         if (format && pageCount) {
+            const outputFormat = $('#output_format').val() || 'A3';
             let recommendedCopies = 2;
+            let outputFormatName = 'A3';
 
-            switch(format) {
-                case 'A4':
-                    recommendedCopies = pageCount === 1 ? 2 : 2;
-                    break;
-                case 'A5':
-                    recommendedCopies = pageCount === 1 ? 4 : 4;
-                    break;
-                case 'A6':
-                    recommendedCopies = pageCount === 1 ? 8 : 8;
-                    break;
+            if (outputFormat === 'A4') {
+                outputFormatName = 'A4';
+                switch(format) {
+                    case 'A4':
+                        recommendedCopies = 1;
+                        break;
+                    case 'A5':
+                        recommendedCopies = 2;
+                        break;
+                    case 'A6':
+                        recommendedCopies = 4;
+                        break;
+                }
+            } else {
+                switch(format) {
+                    case 'A4':
+                        recommendedCopies = 2;
+                        break;
+                    case 'A5':
+                        recommendedCopies = 4;
+                        break;
+                    case 'A6':
+                        recommendedCopies = 8;
+                        break;
+                }
             }
             
             // Activer le bouton
             submitBtn.prop('disabled', false);
             
             // Afficher le résultat attendu avec le format forcé
-            const resultText = `${recommendedCopies} copies de votre tract ${format} sur une feuille A3`;
+            const resultText = `${recommendedCopies} copies de votre tract ${format} sur une feuille ${outputFormatName}`;
             impositionResult.innerHTML = `<i class="fa fa-check-circle"></i> ${resultText}`;
             impositionResult.style.color = '#ff9800'; // Orange pour indiquer que c'est forcé
             
@@ -543,6 +609,16 @@ $(document).ready(function() {
         }
     });
     
+    // Gestion du changement de format de sortie (A3/A4)
+    $('#output_format').change(function() {
+        const manualFormat = $('#manual_format').val();
+        if (manualFormat !== 'auto') {
+            setupAutomaticModeForFormat(manualFormat);
+        } else {
+            setupAutomaticMode();
+        }
+    });
+    
     function formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -551,12 +627,28 @@ $(document).ready(function() {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
     
+    <?php if (isset($from_lib_file)): ?>
+    // Pré-remplissage si fichier bibliothèque
+    fileName.textContent = <?= json_encode($from_lib_file['filename']) ?>;
+    fileSize.textContent = formatFileSize(<?= isset($from_lib_file['file_size']) ? $from_lib_file['file_size'] : 0 ?>);
+    if (<?= isset($from_lib_file['page_count']) ? $from_lib_file['page_count'] : 0 ?> > 0) {
+        pageCountEl.textContent = <?= isset($from_lib_file['page_count']) ? $from_lib_file['page_count'] : 0 ?> + ' page(s)';
+    }
+    fileInfo.style.display = 'block';
+    impositionOptions.style.display = 'block';
+    document.getElementById('pdfFile').removeAttribute('required');
+    // Mettre à jour l'affichage de la zone d'upload
+    fileUploadArea.style.borderColor = '#28a745';
+    fileUploadArea.style.background = 'linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%)';
+    <?php endif; ?>
+    
     // Validation du formulaire
     $('#tractsForm').submit(function(e) {
         const file = fileInput.files[0];
-        // suppression de la vérification de mode car la variable n'est plus définie ici
+        const libFileId = document.getElementById('lib_file_id');
         
-        if (!file) {
+        // Vérifier si un fichier est sélectionné OU si on vient de la bibliothèque
+        if (!file && (!libFileId || !libFileId.value)) {
             e.preventDefault();
             alert('Veuillez sélectionner un fichier PDF.');
             return false;
@@ -567,6 +659,70 @@ $(document).ready(function() {
         submitBtn.prop('disabled', true);
     });
 });
+
+// Fonction d'impression pour les fichiers transformés
+function printUrl(url) {
+    // Vérifier si l'API Electron est disponible
+    if (!window.electronAPI || !window.electronAPI.printFile) {
+        alert('L\'impression système n\'est disponible que dans l\'application Electron. Utilisez le téléchargement pour imprimer depuis un navigateur.');
+        // Fallback : ouvrir l'URL dans un nouvel onglet
+        window.open(url, '_blank');
+        return;
+    }
+    
+    try {
+        // Construire l'URL complète si nécessaire
+        const fullUrl = url.startsWith('http') ? url : window.location.origin + '/' + url;
+        console.log('Demande d\'impression pour:', fullUrl);
+        
+        // Appeler l'API Electron pour imprimer
+        window.electronAPI.printFile(fullUrl)
+            .then(result => {
+                if (result.success) {
+                    console.log('Impression lancée avec succès');
+                } else {
+                    console.error('Erreur lors de l\'impression:', result.error);
+                    alert('Erreur lors de l\'impression: ' + (result.error || 'Erreur inconnue'));
+                }
+            })
+            .catch(error => {
+                console.error('Erreur impression:', error);
+                alert('Erreur lors de l\'impression: ' + error.message);
+            });
+    } catch (error) {
+        console.error('Erreur lors de la préparation de l\'impression:', error);
+        alert('Erreur lors de la préparation de l\'impression: ' + error.message);
+    }
+}
+
+// Fonction d'ouverture pour les fichiers transformés
+function openUrl(url) {
+    // Construire l'URL complète si nécessaire
+    const fullUrl = url.startsWith('http') ? url : window.location.origin + '/' + url;
+    
+    // Vérifier si l'API Electron est disponible
+    if (window.electronAPI && window.electronAPI.openExternalFile) {
+        // Dans Electron : ouvrir avec l'application système
+        console.log('Ouverture externe pour:', fullUrl);
+        window.electronAPI.openExternalFile(fullUrl)
+            .then(result => {
+                if (result.success) {
+                    console.log('Fichier ouvert avec succès');
+                } else {
+                    console.error('Erreur lors de l\'ouverture:', result.error);
+                    alert('Erreur lors de l\'ouverture du fichier: ' + (result.error || 'Erreur inconnue'));
+                }
+            })
+            .catch(error => {
+                console.error('Erreur ouverture:', error);
+                alert('Erreur lors de l\'ouverture du fichier: ' + error.message);
+            });
+    } else {
+        // Dans un navigateur web : ouvrir dans un nouvel onglet
+        console.log('Ouverture dans un nouvel onglet:', fullUrl);
+        window.open(fullUrl, '_blank');
+    }
+}
 </script>
 
 <script>

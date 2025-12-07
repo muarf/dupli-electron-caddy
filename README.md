@@ -25,6 +25,11 @@ Téléchargez la dernière release directement depuis GitHub :
 - Rapports de rentabilité
 
 ### 📄 Traitement de Documents
+- **Bibliothèque PDF/PNG**
+  - Gestion centralisée de fichiers PDF et PNG
+  - Recherche full-text dans les documents
+  - Génération automatique de miniatures
+  - Indexation de dossiers externes
 - **Imposition de PDF** (8/16 pages A5/A6 sur un A3 rectoverso)
 - **Unimposition de PDF** (séparation des pages pour un pdf déjà imposé en livret)
 - **Imposition Tracts** (duplication intelligente A4/A5/A6 vers A3 avec orientation optimisée)
@@ -59,11 +64,38 @@ Téléchargez la dernière release directement depuis GitHub :
 
 - Node.js 18+ 
 - npm ou yarn
+- **Composer** (pour les dépendances PHP)
+
+### Installation de Composer
+
+**Windows (avec Chocolatey) :**
+```powershell
+# Ouvrir PowerShell en tant qu'administrateur
+choco install composer -y
+```
+
+**Windows (manuel) :**
+Téléchargez et installez Composer depuis https://getcomposer.org/download/
+
+**Linux/macOS :**
+```bash
+# Installation globale
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
+```
 
 ### Installation des dépendances
 
+**1. Dépendances Node.js :**
 ```bash
 npm install
+```
+
+**2. Dépendances PHP (dans le dossier app/) :**
+```bash
+cd app
+composer install
+cd ..
 ```
 
 ### Téléchargement des binaires

@@ -271,12 +271,34 @@ jobs:
           fi
           echo "Extraction de $APPIMAGE_FILE..."
           $APPIMAGE_FILE --appimage-extract >/dev/null 2>&1
-          if grep -q 'photocopieur_active.*active' squashfs-root/resources/app.asar.unpacked/app/view/partials/machine_item.html.php; then
+          
+          # Déterminer le chemin correct selon si ASAR est activé ou non
+          # Chercher le fichier dans les différents emplacements possibles
+          if [ -f "squashfs-root/resources/app/app/view/partials/machine_item.html.php" ]; then
+            # ASAR désactivé - fichiers dans resources/app/app/ (structure avec double app/)
+            FILE_PATH="squashfs-root/resources/app/app/view/partials/machine_item.html.php"
+            echo "✅ Fichier trouvé dans resources/app/app/ (ASAR désactivé)"
+          elif [ -f "squashfs-root/resources/app/view/partials/machine_item.html.php" ]; then
+            # ASAR désactivé - fichiers directement dans resources/app/
+            FILE_PATH="squashfs-root/resources/app/view/partials/machine_item.html.php"
+            echo "✅ Fichier trouvé dans resources/app/ (ASAR désactivé)"
+          elif [ -f "squashfs-root/resources/app.asar.unpacked/app/view/partials/machine_item.html.php" ]; then
+            # ASAR activé - fichiers dans app.asar.unpacked
+            FILE_PATH="squashfs-root/resources/app.asar.unpacked/app/view/partials/machine_item.html.php"
+            echo "✅ Fichier trouvé dans app.asar.unpacked (ASAR activé)"
+          else
+            echo "❌ ERREUR: Fichier machine_item.html.php introuvable"
+            echo "Recherche dans squashfs-root/resources/..."
+            find squashfs-root/resources -name "machine_item.html.php" 2>/dev/null || echo "Aucun fichier trouvé"
+            exit 1
+          fi
+          
+          if grep -q 'photocopieur_active.*active' "$FILE_PATH"; then
             echo "✅ ASAR contient les bonnes valeurs PHP"
           else
             echo "❌ ASAR contient les mauvaises valeurs PHP"
             echo "Contenu trouvé dans machine_item.html.php:"
-            grep -A2 -B2 "photocopieur_active\|duplicopieur_active" squashfs-root/resources/app.asar.unpacked/app/view/partials/machine_item.html.php || echo "Variables non trouvées"
+            grep -A2 -B2 "photocopieur_active\|duplicopieur_active" "$FILE_PATH" || echo "Variables non trouvées"
             exit 1
           fi
           echo "✅ Vérification ASAR terminée avec succès"

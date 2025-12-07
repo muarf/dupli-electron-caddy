@@ -10,6 +10,60 @@ const { checkWindowsCompatibility, applyCompatibilitySettings } = require('./uti
 const PrinterMonitor = require('./utils/printer-monitor');
 const printEngine = require('./src/print-engine');
 
+// Vérifier si Ghostscript fonctionne (sous Windows uniquement)
+function checkGhostscript(port = 8000) {
+    return new Promise((resolve, reject) => {
+        // Seulement sous Windows
+        if (process.platform !== 'win32') {
+            resolve();
+            return;
+        }
+        
+        const options = {
+            hostname: '127.0.0.1',
+            port: port,
+            path: '/?check_ghostscript',
+            method: 'GET',
+            timeout: 5000
+        };
+        
+        const req = http.request(options, (res) => {
+            let data = '';
+            
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+            
+            res.on('end', () => {
+                try {
+                    const result = JSON.parse(data);
+                    if (result.available) {
+                        resolve();
+                    } else {
+                        const error = new Error(result.error || 'Ghostscript non disponible');
+                        error.errorCode = result.error_code;
+                        error.returnCode = result.return_code;
+                        reject(error);
+                    }
+                } catch (e) {
+                    reject(new Error(`Erreur parsing réponse Ghostscript: ${e.message}`));
+                }
+            });
+        });
+        
+        req.on('error', (err) => {
+            reject(new Error(`Erreur requête Ghostscript: ${err.message}`));
+        });
+        
+        req.on('timeout', () => {
+            req.destroy();
+            reject(new Error('Timeout lors de la vérification Ghostscript.'));
+        });
+        
+        req.end();
+    });
+}
+
 // Vérifier la compatibilité Windows avant tout
 checkWindowsCompatibility();
 
@@ -86,8 +140,23 @@ function handlePhpOutput(source, data) {
 
     const timestamp = new Date().toISOString();
     const logLine = `[${timestamp}] [PHP ${source}] ${message}`;
-    console[source === 'STDERR' ? 'error' : 'log'](`[PHP ${source}]`, message);
-
+    
+    // Protéger contre les erreurs EPIPE lors de l'écriture dans console
+    try {
+        console[source === 'STDERR' ? 'error' : 'log'](`[PHP ${source}]`, message);
+    } catch (error) {
+        // Ignorer uniquement les erreurs EPIPE (flux fermé - normal lors de la fermeture)
+        // Les autres erreurs doivent être affichées
+        if (error.code && error.code !== 'EPIPE') {
+            try {
+                process.stderr.write(`[PHP ${source}] Erreur log: ${error.message}\n`);
+            } catch (e) {
+                // Si même ça échoue, ignorer silencieusement
+            }
+        }
+        // Pour EPIPE, on ignore silencieusement (flux fermé normalement)
+    }
+    
     sendToRenderer(PHP_LOG_CHANNEL, {
         source,
         message,
@@ -350,8 +419,22 @@ function handlePhpFatal(message, source = 'STDERR') {
 
     phpFatalNotified = true;
     const timestamp = new Date().toISOString();
-    console.error(`[PHP FATAL - ${source}]`, message);
-
+    
+    // Protéger contre les erreurs EPIPE lors de l'écriture dans console
+    try {
+        console.error(`[PHP FATAL - ${source}]`, message);
+    } catch (error) {
+        // Ignorer uniquement les erreurs EPIPE (flux fermé - normal lors de la fermeture)
+        // Les autres erreurs doivent être affichées
+        if (error.code && error.code !== 'EPIPE') {
+            try {
+                process.stderr.write(`[PHP FATAL - ${source}] ${message}\n`);
+            } catch (e) {
+                // Si même ça échoue, ignorer silencieusement
+            }
+        }
+        // Pour EPIPE, on ignore silencieusement (flux fermé normalement)
+    }
     sendToRenderer(PHP_FATAL_CHANNEL, {
         message,
         source,
@@ -398,8 +481,21 @@ function attemptRendererRecovery() {
 
 function handlePhpProcessExit(code, signal) {
     const exitInfo = `Processus PHP terminé (code: ${code !== null ? code : 'null'}, signal: ${signal || 'aucun'})`;
-    console.warn(exitInfo);
-
+    
+    // Protéger contre les erreurs EPIPE lors de l'écriture dans console
+    try {
+        console.warn(exitInfo);
+    } catch (error) {
+        // Ignorer uniquement les erreurs EPIPE (flux fermé - normal lors de la fermeture)
+        if (error.code && error.code !== 'EPIPE') {
+            try {
+                process.stderr.write(exitInfo + '\n');
+            } catch (e) {
+                // Si même ça échoue, ignorer silencieusement
+            }
+        }
+    }
+    
     stopPhpErrorLogWatcher();
 
     sendToRenderer(PHP_STATUS_CHANNEL, {
@@ -594,7 +690,10 @@ function cleanupTmpFiles() {
     let tmpPath;
 
     if (isAppImage || isPackaged) {
-        tmpPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public', 'tmp');
+        // Pour AppImage, essayer d'abord app/app/public (structure réelle sans ASAR)
+        const noAsarTmpPath = path.join(process.resourcesPath, 'app', 'app', 'public', 'tmp');
+        const asarTmpPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public', 'tmp');
+        tmpPath = fs.existsSync(noAsarTmpPath) ? noAsarTmpPath : asarTmpPath;
     } else {
         tmpPath = path.join(__dirname, 'app', 'public', 'tmp');
     }
@@ -619,10 +718,26 @@ function getCaddyPath() {
 
     if (isAppImage || (isLinux && isPackaged)) {
         // AppImage : utiliser le Caddy inclus
-        const caddyPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'caddy', 'caddy');
-        console.log('Chemin Caddy AppImage:', caddyPath);
-        console.log('Caddy existe:', fs.existsSync(caddyPath));
-        return caddyPath;
+        // Avec ASAR désactivé, les fichiers sont dans resources/app/ (comme Windows)
+        // Essayer d'abord sans ASAR (resources/app/caddy/caddy)
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'caddy', 'caddy');
+        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'caddy', 'caddy');
+        
+        if (fs.existsSync(noAsarPath)) {
+            console.log('Chemin Caddy AppImage (sans ASAR):', noAsarPath);
+            console.log('Caddy existe:', fs.existsSync(noAsarPath));
+            return noAsarPath;
+        } else if (fs.existsSync(asarPath)) {
+            console.log('Chemin Caddy AppImage (avec ASAR):', asarPath);
+            console.log('Caddy existe:', fs.existsSync(asarPath));
+            return asarPath;
+        } else {
+            console.error('Caddy non trouvé ni avec ASAR ni sans ASAR');
+            console.log('Ressources path:', process.resourcesPath);
+            console.log('Tentative noAsarPath:', noAsarPath);
+            console.log('Tentative asarPath:', asarPath);
+            return 'caddy'; // Fallback système
+        }
     } else if (isWindows) {
         // Mode développement : utiliser le Caddy local
         if (!isPackaged) {
@@ -851,7 +966,20 @@ function getCaddyfilePath() {
     const isMacOS = process.platform === 'darwin';
 
     if (isAppImage || isMacOS || isPackaged) {
-        // Dans l'AppImage ou macOS, le Caddyfile est dans app.asar.unpacked/
+        // Dans l'AppImage ou macOS, le Caddyfile peut être avec ou sans ASAR
+        const isLinux = process.platform === 'linux';
+        if (isAppImage || (isLinux && isPackaged)) {
+            // Linux avec ASAR désactivé : fichiers dans resources/app/
+            const noAsarPath = path.join(process.resourcesPath, 'app', 'Caddyfile');
+            const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'Caddyfile');
+            if (fs.existsSync(noAsarPath)) {
+                return noAsarPath;
+            } else if (fs.existsSync(asarPath)) {
+                return asarPath;
+            }
+            return noAsarPath; // Fallback
+        }
+        // macOS utilise toujours ASAR
         return path.join(process.resourcesPath, 'app.asar.unpacked', 'Caddyfile');
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
@@ -891,7 +1019,20 @@ function startPhpFpm() {
 
     let appPath;
     if (isAppImage || isMacOS || (isLinux && isPackaged)) {
-        appPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
+        // Pour AppImage, essayer d'abord app/app/public (structure réelle sans ASAR)
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
+        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
+        
+        if (fs.existsSync(noAsarPath)) {
+            appPath = noAsarPath;
+            console.log('App Path trouvé (sans ASAR):', appPath);
+        } else if (fs.existsSync(asarPath)) {
+            appPath = asarPath;
+            console.log('App Path trouvé (avec ASAR):', appPath);
+        } else {
+            console.error('App Path non trouvé ni avec ASAR ni sans ASAR');
+            appPath = noAsarPath; // Fallback
+        }
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
         // Même avec asar: false, les fichiers sont dans resources/app/
@@ -949,10 +1090,17 @@ function startPhpFpm() {
     if (isAppImage || (isLinux && isPackaged)) {
         // AppImage ou Linux packagé (.deb) : utiliser PHP système sans php.ini personnalisé
         // Le PHP système a déjà ses extensions configurées
+        // Pour que vendor/autoload.php soit accessible, on utilise le répertoire parent de public
+        // car public est le document root mais vendor est au niveau de public
+        const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+        const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
         console.log('Configuration PHP pour Linux packagé/AppImage (PHP système)');
+        console.log('Document root (public):', appPath);
+        console.log('App base path (pour vendor):', appBasePath);
         phpArgs = [
             '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
-            '-t', appPath,
+            '-t', appPath, // Document root = public
+            '-d', `include_path=${appBasePath}:${vendorPath}:.`,
             '-d', 'display_errors=1',
             '-d', 'log_errors=1',
             '-d', 'upload_max_filesize=50M',
@@ -978,22 +1126,28 @@ function startPhpFpm() {
             phpExtPath = path.resolve(asarExtPath);
         }
         
+        // Ajouter le répertoire parent au include_path pour que vendor/autoload.php soit accessible
+        const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+        const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
+        
         console.log('Configuration PHP pour Windows');
         console.log('isPackaged:', isPackaged);
         console.log('PHP Ini Path:', phpIniPath);
         console.log('PHP Ini exists:', fs.existsSync(phpIniPath));
         console.log('PHP Ext Path:', phpExtPath);
         console.log('PHP Ext exists:', fs.existsSync(phpExtPath));
+        console.log('App base path (pour vendor):', appBasePath);
         
         phpArgs = [
             '-c', phpIniPath,
             '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
             '-t', appPath,
-            '-d', 'display_errors=1',
-            '-d', 'log_errors=1',
             '-d', `extension_dir=${phpExtPath.replace(/\\/g, '/')}`, // Utiliser des slashes pour Windows
             '-d', 'extension=php_sqlite3.dll', // Charger explicitement SQLite3
             '-d', 'extension=php_pdo_sqlite.dll', // Charger explicitement PDO SQLite
+            '-d', `include_path=${appBasePath};${vendorPath};.`,
+            '-d', 'display_errors=1',
+            '-d', 'log_errors=1',
             '-d', 'upload_max_filesize=50M',
             '-d', 'post_max_size=50M',
             '-d', 'max_execution_time=300',
@@ -1014,17 +1168,20 @@ function startPhpFpm() {
         console.log('Configuration PHP pour macOS/dev');
         console.log('isPackaged:', isPackaged);
         console.log('PHP Ext Path:', phpExtPath);
-
+        
+        // Ajouter le répertoire parent au include_path pour que vendor/autoload.php soit accessible
+        const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+        const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
+        
         if (fs.existsSync(phpIniPath)) {
             phpArgs = [
                 '-c', phpIniPath,
                 '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
                 '-t', appPath,
+                '-d', `extension_dir=${phpExtPath}`,  // extension_dir avant include_path pour cohérence
+                '-d', `include_path=${appBasePath}:${vendorPath}:.`,
                 '-d', 'display_errors=1',
                 '-d', 'log_errors=1',
-                '-d', `extension_dir=${phpExtPath.replace(/\\/g, '/')}`,
-                '-d', 'extension=php_sqlite3.dll', // Charger explicitement SQLite3
-                '-d', 'extension=php_pdo_sqlite.dll', // Charger explicitement PDO SQLite
                 '-d', 'upload_max_filesize=50M',
                 '-d', 'post_max_size=50M',
                 '-d', 'max_execution_time=300',
@@ -1032,9 +1189,13 @@ function startPhpFpm() {
                 '-d', `session.save_path=${sessionPath}`
             ];
         } else {
+            // Pour macOS/dev, ajouter aussi le répertoire parent au include_path
+            const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+            const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
             phpArgs = [
                 '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
                 '-t', appPath,
+                '-d', `include_path=${appBasePath}:${vendorPath}:.`,
                 '-d', 'display_errors=1',
                 '-d', 'log_errors=1',
                 '-d', 'upload_max_filesize=50M',
@@ -1130,9 +1291,14 @@ function startPhpServer() {
     });
 
     // Pas de php.ini pour éviter les erreurs d'extensions
+    // Ajouter le répertoire parent au include_path pour que vendor/autoload.php soit accessible
+    const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+    const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
+    const pathSeparator = isWindows ? ';' : ':';
     phpFpmProcess = spawn(phpPath, [
         '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
         '-t', appPath,
+        '-d', `include_path=${appBasePath}${pathSeparator}${vendorPath}${pathSeparator}.`,
         '-d', 'display_errors=1',
         '-d', 'upload_max_filesize=50M',
         '-d', 'post_max_size=50M',
@@ -1230,7 +1396,20 @@ async function startCaddy() {
     // Obtenir le bon appPath pour Caddy
     let appPath;
     if (isAppImage || isMacOS || (isLinux && isPackaged)) {
-        appPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
+        // Pour AppImage, essayer d'abord app/app/public (structure réelle sans ASAR)
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
+        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
+        
+        if (fs.existsSync(noAsarPath)) {
+            appPath = noAsarPath;
+            console.log('Caddy App Path trouvé (sans ASAR):', appPath);
+        } else if (fs.existsSync(asarPath)) {
+            appPath = asarPath;
+            console.log('Caddy App Path trouvé (avec ASAR):', appPath);
+        } else {
+            console.error('Caddy App Path non trouvé ni avec ASAR ni sans ASAR');
+            appPath = noAsarPath; // Fallback
+        }
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
         // Même avec asar: false, les fichiers sont dans resources/app/
@@ -1274,7 +1453,21 @@ async function startCaddy() {
     });
 
     caddyProcess.stderr.on('data', (data) => {
-        console.error('Caddy Error:', data.toString());
+        try {
+            console.error('Caddy Error:', data.toString());
+        } catch (error) {
+            // Ignorer uniquement les erreurs EPIPE (flux fermé - normal lors de la fermeture)
+            // Les autres erreurs doivent être affichées
+            if (error.code && error.code !== 'EPIPE') {
+                // Essayer d'afficher l'erreur via un autre moyen si console.error échoue
+                try {
+                    process.stderr.write('Erreur lors de l\'écriture du log Caddy: ' + error.message + '\n');
+                } catch (e) {
+                    // Si même ça échoue, ignorer silencieusement
+                }
+            }
+            // Pour EPIPE, on ignore silencieusement (flux fermé normalement)
+        }
     });
 
     caddyProcess.on('close', (code) => {
@@ -1632,8 +1825,51 @@ function createWindow() {
                     proxyPort: serverPort,
                     phpPort: PHP_SERVER_PORT
                 });
-                mainWindow.loadURL(fallbackUrl);
-                mainWindow.show();
+                
+                // Vérifier Ghostscript avant de charger l'app (Windows uniquement)
+                if (process.platform === 'win32') {
+                    try {
+                        await checkGhostscript(frontendPort);
+                        mainWindow.loadURL(fallbackUrl);
+                        mainWindow.show();
+                    } catch (ghostscriptError) {
+                        // S'assurer que la fenêtre est visible pour le dialog
+                        if (!mainWindow.isVisible()) {
+                            mainWindow.show();
+                        }
+                        
+                        dialog.showMessageBox(mainWindow, {
+                            type: 'warning',
+                            title: 'Avertissement - Ghostscript non disponible',
+                            message: 'Ghostscript ne peut pas s\'exécuter',
+                            detail: ghostscriptError.message + '\n\n' + 
+                                    'L\'application peut continuer, mais certaines fonctionnalités de traitement PDF ne seront pas disponibles :\n' +
+                                    '• Génération de miniatures pour les fichiers PDF\n' +
+                                    '• Conversion PDF vers PNG\n\n' +
+                                    'Pour activer ces fonctionnalités, installez Visual C++ Redistributable.\n\n' +
+                                    'Souhaitez-vous télécharger Visual C++ Redistributable maintenant ?',
+                            buttons: ['Télécharger Visual C++ Redistributable', 'Continuer sans Ghostscript'],
+                            defaultId: 1,
+                            cancelId: 1
+                        }).then((result) => {
+                            if (result.response === 0) {
+                                shell.openExternal('https://aka.ms/vs/17/release/vc_redist.x64.exe');
+                            }
+                            // Dans tous les cas, continuer le chargement de l'application
+                            mainWindow.loadURL(fallbackUrl);
+                            mainWindow.show();
+                        }).catch((dialogError) => {
+                            console.error('Erreur lors de l\'affichage du dialog:', dialogError);
+                            // Continuer même en cas d'erreur de dialog
+                            mainWindow.loadURL(fallbackUrl);
+                            mainWindow.show();
+                        });
+                        return; // Ne pas charger l'URL ici, c'est fait dans le dialog
+                    }
+                } else {
+                    mainWindow.loadURL(fallbackUrl);
+                    mainWindow.show();
+                }
             } else {
                 frontendPort = serverPort;
                 sendToRenderer(PHP_STATUS_CHANNEL, {
@@ -1643,9 +1879,55 @@ function createWindow() {
                     proxyPort: serverPort,
                     phpPort: PHP_SERVER_PORT
                 });
-                mainWindow.loadURL(appUrl);
-                mainWindow.show();
-                console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
+                
+                // Vérifier Ghostscript avant de charger l'app (Windows uniquement)
+                if (process.platform === 'win32') {
+                    try {
+                        await checkGhostscript(frontendPort);
+                        mainWindow.loadURL(appUrl);
+                        mainWindow.show();
+                        console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
+                    } catch (ghostscriptError) {
+                        // S'assurer que la fenêtre est visible pour le dialog
+                        if (!mainWindow.isVisible()) {
+                            mainWindow.show();
+                        }
+                        
+                        dialog.showMessageBox(mainWindow, {
+                            type: 'warning',
+                            title: 'Avertissement - Ghostscript non disponible',
+                            message: 'Ghostscript ne peut pas s\'exécuter',
+                            detail: ghostscriptError.message + '\n\n' + 
+                                    'L\'application peut continuer, mais certaines fonctionnalités de traitement PDF ne seront pas disponibles :\n' +
+                                    '• Génération de miniatures pour les fichiers PDF\n' +
+                                    '• Conversion PDF vers PNG\n\n' +
+                                    'Pour activer ces fonctionnalités, installez Visual C++ Redistributable.\n\n' +
+                                    'Souhaitez-vous télécharger Visual C++ Redistributable maintenant ?',
+                            buttons: ['Télécharger Visual C++ Redistributable', 'Continuer sans Ghostscript'],
+                            defaultId: 1,
+                            cancelId: 1
+                        }).then((result) => {
+                            if (result.response === 0) {
+                                shell.openExternal('https://aka.ms/vs/17/release/vc_redist.x64.exe');
+                            }
+                            // Dans tous les cas, continuer le chargement de l'application
+                            mainWindow.loadURL(appUrl);
+                            mainWindow.show();
+                            console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
+                        }).catch((dialogError) => {
+                            console.error('Erreur lors de l\'affichage du dialog:', dialogError);
+                            // Continuer même en cas d'erreur de dialog
+                            mainWindow.loadURL(appUrl);
+                            mainWindow.show();
+                            console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
+                        });
+                        return; // Ne pas charger l'URL ici, c'est fait dans le dialog
+                    }
+                } else {
+                    mainWindow.loadURL(appUrl);
+                    mainWindow.show();
+                    console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
+                }
                 
                 // Démarrer le moniteur d'imprimantes Windows après le démarrage des serveurs
                 startPrinterMonitor();
@@ -1657,9 +1939,56 @@ function createWindow() {
             try {
                 startPhpServer();
                 frontendPort = PHP_SERVER_PORT;
-                mainWindow.loadURL(`http://127.0.0.1:${PHP_SERVER_PORT}/`);
-                mainWindow.show();
-                console.log('Serveur PHP intégré démarré avec succès');
+                
+                // Attendre que le serveur soit prêt puis vérifier Ghostscript (Windows uniquement)
+                if (process.platform === 'win32') {
+                    setTimeout(async () => {
+                        try {
+                            await checkGhostscript(PHP_SERVER_PORT);
+                            mainWindow.loadURL(`http://127.0.0.1:${PHP_SERVER_PORT}/`);
+                            mainWindow.show();
+                            console.log('Serveur PHP intégré démarré avec succès');
+                        } catch (ghostscriptError) {
+                            // S'assurer que la fenêtre est visible pour le dialog
+                            if (!mainWindow.isVisible()) {
+                                mainWindow.show();
+                            }
+                            
+                            dialog.showMessageBox(mainWindow, {
+                                type: 'warning',
+                                title: 'Avertissement - Ghostscript non disponible',
+                                message: 'Ghostscript ne peut pas s\'exécuter',
+                                detail: ghostscriptError.message + '\n\n' + 
+                                        'L\'application peut continuer, mais certaines fonctionnalités de traitement PDF ne seront pas disponibles :\n' +
+                                        '• Génération de miniatures pour les fichiers PDF\n' +
+                                        '• Conversion PDF vers PNG\n\n' +
+                                        'Pour activer ces fonctionnalités, installez Visual C++ Redistributable.\n\n' +
+                                        'Souhaitez-vous télécharger Visual C++ Redistributable maintenant ?',
+                                buttons: ['Télécharger Visual C++ Redistributable', 'Continuer sans Ghostscript'],
+                                defaultId: 1,
+                                cancelId: 1
+                            }).then((result) => {
+                                if (result.response === 0) {
+                                    shell.openExternal('https://aka.ms/vs/17/release/vc_redist.x64.exe');
+                                }
+                                // Dans tous les cas, continuer le chargement de l'application
+                                mainWindow.loadURL(`http://127.0.0.1:${PHP_SERVER_PORT}/`);
+                                mainWindow.show();
+                                console.log('Serveur PHP intégré démarré avec succès');
+                            }).catch((dialogError) => {
+                                console.error('Erreur lors de l\'affichage du dialog:', dialogError);
+                                // Continuer même en cas d'erreur de dialog
+                                mainWindow.loadURL(`http://127.0.0.1:${PHP_SERVER_PORT}/`);
+                                mainWindow.show();
+                                console.log('Serveur PHP intégré démarré avec succès');
+                            });
+                        }
+                    }, 2000);
+                } else {
+                    mainWindow.loadURL(`http://127.0.0.1:${PHP_SERVER_PORT}/`);
+                    mainWindow.show();
+                    console.log('Serveur PHP intégré démarré avec succès');
+                }
             } catch (fallbackError) {
                 console.error('Erreur serveur PHP intégré:', fallbackError);
                 // Afficher une page d'erreur
@@ -1933,6 +2262,17 @@ ipcMain.handle('open-file', async (event, filePath) => {
     } catch (error) {
         console.error('Erreur ouverture fichier:', error);
         return { success: false, error: error.message };
+    }
+});
+
+// Gérer la sélection de dossiers/fichiers
+ipcMain.handle('show-open-dialog', async (event, options) => {
+    try {
+        const result = await dialog.showOpenDialog(mainWindow, options);
+        return result;
+    } catch (error) {
+        console.error('Erreur dialog:', error);
+        return { canceled: true, filePaths: [] };
     }
 });
 
@@ -2378,6 +2718,126 @@ ipcMain.handle('print-job', async (event, pdfPath, options) => {
         return { success: true, result: result };
     } catch (error) {
         console.error('Erreur lors de l\'impression:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Impression de fichiers avec boîte de dialogue système
+ipcMain.handle('print-file', async (event, fileUrl) => {
+    return new Promise((resolve, reject) => {
+        try {
+            console.log('Impression demandée pour:', fileUrl);
+            
+            // Créer une fenêtre invisible pour charger le fichier
+            const printWindow = new BrowserWindow({
+                show: false,
+                webPreferences: {
+                    nodeIntegration: false,
+                    contextIsolation: true,
+                    sandbox: true
+                }
+            });
+            
+            // Charger le fichier
+            printWindow.loadURL(fileUrl);
+            
+            // Attendre que le contenu soit chargé
+            printWindow.webContents.on('did-finish-load', () => {
+                console.log('Fichier chargé, ouverture de la boîte de dialogue d\'impression');
+                
+                // Ouvrir la boîte de dialogue d'impression système
+                printWindow.webContents.print({
+                    silent: false,  // Afficher la boîte de dialogue
+                    printBackground: true,
+                    color: true,
+                    margins: {
+                        marginType: 'printableArea'
+                    }
+                }, (success, errorType) => {
+                    // Fermer la fenêtre après l'impression
+                    printWindow.close();
+                    
+                    if (success) {
+                        console.log('Impression réussie ou annulée par l\'utilisateur');
+                        resolve({ success: true });
+                    } else {
+                        console.error('Erreur d\'impression:', errorType);
+                        resolve({ success: false, error: errorType });
+                    }
+                });
+            });
+            
+            // Gérer les erreurs de chargement
+            printWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+                console.error('Erreur de chargement du fichier:', errorDescription);
+                printWindow.close();
+                reject({ success: false, error: errorDescription });
+            });
+            
+        } catch (error) {
+            console.error('Erreur lors de la préparation de l\'impression:', error);
+            reject({ success: false, error: error.message });
+        }
+    });
+});
+
+// Ouvrir un fichier avec l'application système par défaut
+ipcMain.handle('open-external-file', async (event, fileUrl) => {
+    try {
+        console.log('Ouverture externe demandée pour:', fileUrl);
+        
+        // Si c'est une URL HTTP, on doit d'abord télécharger le fichier
+        if (fileUrl.startsWith('http')) {
+            const http = require('http');
+            const https = require('https');
+            const fs = require('fs');
+            const path = require('path');
+            const os = require('os');
+            
+            return new Promise((resolve, reject) => {
+                // Créer un nom de fichier temporaire
+                const tempFileName = 'temp_' + Date.now() + '.pdf';
+                const tempFilePath = path.join(os.tmpdir(), tempFileName);
+                const file = fs.createWriteStream(tempFilePath);
+                
+                const protocol = fileUrl.startsWith('https') ? https : http;
+                
+                protocol.get(fileUrl, (response) => {
+                    response.pipe(file);
+                    
+                    file.on('finish', () => {
+                        file.close();
+                        console.log('Fichier téléchargé vers:', tempFilePath);
+                        
+                        // Ouvrir le fichier avec l'application par défaut
+                        shell.openPath(tempFilePath).then(error => {
+                            if (error) {
+                                console.error('Erreur lors de l\'ouverture:', error);
+                                resolve({ success: false, error: error });
+                            } else {
+                                console.log('Fichier ouvert avec succès');
+                                resolve({ success: true });
+                            }
+                        });
+                    });
+                }).on('error', (err) => {
+                    fs.unlink(tempFilePath, () => {}); // Supprimer le fichier en cas d'erreur
+                    console.error('Erreur de téléchargement:', err.message);
+                    reject({ success: false, error: err.message });
+                });
+            });
+        } else {
+            // Ouvrir directement le fichier local
+            const error = await shell.openPath(fileUrl);
+            if (error) {
+                console.error('Erreur lors de l\'ouverture:', error);
+                return { success: false, error: error };
+            }
+            console.log('Fichier ouvert avec succès');
+            return { success: true };
+        }
+    } catch (error) {
+        console.error('Erreur lors de l\'ouverture externe:', error);
         return { success: false, error: error.message };
     }
 });

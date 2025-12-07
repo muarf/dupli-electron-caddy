@@ -1,13 +1,28 @@
 <?php
+error_log("[IMPOSITION_TRACTS] Fichier imposition_tracts.php chargé");
 require_once(__DIR__ . '/../controler/functions/utilities.php');
 require_once(__DIR__ . '/../vendor/autoload.php');
 require_once(__DIR__ . '/../controler/functions/i18n.php');
 
 use setasign\Fpdi\TcpdfFpdi as TCPDI;
+error_log("[IMPOSITION_TRACTS] Imports terminés, fonction Action() va être définie");
 
 function Action($conf = null)
 {
+    error_log("[IMPOSITION_TRACTS] Action() appelée - GET: " . print_r($_GET, true));
+    error_log("[IMPOSITION_TRACTS] Action() appelée - POST: " . print_r($_POST, true));
+    error_log("[IMPOSITION_TRACTS] Action() appelée - FILES: " . print_r($_FILES, true));
     $array = array();
+    
+    // Gestion de la pré-sélection bibliothèque (GET)
+    if (isset($_GET['from_lib'])) {
+        require_once __DIR__ . '/BibliothequeManager.php';
+        $libManager = new BibliothequeManager();
+        $file = $libManager->getFile($_GET['from_lib']);
+        if ($file) {
+            $array['from_lib_file'] = $file;
+        }
+    }
     
     // Gestion AJAX pour l'analyse du PDF
     if (isset($_GET['ajax']) && $_GET['ajax'] === 'analyze_pdf' && isset($_FILES['pdf_file'])) {
@@ -24,10 +39,57 @@ function Action($conf = null)
     }
     
     // Traitement du formulaire d'imposition
-    if (isset($_POST['submit']) && isset($_FILES['pdf_file'])) {
+    // Vérifier si le formulaire est soumis : soit via submit, soit via FILES (le fichier est présent)
+    error_log("[IMPOSITION_TRACTS] Vérification formulaire - POST submit: " . (isset($_POST['submit']) ? 'OUI' : 'NON'));
+    error_log("[IMPOSITION_TRACTS] Vérification formulaire - FILES pdf_file: " . (isset($_FILES['pdf_file']) ? 'OUI' : 'NON'));
+    error_log("[IMPOSITION_TRACTS] Méthode HTTP: " . ($_SERVER['REQUEST_METHOD'] ?? 'N/A'));
+    
+    // Le formulaire est soumis si on a un fichier ET que c'est une requête POST
+    // (pas besoin de vérifier submit car le bouton peut ne pas être dans POST)
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && ((isset($_FILES['pdf_file']) && $_FILES['pdf_file']['error'] === UPLOAD_ERR_OK) || (isset($_POST['lib_file_id']) && !empty($_POST['lib_file_id'])))) {
+        error_log("[IMPOSITION_TRACTS] Début traitement formulaire");
+        error_log("[IMPOSITION_TRACTS] POST submit: " . (isset($_POST['submit']) ? 'OUI' : 'NON'));
+        error_log("[IMPOSITION_TRACTS] FILES pdf_file: " . (isset($_FILES['pdf_file']) ? 'OUI' : 'NON'));
+        if (isset($_FILES['pdf_file'])) {
+            error_log("[IMPOSITION_TRACTS] Détails upload - name: " . ($_FILES['pdf_file']['name'] ?? 'N/A'));
+            error_log("[IMPOSITION_TRACTS] Détails upload - error: " . ($_FILES['pdf_file']['error'] ?? 'N/A'));
+            error_log("[IMPOSITION_TRACTS] Détails upload - tmp_name: " . ($_FILES['pdf_file']['tmp_name'] ?? 'N/A'));
+            error_log("[IMPOSITION_TRACTS] Détails upload - size: " . ($_FILES['pdf_file']['size'] ?? 'N/A'));
+        }
         try {
-            $array = processImpositionTracts();
+            // Si fichier bibliothèque, créer un $_FILES temporaire
+            $is_from_lib = false;
+            if (isset($_POST['lib_file_id']) && !empty($_POST['lib_file_id'])) {
+                require_once __DIR__ . '/BibliothequeManager.php';
+                $libManager = new BibliothequeManager();
+                $file = $libManager->getFile($_POST['lib_file_id']);
+                if ($file && file_exists($file['filepath'])) {
+                    // Créer un fichier temporaire copié depuis la bibliothèque
+                    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
+                    if (!file_exists($tmp_dir)) {
+                        mkdir($tmp_dir, 0755, true);
+                    }
+                    $tmpFile = $tmp_dir . 'lib_' . uniqid() . '_' . basename($file['filepath']);
+                    copy($file['filepath'], $tmpFile);
+                    
+                    // Simuler $_FILES pour processImpositionTracts
+                    $_FILES['pdf_file'] = [
+                        'name' => $file['filename'],
+                        'type' => 'application/pdf',
+                        'tmp_name' => $tmpFile,
+                        'error' => UPLOAD_ERR_OK,
+                        'size' => filesize($tmpFile)
+                    ];
+                    $is_from_lib = true;
+                } else {
+                    throw new Exception("Erreur : Fichier de bibliothèque introuvable.");
+                }
+            }
+            
+            $array = processImpositionTracts($is_from_lib);
         } catch (Exception $e) {
+            error_log("[IMPOSITION_TRACTS] Exception capturée: " . $e->getMessage());
+            error_log("[IMPOSITION_TRACTS] Stack trace: " . $e->getTraceAsString());
             $array['error'] = $e->getMessage();
         }
     }
@@ -166,13 +228,32 @@ function determineFormat($widthMm, $heightMm)
     return 'unknown';
 }
 
-function processImpositionTracts()
+function processImpositionTracts($is_from_lib = false)
 {
+    error_log("[IMPOSITION_TRACTS] processImpositionTracts() appelée");
     $array = array();
     
     // Vérifier qu'un fichier a été uploadé
-    if (!isset($_FILES['pdf_file']) || $_FILES['pdf_file']['error'] !== UPLOAD_ERR_OK) {
-        throw new Exception("Erreur lors de l'upload du fichier PDF.");
+    error_log("[IMPOSITION_TRACTS] Vérification upload - isset FILES: " . (isset($_FILES['pdf_file']) ? 'OUI' : 'NON'));
+    if (!isset($_FILES['pdf_file'])) {
+        error_log("[IMPOSITION_TRACTS] ERREUR: \$_FILES['pdf_file'] n'est pas défini");
+        throw new Exception("Erreur lors de l'upload du fichier PDF - fichier non reçu.");
+    }
+    
+    error_log("[IMPOSITION_TRACTS] Upload error code: " . $_FILES['pdf_file']['error']);
+    if ($_FILES['pdf_file']['error'] !== UPLOAD_ERR_OK) {
+        $errorMessages = [
+            UPLOAD_ERR_INI_SIZE => 'Taille du fichier dépasse upload_max_filesize',
+            UPLOAD_ERR_FORM_SIZE => 'Taille du fichier dépasse MAX_FILE_SIZE',
+            UPLOAD_ERR_PARTIAL => 'Upload partiel',
+            UPLOAD_ERR_NO_FILE => 'Aucun fichier uploadé',
+            UPLOAD_ERR_NO_TMP_DIR => 'Répertoire temporaire manquant',
+            UPLOAD_ERR_CANT_WRITE => 'Échec écriture sur disque',
+            UPLOAD_ERR_EXTENSION => 'Upload arrêté par extension PHP'
+        ];
+        $errorMsg = $errorMessages[$_FILES['pdf_file']['error']] ?? 'Erreur inconnue: ' . $_FILES['pdf_file']['error'];
+        error_log("[IMPOSITION_TRACTS] ERREUR upload: " . $errorMsg);
+        throw new Exception("Erreur lors de l'upload du fichier PDF: " . $errorMsg);
     }
     
     // Créer un nom de fichier unique
@@ -181,30 +262,74 @@ function processImpositionTracts()
     $originalNameWithoutExt = pathinfo($originalName, PATHINFO_FILENAME);
     $tempFile = $_FILES['pdf_file']['tmp_name'];
     
-    // Utiliser sys_get_temp_dir() pour être compatible AppImage
-    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
-    if (!file_exists($tmp_dir)) {
-        mkdir($tmp_dir, 0755, true);
+    error_log("[IMPOSITION_TRACTS] Fichier original: " . $originalName);
+    error_log("[IMPOSITION_TRACTS] Fichier temporaire upload: " . $tempFile);
+    error_log("[IMPOSITION_TRACTS] Fichier temporaire existe: " . (file_exists($tempFile) ? 'OUI' : 'NON'));
+    if (file_exists($tempFile)) {
+        error_log("[IMPOSITION_TRACTS] Taille fichier temporaire: " . filesize($tempFile) . " bytes");
+        error_log("[IMPOSITION_TRACTS] Fichier temporaire lisible: " . (is_readable($tempFile) ? 'OUI' : 'NON'));
     }
     
+    // Utiliser sys_get_temp_dir() pour être compatible AppImage
+    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
+    error_log("[IMPOSITION_TRACTS] Répertoire temporaire: " . $tmp_dir);
+    if (!file_exists($tmp_dir)) {
+        error_log("[IMPOSITION_TRACTS] Création répertoire temporaire");
+        $mkdirResult = mkdir($tmp_dir, 0755, true);
+        error_log("[IMPOSITION_TRACTS] Résultat mkdir: " . ($mkdirResult ? 'SUCCÈS' : 'ÉCHEC'));
+    }
+    error_log("[IMPOSITION_TRACTS] Répertoire existe: " . (file_exists($tmp_dir) ? 'OUI' : 'NON'));
+    error_log("[IMPOSITION_TRACTS] Répertoire accessible en écriture: " . (is_writable($tmp_dir) ? 'OUI' : 'NON'));
+    
     $inputFile = $tmp_dir . 'tracts_input_' . $uniqueId . '.pdf';
+    error_log("[IMPOSITION_TRACTS] Fichier destination: " . $inputFile);
     
     // Déplacer le fichier uploadé
-    if (!move_uploaded_file($tempFile, $inputFile)) {
+    // Pour les fichiers de la bibliothèque, utiliser rename() au lieu de move_uploaded_file()
+    // car move_uploaded_file() ne fonctionne que pour les fichiers uploadés via HTTP POST
+    error_log("[IMPOSITION_TRACTS] Tentative déplacement de " . $tempFile . " vers " . $inputFile . " (from_lib: " . ($is_from_lib ? 'OUI' : 'NON') . ")");
+    
+    $moveResult = false;
+    if ($is_from_lib) {
+        // Fichier de la bibliothèque : utiliser rename()
+        if (file_exists($tempFile)) {
+            $moveResult = rename($tempFile, $inputFile);
+        } else {
+            $moveResult = false;
+        }
+    } else {
+        // Fichier uploadé normalement : utiliser move_uploaded_file()
+        $moveResult = move_uploaded_file($tempFile, $inputFile);
+    }
+    
+    error_log("[IMPOSITION_TRACTS] Résultat déplacement: " . ($moveResult ? 'SUCCÈS' : 'ÉCHEC'));
+    
+    if (!$moveResult) {
+        error_log("[IMPOSITION_TRACTS] ERREUR: déplacement a échoué");
+        error_log("[IMPOSITION_TRACTS] tempFile existe: " . (file_exists($tempFile) ? 'OUI' : 'NON'));
+        error_log("[IMPOSITION_TRACTS] inputFile existe après move: " . (file_exists($inputFile) ? 'OUI' : 'NON'));
+        $lastError = error_get_last();
+        error_log("[IMPOSITION_TRACTS] Dernière erreur PHP: " . ($lastError ? $lastError['message'] : 'N/A'));
         throw new Exception("Impossible de déplacer le fichier uploadé.");
     }
     
     // Vérifier les permissions du fichier déplacé
+    error_log("[IMPOSITION_TRACTS] Vérification fichier déplacé");
     if (!file_exists($inputFile)) {
+        error_log("[IMPOSITION_TRACTS] ERREUR: Le fichier déplacé n'existe pas");
         throw new Exception("Le fichier déplacé n'existe pas.");
     }
     
+    error_log("[IMPOSITION_TRACTS] Fichier déplacé existe - taille: " . filesize($inputFile) . " bytes");
+    
     if (!is_readable($inputFile)) {
+        error_log("[IMPOSITION_TRACTS] ERREUR: Le fichier déplacé n'est pas lisible");
         throw new Exception("Le fichier déplacé n'est pas lisible.");
     }
     
     // S'assurer que le fichier a les bonnes permissions
     chmod($inputFile, 0644);
+    error_log("[IMPOSITION_TRACTS] Permissions fichier après chmod: " . substr(sprintf('%o', fileperms($inputFile)), -4));
     
     try {
         // NETTOYER LE PDF AVEC GHOSTSCRIPT FORCÉ (comme unimpose et impose)
@@ -277,6 +402,8 @@ function processImpositionTracts()
         $manualFormat = $_POST['manual_format'] ?? 'auto';
         $forceResize = isset($_POST['force_resize']) && $_POST['force_resize'] == '1';
         $cutMargin = intval($_POST['cut_margin'] ?? 2);
+        $orientation = $_POST['orientation'] ?? 'auto';
+        $outputFormat = $_POST['output_format'] ?? 'A3'; // Format de sortie (A3 ou A4)
         
         // Appliquer le format manuel si spécifié
         if ($manualFormat !== 'auto') {
@@ -285,11 +412,13 @@ function processImpositionTracts()
         }
         
         // Déterminer les paramètres d'imposition automatiquement
-        $impositionParams = determineAutomaticParams($pdfInfo);
+        $impositionParams = determineAutomaticParams($pdfInfo, $outputFormat);
         
-        // Ajouter les options de redimensionnement
+        // Ajouter les options de redimensionnement et orientation
         $impositionParams['force_resize'] = $forceResize;
         $impositionParams['manual_format'] = $manualFormat;
+        $impositionParams['orientation'] = $orientation;
+        $impositionParams['output_format'] = $outputFormat;
         
         // Traiter l'imposition
         $resultFile = performImposition($inputFile, $impositionParams, $cutMargin);
@@ -340,29 +469,45 @@ function processImpositionTracts()
     return $array;
 }
 
-function determineAutomaticParams($pdfInfo)
+function determineAutomaticParams($pdfInfo, $outputFormat = 'A3')
 {
     $format = $pdfInfo['format'];
     $pageCount = $pdfInfo['page_count'];
     
-    // Déterminer le nombre de copies selon le format
+    // Déterminer le nombre de copies selon le format de la page source et le format de sortie
     $copiesPerSheet = 2; // Par défaut
     
-    switch ($format) {
-        case 'A4':
-            $copiesPerSheet = 2; // 2 copies A4 sur A3
-            break;
-        case 'A5':
-            $copiesPerSheet = 4; // 4 copies A5 sur A3
-            break;
-        case 'A6':
-            $copiesPerSheet = 8; // 8 copies A6 sur A3
-            break;
+    if ($outputFormat === 'A4') {
+        // Format de sortie A4 : réduire proportionnellement
+        switch ($format) {
+            case 'A4':
+                $copiesPerSheet = 1; // 1 copie A4 sur A4
+                break;
+            case 'A5':
+                $copiesPerSheet = 2; // 2 copies A5 sur A4
+                break;
+            case 'A6':
+                $copiesPerSheet = 4; // 4 copies A6 sur A4
+                break;
+        }
+    } else {
+        // Format de sortie A3 (par défaut)
+        switch ($format) {
+            case 'A4':
+                $copiesPerSheet = 2; // 2 copies A4 sur A3
+                break;
+            case 'A5':
+                $copiesPerSheet = 4; // 4 copies A5 sur A3
+                break;
+            case 'A6':
+                $copiesPerSheet = 8; // 8 copies A6 sur A3
+                break;
+        }
     }
     
     return [
         'copies_per_sheet' => $copiesPerSheet,
-        'paper_format' => 'A3',
+        'paper_format' => $outputFormat,
         'page_count' => $pageCount,
         'format' => $format
     ];
@@ -374,18 +519,62 @@ function performImposition($inputFile, $params, $cutMargin = 2)
         $pageCount = $params['page_count'];
         $copiesPerSheet = $params['copies_per_sheet'];
         $format = $params['format'];
+        $orientation = $params['orientation'] ?? 'auto';
+        $outputFormat = $params['output_format'] ?? 'A3';
         
-        // Dimensions A3 selon le format
-        if ($format === 'A5') {
-            // A5 : A3 en portrait pour optimiser l'espace
-            $a3_width = 297;  // Largeur A3 en portrait (mm)
-            $a3_height = 420; // Hauteur A3 en portrait (mm)
-            $a3_orientation = 'P'; // Portrait
+        // Dimensions selon le format de sortie et l'orientation choisie ou automatique
+        if ($outputFormat === 'A4') {
+            // Format de sortie A4
+            if ($orientation === 'portrait') {
+                // Orientation portrait forcée
+                $sheet_width = 210;  // Largeur A4 en portrait (mm)
+                $sheet_height = 297; // Hauteur A4 en portrait (mm)
+                $sheet_orientation = 'P'; // Portrait
+            } elseif ($orientation === 'landscape') {
+                // Orientation paysage forcée
+                $sheet_width = 297;  // Largeur A4 en paysage (mm)
+                $sheet_height = 210; // Hauteur A4 en paysage (mm)
+                $sheet_orientation = 'L'; // Paysage
+            } else {
+                // Orientation automatique selon le format
+                if ($format === 'A5') {
+                    // A5 : A4 en portrait pour optimiser l'espace
+                    $sheet_width = 210;  // Largeur A4 en portrait (mm)
+                    $sheet_height = 297; // Hauteur A4 en portrait (mm)
+                    $sheet_orientation = 'P'; // Portrait
+                } else {
+                    // A4 et A6 : A4 en paysage
+                    $sheet_width = 297;  // Largeur A4 en paysage (mm)
+                    $sheet_height = 210; // Hauteur A4 en paysage (mm)
+                    $sheet_orientation = 'L'; // Paysage
+                }
+            }
         } else {
-            // A4 et A6 : A3 en paysage
-            $a3_width = 420;  // Largeur A3 en paysage (mm)
-            $a3_height = 297; // Hauteur A3 en paysage (mm)
-            $a3_orientation = 'L'; // Paysage
+            // Format de sortie A3 (par défaut)
+            if ($orientation === 'portrait') {
+                // Orientation portrait forcée
+                $sheet_width = 297;  // Largeur A3 en portrait (mm)
+                $sheet_height = 420; // Hauteur A3 en portrait (mm)
+                $sheet_orientation = 'P'; // Portrait
+            } elseif ($orientation === 'landscape') {
+                // Orientation paysage forcée
+                $sheet_width = 420;  // Largeur A3 en paysage (mm)
+                $sheet_height = 297; // Hauteur A3 en paysage (mm)
+                $sheet_orientation = 'L'; // Paysage
+            } else {
+                // Orientation automatique selon le format
+                if ($format === 'A5') {
+                    // A5 : A3 en portrait pour optimiser l'espace
+                    $sheet_width = 297;  // Largeur A3 en portrait (mm)
+                    $sheet_height = 420; // Hauteur A3 en portrait (mm)
+                    $sheet_orientation = 'P'; // Portrait
+                } else {
+                    // A4 et A6 : A3 en paysage
+                    $sheet_width = 420;  // Largeur A3 en paysage (mm)
+                    $sheet_height = 297; // Hauteur A3 en paysage (mm)
+                    $sheet_orientation = 'L'; // Paysage
+                }
+            }
         }
         
         // Dimensions des pages selon le format
@@ -403,29 +592,43 @@ function performImposition($inputFile, $params, $cutMargin = 2)
                 break;
         }
         
-        // Calculer la disposition sur A3 selon l'orientation
-        if ($copiesPerSheet == 2) {
-            // 2 copies (A4 sur A3 paysage)
-            $cols = 2;
+        // Calculer la disposition selon l'orientation et le nombre de copies
+        // La disposition doit s'adapter à l'orientation choisie
+        if ($copiesPerSheet == 1) {
+            // 1 copie (A4 sur A4)
+            $cols = 1;
             $rows = 1;
-        } elseif ($copiesPerSheet == 4) {
-            // 4 copies (A5 sur A3 portrait)
-            if ($format === 'A5') {
-                $cols = 2;
-                $rows = 2; // 2×2 en portrait
+        } elseif ($copiesPerSheet == 2) {
+            // 2 copies (A4 sur A3 ou A5 sur A4)
+            if ($sheet_orientation === 'P') {
+                // Portrait : 1 colonne, 2 lignes
+                $cols = 1;
+                $rows = 2;
             } else {
+                // Paysage : 2 colonnes, 1 ligne
                 $cols = 2;
-                $rows = 2; // 2×2 en paysage
+                $rows = 1;
             }
-        } elseif ($copiesPerSheet == 8) {
-            // 8 copies (A6 sur A3 paysage)
-            $cols = 4;
+        } elseif ($copiesPerSheet == 4) {
+            // 4 copies (A5 sur A3 ou A6 sur A4) - toujours 2×2
+            $cols = 2;
             $rows = 2;
+        } elseif ($copiesPerSheet == 8) {
+            // 8 copies (A6 sur A3)
+            if ($sheet_orientation === 'P') {
+                // Portrait : 2 colonnes, 4 lignes
+                $cols = 2;
+                $rows = 4;
+            } else {
+                // Paysage : 4 colonnes, 2 lignes
+                $cols = 4;
+                $rows = 2;
+            }
         }
         
         // Espacement entre les copies
-        $spacingX = ($a3_width - ($cols * $page_width)) / ($cols + 1);
-        $spacingY = ($a3_height - ($rows * $page_height)) / ($rows + 1);
+        $spacingX = ($sheet_width - ($cols * $page_width)) / ($cols + 1);
+        $spacingY = ($sheet_height - ($rows * $page_height)) / ($rows + 1);
         
         // Créer une seule instance TCPDI pour tout le processus
         $pdf = new TCPDI();
@@ -435,8 +638,8 @@ function performImposition($inputFile, $params, $cutMargin = 2)
         
         // Logique simplifiée : traiter chaque page séparément
         for ($pageNum = 1; $pageNum <= $pageCount; $pageNum++) {
-            // Nouvelle feuille A3 avec la bonne orientation
-            $pdf->AddPage($a3_orientation, array($a3_width, $a3_height));
+            // Nouvelle feuille avec la bonne orientation et dimensions
+            $pdf->AddPage($sheet_orientation, array($sheet_width, $sheet_height));
             
             // Importer la page une seule fois
             $templateId = $pdf->importPage($pageNum);

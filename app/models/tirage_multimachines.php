@@ -873,6 +873,9 @@ function Action($conf = null) {
             
             $mot = addslashes($_POST['mot'] ?? '');
             
+            // Charger la classe de migration pour générer les IDs
+            require_once __DIR__ . '/migrations/DatabaseMigrationManager.php';
+            
             // Démarrer une transaction
             $db->beginTransaction();
             
@@ -947,9 +950,12 @@ function Action($conf = null) {
                             }
                         }
                         
+                        // Générer l'identifiant global pour cette machine spécifique
+                        $tirage_global_id = DatabaseMigrationManager::generateTirageGlobalId($date, $contact, $nom_machine);
+                        
                         // Insérer dans la table dupli
-                        $sql = 'INSERT INTO dupli (type, contact, master_av, master_ap, passage_av, passage_ap, rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id, tambour) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-                        $params = [$type, $machine['contact'] ?? $contact, $master_av, $master_ap, $passage_av, $passage_ap, $rv, $prix, $paye, $cb, $mot, $date, $nom_machine, $duplicopieur_id, $machine['tambour'] ?? null];
+                        $sql = 'INSERT INTO dupli (type, contact, master_av, master_ap, passage_av, passage_ap, rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id, tambour, tirage_global_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+                        $params = [$type, $machine['contact'] ?? $contact, $master_av, $master_ap, $passage_av, $passage_ap, $rv, $prix, $paye, $cb, $mot, $date, $nom_machine, $duplicopieur_id, $machine['tambour'] ?? null, $tirage_global_id];
                         
                         // Debug SQL avec var_dump (seulement si debug dans l'URL)
                         if (isset($_GET['debug'])) {
@@ -962,6 +968,9 @@ function Action($conf = null) {
                     } else if ($machine['type'] === 'photocopieur') {
                         // Enregistrement photocopieur dans table photocop
                         $marque = $machine['machine'];
+                        
+                        // Générer l'identifiant global pour cette machine spécifique
+                        $tirage_global_id = DatabaseMigrationManager::generateTirageGlobalId($date, $contact, $marque);
                         
                         // Utiliser le prix calculé pour cette machine
                         $prix_machine_calcule = round(floatval($array['machines'][$index]['prix'] ?? 0), 2);
@@ -995,7 +1004,8 @@ function Action($conf = null) {
                                         $cb,
                                         $mot,
                                         $date,
-                                        $db  // CORRECTION DEADLOCK : Passer la connexion de la transaction
+                                        $db,  // CORRECTION DEADLOCK : Passer la connexion de la transaction
+                                        $tirage_global_id  // Identifiant global pour regrouper les tirages
                                     );
                                     error_log("DEBUG ENREGISTREMENT - Insertion photocop réussie");
                                 }

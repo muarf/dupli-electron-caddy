@@ -36,6 +36,12 @@
                                         <img src="<?= htmlspecialchars($url) ?>" alt="<?php _e('pdf_to_png.page'); ?> <?= ($index + 1) ?>" style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px;">
                                         <div class="caption">
                                             <p><strong><?php _e('pdf_to_png.page'); ?> <?= ($index + 1) ?></strong></p>
+                                            <button type="button" class="btn btn-sm btn-primary" onclick="openUrl('<?= htmlspecialchars($url) ?>')" style="margin-right: 5px;">
+                                                <i class="fa fa-external-link"></i> Ouvrir
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-info" onclick="printUrl('<?= htmlspecialchars($url) ?>')" style="margin-right: 5px;">
+                                                <i class="fa fa-print"></i> Imprimer
+                                            </button>
                                             <a href="<?= htmlspecialchars($url) ?>" class="btn btn-sm btn-success" download>
                                                 <i class="fa fa-download"></i> <?php _e('common.download'); ?>
                                             </a>
@@ -76,6 +82,7 @@
             <div class="panel panel-default">
                 <div class="panel-body">
                     <form method="POST" enctype="multipart/form-data" id="pdfForm">
+                        <input type="hidden" name="lib_file_id" id="lib_file_id" value="<?= isset($from_lib_file) ? $from_lib_file['id'] : '' ?>">
                         <!-- Options de qualité -->
                         <div class="row" style="margin-bottom: 20px;">
                             <div class="col-md-12">
@@ -138,6 +145,13 @@
                                     <i class="fa fa-times"></i> Annuler
                                 </button>
                             </div>
+                            <?php if (isset($from_lib_file)): ?>
+                            <div class="text-end mb-2">
+                                <a href="?bibliotheque" class="btn btn-outline-primary btn-sm">
+                                    <i class="fa fa-book"></i> Ouvrir la bibliothèque
+                                </a>
+                            </div>
+                            <?php endif; ?>
                         </div>
                     </form>
                 </div>
@@ -255,7 +269,18 @@ document.addEventListener('DOMContentLoaded', function() {
         fileInput.value = '';
         uploadText.style.display = 'block';
         fileInfo.style.display = 'none';
+        document.getElementById('lib_file_id').value = '';
     };
+    
+    <?php if (isset($from_lib_file)): ?>
+    // Pré-remplissage si fichier bibliothèque
+    fileUploadArea.style.borderColor = '#28a745';
+    fileUploadArea.style.backgroundColor = '#f8fff8';
+    uploadText.innerHTML = '<i class="fa fa-file-pdf-o"></i> ' + <?= json_encode($from_lib_file['filename']) ?>;
+    fileInfo.style.display = 'block';
+    fileName.textContent = <?= json_encode($from_lib_file['filename']) ?> + ' (Fichier bibliothèque)';
+    fileInput.removeAttribute('required');
+    <?php endif; ?>
     
     // Protection contre double soumission
     form.addEventListener('submit', function(e) {
@@ -268,4 +293,68 @@ document.addEventListener('DOMContentLoaded', function() {
         submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Extraction en cours...';
     });
 });
+
+// Fonction d'impression pour les fichiers transformés
+function printUrl(url) {
+    // Vérifier si l'API Electron est disponible
+    if (!window.electronAPI || !window.electronAPI.printFile) {
+        alert('L\'impression système n\'est disponible que dans l\'application Electron. Utilisez le téléchargement pour imprimer depuis un navigateur.');
+        // Fallback : ouvrir l'URL dans un nouvel onglet
+        window.open(url, '_blank');
+        return;
+    }
+    
+    try {
+        // Construire l'URL complète si nécessaire
+        const fullUrl = url.startsWith('http') ? url : window.location.origin + '/' + url;
+        console.log('Demande d\'impression pour:', fullUrl);
+        
+        // Appeler l'API Electron pour imprimer
+        window.electronAPI.printFile(fullUrl)
+            .then(result => {
+                if (result.success) {
+                    console.log('Impression lancée avec succès');
+                } else {
+                    console.error('Erreur lors de l\'impression:', result.error);
+                    alert('Erreur lors de l\'impression: ' + (result.error || 'Erreur inconnue'));
+                }
+            })
+            .catch(error => {
+                console.error('Erreur impression:', error);
+                alert('Erreur lors de l\'impression: ' + error.message);
+            });
+    } catch (error) {
+        console.error('Erreur lors de la préparation de l\'impression:', error);
+        alert('Erreur lors de la préparation de l\'impression: ' + error.message);
+    }
+}
+
+// Fonction d'ouverture pour les fichiers transformés
+function openUrl(url) {
+    // Construire l'URL complète si nécessaire
+    const fullUrl = url.startsWith('http') ? url : window.location.origin + '/' + url;
+    
+    // Vérifier si l'API Electron est disponible
+    if (window.electronAPI && window.electronAPI.openExternalFile) {
+        // Dans Electron : ouvrir avec l'application système
+        console.log('Ouverture externe pour:', fullUrl);
+        window.electronAPI.openExternalFile(fullUrl)
+            .then(result => {
+                if (result.success) {
+                    console.log('Fichier ouvert avec succès');
+                } else {
+                    console.error('Erreur lors de l\'ouverture:', result.error);
+                    alert('Erreur lors de l\'ouverture du fichier: ' + (result.error || 'Erreur inconnue'));
+                }
+            })
+            .catch(error => {
+                console.error('Erreur ouverture:', error);
+                alert('Erreur lors de l\'ouverture du fichier: ' + error.message);
+            });
+    } else {
+        // Dans un navigateur web : ouvrir dans un nouvel onglet
+        console.log('Ouverture dans un nouvel onglet:', fullUrl);
+        window.open(fullUrl, '_blank');
+    }
+}
 </script>
