@@ -104,7 +104,7 @@ $download_url = $download_url ?? '';
                                 <h3 style="color: #333; margin-bottom: 10px;"><?php _e('unimpose.drag_drop'); ?></h3>
                                 <p style="color: #666; margin-bottom: 20px;"><?php _e('unimpose.click_select'); ?></p>
                                 <input type="file" name="pdf" id="pdf" accept=".pdf" style="display: none;" required>
-                                <button type="button" class="btn btn-lg" style="background: #ffb3ba; border: none; color: white; padding: 12px 30px; border-radius: 25px;">
+                                <button type="button" class="btn btn-lg" id="selectPdfButton" style="background: #ffb3ba; border: none; color: white; padding: 12px 30px; border-radius: 25px;">
                                     <i class="fa fa-upload"></i> <?php _e('unimpose.select_pdf'); ?>
                                 </button>
                             </div>
@@ -189,6 +189,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         fileInput.click();
     });
+
+    // Gestion du clic direct sur le bouton "Sélectionner un PDF"
+    const selectPdfButton = document.getElementById('selectPdfButton');
+    if (selectPdfButton) {
+        selectPdfButton.addEventListener('click', function(e) {
+            e.stopPropagation(); // Empêcher la propagation vers fileUploadArea
+            if (fileInput) {
+                fileInput.click();
+            }
+        });
+    }
 
     // Gestion de la sélection de fichier
     fileInput.addEventListener('change', function() {

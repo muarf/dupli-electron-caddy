@@ -144,7 +144,13 @@ input[type="range"] {
                     </div>
                 <?php endif; ?>
                 <div style="margin-top: 20px;">
-                    <a href="<?= htmlspecialchars($result['download_url']) ?>" class="btn btn-primary btn-lg" download>
+                    <button type="button" class="btn btn-primary btn-lg" onclick="openUrl('<?= htmlspecialchars($result['download_url']) ?>')" style="margin-right: 10px;">
+                        <i class="fa fa-external-link"></i> Ouvrir
+                    </button>
+                    <button type="button" class="btn btn-info btn-lg" onclick="printUrl('<?= htmlspecialchars($result['download_url']) ?>')" style="margin-right: 10px;">
+                        <i class="fa fa-print"></i> Imprimer
+                    </button>
+                    <a href="<?= htmlspecialchars($result['download_url']) ?>" class="btn btn-success btn-lg" download>
                         <i class="fa fa-download"></i> Télécharger <?= $result['is_pdf'] ? 'le PDF' : 'l\'image' ?>
                     </a>
                     <a href="?image_processor" class="btn btn-default btn-lg">
@@ -157,6 +163,13 @@ input[type="range"] {
 
     <!-- Zone d'upload -->
     <div id="uploadSection">
+        <?php if (isset($from_lib_file)): ?>
+        <div class="text-end mb-2">
+            <a href="?bibliotheque" class="btn btn-outline-primary btn-sm">
+                <i class="fa fa-book"></i> Ouvrir la bibliothèque
+            </a>
+        </div>
+        <?php endif; ?>
         <div class="upload-zone" id="uploadZone">
             <div style="font-size: 64px; color: #667eea; margin-bottom: 20px;">
                 <i class="fa fa-cloud-upload"></i>
@@ -273,6 +286,7 @@ input[type="range"] {
 
     <!-- Formulaire caché pour soumission -->
     <form method="POST" enctype="multipart/form-data" id="processForm" style="display: none;">
+        <input type="hidden" name="lib_file_id" id="lib_file_id" value="<?= isset($from_lib_file) ? $from_lib_file['id'] : '' ?>">
         <input type="file" name="file" id="hiddenFileInput">
         <input type="hidden" name="contrast" id="hiddenContrast">
         <input type="hidden" name="brightness" id="hiddenBrightness">
@@ -350,6 +364,27 @@ document.addEventListener('DOMContentLoaded', function() {
             handleFile(e.target.files[0]);
         }
     });
+    
+    <?php if (isset($from_lib_file)): ?>
+    // Charger automatiquement le fichier depuis la bibliothèque
+    (async function() {
+        const fileUrl = '?get_bibliotheque_file&id=' + encodeURIComponent(<?= $from_lib_file['id'] ?>);
+        const fileName = <?= json_encode($from_lib_file['filename']) ?>;
+        const fileType = <?= json_encode($from_lib_file['file_type'] === 'pdf' ? 'application/pdf' : 'image/png') ?>;
+        
+        try {
+            const response = await fetch(fileUrl);
+            if (!response.ok) throw new Error('Erreur lors du chargement du fichier');
+            
+            const blob = await response.blob();
+            const file = new File([blob], fileName, { type: fileType });
+            handleFile(file);
+        } catch (error) {
+            console.error('Erreur chargement fichier bibliothèque:', error);
+            alert('Erreur lors du chargement du fichier depuis la bibliothèque: ' + error.message);
+        }
+    })();
+    <?php endif; ?>
     
     // Sliders
     const sliders = {
@@ -987,7 +1022,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="panel-body">
                             <p>Le fichier <strong>${data.filename || 'traitée'}</strong> a été traité avec succès.</p>
                             <div class="btn-group">
-                                <a href="${data.download_url}" class="btn btn-primary btn-lg" download>
+                                <button type="button" class="btn btn-primary btn-lg" onclick="openUrl('${data.download_url}')" style="margin-right: 10px;">
+                                    <i class="fa fa-external-link"></i> Ouvrir
+                                </button>
+                                <button type="button" class="btn btn-info btn-lg" onclick="printUrl('${data.download_url}')" style="margin-right: 10px;">
+                                    <i class="fa fa-print"></i> Imprimer
+                                </button>
+                                <a href="${data.download_url}" class="btn btn-success btn-lg" download>
                                     <i class="fa fa-download"></i> Télécharger le fichier
                                 </a>
                                 <button type="button" class="btn btn-warning btn-lg" onclick="window.location.reload()">
@@ -1127,5 +1168,69 @@ document.addEventListener('DOMContentLoaded', function() {
     startProgressPolling('<?= htmlspecialchars($result['progress_key']) ?>');
     <?php endif; ?>
 });
+
+// Fonction d'impression pour les fichiers transformés
+function printUrl(url) {
+    // Vérifier si l'API Electron est disponible
+    if (!window.electronAPI || !window.electronAPI.printFile) {
+        alert('L\'impression système n\'est disponible que dans l\'application Electron. Utilisez le téléchargement pour imprimer depuis un navigateur.');
+        // Fallback : ouvrir l'URL dans un nouvel onglet
+        window.open(url, '_blank');
+        return;
+    }
+    
+    try {
+        // Construire l'URL complète si nécessaire
+        const fullUrl = url.startsWith('http') ? url : window.location.origin + '/' + url;
+        console.log('Demande d\'impression pour:', fullUrl);
+        
+        // Appeler l'API Electron pour imprimer
+        window.electronAPI.printFile(fullUrl)
+            .then(result => {
+                if (result.success) {
+                    console.log('Impression lancée avec succès');
+                } else {
+                    console.error('Erreur lors de l\'impression:', result.error);
+                    alert('Erreur lors de l\'impression: ' + (result.error || 'Erreur inconnue'));
+                }
+            })
+            .catch(error => {
+                console.error('Erreur impression:', error);
+                alert('Erreur lors de l\'impression: ' + error.message);
+            });
+    } catch (error) {
+        console.error('Erreur lors de la préparation de l\'impression:', error);
+        alert('Erreur lors de la préparation de l\'impression: ' + error.message);
+    }
+}
+
+// Fonction d'ouverture pour les fichiers transformés
+function openUrl(url) {
+    // Construire l'URL complète si nécessaire
+    const fullUrl = url.startsWith('http') ? url : window.location.origin + '/' + url;
+    
+    // Vérifier si l'API Electron est disponible
+    if (window.electronAPI && window.electronAPI.openExternalFile) {
+        // Dans Electron : ouvrir avec l'application système
+        console.log('Ouverture externe pour:', fullUrl);
+        window.electronAPI.openExternalFile(fullUrl)
+            .then(result => {
+                if (result.success) {
+                    console.log('Fichier ouvert avec succès');
+                } else {
+                    console.error('Erreur lors de l\'ouverture:', result.error);
+                    alert('Erreur lors de l\'ouverture du fichier: ' + (result.error || 'Erreur inconnue'));
+                }
+            })
+            .catch(error => {
+                console.error('Erreur ouverture:', error);
+                alert('Erreur lors de l\'ouverture du fichier: ' + error.message);
+            });
+    } else {
+        // Dans un navigateur web : ouvrir dans un nouvel onglet
+        console.log('Ouverture dans un nouvel onglet:', fullUrl);
+        window.open(fullUrl, '_blank');
+    }
+}
 </script>
 

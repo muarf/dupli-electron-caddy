@@ -16,12 +16,39 @@ class BackupManager {
         
         // Créer le dossier de sauvegarde s'il n'existe pas
         if (!is_dir($this->backup_dir)) {
-            mkdir($this->backup_dir, 0755, true);
+            try {
+                if (!@mkdir($this->backup_dir, 0755, true)) {
+                    $error = error_get_last();
+                    if ($error && strpos($error['message'], 'Read-only file system') !== false) {
+                        // Si on est dans un système de fichiers en lecture seule, utiliser un fallback
+                        error_log('Backup dir in read-only filesystem, using fallback: ' . $this->backup_dir);
+                        $this->backup_dir = rtrim($this->getFallbackBackupDir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+                        if (!is_dir($this->backup_dir)) {
+                            @mkdir($this->backup_dir, 0755, true);
+                        }
+                    }
+                }
+            } catch (Exception $e) {
+                error_log('Error creating backup dir: ' . $e->getMessage());
+                // Utiliser un fallback
+                $this->backup_dir = rtrim($this->getFallbackBackupDir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+                if (!is_dir($this->backup_dir)) {
+                    @mkdir($this->backup_dir, 0755, true);
+                }
+            }
         }
         
         // Optionnel: journaliser si non inscriptible
         if (!is_writable($this->backup_dir)) {
              error_log('Backup dir not writable: ' . $this->backup_dir);
+             // Essayer un fallback
+             $fallback = $this->getFallbackBackupDir();
+             if (is_writable(dirname($fallback))) {
+                 $this->backup_dir = rtrim($fallback, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+                 if (!is_dir($this->backup_dir)) {
+                     @mkdir($this->backup_dir, 0755, true);
+                 }
+             }
         }
     }
     
@@ -128,6 +155,13 @@ class BackupManager {
     }
     
     /**
+     * Obtenir le chemin du dossier de sauvegarde
+     */
+    public function getBackupDir() {
+        return $this->backup_dir;
+    }
+    
+    /**
      * Obtenir la liste des sauvegardes disponibles
      */
     public function getBackupsList() {
@@ -229,9 +263,35 @@ class BackupManager {
         }
         
         // 3) Détection AppImage (avant les autres pour Linux)
+        // Vérifier la variable d'environnement APPIMAGE (définie automatiquement par AppImage)
+        if (getenv('APPIMAGE') !== false) {
+            // AppImage détectée via variable d'environnement
+            $home_dir = $_SERVER['HOME'] ?? getenv('HOME');
+            
+            if (!empty($home_dir) && is_dir($home_dir) && is_writable($home_dir)) {
+                $appImagePath = $this->normalizePath($home_dir . '/.config/dupli-electron/sauvegarde');
+                // Vérifier que le répertoire parent est accessible
+                if (is_dir(dirname($appImagePath)) || @mkdir(dirname($appImagePath), 0755, true)) {
+                    return $appImagePath;
+                }
+            }
+            
+            // Fallback si HOME n'est pas accessible : dossier temporaire système
+            return $this->normalizePath(sys_get_temp_dir() . '/duplicator_backups');
+        }
+        
+        // Vérifier si __DIR__ ou __FILE__ contient .mount (plus fiable que getcwd())
+        $script_dir = __DIR__;
+        $script_file = __FILE__;
         $current_dir = getcwd();
-        if (strpos($current_dir, '.mount') !== false || strpos($current_dir, 'AppDir') !== false) {
-            // AppImage : utiliser le répertoire home de l'utilisateur
+        
+        if (strpos($script_dir, '.mount') !== false || 
+            strpos($script_file, '.mount') !== false || 
+            strpos($current_dir, '.mount') !== false ||
+            strpos($script_dir, 'AppDir') !== false ||
+            strpos($script_file, 'AppDir') !== false ||
+            strpos($current_dir, 'AppDir') !== false) {
+            // AppImage détectée via chemin de fichier
             $home_dir = $_SERVER['HOME'] ?? getenv('HOME');
             
             if (!empty($home_dir) && is_dir($home_dir) && is_writable($home_dir)) {
@@ -297,7 +357,36 @@ class BackupManager {
         $path = trim($path);
         return rtrim($path, DIRECTORY_SEPARATOR);
     }
+    
+    /**
+     * Obtenir un répertoire de sauvegarde de secours (fallback)
+     * Utilisé quand le répertoire principal n'est pas accessible en écriture
+     */
+    private function getFallbackBackupDir() {
+        // Windows
+        if (stripos(PHP_OS_FAMILY, 'Windows') !== false) {
+            $appData = getenv('APPDATA');
+            if (!empty($appData)) {
+                return $this->normalizePath($appData . DIRECTORY_SEPARATOR . 'dupli-electron' . DIRECTORY_SEPARATOR . 'sauvegarde');
+            }
+            $userProfile = getenv('USERPROFILE');
+            if (!empty($userProfile)) {
+                return $this->normalizePath($userProfile . DIRECTORY_SEPARATOR . 'dupli-electron' . DIRECTORY_SEPARATOR . 'sauvegarde');
+            }
+        }
+        
+        // Linux/Unix - utiliser XDG_DATA_HOME ou ~/.local/share
+        $xdgData = getenv('XDG_DATA_HOME');
+        if (!empty($xdgData)) {
+            return $this->normalizePath($xdgData . DIRECTORY_SEPARATOR . 'dupli-electron' . DIRECTORY_SEPARATOR . 'sauvegarde');
+        }
+        
+        $home = getenv('HOME');
+        if (!empty($home) && is_dir($home)) {
+            return $this->normalizePath($home . DIRECTORY_SEPARATOR . '.local' . DIRECTORY_SEPARATOR . 'share' . DIRECTORY_SEPARATOR . 'dupli-electron' . DIRECTORY_SEPARATOR . 'sauvegarde');
+        }
+        
+        // Dernier recours : dossier temporaire système
+        return $this->normalizePath(sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_backups');
+    }
 }
-?>
-
-

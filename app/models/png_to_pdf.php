@@ -73,8 +73,32 @@ function Action($conf) {
     $success = false;
     $result = '';
     $download_url = '';
+    $from_lib_file = null;
+    
+    // Gestion de la pré-sélection bibliothèque (GET)
+    if (isset($_GET['from_lib'])) {
+        require_once __DIR__ . '/BibliothequeManager.php';
+        $libManager = new BibliothequeManager();
+        $file = $libManager->getFile($_GET['from_lib']);
+        if ($file && $file['file_type'] === 'png' && file_exists($file['filepath'])) {
+            $from_lib_file = $file;
+        }
+    }
     
     try {
+        // Cas 1 : Fichier bibliothèque (POST avec lib_file_id)
+        if (isset($_SERVER["REQUEST_METHOD"]) && $_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['lib_file_id']) && !empty($_POST['lib_file_id'])) {
+            require_once __DIR__ . '/BibliothequeManager.php';
+            $libManager = new BibliothequeManager();
+            $file = $libManager->getFile($_POST['lib_file_id']);
+            if ($file && $file['file_type'] === 'png' && file_exists($file['filepath'])) {
+                $from_lib_file = $file;
+            } else {
+                $errors[] = "Fichier bibliothèque non trouvé ou invalide.";
+            }
+        }
+        
+        // Cas 2 : Upload classique
         if (isset($_SERVER["REQUEST_METHOD"]) && $_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["images"]) && !empty($_FILES["images"]["name"][0])) {
             
             // Récupérer le format choisi
@@ -158,6 +182,40 @@ function Action($conf) {
                 $errors[] = "Aucun fichier valide n'a été uploadé.";
             }
         }
+        
+        // Traitement du fichier bibliothèque
+        if ($from_lib_file) {
+            // Récupérer le format choisi
+            $format = isset($_POST['format']) && $_POST['format'] === 'A3' ? 'A3' : 'A4';
+            $orientation = isset($_POST['orientation']) && $_POST['orientation'] === 'L' ? 'L' : 'P';
+            
+            // Utiliser sys_get_temp_dir() pour être compatible AppImage
+            $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_png_to_pdf' . DIRECTORY_SEPARATOR;
+            if (!is_dir($tmpDir)) {
+                if (!mkdir($tmpDir, 0777, true)) {
+                    throw new Exception("Impossible de créer le répertoire temporaire : " . $tmpDir);
+                }
+            }
+            
+            $timestamp = date('YmdHis');
+            $originalName = pathinfo($from_lib_file['filename'], PATHINFO_FILENAME);
+            $safe_filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $originalName);
+            
+            // Générer le fichier de sortie
+            $outputFile = $tmpDir . $safe_filename . ".pdf";
+            
+            // Exécuter la conversion directement depuis le fichier bibliothèque
+            $result_ok = convert_png_to_pdf([$from_lib_file['filepath']], $outputFile, $format, $orientation);
+            
+            if ($result_ok && file_exists($outputFile)) {
+                $success = true;
+                $result = basename($outputFile);
+                // Utiliser une route API pour servir le PDF depuis le dossier temporaire
+                $download_url = "?download_pdf&file=" . urlencode(basename($outputFile)) . "&dir=png_to_pdf";
+            } else {
+                $errors[] = "Erreur lors de la génération du PDF.";
+            }
+        }
     } catch (Exception $e) {
         error_log("Erreur détaillée dans Action : " . $e->getMessage());
         error_log("Trace complète : " . $e->getTraceAsString());
@@ -168,7 +226,8 @@ function Action($conf) {
         'errors' => $errors,
         'success' => $success,
         'result' => $result,
-        'download_url' => $download_url
+        'download_url' => $download_url,
+        'from_lib_file' => $from_lib_file
     ));
 }
 

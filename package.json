@@ -1,6 +1,6 @@
 {
   "name": "dupli-electron",
-  "version": "1.5.33",
+  "version": "1.5.50",
   "main": "main-caddy.js",
   "scripts": {
     "start": "electron . --no-sandbox --disable-gpu",
@@ -114,7 +114,11 @@
     }
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "electron-updater": "^6.6.2",
-    "node-addon-api": "^7.0.0"
+    "node-addon-api": "^7.0.0",
+    "pdfjs-dist": "^3.11.174",
+    "pdfkit": "^0.17.2",
+    "sqlite3": "^5.1.7"
   }
 }

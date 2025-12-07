@@ -1,5 +1,30 @@
 <?php
 
+// Vérifier download_backup AVANT toute autre chose pour éviter la pollution du buffer
+$page_check = key($_GET) ?? '';
+if ($page_check === 'download_backup') {
+    // Désactiver tout affichage et compression AVANT tout
+    if (ini_get('zlib.output_compression')) {
+        ini_set('zlib.output_compression', 'Off');
+    }
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    ini_set('display_errors', 0);
+    error_reporting(0);
+    
+    // Rediriger vers le fichier API dédié pour éviter toute pollution du buffer
+    $api_file = __DIR__ . '/api/download_backup.php';
+    if (file_exists($api_file)) {
+        require_once $api_file;
+        exit;
+    } else {
+        http_response_code(500);
+        die('Fichier API non trouvé');
+    }
+}
+
+// Configuration normale du script
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -109,6 +134,12 @@ if (empty($_GET) && (isset($_SERVER['REQUEST_URI']) && $_SERVER['REQUEST_URI'] =
 }
 
 // Gestion des endpoints API (doit être avant ajax_delete_machine)
+if ($page === 'check_ghostscript') {
+    $api_file = __DIR__ . '/../api/check_ghostscript.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    else { http_response_code(500); echo json_encode(['error' => 'API file not found']); exit; }
+}
+
 if ($page === 'ajax_edit_tambours') {
     // Inclure le fichier API depuis le dossier api/
     $api_file = __DIR__ . '/../api/ajax_edit_tambours.php';
@@ -239,6 +270,48 @@ if ($page === 'upload_aide_pdf') {
         echo json_encode(['error' => 'Fichier API non trouvé']);
         exit;
     }
+}
+
+if ($page === 'upload_bibliotheque') {
+    $api_file = __DIR__ . '/../api/upload_bibliotheque.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    else { http_response_code(500); echo json_encode(['error' => 'API file not found']); exit; }
+}
+
+if ($page === 'search_bibliotheque') {
+    $api_file = __DIR__ . '/../api/search_bibliotheque.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    else { http_response_code(500); echo json_encode(['error' => 'API file not found']); exit; }
+}
+
+if ($page === 'preview_directory') {
+    $api_file = __DIR__ . '/../api/preview_directory.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    else { http_response_code(500); echo json_encode(['error' => 'API file not found']); exit; }
+}
+
+if ($page === 'index_file') {
+    $api_file = __DIR__ . '/../api/index_file.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    else { http_response_code(500); echo json_encode(['error' => 'API file not found']); exit; }
+}
+
+if ($page === 'delete_bibliotheque_file') {
+    $api_file = __DIR__ . '/../api/delete_bibliotheque_file.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    else { http_response_code(500); echo json_encode(['error' => 'API file not found']); exit; }
+}
+
+if ($page === 'get_bibliotheque_thumbnail') {
+    $api_file = __DIR__ . '/../api/get_bibliotheque_thumbnail.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    else { http_response_code(500); echo json_encode(['error' => 'API file not found']); exit; }
+}
+
+if ($page === 'get_bibliotheque_file') {
+    $api_file = __DIR__ . '/../api/get_bibliotheque_file.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    else { http_response_code(500); echo json_encode(['error' => 'API file not found']); exit; }
 }
 
 if ($page === 'check_print_jobs') {
@@ -445,6 +518,7 @@ if ($page === 'view_aide_pdf') {
     exit;
 }
 
+
 if ($page === 'ajax_delete_machine') {
     // Vérifier l'authentification admin
     if (!isset($_SESSION['user'])) {
@@ -511,7 +585,7 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','imposition_brochure','imposition_livre','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','image_processor','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','download_png','download_unimposed','download_processed','view_pdf','get-machine-template','upload_aide_pdf','view_aide_pdf','check_print_jobs','print_notification');
+$page_secure = array('base','accueil','devis','tirage_multimachines','changement','admin','admin_aide_machines','admin_translations','installation','setup','setup_save','setup_upload','create_password','stats','imposition','imposition_brochure','imposition_livre','unimpose','imposition_tracts','png_to_pdf','pdf_to_png','riso_separator','image_processor','taux_remplissage','aide_machines','error','lang','ajax_edit_tambours','ajax_get_tambour_prices','download_pdf','download_png','download_unimposed','download_processed','download_backup','view_pdf','get-machine-template','upload_aide_pdf','view_aide_pdf','bibliotheque','upload_bibliotheque','search_bibliotheque','preview_directory','index_file','delete_bibliotheque_file','get_bibliotheque_thumbnail','get_bibliotheque_file','check_print_jobs','print_notification');
 
 error_log("[PASSWORD_CHECK] ===== DEBUT VERIFICATION =====");
 error_log("[PASSWORD_CHECK] Page demandée (avant vérification): " . $page);
@@ -601,6 +675,20 @@ if(in_array($page, $page_secure,true)){
             } else {
                 error_log("[PASSWORD_CHECK] Page exclue de la vérification: " . $page);
             }
+            
+            // Exécuter les migrations de base de données (après vérification password)
+            // Sauf pour les pages d'installation/setup
+            if ($page != 'installation' && $page != 'setup' && $page != 'setup_save' && $page != 'create_password') {
+                try {
+                    require_once __DIR__ . '/../models/migrations/DatabaseMigrationManager.php';
+                    $migrationManager = new DatabaseMigrationManager($conf);
+                    $migrationManager->runMigrations();
+                } catch (Exception $e) {
+                    error_log("[MIGRATION] Erreur lors de l'exécution des migrations: " . $e->getMessage());
+                    // Ne pas bloquer l'application si les migrations échouent
+                }
+            }
+            
         } catch (PDOException $e) {
             error_log("[PASSWORD_CHECK] Exception connexion DB: " . $e->getMessage());
             // Base de données non trouvée, rediriger vers l'installation

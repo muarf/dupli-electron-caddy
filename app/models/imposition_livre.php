@@ -127,18 +127,49 @@ function Action($conf)
         $array['last_error_details'] = $lastError;
     }
 
-    // Traitement du fichier PDF uploadé
-    if (isset($_SERVER["REQUEST_METHOD"]) && $_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["pdf"])) {
+    // Gestion de la pré-sélection bibliothèque (GET)
+    if (isset($_GET['from_lib'])) {
+        require_once __DIR__ . '/BibliothequeManager.php';
+        $libManager = new BibliothequeManager();
+        $file = $libManager->getFile($_GET['from_lib']);
+        if ($file) {
+            $array['from_lib_file'] = $file;
+        }
+    }
+
+    // Traitement du formulaire (POST)
+    if (isset($_SERVER["REQUEST_METHOD"]) && $_SERVER["REQUEST_METHOD"] == "POST") {
+        $pdfFile = null;
+        $originalFileName = null;
+        
+        // Cas 1 : Fichier bibliothèque
+        if (isset($_POST['lib_file_id']) && !empty($_POST['lib_file_id'])) {
+            require_once __DIR__ . '/BibliothequeManager.php';
+            $libManager = new BibliothequeManager();
+            $file = $libManager->getFile($_POST['lib_file_id']);
+            if ($file && file_exists($file['filepath'])) {
+                $pdfFile = $file['filepath'];
+                $originalFileName = $file['filename'];
+            } else {
+                $array['errors'][] = "Erreur : Fichier de bibliothèque introuvable.";
+                return template(__DIR__ . "/../view/imposition_livre.html.php", $array);
+            }
+        }
+        // Cas 2 : Fichier uploadé
+        elseif (isset($_FILES["pdf"]) && $_FILES["pdf"]["error"] !== UPLOAD_ERR_NO_FILE) {
         $pdfFile = $_FILES["pdf"]["tmp_name"];
         $originalFileName = $_FILES["pdf"]["name"];
-        
-        // Extraire le nom sans extension
-        $originalFileNameWithoutExt = pathinfo($originalFileName, PATHINFO_FILENAME);
         
         if ($_FILES["pdf"]["error"] !== UPLOAD_ERR_OK) {
             $array['errors'][] = "Erreur d'upload : " . $_FILES["pdf"]["error"];
             return template(__DIR__ . "/../view/imposition_livre.html.php", $array);
+            }
         }
+        
+        // Si on a un fichier à traiter
+        if ($pdfFile) {
+            // Extraire le nom sans extension
+            $originalFileNameWithoutExt = pathinfo($originalFileName, PATHINFO_FILENAME);
         
         if (!file_exists($pdfFile)) {
             $array['errors'][] = "Erreur : Fichier introuvable.";
@@ -192,11 +223,13 @@ function Action($conf)
             $target_height = floatval($_POST['target_height'] ?? 0);
             $gutter_x = floatval($_POST['gutter_x'] ?? 0);
             $gutter_y = floatval($_POST['gutter_y'] ?? 0);
+            $gutter_strategy = $_POST['gutter_strategy'] ?? 'reduce'; // 'reduce' ou 'crop'
             $crop_marks = isset($_POST['crop_marks']);
             $crop_mark_len = floatval($_POST['crop_mark_len'] ?? 2);
             $crop_mark_width = floatval($_POST['crop_mark_width'] ?? 0.1);
             $resize_mode = $_POST['resize_mode'] ?? 'percent';
             $add_page_numbers_in_gutters = isset($_POST['add_page_numbers_in_gutters']);
+            $outputFormat = $_POST['output_format'] ?? 'A3'; // Format de sortie (A3 ou A4)
 
             // Si on est en mode dimension cible, on ignore l'échelle %
             if ($resize_mode === 'mm') {
@@ -215,11 +248,13 @@ function Action($conf)
                 'target_height' => $target_height,
                 'gutter_x' => $gutter_x,
                 'gutter_y' => $gutter_y,
+                'gutter_strategy' => $gutter_strategy,
                 'crop_marks' => $crop_marks,
                 'crop_mark_len' => $crop_mark_len,
                 'crop_mark_width' => $crop_mark_width,
                 'preview_mode' => $previewMode,
                 'add_page_numbers_in_gutters' => $add_page_numbers_in_gutters,
+                'output_format' => $outputFormat,
                 'addPageNumberCallback' => $previewMode ? function($pdf, $pageNo, $x, $y, $w, $h, $rotation) {
                     return addPageNumber($pdf, $pageNo, $x, $y, $w, $h, $rotation);
                 } : null
@@ -335,6 +370,7 @@ function Action($conf)
                 $crop_mark_width = floatval($_POST['crop_mark_width'] ?? 0.1);
                 $resize_mode = $_POST['resize_mode'] ?? 'percent';
                 $add_page_numbers_in_gutters = isset($_POST['add_page_numbers_in_gutters']);
+                $outputFormat = $_POST['output_format'] ?? 'A3'; // Format de sortie (A3 ou A4)
 
                 if ($resize_mode === 'mm') {
                     $scale = 0;
@@ -358,6 +394,7 @@ function Action($conf)
                     'crop_mark_width' => $crop_mark_width,
                     'preview_mode' => $previewMode,
                     'add_page_numbers_in_gutters' => $add_page_numbers_in_gutters,
+                    'output_format' => $outputFormat,
                     'addPageNumberCallback' => $previewMode ? function($pdf, $pageNo, $x, $y, $w, $h, $rotation) {
                         return addPageNumber($pdf, $pageNo, $x, $y, $w, $h, $rotation);
                     } : null
@@ -367,7 +404,7 @@ function Action($conf)
                 $timestamp = date('YmdHis');
                 $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR;
 
-                $originalFileName = isset($_FILES["pdf"]["name"]) ? $_FILES["pdf"]["name"] : "document.pdf";
+                $originalFileName = isset($originalFileName) ? $originalFileName : "document.pdf";
                 $originalFileNameWithoutExt = pathinfo($originalFileName, PATHINFO_FILENAME);
                 $safe_filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $originalFileNameWithoutExt);
                 $final_filename = $safe_filename . '_imposed.pdf';
@@ -417,7 +454,8 @@ function Action($conf)
                     unlink($cleanedPdfFile);
                 }
                 
-                error_log("Erreur imposition PDF: " . $e->getMessage() . " - Erreur Ghostscript: " . $e2->getMessage() . " - Fichier: " . ($_FILES["pdf"]["name"] ?? "inconnu"));
+                error_log("Erreur imposition PDF: " . $e->getMessage() . " - Erreur Ghostscript: " . $e2->getMessage() . " - Fichier: " . ($originalFileName ?? "inconnu"));
+            }
             }
         }
     }

@@ -6,6 +6,18 @@
 require_once __DIR__ . '/../controler/functions/i18n.php';
 
 function Action($conf) {
+    $from_lib_file = null;
+    
+    // Gestion de la pré-sélection bibliothèque (GET)
+    if (isset($_GET['from_lib'])) {
+        require_once __DIR__ . '/BibliothequeManager.php';
+        $libManager = new BibliothequeManager();
+        $file = $libManager->getFile($_GET['from_lib']);
+        if ($file && $file['file_type'] === 'png' && file_exists($file['filepath'])) {
+            $from_lib_file = $file;
+        }
+    }
+    
     // Récupérer la liste des tambours depuis la base de données
     $tambours = array();
     
@@ -50,7 +62,8 @@ function Action($conf) {
     }
     
     return template("../view/riso_separator.html.php", array(
-        'tambours' => $tambours
+        'tambours' => $tambours,
+        'from_lib_file' => $from_lib_file
     ));
 }
 
