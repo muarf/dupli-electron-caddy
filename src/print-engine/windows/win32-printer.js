@@ -130,42 +130,104 @@ async function getPrinterCapabilities(printerName) {
 }
 
 /**
- * Lancer un job d'impression
+ * Lancer un job d'impression via Ghostscript (Windows GDI)
  * @param {string} pdfPath
  * @param {Object} options
  * @returns {Promise<Object>}
  */
 async function printJob(pdfPath, options = {}) {
-    try {
-        // Log détaillé des options envoyées
-        const logData = {
-            timestamp: new Date().toISOString(),
-            pdfPath: pdfPath,
-            printer: options.printer,
-            options: {
-                copies: options.copies || 1,
-                pageSize: options.pageSize || 'Default',
-                colorMode: options.colorMode || 'Default',
-                duplex: options.duplex || 'Default',
-                inputSlot: options.inputSlot || 'Default',
-                resolution: options.resolution || 'Default'
-            }
-        };
-        console.log('🖨️ [PRINT_ENGINE] Options d\'impression envoyées:', JSON.stringify(logData, null, 2));
+    const { spawnSync } = require('child_process');
+    const fs = require('fs');
 
+    // Trouver Ghostscript
+    const gsPath = path.join(__dirname, '..', '..', '..', 'ghostscript', 'gswin64c.exe');
+    if (!fs.existsSync(gsPath)) {
+        throw new Error(`Ghostscript non trouvé: ${gsPath}`);
+    }
+
+    // Vérifier que le PDF existe
+    if (!fs.existsSync(pdfPath)) {
+        throw new Error(`Fichier PDF non trouvé: ${pdfPath}`);
+    }
+
+    // Déterminer l'imprimante
+    let printerName = options.printer;
+    if (!printerName) {
         const addon = loadNativeAddon();
-        const result = addon.printJob(pdfPath, options);
+        const printers = addon.getPrinters();
+        const defaultPrinter = printers.find(p => p.isDefault);
+        printerName = defaultPrinter ? defaultPrinter.name : (printers[0]?.name || '');
+    }
 
-        console.log('✅ [PRINT_ENGINE] Résultat de l\'impression:', JSON.stringify(result, null, 2));
+    if (!printerName) {
+        throw new Error('Aucune imprimante disponible');
+    }
+
+    // Log détaillé des options
+    const logData = {
+        timestamp: new Date().toISOString(),
+        pdfPath: pdfPath,
+        printer: printerName,
+        options: {
+            copies: options.copies || 1,
+            pageSize: options.pageSize || 'Default',
+            colorMode: options.colorMode || 'Default',
+            duplex: options.duplex || 'Default'
+        }
+    };
+    console.log('🖨️ [PRINT_ENGINE] Options d\'impression via Ghostscript:', JSON.stringify(logData, null, 2));
+
+    // Nombre de copies - on doit imprimer plusieurs fois car mswinpr2 ne supporte pas NumCopies
+    const copies = parseInt(options.copies) || 1;
+
+    try {
+        for (let i = 0; i < copies; i++) {
+            // Arguments Ghostscript de base (mswinpr2 utilise le driver Windows pour les options)
+            const gsArgs = [
+                '-dBATCH',
+                '-dNOPAUSE',
+                '-dNOSAFER',
+                '-sDEVICE=mswinpr2',
+                `-sOutputFile=%printer%${printerName}`,
+                pdfPath
+            ];
+
+            console.log(`🖨️ [PRINT_ENGINE] Impression copie ${i + 1}/${copies}:`, gsPath, gsArgs.join(' '));
+
+            // Exécuter Ghostscript
+            const result = spawnSync(gsPath, gsArgs, {
+                encoding: 'utf8',
+                windowsHide: true,
+                timeout: 120000 // 2 minutes timeout
+            });
+
+            // Log output
+            if (result.stdout) {
+                console.log('📄 [PRINT_ENGINE] stdout:', result.stdout);
+            }
+            if (result.stderr) {
+                console.log('📄 [PRINT_ENGINE] stderr:', result.stderr);
+            }
+
+            // Vérifier le code de sortie
+            if (result.status !== 0) {
+                throw new Error(`Ghostscript exit code ${result.status}: ${result.stderr || result.stdout || 'Unknown error'}`);
+            }
+        }
+
+        // Générer un ID de job pseudo-unique
+        const jobId = Date.now() % 100000;
+
+        console.log('✅ [PRINT_ENGINE] Impression envoyée avec succès');
 
         return {
-            success: result.success || true,
-            jobId: result.jobId || null,
-            message: result.message || 'Impression lancée',
-            printer: result.printer || options.printer
+            success: true,
+            jobId: jobId,
+            message: `Impression envoyée (${copies} copie${copies > 1 ? 's' : ''})`,
+            printer: printerName
         };
     } catch (error) {
-        console.error('❌ [PRINT_ENGINE] Erreur lors de l\'impression:', error.message);
+        console.error('❌ [PRINT_ENGINE] Erreur Ghostscript:', error.message);
         throw new Error(`Erreur lors de l'impression: ${error.message}`);
     }
 }

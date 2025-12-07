@@ -253,16 +253,17 @@
                     const date = new Date(job.timestamp).toLocaleString('fr-FR');
                     const copies = job.copies || 1;
                     const totalDocPages = job.total_pages || 0;
-                    const totalSheetsPrinted = job.pages_printed || 0;
-
-                    // Calculer les totaux en tenant compte des copies
-                    // On suppose que pages_printed venant de WMI est pour une seule copie si < total_pages * copies
-                    // Mais pour être sûr d'afficher l'info correcte à l'utilisateur :
-                    const displayTotal = totalDocPages * copies;
-
-                    // Pour pages_printed, c'est plus compliqué car ça dépend si WMI a déjà compté les copies
-                    // On va afficher: X / Y (Z copies) pour être clair
-                    const pages = totalSheetsPrinted + ' / ' + displayTotal + (copies > 1 ? ' (' + copies + ' copies)' : '');
+                    const isDuplex = job.duplex === 1 || job.duplex === '1' || job.duplex === true;
+                    
+                    // Calculer le total de pages (pages document × copies)
+                    const totalPages = totalDocPages * copies;
+                    
+                    // Calculer le nombre de feuilles
+                    // En recto-verso : 1 feuille = 2 pages, sinon 1 feuille = 1 page
+                    const sheets = isDuplex ? Math.ceil(totalDocPages / 2) * copies : totalDocPages * copies;
+                    
+                    // Affichage : "X pages, Y feuilles"
+                    const pages = totalPages + ' pages, ' + sheets + ' feuilles' + (copies > 1 ? ' (' + copies + ' copies)' : '');
                     const statusClass = job.status === 'Completed' ? 'success' : job.status === 'Printing' ? 'info' : 'warning';
 
                     // Format papier
