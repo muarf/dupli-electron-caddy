@@ -1581,6 +1581,7 @@ function startPrinterMonitor() {
                     duplex: printData.IsDuplex,
                     colorMode: printData.ColorMode,
                     copies: printData.Copies || 1,
+                    fillRate: printData.FillRate || 0,
                     timestamp: printData.TimeSubmitted || new Date().toISOString(),
                     eventType: 'job_detected'
                 });

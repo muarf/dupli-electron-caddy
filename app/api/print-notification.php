@@ -115,6 +115,11 @@ try {
     } catch (Exception $e) {
         // La colonne existe déjà, ignorer l'erreur
     }
+    try {
+        $db->execute("ALTER TABLE print_jobs ADD COLUMN fill_rate REAL DEFAULT 0");
+    } catch (Exception $e) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
     
     // Vérifier si le job existe déjà (dans la dernière heure pour éviter conflits avec job_ids recyclés)
     $newTotalPages = $data['totalPages'] ?? 0;
@@ -147,8 +152,8 @@ try {
         // Nouveau job - insérer
         $db->execute("
             INSERT INTO print_jobs 
-            (job_id, document, owner, printer_name, status, pages_printed, total_pages, size, duplex, paper_size, color_mode, copies, orientation, resolution, input_slot, time_submitted, event_type, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (job_id, document, owner, printer_name, status, pages_printed, total_pages, size, duplex, paper_size, color_mode, copies, orientation, resolution, input_slot, fill_rate, time_submitted, event_type, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ", [
             $data['jobId'],
             $data['document'],
@@ -165,6 +170,7 @@ try {
             $data['orientation'] ?? null,
             $data['resolution'] ?? null,
             $data['inputSlot'] ?? null,
+            isset($data['fillRate']) ? floatval($data['fillRate']) : 0.0,
             $data['timeSubmitted'] ?? null,
             $data['eventType'] ?? 'unknown',
             $data['timestamp']

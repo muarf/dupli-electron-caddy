@@ -1,4 +1,5 @@
 #include "win32-printer.h"
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -85,6 +86,217 @@ void MonitorWorker::Execute(const ExecutionProgress &progress) {
   }
 }
 
+// Custom EMF enumeration callback to analyze colors
+struct EmfAnalysisData {
+  bool hasColor;
+  double totalPixels;
+  double filledPixels;
+};
+
+int CALLBACK EmfEnumProc(HDC hdc, HANDLETABLE *lpht, const ENHMETARECORD *lpemr,
+                         int nHandles, LPARAM lpData) {
+  EmfAnalysisData *data = (EmfAnalysisData *)lpData;
+
+  // Check for color-related records
+  switch (lpemr->iType) {
+  case EMR_SETTEXTCOLOR:
+  case EMR_SETBKCOLOR: {
+    const EMRSETTEXTCOLOR *rec = (const EMRSETTEXTCOLOR *)lpemr;
+    BYTE r = GetRValue(rec->crColor);
+    BYTE g = GetGValue(rec->crColor);
+    BYTE b = GetBValue(rec->crColor);
+    if (r != g || g != b) {
+      data->hasColor = true;
+    }
+    break;
+  }
+  case EMR_CREATEBRUSHINDIRECT: {
+    const EMRCREATEBRUSHINDIRECT *rec = (const EMRCREATEBRUSHINDIRECT *)lpemr;
+    BYTE r = GetRValue(rec->lb.lbColor);
+    BYTE g = GetGValue(rec->lb.lbColor);
+    BYTE b = GetBValue(rec->lb.lbColor);
+    if (r != g || g != b) {
+      data->hasColor = true;
+    }
+    // Estimate fill based on brush style
+    if (rec->lb.lbStyle == BS_SOLID && (r != 255 || g != 255 || b != 255)) {
+      data->filledPixels += 1000; // Rough estimate
+    }
+    break;
+  }
+  case EMR_CREATEPEN: {
+    const EMRCREATEPEN *rec = (const EMRCREATEPEN *)lpemr;
+    BYTE r = GetRValue(rec->lopn.lopnColor);
+    BYTE g = GetGValue(rec->lopn.lopnColor);
+    BYTE b = GetBValue(rec->lopn.lopnColor);
+    if (r != g || g != b) {
+      data->hasColor = true;
+    }
+    break;
+  }
+  case EMR_RECTANGLE:
+  case EMR_ELLIPSE:
+  case EMR_POLYGON: {
+    data->filledPixels += 500; // Rough estimate for shapes
+    break;
+  }
+  case EMR_STRETCHDIBITS:
+  case EMR_BITBLT: {
+    data->filledPixels += 2000; // Images typically have more coverage
+    data->hasColor = true;      // Assume images are color
+    break;
+  }
+  case EMR_EXTTEXTOUTW:
+  case EMR_EXTTEXTOUTA: {
+    data->filledPixels += 100; // Text has some coverage
+    break;
+  }
+  }
+
+  return 1; // Continue enumeration
+}
+
+// Helper function to search for a pattern in buffer (case insensitive for text)
+bool ContainsPattern(const char *buffer, size_t bufferSize, const char *pattern,
+                     size_t patternLen) {
+  if (bufferSize < patternLen)
+    return false;
+  for (size_t i = 0; i <= bufferSize - patternLen; i++) {
+    bool match = true;
+    for (size_t j = 0; j < patternLen; j++) {
+      if (tolower(buffer[i + j]) != tolower(pattern[j])) {
+        match = false;
+        break;
+      }
+    }
+    if (match)
+      return true;
+  }
+  return false;
+}
+
+// Analyze spool file content for color detection
+// Uses STATISTICAL ANALYSIS of byte triplets to detect color vs grayscale
+// This works for ANY format including proprietary RISO format
+void AnalyzeSpoolFile(DWORD jobId, bool &isGrayscale, float &fillRate) {
+  isGrayscale = true; // Default to grayscale
+  fillRate = 0.0f;
+
+  // Spool directory path
+  wchar_t spoolPath[MAX_PATH];
+  GetSystemDirectoryW(spoolPath, MAX_PATH);
+  wcscat_s(spoolPath, L"\\spool\\PRINTERS\\");
+
+  // Search for SPL files
+  wchar_t searchPattern[MAX_PATH];
+  wcscpy_s(searchPattern, spoolPath);
+  wcscat_s(searchPattern, L"*.SPL");
+
+  WIN32_FIND_DATAW findData;
+  HANDLE hFind = FindFirstFileW(searchPattern, &findData);
+
+  if (hFind == INVALID_HANDLE_VALUE) {
+    return;
+  }
+
+  // Statistics for color detection
+  long long colorTriplets = 0; // Triplets where R, G, B differ significantly
+  long long grayTriplets = 0;  // Triplets where R ≈ G ≈ B
+  long long totalTriplets = 0;
+
+  do {
+    wchar_t fullPath[MAX_PATH];
+    wcscpy_s(fullPath, spoolPath);
+    wcscat_s(fullPath, findData.cFileName);
+
+    // Try to open the file for reading
+    HANDLE hFile =
+        CreateFileW(fullPath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                    NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    if (hFile != INVALID_HANDLE_VALUE) {
+      // Get file size
+      DWORD fileSize = GetFileSize(hFile, NULL);
+      if (fileSize > 0 && fileSize < 100 * 1024 * 1024) { // Max 100MB
+        // Read the file in chunks and analyze
+        // Skip the first 4KB (likely headers) and sample the rest
+        DWORD skipBytes = 4096;
+        if (fileSize > skipBytes) {
+          SetFilePointer(hFile, skipBytes, NULL, FILE_BEGIN);
+        }
+
+        // Read up to 2MB for analysis
+        DWORD bytesToRead =
+            (std::min)(fileSize - skipBytes, (DWORD)(2 * 1024 * 1024));
+        unsigned char *buffer = new unsigned char[bytesToRead];
+        DWORD bytesRead = 0;
+
+        if (ReadFile(hFile, buffer, bytesToRead, &bytesRead, NULL) &&
+            bytesRead > 100) {
+
+          // === STATISTICAL RGB TRIPLET ANALYSIS ===
+          // Treat the data as potential RGB triplets and analyze variance
+          // Sample every 10th triplet for speed
+
+          int sampleRate = 10;
+          int threshold = 15; // Difference threshold to consider "different"
+
+          for (DWORD i = 0; i < bytesRead - 3; i += 3 * sampleRate) {
+            unsigned char r = buffer[i];
+            unsigned char g = buffer[i + 1];
+            unsigned char b = buffer[i + 2];
+
+            // Skip if all values are very low (likely header/metadata)
+            // or all very high (likely white space)
+            if ((r < 10 && g < 10 && b < 10) ||
+                (r > 245 && g > 245 && b > 245)) {
+              continue;
+            }
+
+            totalTriplets++;
+
+            // Check if this triplet looks like color (R, G, B differ)
+            int diffRG = abs((int)r - (int)g);
+            int diffGB = abs((int)g - (int)b);
+            int diffRB = abs((int)r - (int)b);
+
+            if (diffRG > threshold || diffGB > threshold ||
+                diffRB > threshold) {
+              // This triplet has significant color variance
+              colorTriplets++;
+            } else {
+              // This triplet looks grayscale (R ≈ G ≈ B)
+              grayTriplets++;
+            }
+          }
+        }
+
+        delete[] buffer;
+      }
+      CloseHandle(hFile);
+    }
+  } while (FindNextFileW(hFind, &findData));
+
+  FindClose(hFind);
+
+  // Decision: if more than 5% of triplets show color variance, it's a color job
+  // This threshold accounts for noise and metadata in the file
+  if (totalTriplets > 100) {
+    double colorRatio = (double)colorTriplets / (double)totalTriplets;
+    isGrayscale = (colorRatio < 0.05); // Less than 5% color = grayscale
+
+    std::cout << "[COLOR_DETECT] Triplets analyzed: " << totalTriplets
+              << ", color: " << colorTriplets << " (" << (colorRatio * 100.0)
+              << "%)"
+              << " → " << (isGrayscale ? "GRAYSCALE" : "COLOR") << std::endl;
+  } else {
+    std::cout << "[COLOR_DETECT] Not enough data to analyze (" << totalTriplets
+              << " triplets)" << std::endl;
+  }
+
+  // Fill rate stays at 0 - can't calculate accurately for proprietary formats
+}
+
 JobDetails MonitorWorker::GetJobInfo(HANDLE hPrinter, DWORD jobId) {
   JobDetails details;
   details.jobId = jobId;
@@ -94,6 +306,8 @@ JobDetails MonitorWorker::GetJobInfo(HANDLE hPrinter, DWORD jobId) {
   details.copies = 1;    // Default to 1 copy
   details.icmMethod = 0; // Default ICM method
   details.totalPages = 0;
+  details.isGrayscale = true; // Default to grayscale (safer assumption)
+  details.fillRate = 0.0f;    // Default to 0% fill
 
   DWORD needed = 0;
   GetJob(hPrinter, jobId, 2, NULL, 0, &needed);
@@ -112,8 +326,8 @@ JobDetails MonitorWorker::GetJobInfo(HANDLE hPrinter, DWORD jobId) {
   details.documentName = LPSTRToString(jobInfo->pDocument);
 
   // Use TotalPages if available, otherwise use PagesPrinted as fallback
-  // Some applications don't set TotalPages, but PagesPrinted is updated during
-  // printing
+  // Some applications don't set TotalPages, but PagesPrinted is updated
+  // during printing
   if (jobInfo->TotalPages > 0) {
     details.totalPages = jobInfo->TotalPages;
   } else if (jobInfo->PagesPrinted > 0) {
@@ -154,6 +368,9 @@ JobDetails MonitorWorker::GetJobInfo(HANDLE hPrinter, DWORD jobId) {
       details.icmMethod = jobInfo->pDevMode->dmICMMethod;
   }
 
+  // Analyze spool file for actual color content and fill rate
+  AnalyzeSpoolFile(jobId, details.isGrayscale, details.fillRate);
+
   return details;
 }
 
@@ -172,6 +389,8 @@ void MonitorWorker::OnProgress(const JobDetails *data, size_t count) {
     obj.Set("totalPages", Napi::Number::New(env_, data[i].totalPages));
     obj.Set("copies", Napi::Number::New(env_, data[i].copies));
     obj.Set("icmMethod", Napi::Number::New(env_, data[i].icmMethod));
+    obj.Set("isGrayscale", Napi::Boolean::New(env_, data[i].isGrayscale));
+    obj.Set("fillRate", Napi::Number::New(env_, data[i].fillRate));
 
     Callback().Call({Napi::String::New(env_, "job"), obj});
   }
