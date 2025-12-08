@@ -248,7 +248,7 @@
             }
 
             if (data.success && data.jobs && data.jobs.length > 0) {
-                let html = '<table class="table table-striped table-hover"><thead><tr><th>Date</th><th>Document</th><th>Format</th><th>Recto-verso</th><th>Couleur</th><th>Statut</th><th>Pages</th></tr></thead><tbody>';
+                let html = '<table class="table table-striped table-hover"><thead><tr><th>Date</th><th>Document</th><th>Format</th><th>Recto-verso</th><th>Couleur</th><th>Taux remplissage</th><th>Statut</th><th>Pages</th></tr></thead><tbody>';
                 data.jobs.slice(0, 20).forEach(job => {
                     const date = new Date(job.timestamp).toLocaleString('fr-FR');
                     const copies = job.copies || 1;
@@ -283,12 +283,16 @@
                         }
                     }
 
+                    // Taux de remplissage (fill rate) - EMF detected ink coverage
+                    const fillRate = job.fill_rate !== null && job.fill_rate !== undefined ? parseFloat(job.fill_rate).toFixed(1) + '%' : 'N/A';
+
                     html += `<tr>
                     <td>${date}</td>
                     <td>${job.document || 'N/A'}</td>
                     <td>${paperSize}</td>
                     <td>${duplex}</td>
                     <td>${colorMode}</td>
+                    <td>${fillRate}</td>
                     <td><span class="label label-${statusClass}">${job.status || 'N/A'}</span></td>
                     <td>${pages}</td>
                 </tr>`;

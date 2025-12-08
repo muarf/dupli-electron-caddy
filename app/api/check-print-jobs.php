@@ -58,6 +58,7 @@ try {
             duplex,
             color_mode,
             copies,
+            fill_rate,
             time_submitted,
             event_type,
             timestamp,

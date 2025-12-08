@@ -18,6 +18,8 @@ struct JobDetails {
   short copies;    // Number of copies requested
   DWORD icmMethod; // ICM method - might help detect grayscale
   DWORD totalPages;
+  bool isGrayscale; // true if EMF analysis shows grayscale content
+  float fillRate;   // 0.0 to 100.0 - ink coverage percentage
 };
 
 // Worker asynchrone pour la surveillance

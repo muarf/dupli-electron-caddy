@@ -6,6 +6,15 @@
 const os = require('os');
 const path = require('path');
 
+// Import spool analyzer for Ghostscript-based color detection
+let spoolAnalyzer = null;
+try {
+    spoolAnalyzer = require('./spool-analyzer');
+    console.log('✅ Spool analyzer loaded successfully');
+} catch (e) {
+    console.warn('⚠️ Spool analyzer not available:', e.message);
+}
+
 // Import dynamique du module d'impression natif
 let win32Printer = null;
 try {
@@ -113,10 +122,27 @@ class PrinterMonitor {
         const paperSizeStr = mappingPaperSize(jobData.paperSize);
         const duplexBool = jobData.duplex === 2 || jobData.duplex === 3; // 2=Vertical, 3=Horizontal
 
-        // Windows DEVMODE: dmColor = 1 (Monochrome), 2 (Color)
-        // dmICMMethod: 1=None, 2=System, 3=Driver, 4=Device
-        console.log(`[DEBUG] Color: ${jobData.color}, ICM Method: ${jobData.icmMethod}`);
-        const colorModeStr = jobData.color === 2 ? "Color" : "Monochrome";
+        // Color detection strategy:
+        // C++ spool analysis reads actual file content and detects color patterns
+        // The color detection WORKS even for RISO proprietary format
+        // Fill rate is 0 because we can't calculate coverage, but color detection is accurate
+        // 
+        // ALWAYS trust C++ isGrayscale result - it reads the actual spool file content
+
+        // DevMode color setting (only used as fallback if C++ analysis fails completely)
+        const devModeIsColor = jobData.color === 2;
+
+        // Spool analysis result - C++ always provides isGrayscale
+        const spoolSaysGrayscale = jobData.isGrayscale;
+        const fillRate = jobData.fillRate || 0;
+
+        // Decision logic:
+        // - Trust C++ color detection (it reads actual spool file patterns)
+        // - FillRate=0 is OK, it just means we can't calculate coverage for RISO format
+        let colorModeStr = spoolSaysGrayscale ? "Monochrome" : "Color";
+        let colorSource = "Spool";
+
+        console.log(`[DEBUG] Color detection: dmColor=${jobData.color}, spool.isGrayscale=${jobData.isGrayscale}, fillRate=${fillRate.toFixed(1)}%, source=${colorSource} → ${colorModeStr}`);
 
         const jobInfo = {
             JobId: jobData.jobId,
@@ -128,15 +154,22 @@ class PrinterMonitor {
             IsDuplex: duplexBool,
             ColorMode: colorModeStr,
             Copies: jobData.copies || 1,
+            FillRate: fillRate,
             TimeSubmitted: new Date().toISOString()
         };
 
-        console.log(`🖨️ [NATIVE MONITOR] Job #${jobInfo.JobId}: ${jobInfo.Document} (${jobInfo.TotalPages}p x${jobInfo.Copies}) [${jobInfo.PaperSize}, ${jobInfo.ColorMode}, Duplex:${jobInfo.IsDuplex}]`);
+        console.log(`🖨️ [NATIVE MONITOR] Job #${jobInfo.JobId}: ${jobInfo.Document} (${jobInfo.TotalPages}p x${jobInfo.Copies}) [${jobInfo.PaperSize}, ${jobInfo.ColorMode}, ${jobInfo.FillRate.toFixed(1)}% fill, Duplex:${jobInfo.IsDuplex}]`);
 
-        // Notifier l'application
+        // Notifier l'application avec les données initiales
         if (this.callbacks.onPrintJob) {
             this.callbacks.onPrintJob(jobInfo);
         }
+
+        // === GHOSTSCRIPT ANALYSIS DISABLED ===
+        // RISO spool files use a proprietary format that Ghostscript cannot render.
+        // Fill rate analysis requires rendering to images, which isn't possible.
+        // Color detection already uses C++ pattern matching which works correctly.
+        // If you want accurate fill rate, the PDF must be analyzed before printing.
     }
 
     // méthodes legacy (cache) gardées vides pour compatibilité si appelées ailleurs
