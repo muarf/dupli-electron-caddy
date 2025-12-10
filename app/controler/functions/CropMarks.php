@@ -39,13 +39,15 @@ class CropMarks {
      * @param float $bleed_size Taille du fond perdu (non utilisé actuellement mais conservé pour compatibilité)
      * @return void
      */
-    public static function drawCropMarks($pdf, $x, $y, $width, $height, $bleed_size = 3) {
+    public static function drawCropMarks($pdf, $x, $y, $width, $height, $bleed_size = 3, $mark_length = null, $line_width = null) {
+        // Valeurs par défaut si non fournies
+        if ($mark_length === null) $mark_length = self::DEFAULT_MARK_LENGTH;
+        if ($line_width === null) $line_width = self::MARK_LINE_WIDTH;
+
         // Dessiner les traits de coupe aux 4 coins vers l'extérieur de la zone
         // Ligne noire plus épaisse pour les traits de coupe
-        $pdf->SetLineWidth(self::MARK_LINE_WIDTH);
+        $pdf->SetLineWidth($line_width);
         $pdf->SetDrawColor(0, 0, 0); // Noir
-        
-        $mark_length = self::DEFAULT_MARK_LENGTH; // Longueur fixe de 10mm pour bien voir les marques
         
         // Coin supérieur gauche - lignes vers l'extérieur
         $pdf->Line($x, $y, $x - $mark_length, $y); // Horizontale vers la gauche
