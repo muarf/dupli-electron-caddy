@@ -67,7 +67,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     printFile: (fileUrl) => ipcRenderer.invoke('print-file', fileUrl),
 
     // Ouvrir un fichier avec l'application système
-    openExternalFile: (fileUrl) => ipcRenderer.invoke('open-external-file', fileUrl)
+    openExternalFile: (fileUrl) => ipcRenderer.invoke('open-external-file', fileUrl),
+
+    // Droits administrateur
+    checkAdminStatus: () => ipcRenderer.invoke('check-admin-status'),
+    restartAsAdmin: () => ipcRenderer.invoke('restart-as-admin')
 });
 
 
