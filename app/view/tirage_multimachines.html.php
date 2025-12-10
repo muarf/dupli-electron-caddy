@@ -850,10 +850,18 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
             ?>
             
             <!-- Bouton pour ajouter une machine (à l'intérieur du container) -->
-            <div class="text-center" style="margin: 20px 0;">
-                <button type="button" id="add-machine" class="btn btn-success btn-lg">
-                    <i class="fa fa-plus-circle"></i> <?php _e('tirage_multimachines.add_tirage'); ?>
-                </button>
+            <!-- Boutons actions -->
+            <div class="row" style="margin: 20px 0;">
+                <div class="col-md-6 text-center">
+                    <button type="button" id="add-machine" class="btn btn-success btn-lg">
+                        <i class="fa fa-plus-circle"></i> <?php _e('tirage_multimachines.add_tirage'); ?>
+                    </button>
+                </div>
+                <div class="col-md-6 text-center">
+                    <button id="singlebutton" name="ok" class="btn btn-success btn-lg">
+                        <?php _e('tirage_multimachines.next'); ?> <i class="fa fa-arrow-right"></i>
+                    </button>
+                </div>
             </div>
         </div><!-- Fin machines-container -->
         
@@ -864,13 +872,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
         </div>
         
         <!-- Bouton suivant -->
-        <div class="section">
-            <div class="container">
-                <div class="row">
-                    <div class="col-md-12"><button id="singlebutton" name="ok" class="btn btn-success btn-block"><?php _e('tirage_multimachines.next'); ?></button></div>
-                </div>
-            </div>
-        </div>
+
     </fieldset>
 </form>
 
