@@ -6,6 +6,7 @@ dist/
 *.AppImage
 *.dmg
 *.snap
+build/config.gypi
 # Note: php.exe and caddy.exe are needed for Windows builds, so not ignored
 
 # Binaries
