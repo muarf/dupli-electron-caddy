@@ -120,40 +120,61 @@ try {
     } catch (Exception $e) {
         // La colonne existe déjà, ignorer l'erreur
     }
+    try {
+        $db->execute("ALTER TABLE print_jobs ADD COLUMN thumbnail_url TEXT");
+    } catch (Exception $e) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
     
     // Vérifier si le job existe déjà (dans la dernière heure pour éviter conflits avec job_ids recyclés)
     $newTotalPages = $data['totalPages'] ?? 0;
+    $newFillRate = isset($data['fillRate']) ? floatval($data['fillRate']) : 0.0;
+    $newThumbnailUrl = $data['thumbnailUrl'] ?? '';
+    $newStatus = $data['status'];
+    
     $oneHourAgo = date('Y-m-d H:i:s', strtotime('-1 hour'));
-    $existing = $db->select("SELECT id, total_pages FROM print_jobs WHERE job_id = ? AND printer_name = ? AND timestamp > ?", [
+    $existing = $db->select("SELECT id, total_pages, fill_rate, status, thumbnail_url FROM print_jobs WHERE job_id = ? AND printer_name = ? AND timestamp > ?", [
         $data['jobId'],
         $data['printerName'],
         $oneHourAgo
     ]);
     
     if (!empty($existing)) {
-        // Le job existe - mettre à jour seulement si le nouveau total_pages est supérieur
+        // Le job existe - mettre à jour si nécessaire
         $existingPages = (int)($existing[0]['total_pages'] ?? 0);
-        if ($newTotalPages > $existingPages) {
+        $existingFillRate = floatval($existing[0]['fill_rate'] ?? 0);
+        $existingStatus = $existing[0]['status'] ?? '';
+        $existingThumbnail = $existing[0]['thumbnail_url'] ?? '';
+        
+        // Mettre à jour si : pages augmentent OU fill_rate change (et est > 0) OU statut change OU thumbnail change
+        if ($newTotalPages > $existingPages || 
+            ($newFillRate > 0 && abs($newFillRate - $existingFillRate) > 0.1) || 
+            $newStatus !== $existingStatus ||
+            (!empty($newThumbnailUrl) && $newThumbnailUrl !== $existingThumbnail)) {
+            
             $db->execute("
                 UPDATE print_jobs SET 
                     status = ?,
                     total_pages = ?,
+                    fill_rate = ?,
+                    thumbnail_url = ?,
                     timestamp = ?
                 WHERE id = ?
             ", [
-                $data['status'],
+                $newStatus,
                 $newTotalPages,
+                $newFillRate,
+                $newThumbnailUrl,
                 $data['timestamp'],
                 $existing[0]['id']
             ]);
         }
-        // Sinon on ne fait rien (on garde la meilleure valeur)
     } else {
         // Nouveau job - insérer
         $db->execute("
             INSERT INTO print_jobs 
-            (job_id, document, owner, printer_name, status, pages_printed, total_pages, size, duplex, paper_size, color_mode, copies, orientation, resolution, input_slot, fill_rate, time_submitted, event_type, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (job_id, document, owner, printer_name, status, pages_printed, total_pages, size, duplex, paper_size, color_mode, copies, orientation, resolution, input_slot, fill_rate, thumbnail_url, time_submitted, event_type, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ", [
             $data['jobId'],
             $data['document'],
@@ -171,6 +192,7 @@ try {
             $data['resolution'] ?? null,
             $data['inputSlot'] ?? null,
             isset($data['fillRate']) ? floatval($data['fillRate']) : 0.0,
+            $newThumbnailUrl,
             $data['timeSubmitted'] ?? null,
             $data['eventType'] ?? 'unknown',
             $data['timestamp']

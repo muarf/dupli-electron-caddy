@@ -59,6 +59,7 @@ try {
             color_mode,
             copies,
             fill_rate,
+            thumbnail_url,
             time_submitted,
             event_type,
             timestamp,

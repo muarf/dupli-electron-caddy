@@ -155,7 +155,8 @@ class PrinterMonitor {
             ColorMode: colorModeStr,
             Copies: jobData.copies || 1,
             FillRate: fillRate,
-            TimeSubmitted: new Date().toISOString()
+            ThumbnailUrl: jobData.thumbnailUrl || "",
+            TimeSubmitted: jobData.timeSubmitted || new Date().toISOString()
         };
 
         console.log(`🖨️ [NATIVE MONITOR] Job #${jobInfo.JobId}: ${jobInfo.Document} (${jobInfo.TotalPages}p x${jobInfo.Copies}) [${jobInfo.PaperSize}, ${jobInfo.ColorMode}, ${jobInfo.FillRate.toFixed(1)}% fill, Duplex:${jobInfo.IsDuplex}]`);
