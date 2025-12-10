@@ -1,3 +1,10 @@
+<?php
+// Récupérer les machines pour le mapping
+require_once __DIR__ . '/../controler/functions/database.php';
+$db = pdo_connect();
+$photocopieurs_list = $db->query("SELECT id, marque, type_encre FROM photocopieurs WHERE actif = 1 ORDER BY marque")->fetchAll(PDO::FETCH_ASSOC);
+$duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs WHERE actif = 1 ORDER BY marque, modele")->fetchAll(PDO::FETCH_ASSOC);
+?>
 <div class="section">
     <div class="container">
         <div class="row">
@@ -38,6 +45,34 @@
                     <div class="panel-body">
                         <div id="printers-list">
                             <p><i class="fa fa-spinner fa-spin"></i> Chargement des imprimantes...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuration Mappings -->
+                <div class="panel panel-warning">
+                    <div class="panel-heading">
+                        <h3 class="panel-title"><i class="fa fa-link"></i> Configuration des Mappings (Auto-Tirage)</h3>
+                    </div>
+                    <div class="panel-body">
+                        <p class="text-muted">Associez les imprimantes système aux machines de la base de données pour
+                            l'enregistrement automatique.</p>
+                        <div id="mappings-container">
+                            <table class="table table-bordered" id="mappings-table">
+                                <thead>
+                                    <tr>
+                                        <th>Imprimante Système</th>
+                                        <th>Machine Associée</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="3" class="text-center"><i class="fa fa-spinner fa-spin"></i>
+                                            Chargement...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -155,23 +190,29 @@
             if (result.success && result.printers && result.printers.length > 0) {
                 // Filtrer les imprimantes avec statut "Error" ou noms suspects
                 const validPrinters = result.printers.filter(printer => {
-                    const name = (printer.Name || '').toLowerCase();
-                    const status = (printer.Status || '').toLowerCase();
+                    const name = (printer.name || printer.Name || '').toLowerCase();
+                    const status = (printer.status || printer.Status || '').toString().toLowerCase();
                     // Exclure les imprimantes avec statut "Error" ou noms contenant "photocopilleuse" (faute d'orthographe)
                     return status !== 'error' && !name.includes('photocopilleuse');
                 });
 
                 let html = '<table class="table table-striped"><thead><tr><th>Nom</th><th>Statut</th><th>Par défaut</th><th>Actions</th></tr></thead><tbody>';
                 result.printers.forEach(printer => {
-                    const isDefault = printer.Default ? '<span class="label label-success">Oui</span>' : '<span class="label label-default">Non</span>';
-                    const status = (printer.Status || '').toLowerCase();
-                    const name = (printer.Name || '').toLowerCase();
+                    const pName = printer.name || printer.Name;
+                    const pStatus = (printer.status || printer.Status || '').toString();
+                    const pDefault = printer.isDefault || printer.Default;
+                    
+                    const isDefault = pDefault ? '<span class="label label-success">Oui</span>' : '<span class="label label-default">Non</span>';
+                    const status = pStatus.toLowerCase();
+                    const name = (pName || '').toLowerCase();
                     const isError = status === 'error' || name.includes('photocopilleuse');
-                    const statusClass = isError ? 'danger' : status === 'ok' ? 'success' : 'warning';
-                    const deleteBtn = isError ? `<button class="btn btn-xs btn-danger" onclick="deletePrinter('${printer.Name.replace(/'/g, "\\'")}')" title="Supprimer cette imprimante"><i class="fa fa-trash"></i></button>` : '';
+                    const statusClass = isError ? 'danger' : status === '0' || status === 'ok' || status === 'idle' ? 'success' : 'warning';
+                    // Note: status 0 often means idle/ready in Windows CUPS-like stats, or we display what we get.
+                    
+                    const deleteBtn = isError ? `<button class="btn btn-xs btn-danger" onclick="deletePrinter('${pName.replace(/'/g, "\\'")}')" title="Supprimer cette imprimante"><i class="fa fa-trash"></i></button>` : '';
                     html += `<tr class="${isError ? 'danger' : ''}">
-                    <td>${printer.Name || 'N/A'}</td>
-                    <td><span class="label label-${statusClass}">${printer.Status || 'N/A'}</span></td>
+                    <td>${pName || 'N/A'}</td>
+                    <td><span class="label label-${statusClass}">${pStatus || 'N/A'}</span></td>
                     <td>${isDefault}</td>
                     <td>${deleteBtn}</td>
                 </tr>`;
@@ -254,14 +295,14 @@
                     const copies = job.copies || 1;
                     const totalDocPages = job.total_pages || 0;
                     const isDuplex = job.duplex === 1 || job.duplex === '1' || job.duplex === true;
-                    
+
                     // Calculer le total de pages (pages document × copies)
                     const totalPages = totalDocPages * copies;
-                    
+
                     // Calculer le nombre de feuilles
                     // En recto-verso : 1 feuille = 2 pages, sinon 1 feuille = 1 page
                     const sheets = isDuplex ? Math.ceil(totalDocPages / 2) * copies : totalDocPages * copies;
-                    
+
                     // Affichage : "X pages, Y feuilles"
                     const pages = totalPages + ' pages, ' + sheets + ' feuilles' + (copies > 1 ? ' (' + copies + ' copies)' : '');
                     const statusClass = job.status === 'Completed' ? 'success' : job.status === 'Printing' ? 'info' : 'warning';
@@ -371,4 +412,142 @@
             alert('Erreur: ' + error.message);
         }
     }
+
+    // --- LOGIQUE MAPPINGS ---
+
+    // Données des machines injectées depuis PHP
+    const photocopieurs = <?php echo json_encode($photocopieurs_list); ?>;
+    const duplicopieurs = <?php echo json_encode($duplicopieurs_list); ?>;
+
+    async function loadMappings() {
+        if (!hasElectronAPI) {
+            document.querySelector('#mappings-table tbody').innerHTML = '<tr><td colspan="3" class="text-center text-warning">API Electron requise</td></tr>';
+            return;
+        }
+
+        try {
+            // 1. Récupérer les imprimantes système
+            const printersResult = await window.electronAPI.getPrinters();
+            const systemPrinters = printersResult.success ? printersResult.printers : [];
+
+            // 2. Récupérer les mappings existants
+            const response = await fetch('?manage_mappings');
+            const data = await response.json();
+            const mappings = data.success ? data.mappings : [];
+            const mappingsMap = {}; // Map system_printer -> {type, id}
+            mappings.forEach(m => {
+                mappingsMap[m.system_printer_name] = { type: m.machine_type, id: m.machine_id };
+            });
+
+            // 3. Construire le tableau
+            let html = '';
+
+            // Filtrer les imprimantes "inutiles"
+            const validPrinters = systemPrinters.filter(p => {
+                // Ensure name exists
+                if (!p.name && !p.Name) return false;
+                const name = (p.name || p.Name).toLowerCase();
+                const status = (p.status || p.Status || '').toString().toLowerCase();
+                // Basic filtering
+                return status !== 'error' && !name.includes('onenote') && !name.includes('xps') && !name.includes('pdf');
+            });
+
+            validPrinters.forEach(printer => {
+                // Handle both casing commonly returned by Electron
+                const pName = printer.name || printer.Name;
+                if (!pName) return;
+
+                const currentMapping = mappingsMap[pName];
+
+                html += `<tr>
+                    <td style="vertical-align: middle;"><strong>${pName}</strong></td>
+                    <td>
+                        <select class="form-control input-sm mapping-select" data-printer="${pName}">
+                            <option value="">-- Non Assigné --</option>
+                            <optgroup label="Photocopieurs">
+                                ${photocopieurs.map(p => `
+                                    <option value="photocop_${p.id}" ${currentMapping && currentMapping.type === 'photocop' && currentMapping.id == p.id ? 'selected' : ''}>
+                                        ${p.marque} (${p.type_encre})
+                                    </option>
+                                `).join('')}
+                            </optgroup>
+                            <optgroup label="Duplicopieurs">
+                                ${duplicopieurs.map(d => `
+                                    <option value="dupli_${d.id}" ${currentMapping && currentMapping.type === 'dupli' && currentMapping.id == d.id ? 'selected' : ''}>
+                                        ${d.marque} ${d.modele}
+                                    </option>
+                                `).join('')}
+                            </optgroup>
+                        </select>
+                    </td>
+                    <td>
+                        <button class="btn btn-primary btn-sm btn-save-mapping" onclick="saveMapping('${pName.replace(/'/g, "\\'")}')">
+                            <i class="fa fa-save"></i> Enregistrer
+                        </button>
+                    </td>
+                </tr>`;
+            });
+
+            if (validPrinters.length === 0) {
+                html = '<tr><td colspan="3" class="text-center">Aucune imprimante détectée</td></tr>';
+            }
+
+            document.querySelector('#mappings-table tbody').innerHTML = html;
+
+        } catch (error) {
+            console.error(error);
+            document.querySelector('#mappings-table tbody').innerHTML = `<tr><td colspan="3" class="text-center text-danger">Erreur: ${error.message}</td></tr>`;
+        }
+    }
+
+    async function saveMapping(printerName) {
+        const select = document.querySelector(`select[data-printer="${printerName}"]`);
+        const value = select.value;
+
+        if (!value) {
+            alert('Veuillez sélectionner une machine.');
+            return;
+        }
+
+        const [type, id] = value.split('_');
+
+        try {
+            const response = await fetch('?manage_mappings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    system_printer_name: printerName,
+                    machine_type: type,
+                    machine_id: id
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Petit effet visuel
+                const btn = select.closest('tr').querySelector('.btn-save-mapping');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fa fa-check"></i> OK';
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-success');
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.add('btn-primary');
+                    btn.classList.remove('btn-success');
+                }, 2000);
+            } else {
+                alert('Erreur: ' + result.error);
+            }
+        } catch (error) {
+            alert('Erreur réseau: ' + error.message);
+        }
+    }
+
+    // Charger les mappings aussi
+    document.addEventListener('DOMContentLoaded', function () {
+        loadMappings();
+    });
 </script>

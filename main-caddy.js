@@ -2527,28 +2527,41 @@ ipcMain.handle('get-app-version', () => {
 // ============ Handlers pour le moniteur d'imprimantes ============
 
 // Obtenir la liste des imprimantes
+// Obtenir la liste des imprimantes (via Electron native API)
 ipcMain.handle('get-printers', async () => {
-    if (process.platform !== 'win32') {
-        return { success: false, error: 'Disponible uniquement sur Windows' };
-    }
-
-    // Créer un moniteur temporaire si nécessaire pour récupérer les imprimantes
-    let monitorToUse = printerMonitor;
-    if (!monitorToUse) {
-        try {
-            monitorToUse = new PrinterMonitor({
-                phpApiUrl: `http://127.0.0.1:${PHP_SERVER_PORT}`
-            });
-        } catch (error) {
-            return { success: false, error: 'Impossible de créer le moniteur: ' + error.message };
-        }
-    }
-
     try {
-        const printers = await monitorToUse.getPrinters();
+        if (!mainWindow || mainWindow.isDestroyed()) {
+            return { success: false, error: 'Fenêtre principale non disponible' };
+        }
+
+        // Utiliser l'API native d'Electron qui est beaucoup plus fiable pour la liste
+        const printers = await mainWindow.webContents.getPrintersAsync();
+
+        // Normaliser les données pour correspondre à ce que l'interface attend
+        // Electron retourne: { name, displayName, status, isDefault, ... }
+        // Notre interface attend parfois Name/Status avec majuscule, mais on a géré ça dans le frontend.
+        // On retourne l'objet tel quel, le frontend est maintenant robuste.
+
         return { success: true, printers: printers };
     } catch (error) {
-        console.error('Erreur lors de la récupération des imprimantes:', error);
+        console.error('Erreur lors de la récupération des imprimantes via Electron:', error);
+
+        // Fallback sur le moniteur si Electron échoue (cas rare)
+        if (process.platform === 'win32') {
+            try {
+                let monitorToUse = printerMonitor;
+                if (!monitorToUse) {
+                    monitorToUse = new PrinterMonitor({
+                        phpApiUrl: `http://127.0.0.1:${PHP_SERVER_PORT}`
+                    });
+                }
+                const printers = await monitorToUse.getPrinters();
+                return { success: true, printers: printers };
+            } catch (e) {
+                return { success: false, error: error.message };
+            }
+        }
+
         return { success: false, error: error.message };
     }
 });
