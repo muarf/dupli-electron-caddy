@@ -1,5 +1,4 @@
 const { app, BrowserWindow, ipcMain, shell, Menu, dialog, screen } = require('electron');
-const { autoUpdater } = require('electron-updater');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
@@ -9,6 +8,7 @@ const http = require('http');
 const { checkWindowsCompatibility, applyCompatibilitySettings } = require('./utils/windows-compatibility');
 const PrinterMonitor = require('./utils/printer-monitor');
 const printEngine = require('./src/print-engine');
+const { isRunningAsAdmin, restartAsAdmin } = require('./utils/admin-checker');
 
 // Vérifier si Ghostscript fonctionne (sous Windows uniquement)
 function checkGhostscript(port = 8000) {
@@ -1582,6 +1582,7 @@ function startPrinterMonitor() {
                     colorMode: printData.ColorMode,
                     copies: printData.Copies || 1,
                     fillRate: printData.FillRate || 0,
+                    thumbnailUrl: printData.ThumbnailUrl || '',
                     timestamp: printData.TimeSubmitted || new Date().toISOString(),
                     eventType: 'job_detected'
                 });
@@ -2522,6 +2523,28 @@ ipcMain.handle('get-database-path', () => {
 // Obtenir la version actuelle de l'application
 ipcMain.handle('get-app-version', () => {
     return { success: true, version: app.getVersion() };
+});
+
+// Vérifier si l'application est lancée en administrateur
+ipcMain.handle('check-admin-status', async () => {
+    try {
+        const isAdmin = await isRunningAsAdmin();
+        return { success: true, isAdmin };
+    } catch (error) {
+        console.error('Erreur lors de la vérification admin:', error);
+        return { success: false, error: error.message, isAdmin: false };
+    }
+});
+
+// Redémarrer l'application en administrateur
+ipcMain.handle('restart-as-admin', async () => {
+    try {
+        await restartAsAdmin();
+        return { success: true };
+    } catch (error) {
+        console.error('Erreur lors du redémarrage en admin:', error);
+        return { success: false, error: error.message };
+    }
 });
 
 // ============ Handlers pour le moniteur d'imprimantes ============
