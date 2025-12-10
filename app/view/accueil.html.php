@@ -2,6 +2,18 @@
             <h1 class="text-center"><?php _e('accueil.welcome', [], true); ?></h1>
             <hr>
 
+            <!-- Admin Warning Container -->
+            <div id="admin-warning-container"></div>
+            <script src="/js/admin-warning.js"></script>
+            <script>
+                // Afficher l'avertissement admin (dismissible sur la page d'accueil)
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (window.AdminWarning) {
+                        window.AdminWarning.show(true); // true = peut être fermé
+                    }
+                });
+            </script>
+
           </div>
         </div>
       </div>
