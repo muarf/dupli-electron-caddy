@@ -1,13 +1,22 @@
 #include "win32-printer.h"
 #include <algorithm>
 #include <fstream>
+#include <gdiplus.h>
 #include <iomanip>
 #include <iostream>
 #include <map>
 #include <set>
+#include <shlobj.h>
+#include <shlwapi.h>
 #include <string>
 #include <vector>
 #include <windows.h>
+#include <wininet.h>
+
+// Link necessary libraries
+#pragma comment(lib, "gdiplus.lib")
+#pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "wininet.lib")
 
 // Global debug file path
 const std::string DEBUG_LOG_PATH =
@@ -21,6 +30,22 @@ void LogDebug(const std::string &message) {
     logFile.close();
   }
 }
+
+// Cache structure for SPL analysis results
+struct SplAnalysisCache {
+  bool isGrayscale;
+  float fillRate;
+  std::string timestamp;
+  std::string thumbnailUrl;
+};
+
+struct EmfConversionResult {
+  std::vector<std::wstring> pngPaths;
+  std::string thumbnailUrl;
+};
+
+// Global cache for SPL analysis
+std::map<DWORD, SplAnalysisCache> splAnalysisCache;
 
 // --- Helpers ---
 
@@ -76,8 +101,15 @@ void MonitorWorker::Execute(const ExecutionProgress &progress) {
                   // Create a key and state string for this job
                   std::string jobKey =
                       printerName + "_" + std::to_string(jobId);
-                  std::string currentState = details.statusStr + "_" +
-                                             std::to_string(details.totalPages);
+                  std::string currentState =
+                      details.statusStr + "_" +
+                      std::to_string(details.totalPages) + "_" +
+                      std::to_string(details.fillRate) + "_" +
+                      details.statusStr + "_" +
+                      std::to_string(details.totalPages) + "_" +
+                      std::to_string(details.fillRate) + "_" +
+                      std::to_string(details.isGrayscale) + "_" +
+                      details.thumbnailUrl;
 
                   // Report if this is a new job OR if state changed (status or
                   // page count)
@@ -412,27 +444,260 @@ long FindEmfOffset(const unsigned char *buffer, size_t size) {
 // handles) We now calculate it directly in AnalyzeSpoolFile using
 // EmfAnalysisData stats.
 
-// Analyze spool file content for color detection
-// Uses GDI EMF Parsing to detect color vs grayscale and fill rate
-void AnalyzeSpoolFile(DWORD jobId, bool &isGrayscale, float &fillRate) {
-  LogDebug("AnalyzeSpoolFile: Starting for Job " + std::to_string(jobId));
-  // NOTE: do NOT reset isGrayscale here. We keep the fallback (driver value)
-  // unless we successfully analyze the file and determine otherwise.
+// Helper: Get Ghostscript executable path
+std::wstring GetGhostscriptPath() {
+  // Try relative to exe first (development/packaged app)
+  wchar_t exePath[MAX_PATH];
+  GetModuleFileNameW(NULL, exePath, MAX_PATH);
+  std::wstring exeDir = std::wstring(exePath);
+  size_t lastSlash = exeDir.find_last_of(L"\\");
+  if (lastSlash != std::wstring::npos) {
+    exeDir = exeDir.substr(0, lastSlash);
+  }
+
+  // Check multiple possible locations
+  std::vector<std::wstring> relativePaths = {
+      L"\\ghostscript\\gswin64c.exe",
+      L"\\..\\ghostscript\\gswin64c.exe",
+      L"\\app\\ghostscript\\gswin64c.exe",
+      L"\\..\\app\\ghostscript\\gswin64c.exe",
+  };
+
+  for (const auto &relPath : relativePaths) {
+    std::wstring testPath = exeDir + relPath;
+
+    // Resolve relative path to absolute
+    wchar_t fullPath[MAX_PATH];
+    if (GetFullPathNameW(testPath.c_str(), MAX_PATH, fullPath, NULL)) {
+      if (PathFileExistsW(fullPath)) {
+        LogDebug("Found Ghostscript at: " +
+                 std::string(fullPath, fullPath + wcslen(fullPath)));
+        return std::wstring(fullPath);
+      }
+    }
+  }
+
+  // Fallback: system PATH
+  LogDebug("Ghostscript not found in app directories, using system PATH");
+  return L"gswin64c.exe";
+}
+
+// Helper: Convert EMF to PNG using PHP API
+// Returns list of PNG files created (one per page)
+// Helper: Convert EMF to PNG using PHP API
+// Returns list of PNG files created (one per page) and thumbnail URL
+EmfConversionResult ConvertEmfToPngViaPhpApi(DWORD jobId) {
+  EmfConversionResult result;
+
+  try {
+    // Build GET URL
+    std::string url = "http://127.0.0.1:8001/?convert_emf_to_png&job_id=" +
+                      std::to_string(jobId);
+
+    // Make HTTP GET to PHP API (Port 8001 is PHP built-in server, 8000 is
+    // Caddy)
+    HINTERNET hInternet = InternetOpenA(
+        "Fill Rate Analyzer", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+    if (!hInternet) {
+      LogDebug("Failed to initialize WinINet");
+      return result;
+    }
+
+    HINTERNET hConnect = InternetOpenUrlA(
+        hInternet, url.c_str(), NULL, 0,
+        INTERNET_FLAG_NO_CACHE_WRITE | INTERNET_FLAG_RELOAD, 0);
+
+    if (!hConnect) {
+      DWORD error = GetLastError();
+      InternetCloseHandle(hInternet);
+      LogDebug("Failed to connect to PHP API at " + url +
+               ". Error: " + std::to_string(error));
+      return result;
+    }
+
+    // Read response
+    std::string response;
+    char buffer[4096];
+    DWORD bytesRead;
+
+    while (InternetReadFile(hConnect, buffer, sizeof(buffer), &bytesRead) &&
+           bytesRead > 0) {
+      response.append(buffer, bytesRead);
+    }
+
+    InternetCloseHandle(hConnect);
+    InternetCloseHandle(hInternet);
+
+    LogDebug("PHP API Response: " + response);
+
+    // Parse JSON response (simple manual parsing for "path" fields)
+    size_t pathPos = 0;
+    while ((pathPos = response.find("\"path\":\"", pathPos)) !=
+           std::string::npos) {
+      pathPos += 8; // Skip past "path":"
+      size_t endPos = response.find("\"", pathPos);
+      if (endPos != std::string::npos) {
+        std::string pathStr = response.substr(pathPos, endPos - pathPos);
+
+        // Convert to wstring
+        std::wstring wPath(pathStr.begin(), pathStr.end());
+        result.pngPaths.push_back(wPath);
+
+        pathPos = endPos;
+      }
+    }
+
+    // Parse base_url for thumbnail
+    size_t urlPos = response.find("\"base_url\":\"");
+    if (urlPos != std::string::npos) {
+      urlPos += 12;
+      size_t endUrl = response.find("\"", urlPos);
+      if (endUrl != std::string::npos) {
+        result.thumbnailUrl =
+            response.substr(urlPos, endUrl - urlPos) + "page_0.png";
+      }
+    }
+
+    LogDebug("Found " + std::to_string(result.pngPaths.size()) +
+             " PNG files from PHP API");
+
+  } catch (...) {
+    LogDebug("Exception in ConvertEmfToPngViaPhpApi");
+  }
+
+  return result;
+}
+
+// Helper: Analyze PNG pixels to calculate fill rate
+// Returns fill rate percentage and updates isGrayscale
+float AnalyzePngPixels(const std::wstring &pngPath, bool &isGrayscale) {
+  using namespace Gdiplus;
+
+  // Initialize GDI+
+  GdiplusStartupInput gdiplusStartupInput;
+  ULONG_PTR gdiplusToken;
+  GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+
+  float fillRate = 0.0f;
+  // bool hasColor = false; // logic moved to pixel counting
+
+  try {
+    // Load PNG
+    Bitmap *bitmap = new Bitmap(pngPath.c_str());
+
+    if (bitmap && bitmap->GetLastStatus() == Ok) {
+      UINT width = bitmap->GetWidth();
+      UINT height = bitmap->GetHeight();
+      UINT totalPixels = width * height;
+      UINT filledPixels = 0;
+      UINT coloredPixels = 0; // Count colored pixels
+
+      LogDebug("Analyzing PNG: " + std::to_string(width) + "x" +
+               std::to_string(height));
+
+      // Sample pixels (analyze 1 out of every 4 for speed)
+      int step = 2; // Sample every 2nd pixel = analyze 25% of pixels
+      UINT sampledPixels = 0;
+
+      for (UINT y = 0; y < height; y += step) {
+        for (UINT x = 0; x < width; x += step) {
+          Color color;
+          bitmap->GetPixel(x, y, &color);
+
+          BYTE r = color.GetR();
+          BYTE g = color.GetG();
+          BYTE b = color.GetB();
+
+          // Check for color with tolerance (avoid noise)
+          int diff1 = abs((int)r - (int)g);
+          int diff2 = abs((int)g - (int)b);
+          int diff3 = abs((int)r - (int)b);
+          // Increased tolerance to 15 and require more than just one pixel
+          if (diff1 > 15 || diff2 > 15 || diff3 > 15) {
+            coloredPixels++;
+          }
+
+          // Calculate luminosity
+          int luminosity = (r + g + b) / 3;
+
+          // If pixel is not white (luminosity < 200), count as filled
+          // Adjusted to 200 to exclude light artifacts/gray and match PHP
+          // calculation
+          if (luminosity < 200) {
+            filledPixels++;
+          }
+
+          sampledPixels++;
+        }
+      }
+
+      // Extrapolate to full image (since we sampled)
+      float samplingRatio = (float)sampledPixels / (float)totalPixels;
+      float estimatedFilledPixels = filledPixels / samplingRatio;
+
+      fillRate = (estimatedFilledPixels / totalPixels) * 100.0f;
+
+      // Update grayscale status based on percentage of colored pixels
+      // Threshold: 0.5% of pixels must be colored to be considered Color mode
+      // This ignores small anti-aliasing artifacts or compression noise
+      double colorPercentage =
+          ((double)coloredPixels / (double)sampledPixels) * 100.0;
+      if (colorPercentage > 0.5) {
+        isGrayscale = false;
+      } else {
+        isGrayscale = true;
+      }
+
+      LogDebug("Fill rate: " + std::to_string(fillRate) + "% (sampled " +
+               std::to_string(sampledPixels) + "/" +
+               std::to_string(totalPixels) +
+               " pixels). Color%: " + std::to_string(colorPercentage));
+    }
+
+    delete bitmap;
+
+  } catch (...) {
+    LogDebug("Exception in AnalyzePngPixels");
+  }
+
+  GdiplusShutdown(gdiplusToken);
+
+  return fillRate;
+}
+
+// Analyze spool file content for color detection and fill rate
+// Now uses Ghostscript + pixel analysis for accurate results
+// Analyze spool file content for color detection and fill rate
+// Now uses Ghostscript + pixel analysis for accurate results
+void AnalyzeSpoolFile(DWORD jobId, bool &isGrayscale, float &fillRate,
+                      std::string &thumbnailUrl) {
+  LogDebug("AnalyzeSpoolFile: Starting PIXEL ANALYSIS for Job " +
+           std::to_string(jobId));
 
   fillRate = 0.0f;
+
+  // Check cache first
+  if (splAnalysisCache.find(jobId) != splAnalysisCache.end()) {
+    SplAnalysisCache cached = splAnalysisCache[jobId];
+    isGrayscale = cached.isGrayscale;
+    fillRate = cached.fillRate;
+    thumbnailUrl = cached.thumbnailUrl;
+    // thumbnailUrl is unused in this function's logic but available in cache
+    LogDebug("AnalyzeSpoolFile: Using cached result - Grayscale=" +
+             std::to_string(isGrayscale) +
+             ", FillRate=" + std::to_string(fillRate));
+    return;
+  }
 
   wchar_t spoolPath[MAX_PATH];
   GetSystemDirectoryW(spoolPath, MAX_PATH);
   wcscat_s(spoolPath, L"\\spool\\PRINTERS\\");
 
-  // Search for ALL SPL files and parse the Job ID from the filename
-  // This is more robust than *<ID>.SPL patterns which might fail
+  // Search for SPL file
   wchar_t searchPattern[MAX_PATH];
   swprintf_s(searchPattern, MAX_PATH, L"%s*.SPL", spoolPath);
 
-  std::wcout << L"[EMF_DEBUG] Scanning SPL files in: " << spoolPath
-             << std::endl;
-  LogDebug("AnalyzeSpoolFile: Scanning path...");
+  std::wcout << L"[FILLRATE] Scanning SPL files in: " << spoolPath << std::endl;
 
   WIN32_FIND_DATAW findData;
   HANDLE hFind = FindFirstFileW(searchPattern, &findData);
@@ -442,11 +707,6 @@ void AnalyzeSpoolFile(DWORD jobId, bool &isGrayscale, float &fillRate) {
   if (hFind != INVALID_HANDLE_VALUE) {
     do {
       std::wstring fileName = findData.cFileName;
-      // Log matched file names for debug
-      // (converting wchar to string for LogDebug is simpler if we just log
-      // that we found *some* files)
-
-      // Extract numeric part from filename (e.g., FP00014.SPL -> 14)
       std::wstring numberPart;
       for (wchar_t c : fileName) {
         if (iswdigit(c)) {
@@ -458,18 +718,13 @@ void AnalyzeSpoolFile(DWORD jobId, bool &isGrayscale, float &fillRate) {
         try {
           unsigned long fileJobId = std::stoul(numberPart);
           if (fileJobId == jobId) {
-            // Found our file!
-            std::wcout << L"[EMF_DEBUG] Found SPL file for Job " << jobId
+            std::wcout << L"[FILLRATE] Found SPL file for Job " << jobId
                        << L": " << fileName << std::endl;
-            LogDebug("AnalyzeSpoolFile: Found matching SPL file.");
-
-            // Construct full path
             foundFullPath = std::wstring(spoolPath) + fileName;
             found = true;
-            break; // Stop searching, we found the file
+            break;
           }
         } catch (...) {
-          // Ignore parse errors
         }
       }
     } while (FindNextFileW(hFind, &findData));
@@ -477,107 +732,111 @@ void AnalyzeSpoolFile(DWORD jobId, bool &isGrayscale, float &fillRate) {
   }
 
   if (!found) {
-    std::cout << "[EMF_DEBUG] No SPL file found for Job " << jobId
-              << " after scanning directory." << std::endl;
-    LogDebug("AnalyzeSpoolFile: No SPL file found for Job " +
-             std::to_string(jobId));
+    std::cout << "[FILLRATE] No SPL file found for Job " << jobId << std::endl;
     return;
   }
 
-  // Now open the specific found file
+  // Open SPL file
   HANDLE hFile = CreateFileW(foundFullPath.c_str(), GENERIC_READ,
                              FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
                              OPEN_EXISTING, 0, NULL);
   if (hFile == INVALID_HANDLE_VALUE) {
-    std::cout << "[EMF_DEBUG] Could not open found SPL file. Error: "
-              << GetLastError() << std::endl;
+    std::cout << "[FILLRATE] Could not open SPL file. Error: " << GetLastError()
+              << std::endl;
     return;
   }
 
   DWORD fileSize = GetFileSize(hFile, NULL);
   if (fileSize == INVALID_FILE_SIZE) {
-    std::cout << "[EMF_DEBUG] GetFileSize failed. Error: " << GetLastError()
-              << std::endl;
     CloseHandle(hFile);
     return;
   }
 
+  // Read SPL file
   std::vector<BYTE> buffer(fileSize);
   DWORD bytesRead;
-  if (ReadFile(hFile, buffer.data(), fileSize, &bytesRead, NULL)) {
-    long emfOffset = FindEmfOffset(buffer.data(), bytesRead);
-    if (emfOffset >= 0) {
-      std::cout << "[EMF_DEBUG] EMF Header found at offset " << emfOffset
-                << std::endl;
-
-      // Set
-      HENHMETAFILE hEmf =
-          SetEnhMetaFileBits(bytesRead - emfOffset, buffer.data() + emfOffset);
-      if (hEmf) {
-        LogDebug("AnalyzeSpoolFile: SetEnhMetaFileBits success. Handle: " +
-                 std::to_string((unsigned long long)hEmf));
-        EmfAnalysisData data = {false, 0.0, 0.0, {0, 0, 0, 0}};
-
-        EnumEnhMetaFile(NULL, hEmf, EmfEnumProc, &data, NULL);
-        DeleteEnhMetaFile(hEmf);
-
-        // Determine grayscale based on hasColor flag
-        bool detectedGrayscale = !data.hasColor;
-        bool hasContent =
-            (data.filledPixels > 0) || data.hasColor; // Rough guess if "blank"
-
-        std::cout << "[EMF_DEBUG] Analysis Result: Grayscale="
-                  << detectedGrayscale << ", HasColor=" << data.hasColor
-                  << ", FilledPixels=" << data.filledPixels << std::endl;
-
-        // We trust the analysis if we found *some* drawing commands
-        // (filledPixels > 0) Or if we found color instructions.
-        if (hasContent || data.hasColor) {
-          isGrayscale = detectedGrayscale;
-        }
-
-        // Calculate explicit fill rate using the bounds and filled estimates
-        double width = std::abs(data.rclBounds.right - data.rclBounds.left);
-        double height = std::abs(data.rclBounds.bottom - data.rclBounds.top);
-
-        if (width > 0 && height > 0) {
-          double totalArea = width * height;
-          // The filledPixels heuristic logic in EmfEnumProc uses "pixel-like"
-          // units but needs calibration. Assuming the heuristic values (e.g.
-          // 1000 for text) are roughly equivalent to area units in the EMF
-          // coordinate space. If the EMF space is high-res (e.g. 600dpi),
-          // 1000 units is tiny. However, the logs show: Header Bounds:
-          // 385,14-3434,4879 (Width ~3000, Height ~4800). Area ~14.8M.
-          // FilledPixels from heuristic: 93000.
-          // Ratio: 93000 / 14.8M = 0.0062 = 0.62%.
-          // This seems like a reasonable "text page" fill rate.
-          // We'll use this direct calculation.
-
-          fillRate = (float)((data.filledPixels / totalArea) * 100.0);
-
-          // Cap at 100%
-          if (fillRate > 100.0f)
-            fillRate = 100.0f;
-        } else {
-          fillRate = 0.0f;
-        }
-
-        LogDebug("AnalyzeSpoolFile: Calculated Fill Rate: " +
-                 std::to_string(fillRate) +
-                 "% (Pixels=" + std::to_string(data.filledPixels) +
-                 "/Area=" + std::to_string(width * height) + ")");
-        std::cout << "[EMF_DEBUG] Calculated Coverage: " << fillRate << "%"
-                  << std::endl;
-      } else {
-        std::cout << "[EMF_DEBUG] SetEnhMetaFileBits failed. Error: "
-                  << GetLastError() << std::endl;
-      }
-    } else {
-      std::cout << "[EMF_DEBUG] EMF Signature NOT found in SPL file."
-                << std::endl;
-    }
+  if (!ReadFile(hFile, buffer.data(), fileSize, &bytesRead, NULL)) {
+    CloseHandle(hFile);
+    return;
   }
   CloseHandle(hFile);
+
+  // Find EMF offset
+  long emfOffset = FindEmfOffset(buffer.data(), bytesRead);
+  if (emfOffset < 0) {
+    std::cout << "[FILLRATE] EMF Signature NOT found in SPL file." << std::endl;
+    return;
+  }
+
+  std::cout << "[FILLRATE] EMF found at offset " << emfOffset << std::endl;
+
+  // Convert EMF to PNG(s) using PHP API (no need to extract EMF, API reads SPL
+  // directly)
+  // Convert EMF to PNG(s) using PHP API
+  EmfConversionResult conversion = ConvertEmfToPngViaPhpApi(jobId);
+  std::vector<std::wstring> pngFiles = conversion.pngPaths;
+
+  if (pngFiles.empty()) {
+    std::cout << "[FILLRATE] Failed to convert EMF to PNG" << std::endl;
+    return;
+  }
+
+  std::cout << "[FILLRATE] Analyzing " << pngFiles.size() << " page(s)"
+            << std::endl;
+
+  // Analyze each page and calculate average
+  float totalFillRate = 0.0f;
+  int pagesAnalyzed = 0;
+
+  // Files are already in public/thumbnails managed by PHP
+  // Check if they exist, analyze them, but do NOT delete them
+  for (const auto &pngFile : pngFiles) {
+    if (PathFileExistsW(pngFile.c_str())) {
+      float pageFillRate = AnalyzePngPixels(pngFile, isGrayscale);
+      totalFillRate += pageFillRate;
+      pagesAnalyzed++;
+
+      std::wcout << L"[FILLRATE] Page " << pagesAnalyzed << L": "
+                 << pageFillRate << L"%" << std::endl;
+    }
+  }
+
+  // Calculate average fill rate
+  if (pagesAnalyzed > 0) {
+    fillRate = totalFillRate / pagesAnalyzed;
+  }
+
+  // Update Cache
+  splAnalysisCache[jobId] = {isGrayscale, fillRate, "now",
+                             conversion.thumbnailUrl};
+
+  // IMPORTANT: Assign back to output parameter so caller sees it immediately
+  thumbnailUrl = conversion.thumbnailUrl;
+
+  std::cout << "[FILLRATE] Average Fill Rate: " << fillRate << "% across "
+            << pagesAnalyzed << " page(s)" << std::endl;
+
+  // Cleanup temp directory
+  if (!pngFiles.empty()) {
+    std::wstring tempDir = pngFiles[0];
+    size_t lastSlash = tempDir.find_last_of(L"\\");
+    if (lastSlash != std::wstring::npos) {
+      tempDir = tempDir.substr(0, lastSlash);
+      RemoveDirectoryW(tempDir.c_str());
+    }
+  }
+
+  // Cache the result
+  SplAnalysisCache cacheEntry;
+  cacheEntry.isGrayscale = isGrayscale;
+  cacheEntry.fillRate = fillRate;
+  cacheEntry.timestamp = std::to_string(time(NULL));
+  cacheEntry.thumbnailUrl = conversion.thumbnailUrl;
+  splAnalysisCache[jobId] = cacheEntry;
+
+  LogDebug(
+      "AnalyzeSpoolFile: FINAL - Grayscale=" + std::to_string(isGrayscale) +
+      ", FillRate=" + std::to_string(fillRate) + "%");
 }
 
 JobDetails MonitorWorker::GetJobInfo(HANDLE hPrinter, DWORD jobId) {
@@ -618,6 +877,17 @@ JobDetails MonitorWorker::GetJobInfo(HANDLE hPrinter, DWORD jobId) {
     details.totalPages = jobInfo->PagesPrinted;
   } else {
     details.totalPages = 0;
+  }
+
+  // Extract Time Submitted
+  SYSTEMTIME st = jobInfo->Submitted;
+  if (st.wYear > 0) {
+    char timeBuf[64];
+    sprintf_s(timeBuf, sizeof(timeBuf), "%04d-%02d-%02dT%02d:%02d:%02d.000Z",
+              st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
+    details.timeSubmitted = std::string(timeBuf);
+  } else {
+    details.timeSubmitted = ""; // Empty if invalid
   }
 
   if (jobInfo->Status & JOB_STATUS_PRINTING)
@@ -665,7 +935,8 @@ JobDetails MonitorWorker::GetJobInfo(HANDLE hPrinter, DWORD jobId) {
 
   // Analyze spool file for ACTUAL color content and fill rate
   // This will overwrite isGrayscale ONLY if analysis succeeds
-  AnalyzeSpoolFile(jobId, details.isGrayscale, details.fillRate);
+  AnalyzeSpoolFile(jobId, details.isGrayscale, details.fillRate,
+                   details.thumbnailUrl);
 
   return details;
 }
@@ -687,6 +958,8 @@ void MonitorWorker::OnProgress(const JobDetails *data, size_t count) {
     obj.Set("icmMethod", Napi::Number::New(env_, data[i].icmMethod));
     obj.Set("isGrayscale", Napi::Boolean::New(env_, data[i].isGrayscale));
     obj.Set("fillRate", Napi::Number::New(env_, data[i].fillRate));
+    obj.Set("thumbnailUrl", StringToNapiString(env_, data[i].thumbnailUrl));
+    obj.Set("timeSubmitted", StringToNapiString(env_, data[i].timeSubmitted));
 
     Callback().Call({Napi::String::New(env_, "job"), obj});
   }

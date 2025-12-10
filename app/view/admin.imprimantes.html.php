@@ -37,6 +37,52 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                     </div>
                 </div>
 
+                <!-- Avertissement droits administrateur (Windows uniquement) -->
+                <div class="panel panel-danger" id="admin-warning-panel" style="display: none;">
+                    <div class="panel-heading">
+                        <h3 class="panel-title"><i class="fa fa-exclamation-triangle"></i> Droits Administrateur Requis</h3>
+                    </div>
+                    <div class="panel-body">
+                        <p><strong>L'application n'est pas lancée en mode administrateur.</strong></p>
+                        <p>Pour que le système puisse calculer le <strong>taux de remplissage (fill rate)</strong> des impressions, 
+                        l'application doit avoir les droits administrateur pour accéder aux fichiers spool de Windows.</p>
+                        
+                        <div class="row" style="margin-top: 15px;">
+                            <div class="col-md-6">
+                                <h4><i class="fa fa-magic"></i> Solution Rapide</h4>
+                                <button class="btn btn-warning bt
+
+n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
+                                    <i class="fa fa-refresh"></i> Relancer en Administrateur
+                                </button>
+                                <p class="text-muted" style="margin-top: 10px; font-size: 12px;">
+                                    <i class="fa fa-info-circle"></i> Cette action va fermer et relancer l'application avec les droits requis.
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                <h4><i class="fa fa-graduation-cap"></i> Tutoriel Manuel</h4>
+                                <ol style="font-size: 13px;">
+                                    <li>Fermez cette application</li>
+                                    <li>Trouvez l'icône de l'application sur votre bureau ou dans le menu Démarrer</li>
+                                    <li><strong>Clic droit</strong> sur l'icône</li>
+                                    <li>Cliquez sur <strong>"Exécuter en tant qu'administrateur"</strong></li>
+                                </ol>
+                                <p class="text-muted" style="font-size: 12px;">
+                                    <i class="fa fa-lightbulb-o"></i> Vous pouvez configurer l'appli pour toujours démarrer en admin :
+                                    <br>Clic droit sur l'icône → Propriétés → Compatibilité → 
+                                    Cocher "Exécuter ce programme en tant qu'administrateur"
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info" style="margin-top: 15px; margin-bottom: 0;">
+                            <strong><i class="fa fa-info-circle"></i> Que se passe-t-il sans les droits admin ?</strong><br>
+                            L'application fonctionnera normalement, mais le <strong>taux de remplissage</strong> sur les impressions 
+                            sera affiché comme <code>N/A</code> ou <code>0%</code>.
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Liste des imprimantes -->
                 <div class="panel panel-default">
                     <div class="panel-heading">
@@ -95,19 +141,125 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                         <h3 class="panel-title"><i class="fa fa-history"></i> Impressions Récentes</h3>
                     </div>
                     <div class="panel-body">
+                        <!-- Controls de pagination en haut -->
+                        <div class="row" style="margin-bottom: 15px;">
+                            <div class="col-sm-6">
+                                <label for="items-per-page">Afficher par page:</label>
+                                <select id="items-per-page" class="form-control" style="width: auto; display: inline-block;">
+                                    <option value="10">10</option>
+                                    <option value="20" selected>20</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-6 text-right">
+                                <span id="pagination-info" class="text-muted"></span>
+                            </div>
+                        </div>
+                        
                         <div id="print-jobs-list">
                             <p><i class="fa fa-spinner fa-spin"></i> Chargement des impressions...</p>
+                        </div>
+                        
+                        <!-- Pagination en bas -->
+                        <div id="pagination-controls" class="text-center" style="margin-top: 15px; display: none;">
+                            <nav>
+                                <ul class="pagination" style="margin: 0;">
+                                    <li id="btn-first-page"><a href="#" onclick="goToPage(1); return false;"><i class="fa fa-angle-double-left"></i></a></li>
+                                    <li id="btn-prev-page"><a href="#" onclick="goToPreviousPage(); return false;"><i class="fa fa-angle-left"></i> Précédent</a></li>
+                                    <li class="active"><a href="#" id="current-page-display">Page 1</a></li>
+                                    <li id="btn-next-page"><a href="#" onclick="goToNextPage(); return false;">Suivant <i class="fa fa-angle-right"></i></a></li>
+                                    <li id="btn-last-page"><a href="#" onclick="goToLastPage(); return false;"><i class="fa fa-angle-double-right"></i></a></li>
+                                </ul>
+                            </nav>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+<!-- Modal Aperçu -->
+<div class="modal fade" id="previewModal" tabindex="-1" role="dialog" aria-labelledby="previewModalLabel">
+  <div class="modal-dialog modal-lg" role="document" style="width: 90%;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="previewModalLabel">Aperçu du document</h4>
+      </div>
+      <div class="modal-body text-center" style="background-color: #f5f5f5; min-height: 400px; display: flex; align-items: center; justify-content: center;">
+        <img id="previewImage" src="" class="img-responsive" style="max-height: 80vh; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+        <p id="previewError" class="text-danger" style="display:none;"><i class="fa fa-exclamation-triangle"></i> Impossible de charger l'image</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Fermer</button>
+      </div>
     </div>
+  </div>
 </div>
+
+<script>
+    function showPreview(url, title) {
+        $('#previewModalLabel').text(title);
+        $('#previewImage').attr('src', url);
+        $('#previewError').hide();
+        $('#previewImage').show();
+        
+        // Gestion erreur chargement
+        $('#previewImage').off('error').on('error', function() {
+            $(this).hide();
+            $('#previewError').show();
+        });
+        
+        $('#previewModal').modal('show');
+    }
+</script>
 
 <script>
     // Vérifier si l'API Electron est disponible
     const hasElectronAPI = typeof window.electronAPI !== 'undefined';
+
+    // Fonction pour vérifier le statut admin
+    async function checkAdminStatus() {
+        if (!hasElectronAPI) {
+            return; // Pas d'API Electron, pas besoin de vérifier
+        }
+
+        try {
+            const result = await window.electronAPI.checkAdminStatus();
+            if (result.success && !result.isAdmin) {
+                // Afficher le panneau d'avertissement
+                document.getElementById('admin-warning-panel').style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Erreur lors de la vérification admin:', error);
+        }
+    }
+
+    // Fonction pour relancer en admin
+    async function restartAsAdmin() {
+        if (!hasElectronAPI) {
+            alert('API Electron non disponible');
+            return;
+        }
+
+        if (!confirm('L\'application va se fermer et redémarrer avec les droits administrateur.\n\nVous pourriez voir une fenêtre de contrôle de compte d\'utilisateur (UAC).\n\nContinuer ?')) {
+            return;
+        }
+
+        try {
+            const btn = document.getElementById('btn-restart-admin');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Redémarrage...';
+            
+            const result = await window.electronAPI.restartAsAdmin();
+            if (!result.success) {
+                alert('Erreur lors du redémarrage : ' + result.error);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa fa-refresh"></i> Relancer en Administrateur';
+            }
+        } catch (error) {
+            alert('Erreur : ' + error.message);
+        }
+    }
 
     // Fonction pour afficher le statut du moniteur
     async function refreshStatus() {
@@ -268,8 +420,18 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
         }
     }
 
+    // Variables de pagination
+    let currentPage = 1;
+    let itemsPerPage = 20;
+    let totalJobs = 0;
+    let allJobs = [];
+
     // Fonction pour charger les jobs d'impression
-    async function loadPrintJobs() {
+    async function loadPrintJobs(page = null) {
+        if (page !== null) {
+            currentPage = page;
+        }
+        
         const jobsDiv = document.getElementById('print-jobs-list');
 
         try {
@@ -289,8 +451,18 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
             }
 
             if (data.success && data.jobs && data.jobs.length > 0) {
-                let html = '<table class="table table-striped table-hover"><thead><tr><th>Date</th><th>Document</th><th>Format</th><th>Recto-verso</th><th>Couleur</th><th>Taux remplissage</th><th>Statut</th><th>Pages</th></tr></thead><tbody>';
-                data.jobs.slice(0, 20).forEach(job => {
+                allJobs = data.jobs;
+                totalJobs = data.total_jobs || data.jobs.length;
+                
+                // Calculer la pagination
+                const totalPages = Math.ceil(totalJobs / itemsPerPage);
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = Math.min(startIndex + itemsPerPage, totalJobs);
+                const jobsToDisplay = allJobs.slice(startIndex, endIndex);
+                
+                // Construire le tableau
+                let html = '<table class="table table-striped table-hover"><thead><tr><th>Aperçu</th><th>Date</th><th>Document</th><th>Format</th><th>Recto-verso</th><th>Couleur</th><th>Taux remplissage</th><th>Statut</th><th>Pages</th></tr></thead><tbody>';
+                jobsToDisplay.forEach(job => {
                     const date = new Date(job.timestamp).toLocaleString('fr-FR');
                     const copies = job.copies || 1;
                     const totalDocPages = job.total_pages || 0;
@@ -327,7 +499,16 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                     // Taux de remplissage (fill rate) - EMF detected ink coverage
                     const fillRate = job.fill_rate !== null && job.fill_rate !== undefined ? parseFloat(job.fill_rate).toFixed(1) + '%' : 'N/A';
 
+                    // Thumbnail
+                    let thumbnailHtml = '<span class="text-muted"><i class="fa fa-image"></i> N/A</span>';
+                    if (job.thumbnail_url) {
+                        thumbnailHtml = `<a href="#" onclick="showPreview('${job.thumbnail_url}', '${job.document.replace(/'/g, "\\'") + " - " + pages}'); return false;">
+                            <img src="${job.thumbnail_url}" style="height: 40px; border: 1px solid #ddd; border-radius: 4px;" onerror="this.src=''; this.parentElement.innerHTML='<span class=\\'text-muted\\'><i class=\\'fa fa-exclamation-circle\\'></i> Err</span>'">
+                        </a>`;
+                    }
+
                     html += `<tr>
+                    <td>${thumbnailHtml}</td>
                     <td>${date}</td>
                     <td>${job.document || 'N/A'}</td>
                     <td>${paperSize}</td>
@@ -339,16 +520,86 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                 </tr>`;
                 });
                 html += '</tbody></table>';
-                if (data.jobs.length > 20) {
-                    html += '<p class="text-muted">Affichage des 20 dernières impressions sur ' + data.total_jobs + ' total.</p>';
-                }
                 jobsDiv.innerHTML = html;
+                
+                // Mettre à jour les contrôles de pagination
+                updatePaginationControls(totalPages);
             } else {
                 jobsDiv.innerHTML = '<p class="text-muted">' + (data.message || 'Aucune impression enregistrée pour le moment. Lancez une impression pour tester le système.') + '</p>';
+                document.getElementById('pagination-controls').style.display = 'none';
+                document.getElementById('pagination-info').textContent = '';
             }
         } catch (error) {
             jobsDiv.innerHTML = '<div class="alert alert-danger">Erreur: ' + error.message + '</div>';
         }
+    }
+    
+    // Fonction pour mettre à jour les contrôles de pagination
+    function updatePaginationControls(totalPages) {
+        const paginationControls = document.getElementById('pagination-controls');
+        const paginationInfo = document.getElementById('pagination-info');
+        const currentPageDisplay = document.getElementById('current-page-display');
+        const btnFirstPage = document.getElementById('btn-first-page');
+        const btnPrevPage = document.getElementById('btn-prev-page');
+        const btnNextPage = document.getElementById('btn-next-page');
+        const btnLastPage = document.getElementById('btn-last-page');
+        
+        if (totalPages <= 1) {
+            paginationControls.style.display = 'none';
+        } else {
+            paginationControls.style.display = 'block';
+        }
+        
+        // Mettre à jour l'affichage de la page courante
+        currentPageDisplay.textContent = `Page ${currentPage} / ${totalPages}`;
+        
+        // Mettre à jour les informations de pagination
+        const startIndex = (currentPage - 1) * itemsPerPage + 1;
+        const endIndex = Math.min(currentPage * itemsPerPage, totalJobs);
+        paginationInfo.textContent = `Affichage de ${startIndex} à ${endIndex} sur ${totalJobs} impressions`;
+        
+        // Désactiver/activer les boutons selon la page courante
+        if (currentPage === 1) {
+            btnFirstPage.classList.add('disabled');
+            btnPrevPage.classList.add('disabled');
+        } else {
+            btnFirstPage.classList.remove('disabled');
+            btnPrevPage.classList.remove('disabled');
+        }
+        
+        if (currentPage === totalPages) {
+            btnNextPage.classList.add('disabled');
+            btnLastPage.classList.add('disabled');
+        } else {
+            btnNextPage.classList.remove('disabled');
+            btnLastPage.classList.remove('disabled');
+        }
+    }
+    
+    // Fonctions de navigation
+    function goToPage(page) {
+        const totalPages = Math.ceil(totalJobs / itemsPerPage);
+        if (page >= 1 && page <= totalPages) {
+            loadPrintJobs(page);
+        }
+    }
+    
+    function goToPreviousPage() {
+        if (currentPage > 1) {
+            loadPrintJobs(currentPage - 1);
+        }
+    }
+    
+    function goToNextPage() {
+        const totalPages = Math.ceil(totalJobs / itemsPerPage);
+        if (currentPage < totalPages) {
+            loadPrintJobs(currentPage + 1);
+        }
+    }
+    
+    function goToLastPage() {
+        const totalPages = Math.ceil(totalJobs / itemsPerPage);
+        loadPrintJobs(totalPages);
     }
 
     // Écouter les événements d'impression en temps réel
@@ -377,6 +628,9 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
 
     // Charger les données au démarrage
     document.addEventListener('DOMContentLoaded', function () {
+        // Vérifier le statut admin en premier
+        checkAdminStatus();
+        
         refreshStatus();
         loadPrinters();
         loadStats();
@@ -387,6 +641,13 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
             loadPrintJobs();
             loadStats();
         }, 30000);
+        
+        // Event listener pour le changement de nombre d'éléments par page
+        document.getElementById('items-per-page').addEventListener('change', function() {
+            itemsPerPage = parseInt(this.value);
+            currentPage = 1; // Retour à la première page
+            loadPrintJobs();
+        });
     });
 
     // Fonction pour supprimer une imprimante
