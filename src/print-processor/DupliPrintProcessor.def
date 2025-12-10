@@ -1,0 +1,12 @@
+; DupliPrintProcessor.def
+; Module definition file for Print Processor DLL exports
+
+LIBRARY DupliPrintProcessor
+
+EXPORTS
+    EnumPrintProcessorDatatypesW=DupliEnumPrintProcessorDatatypesW
+    OpenPrintProcessor=DupliOpenPrintProcessor
+    PrintDocumentOnPrintProcessor=DupliPrintDocumentOnPrintProcessor
+    ClosePrintProcessor=DupliClosePrintProcessor
+    ControlPrintProcessor=DupliControlPrintProcessor
+    GetPrintProcessorCapabilities=DupliGetPrintProcessorCapabilities
