@@ -52,6 +52,10 @@ try {
     $duplex = isset($input['duplex']) && ($input['duplex'] === true || $input['duplex'] === 1 || $input['duplex'] === '1');
     $color = isset($input['color_mode']) && (stripos($input['color_mode'], 'color') !== false);
     $fill_rate = floatval($input['fill_rate'] ?? 0.5);
+    // Normalisation : si > 1, on suppose que c'est un pourcentage (ex: 36.5), on convertit en ratio (0.365)
+    if ($fill_rate > 1.0) {
+        $fill_rate = $fill_rate / 100.0;
+    }
 
     $db = create_database_manager();
 
@@ -166,7 +170,7 @@ try {
             'price' => $price,
             'duplex' => $duplex,
             'color' => $color,
-            'fill_rate_percent' => round($fill_rate * 100),
+            'fill_rate_percent' => number_format($fill_rate * 100, 2, ',', ''),
             'nb_feuilles' => $nb_feuilles_total
         ];
 

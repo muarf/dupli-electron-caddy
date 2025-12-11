@@ -42,21 +42,79 @@ if ($jobId == 0) {
 // Chemin vers le dossier spool
 $spoolDir = 'C:\\Windows\\System32\\spool\\PRINTERS\\';
 
-// Trouver le fichier SPL
-$splFiles = glob($spoolDir . '*.SPL');
-debugLog("Found " . count($splFiles) . " SPL files in spool dir");
+// Fonction pour lire le Job ID depuis un fichier SHD
+function readJobIdFromShd($shdPath) {
+    if (!file_exists($shdPath) || filesize($shdPath) < 16) {
+        return 0;
+    }
+    $handle = fopen($shdPath, 'rb');
+    if (!$handle) return 0;
+    $data = fread($handle, 16);
+    fclose($handle);
+    if (strlen($data) < 16) return 0;
+    
+    // Try offset 12 (Windows 10+)
+    $jobId = unpack('V', substr($data, 12, 4))[1];
+    if ($jobId > 0 && $jobId < 100000) return $jobId;
+    
+    // Fallback: offset 8 (older Windows)
+    $jobId = unpack('V', substr($data, 8, 4))[1];
+    if ($jobId > 0 && $jobId < 100000) return $jobId;
+    
+    return 0;
+}
+
+// Trouver le fichier SPL - supports standard naming AND File Pooling
 $splFile = null;
 
-foreach ($splFiles as $file) {
-    $filename = basename($file);
-    preg_match('/\d+/', $filename, $matches);
-    if (!empty($matches) && intval($matches[0]) == $jobId) {
-        $splFile = $file;
-        debugLog("Matched SPL file: $splFile");
-        break;
+// Step 1: Try standard naming (00105.SPL)
+$standardName = sprintf('%s%05d.SPL', $spoolDir, $jobId);
+if (file_exists($standardName)) {
+    $splFile = $standardName;
+    debugLog("Found SPL via standard naming: $splFile");
+} else {
+    // Step 2: Scan SHD files
+    debugLog("Standard SPL not found, scanning SHD files...");
+    $shdFiles = glob($spoolDir . '*.SHD');
+    $mostRecentFpSpl = null;
+    $mostRecentTime = 0;
+    
+    foreach ($shdFiles as $shdFile) {
+        $shdSize = filesize($shdFile);
+        $baseName = pathinfo($shdFile, PATHINFO_FILENAME);
+        $correspondingSpl = $spoolDir . $baseName . '.SPL';
+        
+        debugLog("Found SHD: $baseName (size=$shdSize)");
+        
+        // Track FP files for fallback (regardless of SHD content)
+        if (strpos($baseName, 'FP') === 0 && file_exists($correspondingSpl)) {
+            $mtime = filemtime($correspondingSpl);
+            if ($mtime > $mostRecentTime) {
+                $mostRecentTime = $mtime;
+                $mostRecentFpSpl = $correspondingSpl;
+            }
+        }
+        
+        if ($shdSize > 0) {
+            // SHD has content - try to read job ID
+            $shdJobId = readJobIdFromShd($shdFile);
+            debugLog("  -> SHD Job ID: $shdJobId (looking for: $jobId)");
+            if ($shdJobId == $jobId && file_exists($correspondingSpl)) {
+                $splFile = $correspondingSpl;
+                debugLog("Found SPL via SHD mapping: $splFile (SHD Job ID: $shdJobId)");
+                break;
+            }
+        }
+    }
+    
+    // Step 3: Fallback to most recent FP file
+    if (!$splFile && $mostRecentFpSpl) {
+        $splFile = $mostRecentFpSpl;
+        debugLog("Using most recent FP SPL as fallback: $splFile");
     }
 }
 
+// Verify we found a SPL file
 if (!$splFile || !file_exists($splFile)) {
     debugLog("SPL file not found for Job $jobId");
     echo json_encode(['error' => 'SPL file not found', 'job_id' => $jobId]);
@@ -66,7 +124,7 @@ if (!$splFile || !file_exists($splFile)) {
 // Ouvrir le fichier SPL en lecture
 $handle = fopen($splFile, 'rb');
 if (!$handle) {
-    debugLog("Failed to open SPL file");
+    debugLog("Failed to open SPL file: $splFile");
     echo json_encode(['error' => 'Failed to open SPL file']);
     exit;
 }
