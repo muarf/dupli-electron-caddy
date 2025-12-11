@@ -64,140 +64,44 @@ try {
             pages_printed INTEGER DEFAULT 0,
             total_pages INTEGER DEFAULT 0,
             size INTEGER DEFAULT 0,
-            duplex INTEGER DEFAULT 0,
-            paper_size TEXT,
-            color_mode TEXT,
-            copies INTEGER DEFAULT 1,
-            orientation TEXT,
-            resolution TEXT,
-            input_slot TEXT,
             time_submitted TEXT,
             event_type TEXT,
             timestamp TEXT NOT NULL,
+            fill_rate REAL DEFAULT 0,
+            color_mode TEXT DEFAULT 'unknown',
+            duplex INTEGER DEFAULT 0,
+            thumbnail_url TEXT,
+            paper_size TEXT,
+            copies INTEGER DEFAULT 1,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(job_id, printer_name, timestamp)
         )
     ");
     
-    // Ajouter les colonnes si elles n'existent pas (migration)
-    try {
-        $db->execute("ALTER TABLE print_jobs ADD COLUMN duplex INTEGER DEFAULT 0");
-    } catch (Exception $e) {
-        // La colonne existe déjà, ignorer l'erreur
-    }
-    try {
-        $db->execute("ALTER TABLE print_jobs ADD COLUMN paper_size TEXT");
-    } catch (Exception $e) {
-        // La colonne existe déjà, ignorer l'erreur
-    }
-    try {
-        $db->execute("ALTER TABLE print_jobs ADD COLUMN color_mode TEXT");
-    } catch (Exception $e) {
-        // La colonne existe déjà, ignorer l'erreur
-    }
-    try {
-        $db->execute("ALTER TABLE print_jobs ADD COLUMN copies INTEGER DEFAULT 1");
-    } catch (Exception $e) {
-        // La colonne existe déjà, ignorer l'erreur
-    }
-    try {
-        $db->execute("ALTER TABLE print_jobs ADD COLUMN orientation TEXT");
-    } catch (Exception $e) {
-        // La colonne existe déjà, ignorer l'erreur
-    }
-    try {
-        $db->execute("ALTER TABLE print_jobs ADD COLUMN resolution TEXT");
-    } catch (Exception $e) {
-        // La colonne existe déjà, ignorer l'erreur
-    }
-    try {
-        $db->execute("ALTER TABLE print_jobs ADD COLUMN input_slot TEXT");
-    } catch (Exception $e) {
-        // La colonne existe déjà, ignorer l'erreur
-    }
-    try {
-        $db->execute("ALTER TABLE print_jobs ADD COLUMN fill_rate REAL DEFAULT 0");
-    } catch (Exception $e) {
-        // La colonne existe déjà, ignorer l'erreur
-    }
-    try {
-        $db->execute("ALTER TABLE print_jobs ADD COLUMN thumbnail_url TEXT");
-    } catch (Exception $e) {
-        // La colonne existe déjà, ignorer l'erreur
-    }
-    
-    // Vérifier si le job existe déjà (dans la dernière heure pour éviter conflits avec job_ids recyclés)
-    $newTotalPages = $data['totalPages'] ?? 0;
-    $newFillRate = isset($data['fillRate']) ? floatval($data['fillRate']) : 0.0;
-    $newThumbnailUrl = $data['thumbnailUrl'] ?? '';
-    $newStatus = $data['status'];
-    
-    $oneHourAgo = date('Y-m-d H:i:s', strtotime('-1 hour'));
-    $existing = $db->select("SELECT id, total_pages, fill_rate, status, thumbnail_url FROM print_jobs WHERE job_id = ? AND printer_name = ? AND timestamp > ?", [
+    // Insérer ou mettre à jour le job d'impression
+    $db->execute("
+        INSERT OR REPLACE INTO print_jobs 
+        (job_id, document, owner, printer_name, status, pages_printed, total_pages, size, time_submitted, event_type, timestamp, fill_rate, color_mode, duplex, thumbnail_url, paper_size, copies)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ", [
         $data['jobId'],
+        $data['document'],
+        $data['owner'] ?? null,
         $data['printerName'],
-        $oneHourAgo
+        $data['status'],
+        $data['pagesPrinted'] ?? 0,
+        $data['totalPages'] ?? 0,
+        $data['size'] ?? 0,
+        $data['timeSubmitted'] ?? null,
+        $data['eventType'] ?? 'unknown',
+        $data['timestamp'],
+        $data['fillRate'] ?? 0,
+        $data['colorMode'] ?? 'unknown',
+        isset($data['duplex']) ? ($data['duplex'] ? 1 : 0) : 0,
+        $data['thumbnailUrl'] ?? '',
+        $data['paperSize'] ?? '',
+        $data['copies'] ?? 1
     ]);
-    
-    if (!empty($existing)) {
-        // Le job existe - mettre à jour si nécessaire
-        $existingPages = (int)($existing[0]['total_pages'] ?? 0);
-        $existingFillRate = floatval($existing[0]['fill_rate'] ?? 0);
-        $existingStatus = $existing[0]['status'] ?? '';
-        $existingThumbnail = $existing[0]['thumbnail_url'] ?? '';
-        
-        // Mettre à jour si : pages augmentent OU fill_rate change (et est > 0) OU statut change OU thumbnail change
-        if ($newTotalPages > $existingPages || 
-            ($newFillRate > 0 && abs($newFillRate - $existingFillRate) > 0.1) || 
-            $newStatus !== $existingStatus ||
-            (!empty($newThumbnailUrl) && $newThumbnailUrl !== $existingThumbnail)) {
-            
-            $db->execute("
-                UPDATE print_jobs SET 
-                    status = ?,
-                    total_pages = ?,
-                    fill_rate = ?,
-                    thumbnail_url = ?,
-                    timestamp = ?
-                WHERE id = ?
-            ", [
-                $newStatus,
-                $newTotalPages,
-                $newFillRate,
-                $newThumbnailUrl,
-                $data['timestamp'],
-                $existing[0]['id']
-            ]);
-        }
-    } else {
-        // Nouveau job - insérer
-        $db->execute("
-            INSERT INTO print_jobs 
-            (job_id, document, owner, printer_name, status, pages_printed, total_pages, size, duplex, paper_size, color_mode, copies, orientation, resolution, input_slot, fill_rate, thumbnail_url, time_submitted, event_type, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ", [
-            $data['jobId'],
-            $data['document'],
-            $data['owner'] ?? null,
-            $data['printerName'],
-            $data['status'],
-            $data['pagesPrinted'] ?? 0,
-            $newTotalPages,
-            $data['size'] ?? 0,
-            isset($data['duplex']) ? ($data['duplex'] ? 1 : 0) : 0,
-            $data['paperSize'] ?? null,
-            $data['colorMode'] ?? null,
-            $data['copies'] ?? 1,
-            $data['orientation'] ?? null,
-            $data['resolution'] ?? null,
-            $data['inputSlot'] ?? null,
-            isset($data['fillRate']) ? floatval($data['fillRate']) : 0.0,
-            $newThumbnailUrl,
-            $data['timeSubmitted'] ?? null,
-            $data['eventType'] ?? 'unknown',
-            $data['timestamp']
-        ]);
-    }
     
     // Log pour le débogage (optionnel)
     error_log(sprintf(

@@ -63,6 +63,7 @@ class PrinterMonitor {
 
         try {
             const success = win32Printer.startPrinterMonitor((event, data) => {
+                console.log(`[NATIVE-RAW-EVENT] Event: ${event}`, JSON.stringify(data));
                 if (event === 'job') {
                     this.handleNativeJob(data);
                 }
