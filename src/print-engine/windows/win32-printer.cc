@@ -665,6 +665,145 @@ float AnalyzePngPixels(const std::wstring &pngPath, bool &isGrayscale) {
   return fillRate;
 }
 
+// Helper: Read Job ID from SHD (Shadow) file header
+// Windows 10+: offset 12, Windows XP/Vista: offset 8
+DWORD ReadJobIdFromShd(const std::wstring &shdPath) {
+  HANDLE hFile = CreateFileW(shdPath.c_str(), GENERIC_READ,
+                             FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                             OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+  if (hFile == INVALID_HANDLE_VALUE) {
+    // File might be locked, try with retry
+    for (int retry = 0; retry < 3; retry++) {
+      Sleep(100);
+      hFile = CreateFileW(shdPath.c_str(), GENERIC_READ,
+                          FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                          OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+      if (hFile != INVALID_HANDLE_VALUE)
+        break;
+    }
+    if (hFile == INVALID_HANDLE_VALUE) {
+      return 0;
+    }
+  }
+
+  BYTE buffer[16];
+  DWORD bytesRead = 0;
+  if (!ReadFile(hFile, buffer, 16, &bytesRead, NULL) || bytesRead < 16) {
+    CloseHandle(hFile);
+    return 0;
+  }
+  CloseHandle(hFile);
+
+  // Try Windows 10+ format (offset 12)
+  DWORD jobId = *((DWORD *)(buffer + 12));
+  if (jobId > 0 && jobId < 100000) {
+    return jobId;
+  }
+
+  // Fallback: Windows XP/Vista format (offset 8)
+  jobId = *((DWORD *)(buffer + 8));
+  if (jobId > 0 && jobId < 100000) {
+    return jobId;
+  }
+
+  return 0;
+}
+
+// Helper: Find SPL file by Job ID
+// 1. First tries standard naming (00{jobId}.SPL)
+// 2. If not found, scans SHD files to find the correct one
+// 3. If SHD empty/not found, falls back to most recent FP*.SPL file
+std::wstring FindSplFileByJobId(DWORD jobId, const std::wstring &spoolPath) {
+  // Step 1: Try standard naming format
+  wchar_t standardName[MAX_PATH];
+  swprintf_s(standardName, MAX_PATH, L"%s%05lu.SPL", spoolPath.c_str(), jobId);
+
+  if (PathFileExistsW(standardName)) {
+    std::wcout << L"[FILLRATE] Found SPL via standard naming: " << standardName
+               << std::endl;
+    return std::wstring(standardName);
+  }
+
+  // Step 2: Scan SHD files to find matching Job ID
+  std::wcout << L"[FILLRATE] Standard SPL not found, scanning SHD files..."
+             << std::endl;
+
+  wchar_t searchPattern[MAX_PATH];
+  swprintf_s(searchPattern, MAX_PATH, L"%s*.SHD", spoolPath.c_str());
+
+  WIN32_FIND_DATAW findData;
+  HANDLE hFind = FindFirstFileW(searchPattern, &findData);
+  std::wstring mostRecentFpSpl = L"";
+  FILETIME mostRecentTime = {0, 0};
+
+  if (hFind != INVALID_HANDLE_VALUE) {
+    do {
+      std::wstring shdFileName = findData.cFileName;
+      std::wstring shdFullPath = spoolPath + shdFileName;
+
+      // Debug: log each SHD file found
+      std::wcout << L"[FILLRATE] Found SHD: " << shdFileName << L" (size="
+                 << findData.nFileSizeLow << L")" << std::endl;
+
+      // Track FP files for fallback (regardless of SHD content)
+      if (shdFileName.find(L"FP") == 0) {
+        std::wstring splFileName = shdFileName;
+        size_t dotPos = splFileName.rfind(L'.');
+        if (dotPos != std::wstring::npos) {
+          splFileName = splFileName.substr(0, dotPos) + L".SPL";
+        }
+        std::wstring splFullPath = spoolPath + splFileName;
+        if (PathFileExistsW(splFullPath.c_str())) {
+          // Track most recent FP file
+          if (CompareFileTime(&findData.ftLastWriteTime, &mostRecentTime) > 0) {
+            mostRecentTime = findData.ftLastWriteTime;
+            mostRecentFpSpl = splFullPath;
+          }
+        }
+      }
+
+      // Check if SHD has content (not empty)
+      if (findData.nFileSizeLow > 0 || findData.nFileSizeHigh > 0) {
+        DWORD shdJobId = ReadJobIdFromShd(shdFullPath);
+
+        // Debug: log job ID read from SHD
+        std::wcout << L"[FILLRATE]   -> SHD Job ID: " << shdJobId
+                   << L" (looking for: " << jobId << L")" << std::endl;
+
+        if (shdJobId == jobId) {
+          // Found matching SHD, now get corresponding SPL
+          std::wstring splFileName = shdFileName;
+          size_t dotPos = splFileName.rfind(L'.');
+          if (dotPos != std::wstring::npos) {
+            splFileName = splFileName.substr(0, dotPos) + L".SPL";
+          }
+
+          std::wstring splFullPath = spoolPath + splFileName;
+
+          if (PathFileExistsW(splFullPath.c_str())) {
+            std::wcout << L"[FILLRATE] Found SPL via SHD mapping: "
+                       << splFileName << L" (SHD Job ID: " << shdJobId << L")"
+                       << std::endl;
+            FindClose(hFind);
+            return splFullPath;
+          }
+        }
+      }
+    } while (FindNextFileW(hFind, &findData));
+    FindClose(hFind);
+  }
+
+  // Step 3: If no match found but we have a recent FP file, use it
+  if (!mostRecentFpSpl.empty()) {
+    std::wcout << L"[FILLRATE] Using most recent FP SPL as fallback: "
+               << mostRecentFpSpl << std::endl;
+    return mostRecentFpSpl;
+  }
+
+  return L"";
+}
+
 // Analyze spool file content for color detection and fill rate
 // Now uses Ghostscript + pixel analysis for accurate results
 // Analyze spool file content for color detection and fill rate
@@ -693,45 +832,13 @@ void AnalyzeSpoolFile(DWORD jobId, bool &isGrayscale, float &fillRate,
   GetSystemDirectoryW(spoolPath, MAX_PATH);
   wcscat_s(spoolPath, L"\\spool\\PRINTERS\\");
 
-  // Search for SPL file
-  wchar_t searchPattern[MAX_PATH];
-  swprintf_s(searchPattern, MAX_PATH, L"%s*.SPL", spoolPath);
-
   std::wcout << L"[FILLRATE] Scanning SPL files in: " << spoolPath << std::endl;
 
-  WIN32_FIND_DATAW findData;
-  HANDLE hFind = FindFirstFileW(searchPattern, &findData);
-  bool found = false;
-  std::wstring foundFullPath;
+  // Use new universal SPL finder (supports standard + File Pooling)
+  std::wstring foundFullPath =
+      FindSplFileByJobId(jobId, std::wstring(spoolPath));
 
-  if (hFind != INVALID_HANDLE_VALUE) {
-    do {
-      std::wstring fileName = findData.cFileName;
-      std::wstring numberPart;
-      for (wchar_t c : fileName) {
-        if (iswdigit(c)) {
-          numberPart += c;
-        }
-      }
-
-      if (!numberPart.empty()) {
-        try {
-          unsigned long fileJobId = std::stoul(numberPart);
-          if (fileJobId == jobId) {
-            std::wcout << L"[FILLRATE] Found SPL file for Job " << jobId
-                       << L": " << fileName << std::endl;
-            foundFullPath = std::wstring(spoolPath) + fileName;
-            found = true;
-            break;
-          }
-        } catch (...) {
-        }
-      }
-    } while (FindNextFileW(hFind, &findData));
-    FindClose(hFind);
-  }
-
-  if (!found) {
+  if (foundFullPath.empty()) {
     std::cout << "[FILLRATE] No SPL file found for Job " << jobId << std::endl;
     return;
   }

@@ -63,7 +63,8 @@
                                 <h4>Qui êtes-vous ?</h4>
                             </label>
                             <input type="text" id="pseudo-input" class="form-control"
-                                style="max-width:300px; margin:0 auto;" placeholder="Entrez un pseudo ou nom">
+                                style="max-width:300px; margin:0 auto;" placeholder="Entrez un pseudo ou nom"
+                                onkeypress="if(event.key === 'Enter') startSession()">
                             <button class="btn btn-primary-modern mt-3" onclick="startSession()">Démarrer la
                                 session</button>
                         </div>
@@ -76,8 +77,13 @@
                                 <h4>Session de : <span id="session-pseudo" class="text-primary"></span></h4>
                                 <small class="text-muted">En attente d'impressions...</small>
                             </div>
-                            <div class="spinner-grow text-success" role="status">
-                                <span class="sr-only">Listening...</span>
+                            <div>
+                                <button class="btn btn-danger-modern btn-sm" onclick="quitSession()">
+                                    <i class="fa fa-sign-out"></i> Quitter la session
+                                </button>
+                                <div class="spinner-grow text-success ml-3" role="status" style="vertical-align: middle;">
+                                    <span class="sr-only">Listening...</span>
+                                </div>
                             </div>
                         </div>
 
@@ -221,7 +227,8 @@
             // Check for updates on ALREADY PROCESSED jobs (Live Update)
             if (data.jobs && data.jobs.length > 0) {
                 data.jobs.forEach(job => {
-                    if (processedJobIds.has(job.job_id)) {
+                    // Use String() to handle type mismatch (string vs number)
+                    if (processedJobIds.has(job.job_id) || processedJobIds.has(String(job.job_id))) {
                         checkForUpdate(job);
                     }
                 });
@@ -259,22 +266,18 @@
     }
 
     function checkForUpdate(apiJob) {
-        // Find in sessionJobs
-        const existingIndex = sessionJobs.findIndex(j => j.originalJobId === apiJob.job_id);
+        // Find in sessionJobs - handle type mismatch (string vs int)
+        const existingIndex = sessionJobs.findIndex(j => String(j.originalJobId) === String(apiJob.job_id));
         if (existingIndex === -1) return;
 
         const currentJob = sessionJobs[existingIndex];
-        // Check if pages changed (e.g. 36 -> 108)
-        // Note: simulation details uses 'pages' as 'pages per copy' in my previous hack, 
-        // but let's compare with RAW total_pages from API.
-
-        // We stored 'originalJobId' but not the raw total_pages in sessionJobs details...
-        // But we can check if the new total_pages > calculated total stored?
-        // Let's rely on apiJob.total_pages vs apiJob.timestamp
-
-        // Simplest: If apiJob.total_pages > currentJob.total_pages_raw (we need to store this)
-        if (apiJob.total_pages !== currentJob.raw_total_pages) {
-            console.log(`Job ${apiJob.job_id} updated from ${currentJob.raw_total_pages} to ${apiJob.total_pages}`);
+        
+        // Check if fill_rate changed significantly (more than 1% difference)
+        const newFillRate = parseFloat(apiJob.fill_rate || 0);
+        const oldFillRate = parseFloat(currentJob.raw_fill_rate || 0);
+        
+        if (apiJob.total_pages !== currentJob.raw_total_pages || Math.abs(newFillRate - oldFillRate) > 0.01) {
+            addLog('info', `🔄 Mise à jour: Remplissage ${newFillRate.toFixed(1)}%`);
             simulateJob(apiJob, existingIndex); // Re-simulate and update in place
         }
     }
@@ -307,20 +310,41 @@
             // Force robust boolean conversion for duplex
             const isDuplex = (job.duplex == 1 || job.duplex == '1' || job.duplex === true || String(job.duplex).toLowerCase() === 'oui');
 
-            const payload = {
-                printerName: job.printer_name,
-                pages: pagesPerCopy,
-                contact: sessionUser,
-                document: job.document,
-                copies: copies,
-                total_pages: globalTotalPages,
-                duplex: isDuplex,
-                color_mode: job.color_mode,
-                paper_size: job.paper_size,
-                fill_rate: job.fill_rate || 0.5,
-                timestamp: job.timestamp,
-                simulate: true
-            };
+                // Fill rate handling:
+                // API might return "90.4", 90.4, 0.904, or "90.4%"
+                let rawFillRate = job.fill_rate;
+                let parsedFillRate = 0.5; // Default
+
+                if (rawFillRate !== undefined && rawFillRate !== null && rawFillRate !== '') {
+                    let val = parseFloat(rawFillRate);
+                    // If > 1, assume percent (e.g. 90.4) -> 90.4
+                    // If < 1, assume ratio (e.g. 0.904) -> 90.4
+                    // We want to send a value such that backend handles it.
+                    // Backend divides by 100 if > 1.
+                    // So sending 90.4 is fine. Sending 0.904 is fine.
+                    // But if it's 0, we might want to default to 0.5?
+                    // User complained about 50% when it should be 90%.
+                    // If val is 0, keep 0? Or 0.5? 
+                    // If it's color, 0 is unlikely.
+                    if (!isNaN(val) && val > 0) {
+                        parsedFillRate = val;
+                    }
+                }
+
+                const payload = {
+                    printerName: job.printer_name,
+                    pages: pagesPerCopy,
+                    contact: sessionUser,
+                    document: job.document,
+                    copies: copies,
+                    total_pages: globalTotalPages,
+                    duplex: isDuplex,
+                    color_mode: job.color_mode,
+                    paper_size: job.paper_size,
+                    fill_rate: parsedFillRate,
+                    timestamp: job.timestamp,
+                    simulate: true
+                };
 
         // Pass the RAW total pages to the details for future comparison
         const rawTotalPages = job.total_pages;
@@ -336,6 +360,7 @@
         if (result.success) {
             // Store raw total pages for update checking
             result.details.raw_total_pages = job.total_pages;
+            result.details.raw_fill_rate = parsedFillRate; // Store the parsed fill rate we used
             result.details.document_name = job.document;
 
             if (updateIndex !== undefined && updateIndex !== null) {
@@ -344,6 +369,10 @@
             } else {
                 addLog('success', `✅ ${job.document} : ${result.details.price} €`);
                 addJobToSession(result.details, job.job_id);
+                // Nettoyer les logs après 10 secondes (sauf erreur)
+                setTimeout(() => {
+                    cleanLogs();
+                }, 10000);
             }
         } else {
             addLog('error', `❌ Erreur: ${result.error}`);
@@ -412,7 +441,7 @@
             // sheetsPerCopy = global sheets / copies
             const sheetsPerCopy = job.nb_feuilles ? Math.ceil(job.nb_feuilles / job.copies) : Math.ceil(job.pages / (job.duplex ? 2 : 1));
             const detailsText = job.type === 'photocop'
-                ? `${job.copies} ex × ${sheetsPerCopy} feuilles<br><small>${job.duplex ? 'R/V' : 'Recto'} - ${job.taille}</small>`
+                ? `${job.copies} ex × ${sheetsPerCopy} feuilles<br><small>${job.duplex ? 'R/V' : 'Recto'} - ${job.taille}</small>${job.color && job.fill_rate_percent ? '<br><small class="text-muted">Remplissage: ' + job.fill_rate_percent + '%</small>' : ''}`
                 : `${job.nb_masters} M + ${job.nb_passages} P`;
 
             const tr = document.createElement('tr');
@@ -463,6 +492,9 @@
         const div = document.createElement('div');
         const alertType = type === 'error' ? 'danger' : (type === 'success' ? 'success' : (type === 'process' ? 'warning' : 'info'));
         div.className = `alert alert-${alertType} py-2 mb-2`;
+        
+        // Marquer les logs pour nettoyage facile
+        div.dataset.type = type;
 
         const time = new Date().toLocaleTimeString();
         div.innerHTML = `<strong>[${time}]</strong> ${message}`;
@@ -472,6 +504,28 @@
             logContainer.lastChild.remove();
         }
     }
+
+    function cleanLogs() {
+        // Enlève TOUS les logs
+        const logContainer = document.getElementById('activity-log');
+        logContainer.innerHTML = '';
+        // Réinsère "Système prêt"
+        addLog('info', "✅ Système prêt. Lancez une impression...");
+    }
+
+    window.quitSession = function() {
+        if(sessionJobs.length > 0) {
+            if(!confirm("Voulez-vous vraiment quitter sans valider les impressions en cours ?")) return;
+        }
+        
+        // Clear all session data
+        sessionStorage.removeItem('auto_tirage_session_jobs');
+        sessionStorage.removeItem('auto_tirage_session_user');
+        localStorage.removeItem('auto_tirage_user'); // Also clear remembered user
+        
+        // Redirect to auto_tirage (will show identity form)
+        window.location.href = '?auto_tirage';
+    };
 
     window.finishSession = function () {
         if (sessionJobs.length === 0) return alert("Aucune impression à valider.");
@@ -513,9 +567,10 @@
         });
 
         document.body.appendChild(form);
-        // Clear session on submit to confirmation
-        sessionStorage.removeItem('auto_tirage_session_jobs');
-        sessionStorage.removeItem('auto_tirage_session_user');
+        document.body.appendChild(form);
+        // On NE vide PLUS la session ici pour permettre le retour
+        // sessionStorage.removeItem('auto_tirage_session_jobs');
+        // sessionStorage.removeItem('auto_tirage_session_user');
         form.submit();
     };
 

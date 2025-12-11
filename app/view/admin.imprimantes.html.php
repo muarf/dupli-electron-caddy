@@ -157,6 +157,17 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                             </div>
                         </div>
                         
+                        <div class="row" style="margin-bottom: 15px;">
+                            <div class="col-sm-12 text-right">
+                                <button class="btn btn-danger" id="btn-delete-selection" onclick="deleteSelectedJobs()" disabled>
+                                    <i class="fa fa-trash"></i> Supprimer la sélection
+                                </button>
+                                <button class="btn btn-danger" onclick="purgeAllJobs()">
+                                    <i class="fa fa-bomb"></i> Purger tout l'historique
+                                </button>
+                            </div>
+                        </div>
+
                         <div id="print-jobs-list">
                             <p><i class="fa fa-spinner fa-spin"></i> Chargement des impressions...</p>
                         </div>
@@ -461,7 +472,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 const jobsToDisplay = allJobs.slice(startIndex, endIndex);
                 
                 // Construire le tableau
-                let html = '<table class="table table-striped table-hover"><thead><tr><th>Aperçu</th><th>Date</th><th>Document</th><th>Format</th><th>Recto-verso</th><th>Couleur</th><th>Taux remplissage</th><th>Statut</th><th>Pages</th></tr></thead><tbody>';
+                let html = '<table class="table table-striped table-hover"><thead><tr><th><input type="checkbox" id="select-all-jobs" onclick="toggleSelectAll(this)"></th><th>Aperçu</th><th>Date</th><th>Document</th><th>Format</th><th>Recto-verso</th><th>Couleur</th><th>Taux remplissage</th><th>Statut</th><th>Pages</th></tr></thead><tbody>';
                 jobsToDisplay.forEach(job => {
                     const date = new Date(job.timestamp).toLocaleString('fr-FR');
                     const copies = job.copies || 1;
@@ -508,6 +519,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                     }
 
                     html += `<tr>
+                    <td><input type="checkbox" class="job-checkbox" value="${job.id}" onclick="updateDeleteButton()"></td>
                     <td>${thumbnailHtml}</td>
                     <td>${date}</td>
                     <td>${job.document || 'N/A'}</td>
@@ -524,6 +536,10 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 
                 // Mettre à jour les contrôles de pagination
                 updatePaginationControls(totalPages);
+                // Reset select all checkbox
+                const selectAll = document.getElementById('select-all-jobs');
+                if (selectAll) selectAll.checked = false;
+                updateDeleteButton();
             } else {
                 jobsDiv.innerHTML = '<p class="text-muted">' + (data.message || 'Aucune impression enregistrée pour le moment. Lancez une impression pour tester le système.') + '</p>';
                 document.getElementById('pagination-controls').style.display = 'none';
@@ -602,6 +618,93 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
         loadPrintJobs(totalPages);
     }
 
+    // Gestion de la sélection et suppression
+    function toggleSelectAll(source) {
+        const checkboxes = document.querySelectorAll('.job-checkbox');
+        for (let i = 0; i < checkboxes.length; i++) {
+            checkboxes[i].checked = source.checked;
+        }
+        updateDeleteButton();
+    }
+
+    function updateDeleteButton() {
+        const checkboxes = document.querySelectorAll('.job-checkbox:checked');
+        const btn = document.getElementById('btn-delete-selection');
+        if (btn) {
+            btn.disabled = checkboxes.length === 0;
+            btn.innerHTML = `<i class="fa fa-trash"></i> Supprimer la sélection (${checkboxes.length})`;
+        }
+    }
+
+    async function deleteSelectedJobs() {
+        const checkboxes = document.querySelectorAll('.job-checkbox:checked');
+        if (checkboxes.length === 0) return;
+
+        if (!confirm(`Êtes-vous sûr de vouloir supprimer ${checkboxes.length} impression(s) ?`)) {
+            return;
+        }
+
+        const ids = Array.from(checkboxes).map(cb => cb.value);
+
+        try {
+            const response = await fetch('?check_print_jobs', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'delete_jobs',
+                    ids: ids
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Recharger les données
+                loadPrintJobs();
+                loadStats();
+                // Reset header checkbox
+                const selectAll = document.getElementById('select-all-jobs');
+                if (selectAll) selectAll.checked = false;
+            } else {
+                alert('Erreur lors de la suppression: ' + (result.error || result.message));
+            }
+        } catch (error) {
+            alert('Erreur réseau: ' + error.message);
+        }
+    }
+
+    async function purgeAllJobs() {
+        if (!confirm('ATTENTION: Cette action est irréversible !\n\nÊtes-vous sûr de vouloir supprimer TOUT l\'historique des impressions ?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch('?check_print_jobs', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'purge_all'
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Recharger les données
+                loadPrintJobs();
+                loadStats();
+            } else {
+                alert('Erreur lors de la purge: ' + (result.error || result.message));
+            }
+        } catch (error) {
+            alert('Erreur réseau: ' + error.message);
+        }
+    }
+
     // Écouter les événements d'impression en temps réel
     if (hasElectronAPI) {
         window.electronAPI.onPrintJobDetected((printData) => {
@@ -609,20 +712,6 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
             // Recharger les données
             loadPrintJobs();
             loadStats();
-
-            // Afficher une notification
-            const notification = document.createElement('div');
-            notification.className = 'alert alert-info alert-dismissible';
-            notification.innerHTML = `
-            <button type="button" class="close" data-dismiss="alert">&times;</button>
-            <strong>Nouvelle impression détectée!</strong> ${printData.document} sur ${printData.printerName}
-        `;
-            document.querySelector('.container').insertBefore(notification, document.querySelector('.container').firstChild);
-
-            // Supprimer la notification après 5 secondes
-            setTimeout(() => {
-                notification.remove();
-            }, 5000);
         });
     }
 
