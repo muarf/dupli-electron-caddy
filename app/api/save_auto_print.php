@@ -264,19 +264,45 @@ try {
             $message = "Simulation : $nb_masters M, $nb_passages P";
         }
 
+        global $conf; // Ensure we access global conf
+
+        // Extract available drums
+        $tambours = [];
+        if (isset($prix_data[$machine_key])) {
+            foreach ($prix_data[$machine_key] as $type => $data) {
+                if ($type !== 'master') {
+                     // Clean up name for display? Usually type is 'tambour_noir', 'tambour_bleu', etc.
+                     // Or just 'noire', 'bleue' depending on how it's stored.
+                     // tirage_multimachines uses $type directly as value.
+                     $tambours[] = [
+                         'value' => $type,
+                         'label' => ucfirst(str_replace('tambour_', '', $type)), // Simple label formatting
+                         'price' => $data['unite'] ?? 0
+                     ];
+                }
+            }
+        }
+
         $details = [
             'type' => 'duplicopieur',
             'machine' => $nom_machine,
             'machine_id' => $machine_id,
             'nb_masters' => $nb_masters,
             'nb_passages' => $nb_passages,
+            'master_av' => $master_av,
+            'master_ap' => $master_ap,
+            'passage_av' => $passage_av,
+            'passage_ap' => $passage_ap,
             'taille' => $taille_papier,
             'duplex' => $duplex,
             'cout_masters' => $cout_masters,
             'cout_passages' => $cout_passages,
             'cout_papier' => $cout_papier,
             'price' => $price,
-            'nb_feuilles' => $nb_f
+            'nb_feuilles' => $nb_f,
+            'tambours' => $tambours, // Add drums
+            'debug_db_path' => $conf['db_path'] ?? 'unknown',
+            'debug_nom_machine' => $nom_machine
         ];
     }
 
