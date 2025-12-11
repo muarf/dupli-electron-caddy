@@ -2850,6 +2850,8 @@ ipcMain.handle('print-file', async (event, fileUrl) => {
                 });
             });
 
+
+
             // Gérer les erreurs de chargement
             printWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
                 console.error('Erreur de chargement du fichier:', errorDescription);
@@ -2921,6 +2923,28 @@ ipcMain.handle('open-external-file', async (event, fileUrl) => {
         }
     } catch (error) {
         console.error('Erreur lors de l\'ouverture externe:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Verification des droits admin
+ipcMain.handle('check-admin-status', async () => {
+    try {
+        const isAdmin = await isRunningAsAdmin();
+        return { success: true, isAdmin };
+    } catch (error) {
+        console.error('Erreur check-admin-status:', error);
+        return { success: false, error: error.message };
+    }
+});
+
+// Redemarrage en admin
+ipcMain.handle('restart-as-admin', async () => {
+    try {
+        await restartAsAdmin(app.getPath('exe'));
+        return { success: true };
+    } catch (error) {
+        console.error('Erreur restart-as-admin:', error);
         return { success: false, error: error.message };
     }
 });
