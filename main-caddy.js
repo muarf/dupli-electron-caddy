@@ -2927,27 +2927,7 @@ ipcMain.handle('open-external-file', async (event, fileUrl) => {
     }
 });
 
-// Verification des droits admin
-ipcMain.handle('check-admin-status', async () => {
-    try {
-        const isAdmin = await isRunningAsAdmin();
-        return { success: true, isAdmin };
-    } catch (error) {
-        console.error('Erreur check-admin-status:', error);
-        return { success: false, error: error.message };
-    }
-});
 
-// Redemarrage en admin
-ipcMain.handle('restart-as-admin', async () => {
-    try {
-        await restartAsAdmin(app.getPath('exe'));
-        return { success: true };
-    } catch (error) {
-        console.error('Erreur restart-as-admin:', error);
-        return { success: false, error: error.message };
-    }
-});
 
 // Gérer l'arrêt propre de l'application
 process.on('SIGINT', () => {
