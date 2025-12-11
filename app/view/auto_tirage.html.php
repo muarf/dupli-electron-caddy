@@ -276,8 +276,19 @@
         const newFillRate = parseFloat(apiJob.fill_rate || 0);
         const oldFillRate = parseFloat(currentJob.raw_fill_rate || 0);
         
-        if (apiJob.total_pages !== currentJob.raw_total_pages || Math.abs(newFillRate - oldFillRate) > 0.01) {
-            addLog('info', `🔄 Mise à jour: Remplissage ${newFillRate.toFixed(1)}%`);
+        // Check for thumbnail update
+        const thumbnailUpdate = !currentJob.thumbnail_url && apiJob.thumbnail_url;
+
+        if (apiJob.total_pages !== currentJob.raw_total_pages 
+            || Math.abs(newFillRate - oldFillRate) > 0.01
+            || thumbnailUpdate) {
+            
+            let reason = [];
+            if (apiJob.total_pages !== currentJob.raw_total_pages) reason.push('pages');
+            if (Math.abs(newFillRate - oldFillRate) > 0.01) reason.push('remplissage');
+            if (thumbnailUpdate) reason.push('aperçu');
+
+            addLog('info', `🔄 Mise à jour (${reason.join(', ')})...`);
             simulateJob(apiJob, existingIndex); // Re-simulate and update in place
         }
     }
@@ -310,84 +321,116 @@
             // Force robust boolean conversion for duplex
             const isDuplex = (job.duplex == 1 || job.duplex == '1' || job.duplex === true || String(job.duplex).toLowerCase() === 'oui');
 
-                // Fill rate handling:
-                // API might return "90.4", 90.4, 0.904, or "90.4%"
-                let rawFillRate = job.fill_rate;
-                let parsedFillRate = 0.5; // Default
+            // Fill rate handling
+            let rawFillRate = job.fill_rate;
+            let parsedFillRate = 0.5; // Default
 
-                if (rawFillRate !== undefined && rawFillRate !== null && rawFillRate !== '') {
-                    let val = parseFloat(rawFillRate);
-                    // If > 1, assume percent (e.g. 90.4) -> 90.4
-                    // If < 1, assume ratio (e.g. 0.904) -> 90.4
-                    // We want to send a value such that backend handles it.
-                    // Backend divides by 100 if > 1.
-                    // So sending 90.4 is fine. Sending 0.904 is fine.
-                    // But if it's 0, we might want to default to 0.5?
-                    // User complained about 50% when it should be 90%.
-                    // If val is 0, keep 0? Or 0.5? 
-                    // If it's color, 0 is unlikely.
-                    if (!isNaN(val) && val > 0) {
-                        parsedFillRate = val;
-                    }
+            if (rawFillRate !== undefined && rawFillRate !== null && rawFillRate !== '') {
+                let val = parseFloat(rawFillRate);
+                if (!isNaN(val) && val > 0) {
+                    parsedFillRate = val;
                 }
-
-                const payload = {
-                    printerName: job.printer_name,
-                    pages: pagesPerCopy,
-                    contact: sessionUser,
-                    document: job.document,
-                    copies: copies,
-                    total_pages: globalTotalPages,
-                    duplex: isDuplex,
-                    color_mode: job.color_mode,
-                    paper_size: job.paper_size,
-                    fill_rate: parsedFillRate,
-                    timestamp: job.timestamp,
-                    simulate: true
-                };
-
-        // Pass the RAW total pages to the details for future comparison
-        const rawTotalPages = job.total_pages;
-
-        const response = await fetch('?save_auto_print', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            // Store raw total pages for update checking
-            result.details.raw_total_pages = job.total_pages;
-            result.details.raw_fill_rate = parsedFillRate; // Store the parsed fill rate we used
-            result.details.document_name = job.document;
-
-            if (updateIndex !== undefined && updateIndex !== null) {
-                addLog('info', `🔄 Mise à jour job : ${job.total_pages} pages`);
-                updateJobInSession(result.details, updateIndex);
-            } else {
-                addLog('success', `✅ ${job.document} : ${result.details.price} €`);
-                addJobToSession(result.details, job.job_id);
-                // Nettoyer les logs après 10 secondes (sauf erreur)
-                setTimeout(() => {
-                    cleanLogs();
-                }, 10000);
             }
-        } else {
-            addLog('error', `❌ Erreur: ${result.error}`);
-        }
 
-    } catch (error) {
-        addLog('error', "❌ Erreur de communication serveur");
-        console.error(error);
-    }
+            const payload = {
+                printerName: job.printer_name,
+                pages: pagesPerCopy,
+                contact: sessionUser,
+                document: job.document,
+                copies: copies,
+                total_pages: globalTotalPages,
+                duplex: isDuplex,
+                color_mode: job.color_mode,
+                paper_size: job.paper_size,
+                fill_rate: parsedFillRate,
+                timestamp: job.timestamp,
+                simulate: true
+            };
+
+            // Pass the RAW total pages to the details for future comparison
+            const rawTotalPages = job.total_pages;
+
+            const response = await fetch('?save_auto_print', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Store raw total pages for update checking
+                result.details.raw_total_pages = job.total_pages;
+                result.details.raw_fill_rate = parsedFillRate; // Store the parsed fill rate we used
+                result.details.document_name = job.document;
+                result.details.thumbnail_url = job.thumbnail_url; // Persist thumbnail
+
+                if (updateIndex !== undefined && updateIndex !== null) {
+                    addLog('info', `🔄 Mise à jour job : ${job.total_pages} pages`);
+                    updateJobInSession(result.details, updateIndex);
+                } else {
+                    addLog('success', `✅ ${job.document} : ${result.details.price} €`);
+                    addJobToSession(result.details, job.job_id);
+                    // Nettoyer les logs après 10 secondes (sauf erreur)
+                    setTimeout(() => {
+                        cleanLogs();
+                    }, 10000);
+                }
+            } else {
+                addLog('error', `❌ Erreur: ${result.error}`);
+            }
+
+        } catch (error) {
+            addLog('error', "❌ Erreur de communication serveur");
+            console.error(error);
+        }
     }
 
     function addJobToSession(details, jobId) {
         details.localId = Date.now() + Math.random().toString(36).substr(2, 9);
         details.originalJobId = jobId;
         details.feuilles_payees = false;
+        
+        // Initialiser les valeurs unitaires pour recalcul JS
+        if (details.type === 'duplicopieur') {
+            details.unit_master = details.nb_masters > 0 ? (details.cout_masters / details.nb_masters) : 0;
+            // Pour le passage c'est plus subtil à cause de A3/A4 déjà appliqué.
+            // On peut déduire depuis le total:
+            // Si A4, prix_passage est la moitié du A3.
+            // Mais on a le total.
+            
+            // On a besoin des prix unitaires bruts pour recalculer.
+            // On peut tenter de deviner ou les demander à l'API.
+            // Simplification : on utilise cout / nombre.
+            
+            details.unit_passage = details.nb_passages > 0 ? (details.cout_passages / details.nb_passages) : 0;
+            details.unit_papier = details.nb_feuilles > 0 ? (details.cout_papier / details.nb_feuilles) : 0;
+
+            // CHAINAGE DES COMPTEURS - LOGIC V2
+            // Vérifier s'il y a déjà des jobs pour CETTE machine dans la session
+            // Si oui, on prend le compteur APRES du dernier job comme compteur AVANT du nouveau
+            
+            // Trouver le dernier job pour cette machine (en excluant soi-même qui n'est pas encore ajouté)
+            let lastJob = null;
+            for (let i = sessionJobs.length - 1; i >= 0; i--) {
+                if (sessionJobs[i].machine === details.machine) {
+                    lastJob = sessionJobs[i];
+                    break;
+                }
+            }
+
+            if (lastJob) {
+                // On enchaine !
+                details.master_av = lastJob.master_ap;
+                details.passage_av = lastJob.passage_ap;
+                
+                // Recalculer les AP en conséquence
+                // Note: details.nb_masters et nb_passages viennent de l'API (basé sur simulation)
+                // Ils restent valables. On décale juste les compteurs.
+                details.master_ap = details.master_av + details.nb_masters;
+                details.passage_ap = details.passage_av + details.nb_passages;
+            }
+        }
 
         sessionJobs.push(details);
         saveSession();
@@ -395,11 +438,17 @@
     }
 
     function updateJobInSession(newDetails, index) {
-        // Keep some existing flags like localId or paid status if we want?
-        // For now, reset but keep Id
+        // Preserve local state
         newDetails.localId = sessionJobs[index].localId;
         newDetails.originalJobId = sessionJobs[index].originalJobId;
-        newDetails.feuilles_payees = sessionJobs[index].feuilles_payees; // Preserve paid status
+        newDetails.feuilles_payees = sessionJobs[index].feuilles_payees; 
+
+        // Si Duplicopieur, on doit recalculer les unitaires si on met à jour
+        if (newDetails.type === 'duplicopieur') {
+            newDetails.unit_master = newDetails.nb_masters > 0 ? (newDetails.cout_masters / newDetails.nb_masters) : 0;
+            newDetails.unit_passage = newDetails.nb_passages > 0 ? (newDetails.cout_passages / newDetails.nb_passages) : 0;
+            newDetails.unit_papier = newDetails.nb_feuilles > 0 ? (newDetails.cout_papier / newDetails.nb_feuilles) : 0;
+        }
 
         sessionJobs[index] = newDetails;
         saveSession();
@@ -436,43 +485,307 @@
             }
             globalTotal += currentPrice;
 
-            // Display like tirage_multimachines: X exemplaires × Y feuilles
-            // nb_feuilles from backend is GLOBAL total sheets.
-            // sheetsPerCopy = global sheets / copies
-            const sheetsPerCopy = job.nb_feuilles ? Math.ceil(job.nb_feuilles / job.copies) : Math.ceil(job.pages / (job.duplex ? 2 : 1));
-            const detailsText = job.type === 'photocop'
-                ? `${job.copies} ex × ${sheetsPerCopy} feuilles<br><small>${job.duplex ? 'R/V' : 'Recto'} - ${job.taille}</small>${job.color && job.fill_rate_percent ? '<br><small class="text-muted">Remplissage: ' + job.fill_rate_percent + '%</small>' : ''}`
-                : `${job.nb_masters} M + ${job.nb_passages} P`;
-
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><span class="badge badge-info">${job.machine}</span></td>
-                <td><small>${job.document_name || '...'}</small></td>
-                <td>${detailsText}</td>
-                <td><small>${job.cout_papier ? job.cout_papier.toFixed(2) + ' €' : '-'}</small></td>
-                <td><small>${job.cout_encre ? job.cout_encre.toFixed(2) + ' €' : (job.cout_masters ? (job.cout_masters + job.cout_passages).toFixed(2) + ' €' : '-')}</small></td>
-                <td><strong>${currentPrice.toFixed(2)} €</strong></td>
-                <td>
-                    <div class="custom-control custom-switch">
-                        <input type="checkbox" class="custom-control-input" id="paid-${index}" ${job.feuilles_payees ? 'checked' : ''} onchange="togglePaid(${index})">
-                        <label class="custom-control-label" for="paid-${index}"></label>
-                    </div>
-                </td>
-                <td>
-                    <button class="btn btn-sm btn-danger" onclick="removeJob(${index})"><i class="fa fa-trash"></i></button>
+            
+            const badgeClass = job.type === 'photocop' ? 'badge-primary' : 'badge-secondary';
+            const machineName = job.type === 'photocop' ? 'Photocopieur' : 'Duplicopieur';
+            
+            // Thumbnail handling
+            let thumbHtml = '';
+            // Use local thumbnail_url if available, else standard fallback
+            const thumbUrl = job.thumbnail_url;
+            if (thumbUrl) {
+                thumbHtml = `<img src="${thumbUrl}" alt="Aperçu" class="img-thumbnail rounded mr-2" style="width: 50px; height: 50px; object-fit: contain;">`;
+            } else {
+                thumbHtml = `<div class="d-inline-flex align-items-center justify-content-center bg-light text-muted border rounded mr-2" style="width: 50px; height: 50px;"><i class="fa fa-file-o fa-lg"></i></div>`;
+            }
+
+            const colMachine = `
+                <td class="align-middle">
+                    <span class="badge ${badgeClass}">${machineName}</span><br>
+                    <small class="text-muted" style="font-size: 0.8em;">${job.machine || ''}</small>
                 </td>
             `;
+            
+            // Fix: Use job.document_name which comes from the API details, backup with job.document if raw job
+            const docName = job.document_name || job.document || 'Document';
+            
+            const colDoc = `
+                <td class="align-middle">
+                    <div class="d-flex align-items-center">
+                        ${thumbHtml}
+                        <div style="line-height: 1.2;">
+                            <strong style="font-size: 0.95em;">${docName}</strong><br>
+                            <small class="text-muted">${job.nb_passages || job.total_pages} Pg ${job.copies > 1 ? `× ${job.copies} Ex` : ''}</small>
+                        </div>
+                    </div>
+                </td>
+            `;
+            
+            let colDetails = '';
+            let colPaidInDetails = ''; // For Duplicopieur only
+
+            if (job.type === 'photocop') {
+                 // sheetsPerCopy = global sheets / copies
+                const sheetsPerCopy = job.nb_feuilles ? Math.ceil(job.nb_feuilles / job.copies) : Math.ceil(job.pages / (job.duplex ? 2 : 1));
+                colDetails = `
+                    <div style="font-size: 0.9em;">
+                        ${job.copies} ex × ${sheetsPerCopy} f.<br>
+                        <small>${job.duplex ? 'R/V' : 'Recto'} - ${job.taille}</small>
+                        ${job.color && job.fill_rate_percent ? '<br><small class="text-muted">Encrage: ' + job.fill_rate_percent + '%</small>' : ''}
+                    </div>
+                `;
+            } else {
+                // Duplicopieur: Compact Grid
+                const masterAv = job.master_av !== null ? job.master_av : 0;
+                const masterAp = job.master_ap !== null ? job.master_ap : 0;
+                const passageAv = job.passage_av !== null ? job.passage_av : 0;
+                const passageAp = job.passage_ap !== null ? job.passage_ap : 0;
+                
+                // Tambours dropdown
+                let tambourSelect = '';
+                if (job.tambours && job.tambours.length > 0) {
+                    let options = job.tambours.map(t => 
+                        `<option value="${t.value}" ${t.value === (job.selected_tambour || 'tambour_noir') ? 'selected' : ''} data-price="${t.price}">${t.label}</option>`
+                    ).join('');
+                    tambourSelect = `
+                        <select class="form-control form-control-sm py-0 border-secondary mr-2" style="height: 24px; font-size: 11px; width: auto; min-width: 80px;" onchange="updateTambour(${index}, this)">
+                            ${options}
+                        </select>
+                    `;
+                    
+                    if (!job.selected_tambour) {
+                        const noir = job.tambours.find(t => t.value === 'tambour_noir');
+                        if (noir) job.selected_tambour = 'tambour_noir';
+                        else job.selected_tambour = job.tambours[0].value;
+                    }
+                }
+
+                // FIX: FORCE SINGLE LINE using inline styles
+                colDetails = `
+                    <div style="min-width: 320px;">
+                        <div style="display: flex; align-items: center; white-space: nowrap; margin-bottom: 5px; padding: 4px; background: #fff; border: 1px solid #dee2e6; border-radius: 4px;">
+                            <span class="mr-1" style="font-size: 11px; font-weight:bold;">Tambour:</span>
+                            ${tambourSelect}
+                            
+                            <div class="custom-control custom-checkbox mr-3" style="display: inline-flex; align-items: center;">
+                                <input type="checkbox" class="custom-control-input" id="duplex-${index}" ${job.duplex ? 'checked' : ''} onchange="toggleDuplex(${index})">
+                                <label class="custom-control-label" for="duplex-${index}" style="font-size: 11px; padding-top: 2px; margin-bottom: 0;">R/V</label>
+                            </div>
+
+                            <div class="custom-control custom-checkbox" style="display: inline-flex; align-items: center;">
+                                <input type="checkbox" class="custom-control-input" id="paid-details-${index}" ${job.feuilles_payees ? 'checked' : ''} onchange="togglePaid(${index})">
+                                <label class="custom-control-label" for="paid-details-${index}" style="font-size: 11px; padding-top: 2px; margin-bottom: 0;">Papier Payé</label>
+                            </div>
+                        </div>
+                        
+                        <div class="card p-1 border bg-light" style="border-radius: 4px;">
+                            <table class="table table-borderless table-sm mb-0" style="font-size: 11px;">
+                                <thead>
+                                    <tr class="text-muted text-center" style="line-height: 1;">
+                                        <th class="py-0 px-1 text-left">Compteur</th>
+                                        <th class="py-0 px-1">Avant</th>
+                                        <th class="py-0 px-1">Après</th>
+                                        <th class="py-0 px-1 text-right">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="py-1 px-1 align-middle text-left"><strong>Master</strong></td>
+                                        <td class="py-1 px-1"><input type="number" class="form-control form-control-sm py-0 px-1 text-center" style="height: 20px; font-size: 11px;" value="${masterAv}" onchange="updateCounterAndCalc('master_av', ${index}, this.value)"></td>
+                                        <td class="py-1 px-1"><input type="number" class="form-control form-control-sm py-0 px-1 text-center font-weight-bold" style="height: 20px; font-size: 11px;" value="${masterAp}" onchange="updateCounterAndCalc('master_ap', ${index}, this.value)"></td>
+                                        <td class="py-1 px-1 text-right align-middle"><span class="badge badge-light border text-dark" id="diff-master-${index}">${job.nb_masters}</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-1 px-1 align-middle text-left"><strong>Passage</strong></td>
+                                        <td class="py-1 px-1"><input type="number" class="form-control form-control-sm py-0 px-1 text-center" style="height: 20px; font-size: 11px;" value="${passageAv}" onchange="updateCounterAndCalc('passage_av', ${index}, this.value)"></td>
+                                        <td class="py-1 px-1"><input type="number" class="form-control form-control-sm py-0 px-1 text-center font-weight-bold" style="height: 20px; font-size: 11px;" value="${passageAp}" onchange="updateCounterAndCalc('passage_ap', ${index}, this.value)"></td>
+                                        <td class="py-1 px-1 text-right align-middle"><span class="badge badge-light border text-dark" id="diff-passage-${index}">${job.nb_passages}</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            const colPapier = `<td class="align-middle text-right"><small id="cout-papier-${index}" class="text-muted">${job.cout_papier ? job.cout_papier.toFixed(2) + ' €' : '-'}</small></td>`;
+            
+            let inkPriceDisplay = '-';
+            if (job.type === 'photocop') {
+                inkPriceDisplay = job.cout_encre ? job.cout_encre.toFixed(2) + ' €' : '-';
+            } else {
+                inkPriceDisplay = (job.cout_masters + job.cout_passages).toFixed(2) + ' €';
+            }
+            const colEncre = `<td class="align-middle text-right"><small id="cout-encre-${index}" class="text-muted">${inkPriceDisplay}</small></td>`;
+            const colTotal = `<td class="align-middle text-right"><strong id="total-price-${index}" class="text-dark" style="font-size: 1.1em;">${currentPrice.toFixed(2)} €</strong></td>`;
+            
+            // Should column "Papier Payé" exist for Duplicopieur if it's in details?
+            // Yes, user asked for it in details "on the same line".
+            // I will keep the column empty to avoid breaking table layout.
+            // OR render it ONLY if photocop. But header is fixed. So I must render an empty cell or "-" for dupli.
+            
+            let colPaid = '';
+            if (job.type === 'photocop') {
+                colPaid = `
+                    <td class="align-middle text-center">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="paid-${index}" ${job.feuilles_payees ? 'checked' : ''} onchange="togglePaid(${index})">
+                            <label class="custom-control-label" for="paid-${index}"></label>
+                        </div>
+                    </td>
+                `;
+            } else {
+                 colPaid = `<td class="align-middle text-center"><small class="text-muted">-</small></td>`;
+            }
+
+            const colAction = `
+                <td class="align-middle text-center">
+                    <button class="btn btn-sm btn-outline-danger shadow-sm" style="border-radius: 50%; width: 30px; height: 30px; padding: 0;" onclick="removeJob(${index})"><i class="fa fa-trash"></i></button>
+                </td>
+            `;
+
+            tr.innerHTML = colMachine + colDoc + `<td class="p-2 align-middle">${colDetails}</td>` + colPapier + colEncre + colTotal + colPaid + colAction;
             tbody.appendChild(tr);
         });
 
         totalSpan.textContent = globalTotal.toFixed(2);
         badge.textContent = sessionJobs.length;
     }
+    
+    // --- Logic for Duplicopieur Counters ---
+    window.updateCounterAndCalc = function(field, index, value) {
+        let job = sessionJobs[index];
+        const val = parseInt(value) || 0;
+        
+        // Update model
+        job[field] = val;
+        
+        // Recalculate Deltas
+        if (field === 'master_av' || field === 'master_ap') {
+            const av = job.master_av || 0;
+            const ap = job.master_ap || 0;
+            job.nb_masters = Math.max(0, ap - av);
+            
+            // Recalculate Cost
+            job.cout_masters = job.nb_masters * (job.unit_master || 0); // Need unit price! 
+        }
+        
+        if (field === 'passage_av' || field === 'passage_ap') {
+            const av = job.passage_av || 0;
+            const ap = job.passage_ap || 0;
+            job.nb_passages = Math.max(0, ap - av);
+            
+            // Recalculate Cost
+            job.cout_passages = job.nb_passages * (job.unit_passage || 0);
+            
+            // Recalculate Paper
+            recalcPaper(job);
+        }
+        
+        recalcTotal(index);
+        
+        // Update UI (Partial to avoid full redraw losing focus)
+        // Actually, just save session and specific fields
+        saveSession();
+        
+        // Update badges
+        const mBadge = document.getElementById(`diff-master-${index}`);
+        if(mBadge) mBadge.textContent = `${job.nb_masters} M`;
+        
+        const pBadge = document.getElementById(`diff-passage-${index}`);
+        if(pBadge) pBadge.textContent = `${job.nb_passages} P`;
+    };
+    
+    window.updateTambour = function(index, selectElement) {
+        let job = sessionJobs[index];
+        const selectedValue = selectElement.value;
+        const selectedPrice = parseFloat(selectElement.options[selectElement.selectedIndex].dataset.price || 0);
+        
+        job.selected_tambour = selectedValue;
+        
+        // Update unit price for passage!
+        // NOTE: If A4 is selected, price might be halved? 
+        // Backend 'unit' price logic is: "prix par passage sans papier"
+        // In tirage_multimachines: if size == A4, price = price / 2
+        // We should replicate this logic.
+        
+        let effectivePrice = selectedPrice;
+        if (job.taille === 'A4') {
+            effectivePrice = effectivePrice / 2;
+        }
+        
+        job.unit_passage = effectivePrice;
+        
+        // Recalulate passage cost
+        job.cout_passages = job.nb_passages * job.unit_passage;
+        
+        recalcTotal(index);
+        saveSession();
+    };
+
+    window.toggleDuplex = function(index) {
+        let job = sessionJobs[index];
+        job.duplex = !job.duplex;
+        
+        recalcPaper(job);
+        recalcTotal(index);
+        saveSession();
+    };
+    
+    function recalcPaper(job) {
+        if (job.type !== 'duplicopieur') return;
+        
+        let sheets = job.nb_passages;
+        if (job.duplex) {
+            sheets = Math.ceil(job.nb_passages / 2); // Assuming simple division for manual duplex logic
+        }
+        job.nb_feuilles = sheets;
+        job.cout_papier = sheets * (job.unit_papier || 0);
+    }
+    
+    function recalcTotal(index) {
+        let job = sessionJobs[index];
+        
+        // Total Base
+        let total = (job.cout_masters || 0) + (job.cout_passages || 0) + (job.cout_papier || 0);
+        job.price = parseFloat(total.toFixed(2)); // Store rounded
+        
+        let finalPrice = job.price;
+        if (job.feuilles_payees) {
+            finalPrice = Math.max(0, finalPrice - job.cout_papier);
+        }
+        
+        // Update UI
+        const elPapier = document.getElementById(`cout-papier-${index}`);
+        if(elPapier) elPapier.textContent = job.cout_papier.toFixed(2) + ' €';
+        
+        const elEncre = document.getElementById(`cout-encre-${index}`);
+        if(elEncre) {
+            const ink = (job.cout_masters + job.cout_passages);
+             elEncre.textContent = ink.toFixed(2) + ' €';
+        }
+        
+        const elTotal = document.getElementById(`total-price-${index}`);
+        if(elTotal) elTotal.textContent = finalPrice.toFixed(2) + ' €';
+        
+        // Update Global Total
+        let globalTotal = 0;
+        sessionJobs.forEach(j => {
+            let p = j.price;
+            if (j.feuilles_payees) p -= j.cout_papier;
+            globalTotal += Math.max(0, p);
+        });
+        document.getElementById('session-total').textContent = globalTotal.toFixed(2);
+    }
 
     window.togglePaid = function (index) {
         sessionJobs[index].feuilles_payees = !sessionJobs[index].feuilles_payees;
+        
+        // Recalc total for this row immediately (in case price changed)
+        recalcTotal(index);
+        
         saveSession();
-        renderSessionTable();
     };
 
     window.removeJob = function (index) {
@@ -562,15 +875,18 @@
                 addHidden(form, `machines[${index}][rv]`, job.duplex ? 'oui' : 'non');
                 addHidden(form, `machines[${index}][feuilles_payees]`, job.feuilles_payees ? 'oui' : 'non');
                 addHidden(form, `machines[${index}][A4]`, job.taille === 'A4' ? 'A4' : 'A3');
-                addHidden(form, `machines[${index}][tambour]`, 'tambour_noir');
+                addHidden(form, `machines[${index}][tambour]`, job.selected_tambour || 'tambour_noir');
+                
+                // --- AJOUTS COMPTEURS ---
+                addHidden(form, `machines[${index}][master_av]`, job.master_av !== undefined ? job.master_av : 0);
+                addHidden(form, `machines[${index}][master_ap]`, job.master_ap !== undefined ? job.master_ap : 0);
+                addHidden(form, `machines[${index}][passage_av]`, job.passage_av !== undefined ? job.passage_av : 0);
+                addHidden(form, `machines[${index}][passage_ap]`, job.passage_ap !== undefined ? job.passage_ap : 0);
             }
         });
 
         document.body.appendChild(form);
         document.body.appendChild(form);
-        // On NE vide PLUS la session ici pour permettre le retour
-        // sessionStorage.removeItem('auto_tirage_session_jobs');
-        // sessionStorage.removeItem('auto_tirage_session_user');
         form.submit();
     };
 

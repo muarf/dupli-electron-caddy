@@ -2189,7 +2189,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     calculateTotalPrice();
     
-    // S'assurer que le champ cb1 est rempli avant la soumission
+    // Logic for Main Edit Form
     const multimachinesForm = document.getElementById('multimachines-form');
     if (multimachinesForm) {
         multimachinesForm.addEventListener('submit', function() {
@@ -2199,8 +2199,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 var total = calculateTotalPrice();
                 cbField.value = total.toFixed(2);
             }
-            // Sauvegarder une dernière fois avant la soumission
             saveFormData();
+        });
+    }
+
+    // Logic for Confirmation Form (Final Validation)
+    const confirmationForm = document.getElementById('form-enregistrement');
+    if (confirmationForm) {
+        confirmationForm.addEventListener('submit', function() {
+            // KILL SESSION AUTO TIRAGE ON FINAL VALIDATION
+            console.log('🧹 Validation finale : Nettoyage de la session auto_tirage et de l\'utilisateur...');
+            sessionStorage.removeItem('auto_tirage_session_jobs');
+            sessionStorage.removeItem('auto_tirage_session_user');
+            // Remove persistent user data to fully logout
+            localStorage.removeItem('auto_tirage_user');
+            
+            // Note: No need to calc price here, it's already fixed in the summary
         });
     }
 });
