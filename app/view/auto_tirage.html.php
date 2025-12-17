@@ -516,7 +516,7 @@
                         ${thumbHtml}
                         <div style="line-height: 1.2;">
                             <strong style="font-size: 0.95em;">${docName}</strong><br>
-                            <small class="text-muted">${job.nb_passages || job.total_pages} Pg ${job.copies > 1 ? `× ${job.copies} Ex` : ''}</small>
+                            <small class="text-muted">${job.nb_passages || job.pages} Pg ${job.copies > 1 ? `× ${job.copies} Ex` : ''}</small>
                         </div>
                     </div>
                 </td>
