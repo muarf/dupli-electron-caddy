@@ -56,6 +56,9 @@ try {
     if ($fill_rate > 1.0) {
         $fill_rate = $fill_rate / 100.0;
     }
+    
+    // ID du job original (pour suppression après traitement)
+    $original_job_id = isset($input['job_id']) ? $input['job_id'] : null;
 
     $db = create_database_manager();
 
@@ -67,9 +70,31 @@ try {
         echo json_encode(['success' => false, 'error' => "Imprimante '$printerName' non reconnue. Veuillez la configurer dans l'admin."]);
         exit;
     }
+    
+    // DEBUG: Log keys to see potential case mismatch
+    $keys = array_keys($mapping);
+    file_put_contents(__DIR__ . '/debug_log.txt', "KEYS FOUND: " . implode(', ', $keys) . "\n", FILE_APPEND);
 
-    $machine_type = $mapping['machine_type'];
-    $machine_id = $mapping['machine_id'];
+    // Robust retrieval: valid machine_type or Machine_Type or MACHINE_TYPE
+    $machine_type = null;
+    foreach ($mapping as $key => $val) {
+        if (strtolower($key) === 'machine_type') {
+            $machine_type = $val;
+            break;
+        }
+    }
+    // Fallback if null (should not happen if key exists)
+    if ($machine_type === null && isset($mapping['machine_type'])) $machine_type = $mapping['machine_type']; // standard
+    if ($machine_type === null) $machine_type = ''; // Default to empty string
+
+    $machine_id = null;
+    foreach ($mapping as $key => $val) {
+        if (strtolower($key) === 'machine_id') {
+            $machine_id = $val;
+            break;
+        }
+    }
+    if ($machine_id === null && isset($mapping['machine_id'])) $machine_id = $mapping['machine_id'];
     $con_pdo = pdo_connect(); // Connexion brute pour les fonctions legacy si besoin
 
     $date = time();
@@ -85,6 +110,30 @@ try {
     $details = [];
 
     $con_pdo->beginTransaction();
+    // Log valid information about the DB
+    global $conf;
+    $db_path_used = $conf['dsn'] ?? 'unknown';
+    file_put_contents(__DIR__ . '/debug_log.txt', "DB_PATH_USED: $db_path_used\n", FILE_APPEND);
+
+    file_put_contents(__DIR__ . '/debug_log.txt', "INIT: Printer='$printerName', Type='$machine_type'\n", FILE_APPEND);
+    file_put_contents(__DIR__ . '/debug_log.txt', "HEX: " . bin2hex($machine_type) . "\n", FILE_APPEND);
+    
+    // CORRECTION AUTOMATIQUE COMCOLOR - RETIRÉE SUR DEMANDE
+    // $has_comcolor = (stripos($printerName, 'ComColor') !== false);
+    // // Si la base de données renvoie un type vide pour la ComColor, on force 'photocop'
+    // $match_name = stripos($printerName, 'ComColor');
+    // $is_empty = empty($machine_type);
+    
+    // file_put_contents(__DIR__ . '/debug_log.txt', "DEBUG FIX COND: NameMatch=" . var_export($match_name, true) . ", IsEmpty=" . var_export($is_empty, true) . "\n", FILE_APPEND);
+
+    // if ($is_empty && $match_name !== false) {
+    //     $machine_type = 'photocop';
+    //     file_put_contents(__DIR__ . '/debug_log.txt', "FIX APPLIED: Forced 'photocop'\n", FILE_APPEND);
+    // }
+
+    // Strict check debug
+    $is_photocop = ($machine_type === 'photocop');
+    file_put_contents(__DIR__ . '/debug_log.txt', "Check 'photocop': " . ($is_photocop ? 'TRUE' : 'FALSE') . "\n", FILE_APPEND);
 
     if ($machine_type === 'photocop') {
         // --- PHOTOCOPIEUR ---
@@ -184,10 +233,9 @@ try {
         if ($machine['marque'] === $machine['modele'])
             $nom_machine = $machine['marque'];
 
-        // Hypothèse Auto: 1 Master, N Passages (= total_pages)
-        // C'est le cas le plus courant pour un nouveau job d'impression.
-        // Si c'est "copies", le driver d'impression envoie 1 job avec N copies.
-        $nb_masters = 1;
+        // Un duplicopieur nécessite 1 Master par page unique du document
+        // et 1 Passage par page totale imprimée (pages * copies)
+        $nb_masters = $pages;
         $nb_passages = $total_pages;
 
         // Récupérer compteurs actuels
@@ -304,17 +352,47 @@ try {
             'debug_db_path' => $conf['db_path'] ?? 'unknown',
             'debug_nom_machine' => $nom_machine
         ];
+    } else {
+        // Unknown machine type
+        $message = "Type de machine inconnu: $machine_type";
+        $details = [
+            'type' => 'unknown',
+            'machine' => $printerName,
+            'machine_id' => $machine_id,
+            'price' => 0,
+            'error' => "Type de machine inconnu: $machine_type"
+        ];
+        error_log("CRITICAL save_auto_print: Unknown machine type '$machine_type'");
+    } // End of machine type block
+
+    if (!$simulate && isset($original_job_id) && $original_job_id) {
+        $del = $con_pdo->prepare("DELETE FROM print_jobs WHERE job_id = ?");
+        $del->execute([$original_job_id]);
     }
 
-    $con_pdo->commit();
+    if ($con_pdo) {
+        $con_pdo->commit();
+    } else {
+        error_log("CRITICAL: con_pdo is null at commit time!");
+    }
+
+    $final_log = [
+        'success' => true,
+        'message_null' => is_null($message),
+        'message_val' => $message,
+        'details_null' => is_null($details),
+        'details_count' => is_array($details) ? count($details) : 'not_array'
+    ];
+    error_log("DEBUG save_auto_print FINAL: " . json_encode($final_log));
 
     echo json_encode([
         'success' => true,
-        'message' => $message,
-        'details' => $details
+        'message' => $message ?? "MessageNullFallback",
+        'details' => $details ?? [],
+        'debug_info' => "Printer: $printerName | Type: '$machine_type' (Hex: " . bin2hex($machine_type) . ") | Keys: " . implode(',', array_keys($mapping)) . " | IsPhotocop: " . ($machine_type === 'photocop' ? 'YES' : 'NO')
     ]);
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
     if (isset($con_pdo) && $con_pdo->inTransaction()) {
         $con_pdo->rollBack();
     }
