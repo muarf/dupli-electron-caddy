@@ -851,7 +851,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
             
             <!-- Bouton pour ajouter une machine (à l'intérieur du container) -->
             <!-- Boutons actions -->
-            <div class="row" style="margin: 20px 0;">
+            <div id="buttons-container" class="row" style="margin: 20px 0;">
                 <div class="col-md-6 text-center">
                     <button type="button" id="add-machine" class="btn btn-success btn-lg">
                         <i class="fa fa-plus-circle"></i> <?php _e('tirage_multimachines.add_tirage'); ?>
@@ -1039,7 +1039,7 @@ function addMachineAsync(index) {
                     return;
                 }
                 
-                const addButtonContainer = container.querySelector('div.text-center:last-child');
+                const addButtonContainer = document.getElementById('buttons-container');
                 
                 if (addButtonContainer && container.contains(addButtonContainer)) {
                     container.insertBefore(newMachineContainer, addButtonContainer);
@@ -2090,7 +2090,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Ajouter la machine au container
             // Trouver le div qui contient le bouton "Ajouter un tirage" (le dernier .text-center)
-            const addButtonContainer = container.querySelector('div.text-center:last-child');
+            const addButtonContainer = document.getElementById('buttons-container');
             
             console.log('🔍 container:', container);
             console.log('🔍 addButtonContainer:', addButtonContainer);
