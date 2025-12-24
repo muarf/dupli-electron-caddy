@@ -49,6 +49,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     togglePrinterMonitor: (start) => ipcRenderer.invoke('toggle-printer-monitor', start),
     getPrinterMonitorStatus: () => ipcRenderer.invoke('get-printer-monitor-status'),
     deletePrinter: (printerName) => ipcRenderer.invoke('delete-printer', printerName),
+    deletePrintJob: (printerName, jobId) => ipcRenderer.invoke('delete-print-job', printerName, jobId),
     onPrintJobDetected: (callback) => {
         ipcRenderer.on('print-job-detected', (event, payload) => callback(payload));
     },

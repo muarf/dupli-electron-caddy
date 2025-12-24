@@ -43,6 +43,9 @@ app/duplinew.sqlite
 app/sessions/
 app/public/tmp/*
 app/public/sauvegarde/*
+app/public/thumbnails/
+app/public/uploads/
+app/uploads/
 app/vendor/
 squashfs-root/
 

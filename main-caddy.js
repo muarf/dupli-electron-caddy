@@ -1490,7 +1490,26 @@ async function startCaddy() {
 }
 
 // Arrêter les processus
-function stopProcesses() {
+async function stopProcesses() {
+    console.log('Fermeture des sessions actives...');
+    try {
+        // Appeler l'API PHP pour fermer toutes les sessions
+        // On utilise http.get car c'est simple et synchrone-ish avec un petit timeout
+        const request = new Promise((resolve) => {
+            const req = http.get(`http://127.0.0.1:${PHP_SERVER_PORT}/?sessions&action=close_all`, (res) => {
+                resolve();
+            });
+            req.on('error', () => resolve()); // On ignore les erreurs à la fermeture
+            req.setTimeout(2000, () => {
+                req.destroy();
+                resolve();
+            });
+        });
+        await request;
+    } catch (e) {
+        console.error('Erreur fermeture sessions:', e.message);
+    }
+
     if (phpFpmProcess) {
         stopPhpFpmProcess().catch(error => {
             console.log(`Erreur lors de l'arrêt du processus PHP: ${error.message}`);
@@ -2678,6 +2697,61 @@ ipcMain.handle('delete-printer', async (event, printerName) => {
     });
 });
 
+
+// Supprimer un job d'impression du spooler Windows
+ipcMain.handle('delete-print-job', async (event, printerName, jobId) => {
+    if (process.platform !== 'win32') {
+        return { success: false, error: 'Disponible uniquement sur Windows' };
+    }
+
+    if (!printerName || !jobId) {
+        return { success: false, error: 'Paramètres manquants' };
+    }
+
+    // Convertir jobId en entier si c'est une chaîne
+    const id = parseInt(jobId);
+    if (isNaN(id)) {
+        return { success: false, error: 'ID de job invalide' };
+    }
+
+    return new Promise((resolve) => {
+        const escapedName = printerName.replace(/'/g, "''").replace(/"/g, '\\"');
+
+        // Commande PowerShell pour supprimer le job
+        const psScript = `Remove-PrintJob -PrinterName "${escapedName}" -ID ${id} -ErrorAction Stop; Write-Output "SUCCESS"`;
+
+        const ps = spawn('powershell.exe', [
+            '-NoProfile',
+            '-ExecutionPolicy', 'Bypass',
+            '-Command', psScript
+        ], {
+            stdio: ['pipe', 'pipe', 'pipe'],
+            shell: false
+        });
+
+        let stdout = '';
+        let stderr = '';
+
+        ps.stdout.on('data', (data) => stdout += data.toString());
+        ps.stderr.on('data', (data) => stderr += data.toString());
+
+        ps.on('close', (code) => {
+            if (code === 0 || stdout.includes('SUCCESS')) {
+                resolve({ success: true });
+            } else {
+                // Si erreur "Not Found", on considère succès (déjà supprimé)
+                if (stderr.includes('ObjectNotFound') || stderr.includes('n\'existe pas')) {
+                    resolve({ success: true, note: 'Job already gone' });
+                } else {
+                    resolve({ success: false, error: stderr || stdout });
+                }
+            }
+        });
+
+        ps.on('error', (err) => resolve({ success: false, error: err.message }));
+    });
+});
+
 // ============ Handlers pour le module d'impression ============
 
 // Obtenir les capacités d'une imprimante
@@ -2930,14 +3004,26 @@ ipcMain.handle('open-external-file', async (event, fileUrl) => {
 
 
 // Gérer l'arrêt propre de l'application
-process.on('SIGINT', () => {
+let isStopping = false;
+async function stopProcessesGracefully() {
+    if (isStopping) return;
+    isStopping = true;
     console.log('Arrêt de l\'application...');
-    stopProcesses();
+    await stopProcesses();
     app.quit();
+}
+
+app.on('before-quit', (event) => {
+    if (!isStopping) {
+        event.preventDefault();
+        stopProcessesGracefully();
+    }
+});
+
+process.on('SIGINT', () => {
+    stopProcessesGracefully();
 });
 
 process.on('SIGTERM', () => {
-    console.log('Arrêt de l\'application...');
-    stopProcesses();
-    app.quit();
+    stopProcessesGracefully();
 });
