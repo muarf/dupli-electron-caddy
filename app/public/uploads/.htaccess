@@ -1,0 +1,17 @@
+# Permettre l'accès aux fichiers PDF dans le répertoire uploads
+<Files "*.pdf">
+    Order Allow,Deny
+    Allow from all
+</Files>
+
+# Empêcher l'exécution de scripts PHP dans ce répertoire
+<Files "*.php">
+    Order Deny,Allow
+    Deny from all
+</Files>
+
+# Limiter les types de fichiers autorisés
+<FilesMatch "\.(?!pdf$).*">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>

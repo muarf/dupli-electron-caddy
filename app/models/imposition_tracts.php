@@ -401,6 +401,10 @@ function processImpositionTracts($is_from_lib = false)
         // Récupérer les options d'imposition
         $manualFormat = $_POST['manual_format'] ?? 'auto';
         $forceResize = isset($_POST['force_resize']) && $_POST['force_resize'] == '1';
+        $keepOriginalSize = isset($_POST['keep_original_size']) && $_POST['keep_original_size'] == '1';
+        $drawCropMarks = isset($_POST['draw_crop_marks']) && $_POST['draw_crop_marks'] == '1';
+        $cropMarksLength = floatval($_POST['crop_marks_length'] ?? 10);
+        $cropMarksWidth = floatval($_POST['crop_marks_width'] ?? 0.5);
         $cutMargin = intval($_POST['cut_margin'] ?? 2);
         $orientation = $_POST['orientation'] ?? 'auto';
         $outputFormat = $_POST['output_format'] ?? 'A3'; // Format de sortie (A3 ou A4)
@@ -416,6 +420,10 @@ function processImpositionTracts($is_from_lib = false)
         
         // Ajouter les options de redimensionnement et orientation
         $impositionParams['force_resize'] = $forceResize;
+        $impositionParams['keep_original_size'] = $keepOriginalSize;
+        $impositionParams['draw_crop_marks'] = $drawCropMarks;
+        $impositionParams['crop_marks_length'] = $cropMarksLength;
+        $impositionParams['crop_marks_width'] = $cropMarksWidth;
         $impositionParams['manual_format'] = $manualFormat;
         $impositionParams['orientation'] = $orientation;
         $impositionParams['output_format'] = $outputFormat;
@@ -522,6 +530,13 @@ function performImposition($inputFile, $params, $cutMargin = 2)
         $orientation = $params['orientation'] ?? 'auto';
         $outputFormat = $params['output_format'] ?? 'A3';
         
+        // Paramètres supplémentaires
+        $forceResize = $params['force_resize'] ?? false;
+        $keepOriginalSize = $params['keep_original_size'] ?? false;
+        $drawCropMarks = $params['draw_crop_marks'] ?? false;
+        $cropMarksLength = $params['crop_marks_length'] ?? 10;
+        $cropMarksWidth = $params['crop_marks_width'] ?? 0.5;
+        
         // Dimensions selon le format de sortie et l'orientation choisie ou automatique
         if ($outputFormat === 'A4') {
             // Format de sortie A4
@@ -577,18 +592,18 @@ function performImposition($inputFile, $params, $cutMargin = 2)
             }
         }
         
-        // Dimensions des pages selon le format
-        $page_width = 210;  // A4
-        $page_height = 297;
+        // Dimensions des zones d'imposition (target slots)
+        $slot_width = 210;  // A4 défaut
+        $slot_height = 297;
         
         switch ($format) {
             case 'A5':
-                $page_width = 148;
-                $page_height = 210;
+                $slot_width = 148;
+                $slot_height = 210;
                 break;
             case 'A6':
-                $page_width = 105;
-                $page_height = 148;
+                $slot_width = 105;
+                $slot_height = 148;
                 break;
         }
         
@@ -627,14 +642,19 @@ function performImposition($inputFile, $params, $cutMargin = 2)
         }
         
         // Espacement entre les copies
-        $spacingX = ($sheet_width - ($cols * $page_width)) / ($cols + 1);
-        $spacingY = ($sheet_height - ($rows * $page_height)) / ($rows + 1);
+        $spacingX = ($sheet_width - ($cols * $slot_width)) / ($cols + 1);
+        $spacingY = ($sheet_height - ($rows * $slot_height)) / ($rows + 1);
         
         // Créer une seule instance TCPDI pour tout le processus
         $pdf = new TCPDI();
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
         $pdf->setSourceFile($inputFile);
+        
+        // Inclure la classe CropMarks si nécessaire
+        if ($drawCropMarks && !class_exists('CropMarks')) {
+            require_once __DIR__ . '/../controler/functions/CropMarks.php';
+        }
         
         // Logique simplifiée : traiter chaque page séparément
         for ($pageNum = 1; $pageNum <= $pageCount; $pageNum++) {
@@ -644,16 +664,51 @@ function performImposition($inputFile, $params, $cutMargin = 2)
             // Importer la page une seule fois
             $templateId = $pdf->importPage($pageNum);
             
+            // Obtenir les dimensions réelles de la page importée
+            $tplSize = $pdf->getTemplateSize($templateId);
+            $tplWidth = $tplSize['width'];
+            $tplHeight = $tplSize['height'];
+            
             // Dupliquer cette page le nombre de fois nécessaire
             $copiesPlaced = 0;
             for ($row = 0; $row < $rows && $copiesPlaced < $copiesPerSheet; $row++) {
                 for ($col = 0; $col < $cols && $copiesPlaced < $copiesPerSheet; $col++) {
-                    // Calculer la position
-                    $x = $spacingX + $col * ($page_width + $spacingX);
-                    $y = $spacingY + $row * ($page_height + $spacingY);
+                    // Calculer la position du coin supérieur gauche du SLOT (case)
+                    $slotX = $spacingX + $col * ($slot_width + $spacingX);
+                    $slotY = $spacingY + $row * ($slot_height + $spacingY);
                     
-                    // Placer la même page à cette position
-                    $pdf->useTemplate($templateId, $x, $y, $page_width, $page_height);
+                    // Déterminer taille et position du CONTENU
+                    $contentX = $slotX;
+                    $contentY = $slotY;
+                    $contentW = $slot_width;
+                    $contentH = $slot_height;
+                    
+                    if ($keepOriginalSize) {
+                        // Garder taille originale mais centrer dans le slot
+                        $contentW = $tplWidth;
+                        $contentH = $tplHeight;
+                        
+                        // Centrage
+                        $contentX = $slotX + ($slot_width - $contentW) / 2;
+                        $contentY = $slotY + ($slot_height - $contentH) / 2;
+                    }
+                    
+                    // Placer la page
+                    if ($keepOriginalSize) {
+                        // Utiliser dimensions originales (ou null pour défaut, mais ici explicite pour la clarté)
+                        $pdf->useTemplate($templateId, $contentX, $contentY, $contentW, $contentH);
+                    } else {
+                        // Forcer le redimensionnement au slot
+                        $pdf->useTemplate($templateId, $contentX, $contentY, $contentW, $contentH);
+                    }
+                    
+                    // Dessiner les traits de coupe si demandé
+                    if ($drawCropMarks) {
+                        // Les traits de coupe se dessinent autour du SLOT théorique (format fini), 
+                        // pas nécessairement autour du contenu si celui-ci est plus petit/grand
+                        // Mais généralement on veut couper au format fini (A5, A6 etc.)
+                        CropMarks::drawCropMarks($pdf, $slotX, $slotY, $slot_width, $slot_height, 3, $cropMarksLength, $cropMarksWidth);
+                    }
                     
                     $copiesPlaced++;
                 }

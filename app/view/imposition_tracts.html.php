@@ -153,6 +153,48 @@ ob_start();
                                     <small class="help-block text-muted"><?php _e('imposition_tracts.auto_resize_description'); ?></small>
                                 </div>
                             </div>
+                            
+                            <!-- Option "Garder la taille originale" -->
+                            <div class="form-group">
+                                <label class="col-md-4 control-label">Taille originale</label>
+                                <div class="col-md-8">
+                                    <div class="checkbox">
+                                        <label>
+                                            <input type="checkbox" name="keep_original_size" id="keep_original_size" value="1">
+                                            Ne pas redimensionner (garder les dimensions du fichier source)
+                                        </label>
+                                    </div>
+                                    <small class="help-block text-muted">Utile pour les couvertures ou formats personnalisés. L'image sera centrée.</small>
+                                </div>
+                            </div>
+
+                            <!-- Option Traits de coupe -->
+                            <div class="form-group">
+                                <label class="col-md-4 control-label">Traits de coupe</label>
+                                <div class="col-md-8">
+                                    <div class="checkbox">
+                                        <label>
+                                            <input type="checkbox" name="draw_crop_marks" id="draw_crop_marks" value="1">
+                                            Afficher les traits de coupe
+                                        </label>
+                                    </div>
+                                    <small class="help-block text-muted">Ajoute des traits de coupe autour de chaque pose.</small>
+                                    
+                                    <!-- Options détaillées pour les traits de coupe (caché par défaut) -->
+                                    <div id="cropMarksOptions" style="display: none; margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <label for="crop_marks_length" style="font-weight: normal;">Longueur (mm)</label>
+                                                <input type="number" step="0.5" name="crop_marks_length" id="crop_marks_length" class="form-control" value="10" style="height: 34px !important; padding: 6px 12px !important;">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="crop_marks_width" style="font-weight: normal;">Épaisseur (mm)</label>
+                                                <input type="number" step="0.1" name="crop_marks_width" id="crop_marks_width" class="form-control" value="0.5" style="height: 34px !important; padding: 6px 12px !important;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                             <!-- Format de sortie -->
                             <div class="form-group">
@@ -642,6 +684,15 @@ $(document).ready(function() {
     fileUploadArea.style.background = 'linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%)';
     <?php endif; ?>
     
+    // Gestion de l'affichage des options de traits de coupe
+    $('#draw_crop_marks').change(function() {
+        if ($(this).is(':checked')) {
+            $('#cropMarksOptions').slideDown();
+        } else {
+            $('#cropMarksOptions').slideUp();
+        }
+    });
+
     // Validation du formulaire
     $('#tractsForm').submit(function(e) {
         const file = fileInput.files[0];

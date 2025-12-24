@@ -146,15 +146,21 @@ function Action($conf) {
                         $zip_filename = $safe_filename . '_pages.zip';
                         $zip_path = $tmpDir . $zip_filename;
                         
-                        $zip = new ZipArchive();
-                        if ($zip->open($zip_path, ZipArchive::CREATE) === TRUE) {
-                            foreach ($created_files as $file) {
-                                $zip->addFile($file, basename($file));
+                        if (class_exists('ZipArchive')) {
+                            $zip = new ZipArchive();
+                            if ($zip->open($zip_path, ZipArchive::CREATE) === TRUE) {
+                                foreach ($created_files as $file) {
+                                    $zip->addFile($file, basename($file));
+                                }
+                                $zip->close();
+                                $zip_url = '?download_png&file=' . urlencode($zip_filename) . '&dir=';
+                            } else {
+                                $zip_url = '';
                             }
-                            $zip->close();
-                            $zip_url = '?download_png&file=' . urlencode($zip_filename) . '&dir=';
                         } else {
+                            // Extension zip non disponible, on continue sans créer le ZIP
                             $zip_url = '';
+                            error_log("Extension ZipArchive non disponible. Le fichier ZIP ne sera pas créé.");
                         }
                         
                         // Nettoyer le fichier PDF uploadé
@@ -208,15 +214,21 @@ function Action($conf) {
                 $zip_filename = $safe_filename . '_pages.zip';
                 $zip_path = $tmpDir . $zip_filename;
                 
-                $zip = new ZipArchive();
-                if ($zip->open($zip_path, ZipArchive::CREATE) === TRUE) {
-                    foreach ($created_files as $file) {
-                        $zip->addFile($file, basename($file));
+                if (class_exists('ZipArchive')) {
+                    $zip = new ZipArchive();
+                    if ($zip->open($zip_path, ZipArchive::CREATE) === TRUE) {
+                        foreach ($created_files as $file) {
+                            $zip->addFile($file, basename($file));
+                        }
+                        $zip->close();
+                        $zip_url = '?download_png&file=' . urlencode($zip_filename) . '&dir=';
+                    } else {
+                        $zip_url = '';
                     }
-                    $zip->close();
-                    $zip_url = '?download_png&file=' . urlencode($zip_filename) . '&dir=';
                 } else {
+                    // Extension zip non disponible, on continue sans créer le ZIP
                     $zip_url = '';
+                    error_log("Extension ZipArchive non disponible. Le fichier ZIP ne sera pas créé.");
                 }
             } else {
                 $errors[] = "Erreur lors de la génération des images PNG.";
