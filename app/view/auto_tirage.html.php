@@ -56,32 +56,81 @@
                 </div>
 
                 <div class="form-section">
+                    <!-- Sélecteur de Session Multi-Contact -->
+                    <div id="session-selector-area" class="mb-4" style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <label><strong>Session active :</strong></label>
+                                <select id="active-session-select" class="form-control" onchange="switchSession()">
+                                    <option value="">-- Nouvelle session --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <button class="btn btn-sm btn-success" onclick="loadActiveSessions()">
+                                    <i class="fa fa-refresh"></i> Actualiser
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Étape 1: Identification -->
                     <div id="step-identity" style="display:none;">
                         <div class="form-group text-center">
                             <label for="pseudo-input">
                                 <h4>Qui êtes-vous ?</h4>
                             </label>
-                            <input type="text" id="pseudo-input" class="form-control"
-                                style="max-width:300px; margin:0 auto;" placeholder="Entrez un pseudo ou nom"
-                                onkeypress="if(event.key === 'Enter') startSession()">
-                            <button class="btn btn-primary-modern mt-3" onclick="startSession()">Démarrer la
-                                session</button>
+                            <input type="text" id="pseudo-input" class="form-control mb-2"
+                                 style="max-width:300px; margin:0 auto;" placeholder="Entrez un pseudo ou nom"
+                                 onkeypress="if(event.key === 'Enter') startSession()">
+                            <input type="text" id="session-name-input" class="form-control mb-3"
+                                 style="max-width:300px; margin:0 auto;" placeholder="Nom de la session (facultatif)"
+                                 onkeypress="if(event.key === 'Enter') startSession()">
+                            <button class="btn btn-primary-modern" onclick="startSession()">Démarrer la
+                                 session</button>
                         </div>
                     </div>
 
                     <!-- Étape 2: Écoute active -->
                     <div id="step-listening" style="display:none;">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
+                        <!-- BUFFER ZONE: Impressions en attente -->
+                <div id="buffer-zone" class="card mb-4" style="display:none; border: 2px dashed #3498db; background: #f8fbff; margin-bottom: 30px; padding: 15px;">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0"><i class="fa fa-inbox"></i> Impressions en attente (Pool)</h4>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Ces impressions ont été détectées mais ne sont pas encore dans votre session.</p>
+                        <table class="table table-striped table-hover" id="buffer-table">
+                            <thead>
+                                <tr>
+                                    <th>Aperçu</th>
+                                    <th>Date</th>
+                                    <th>Document</th>
+                                    <th>Pages</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Jobs will be injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Session Actuelle -->
+                <div id="session-zone">
+                    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
                             <div>
-                                <h4>Session de : <span id="session-pseudo" class="text-primary"></span></h4>
-                                <small class="text-muted">En attente d'impressions...</small>
+                                <h2 class="mb-0">Session de : <span id="session-pseudo" class="text-primary" style="font-weight: bold;"></span></h2>
+                                <small class="text-muted"><i class="fa fa-clock-o"></i> En attente d'impressions...</small>
                             </div>
-                            <div>
-                                <button class="btn btn-danger-modern btn-sm" onclick="quitSession()">
-                                    <i class="fa fa-sign-out"></i> Quitter la session
+                            <div class="text-right">
+                                <button class="btn btn-outline-secondary btn-sm mr-2" onclick="suspendSession()">
+                                    <i class="fa fa-pause"></i> Suspendre (Changer)
                                 </button>
-                                <div class="spinner-grow text-success ml-3" role="status" style="vertical-align: middle;">
+                                <button class="btn btn-danger-modern btn-sm" onclick="quitSession()">
+                                    <i class="fa fa-sign-out"></i> Clôturer & Quitter
+                                </button>
+                                <div class="spinner-grow text-success ml-3" role="status" style="vertical-align: middle; width: 1.5rem; height: 1.5rem;">
                                     <span class="sr-only">Listening...</span>
                                 </div>
                             </div>
@@ -135,14 +184,22 @@
     </div>
 </div>
 
+    <!-- Inclure la modale de sélection de session -->
+    <?php include __DIR__ . '/components/session-modal.html.php'; ?>
+    
 <script>
     let sessionUser = "";
     let processedJobIds = new Set();
     let pendingJobs = new Map(); // For stabilization
     let sessionJobs = []; // List of validated jobs ready for checkout
     const STABILIZATION_DELAY = 10000;
-    let lastCheckTime = Date.now();
+    // Initialiser à 24h en arrière pour récupérer les jobs en attente
+    let lastCheckTime = Date.now() - (24 * 60 * 60 * 1000);
     let pollingInterval = null;
+
+    // Variables multi-session
+    let currentSessionId = null;
+    let activeSessions = [];
 
     // Au chargement, vérifier s'il y a un pseudo dans l'URL ou localStorage
     document.addEventListener('DOMContentLoaded', () => {
@@ -182,23 +239,67 @@
         } else {
             document.getElementById('step-identity').style.display = 'block';
         }
+
+        // Charger les sessions actives
+        loadActiveSessions();
     });
 
-    function startSession() {
+    async function startSession() {
         const pseudo = document.getElementById('pseudo-input').value.trim();
         if (!pseudo) return alert("Merci d'entrer un nom");
 
         sessionUser = pseudo;
+        const sessionName = document.getElementById('session-name-input').value.trim();
         sessionStorage.setItem('auto_tirage_session_user', sessionUser);
         localStorage.setItem('auto_tirage_user', sessionUser);
 
+        // Créer une nouvelle session via API
+        try {
+            const response = await fetch('?sessions&action=create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    contact: sessionUser, 
+                    session_name: sessionName,
+                    force_new: true // On force la création d'une nouvelle session si on passe par ici
+                })
+            });
+            const data = await response.json();
+            if (data.success) {
+                currentSessionId = data.session_id;
+                console.log('[AutoTirage] Session créée:', currentSessionId);
+                await loadActiveSessions();
+                document.getElementById('active-session-select').value = currentSessionId;
+            }
+        } catch (error) {
+            console.error('[AutoTirage] Erreur création session:', error);
+        }
+
         document.getElementById('step-identity').style.display = 'none';
         document.getElementById('step-listening').style.display = 'block';
-        document.getElementById('session-pseudo').textContent = sessionUser;
+        document.getElementById('session-pseudo').textContent = sessionUser + (sessionName ? ' (' + sessionName + ')' : '');
 
         // Démarrer le polling
         startPolling();
     }
+
+    window.suspendSession = function() {
+        // Juste vider l'état local et retourner au début sans fermer
+        currentSessionId = null;
+        sessionUser = "";
+        sessionJobs = [];
+        processedJobIds.clear();
+        bufferJobs.clear();
+        
+        sessionStorage.removeItem('auto_tirage_session_jobs');
+        sessionStorage.removeItem('auto_tirage_session_user');
+        
+        document.getElementById('step-identity').style.display = 'block';
+        document.getElementById('step-listening').style.display = 'none';
+        
+        loadActiveSessions();
+    };
+
 
     function startPolling() {
         pollingInterval = setInterval(checkPrintJobs, 3000);
@@ -265,50 +366,167 @@
         }
     }
 
+
+
     function checkForUpdate(apiJob) {
-        // Find in sessionJobs - handle type mismatch (string vs int)
+        // 1. Check Session Jobs
         const existingIndex = sessionJobs.findIndex(j => String(j.originalJobId) === String(apiJob.job_id));
-        if (existingIndex === -1) return;
-
-        const currentJob = sessionJobs[existingIndex];
-        
-        // Check if fill_rate changed significantly (more than 1% difference)
-        const newFillRate = parseFloat(apiJob.fill_rate || 0);
-        const oldFillRate = parseFloat(currentJob.raw_fill_rate || 0);
-        
-        // Check for thumbnail update
-        const thumbnailUpdate = !currentJob.thumbnail_url && apiJob.thumbnail_url;
-
-        if (apiJob.total_pages !== currentJob.raw_total_pages 
-            || Math.abs(newFillRate - oldFillRate) > 0.01
-            || thumbnailUpdate) {
+        if (existingIndex !== -1) {
+            const currentJob = sessionJobs[existingIndex];
+            const newFillRate = parseFloat(apiJob.fill_rate || 0);
+            const oldFillRate = parseFloat(currentJob.raw_fill_rate || 0);
+            const thumbnailUpdate = !currentJob.thumbnail_url && apiJob.thumbnail_url;
             
-            let reason = [];
-            if (apiJob.total_pages !== currentJob.raw_total_pages) reason.push('pages');
-            if (Math.abs(newFillRate - oldFillRate) > 0.01) reason.push('remplissage');
-            if (thumbnailUpdate) reason.push('aperçu');
+             if (currentJob.raw_total_pages !== apiJob.total_pages || thumbnailUpdate) {
+                simulateJob(apiJob, existingIndex);
+            }
+            return;
+        }
 
-            addLog('info', `🔄 Mise à jour (${reason.join(', ')})...`);
-            simulateJob(apiJob, existingIndex); // Re-simulate and update in place
+        // 2. Check Buffer Jobs
+        if (bufferJobs.has(apiJob.job_id) || bufferJobs.has(String(apiJob.job_id))) {
+             addToBuffer(apiJob);
         }
     }
 
     function processPendingJobs() {
         const now = Date.now();
-        pendingJobs.forEach(async (candidate, jobId) => {
+        pendingJobs.forEach((candidate, jobId) => {
             if (now - candidate.lastUpdate > STABILIZATION_DELAY) {
                 pendingJobs.delete(jobId);
                 processedJobIds.add(jobId);
+                
+                if (currentSessionId && candidate.job.session_id == currentSessionId) {
+                     addLog('success', `📥 Job assigné détecté : ${candidate.job.document}`);
+                     
+                     // Supprimer de la base de données pool
+                     fetch('?check_print_jobs', {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify({
+                             action: 'delete_jobs',
+                             ids: [candidate.job.id]
+                         })
+                     }).catch(e => console.error("Erreur suppression job assigné:", e));
 
-                const t = new Date(candidate.job.timestamp).getTime();
-                if (t > lastCheckTime) lastCheckTime = t;
-
-                await simulateJob(candidate.job);
+                     simulateJob(candidate.job);
+                } else {
+                     addLog('info', `⏸️ Job en attente (Buffer) : ${candidate.job.document}`);
+                     addToBuffer(candidate.job);
+                }
             }
         });
     }
 
-    async function simulateJob(job, updateIndex = null) {
+    // --- BUFFER ZONE LOGIC ---
+    let bufferJobs = new Map();
+
+    function addToBuffer(job) {
+        bufferJobs.set(job.job_id, job);
+        renderBufferRow(job);
+        document.getElementById('buffer-zone').style.display = 'block';
+    }
+
+    function renderBufferRow(job) {
+        const tbody = document.querySelector('#buffer-table tbody');
+        let row = document.getElementById(`buffer-row-${job.job_id}`);
+        if (!row) {
+            row = document.createElement('tr');
+            row.id = `buffer-row-${job.job_id}`;
+            tbody.appendChild(row);
+        }
+        
+        const date = new Date(job.timestamp).toLocaleTimeString();
+        const pages = job.total_pages * (job.copies || 1);
+        
+        row.innerHTML = `
+            <td>${job.thumbnail_url ? `<img src="${job.thumbnail_url}" height="30">` : '<i class="fa fa-file-o"></i>'}</td>
+            <td>${date}</td>
+            <td><strong>${job.document}</strong></td>
+            <td>${pages} pages</td>
+            <td>
+                <button class="btn btn-primary btn-sm" onclick="moveBufferToSession('${job.job_id}')">
+                    <i class="fa fa-plus"></i> Ajouter
+                </button>
+                <button class="btn btn-outline-danger btn-sm" onclick="deleteBufferJob('${job.id}', '${job.job_id}')">
+                    <i class="fa fa-trash"></i>
+                </button>
+            </td>
+        `;
+    }
+
+    window.moveBufferToSession = async function(jobId) {
+        let job = null;
+        let dbId = null;
+        for (let [key, val] of bufferJobs) {
+            if (String(key) === String(jobId)) {
+                job = val;
+                dbId = job.id;
+                break;
+            }
+        }
+
+        if (job) {
+            // Supprimer de la base de données pour qu'il ne réapparaisse plus dans le pool
+            try {
+                fetch('?check_print_jobs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'delete_jobs',
+                        ids: [dbId]
+                    })
+                });
+                // On n'attend pas forcément la réponse pour simuler le job (UI plus fluide)
+                bufferJobs.delete(jobId);
+                const row = document.getElementById(`buffer-row-${jobId}`);
+                if (row) row.remove();
+                
+                if (bufferJobs.size === 0) {
+                    document.getElementById('buffer-zone').style.display = 'none';
+                }
+                
+                simulateJob(job, null, jobId);
+            } catch (e) {
+                console.error("Erreur suppression job du pool:", e);
+                simulateJob(job, null, jobId);
+            }
+        }
+    };
+
+    window.deleteBufferJob = async function(dbId, spoolJobId) {
+        if (!confirm("Voulez-vous vraiment supprimer cette impression du pool ?")) return;
+
+        try {
+            const response = await fetch('?check_print_jobs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'delete_jobs',
+                    ids: [dbId]
+                })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                addLog('info', `🗑️ Job supprimé du pool`);
+                bufferJobs.delete(spoolJobId);
+                const row = document.getElementById(`buffer-row-${spoolJobId}`);
+                if (row) row.remove();
+
+                if (bufferJobs.size === 0) {
+                    document.getElementById('buffer-zone').style.display = 'none';
+                }
+            } else {
+                alert("Erreur lors de la suppression: " + result.error);
+            }
+        } catch (error) {
+            console.error("Erreur suppression job:", error);
+            alert("Erreur de communication");
+        }
+    };
+
+    async function simulateJob(job, updateIndex = null, bufferJobId = null) {
         addLog('process', `⚙️ Analyse du job : ${job.document}...`);
 
         try {
@@ -325,12 +543,7 @@
             let rawFillRate = job.fill_rate;
             let parsedFillRate = 0.5; // Default
 
-            if (rawFillRate !== undefined && rawFillRate !== null && rawFillRate !== '') {
-                let val = parseFloat(rawFillRate);
-                if (!isNaN(val) && val > 0) {
-                    parsedFillRate = val;
-                }
-            }
+
 
             const payload = {
                 printerName: job.printer_name,
@@ -344,6 +557,8 @@
                 paper_size: job.paper_size,
                 fill_rate: parsedFillRate,
                 timestamp: job.timestamp,
+
+                job_id: job.job_id, // Send original Job ID for deletion
                 simulate: true
             };
 
@@ -359,23 +574,45 @@
             const result = await response.json();
 
             if (result.success) {
+                if (result.debug_info) {
+                    addLog('info', '🔧 DEBUG: ' + result.debug_info);
+                    console.log('DEBUG INFO:', result.debug_info);
+                }
+                if (!result.details) {
+                    console.error('CRITICAL: result.details is null/undefined', result);
+                    addLog('error', '❌ Erreur interne: détails du job manquants');
+                    return;
+                }
                 // Store raw total pages for update checking
                 result.details.raw_total_pages = job.total_pages;
                 result.details.raw_fill_rate = parsedFillRate; // Store the parsed fill rate we used
                 result.details.document_name = job.document;
                 result.details.thumbnail_url = job.thumbnail_url; // Persist thumbnail
 
-                if (updateIndex !== undefined && updateIndex !== null) {
-                    addLog('info', `🔄 Mise à jour job : ${job.total_pages} pages`);
-                    updateJobInSession(result.details, updateIndex);
-                } else {
-                    addLog('success', `✅ ${job.document} : ${result.details.price} €`);
-                    addJobToSession(result.details, job.job_id);
-                    // Nettoyer les logs après 10 secondes (sauf erreur)
-                    setTimeout(() => {
-                        cleanLogs();
-                    }, 10000);
-                }
+                    if (updateIndex !== undefined && updateIndex !== null) {
+                        addLog('info', `🔄 Mise à jour job : ${job.total_pages} pages`);
+                        updateJobInSession(result.details, updateIndex);
+                    } else {
+                        addLog('success', `✅ ${job.document} : ${result.details.price} €`);
+                        addJobToSession(result.details, job.job_id);
+                        
+                        // NEW: Try to delete from Windows Spooler to avoid "blocking" the queue
+                        // Requires Electron context
+                        if (window.electronAPI && window.electronAPI.deletePrintJob) {
+                            addLog('info', '🗑️ Suppression du spooler...');
+                            window.electronAPI.deletePrintJob(job.printer_name, job.job_id)
+                                .then(res => {
+                                    if (res.success) addLog('success', '🗑️ Spooler nettoyé');
+                                    else console.warn('Erreur suppression spool:', res.error);
+                                })
+                                .catch(err => console.error(err));
+                        }
+
+                        // Nettoyer les logs après 10 secondes (sauf erreur)
+                        setTimeout(() => {
+                            cleanLogs();
+                        }, 10000);
+                    }
             } else {
                 addLog('error', `❌ Erreur: ${result.error}`);
             }
@@ -479,10 +716,19 @@
         let globalTotal = 0;
 
         sessionJobs.forEach((job, index) => {
+            // Defensive coding: Ensure numeric values
+            job.price = (typeof job.price === 'number') ? job.price : parseFloat(job.price || 0);
+            job.cout_papier = (typeof job.cout_papier === 'number') ? job.cout_papier : parseFloat(job.cout_papier || 0);
+            job.cout_masters = (typeof job.cout_masters === 'number') ? job.cout_masters : parseFloat(job.cout_masters || 0);
+            job.cout_passages = (typeof job.cout_passages === 'number') ? job.cout_passages : parseFloat(job.cout_passages || 0);
+            job.cout_encre = (typeof job.cout_encre === 'number') ? job.cout_encre : parseFloat(job.cout_encre || 0);
+
             let currentPrice = job.price;
             if (job.feuilles_payees && job.cout_papier) {
                 currentPrice = Math.max(0, currentPrice - job.cout_papier);
             }
+            if (isNaN(currentPrice)) currentPrice = 0;
+            
             globalTotal += currentPrice;
 
             const tr = document.createElement('tr');
@@ -826,22 +1072,37 @@
         addLog('info', "✅ Système prêt. Lancez une impression...");
     }
 
-    window.quitSession = function() {
-        if(sessionJobs.length > 0) {
-            if(!confirm("Voulez-vous vraiment quitter sans valider les impressions en cours ?")) return;
+    window.quitSession = async function() {
+        if(!confirm("Voulez-vous CLÔTURER définitivement cette session ?\n\nCela la retirera de la liste des sessions actives.")) return;
+        
+        if (currentSessionId) {
+            try {
+                // Clôturer la session via API
+                await fetch(`?sessions&action=close&id=${currentSessionId}`);
+            } catch (e) {
+                console.error('Erreur fermeture session:', e);
+            }
         }
         
-        // Clear all session data
-        sessionStorage.removeItem('auto_tirage_session_jobs');
         sessionStorage.removeItem('auto_tirage_session_user');
         localStorage.removeItem('auto_tirage_user'); // Also clear remembered user
         
         // Redirect to auto_tirage (will show identity form)
-        window.location.href = '?auto_tirage';
+        window.location.reload();
     };
 
-    window.finishSession = function () {
+    window.finishSession = async function () {
         if (sessionJobs.length === 0) return alert("Aucune impression à valider.");
+
+        // Si on est dans une session active, on la clôture
+        if (currentSessionId) {
+            try {
+                await fetch(`?sessions&action=close&id=${currentSessionId}`);
+                console.log('[AutoTirage] Session clôturée avant validation');
+            } catch (e) {
+                console.error('Erreur fermeture session:', e);
+            }
+        }
 
         const form = document.createElement('form');
         form.method = 'POST';
@@ -882,6 +1143,11 @@
                 addHidden(form, `machines[${index}][master_ap]`, job.master_ap !== undefined ? job.master_ap : 0);
                 addHidden(form, `machines[${index}][passage_av]`, job.passage_av !== undefined ? job.passage_av : 0);
                 addHidden(form, `machines[${index}][passage_ap]`, job.passage_ap !== undefined ? job.passage_ap : 0);
+                
+                // Ajouter session_id si disponible
+                if (currentSessionId) {
+                    addHidden(form, `machines[${index}][session_id]`, currentSessionId);
+                }
             }
         });
 
@@ -897,4 +1163,97 @@
         i.value = value;
         form.appendChild(i);
     }
+
+    // ===== FONCTIONS MULTI-SESSION =====
+    
+    // Charger les sessions actives
+    async function loadActiveSessions() {
+        try {
+            const response = await fetch('?sessions&action=list');
+            const data = await response.json();
+            activeSessions = data.sessions || [];
+            
+            // Remplir le sélecteur
+            const select = document.getElementById('active-session-select');
+            select.innerHTML = '<option value="">-- Nouvelle session --</option>';
+            
+            activeSessions.forEach(session => {
+                const option = document.createElement('option');
+                option.value = session.id;
+                option.textContent = `${session.contact}${session.session_name ? ' - ' + session.session_name : ''} (${session.job_count} jobs)`;
+                select.appendChild(option);
+            });
+            
+            console.log('[AutoTirage] Sessions chargées:', activeSessions.length);
+        } catch (error) {
+            console.error('[AutoTirage] Erreur chargement sessions:', error);
+        }
+    }
+    
+    // Changer de session
+    // Changer de session
+    async function switchSession() {
+        const sessionId = parseInt(document.getElementById('active-session-select').value);
+        if (sessionId) {
+            const session = activeSessions.find(s => s.id === sessionId);
+            if (session) {
+                currentSessionId = sessionId;
+                sessionUser = session.contact;
+                
+                // Mettre à jour l'UI + Passer en mode écoute
+                document.getElementById('pseudo-input').value = sessionUser;
+                document.getElementById('session-name-input').value = session.session_name || '';
+                
+                sessionStorage.setItem('auto_tirage_session_user', sessionUser);
+                localStorage.setItem('auto_tirage_user', sessionUser);
+
+                document.getElementById('step-identity').style.display = 'none';
+                document.getElementById('step-listening').style.display = 'block';
+                document.getElementById('session-pseudo').textContent = sessionUser + (session.session_name ? ' (' + session.session_name + ')' : '');
+                
+                console.log('[AutoTirage] Session sélectionnée:', session.contact);
+
+                // Charger les jobs EXISTANTS de cette session
+                await loadSessionJobs(sessionId);
+                
+                // Démarrer le polling si pas déjà fait
+                if (!pollingInterval) startPolling();
+            }
+        } else {
+            // Retour à "Nouvelle session"
+            suspendSession();
+        }
+    }
+
+    // Charger les jobs d'une session depuis le serveur
+    async function loadSessionJobs(sessionId) {
+        try {
+            const response = await fetch(`?get_session_jobs&session_id=${sessionId}`);
+            const data = await response.json();
+            
+            if (data.jobs && data.jobs.length > 0) {
+                // Convertir au format attendu par sessionJobs
+                sessionJobs = data.jobs.map(job => ({
+                    originalJobId: job.job_id,
+                    type: job.type_machine === 'photocopieur' ? 'photocop' : 'dupi',
+                    machine: job.machine_id, // ou nom machine
+                    machine_id: job.machine_id,
+                    copies: job.copies || 1,
+                    pages: job.pages || 0,
+                    document: job.document || 'Document',
+                    timestamp: job.created_at,
+                    taille: 'A4', // Default
+                    color: false, // Default
+                    duplex: false, // Default
+                    // ... mapper autres champs si possible
+                }));
+                
+                renderSessionTable();
+                addLog('info', `📥 ${sessionJobs.length} jobs chargés de la session`);
+            }
+        } catch (error) {
+            console.error('[AutoTirage] Erreur chargement jobs session:', error);
+        }
+    }
+    
 </script>

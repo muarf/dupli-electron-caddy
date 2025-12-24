@@ -13,3 +13,25 @@
         <?php endif; ?>
     </div>
 </div>
+
+<?php
+// Inclure le modal de sélection de session (pour détection impression)
+$modal_path = __DIR__ . '/components/session-modal.html.php';
+if (file_exists($modal_path)) {
+    include $modal_path;
+}
+?>
+
+<!-- Print Session Manager - Toast Notifications CSS -->
+<link href="css/toast-notifications.css" rel="stylesheet" type="text/css">
+
+<!-- Print Session Manager - Global JS -->
+<script>
+// Feature detection pour mode Electron vs Standalone
+window.isElectronMode = typeof window.electronAPI !== 'undefined';
+
+if (!window.isElectronMode) {
+    console.log('[App] Mode standalone PHP - Pas de détection auto d\'impressions');
+}
+</script>
+<script src="js/print-session-manager.js"></script>

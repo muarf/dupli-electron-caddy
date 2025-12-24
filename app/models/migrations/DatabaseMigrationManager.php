@@ -30,6 +30,7 @@ class DatabaseMigrationManager {
             
             $migrations = [
                 'tirage_global_id' => [$this, 'migrateTirageGlobalId'],
+                'print_jobs_table' => [$this, 'createPrintJobsTable'],
                 'bibliotheque_table' => [$this, 'createBibliothequeTable'],
                 'bibliotheque_fts' => [$this, 'createBibliothequeFTS'],
                 'multi_session_support' => function() {
@@ -383,6 +384,38 @@ class DatabaseMigrationManager {
         }
         
         return $result;
+    }
+
+    /**
+     * Migration: Créer la table print_jobs
+     */
+    private function createPrintJobsTable() {
+        error_log("[MIGRATION] Création table print_jobs");
+        
+        $sql = "CREATE TABLE IF NOT EXISTS print_jobs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            job_id TEXT NOT NULL,
+            document TEXT NOT NULL,
+            owner TEXT,
+            printer_name TEXT NOT NULL,
+            status TEXT NOT NULL,
+            pages_printed INTEGER DEFAULT 0,
+            total_pages INTEGER DEFAULT 0,
+            size INTEGER DEFAULT 0,
+            time_submitted TEXT,
+            event_type TEXT,
+            timestamp TEXT NOT NULL,
+            fill_rate REAL DEFAULT 0,
+            color_mode TEXT DEFAULT 'unknown',
+            duplex INTEGER DEFAULT 0,
+            thumbnail_url TEXT,
+            paper_size TEXT,
+            copies INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(job_id, printer_name, timestamp)
+        )";
+        
+        $this->db->exec($sql);
     }
 }
 ?>

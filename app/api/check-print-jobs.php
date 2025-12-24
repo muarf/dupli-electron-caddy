@@ -25,50 +25,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Récupérer le corps de la requête (JSON)
     $input = json_decode(file_get_contents('php://input'), true);
-    
+
     // Si pas de JSON, regarder $_POST (form-data)
     if (!$input) {
         $input = $_POST;
     }
-    
+
     if (isset($input['action'])) {
         ob_start(); // Buffer pour capturer les erreurs inattendues
-        
+
         try {
             require_once(__DIR__ . '/../controler/conf.php');
             require_once(__DIR__ . '/../controler/functions/database.php');
-            
+
             // Nettoyer le buffer
             ob_end_clean();
             $db = create_database_manager(); // Assurez-vous que cette fonction existe et retourne une instance PDO ou wrapper
-            
+
             $action = $input['action'];
-            
+
             if ($action === 'delete_jobs') {
                 if (!isset($input['ids']) || !is_array($input['ids']) || empty($input['ids'])) {
                      throw new Exception("Aucun ID spécifié pour la suppression");
                 }
-                
+
                 $ids = array_map('intval', $input['ids']);
                 $ids_string = implode(',', $ids);
-                
+
                 // Utiliser la méthode execute() de DatabaseManager
                 $db->execute("DELETE FROM print_jobs WHERE id IN ($ids_string)");
-                
+
                 echo json_encode(['success' => true, 'message' => count($ids) . ' impression(s) supprimée(s)']);
                 exit;
-                
+
             } elseif ($action === 'purge_all') {
                 $db->execute("DELETE FROM print_jobs");
                  // Ou TRUNCATE si préféré et supporté: $db->query("TRUNCATE TABLE print_jobs");
-                
+
                 echo json_encode(['success' => true, 'message' => 'Historique purgé avec succès']);
                 exit;
-                
+
             } else {
                 throw new Exception("Action inconnue: " . $action);
             }
-            
+
         } catch (Exception $e) {
             ob_end_clean();
             http_response_code(500);
@@ -89,11 +89,11 @@ try {
     require_once(__DIR__ . '/../controler/conf.php');
     require_once(__DIR__ . '/../controler/functions/database.php');
     require_once(__DIR__ . '/../controler/functions/utilities.php');
-    
+
     // Nettoyer le buffer de sortie
     ob_end_clean();
     $db = create_database_manager();
-    
+
     // Vérifier si la table existe
     if (!$db->tableExists('print_jobs')) {
         echo json_encode([
@@ -103,7 +103,7 @@ try {
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         exit;
     }
-    
+
     // Récupérer tous les jobs d'impression, triés par date décroissante
     $jobs = $db->select("
         SELECT
@@ -130,10 +130,10 @@ try {
         ORDER BY timestamp DESC
         LIMIT 50
     ");
-    
+
     // Compter le total
     $total = $db->count('print_jobs');
-    
+
     // Statistiques par imprimante
     $statsByPrinter = $db->select("
         SELECT 
@@ -144,7 +144,7 @@ try {
         GROUP BY printer_name
         ORDER BY total_jobs DESC
     ");
-    
+
     // Statistiques par statut
     $statsByStatus = $db->select("
         SELECT 
@@ -154,7 +154,7 @@ try {
         GROUP BY status
         ORDER BY count DESC
     ");
-    
+
     echo json_encode([
         'success' => true,
         'total_jobs' => $total,
@@ -164,7 +164,7 @@ try {
             'by_status' => $statsByStatus
         ]
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-    
+
 } catch (Exception $e) {
     // Nettoyer le buffer avant d'envoyer l'erreur
     ob_end_clean();
@@ -184,4 +184,3 @@ try {
         'trace' => $e->getTraceAsString()
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 }
-

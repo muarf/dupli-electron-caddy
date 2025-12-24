@@ -1,12 +1,8 @@
-<?php
-/**
- * Modèle pour la page d'administration du moniteur d'imprimantes
- */
-
 function Action($conf = null)
 {
-    // Cette page ne nécessite pas de traitement particulier
-    // Elle utilise l'API Electron et les endpoints PHP pour afficher les données
-    return [];
+    ob_start();
+    include(__DIR__ . '/../view/admin_imprimantes.html.php');
+    $content = ob_get_clean();
+    return $content;
 }
 
