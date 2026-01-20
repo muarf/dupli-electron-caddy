@@ -6,19 +6,19 @@ require_once __DIR__ . '/../controler/functions/tirage.php';
 require_once __DIR__ . '/../controler/functions/i18n.php';
 
 // Gestion AJAX pour récupérer les tambours d'un duplicopieur
-if(isset($_GET['ajax']) && $_GET['ajax'] === 'get_tambours' && isset($_GET['duplicopieur_id'])) {
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_tambours' && isset($_GET['duplicopieur_id'])) {
     $duplicopieur_id = intval($_GET['duplicopieur_id']);
-    
+
     try {
         $con = pdo_connect();
         $db = pdo_connect();
-        
+
         $query = $db->prepare('SELECT tambours FROM duplicopieurs WHERE id = ? AND actif = 1');
         $query->execute([$duplicopieur_id]);
         $result = $query->fetch(PDO::FETCH_ASSOC);
-        
+
         $tambours = ['tambour_noir']; // Fallback par défaut
-        
+
         if ($result && !empty($result['tambours'])) {
             try {
                 $tambours = json_decode($result['tambours'], true);
@@ -29,11 +29,11 @@ if(isset($_GET['ajax']) && $_GET['ajax'] === 'get_tambours' && isset($_GET['dupl
                 $tambours = ['tambour_noir'];
             }
         }
-        
+
         header('Content-Type: application/json');
         echo json_encode(['success' => true, 'tambours' => $tambours]);
         exit;
-        
+
     } catch (Exception $e) {
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
@@ -42,25 +42,25 @@ if(isset($_GET['ajax']) && $_GET['ajax'] === 'get_tambours' && isset($_GET['dupl
 }
 
 // Gestion AJAX pour récupérer les compteurs d'une machine
-if(isset($_GET['ajax']) && $_GET['ajax'] === 'get_last_counters' && isset($_GET['machine'])) {
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_last_counters' && isset($_GET['machine'])) {
     $machine = $_GET['machine'];
-    
+
     try {
         $con = pdo_connect();
         $db = pdo_connect();
-        
+
         // Vérifier si c'est un duplicopieur ou un photocopieur (SQLite compatible)
         $query = $db->prepare('SELECT COUNT(*) as count FROM duplicopieurs WHERE (TRIM(marque) || " " || TRIM(modele) = ? OR marque = ?) AND actif = 1');
         $query->execute([$machine, $machine]);
         $is_duplicopieur = $query->fetch(PDO::FETCH_ASSOC)['count'] > 0;
-        
+
         if ($is_duplicopieur) {
             // C'est un duplicopieur, récupérer les compteurs depuis la table dupli
             $query_counters = $db->prepare('SELECT master_ap, passage_ap FROM dupli WHERE nom_machine = ? ORDER BY id DESC LIMIT 1');
             $query_counters->execute([$machine]);
             $last_counters = $query_counters->fetch(PDO::FETCH_ASSOC);
             $query_counters->closeCursor(); // Bonne pratique : fermer le curseur
-            
+
             if ($last_counters) {
                 $counters = [
                     'master_av' => ceil($last_counters['master_ap']),
@@ -73,11 +73,11 @@ if(isset($_GET['ajax']) && $_GET['ajax'] === 'get_last_counters' && isset($_GET[
             // C'est un photocopieur, utiliser la fonction existante
             $counters = get_last_counters_photocop($machine);
         }
-        
+
         header('Content-Type: application/json');
         echo json_encode(['success' => true, 'counters' => $counters]);
         exit;
-        
+
     } catch (Exception $e) {
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
@@ -88,22 +88,23 @@ if(isset($_GET['ajax']) && $_GET['ajax'] === 'get_last_counters' && isset($_GET[
 /**
  * Fonctions utilitaires pour les prix des photocopieurs
  */
-function getMachinePrices($db, $machine_name) {
+function getMachinePrices($db, $machine_name)
+{
     // CORRECTION DEADLOCK : Utiliser la connexion passée en paramètre (pas de nouvelle connexion pendant une transaction)
-    
+
     // Déterminer la clé de la machine selon la nouvelle structure
     $machine_type = '';
     $machine_id = 0;
-    
+
     // Vérifier si c'est un photocopieur
     $query1 = $db->prepare('SELECT id, type_encre FROM photocopieurs WHERE marque = ? AND actif = 1');
     $query1->execute([$machine_name]);
     $photocop = $query1->fetch(PDO::FETCH_ASSOC);
     $query1->closeCursor(); // CORRECTION CRITIQUE : Fermer le curseur avant la prochaine requête
-    
+
     error_log("DEBUG getMachinePrices - machine_name: $machine_name");
     error_log("DEBUG getMachinePrices - photocop trouvé: id=" . ($photocop['id'] ?? 'N/A') . ", type_encre=" . ($photocop['type_encre'] ?? 'N/A'));
-    
+
     if ($photocop) {
         // C'est un photocopieur
         $machine_type = 'photocop';
@@ -115,13 +116,13 @@ function getMachinePrices($db, $machine_name) {
         $machine_id = 1;
         error_log("DEBUG getMachinePrices - Pas de photocopieur trouvé, utilisation dupli_1");
     }
-    
+
     $query2 = $db->prepare('SELECT type, unite, pack FROM prix WHERE machine_type = ? AND machine_id = ?');
     $query2->execute([$machine_type, $machine_id]);
     $prices = [];
-    
+
     error_log("DEBUG getMachinePrices - Requête prix: machine_type=$machine_type, machine_id=$machine_id");
-    
+
     // CORRECTION DEADLOCK : Utiliser fetchAll() pour libérer immédiatement le curseur SQLite
     $rows = $query2->fetchAll(PDO::FETCH_ASSOC);
     $query2->closeCursor(); // Fermer explicitement
@@ -132,9 +133,9 @@ function getMachinePrices($db, $machine_name) {
         ];
         error_log("DEBUG getMachinePrices - Prix ajouté: " . $row['type'] . " = " . $row['unite']);
     }
-    
+
     error_log("DEBUG getMachinePrices - Prix finaux: " . count($prices) . " éléments");
-    
+
     return $prices;
 }
 
@@ -142,7 +143,8 @@ function getMachinePrices($db, $machine_name) {
  * Fonction optimisée pour calculer le prix d'une brochure photocopieur
  * Évite les requêtes DB répétées et les logs excessifs
  */
-function calculateBrochurePriceOptimized($brochure, $prix_papier_a3, $prix_papier_a4, $machine_prices, $machine_type_detected, $machine_name, $fill_rate = 0.5) {
+function calculateBrochurePriceOptimized($brochure, $prix_papier_a3, $prix_papier_a4, $machine_prices, $machine_type_detected, $machine_name, $fill_rate = 0.5)
+{
     $nb_exemplaires = intval($brochure['nb_exemplaires']);
     $nb_feuilles = intval($brochure['nb_feuilles']);
     $nb_f_total = $nb_exemplaires * $nb_feuilles;
@@ -150,35 +152,37 @@ function calculateBrochurePriceOptimized($brochure, $prix_papier_a3, $prix_papie
     $rv = isset($brochure['rv']) && $brochure['rv'] == 'oui';
     $couleur = isset($brochure['couleur']) && $brochure['couleur'] == 'oui';
     $feuilles_payees = isset($brochure['feuilles_payees']) && $brochure['feuilles_payees'] == 'oui';
-    
+
     // Calcul rapide
     $nb_p = $rv ? $nb_f_total * 2 : $nb_f_total;
     $prix_papier = ($taille == 'A4') ? $prix_papier_a4 : $prix_papier_a3;
     $prix_papier_total = $feuilles_payees ? 0 : ($nb_f_total * $prix_papier);
-    
+
     // Calcul coût par page optimisé avec taux de remplissage
     try {
         $cost_per_page = calculatePageCost($machine_name, $machine_type_detected, $machine_prices, $couleur, $rv, $fill_rate);
     } catch (Exception $e) {
         $cost_per_page = 0.01; // Prix de secours
     }
-    
+
     // Ajuster selon la taille
-    if ($taille === 'A4') $cost_per_page = $cost_per_page / 2;
-    
+    if ($taille === 'A4')
+        $cost_per_page = $cost_per_page / 2;
+
     $prix_encre_total = $nb_p * $cost_per_page;
     return $prix_papier_total + $prix_encre_total;
 }
 
-function determineMachineType($db, $machine_name) {
+function determineMachineType($db, $machine_name)
+{
     // CORRECTION DEADLOCK : Utiliser la connexion passée en paramètre (pas de nouvelle connexion pendant une transaction)
-    
+
     // Vérifier si c'est un photocopieur
     $query_type1 = $db->prepare('SELECT id, type_encre FROM photocopieurs WHERE marque = ? AND actif = 1');
     $query_type1->execute([$machine_name]);
     $photocop = $query_type1->fetch(PDO::FETCH_ASSOC);
     $query_type1->closeCursor(); // CORRECTION CRITIQUE : Fermer le curseur avant la prochaine requête
-    
+
     if ($photocop) {
         // C'est un photocopieur, utiliser le type_encre de la table
         return $photocop['type_encre'];
@@ -186,24 +190,25 @@ function determineMachineType($db, $machine_name) {
         // Pour les duplicopieurs, utiliser dupli_1
         $machine_type = 'dupli';
         $machine_id = 1;
-        
+
         $query_type2 = $db->prepare('SELECT COUNT(*) as count FROM prix WHERE machine_type = ? AND machine_id = ? AND type IN ("tambour", "dev")');
         $query_type2->execute([$machine_type, $machine_id]);
         $result = $query_type2->fetch(PDO::FETCH_ASSOC);
         $query_type2->closeCursor(); // CORRECTION CRITIQUE : Fermer le curseur
-        
+
         return ($result['count'] > 0) ? 'toner' : 'encre';
     }
 }
 
-function calculatePageCost($machine_name, $machine_type, $prices, $is_color, $is_duplex, $fill_rate = 0.5) {
+function calculatePageCost($machine_name, $machine_type, $prices, $is_color, $is_duplex, $fill_rate = 0.5)
+{
     error_log("DEBUG calculatePageCost - ENTREE avec prix fixes, fill_rate=$fill_rate, is_color=" . ($is_color ? 'OUI' : 'NON'));
-    
+
     $cost_per_page = 0;
-    
+
     // Calculer le multiplicateur de taux de remplissage (50% = ×1, 100% = ×2)
     $fill_rate_multiplier = $is_color ? ($fill_rate / 0.5) : 1.0;
-    
+
     try {
         if ($machine_type === 'toner') {
             error_log("DEBUG calculatePageCost - BRANCHE TONER");
@@ -240,17 +245,18 @@ function calculatePageCost($machine_name, $machine_type, $prices, $is_color, $is
                 error_log("DEBUG calculatePageCost - NOIR ET BLANC : multiplicateur=1.0 (prix BDD normal)");
             }
         }
-        
+
         error_log("DEBUG calculatePageCost - COÛT FINAL avec fill_rate_multiplier: $cost_per_page");
         return $cost_per_page;
-        
+
     } catch (Exception $e) {
         error_log("DEBUG calculatePageCost - ERREUR: " . $e->getMessage());
         return 0.01; // Prix de secours
     }
 }
 
-function Action($conf = null) {
+function Action($conf = null)
+{
     error_log("=== NOUVEAU TEST MULTIMACHINES " . date('Y-m-d H:i:s') . " ===");
     error_log("=== TEST LOG SIMPLE " . date('H:i:s') . " ===");
     error_log("=== POST DATA DEBUG - REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
@@ -263,56 +269,56 @@ function Action($conf = null) {
     $array['contact'] = '';
     $array['machines'] = array();
     $array['prix_total'] = 0;
-    
+
     // Debug seulement si demandé dans l'URL
     if (isset($_GET['debug'])) {
         $array['debug']['test'] = "DEBUG ACTIVÉ - " . date('H:i:s');
     }
-    
+
     // Debug: vérifier si on est en POST (seulement si debug dans l'URL)
     if (isset($_GET['debug']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $array['debug']['post'] = "POST détecté";
-        
+
         // Debug: vérifier si on a le bouton 'ok'
         if (isset($_POST['ok'])) {
             $array['debug']['ok'] = "Bouton 'ok' détecté";
         } else {
             $array['debug']['ok'] = "Bouton 'ok' NON détecté";
         }
-        
+
         // Debug: vérifier si on a le bouton 'enregistrer'
         if (isset($_POST['enregistrer'])) {
             $array['debug']['enregistrer'] = "Bouton 'enregistrer' détecté";
         } else {
             $array['debug']['enregistrer'] = "Bouton 'enregistrer' NON détecté";
         }
-        
+
         // Debug: vérifier si on a des machines
         if (isset($_POST['machines'])) {
             $array['debug']['machines'] = "Machines détectées: " . count($_POST['machines']);
         } else {
             $array['debug']['machines'] = "Aucune machine détectée";
         }
-        
+
         // Debug: afficher toutes les clés POST
         $array['debug']['post_keys'] = "Clés POST: " . implode(', ', array_keys($_POST));
     }
-    
+
     // Récupérer la liste des duplicopieurs actifs
     try {
         $db = pdo_connect();
         $query = $db->query('SELECT * FROM duplicopieurs WHERE actif = 1 ORDER BY marque, modele');
         $duplicopieurs = $query->fetchAll(PDO::FETCH_ASSOC);
-        
+
         // Debug: vérifier les duplicopieurs récupérés (seulement si debug dans l'URL)
         // Debug des duplicopieurs (seulement si debug dans l'URL)
         if (isset($_GET['debug'])) {
             $array['debug']['duplicopieurs_count'] = count($duplicopieurs);
             $array['debug']['duplicopieurs_data'] = $duplicopieurs;
         }
-        
+
         // Parser les tambours pour chaque duplicopieur
-        foreach($duplicopieurs as $index => $dup) {
+        foreach ($duplicopieurs as $index => $dup) {
             $tambours = [];
             if (!empty($dup['tambours'])) {
                 try {
@@ -328,22 +334,22 @@ function Action($conf = null) {
             }
             $duplicopieurs[$index]['tambours_parsed'] = $tambours;
         }
-        
+
         // Debug après traitement (seulement si debug dans l'URL)
         if (isset($_GET['debug'])) {
             $array['debug']['duplicopieurs_after_processing'] = $duplicopieurs;
         }
         $array['duplicopieurs'] = $duplicopieurs;
-        
+
         // Si un seul duplicopieur, le sélectionner automatiquement
-        if(count($array['duplicopieurs']) == 1) {
+        if (count($array['duplicopieurs']) == 1) {
             $array['duplicopieur_selectionne'] = $array['duplicopieurs'][0];
         }
     } catch (Exception $e) {
         $array['duplicopieurs'] = array();
         $array['duplicopieur_selectionne'] = null;
     }
-    
+
     // Récupérer la liste des photocopieurs disponibles (exclure les duplicopieurs)
     $duplicopieurs_names = [];
     foreach ($array['duplicopieurs'] as $dup) {
@@ -353,7 +359,7 @@ function Action($conf = null) {
         }
         $duplicopieurs_names[] = $machine_name;
     }
-    
+
     $photocopiers = [];
     if (!empty($duplicopieurs_names)) {
         $placeholders = str_repeat('?,', count($duplicopieurs_names) - 1) . '?';
@@ -365,7 +371,7 @@ function Action($conf = null) {
         $photocopiers = $query->fetchAll(PDO::FETCH_OBJ);
     }
     $array['photocopiers'] = $photocopiers;
-    
+
     // Récupérer automatiquement les valeurs "AVANT" pour le duplicopieur par défaut
     if (isset($array['duplicopieur_selectionne'])) {
         // Construire le nom de la machine duplicopieur sélectionnée
@@ -373,13 +379,13 @@ function Action($conf = null) {
         if ($array['duplicopieur_selectionne']['marque'] === $array['duplicopieur_selectionne']['modele']) {
             $machine_name = $array['duplicopieur_selectionne']['marque'];
         }
-        
+
         // Récupérer les derniers compteurs pour cette machine spécifique
         $query_counters = $db->prepare('SELECT master_ap, passage_ap FROM dupli WHERE nom_machine = ? ORDER BY id DESC LIMIT 1');
         $query_counters->execute([$machine_name]);
         $last_counters = $query_counters->fetch(PDO::FETCH_ASSOC);
         $query_counters->closeCursor(); // Bonne pratique : fermer le curseur
-        
+
         if ($last_counters) {
             $array['master_av'] = ceil($last_counters['master_ap']);
             $array['passage_av'] = ceil($last_counters['passage_ap']);
@@ -391,17 +397,17 @@ function Action($conf = null) {
         $array['master_av'] = 0;
         $array['passage_av'] = 0;
     }
-    
+
     // Récupérer les prix depuis la base de données
     $array['prix_data'] = get_price();
-    
+
     // Debug pour comprendre pourquoi la condition ne fonctionne pas (seulement si debug dans l'URL)
     if (isset($_GET['debug'])) {
-        $array['debug']['post_check'] = "Contact isset: " . (isset($_POST['contact']) ? 'OUI' : 'NON') . 
-                                     " | OK isset: " . (isset($_POST['ok']) ? 'OUI' : 'NON') . 
-                                     " | OK value: '" . ($_POST['ok'] ?? 'UNDEFINED') . "'";
+        $array['debug']['post_check'] = "Contact isset: " . (isset($_POST['contact']) ? 'OUI' : 'NON') .
+            " | OK isset: " . (isset($_POST['ok']) ? 'OUI' : 'NON') .
+            " | OK value: '" . ($_POST['ok'] ?? 'UNDEFINED') . "'";
     }
-    
+
     // Traitement des données POST - Affichage de la page de confirmation
     if (isset($_POST['contact']) && isset($_POST['ok'])) {
         error_log("DEBUG - ENTREE DANS CONFIRMATION (bouton ok)");
@@ -411,7 +417,7 @@ function Action($conf = null) {
         // Définir les machines pour l'affichage du formulaire
         $array['machines'] = $_POST['machines'];
         $array['contact'] = addslashes($_POST['contact']);
-        
+
         // Calculer le prix total pour l'affichage
         $array['prix_total'] = 0;
         if (isset($_GET['debug'])) {
@@ -422,14 +428,14 @@ function Action($conf = null) {
             if ($machine['type'] === 'duplicopieur') {
                 // Calcul duplicopieur
                 $mode_saisie = $machine['mode_saisie'] ?? 'compteurs';
-                
+
                 if ($mode_saisie === 'compteurs') {
                     // Mode compteurs
                     $master_av = ceil(floatval($machine['master_av'] ?? 0));
                     $master_ap = ceil(floatval($machine['master_ap'] ?? 0));
                     $passage_av = ceil(floatval($machine['passage_av'] ?? 0));
                     $passage_ap = ceil(floatval($machine['passage_ap'] ?? 0));
-                    
+
                     $nb_masters = max(0, $master_ap - $master_av);
                     $nb_passages = max(0, $passage_ap - $passage_av);
                 } else {
@@ -437,7 +443,7 @@ function Action($conf = null) {
                     $nb_masters = ceil(floatval($machine['nb_masters'] ?? 0));
                     $nb_passages = ceil(floatval($machine['nb_passages'] ?? 0));
                 }
-                
+
                 // Calculer nb_f selon les options
                 $nb_f = $nb_passages;
                 if (isset($machine['rv']) && $machine['rv'] == 'oui') {
@@ -446,32 +452,32 @@ function Action($conf = null) {
                 if (isset($machine['feuilles_payees']) && $machine['feuilles_payees'] == 'oui') {
                     $nb_f = 0;
                 }
-                
+
                 // Déterminer la taille
                 $taille = 'A3';
                 if (isset($machine['A4']) && $machine['A4'] == 'A4') {
                     $taille = 'A4';
                 }
-                
+
                 // Récupérer les prix
                 $prix_data = get_price();
                 $prix_master = 0;
                 $prix_passage = 0;
                 $prix_papier = 0;
-                
+
                 // NOUVELLE STRUCTURE : Utiliser l'ID du duplicopieur sélectionné
                 $duplicopieur_id = $machine['duplicopieur_id'] ?? $array['duplicopieur_selectionne']['id']; // Utiliser l'ID du duplicopieur sélectionné
                 $machine_key = 'dupli_' . $duplicopieur_id;
                 $prix_master = $prix_data[$machine_key]['master']['unite'] ?? 0;
-                
+
                 // Prix des passages selon le tambour sélectionné (comme le JavaScript)
                 $tambour_selected = $machine['tambour'] ?? '';
                 $prix_passage = 0;
-                
+
                 // Debug
                 error_log("DEBUG tirage_multimachines: machine_key=$machine_key, tambour_selected=$tambour_selected");
                 error_log("DEBUG tirage_multimachines: prix_data structure: " . print_r($prix_data[$machine_key] ?? 'NOT_FOUND', true));
-                
+
                 if (!empty($tambour_selected) && isset($prix_data[$machine_key][$tambour_selected]['unite'])) {
                     $prix_passage = $prix_data[$machine_key][$tambour_selected]['unite'];
                     error_log("DEBUG tirage_multimachines: Using tambour_selected price: $prix_passage");
@@ -482,26 +488,26 @@ function Action($conf = null) {
                 } else {
                     error_log("DEBUG tirage_multimachines: No price found for machine_key=$machine_key");
                 }
-                
+
                 // Prix du papier selon la taille
                 if ($taille === 'A3') {
                     $prix_papier = $prix_data['papier']['A3'] ?? 0;
                 } else {
                     $prix_papier = $prix_data['papier']['A4'] ?? 0;
                 }
-                
+
                 // NOUVELLE LOGIQUE : A4 = A3/2 pour masters et passages
                 if ($taille === 'A4') {
                     $prix_master = $prix_master / 2;
                     $prix_passage = $prix_passage / 2;
                 }
-                
+
                 // Calculer le prix total
                 $prix_total = ($nb_masters * $prix_master) + ($nb_passages * $prix_passage) + ($nb_f * $prix_papier);
                 $array['machines'][$index]['prix'] = round($prix_total, 2);
                 $array['machines'][$index]['nb_masters'] = $nb_masters;
                 $array['machines'][$index]['nb_passages'] = $nb_passages;
-                
+
                 // Calculer les valeurs avant/après pour l'enregistrement
                 if ($mode_saisie === 'compteurs') {
                     // Mode compteurs - utiliser les valeurs du formulaire
@@ -517,12 +523,12 @@ function Action($conf = null) {
                         if ($array['duplicopieur_selectionne']['marque'] === $array['duplicopieur_selectionne']['modele']) {
                             $machine_name = $array['duplicopieur_selectionne']['marque'];
                         }
-                        
+
                         $query_counters = $db->prepare('SELECT master_ap, passage_ap FROM dupli WHERE nom_machine = ? ORDER BY id DESC LIMIT 1');
                         $query_counters->execute([$machine_name]);
                         $last_counters = $query_counters->fetch(PDO::FETCH_ASSOC);
                         $query_counters->closeCursor(); // CORRECTION DEADLOCK : Fermer le curseur SQLite
-                        
+
                         if ($last_counters) {
                             $master_av = ceil($last_counters['master_ap']);
                             $passage_av = ceil($last_counters['passage_ap']);
@@ -534,13 +540,13 @@ function Action($conf = null) {
                         $master_av = 0;
                         $passage_av = 0;
                     }
-                    
+
                     $array['machines'][$index]['master_av'] = $master_av;
                     $array['machines'][$index]['master_ap'] = $master_av + $nb_masters;
                     $array['machines'][$index]['passage_av'] = $passage_av;
                     $array['machines'][$index]['passage_ap'] = $passage_av + $nb_passages;
                 }
-                
+
                 $array['prix_total'] += $prix_total;
             } else if ($machine['type'] === 'photocopieur') {
                 // Calcul photocopieur
@@ -549,14 +555,14 @@ function Action($conf = null) {
                 if (isset($_GET['debug'])) {
                     $array['debug']['photocopieur_' . $index] = "Machine " . $index . " (photocopieur) détectée";
                 }
-                
+
                 // OPTIMISATION : Récupérer les prix UNE SEULE FOIS avant la boucle (comme dans l'enregistrement)
                 error_log("DEBUG CONFIRMATION - AVANT getMachinePrices");
                 $machine_prices = getMachinePrices($db, $machine['machine']);
                 error_log("DEBUG CONFIRMATION - APRES getMachinePrices, AVANT determineMachineType");
                 $machine_type_detected = determineMachineType($db, $machine['machine']);
                 error_log("DEBUG CONFIRMATION - APRES determineMachineType");
-                
+
                 if (isset($machine['brochures']) && is_array($machine['brochures'])) {
                     if (isset($_GET['debug'])) {
                         $array['debug']['photocopieur_' . $index] .= " - Brochures trouvées: " . count($machine['brochures']);
@@ -565,7 +571,7 @@ function Action($conf = null) {
                         if (isset($_GET['debug'])) {
                             $array['debug']['photocopieur_' . $index] .= " - Brochure " . $brochure_index . ": " . print_r($brochure, true);
                         }
-                        
+
                         if (!empty($brochure['nb_exemplaires']) && !empty($brochure['nb_feuilles']) && !empty($brochure['taille'])) {
                             $nb_exemplaires = intval($brochure['nb_exemplaires']);
                             $nb_feuilles = intval($brochure['nb_feuilles']);
@@ -573,33 +579,35 @@ function Action($conf = null) {
                             $rv = isset($brochure['rv']) && $brochure['rv'] == 'oui';
                             $couleur = isset($brochure['couleur']) && $brochure['couleur'] == 'oui';
                             $feuilles_payees = isset($brochure['feuilles_payees']) && $brochure['feuilles_payees'] == 'oui';
-                            
+
                             // Récupérer le taux de remplissage (valeur par défaut 0.5 = 50%)
                             $fill_rate = isset($machine['fill_rate']) ? floatval($machine['fill_rate']) : 0.5;
-                            
+
                             if (isset($_GET['debug'])) {
                                 $array['debug']['photocopieur_' . $index] .= " - Calcul pour: " . $nb_exemplaires . " exemplaires, " . $nb_feuilles . " feuilles, " . $taille . ", rv=" . ($rv ? 'oui' : 'non') . ", couleur=" . ($couleur ? 'oui' : 'non') . ", feuilles_payees=" . ($feuilles_payees ? 'oui' : 'non') . ", fill_rate=" . $fill_rate;
                             }
-                            
+
                             // Calculer le prix comme le JavaScript
                             $nbPages = $nb_exemplaires * $nb_feuilles;
                             $prixPapier = $array['prix_data']['papier'][$taille] ?? 0;
                             $coutPapier = $feuilles_payees ? 0 : ($nbPages * $prixPapier);
-                            
+
                             // Calculer le coût par page selon le type de machine et les couleurs (avec taux de remplissage)
                             $cost_per_page = calculatePageCost($machine['machine'], $machine_type_detected, $machine_prices, $couleur, $rv, $fill_rate);
-                            
+
                             // Ajuster selon la taille (A3 = prix normal, A4 = prix/2)
-                            if ($taille === 'A4') $cost_per_page = $cost_per_page / 2;
-                            
+                            if ($taille === 'A4')
+                                $cost_per_page = $cost_per_page / 2;
+
                             // Calculer le coût d'encre
                             $nbPagesEncre = $nbPages; // Pages pour l'encre
-                            if ($rv) $nbPagesEncre = $nbPages * 2; // Recto-verso = 2 fois plus de pages pour l'encre
+                            if ($rv)
+                                $nbPagesEncre = $nbPages * 2; // Recto-verso = 2 fois plus de pages pour l'encre
                             $prixEncre = $nbPagesEncre * $cost_per_page;
-                            
+
                             $prixBrochure = $coutPapier + $prixEncre;
                             $prix_total += $prixBrochure;
-                            
+
                             if (isset($_GET['debug'])) {
                                 $array['debug']['photocopieur_' . $index] .= " - Calcul détaillé: " . $nbPages . " pages, papier=" . $prixPapier . "€, encre=" . $prixEncre . "€, coutPapier=" . $coutPapier . "€, total=" . $prixBrochure . "€";
                             }
@@ -614,7 +622,7 @@ function Action($conf = null) {
                         $array['debug']['photocopieur_' . $index] .= " - Aucune brochure trouvée";
                     }
                 }
-                
+
                 $array['machines'][$index]['prix'] = round($prix_total, 2);
                 $array['prix_total'] += $prix_total;
                 if (isset($_GET['debug'])) {
@@ -623,7 +631,7 @@ function Action($conf = null) {
             }
         }
     }
-    
+
     // Traitement des données POST - Enregistrement en BDD
     error_log("DEBUG POST CHECK - contact isset: " . (isset($_POST['contact']) ? 'OUI' : 'NON') . ", enregistrer isset: " . (isset($_POST['enregistrer']) ? 'OUI' : 'NON'));
     error_log("DEBUG POST CHECK - POST keys: " . implode(', ', array_keys($_POST)));
@@ -642,19 +650,19 @@ function Action($conf = null) {
         }
         // Définir les machines pour l'affichage du formulaire
         $array['machines'] = $_POST['machines'] ?? [];
-        
+
         // Vérifier qu'on a des machines
         if (empty($array['machines'])) {
             error_log("DEBUG ENREGISTREMENT - ERREUR: Aucune machine fournie");
             $array['errors'][] = "Aucune machine fournie pour l'enregistrement";
             return $array;
         }
-        
+
         // OPTIMISATION : Récupérer les prix UNE SEULE FOIS pour toutes les machines
         error_log("DEBUG ENREGISTREMENT - Récupération globale des prix AVANT la boucle");
         $prix_data_global = get_price();
         error_log("DEBUG ENREGISTREMENT - Prix globaux récupérés avec succès");
-        
+
         // Calculer le prix pour chaque machine AVANT l'enregistrement
         error_log("DEBUG ENREGISTREMENT - Début calcul prix pour " . count($array['machines']) . " machines");
         foreach ($array['machines'] as $index => $machine) {
@@ -669,14 +677,14 @@ function Action($conf = null) {
                 }
                 // Calcul duplicopieur
                 $mode_saisie = $machine['mode_saisie'] ?? 'compteurs';
-                
+
                 if ($mode_saisie === 'compteurs') {
                     // Mode compteurs
                     $master_av = ceil(floatval($machine['master_av'] ?? 0));
                     $master_ap = ceil(floatval($machine['master_ap'] ?? 0));
                     $passage_av = ceil(floatval($machine['passage_av'] ?? 0));
                     $passage_ap = ceil(floatval($machine['passage_ap'] ?? 0));
-                    
+
                     $nb_masters = max(0, $master_ap - $master_av);
                     $nb_passages = max(0, $passage_ap - $passage_av);
                 } else {
@@ -684,7 +692,7 @@ function Action($conf = null) {
                     $nb_masters = ceil(floatval($machine['nb_masters'] ?? 0));
                     $nb_passages = ceil(floatval($machine['nb_passages'] ?? 0));
                 }
-                
+
                 // Calculer nb_f selon les options
                 $nb_f = $nb_passages;
                 if (isset($machine['rv']) && $machine['rv'] == 'oui') {
@@ -694,53 +702,53 @@ function Action($conf = null) {
                     $nb_f = 0;
                 }
                 // Suppression de la division par 2 pour A4 car elle est déjà appliquée aux prix unitaires
-                
+
                 // Déterminer la taille selon les options
                 $taille = 'A3'; // Par défaut A3
                 if (isset($machine['A4']) && $machine['A4'] == 'A4') {
                     $taille = 'A4';
                 }
-                
+
                 // NOUVELLE STRUCTURE : Calculer le prix directement comme le JavaScript pour être cohérent
                 // Utiliser les prix globaux au lieu d'appeler get_price() à chaque fois
                 $prix_data = $prix_data_global;
                 $duplicopieur_id = $machine['duplicopieur_id'] ?? $array['duplicopieur_selectionne']['id']; // Utiliser l'ID du duplicopieur sélectionné
                 $machine_key = 'dupli_' . $duplicopieur_id;
                 $prix_master = $prix_data[$machine_key]['master']['unite'] ?? 0;
-                
+
                 // Prix des passages selon le tambour sélectionné (comme le JavaScript)
                 $tambour_selected = $machine['tambour'] ?? '';
                 $prix_passage = 0;
-                
+
                 if (!empty($tambour_selected) && isset($prix_data[$machine_key][$tambour_selected]['unite'])) {
                     $prix_passage = $prix_data[$machine_key][$tambour_selected]['unite'];
                 } elseif (isset($prix_data[$machine_key]['tambour_noir']['unite'])) {
                     // Fallback sur le tambour noir si pas de tambour spécifique
                     $prix_passage = $prix_data[$machine_key]['tambour_noir']['unite'];
                 }
-                
+
                 $prix_papier = ($taille === 'A3') ? ($prix_data['papier']['A3'] ?? 0) : ($prix_data['papier']['A4'] ?? 0);
-                
+
                 // NOUVELLE LOGIQUE : A4 = A3/2 pour masters et passages
                 if ($taille === 'A4') {
                     $prix_master = $prix_master / 2;
                     $prix_passage = $prix_passage / 2;
                 }
-                
+
                 $prix_total = ($nb_masters * $prix_master) + ($nb_passages * $prix_passage) + ($nb_f * $prix_papier);
                 $array['machines'][$index]['prix'] = round($prix_total, 2);
                 $array['prix_total'] += $prix_total;
-                
+
                 // Debug pour duplicopieur (seulement si debug dans l'URL)
                 if (isset($_GET['debug'])) {
                     $array['debug']['duplicopieur_' . $index] = "Machine " . $index . " (duplicopieur) détectée - Masters: " . $nb_masters . ", Passages: " . $nb_passages . ", Feuilles: " . $nb_f . ", Taille: " . $taille . ", RV: " . (isset($machine['rv']) ? $machine['rv'] : 'non') . ", Couleur: " . (isset($machine['couleur']) ? $machine['couleur'] : 'non') . ", A4: " . (isset($machine['A4']) ? $machine['A4'] : 'non') . " - Calcul détaillé: " . $nb_masters . " masters × " . $prix_master . "€ + " . $nb_passages . " passages × " . $prix_passage . "€ + " . $nb_f . " feuilles × " . $prix_papier . "€ = " . $prix_total . "€ - Prix final: " . round($prix_total, 2);
                 }
-                
+
             } else if ($machine['type'] === 'photocopieur') {
                 // Calcul photocopieur - OPTIMISÉ POUR ÉVITER TIMEOUT
                 error_log("DEBUG ENREGISTREMENT - ENTREE DANS CALCUL PHOTOCOPIEUR machine $index");
                 $prix_machine = 0;
-                
+
                 // OPTIMISATION : Utiliser les prix globaux récupérés avant la boucle
                 error_log("DEBUG ENREGISTREMENT - Utilisation des prix globaux");
                 try {
@@ -754,7 +762,7 @@ function Action($conf = null) {
                     $prix_papier_a3 = 0.02;
                     $prix_papier_a4 = 0.01;
                 }
-                
+
                 // OPTIMISATION : Récupérer les prix machine UNE SEULE FOIS
                 error_log("DEBUG ENREGISTREMENT - Récupération prix machine (une seule fois)");
                 try {
@@ -771,7 +779,7 @@ function Action($conf = null) {
                     ];
                     $machine_type_detected = 'encre';
                 }
-                
+
                 if (isset($machine['brochures']) && is_array($machine['brochures'])) {
                     error_log("DEBUG ENREGISTREMENT - Début boucle brochures optimisée, count: " . count($machine['brochures']));
                     foreach ($machine['brochures'] as $brochure_index => $brochure) {
@@ -779,64 +787,64 @@ function Action($conf = null) {
                             // Utilisation de la fonction optimisée
                             // Récupérer le taux de remplissage (valeur par défaut 0.5 = 50%)
                             $fill_rate = isset($machine['fill_rate']) ? floatval($machine['fill_rate']) : 0.5;
-                            
+
                             $prix_brochure = calculateBrochurePriceOptimized(
-                                $brochure, 
-                                $prix_papier_a3, 
-                                $prix_papier_a4, 
-                                $machine_prices, 
+                                $brochure,
+                                $prix_papier_a3,
+                                $prix_papier_a4,
+                                $machine_prices,
                                 $machine_type_detected,
                                 $machine['machine'],
                                 $fill_rate
                             );
                             $prix_machine += $prix_brochure;
-                            
+
                             // Debug: Log du prix final de la brochure
                             error_log("DEBUG ENREGISTREMENT - Prix brochure: " . $prix_brochure);
                             error_log("DEBUG ENREGISTREMENT - Prix machine total: " . $prix_machine);
                         }
                     }
                 }
-                
+
                 $array['machines'][$index]['prix'] = $prix_machine;
                 $array['prix_total'] += $prix_machine;
             }
         }
-        
+
         // Validation des données
         if (empty($_POST['contact'])) {
             $array['errors'][] = "Veuillez entrer votre nom/contact.";
         }
-        
+
         if (empty($_POST['machines']) || !is_array($_POST['machines'])) {
             $array['errors'][] = "Veuillez ajouter au moins une machine.";
         }
-        
+
         // Validation spécifique pour chaque machine
         if (isset($_POST['machines']) && is_array($_POST['machines'])) {
             foreach ($_POST['machines'] as $index => $machine) {
                 if (empty($machine['type'])) {
                     $array['errors'][] = "Machine #" . ($index + 1) . " : Veuillez sélectionner un type.";
                 }
-                
+
                 if ($machine['type'] === 'duplicopieur') {
                     // Vérifier le mode de saisie
                     $mode_saisie = $machine['mode_saisie'] ?? 'compteurs';
-                    
+
                     if ($mode_saisie === 'compteurs') {
                         // Mode compteurs
                         if (!isset($machine['master_av']) || !is_numeric($machine['master_av']) || intval($machine['master_av']) < 0) {
                             $array['errors'][] = "Machine #" . ($index + 1) . " : Veuillez entrer un nombre de masters AVANT valide.";
                         }
-                        
+
                         if (!isset($machine['master_ap']) || !is_numeric($machine['master_ap']) || intval($machine['master_ap']) < 0) {
                             $array['errors'][] = "Machine #" . ($index + 1) . " : Veuillez entrer un nombre de masters APRÈS valide.";
                         }
-                        
+
                         if (!isset($machine['passage_av']) || !is_numeric($machine['passage_av']) || intval($machine['passage_av']) < 0) {
                             $array['errors'][] = "Machine #" . ($index + 1) . " : Veuillez entrer un nombre de passages AVANT valide.";
                         }
-                        
+
                         if (!isset($machine['passage_ap']) || !is_numeric($machine['passage_ap']) || intval($machine['passage_ap']) < 0) {
                             $array['errors'][] = "Machine #" . ($index + 1) . " : Veuillez entrer un nombre de passages APRÈS valide.";
                         }
@@ -845,7 +853,7 @@ function Action($conf = null) {
                         if (!isset($machine['nb_masters']) || !is_numeric($machine['nb_masters']) || intval($machine['nb_masters']) < 0) {
                             $array['errors'][] = "Machine #" . ($index + 1) . " : Veuillez entrer un nombre de masters valide.";
                         }
-                        
+
                         if (!isset($machine['nb_passages']) || !is_numeric($machine['nb_passages']) || intval($machine['nb_passages']) < 0) {
                             $array['errors'][] = "Machine #" . ($index + 1) . " : Veuillez entrer un nombre de passages valide.";
                         }
@@ -854,31 +862,31 @@ function Action($conf = null) {
                     if (empty($machine['machine'])) {
                         $array['errors'][] = "Machine #" . ($index + 1) . " : Veuillez sélectionner une photocopieuse.";
                     }
-                    
+
                     if (empty($machine['brochures']) || !is_array($machine['brochures'])) {
                         $array['errors'][] = "Machine #" . ($index + 1) . " : Veuillez ajouter au moins une brochure.";
                     }
                 }
             }
         }
-        
+
         // Si pas d'erreurs, traiter les données
         if (empty($array['errors'])) {
             $contact = addslashes($_POST['contact']);
             $date = time();
-            
+
             // Récupérer les valeurs paye et cb depuis les champs globaux du formulaire
             $paye = $_POST['paye'] ?? "non";
             $cb = floatval($_POST['cb'] ?? 0);
-            
+
             $mot = addslashes($_POST['mot'] ?? '');
-            
+
             // Charger la classe de migration pour générer les IDs
             require_once __DIR__ . '/migrations/DatabaseMigrationManager.php';
-            
+
             // Démarrer une transaction
             $db->beginTransaction();
-            
+
             try {
                 foreach ($_POST['machines'] as $index => $machine) {
                     if ($machine['type'] === 'duplicopieur') {
@@ -889,10 +897,10 @@ function Action($conf = null) {
                             $machine_name = 'A4';
                         }
                         $type = "tirage";
-                        
+
                         // Déterminer le mode de saisie
                         $mode_saisie = $machine['mode_saisie'] ?? 'compteurs';
-                        
+
                         if ($mode_saisie === 'compteurs') {
                             // Mode compteurs
                             $master_av = ceil(floatval($machine['master_av'] ?? 0));
@@ -907,12 +915,12 @@ function Action($conf = null) {
                                 if ($array['duplicopieur_selectionne']['marque'] === $array['duplicopieur_selectionne']['modele']) {
                                     $machine_name = $array['duplicopieur_selectionne']['marque'];
                                 }
-                                
+
                                 $query_counters = $db->prepare('SELECT master_ap, passage_ap FROM dupli WHERE nom_machine = ? ORDER BY id DESC LIMIT 1');
                                 $query_counters->execute([$machine_name]);
                                 $last_counters = $query_counters->fetch(PDO::FETCH_ASSOC);
                                 $query_counters->closeCursor(); // Bonne pratique : fermer le curseur
-                                
+
                                 if ($last_counters) {
                                     $master_av = ceil($last_counters['master_ap']);
                                     $passage_av = ceil($last_counters['passage_ap']);
@@ -924,14 +932,14 @@ function Action($conf = null) {
                                 $master_av = 0;
                                 $passage_av = 0;
                             }
-                            
+
                             $master_ap = $master_av + ceil(floatval($machine['nb_masters'] ?? 0));
                             $passage_ap = $passage_av + ceil(floatval($machine['nb_passages'] ?? 0));
                         }
-                        
+
                         $rv = $machine['rv'] ?? 'non';
                         $prix = round(floatval($array['machines'][$index]['prix'] ?? 0), 2);
-                        
+
                         // Déterminer le nom de la machine et l'ID du duplicopieur
                         $nom_machine = 'Duplicopieur';
                         $duplicopieur_id = $array['duplicopieur_selectionne']['id'];
@@ -949,38 +957,45 @@ function Action($conf = null) {
                                 }
                             }
                         }
-                        
+
                         // Générer l'identifiant global pour cette machine spécifique
                         $tirage_global_id = DatabaseMigrationManager::generateTirageGlobalId($date, $contact, $nom_machine);
-                        
+
                         // Insérer dans la table dupli
                         $sql = 'INSERT INTO dupli (type, contact, master_av, master_ap, passage_av, passage_ap, rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id, tambour, tirage_global_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
                         $params = [$type, $machine['contact'] ?? $contact, $master_av, $master_ap, $passage_av, $passage_ap, $rv, $prix, $paye, $cb, $mot, $date, $nom_machine, $duplicopieur_id, $machine['tambour'] ?? null, $tirage_global_id];
-                        
+
                         // Debug SQL avec var_dump (seulement si debug dans l'URL)
                         if (isset($_GET['debug'])) {
                             $array['debug']['sql_vardump'] = "<pre>SQL: " . $sql . "\nParams: " . print_r($params, true) . "</pre>";
                         }
-                        
+
                         $query = $db->prepare($sql);
                         $query->execute($params);
-                        
+
+                        // Marquer comme enregistré s'il y a un job_id (Auto-Tirage)
+                        if (isset($machine['job_id']) && !empty($machine['job_id'])) {
+                            error_log("[DEDUPLICATION] Marquage job dupli: " . $machine['job_id']);
+                            $mark = $db->prepare("INSERT OR IGNORE INTO recorded_print_jobs (job_id, printer_name) VALUES (?, ?)");
+                            $mark->execute([strval($machine['job_id']), $machine['printer_name'] ?? $nom_machine]);
+                        }
+
                     } else if ($machine['type'] === 'photocopieur') {
                         // Enregistrement photocopieur dans table photocop
                         $marque = $machine['machine'];
-                        
+
                         // Générer l'identifiant global pour cette machine spécifique
                         $tirage_global_id = DatabaseMigrationManager::generateTirageGlobalId($date, $contact, $marque);
-                        
+
                         // Utiliser le prix calculé pour cette machine
                         $prix_machine_calcule = round(floatval($array['machines'][$index]['prix'] ?? 0), 2);
-                        
+
                         // Debug: Log du prix final transmis à insert_photocop
                         error_log("DEBUG ENREGISTREMENT - Prix final transmis à insert_photocop: " . $prix_machine_calcule);
-                        
+
                         // Debug: Log des brochures reçues
                         error_log("DEBUG ENREGISTREMENT - Brochures reçues: " . count($machine['brochures']) . " brochures");
-                        
+
                         // Traiter les brochures pour récupérer les infos nécessaires à l'enregistrement
                         if (isset($machine['brochures']) && is_array($machine['brochures'])) {
                             foreach ($machine['brochures'] as $brochure) {
@@ -990,7 +1005,7 @@ function Action($conf = null) {
                                     $nb_f_total = $nb_exemplaires * $nb_feuilles;
                                     $taille = $brochure['taille'];
                                     $rv = isset($brochure['rv']) && $brochure['rv'] == 'oui' ? 'oui' : 'non';
-                                    
+
                                     // Insérer dans la table photocop avec le prix transmis
                                     error_log("DEBUG ENREGISTREMENT - Tentative insertion photocop: type=photocopieur, marque=$marque, nb_f_total=$nb_f_total, prix=$prix_machine_calcule");
                                     insert_photocop(
@@ -1011,15 +1026,22 @@ function Action($conf = null) {
                                 }
                             }
                         }
+
+                        // Marquer comme enregistré s'il y a un job_id (Auto-Tirage)
+                        if (isset($machine['job_id']) && !empty($machine['job_id'])) {
+                            error_log("[DEDUPLICATION] Marquage job photocop: " . $machine['job_id']);
+                            $mark = $db->prepare("INSERT OR IGNORE INTO recorded_print_jobs (job_id, printer_name) VALUES (?, ?)");
+                            $mark->execute([strval($machine['job_id']), $machine['printer_name'] ?? $marque]);
+                        }
                     }
                 }
-                
+
                 // Valider la transaction
                 $db->commit();
-                
+
                 // Message de succès
                 $array['success_message'] = "Tirage enregistré avec succès !";
-                
+
             } catch (Exception $e) {
                 // Annuler la transaction en cas d'erreur
                 $db->rollBack();
@@ -1027,7 +1049,7 @@ function Action($conf = null) {
             }
         }
     }
-    
+
     // Traitement pour récupération des valeurs AVANT (duplicopieur)
     if (isset($_POST['contact']) && !isset($_POST['ok'])) {
         $machine = 'dupli';
@@ -1036,46 +1058,47 @@ function Action($conf = null) {
         $array['passage_av'] = $last['passage_av'];
         $array['contact'] = addslashes($_POST['contact']);
     }
-    
+
     // Traitement pour récupération des valeurs AVANT (duplicopieur)
 
     // Assigner debug pour le template
     $debug = $array['debug'] ?? null;
-    
+
     return template("../view/tirage_multimachines.html.php", $array);
 }
 
 /**
  * Génère le HTML d'une machine pour les nouvelles machines ajoutées via AJAX
  */
-function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, $photocopiers) {
+function generateMachineHTML($index, $duplicopieurs, $duplicopieur_selectionne, $photocopiers)
+{
     // Inclure le système de traduction
     require_once __DIR__ . '/../controler/functions/i18n.php';
-    
+
     // Récupérer les dernières valeurs de compteurs pour le duplicopieur par défaut
     $master_av = 0;
     $passage_av = 0;
-    
+
     if ($duplicopieur_selectionne) {
         // Construire le nom de la machine duplicopieur sélectionnée
         $machine_name = $duplicopieur_selectionne['marque'] . ' ' . $duplicopieur_selectionne['modele'];
         if ($duplicopieur_selectionne['marque'] === $duplicopieur_selectionne['modele']) {
             $machine_name = $duplicopieur_selectionne['marque'];
         }
-        
+
         // Récupérer les derniers compteurs pour cette machine spécifique
         $db = pdo_connect();
         $query_counters = $db->prepare('SELECT master_ap, passage_ap FROM dupli WHERE nom_machine = ? ORDER BY id DESC LIMIT 1');
         $query_counters->execute([$machine_name]);
         $last_counters = $query_counters->fetch(PDO::FETCH_ASSOC);
         $query_counters->closeCursor();
-        
+
         if ($last_counters) {
             $master_av = ceil($last_counters['master_ap']);
             $passage_av = ceil($last_counters['passage_ap']);
         }
     }
-    
+
     // Utiliser le template partiel pour générer le HTML
     ob_start();
     include __DIR__ . '/../view/partials/machine_item.html.php';

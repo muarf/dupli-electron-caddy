@@ -56,7 +56,7 @@ try {
     if ($fill_rate > 1.0) {
         $fill_rate = $fill_rate / 100.0;
     }
-    
+
     // ID du job original (pour suppression après traitement)
     $original_job_id = isset($input['job_id']) ? $input['job_id'] : null;
 
@@ -70,7 +70,7 @@ try {
         echo json_encode(['success' => false, 'error' => "Imprimante '$printerName' non reconnue. Veuillez la configurer dans l'admin."]);
         exit;
     }
-    
+
     // DEBUG: Log keys to see potential case mismatch
     $keys = array_keys($mapping);
     file_put_contents(__DIR__ . '/debug_log.txt', "KEYS FOUND: " . implode(', ', $keys) . "\n", FILE_APPEND);
@@ -84,8 +84,10 @@ try {
         }
     }
     // Fallback if null (should not happen if key exists)
-    if ($machine_type === null && isset($mapping['machine_type'])) $machine_type = $mapping['machine_type']; // standard
-    if ($machine_type === null) $machine_type = ''; // Default to empty string
+    if ($machine_type === null && isset($mapping['machine_type']))
+        $machine_type = $mapping['machine_type']; // standard
+    if ($machine_type === null)
+        $machine_type = ''; // Default to empty string
 
     $machine_id = null;
     foreach ($mapping as $key => $val) {
@@ -94,7 +96,8 @@ try {
             break;
         }
     }
-    if ($machine_id === null && isset($mapping['machine_id'])) $machine_id = $mapping['machine_id'];
+    if ($machine_id === null && isset($mapping['machine_id']))
+        $machine_id = $mapping['machine_id'];
     $con_pdo = pdo_connect(); // Connexion brute pour les fonctions legacy si besoin
 
     $date = time();
@@ -117,13 +120,13 @@ try {
 
     file_put_contents(__DIR__ . '/debug_log.txt', "INIT: Printer='$printerName', Type='$machine_type'\n", FILE_APPEND);
     file_put_contents(__DIR__ . '/debug_log.txt', "HEX: " . bin2hex($machine_type) . "\n", FILE_APPEND);
-    
+
     // CORRECTION AUTOMATIQUE COMCOLOR - RETIRÉE SUR DEMANDE
     // $has_comcolor = (stripos($printerName, 'ComColor') !== false);
     // // Si la base de données renvoie un type vide pour la ComColor, on force 'photocop'
     // $match_name = stripos($printerName, 'ComColor');
     // $is_empty = empty($machine_type);
-    
+
     // file_put_contents(__DIR__ . '/debug_log.txt', "DEBUG FIX COND: NameMatch=" . var_export($match_name, true) . ", IsEmpty=" . var_export($is_empty, true) . "\n", FILE_APPEND);
 
     // if ($is_empty && $match_name !== false) {
@@ -319,14 +322,14 @@ try {
         if (isset($prix_data[$machine_key])) {
             foreach ($prix_data[$machine_key] as $type => $data) {
                 if ($type !== 'master') {
-                     // Clean up name for display? Usually type is 'tambour_noir', 'tambour_bleu', etc.
-                     // Or just 'noire', 'bleue' depending on how it's stored.
-                     // tirage_multimachines uses $type directly as value.
-                     $tambours[] = [
-                         'value' => $type,
-                         'label' => ucfirst(str_replace('tambour_', '', $type)), // Simple label formatting
-                         'price' => $data['unite'] ?? 0
-                     ];
+                    // Clean up name for display? Usually type is 'tambour_noir', 'tambour_bleu', etc.
+                    // Or just 'noire', 'bleue' depending on how it's stored.
+                    // tirage_multimachines uses $type directly as value.
+                    $tambours[] = [
+                        'value' => $type,
+                        'label' => ucfirst(str_replace('tambour_', '', $type)), // Simple label formatting
+                        'price' => $data['unite'] ?? 0
+                    ];
                 }
             }
         }
@@ -366,8 +369,13 @@ try {
     } // End of machine type block
 
     if (!$simulate && isset($original_job_id) && $original_job_id) {
+        // Supprimer des jobs temporaires
         $del = $con_pdo->prepare("DELETE FROM print_jobs WHERE job_id = ?");
         $del->execute([$original_job_id]);
+
+        // Marquer comme définitivement enregistré pour éviter les doublons au redémarrage/nouvelle session
+        $mark = $con_pdo->prepare("INSERT OR IGNORE INTO recorded_print_jobs (job_id, printer_name) VALUES (?, ?)");
+        $mark->execute([$original_job_id, $printerName]);
     }
 
     if ($con_pdo) {

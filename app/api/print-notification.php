@@ -48,10 +48,22 @@ try {
     // Inclure les fichiers nécessaires
     require_once(__DIR__ . '/../controler/functions/database.php');
     require_once(__DIR__ . '/../controler/functions/utilities.php');
-    
+
     // Créer le gestionnaire de base de données
     $db = create_database_manager();
-    
+
+    // 0. Vérifier si le job a déjà été enregistré définitivement
+    $alreadyRecorded = $db->selectOne("SELECT 1 FROM recorded_print_jobs WHERE job_id = ? AND printer_name = ?", [
+        strval($data['jobId']),
+        $data['printerName']
+    ]);
+
+    if ($alreadyRecorded) {
+        error_log(sprintf("[DOUBLON] Job %s sur %s déjà enregistré, ignoré.", $data['jobId'], $data['printerName']));
+        echo json_encode(['success' => true, 'message' => 'Job déjà enregistré, ignoré']);
+        exit;
+    }
+
     // Vérifier si la table existe, sinon la créer
     $db->execute("
         CREATE TABLE IF NOT EXISTS print_jobs (
@@ -77,7 +89,7 @@ try {
             UNIQUE(job_id, printer_name, timestamp)
         )
     ");
-    
+
     // Insérer ou mettre à jour le job d'impression
     $db->execute("
         INSERT OR REPLACE INTO print_jobs 
@@ -102,7 +114,7 @@ try {
         $data['paperSize'] ?? '',
         $data['copies'] ?? 1
     ]);
-    
+
     // Log pour le débogage (optionnel)
     error_log(sprintf(
         "Impression détectée: Job %s - Document: %s - Imprimante: %s - Status: %s",
@@ -111,7 +123,7 @@ try {
         $data['printerName'],
         $data['status']
     ));
-    
+
     // Réponse de succès
     http_response_code(200);
     echo json_encode([
@@ -120,7 +132,7 @@ try {
         'jobId' => $data['jobId'],
         'printerName' => $data['printerName']
     ]);
-    
+
 } catch (Exception $e) {
     error_log('Erreur lors de l\'enregistrement de la notification d\'impression: ' . $e->getMessage());
     http_response_code(500);
