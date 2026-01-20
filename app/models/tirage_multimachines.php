@@ -423,6 +423,8 @@ function Action($conf = null)
         if (isset($_GET['debug'])) {
             $array['debug']['machines_count'] = "Nombre de machines à traiter: " . count($_POST['machines']);
         }
+
+
         foreach ($_POST['machines'] as $index => $machine) {
             $array['debug']['machine_' . $index] = "Machine " . $index . " - Type: " . $machine['type'];
             if ($machine['type'] === 'duplicopieur') {
@@ -582,6 +584,11 @@ function Action($conf = null)
 
                             // Récupérer le taux de remplissage (valeur par défaut 0.5 = 50%)
                             $fill_rate = isset($machine['fill_rate']) ? floatval($machine['fill_rate']) : 0.5;
+
+                            // Normalisation : si > 1, on suppose que c'est un pourcentage (ex: 36.5), on convertit en ratio (0.365)
+                            if ($fill_rate > 1.0) {
+                                $fill_rate = $fill_rate / 100.0;
+                            }
 
                             if (isset($_GET['debug'])) {
                                 $array['debug']['photocopieur_' . $index] .= " - Calcul pour: " . $nb_exemplaires . " exemplaires, " . $nb_feuilles . " feuilles, " . $taille . ", rv=" . ($rv ? 'oui' : 'non') . ", couleur=" . ($couleur ? 'oui' : 'non') . ", feuilles_payees=" . ($feuilles_payees ? 'oui' : 'non') . ", fill_rate=" . $fill_rate;
@@ -787,6 +794,11 @@ function Action($conf = null)
                             // Utilisation de la fonction optimisée
                             // Récupérer le taux de remplissage (valeur par défaut 0.5 = 50%)
                             $fill_rate = isset($machine['fill_rate']) ? floatval($machine['fill_rate']) : 0.5;
+
+                            // Normalisation : si > 1, on suppose que c'est un pourcentage (ex: 36.5), on convertit en ratio (0.365)
+                            if ($fill_rate > 1.0) {
+                                $fill_rate = $fill_rate / 100.0;
+                            }
 
                             $prix_brochure = calculateBrochurePriceOptimized(
                                 $brochure,
