@@ -1129,6 +1129,9 @@
                         addHidden(form, `machines[${index}][job_id]`, job.originalJobId);
                         addHidden(form, `machines[${index}][printer_name]`, job.printerName || job.machine); // Use printerName if available
                     }
+                    if (job.raw_fill_rate !== undefined) {
+                        addHidden(form, `machines[${index}][fill_rate]`, job.raw_fill_rate);
+                    }
 
                     const bPrefix = `machines[${index}][brochures][0]`;
                     // Use nb_feuilles from backend if available (handles duplex correctly), else fallback
