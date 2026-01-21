@@ -59,6 +59,7 @@ try {
 
     // ID du job original (pour suppression après traitement)
     $original_job_id = isset($input['job_id']) ? $input['job_id'] : null;
+    $session_id = isset($input['session_id']) ? intval($input['session_id']) : null;
 
     $db = create_database_manager();
 
@@ -113,6 +114,21 @@ try {
     $details = [];
 
     $con_pdo->beginTransaction();
+
+    // SÉCURITÉ ANTI-DOUBLON SESSION : Vérifier si ce job unique n'a pas déjà été enregistré par un autre onglet
+    if ($original_job_id && !$simulate) {
+        $check = $con_pdo->prepare("SELECT COUNT(*) FROM recorded_print_jobs WHERE job_id = ? AND printer_name = ?");
+        $check->execute([strval($original_job_id), $printerName]);
+        if ($check->fetchColumn() > 0) {
+            $con_pdo->rollBack();
+            echo json_encode(['success' => true, 'message' => 'Job déjà enregistré par une autre session.']);
+            exit;
+        }
+        
+        // Marquer immédiatement pour éviter les clics impulsés
+        $mark = $con_pdo->prepare("INSERT INTO recorded_print_jobs (job_id, printer_name) VALUES (?, ?)");
+        $mark->execute([strval($original_job_id), $printerName]);
+    }
     // Log valid information about the DB
     global $conf;
     $db_path_used = $conf['dsn'] ?? 'unknown';
@@ -173,8 +189,10 @@ try {
         // Non, insert_photocop prend $prix.
 
         // Calcul du nombre de feuilles (physique) pour le papier
-        // Si duplex, nb_feuilles = ceil(total_pages / 2)
-        $nb_feuilles_total = $duplex ? ceil($total_pages / 2) : $total_pages;
+        // On calcule d'abord les feuilles par exemplaire, puis on multiplie par le nombre de copies
+        $pages_per_copy = $total_pages / $copies;
+        $sheets_per_copy = $duplex ? ceil($pages_per_copy / 2) : $pages_per_copy;
+        $nb_feuilles_total = $sheets_per_copy * $copies;
 
         // Coût papier
         $cout_papier = $nb_feuilles_total * $prix_papier;
@@ -190,7 +208,9 @@ try {
             $tirage_global_id = DatabaseMigrationManager::generateTirageGlobalId($date, $contact, $marque);
 
             // Insertion
-            insert_photocop(
+            file_put_contents(__DIR__ . '/debug_log.txt', "PRE-INSERT: nb_f=$nb_feuilles_total, price=$price, session=$session_id\n", FILE_APPEND);
+            
+            $inserted_id = insert_photocop(
                 'photocopieur',
                 $marque,
                 $contact,
@@ -202,7 +222,8 @@ try {
                 $mot,
                 $date,
                 $con_pdo,
-                $tirage_global_id
+                $tirage_global_id,
+                $session_id
             );
 
             $message = "Enregistré sur $marque : $total_pages pages ($taille) -> $price €";
@@ -211,6 +232,7 @@ try {
         }
 
         $details = [
+            'id' => $inserted_id ?? null,
             'type' => 'photocop',
             'machine' => $marque,
             'machine_id' => $machine_id,
@@ -289,7 +311,7 @@ try {
             $tirage_global_id = DatabaseMigrationManager::generateTirageGlobalId($date, $contact, $nom_machine);
 
             // Insert
-            $sql = 'INSERT INTO dupli (type, contact, master_av, master_ap, passage_av, passage_ap, rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id, tambour, tirage_global_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+            $sql = 'INSERT INTO dupli (type, contact, master_av, master_ap, passage_av, passage_ap, rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id, tambour, tirage_global_id, session_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
             $stmt = $con_pdo->prepare($sql);
             $stmt->execute([
                 "tirage",
@@ -307,8 +329,11 @@ try {
                 $nom_machine,
                 $machine_id,
                 'tambour_noir', // Défaut
-                $tirage_global_id
+                $tirage_global_id,
+                $session_id
             ]);
+
+            $details['id'] = $con_pdo->lastInsertId();
 
             $message = "Enregistré sur $nom_machine : 1 Master, $nb_passages Passages -> $price €";
         } else {

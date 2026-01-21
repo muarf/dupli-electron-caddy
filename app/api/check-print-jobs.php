@@ -104,30 +104,32 @@ try {
         exit;
     }
 
-    // Récupérer tous les jobs d'impression, triés par date décroissante
+    // Récupérer tous les jobs d'impression non encore enregistrés, triés par date décroissante
     $jobs = $db->select("
         SELECT
-            id,
-            job_id,
-            document,
-            owner,
-            printer_name,
-            status,
-            pages_printed,
-            total_pages,
-            size,
-            paper_size,
-            duplex,
-            color_mode,
-            copies,
-            fill_rate,
-            thumbnail_url,
-            time_submitted,
-            event_type,
-            timestamp,
-            created_at
-        FROM print_jobs
-        ORDER BY timestamp DESC
+            pj.id,
+            pj.job_id,
+            pj.document,
+            pj.owner,
+            pj.printer_name,
+            pj.status,
+            pj.pages_printed,
+            pj.total_pages,
+            pj.size,
+            pj.paper_size,
+            pj.duplex,
+            pj.color_mode,
+            pj.copies,
+            pj.fill_rate,
+            pj.thumbnail_url,
+            pj.time_submitted,
+            pj.event_type,
+            pj.timestamp,
+            pj.created_at
+        FROM print_jobs pj
+        LEFT JOIN recorded_print_jobs rpj ON pj.job_id = rpj.job_id AND pj.printer_name = rpj.printer_name
+        WHERE rpj.job_id IS NULL
+        ORDER BY pj.timestamp DESC
         LIMIT 50
     ");
 

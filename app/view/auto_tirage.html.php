@@ -44,6 +44,126 @@
         border: none;
         color: #2e7d32;
     }
+
+    /* Styles pour les onglets de session */
+    .session-tabs-container {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        border-bottom: 2px solid #eee;
+        padding: 0 10px;
+        background: #f8f9fa;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        flex-wrap: wrap;
+    }
+
+    .session-tab {
+        padding: 10px 15px;
+        margin-right: 5px;
+        cursor: pointer;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        background: #e9ecef;
+        color: #495057;
+        font-weight: 500;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+        border-bottom: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: -2px;
+    }
+
+    .session-tab:hover {
+        background: #dee2e6;
+    }
+
+    .session-tab.active {
+        background: white;
+        color: #007bff;
+        border-color: #eee;
+        border-bottom: 2px solid white;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+
+    .session-tab .close-tab {
+        font-size: 14px;
+        opacity: 0.5;
+        transition: opacity 0.2s;
+        padding: 2px 5px;
+        border-radius: 4px;
+    }
+
+    .session-tab .close-tab:hover {
+        opacity: 1;
+        background: rgba(255,0,0,0.1);
+        color: #dc3545;
+    }
+
+    .add-session-tab {
+        padding: 10px 15px;
+        cursor: pointer;
+        color: #28a745;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        margin-bottom: -2px;
+    }
+
+    .add-session-tab:hover {
+        color: #218838;
+        transform: scale(1.1);
+    }
+
+    /* Fancy Creation Card */
+    .fancy-creation-card {
+        background: white;
+        border-radius: 15px;
+        padding: 3rem;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        border: 1px solid #f0f0f0;
+        max-width: 500px;
+        margin: 2rem auto;
+        text-align: center;
+    }
+
+    .fancy-creation-card .icon-header {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        font-size: 30px;
+        color: #007bff;
+    }
+
+    .fancy-creation-card h4 {
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .fancy-input {
+        border: 2px solid #eee;
+        border-radius: 10px;
+        padding: 12px 15px;
+        font-size: 16px;
+        transition: border-color 0.3s;
+        margin-bottom: 1rem;
+    }
+
+    .fancy-input:focus {
+        border-color: #80bdff;
+        box-shadow: none;
+    }
 </style>
 
 <div class="container">
@@ -56,38 +176,32 @@
                 </div>
 
                 <div class="form-section">
-                    <!-- Sélecteur de Session Multi-Contact -->
-                    <div id="session-selector-area" class="mb-4"
-                        style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
-                        <div class="row align-items-center">
-                            <div class="col-md-6">
-                                <label><strong>Session active :</strong></label>
-                                <select id="active-session-select" class="form-control" onchange="switchSession()">
-                                    <option value="">-- Nouvelle session --</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 text-right">
-                                <button class="btn btn-sm btn-success" onclick="loadActiveSessions()">
-                                    <i class="fa fa-refresh"></i> Actualiser
-                                </button>
-                            </div>
-                        </div>
+                    <!-- Interface par onglets de Session -->
+                    <div id="session-tabs-container" class="session-tabs-container">
+                        <!-- Les onglets seront injectés ici par JS -->
+                        <button class="add-session-tab" onclick="createNewSessionClick()" title="Nouvelle session">
+                            <i class="fa fa-plus-circle"></i>
+                        </button>
                     </div>
 
-                    <!-- Étape 1: Identification -->
+                    <!-- Étape 1: Identification (Formulaire Fancy) -->
                     <div id="step-identity" style="display:none;">
-                        <div class="form-group text-center">
-                            <label for="pseudo-input">
-                                <h4>Qui êtes-vous ?</h4>
-                            </label>
-                            <input type="text" id="pseudo-input" class="form-control mb-2"
-                                style="max-width:300px; margin:0 auto;" placeholder="Entrez un pseudo ou nom"
-                                onkeypress="if(event.key === 'Enter') startSession()">
-                            <input type="text" id="session-name-input" class="form-control mb-3"
-                                style="max-width:300px; margin:0 auto;" placeholder="Nom de la session (facultatif)"
-                                onkeypress="if(event.key === 'Enter') startSession()">
-                            <button class="btn btn-primary-modern" onclick="startSession()">Démarrer la
-                                session</button>
+                        <div class="fancy-creation-card">
+                            <div class="icon-header">
+                                <i class="fa fa-user-plus"></i>
+                            </div>
+                            <h4>Démarrer une nouvelle session</h4>
+                            <div class="form-group">
+                                <input type="text" id="pseudo-input" class="form-control fancy-input"
+                                    placeholder="Qui êtes-vous ?"
+                                    onkeypress="if(event.key === 'Enter') startSession()">
+                                <input type="text" id="session-name-input" class="form-control fancy-input"
+                                    placeholder="Nom de la session (facultatif)"
+                                    onkeypress="if(event.key === 'Enter') startSession()">
+                            </div>
+                            <button class="btn btn-primary-modern btn-block btn-lg" onclick="startSession()">
+                                C'est parti !
+                            </button>
                         </div>
                     </div>
 
@@ -121,29 +235,15 @@
 
                         <!-- Session Actuelle -->
                         <div id="session-zone">
-                            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-                                <div>
-                                    <h2 class="mb-0">Session de : <span id="session-pseudo" class="text-primary"
-                                            style="font-weight: bold;"></span></h2>
-                                    <small class="text-muted"><i class="fa fa-clock-o"></i> En attente
-                                        d'impressions...</small>
-                                </div>
-                                <div class="text-right">
-                                    <button class="btn btn-outline-secondary btn-sm mr-2" onclick="suspendSession()">
-                                        <i class="fa fa-pause"></i> Suspendre (Changer)
-                                    </button>
-                                    <button class="btn btn-danger-modern btn-sm" onclick="quitSession()">
-                                        <i class="fa fa-sign-out"></i> Clôturer & Quitter
-                                    </button>
-                                    <div class="spinner-grow text-success ml-3" role="status"
-                                        style="vertical-align: middle; width: 1.5rem; height: 1.5rem;">
-                                        <span class="sr-only">Listening...</span>
-                                    </div>
-                                </div>
+                            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                                <small class="text-muted"><i class="fa fa-clock-o"></i> <span id="session-status-text">En attente d'impressions...</span></small>
+                                <button class="btn btn-link btn-sm text-muted" type="button" onclick="toggleLogs()">
+                                    <i class="fa fa-list"></i> Voir l'activité
+                                </button>
                             </div>
 
                             <!-- Zone de logs / Status -->
-                            <div id="activity-log" class="mb-4">
+                            <div id="activity-log" class="mb-4" style="display: none;">
                                 <!-- Les cartes de détection apparaîtront ici -->
                             </div>
 
@@ -227,7 +327,6 @@
                     document.getElementById('pseudo-input').value = sessionUser;
                     document.getElementById('step-identity').style.display = 'none';
                     document.getElementById('step-listening').style.display = 'block';
-                    document.getElementById('session-pseudo').textContent = sessionUser;
                     renderSessionTable();
                     startPolling();
                     addLog('info', `✅ Session restaurée (${sessionJobs.length} jobs)`);
@@ -242,7 +341,8 @@
 
             if (user) {
                 document.getElementById('pseudo-input').value = user;
-                startSession();
+                // On ne démarre plus automatiquement pour éviter les doublons au refresh
+                document.getElementById('step-identity').style.display = 'block'; 
             } else {
                 document.getElementById('step-identity').style.display = 'block';
             }
@@ -276,7 +376,7 @@
                     currentSessionId = data.session_id;
                     console.log('[AutoTirage] Session créée:', currentSessionId);
                     await loadActiveSessions();
-                    document.getElementById('active-session-select').value = currentSessionId;
+                    // On laisse loadActiveSessions activer le bon onglet
                 }
             } catch (error) {
                 console.error('[AutoTirage] Erreur création session:', error);
@@ -284,7 +384,6 @@
 
             document.getElementById('step-identity').style.display = 'none';
             document.getElementById('step-listening').style.display = 'block';
-            document.getElementById('session-pseudo').textContent = sessionUser + (sessionName ? ' (' + sessionName + ')' : '');
 
             // Démarrer le polling
             startPolling();
@@ -340,6 +439,23 @@
                             checkForUpdate(job);
                         }
                     });
+                }
+
+                // Sync Buffer Jobs: remove jobs that are no longer in the API response
+                if (data.success && Array.isArray(data.jobs)) {
+                    const apiJobIds = new Set(data.jobs.map(j => String(j.job_id)));
+                    bufferJobs.forEach((job, jobId) => {
+                        if (!apiJobIds.has(String(jobId))) {
+                            // Job is gone from server pool (either added to a session or deleted)
+                            bufferJobs.delete(jobId);
+                            const row = document.getElementById(`buffer-row-${jobId}`);
+                            if (row) row.remove();
+                        }
+                    });
+
+                    if (bufferJobs.size === 0) {
+                        document.getElementById('buffer-zone').style.display = 'none';
+                    }
                 }
 
                 processPendingJobs();
@@ -474,30 +590,34 @@
             }
 
             if (job) {
-                // Supprimer de la base de données pour qu'il ne réapparaisse plus dans le pool
-                try {
-                    fetch('?check_print_jobs', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            action: 'delete_jobs',
-                            ids: [dbId]
-                        })
-                    });
-                    // On n'attend pas forcément la réponse pour simuler le job (UI plus fluide)
-                    bufferJobs.delete(jobId);
-                    const row = document.getElementById(`buffer-row-${jobId}`);
-                    if (row) row.remove();
+                // Optimistic UI: Hide row immediately
+                const row = document.getElementById(`buffer-row-${jobId}`);
+                if (row) row.style.display = 'none';
 
-                    if (bufferJobs.size === 0) {
-                        document.getElementById('buffer-zone').style.display = 'none';
+                // Pass a callback to know if save succeeded
+                simulateJob(job, null, jobId).then(success => {
+                    if (success) {
+                         // Only delete from pool if safely saved in session
+                        fetch('?check_print_jobs', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                action: 'delete_jobs',
+                                ids: [dbId]
+                            })
+                        }).catch(e => console.error("Erreur suppression job du pool:", e));
+                        
+                        bufferJobs.delete(jobId);
+                        if (row) row.remove();
+                        if (bufferJobs.size === 0) {
+                            document.getElementById('buffer-zone').style.display = 'none';
+                        }
+                    } else {
+                        // Revert UI if failed
+                        if (row) row.style.display = '';
+                        alert("Erreur lors de l'ajout à la session. Veuillez réessayer.");
                     }
-
-                    simulateJob(job, null, jobId);
-                } catch (e) {
-                    console.error("Erreur suppression job du pool:", e);
-                    simulateJob(job, null, jobId);
-                }
+                });
             }
         };
 
@@ -566,7 +686,8 @@
                     timestamp: job.timestamp,
 
                     job_id: job.job_id, // Send original Job ID for deletion
-                    simulate: true
+                    session_id: currentSessionId, // Send active session ID
+                    simulate: false
                 };
 
                 // Pass the RAW total pages to the details for future comparison
@@ -619,14 +740,18 @@
                         setTimeout(() => {
                             cleanLogs();
                         }, 10000);
+                        
+                        return true; // Success
                     }
                 } else {
                     addLog('error', `❌ Erreur: ${result.error}`);
+                    return false; // Failed
                 }
 
             } catch (error) {
                 addLog('error', "❌ Erreur de communication serveur");
                 console.error(error);
+                return false; // Failed
             }
         }
 
@@ -709,7 +834,8 @@
         }
 
         function saveSession() {
-            sessionStorage.setItem('auto_tirage_session_jobs', JSON.stringify(sessionJobs));
+            if (!currentSessionId) return;
+            sessionStorage.setItem('auto_tirage_session_jobs_' + currentSessionId, JSON.stringify(sessionJobs));
             sessionStorage.setItem('auto_tirage_session_user', sessionUser);
         }
 
@@ -1043,14 +1169,31 @@
             saveSession();
         };
 
-        window.removeJob = function (index) {
+        window.removeJob = async function (index) {
+            const job = sessionJobs[index];
             if (confirm('Supprimer ce job de la liste ?')) {
+                // Si le job a un ID de base de données, on le supprime côté serveur
+                if (job.id && job.type) {
+                    try {
+                        const resp = await fetch(`?delete_session_job&id=${job.id}&type=${job.type}`);
+                        const result = await resp.json();
+                        if (!result.success) {
+                            console.error("Erreur serveur lors de la suppression:", result.error);
+                        }
+                    } catch (e) {
+                        console.error("Erreur réseau lors de la suppression:", e);
+                    }
+                }
+
                 sessionJobs.splice(index, 1);
                 saveSession();
                 renderSessionTable();
                 if (sessionJobs.length === 0) {
                     document.getElementById('pending-list-container').style.display = 'none';
-                    sessionStorage.removeItem('auto_tirage_session_jobs');
+                    // Nettoyer aussi le cache spécifique à la session
+                    if (currentSessionId) {
+                        sessionStorage.removeItem('auto_tirage_session_jobs_' + currentSessionId);
+                    }
                 }
             }
         };
@@ -1081,23 +1224,40 @@
             addLog('info', "✅ Système prêt. Lancez une impression...");
         }
 
-        window.quitSession = async function () {
+        window.toggleLogs = function() {
+            const el = document.getElementById('activity-log');
+            const isHidden = el.style.display === 'none';
+            el.style.display = isHidden ? 'block' : 'none';
+            
+            // Modifier le texte du bouton si nécessaire
+            const btn = document.querySelector('button[onclick="toggleLogs()"]');
+            if (btn) {
+                btn.innerHTML = isHidden ? '<i class="fa fa-list"></i> Masquer l\'activité' : '<i class="fa fa-list"></i> Voir l\'activité';
+            }
+        };
+
+        window.quitSession = async function (idToClose) {
+            const id = idToClose || currentSessionId;
             if (!confirm("Voulez-vous CLÔTURER définitivement cette session ?\n\nCela la retirera de la liste des sessions actives.")) return;
 
-            if (currentSessionId) {
+            if (id) {
                 try {
                     // Clôturer la session via API
-                    await fetch(`?sessions&action=close&id=${currentSessionId}`);
+                    await fetch(`?sessions&action=close&id=${id}`);
                 } catch (e) {
                     console.error('Erreur fermeture session:', e);
                 }
             }
 
-            sessionStorage.removeItem('auto_tirage_session_user');
-            localStorage.removeItem('auto_tirage_user'); // Also clear remembered user
-
-            // Redirect to auto_tirage (will show identity form)
-            window.location.reload();
+            if (id == currentSessionId) {
+                sessionStorage.removeItem('auto_tirage_session_user');
+                localStorage.removeItem('auto_tirage_user'); 
+                localStorage.removeItem('auto_tirage_last_session_id');
+                window.location.reload();
+            } else {
+                // Juste rafraîchir la liste si on ferme une autre session
+                loadActiveSessions();
+            }
         };
 
         window.finishSession = async function () {
@@ -1108,6 +1268,7 @@
                 try {
                     await fetch(`?sessions&action=close&id=${currentSessionId}`);
                     console.log('[AutoTirage] Session clôturée avant validation');
+                    localStorage.removeItem('auto_tirage_last_session_id');
                 } catch (e) {
                     console.error('Erreur fermeture session:', e);
                 }
@@ -1141,6 +1302,7 @@
 
                     addHidden(form, `${bPrefix}[nb_exemplaires]`, job.copies);
                     addHidden(form, `${bPrefix}[nb_feuilles]`, sheetsPerCopy);
+                    addHidden(form, `${bPrefix}[nb_pages]`, job.pages / job.copies);
                     addHidden(form, `${bPrefix}[taille]`, job.taille);
                     addHidden(form, `${bPrefix}[rv]`, job.duplex ? 'oui' : 'non');
                     addHidden(form, `${bPrefix}[couleur]`, job.color ? 'oui' : 'non');
@@ -1169,6 +1331,11 @@
                         addHidden(form, `machines[${index}][session_id]`, currentSessionId);
                     }
                 }
+                
+                // FIX: Envoyer l'ID de base de données pour permettre la mise à jour (évite les doublons)
+                if (job.id) {
+                    addHidden(form, `machines[${index}][db_id]`, job.id);
+                }
             });
 
             document.body.appendChild(form);
@@ -1193,30 +1360,87 @@
                 const data = await response.json();
                 activeSessions = data.sessions || [];
 
-                // Remplir le sélecteur
-                const select = document.getElementById('active-session-select');
-                select.innerHTML = '<option value="">-- Nouvelle session --</option>';
-
-                activeSessions.forEach(session => {
-                    const option = document.createElement('option');
-                    option.value = session.id;
-                    option.textContent = `${session.contact}${session.session_name ? ' - ' + session.session_name : ''} (${session.job_count} jobs)`;
-                    select.appendChild(option);
-                });
-
+                renderSessionTabs();
+                
                 console.log('[AutoTirage] Sessions chargées:', activeSessions.length);
+                
+                // Si aucune session n'est ouverte et qu'on n'est pas déjà sur le formulaire
+                if (activeSessions.length === 0 && !currentSessionId) {
+                    createNewSessionClick();
+                } else if (!currentSessionId) {
+                    // Tenter de restaurer la dernière session utilisée
+                    const lastId = localStorage.getItem('auto_tirage_last_session_id');
+                    if (lastId && activeSessions.some(s => s.id == lastId)) {
+                        switchSession(lastId);
+                    } else if (activeSessions.length > 0) {
+                        // Sinon on prend la première session active (optionnel, peut-être rester sur l'écran d'accueil)
+                        // switchSession(activeSessions[0].id);
+                    }
+                }
             } catch (error) {
                 console.error('[AutoTirage] Erreur chargement sessions:', error);
             }
         }
 
+        // Rendu des onglets
+        function renderSessionTabs() {
+            const container = document.getElementById('session-tabs-container');
+            const addButton = container.querySelector('.add-session-tab');
+            
+            // Supprimer les anciens onglets (tout sauf le bouton +)
+            const oldTabs = container.querySelectorAll('.session-tab');
+            oldTabs.forEach(tab => tab.remove());
+
+            activeSessions.forEach(session => {
+                const tab = document.createElement('div');
+                tab.className = `session-tab ${currentSessionId == session.id ? 'active' : ''}`;
+                tab.onclick = (e) => {
+                    // Ne pas switcher si on clique sur la petite croix
+                    if (!e.target.classList.contains('close-tab') && !e.target.parentElement.classList.contains('close-tab')) {
+                        switchSession(session.id);
+                    }
+                };
+
+                const name = document.createElement('span');
+                name.textContent = `${session.contact}${session.session_name ? ' (' + session.session_name + ')' : ''}`;
+                
+                const closeBtn = document.createElement('span');
+                closeBtn.className = 'close-tab';
+                closeBtn.innerHTML = '<i class="fa fa-times"></i>';
+                closeBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    quitSession(session.id);
+                };
+
+                tab.appendChild(name);
+                tab.appendChild(closeBtn);
+                
+                // Insérer avant le bouton +
+                container.insertBefore(tab, addButton);
+            });
+        }
+
+        function createNewSessionClick() {
+            currentSessionId = null;
+            sessionUser = "";
+            sessionJobs = [];
+            processedJobIds.clear();
+
+            document.getElementById('step-identity').style.display = 'block';
+            document.getElementById('step-listening').style.display = 'none';
+            
+            // Désélectionner tous les onglets
+            document.querySelectorAll('.session-tab').forEach(t => t.classList.remove('active'));
+        }
+
         // Changer de session
-        // Changer de session
-        async function switchSession() {
-            const sessionId = parseInt(document.getElementById('active-session-select').value);
+        async function switchSession(sessionId) {
             if (sessionId) {
                 const session = activeSessions.find(s => s.id === sessionId);
                 if (session) {
+                    // Sauvegarder la session actuelle avant de switcher
+                    saveSession();
+
                     currentSessionId = sessionId;
                     sessionUser = session.contact;
 
@@ -1229,12 +1453,26 @@
 
                     document.getElementById('step-identity').style.display = 'none';
                     document.getElementById('step-listening').style.display = 'block';
-                    document.getElementById('session-pseudo').textContent = sessionUser + (session.session_name ? ' (' + session.session_name + ')' : '');
 
                     console.log('[AutoTirage] Session sélectionnée:', session.contact);
 
-                    // Charger les jobs EXISTANTS de cette session
+                    // Re-render pour activer le bon onglet
+                    renderSessionTabs();
+
+                    // Charger les jobs (Local Storage d'abord, puis Serveur)
+                    sessionJobs = [];
+                    const saved = sessionStorage.getItem('auto_tirage_session_jobs_' + sessionId);
+                    if (saved) {
+                        try {
+                            sessionJobs = JSON.parse(saved);
+                        } catch(e) { sessionJobs = []; }
+                    }
+
+                    // Charger les jobs EXISTANTS de cette session depuis la DB
                     await loadSessionJobs(sessionId);
+
+                    // Mémoriser pour le prochain refresh
+                    localStorage.setItem('auto_tirage_last_session_id', sessionId);
 
                     // Démarrer le polling si pas déjà fait
                     if (!pollingInterval) startPolling();
@@ -1252,24 +1490,32 @@
                 const data = await response.json();
 
                 if (data.jobs && data.jobs.length > 0) {
-                    // Convertir au format attendu par sessionJobs
-                    sessionJobs = data.jobs.map(job => ({
-                        originalJobId: job.job_id,
-                        type: job.type_machine === 'photocopieur' ? 'photocop' : 'dupi',
-                        machine: job.machine_id, // ou nom machine
-                        machine_id: job.machine_id,
-                        copies: job.copies || 1,
-                        pages: job.pages || 0,
-                        document: job.document || 'Document',
-                        timestamp: job.created_at,
-                        taille: 'A4', // Default
-                        color: false, // Default
-                        duplex: false, // Default
-                        // ... mapper autres champs si possible
-                    }));
+                    // Convertir au format attendu par sessionJobs (en évitant les doublons avec ce qu'on a en local)
+                    data.jobs.forEach(job => {
+                        const exists = sessionJobs.some(sj => sj.id == job.id && sj.type == job.table_source);
+                        if (!exists) {
+                            sessionJobs.push({
+                                id: job.id,
+                                type: job.table_source,
+                                machine: job.printerName,
+                                machine_id: job.printerName, 
+                                copies: parseInt(job.copies) || 1,
+                                pages: parseInt(job.pages) || 0,
+                                document: job.document || 'Document',
+                                price: parseFloat(job.prix) || 0,
+                                cout_papier: parseFloat(job.paper_cost) || 0,
+                                cout_encre: parseFloat(job.ink_cost) || 0,
+                                feuilles_payees: job.papierPaye === 'oui',
+                                timestamp: job.date
+                            });
+                        }
+                    });
 
                     renderSessionTable();
-                    addLog('info', `📥 ${sessionJobs.length} jobs chargés de la session`);
+                    addLog('info', `📥 ${data.jobs.length} jobs chargés de la session`);
+                } else if (data.jobs && data.jobs.length === 0) {
+                    // Si le serveur dit 0 job, et qu'on n'a rien en local, on s'assure que c'est vide
+                    if (sessionJobs.length === 0) renderSessionTable();
                 }
             } catch (error) {
                 console.error('[AutoTirage] Erreur chargement jobs session:', error);
