@@ -896,6 +896,7 @@ function Action($conf = null)
             $cb = floatval($_POST['cb'] ?? 0);
 
             $mot = addslashes($_POST['mot'] ?? '');
+            $session_id = isset($_POST['session_id']) ? intval($_POST['session_id']) : null;
 
             // Charger la classe de migration pour générer les IDs
             require_once __DIR__ . '/migrations/DatabaseMigrationManager.php';
@@ -982,14 +983,14 @@ function Action($conf = null)
 
                         if ($db_id > 0) {
                             error_log("[DEDUPLICATION] Mise à jour d'un job dupli existant ID: $db_id");
-                            $sql = 'UPDATE dupli SET contact = ?, master_av = ?, master_ap = ?, passage_av = ?, passage_ap = ?, rv = ?, prix = ?, paye = ?, cb = ?, mot = ?, date = ?, nom_machine = ?, duplicopieur_id = ?, tambour = ?, tirage_global_id = ? WHERE id = ?';
-                            $params = [$machine['contact'] ?? $contact, $master_av, $master_ap, $passage_av, $passage_ap, $rv, $prix, $paye, $cb, $mot, $date, $nom_machine, $duplicopieur_id, $machine['tambour'] ?? null, $tirage_global_id, $db_id];
+                            $sql = 'UPDATE dupli SET contact = ?, master_av = ?, master_ap = ?, passage_av = ?, passage_ap = ?, rv = ?, prix = ?, paye = ?, cb = ?, mot = ?, date = ?, nom_machine = ?, duplicopieur_id = ?, tambour = ?, tirage_global_id = ?, session_id = ? WHERE id = ?';
+                            $params = [$machine['contact'] ?? $contact, $master_av, $master_ap, $passage_av, $passage_ap, $rv, $prix, $paye, $cb, $mot, $date, $nom_machine, $duplicopieur_id, $machine['tambour'] ?? null, $tirage_global_id, $session_id, $db_id];
                             $query = $db->prepare($sql);
                             $query->execute($params);
                         } else {
                             // Insérer dans la table dupli (Enregistrement Manuel)
-                            $sql = 'INSERT INTO dupli (type, contact, master_av, master_ap, passage_av, passage_ap, rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id, tambour, tirage_global_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-                            $params = [$type, $machine['contact'] ?? $contact, $master_av, $master_ap, $passage_av, $passage_ap, $rv, $prix, $paye, $cb, $mot, $date, $nom_machine, $duplicopieur_id, $machine['tambour'] ?? null, $tirage_global_id];
+                            $sql = 'INSERT INTO dupli (type, contact, master_av, master_ap, passage_av, passage_ap, rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id, tambour, tirage_global_id, session_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+                            $params = [$type, $machine['contact'] ?? $contact, $master_av, $master_ap, $passage_av, $passage_ap, $rv, $prix, $paye, $cb, $mot, $date, $nom_machine, $duplicopieur_id, $machine['tambour'] ?? null, $tirage_global_id, $session_id];
                             $query = $db->prepare($sql);
                             $query->execute($params);
                         }
@@ -1032,13 +1033,13 @@ function Action($conf = null)
 
                                     if ($db_id > 0) {
                                         error_log("[DEDUPLICATION] Mise à jour d'un job photocop existant ID: $db_id");
-                                        $sql = 'UPDATE photocop SET contact = ?, nb_f = ?, rv = ?, prix = ?, paye = ?, cb = ?, mot = ?, date = ?, marque = ?, tirage_global_id = ? WHERE id = ?';
-                                        $params = [$machine['contact'] ?? $contact, $nb_f_total, $rv, $prix_machine_calcule, $paye, $cb, $mot, $date, $marque, $tirage_global_id, $db_id];
+                                        $sql = 'UPDATE photocop SET contact = ?, nb_f = ?, rv = ?, prix = ?, paye = ?, cb = ?, mot = ?, date = ?, marque = ?, tirage_global_id = ?, session_id = ? WHERE id = ?';
+                                        $params = [$machine['contact'] ?? $contact, $nb_f_total, $rv, $prix_machine_calcule, $paye, $cb, $mot, $date, $marque, $tirage_global_id, $session_id, $db_id];
                                         $query = $db->prepare($sql);
                                         $query->execute($params);
                                     } else {
                                         // Insérer dans la table photocop avec le prix transmis
-                                        error_log("DEBUG ENREGISTREMENT - Tentative insertion photocop: type=photocopieur, marque=$marque, nb_f_total=$nb_f_total, prix=$prix_machine_calcule");
+                                        error_log("DEBUG ENREGISTREMENT - Tentative insertion photocop: type=photocopieur, marque=$marque, nb_f_total=$nb_f_total, prix=$prix_machine_calcule, session=$session_id");
                                         insert_photocop(
                                             'photocopieur',  // CORRECTION: $type au lieu de $taille
                                             $marque,
@@ -1051,7 +1052,8 @@ function Action($conf = null)
                                             $mot,
                                             $date,
                                             $db,  // CORRECTION DEADLOCK : Passer la connexion de la transaction
-                                            $tirage_global_id  // Identifiant global pour regrouper les tirages
+                                            $tirage_global_id,  // Identifiant global pour regrouper les tirages
+                                            $session_id // Link to active session
                                         );
                                     }
                                     error_log("DEBUG ENREGISTREMENT - Fin traitement brochure");

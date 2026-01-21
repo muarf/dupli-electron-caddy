@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{793508EA-C321-1303-F6A4-D4F56DF80309}</ProjectGuid>
+    <ProjectGuid>{4FE5FCB8-A2E7-EAE8-3CCA-EDF2AE85A703}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>win32-printer</RootNamespace>
     <IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
@@ -48,7 +48,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\include\node;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\src;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\openssl\config;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\openssl\openssl\include;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\uv\include;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\zlib;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\v8\include;C:\Users\Dupli\AppData\Local\Programs\dupli-electron-caddy\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\include\node;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\src;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\openssl\config;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\openssl\openssl\include;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\uv\include;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\zlib;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\v8\include;C:\Users\A\antigravity\dupli-electron-caddy\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:__cplusplus -std:c++20 /Zm2000 %(AdditionalOptions)</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <BufferSecurityCheck>true</BufferSecurityCheck>
@@ -72,7 +72,7 @@
       <AdditionalOptions>/LTCG:INCREMENTAL %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <Link>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib;&quot;C:\\Users\\Dupli\\AppData\\Local\\node-gyp\\Cache\\22.21.0\\x64\\node.lib&quot;;winspool.lib</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib;&quot;C:\\Users\\A\\AppData\\Local\\node-gyp\\Cache\\24.11.1\\x64\\node.lib&quot;;winspool.lib</AdditionalDependencies>
       <AdditionalOptions>/LTCG:INCREMENTAL /ignore:4199 %(AdditionalOptions)</AdditionalOptions>
       <DelayLoadDLLs>node.exe;%(DelayLoadDLLs)</DelayLoadDLLs>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -84,13 +84,13 @@
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\include\node;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\src;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\openssl\config;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\openssl\openssl\include;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\uv\include;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\zlib;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\v8\include;C:\Users\Dupli\AppData\Local\Programs\dupli-electron-caddy\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\include\node;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\src;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\openssl\config;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\openssl\openssl\include;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\uv\include;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\zlib;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\v8\include;C:\Users\A\antigravity\dupli-electron-caddy\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NODE_GYP_MODULE_NAME=win32-printer;USING_UV_SHARED=1;USING_V8_SHARED=1;V8_DEPRECATION_WARNINGS=1;_GLIBCXX_USE_CXX11_ABI=1;_FILE_OFFSET_BITS=64;WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_HAS_EXCEPTIONS=0;NOMINMAX;OPENSSL_NO_PINSHARED;OPENSSL_THREADS;NAPI_DISABLE_CPP_EXCEPTIONS;BUILDING_NODE_EXTENSION;HOST_BINARY=&quot;node.exe&quot;;DEBUG;_DEBUG;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\include\node;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\src;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\openssl\config;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\openssl\openssl\include;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\uv\include;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\zlib;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\v8\include;C:\Users\Dupli\AppData\Local\Programs\dupli-electron-caddy\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\include\node;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\src;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\openssl\config;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\openssl\openssl\include;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\uv\include;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\zlib;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\v8\include;C:\Users\A\antigravity\dupli-electron-caddy\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:__cplusplus -std:c++20 /Zm2000 %(AdditionalOptions)</AdditionalOptions>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
@@ -117,7 +117,7 @@
       <AdditionalOptions>/LTCG:INCREMENTAL %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <Link>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib;&quot;C:\\Users\\Dupli\\AppData\\Local\\node-gyp\\Cache\\22.21.0\\x64\\node.lib&quot;;winspool.lib</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib;&quot;C:\\Users\\A\\AppData\\Local\\node-gyp\\Cache\\24.11.1\\x64\\node.lib&quot;;winspool.lib</AdditionalDependencies>
       <AdditionalOptions>/LTCG:INCREMENTAL /ignore:4199 %(AdditionalOptions)</AdditionalOptions>
       <DelayLoadDLLs>node.exe;%(DelayLoadDLLs)</DelayLoadDLLs>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -129,7 +129,7 @@
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\include\node;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\src;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\openssl\config;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\openssl\openssl\include;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\uv\include;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\zlib;C:\Users\Dupli\AppData\Local\node-gyp\Cache\22.21.0\deps\v8\include;C:\Users\Dupli\AppData\Local\Programs\dupli-electron-caddy\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\include\node;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\src;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\openssl\config;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\openssl\openssl\include;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\uv\include;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\zlib;C:\Users\A\AppData\Local\node-gyp\Cache\24.11.1\deps\v8\include;C:\Users\A\antigravity\dupli-electron-caddy\node_modules\node-addon-api;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NODE_GYP_MODULE_NAME=win32-printer;USING_UV_SHARED=1;USING_V8_SHARED=1;V8_DEPRECATION_WARNINGS=1;_GLIBCXX_USE_CXX11_ABI=1;_FILE_OFFSET_BITS=64;WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_HAS_EXCEPTIONS=0;NOMINMAX;OPENSSL_NO_PINSHARED;OPENSSL_THREADS;NAPI_DISABLE_CPP_EXCEPTIONS;BUILDING_NODE_EXTENSION;HOST_BINARY=&quot;node.exe&quot;;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
@@ -140,11 +140,11 @@
     <ClCompile Include="..\win32-printer.cc">
       <ObjectFileName>$(IntDir)\win32-printer.obj</ObjectFileName>
     </ClCompile>
-    <ClCompile Include="C:\Users\Dupli\AppData\Local\Programs\dupli-electron-caddy\node_modules\node-gyp\src\win_delay_load_hook.cc"/>
+    <ClCompile Include="C:\Users\A\antigravity\dupli-electron-caddy\node_modules\node-gyp\src\win_delay_load_hook.cc"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\node_modules\node-addon-api\nothing.vcxproj">
-      <Project>{2E9E7457-2F66-5730-64BC-7090E3945328}</Project>
+      <Project>{7807DCE0-301B-1BB6-07DB-1CEFD6A03022}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

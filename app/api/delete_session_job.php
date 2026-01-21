@@ -14,11 +14,11 @@ try {
         throw new Exception("Paramètres ID ou Type manquants ou invalides.");
     }
 
-    $db = create_database_manager()->getConnection();
-    
+    $db = create_database_manager()->connect();
+
     // Sécuriser le nom de la table (ne pas utiliser de variables directement dans le FROM)
     $table = ($type === 'photocop') ? 'photocop' : 'dupli';
-    
+
     $stmt = $db->prepare("DELETE FROM $table WHERE id = ?");
     $success = $stmt->execute([$id]);
 

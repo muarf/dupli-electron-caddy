@@ -11,14 +11,31 @@ set_time_limit(300);
 header('Content-Type: application/json');
 
 // Log debug function
-function debugLog($msg) {
-    if (!is_dir(__DIR__ . '/../../logs')) {
-        @mkdir(__DIR__ . '/../../logs', 0777, true);
-    }
-    file_put_contents(__DIR__ . '/../../logs/debug_api.log', date('[H:i:s] ') . $msg . "\n", FILE_APPEND);
+function debugLog($msg)
+{
+    $logFile = __DIR__ . '/../../logs/debug_api.log';
+    $timestamp = date('H:i:s');
+    @file_put_contents($logFile, "[$timestamp] $msg\n", FILE_APPEND);
 }
 
-debugLog("API Called. POST: " . print_r($_POST, true));
+debugLog("API Called. REQUEST: " . print_r($_REQUEST, true));
+
+// Helper function to recursively delete a directory
+function rrmdir($dir)
+{
+    if (is_dir($dir)) {
+        $objects = scandir($dir);
+        foreach ($objects as $object) {
+            if ($object != "." && $object != "..") {
+                if (is_dir($dir . DIRECTORY_SEPARATOR . $object) && !is_link($dir . DIRECTORY_SEPARATOR . $object))
+                    rrmdir($dir . DIRECTORY_SEPARATOR . $object);
+                else
+                    unlink($dir . DIRECTORY_SEPARATOR . $object);
+            }
+        }
+        rmdir($dir);
+    }
+}
 
 // Chemin vers ImageMagick (Portable)
 $imPath = __DIR__ . '/../imagemagick/magick.exe';
@@ -43,24 +60,29 @@ if ($jobId == 0) {
 $spoolDir = 'C:\\Windows\\System32\\spool\\PRINTERS\\';
 
 // Fonction pour lire le Job ID depuis un fichier SHD
-function readJobIdFromShd($shdPath) {
+function readJobIdFromShd($shdPath)
+{
     if (!file_exists($shdPath) || filesize($shdPath) < 16) {
         return 0;
     }
     $handle = fopen($shdPath, 'rb');
-    if (!$handle) return 0;
+    if (!$handle)
+        return 0;
     $data = fread($handle, 16);
     fclose($handle);
-    if (strlen($data) < 16) return 0;
-    
+    if (strlen($data) < 16)
+        return 0;
+
     // Try offset 12 (Windows 10+)
     $jobId = unpack('V', substr($data, 12, 4))[1];
-    if ($jobId > 0 && $jobId < 100000) return $jobId;
-    
+    if ($jobId > 0 && $jobId < 100000)
+        return $jobId;
+
     // Fallback: offset 8 (older Windows)
     $jobId = unpack('V', substr($data, 8, 4))[1];
-    if ($jobId > 0 && $jobId < 100000) return $jobId;
-    
+    if ($jobId > 0 && $jobId < 100000)
+        return $jobId;
+
     return 0;
 }
 
@@ -78,14 +100,14 @@ if (file_exists($standardName)) {
     $shdFiles = glob($spoolDir . '*.SHD');
     $mostRecentFpSpl = null;
     $mostRecentTime = 0;
-    
+
     foreach ($shdFiles as $shdFile) {
         $shdSize = filesize($shdFile);
         $baseName = pathinfo($shdFile, PATHINFO_FILENAME);
         $correspondingSpl = $spoolDir . $baseName . '.SPL';
-        
+
         debugLog("Found SHD: $baseName (size=$shdSize)");
-        
+
         // Track FP files for fallback (regardless of SHD content)
         if (strpos($baseName, 'FP') === 0 && file_exists($correspondingSpl)) {
             $mtime = filemtime($correspondingSpl);
@@ -94,7 +116,7 @@ if (file_exists($standardName)) {
                 $mostRecentFpSpl = $correspondingSpl;
             }
         }
-        
+
         if ($shdSize > 0) {
             // SHD has content - try to read job ID
             $shdJobId = readJobIdFromShd($shdFile);
@@ -106,7 +128,7 @@ if (file_exists($standardName)) {
             }
         }
     }
-    
+
     // Step 3: Fallback to most recent FP file
     if (!$splFile && $mostRecentFpSpl) {
         $splFile = $mostRecentFpSpl;
@@ -151,10 +173,10 @@ while (!feof($handle)) {
     } else {
         $pos += strlen($chunk);
     }
-    
+
     // Sécurité: ne pas scanner trop loin si c'est pas au début
     if ($pos > 100000) { // Si pas trouvé dans les 100 premiers KB, probablement pas là
-         break;
+        break;
     }
 }
 
@@ -170,6 +192,11 @@ fseek($handle, $emfOffset);
 
 // Créer le dossier de sortie (Accessible publiquement)
 $outputDir = __DIR__ . '/../public/thumbnails/' . $jobId . '/';
+if (is_dir($outputDir)) {
+    debugLog("Clearing existing output dir: $outputDir");
+    rrmdir($outputDir);
+}
+
 if (!is_dir($outputDir)) {
     mkdir($outputDir, 0777, true);
     debugLog("Created output dir: $outputDir");
@@ -255,7 +282,7 @@ foreach ($pngFiles as $file) {
     $filename = basename($file);
     preg_match('/page_(\d+)\.png/', $filename, $matches);
     $pageNum = isset($matches[1]) ? intval($matches[1]) : 0;
-    
+
     $pages[] = [
         'page' => $pageNum,
         'path' => $file,
@@ -264,7 +291,7 @@ foreach ($pngFiles as $file) {
 }
 
 // Trier par numéro de page
-usort($pages, function($a, $b) {
+usort($pages, function ($a, $b) {
     return $a['page'] - $b['page'];
 });
 

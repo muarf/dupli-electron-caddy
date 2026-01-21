@@ -61,7 +61,28 @@ try {
     $original_job_id = isset($input['job_id']) ? $input['job_id'] : null;
     $session_id = isset($input['session_id']) ? intval($input['session_id']) : null;
 
+    // Log the full payload for debugging
+    $log_entry = "[" . date('Y-m-d H:i:s') . "] [PAYLOAD] " . json_encode($input) . "\n";
+    file_put_contents(__DIR__ . '/debug_log.txt', $log_entry, FILE_APPEND);
+
     $db = create_database_manager();
+
+    // 0. Validation de la session si fournie
+    if ($session_id) {
+        $sessionExists = $db->selectOne("SELECT id, status FROM print_sessions WHERE id = ?", [$session_id]);
+
+        if (!$sessionExists) {
+            file_put_contents(__DIR__ . '/debug_log.txt', "[ERROR] Session ID $session_id INEXISTANTE.\n", FILE_APPEND);
+            echo json_encode(['success' => false, 'error' => "La session (ID: $session_id) n'existe pas. Veuillez rafraîchir la page."]);
+            exit;
+        }
+
+        if ($sessionExists['status'] !== 'active') {
+            file_put_contents(__DIR__ . '/debug_log.txt', "[ERROR] Session ID $session_id FERMÉE.\n", FILE_APPEND);
+            echo json_encode(['success' => false, 'error' => "La session (ID: $session_id) est fermée. Veuillez rafraîchir la page."]);
+            exit;
+        }
+    }
 
     // 1. Trouver le mapping
     $mapping = $db->selectOne("SELECT * FROM printer_mappings WHERE system_printer_name = ?", [$printerName]);
@@ -124,7 +145,7 @@ try {
             echo json_encode(['success' => true, 'message' => 'Job déjà enregistré par une autre session.']);
             exit;
         }
-        
+
         // Marquer immédiatement pour éviter les clics impulsés
         $mark = $con_pdo->prepare("INSERT INTO recorded_print_jobs (job_id, printer_name) VALUES (?, ?)");
         $mark->execute([strval($original_job_id), $printerName]);
@@ -209,7 +230,7 @@ try {
 
             // Insertion
             file_put_contents(__DIR__ . '/debug_log.txt', "PRE-INSERT: nb_f=$nb_feuilles_total, price=$price, session=$session_id\n", FILE_APPEND);
-            
+
             $inserted_id = insert_photocop(
                 'photocopieur',
                 $marque,
