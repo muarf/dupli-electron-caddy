@@ -104,8 +104,11 @@ try {
         exit;
     }
 
-    // Récupérer tous les jobs d'impression non encore enregistrés, triés par date décroissante
-    $jobs = $db->select("
+    // Gestion du filtre d'historique
+    $show_history = isset($_GET['history']) && $_GET['history'] === 'true';
+    $where_clause = $show_history ? "" : "WHERE rpj.job_id IS NULL";
+
+    $sql = "
         SELECT
             pj.id,
             pj.job_id,
@@ -125,13 +128,17 @@ try {
             pj.time_submitted,
             pj.event_type,
             pj.timestamp,
-            pj.created_at
+            pj.created_at,
+            (CASE WHEN rpj.job_id IS NOT NULL THEN 1 ELSE 0 END) as is_recorded
         FROM print_jobs pj
         LEFT JOIN recorded_print_jobs rpj ON pj.job_id = rpj.job_id AND pj.printer_name = rpj.printer_name
-        WHERE rpj.job_id IS NULL
+        $where_clause
         ORDER BY pj.timestamp DESC
         LIMIT 50
-    ");
+    ";
+
+    // Récupérer tous les jobs d'impression non encore enregistrés, triés par date décroissante
+    $jobs = $db->select($sql);
 
     // Compter le total
     $total = $db->count('print_jobs');

@@ -523,6 +523,7 @@
                         addLog('success', `📥 Job assigné détecté : ${candidate.job.document}`);
 
                         // Supprimer de la base de données pool
+                        /*
                         fetch('?check_print_jobs', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -531,6 +532,7 @@
                                 ids: [candidate.job.id]
                             })
                         }).catch(e => console.error("Erreur suppression job assigné:", e));
+                        */
 
                         simulateJob(candidate.job);
                     } else {
@@ -598,6 +600,7 @@
                 simulateJob(job, null, jobId).then(success => {
                     if (success) {
                          // Only delete from pool if safely saved in session
+                        /*
                         fetch('?check_print_jobs', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -606,6 +609,7 @@
                                 ids: [dbId]
                             })
                         }).catch(e => console.error("Erreur suppression job du pool:", e));
+                        */
                         
                         bufferJobs.delete(jobId);
                         if (row) row.remove();
