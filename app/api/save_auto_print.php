@@ -395,8 +395,11 @@ try {
 
     if (!$simulate && isset($original_job_id) && $original_job_id) {
         // Supprimer des jobs temporaires
-        $del = $con_pdo->prepare("DELETE FROM print_jobs WHERE job_id = ?");
-        $del->execute([$original_job_id]);
+        // EDIT: On conserve l'historique brut pour le moniteur (à la demande de l'utilisateur)
+        // $del = $con_pdo->prepare("DELETE FROM print_jobs WHERE job_id = ?");
+        // $del->execute([$original_job_id]);
+        // $del = $con_pdo->prepare("DELETE FROM print_jobs WHERE job_id = ?");
+        // $del->execute([$original_job_id]);
 
         // Marquer comme définitivement enregistré pour éviter les doublons au redémarrage/nouvelle session
         $mark = $con_pdo->prepare("INSERT OR IGNORE INTO recorded_print_jobs (job_id, printer_name) VALUES (?, ?)");

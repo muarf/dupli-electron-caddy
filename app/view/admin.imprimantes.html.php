@@ -157,9 +157,15 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                                     <option value="10">10</option>
                                     <option value="20" selected>20</option>
                                     <option value="50">50</option>
-                                    <option value="100">100</option>
+                            <option value="100">100</option>
                                 </select>
+                                <div class="checkbox" style="display: inline-block; margin-left: 20px; vertical-align: middle; margin-top: 0;">
+                                    <label>
+                                        <input type="checkbox" id="show-history" onchange="loadPrintJobs(1)"> Voir l'historique complet (y compris traitées)
+                                    </label>
+                                </div>
                             </div>
+
                             <div class="col-sm-6 text-right">
                                 <span id="pagination-info" class="text-muted"></span>
                             </div>
@@ -463,8 +469,11 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 const jobsDiv = document.getElementById('print-jobs-list');
 
                 try {
+                    // Check history parameter
+                    const showHistory = document.getElementById('show-history') ? document.getElementById('show-history').checked : false;
+
                     // Utiliser la syntaxe ?check_print_jobs (sans page=) pour correspondre au système de routage
-                    const response = await fetch('?check_print_jobs');
+                    const response = await fetch('?check_print_jobs&history=' + showHistory);
                     if (!response.ok) {
                         throw new Error('HTTP ' + response.status);
                     }
