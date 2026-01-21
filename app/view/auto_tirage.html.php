@@ -85,7 +85,7 @@
         color: #007bff;
         border-color: #eee;
         border-bottom: 2px solid white;
-        box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
     }
 
     .session-tab .close-tab {
@@ -98,7 +98,7 @@
 
     .session-tab .close-tab:hover {
         opacity: 1;
-        background: rgba(255,0,0,0.1);
+        background: rgba(255, 0, 0, 0.1);
         color: #dc3545;
     }
 
@@ -125,7 +125,7 @@
         background: white;
         border-radius: 15px;
         padding: 3rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
         border: 1px solid #f0f0f0;
         max-width: 500px;
         margin: 2rem auto;
@@ -193,8 +193,7 @@
                             <h4>Démarrer une nouvelle session</h4>
                             <div class="form-group">
                                 <input type="text" id="pseudo-input" class="form-control fancy-input"
-                                    placeholder="Qui êtes-vous ?"
-                                    onkeypress="if(event.key === 'Enter') startSession()">
+                                    placeholder="Qui êtes-vous ?" onkeypress="if(event.key === 'Enter') startSession()">
                                 <input type="text" id="session-name-input" class="form-control fancy-input"
                                     placeholder="Nom de la session (facultatif)"
                                     onkeypress="if(event.key === 'Enter') startSession()">
@@ -236,7 +235,8 @@
                         <!-- Session Actuelle -->
                         <div id="session-zone">
                             <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                                <small class="text-muted"><i class="fa fa-clock-o"></i> <span id="session-status-text">En attente d'impressions...</span></small>
+                                <small class="text-muted"><i class="fa fa-clock-o"></i> <span
+                                        id="session-status-text">En attente d'impressions...</span></small>
                                 <button class="btn btn-link btn-sm text-muted" type="button" onclick="toggleLogs()">
                                     <i class="fa fa-list"></i> Voir l'activité
                                 </button>
@@ -291,6 +291,25 @@
         </div>
     </div>
 
+    <!-- Modale pour l'aperçu de la vignette -->
+    <div class="modal fade" id="thumbnail-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="thumbnail-modal-title">Aperçu du document</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="modal-thumbnail-img" src=""
+                        style="max-width: 100%; max-height: 80vh; object-fit: contain;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <!-- Inclure la modale de sélection de session -->
     <?php include __DIR__ . '/components/session-modal.html.php'; ?>
 
@@ -342,7 +361,7 @@
             if (user) {
                 document.getElementById('pseudo-input').value = user;
                 // On ne démarre plus automatiquement pour éviter les doublons au refresh
-                document.getElementById('step-identity').style.display = 'block'; 
+                document.getElementById('step-identity').style.display = 'block';
             } else {
                 document.getElementById('step-identity').style.display = 'block';
             }
@@ -353,7 +372,7 @@
 
         async function startSession() {
             const pseudo = document.getElementById('pseudo-input').value.trim();
-            if (!pseudo) return alert("Merci d'entrer un nom");
+            if (!pseudo) return showAppModal({ message: "Merci d'entrer un nom", type: "warning" });
 
             sessionUser = pseudo;
             const sessionName = document.getElementById('session-name-input').value.trim();
@@ -565,7 +584,7 @@
             const pages = job.total_pages * (job.copies || 1);
 
             row.innerHTML = `
-            <td>${job.thumbnail_url ? `<img src="${job.thumbnail_url}" height="30">` : '<i class="fa fa-file-o"></i>'}</td>
+            <td>${job.thumbnail_url ? `<img src="${job.thumbnail_url}" height="30" style="cursor: pointer; border-radius: 3px;" onclick="showThumbnailModal('${job.thumbnail_url}', '${job.document.replace(/'/g, "\\'")}')">` : '<i class="fa fa-file-o"></i>'}</td>
             <td>${date}</td>
             <td><strong>${job.document}</strong></td>
             <td>${pages} pages</td>
@@ -599,7 +618,7 @@
                 // Pass a callback to know if save succeeded
                 simulateJob(job, null, jobId).then(success => {
                     if (success) {
-                         // Only delete from pool if safely saved in session
+                        // Only delete from pool if safely saved in session
                         /*
                         fetch('?check_print_jobs', {
                             method: 'POST',
@@ -610,7 +629,7 @@
                             })
                         }).catch(e => console.error("Erreur suppression job du pool:", e));
                         */
-                        
+
                         bufferJobs.delete(jobId);
                         if (row) row.remove();
                         if (bufferJobs.size === 0) {
@@ -619,42 +638,48 @@
                     } else {
                         // Revert UI if failed
                         if (row) row.style.display = '';
-                        alert("Erreur lors de l'ajout à la session. Veuillez réessayer.");
+                        showAppModal({ message: "Erreur lors de l'ajout à la session. Veuillez réessayer.", type: "danger" });
                     }
                 });
             }
         };
 
         window.deleteBufferJob = async function (dbId, spoolJobId) {
-            if (!confirm("Voulez-vous vraiment supprimer cette impression du pool ?")) return;
+            showAppModal({
+                message: "Voulez-vous vraiment supprimer cette impression du pool ?",
+                confirm: true,
+                type: "warning"
+            }, async (confirmed) => {
+                if (!confirmed) return;
 
-            try {
-                const response = await fetch('?check_print_jobs', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'delete_jobs',
-                        ids: [dbId]
-                    })
-                });
+                try {
+                    const response = await fetch('?check_print_jobs', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'delete_jobs',
+                            ids: [dbId]
+                        })
+                    });
 
-                const result = await response.json();
-                if (result.success) {
-                    addLog('info', `🗑️ Job supprimé du pool`);
-                    bufferJobs.delete(spoolJobId);
-                    const row = document.getElementById(`buffer-row-${spoolJobId}`);
-                    if (row) row.remove();
+                    const result = await response.json();
+                    if (result.success) {
+                        addLog('info', `🗑️ Job supprimé du pool`);
+                        bufferJobs.delete(spoolJobId);
+                        const row = document.getElementById(`buffer-row-${spoolJobId}`);
+                        if (row) row.remove();
 
-                    if (bufferJobs.size === 0) {
-                        document.getElementById('buffer-zone').style.display = 'none';
+                        if (bufferJobs.size === 0) {
+                            document.getElementById('buffer-zone').style.display = 'none';
+                        }
+                    } else {
+                        showAppModal({ message: "Erreur lors de la suppression: " + result.error, type: "danger" });
                     }
-                } else {
-                    alert("Erreur lors de la suppression: " + result.error);
+                } catch (error) {
+                    console.error("Erreur suppression job:", error);
+                    showAppModal({ message: "Erreur de communication", type: "danger" });
                 }
-            } catch (error) {
-                console.error("Erreur suppression job:", error);
-                alert("Erreur de communication");
-            }
+            });
         };
 
         async function simulateJob(job, updateIndex = null, bufferJobId = null) {
@@ -744,7 +769,7 @@
                         setTimeout(() => {
                             cleanLogs();
                         }, 10000);
-                        
+
                         return true; // Success
                     }
                 } else {
@@ -875,15 +900,19 @@
                 const badgeClass = job.type === 'photocop' ? 'badge-primary' : 'badge-secondary';
                 const machineName = job.type === 'photocop' ? 'Photocopieur' : 'Duplicopieur';
 
+                // Fix: Use job.document_name which comes from the API details, backup with job.document if raw job
+                const docName = job.document_name || job.document || 'Document';
+
                 // Thumbnail handling
                 let thumbHtml = '';
                 // Use local thumbnail_url if available, else standard fallback
                 const thumbUrl = job.thumbnail_url;
                 if (thumbUrl) {
-                    thumbHtml = `<img src="${thumbUrl}" alt="Aperçu" class="img-thumbnail rounded mr-2" style="width: 50px; height: 50px; object-fit: contain;">`;
+                    thumbHtml = `<img src="${thumbUrl}" alt="Aperçu" class="img-thumbnail rounded mr-2" style="width: 50px; height: 50px; object-fit: contain; cursor: pointer;" onclick="showThumbnailModal('${thumbUrl}', '${docName.replace(/'/g, "\\'")}')">`;
                 } else {
                     thumbHtml = `<div class="d-inline-flex align-items-center justify-content-center bg-light text-muted border rounded mr-2" style="width: 50px; height: 50px;"><i class="fa fa-file-o fa-lg"></i></div>`;
                 }
+
 
                 const colMachine = `
                 <td class="align-middle">
@@ -891,9 +920,6 @@
                     <small class="text-muted" style="font-size: 0.8em;">${job.machine || ''}</small>
                 </td>
             `;
-
-                // Fix: Use job.document_name which comes from the API details, backup with job.document if raw job
-                const docName = job.document_name || job.document || 'Document';
 
                 const colDoc = `
                 <td class="align-middle">
@@ -903,6 +929,7 @@
                             <strong style="font-size: 0.95em;">${docName}</strong><br>
                             <small class="text-muted">${job.nb_passages || job.pages} Pg ${job.copies > 1 ? `× ${job.copies} Ex` : ''}</small>
                         </div>
+
                     </div>
                 </td>
             `;
@@ -919,6 +946,7 @@
                         <small>${job.duplex ? 'R/V' : 'Recto'} - ${job.taille}</small>
                         ${job.color && job.fill_rate_percent ? '<br><small class="text-muted">Encrage: ' + job.fill_rate_percent + '%</small>' : ''}
                     </div>
+
                 `;
                 } else {
                     // Duplicopieur: Compact Grid
@@ -1228,11 +1256,11 @@
             addLog('info', "✅ Système prêt. Lancez une impression...");
         }
 
-        window.toggleLogs = function() {
+        window.toggleLogs = function () {
             const el = document.getElementById('activity-log');
             const isHidden = el.style.display === 'none';
             el.style.display = isHidden ? 'block' : 'none';
-            
+
             // Modifier le texte du bouton si nécessaire
             const btn = document.querySelector('button[onclick="toggleLogs()"]');
             if (btn) {
@@ -1255,7 +1283,7 @@
 
             if (id == currentSessionId) {
                 sessionStorage.removeItem('auto_tirage_session_user');
-                localStorage.removeItem('auto_tirage_user'); 
+                localStorage.removeItem('auto_tirage_user');
                 localStorage.removeItem('auto_tirage_last_session_id');
                 window.location.reload();
             } else {
@@ -1335,7 +1363,7 @@
                         addHidden(form, `machines[${index}][session_id]`, currentSessionId);
                     }
                 }
-                
+
                 // FIX: Envoyer l'ID de base de données pour permettre la mise à jour (évite les doublons)
                 if (job.id) {
                     addHidden(form, `machines[${index}][db_id]`, job.id);
@@ -1365,9 +1393,9 @@
                 activeSessions = data.sessions || [];
 
                 renderSessionTabs();
-                
+
                 console.log('[AutoTirage] Sessions chargées:', activeSessions.length);
-                
+
                 // Si aucune session n'est ouverte et qu'on n'est pas déjà sur le formulaire
                 if (activeSessions.length === 0 && !currentSessionId) {
                     createNewSessionClick();
@@ -1390,7 +1418,7 @@
         function renderSessionTabs() {
             const container = document.getElementById('session-tabs-container');
             const addButton = container.querySelector('.add-session-tab');
-            
+
             // Supprimer les anciens onglets (tout sauf le bouton +)
             const oldTabs = container.querySelectorAll('.session-tab');
             oldTabs.forEach(tab => tab.remove());
@@ -1407,7 +1435,7 @@
 
                 const name = document.createElement('span');
                 name.textContent = `${session.contact}${session.session_name ? ' (' + session.session_name + ')' : ''}`;
-                
+
                 const closeBtn = document.createElement('span');
                 closeBtn.className = 'close-tab';
                 closeBtn.innerHTML = '<i class="fa fa-times"></i>';
@@ -1418,7 +1446,7 @@
 
                 tab.appendChild(name);
                 tab.appendChild(closeBtn);
-                
+
                 // Insérer avant le bouton +
                 container.insertBefore(tab, addButton);
             });
@@ -1432,7 +1460,7 @@
 
             document.getElementById('step-identity').style.display = 'block';
             document.getElementById('step-listening').style.display = 'none';
-            
+
             // Désélectionner tous les onglets
             document.querySelectorAll('.session-tab').forEach(t => t.classList.remove('active'));
         }
@@ -1469,7 +1497,7 @@
                     if (saved) {
                         try {
                             sessionJobs = JSON.parse(saved);
-                        } catch(e) { sessionJobs = []; }
+                        } catch (e) { sessionJobs = []; }
                     }
 
                     // Charger les jobs EXISTANTS de cette session depuis la DB
@@ -1502,7 +1530,7 @@
                                 id: job.id,
                                 type: job.table_source,
                                 machine: job.printerName,
-                                machine_id: job.printerName, 
+                                machine_id: job.printerName,
                                 copies: parseInt(job.copies) || 1,
                                 pages: parseInt(job.pages) || 0,
                                 document: job.document || 'Document',
@@ -1525,5 +1553,13 @@
                 console.error('[AutoTirage] Erreur chargement jobs session:', error);
             }
         }
+
+        // --- Fonctions UI additionnelles ---
+        window.showThumbnailModal = function (url, title) {
+            const modal = $('#thumbnail-modal');
+            $('#modal-thumbnail-img').attr('src', url);
+            $('#thumbnail-modal-title').text(title || 'Aperçu du document');
+            modal.modal('show');
+        };
 
     </script>

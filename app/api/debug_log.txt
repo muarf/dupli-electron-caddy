@@ -1,281 +1,37 @@
+[2026-01-21 18:32:34] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":4,"contact":"manu","session_id":16,"document":"Test Verif.pdf","copies":1,"total_pages":4,"duplex":true,"color_mode":"color","simulate":false}
 KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
 INIT: Printer='RISO ComColor FW5230', Type='photocop'
 HEX: 70686f746f636f70
 Check 'photocop': TRUE
+PRE-INSERT: nb_f=2, price=0.04, session=16
+[2026-01-21 18:33:21] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":4,"contact":"manu","session_id":1611,"document":"Test Error.pdf","copies":1,"total_pages":4,"duplex":true,"color_mode":"color","simulate":false}
+[ERROR] Session ID 1611 INEXISTANTE.
+[2026-01-21 18:34:48] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":4,"contact":"manu","document":"Ghostscript output","copies":1,"total_pages":4,"duplex":false,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0,"timestamp":"2026-01-21T18:04:34.000Z","job_id":"21","session_id":16,"simulate":false}
 KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
 INIT: Printer='RISO ComColor FW5230', Type='photocop'
 HEX: 70686f746f636f70
 Check 'photocop': TRUE
+PRE-INSERT: nb_f=4, price=0.04, session=16
+[2026-01-21 18:46:04] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":16,"contact":"quinoa","document":"la-justice-contre-la-revolte.pdf","copies":1,"total_pages":16,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":13.413519859314,"timestamp":"2026-01-21T18:45:11.000Z","job_id":"33","session_id":"17","simulate":false}
 KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
 INIT: Printer='RISO ComColor FW5230', Type='photocop'
 HEX: 70686f746f636f70
 Check 'photocop': TRUE
+PRE-INSERT: nb_f=8, price=0.1, session=17
+[2026-01-21 18:51:00] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":30,"contact":"quinoa2","document":"8 Decembre analyse enquete pnat-dgsi.pdf","copies":15,"total_pages":450,"duplex":true,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0.73940509557724,"timestamp":"2026-01-21T18:47:12.000Z","job_id":"34","session_id":18,"simulate":false}
 KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
 INIT: Printer='RISO ComColor FW5230', Type='photocop'
 HEX: 70686f746f636f70
 Check 'photocop': TRUE
+PRE-INSERT: nb_f=225, price=2.7, session=18
+[2026-01-21 18:51:06] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":20,"contact":"quinoa2","document":"du sang sur le pacte vert-conv.pdf","copies":1,"total_pages":20,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":0,"timestamp":"2026-01-21T18:47:33.000Z","job_id":"35","session_id":18,"simulate":false}
 KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
 HEX: 70686f746f636f70
 Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=5, price=0.12, session=34
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=1, price=0.05, session=34
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=5, price=0.15, session=34
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=4, price=0.21, session=34
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=5, price=0.27, session=34
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=1, price=0.05, session=34
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=1, price=0.05, session=34
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=5, price=0.27, session=34
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=4, price=0.24, session=34
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=1, price=0.06, session=34
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=3, price=0.07, session=34
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=100, price=4.09, session=35
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=1, price=0.04, session=38
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=1, price=0.02, session=38
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=100, price=3, session=37
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=100, price=3, session=40
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=50, price=1.5, session=39
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=10, price=0.3, session=39
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=1, price=0.03, session=41
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=1, price=0.03, session=42
-KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
-DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
-INIT: Printer='RISO ComColor FW5230', Type='photocop'
-HEX: 70686f746f636f70
-Check 'photocop': TRUE
-PRE-INSERT: nb_f=1, price=0.03, session=43
+PRE-INSERT: nb_f=10, price=0.14, session=18

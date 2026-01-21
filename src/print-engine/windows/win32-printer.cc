@@ -37,6 +37,7 @@ struct SplAnalysisCache {
   float fillRate;
   std::string timestamp;
   std::string thumbnailUrl;
+  std::string documentName; // New: to verify jobId recycling
 };
 
 struct EmfConversionResult {
@@ -806,26 +807,32 @@ std::wstring FindSplFileByJobId(DWORD jobId, const std::wstring &spoolPath) {
 
 // Analyze spool file content for color detection and fill rate
 // Now uses Ghostscript + pixel analysis for accurate results
-// Analyze spool file content for color detection and fill rate
-// Now uses Ghostscript + pixel analysis for accurate results
-void AnalyzeSpoolFile(DWORD jobId, bool &isGrayscale, float &fillRate,
+void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
+                      bool &isGrayscale, float &fillRate,
                       std::string &thumbnailUrl) {
   LogDebug("AnalyzeSpoolFile: Starting PIXEL ANALYSIS for Job " +
-           std::to_string(jobId));
+           std::to_string(jobId) + " (" + documentName + ")");
 
   fillRate = 0.0f;
 
   // Check cache first
   if (splAnalysisCache.find(jobId) != splAnalysisCache.end()) {
     SplAnalysisCache cached = splAnalysisCache[jobId];
-    isGrayscale = cached.isGrayscale;
-    fillRate = cached.fillRate;
-    thumbnailUrl = cached.thumbnailUrl;
-    // thumbnailUrl is unused in this function's logic but available in cache
-    LogDebug("AnalyzeSpoolFile: Using cached result - Grayscale=" +
-             std::to_string(isGrayscale) +
-             ", FillRate=" + std::to_string(fillRate));
-    return;
+
+    // Verify if it's the SAME document. If not, ignore cache (jobId recycled)
+    if (cached.documentName == documentName) {
+      isGrayscale = cached.isGrayscale;
+      fillRate = cached.fillRate;
+      thumbnailUrl = cached.thumbnailUrl;
+      LogDebug("AnalyzeSpoolFile: Using cached result - Grayscale=" +
+               std::to_string(isGrayscale) +
+               ", FillRate=" + std::to_string(fillRate));
+      return;
+    } else {
+      LogDebug("AnalyzeSpoolFile: Cache Document Mismatch (" +
+               cached.documentName + " vs " + documentName +
+               "). Invaliding.");
+    }
   }
 
   wchar_t spoolPath[MAX_PATH];
@@ -915,7 +922,7 @@ void AnalyzeSpoolFile(DWORD jobId, bool &isGrayscale, float &fillRate,
 
   // Update Cache
   splAnalysisCache[jobId] = {isGrayscale, fillRate, "now",
-                             conversion.thumbnailUrl};
+                             conversion.thumbnailUrl, documentName};
 
   // IMPORTANT: Assign back to output parameter so caller sees it immediately
   thumbnailUrl = conversion.thumbnailUrl;
@@ -939,6 +946,7 @@ void AnalyzeSpoolFile(DWORD jobId, bool &isGrayscale, float &fillRate,
   cacheEntry.fillRate = fillRate;
   cacheEntry.timestamp = std::to_string(time(NULL));
   cacheEntry.thumbnailUrl = conversion.thumbnailUrl;
+  cacheEntry.documentName = documentName;
   splAnalysisCache[jobId] = cacheEntry;
 
   LogDebug(
@@ -1042,8 +1050,8 @@ JobDetails MonitorWorker::GetJobInfo(HANDLE hPrinter, DWORD jobId) {
 
   // Analyze spool file for ACTUAL color content and fill rate
   // This will overwrite isGrayscale ONLY if analysis succeeds
-  AnalyzeSpoolFile(jobId, details.isGrayscale, details.fillRate,
-                   details.thumbnailUrl);
+  AnalyzeSpoolFile(jobId, details.documentName, details.isGrayscale,
+                   details.fillRate, details.thumbnailUrl);
 
   return details;
 }

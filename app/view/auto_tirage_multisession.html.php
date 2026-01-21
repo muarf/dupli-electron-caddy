@@ -50,7 +50,7 @@
     }
 
     .session-card:hover {
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     .form-section {
@@ -87,7 +87,8 @@
                             <button class="btn btn-success btn-modern" onclick="showCreateSessionModal()">
                                 <i class="fa fa-plus"></i> Nouvelle Session
                             </button>
-                            <button id="close-session-btn" class="btn btn-danger btn-modern" onclick="closeCurrentSession()" style="display:none;">
+                            <button id="close-session-btn" class="btn btn-danger btn-modern"
+                                onclick="closeCurrentSession()" style="display:none;">
                                 <i class="fa fa-times"></i> Fermer Session
                             </button>
                         </div>
@@ -164,221 +165,231 @@
 </div>
 
 <script>
-// Variables globales
-let currentSessionId = null;
-let allSessions = [];
-let sessionJobs = [];
+    // Variables globales
+    let currentSessionId = null;
+    let allSessions = [];
+    let sessionJobs = [];
 
-// Init au chargement
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('[AutoTirage] Init multi-session page');
-    loadSessions();
-    
-    // Écouter les événements du PrintSessionManager global
-    window.addEventListener('sessions-loaded', (e) => {
-        console.log('[AutoTirage] Sessions loaded event', e.detail);
-        refreshSessionsList(e.detail.sessions);
-    });
-    
-    window.addEventListener('session-switched', (e) => {
-        console.log('[AutoTirage] Session switched event', e.detail);
-        currentSessionId = e.detail.sessionId;
-        loadCurrentSessionJobs();
-    });
-    
-    window.addEventListener('print-job-registered', (e) => {
-        console.log('[AutoTirage] Print job registered', e.detail);
-        if (e.detail.sessionId === currentSessionId) {
+    // Init au chargement
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('[AutoTirage] Init multi-session page');
+        loadSessions();
+
+        // Écouter les événements du PrintSessionManager global
+        window.addEventListener('sessions-loaded', (e) => {
+            console.log('[AutoTirage] Sessions loaded event', e.detail);
+            refreshSessionsList(e.detail.sessions);
+        });
+
+        window.addEventListener('session-switched', (e) => {
+            console.log('[AutoTirage] Session switched event', e.detail);
+            currentSessionId = e.detail.sessionId;
             loadCurrentSessionJobs();
-        }
-    });
-});
+        });
 
-// Charger toutes les sessions
-async function loadSessions() {
-    try {
-        const response = await fetch('?sessions&action=list');
-        const data = await response.json();
-        
-        allSessions = data.sessions || [];
-        refreshSessionsList(allSessions);
-        
-        // Restaurer dernière session
-        if (window.printSessionManager && window.printSessionManager.currentSessionId) {
-            currentSessionId = window.printSessionManager.currentSessionId;
-            selectSession(currentSessionId);
+        window.addEventListener('print-job-registered', (e) => {
+            console.log('[AutoTirage] Print job registered', e.detail);
+            if (e.detail.sessionId === currentSessionId) {
+                loadCurrentSessionJobs();
+            }
+        });
+    });
+
+    // Charger toutes les sessions
+    async function loadSessions() {
+        try {
+            const response = await fetch('?sessions&action=list');
+            const data = await response.json();
+
+            allSessions = data.sessions || [];
+            refreshSessionsList(allSessions);
+
+            // Restaurer dernière session
+            if (window.printSessionManager && window.printSessionManager.currentSessionId) {
+                currentSessionId = window.printSessionManager.currentSessionId;
+                selectSession(currentSessionId);
+            }
+        } catch (error) {
+            console.error('[AutoTirage] Erreur chargement sessions:', error);
         }
-    } catch (error) {
-        console.error('[AutoTirage] Erreur chargement sessions:', error);
     }
-}
 
-// Actualiser l'affichage des sessions
-function refreshSessionsList(sessions) {
-    allSessions = sessions;
-    
-    // Update selector
-    const selector = document.getElementById('session-selector');
-    selector.innerHTML = '<option value="">-- Aucune session --</option>';
-    
-    sessions.forEach(session => {
-        const option = document.createElement('option');
-        option.value = session.id;
-        option.textContent = `${session.contact}${session.session_name ? ' - ' + session.session_name : ''} (${session.job_count} jobs, ${session.total_price.toFixed(2)} €)`;
-        selector.appendChild(option);
-    });
-    
-    // Update quick view
-    const quickView = document.getElementById('sessions-quick-view');
-    const sessionsList = document.getElementById('sessions-list');
-    
-    if (sessions.length > 0) {
-        quickView.style.display = 'block';
-        sessionsList.innerHTML = '';
-        
+    // Actualiser l'affichage des sessions
+    function refreshSessionsList(sessions) {
+        allSessions = sessions;
+
+        // Update selector
+        const selector = document.getElementById('session-selector');
+        selector.innerHTML = '<option value="">-- Aucune session --</option>';
+
         sessions.forEach(session => {
-            const card = document.createElement('div');
-            card.className = 'session-card' + (session.id === currentSessionId ? ' active' : '');
-            card.onclick = () => selectSession(session.id);
-            card.innerHTML = `
+            const option = document.createElement('option');
+            option.value = session.id;
+            option.textContent = `${session.contact}${session.session_name ? ' - ' + session.session_name : ''} (${session.job_count} jobs, ${session.total_price.toFixed(2)} €)`;
+            selector.appendChild(option);
+        });
+
+        // Update quick view
+        const quickView = document.getElementById('sessions-quick-view');
+        const sessionsList = document.getElementById('sessions-list');
+
+        if (sessions.length > 0) {
+            quickView.style.display = 'block';
+            sessionsList.innerHTML = '';
+
+            sessions.forEach(session => {
+                const card = document.createElement('div');
+                card.className = 'session-card' + (session.id === currentSessionId ? ' active' : '');
+                card.onclick = () => selectSession(session.id);
+                card.innerHTML = `
                 <div class="d-flex justify-content-between">
                     <strong>${session.contact}</strong>
                     <span class="text-muted">${session.job_count} jobs - ${session.total_price.toFixed(2)} €</span>
                 </div>
             `;
-            sessionsList.appendChild(card);
-        });
-    } else {
-        quickView.style.display = 'none';
-    }
-    
-    // Update current session if selected
-    if (currentSessionId) {
-        selector.value = currentSessionId;
-    }
-}
-
-// Sélectionner une session
-function selectSession(sessionId) {
-    currentSessionId = sessionId;
-    
-    if (window.printSessionManager) {
-        window.printSessionManager.switchToSession(sessionId);
-    }
-    
-    document.getElementById('session-selector').value = sessionId;
-    
-    if (sessionId) {
-        const session = allSessions.find(s => s.id === parseInt(sessionId));
-        if (session) {
-            document.getElementById('current-session-name').textContent = session.contact;
-            document.getElementById('no-session-view').style.display = 'none';
-            document.getElementById('session-view').style.display = 'block';
-            document.getElementById('close-session-btn').style.display = 'inline-block';
-            
-            loadCurrentSessionJobs();
+                sessionsList.appendChild(card);
+            });
+        } else {
+            quickView.style.display = 'none';
         }
-    } else {
-        document.getElementById('no-session-view').style.display = 'block';
-        document.getElementById('session-view').style.display = 'none';
-        document.getElementById('close-session-btn').style.display = 'none';
-    }
-    
-    refreshSessionsList(allSessions);
-}
 
-// Switch via selector
-function switchToSelectedSession() {
-    const sessionId = document.getElementById('session-selector').value;
-    if (sessionId) {
-        selectSession(parseInt(sessionId));
-    } else {
-        selectSession(null);
+        // Update current session if selected
+        if (currentSessionId) {
+            selector.value = currentSessionId;
+        }
     }
-}
 
-// Modal création session
-function showCreateSessionModal() {
-    if (window.printSessionManager) {
-        // Utiliser le modal global s'il existe
-        const modal = document.getElementById('session-select-modal');
-        if (modal) {
-            document.getElementById('new-session-contact').value = '';
-            document.getElementById('new-session-name').value = '';
-            $(modal).modal('show');
+    // Sélectionner une session
+    function selectSession(sessionId) {
+        currentSessionId = sessionId;
+
+        if (window.printSessionManager) {
+            window.printSessionManager.switchToSession(sessionId);
+        }
+
+        document.getElementById('session-selector').value = sessionId;
+
+        if (sessionId) {
+            const session = allSessions.find(s => s.id === parseInt(sessionId));
+            if (session) {
+                document.getElementById('current-session-name').textContent = session.contact;
+                document.getElementById('no-session-view').style.display = 'none';
+                document.getElementById('session-view').style.display = 'block';
+                document.getElementById('close-session-btn').style.display = 'inline-block';
+
+                loadCurrentSessionJobs();
+            }
+        } else {
+            document.getElementById('no-session-view').style.display = 'block';
+            document.getElementById('session-view').style.display = 'none';
+            document.getElementById('close-session-btn').style.display = 'none';
+        }
+
+        refreshSessionsList(allSessions);
+    }
+
+    // Switch via selector
+    function switchToSelectedSession() {
+        const sessionId = document.getElementById('session-selector').value;
+        if (sessionId) {
+            selectSession(parseInt(sessionId));
+        } else {
+            selectSession(null);
+        }
+    }
+
+    // Modal création session
+    function showCreateSessionModal() {
+        if (window.printSessionManager) {
+            // Utiliser le modal global s'il existe
+            const modal = document.getElementById('session-select-modal');
+            if (modal) {
+                document.getElementById('new-session-contact').value = '';
+                document.getElementById('new-session-name').value = '';
+                $(modal).modal('show');
+                return;
+            }
+        }
+
+        // Fallback: prompt simple avec notre nouveau système
+        showAppModal({
+            title: "Nouvelle Session",
+            message: "Entrez le nom du contact:",
+            prompt: true
+        }, (contact) => {
+            if (contact) {
+                showAppModal({
+                    title: "Nouvelle Session",
+                    message: "Nom de la session (optionnel):",
+                    prompt: true
+                }, (sessionName) => {
+                    createSession(contact, sessionName);
+                });
+            }
+        });
+    }
+
+    // Créer session
+    async function createSession(contact, sessionName) {
+        if (window.printSessionManager) {
+            await window.printSessionManager.createSession(contact, sessionName || '');
+            await loadSessions();
+
+            // Sélectionner la nouvelle session
+            if (window.printSessionManager.currentSessionId) {
+                selectSession(window.printSessionManager.currentSessionId);
+            }
+        }
+    }
+
+    // Charger jobs en attente (depuis print_jobs - table temporaire)
+    let pendingJobs = [];
+
+    async function loadPendingJobs() {
+        try {
+            const response = await fetch('?get_pending_jobs');
+            const data = await response.json();
+            pendingJobs = data.jobs || [];
+            console.log('[AutoTirage] Jobs en attente chargés:', pending Jobs.length);
+            updatePendingJobsDisplay();
+        } catch (error) {
+            console.error('[AutoTirage] Erreur chargement jobs en attente:', error);
+        }
+    }
+
+    // Charger jobs de la session courante (depuis photocop/dupli)
+    async function loadCurrentSessionJobs() {
+        if (!currentSessionId) {
+            sessionJobs = [];
+            updateJobsDisplay();
             return;
         }
-    }
-    
-    // Fallback: prompt simple
-    const contact = prompt('Entrez le nom du contact:');
-    if (contact) {
-        const sessionName = prompt('Nom de la session (optionnel):');
-        createSession(contact, sessionName);
-    }
-}
 
-// Créer session
-async function createSession(contact, sessionName) {
-    if (window.printSessionManager) {
-        await window.printSessionManager.createSession(contact, sessionName || '');
-        await loadSessions();
-        
-        // Sélectionner la nouvelle session
-        if (window.printSessionManager.currentSessionId) {
-            selectSession(window.printSessionManager.currentSessionId);
+        try {
+            // Charger jobs photocop + dupli avec session_id
+            const response = await fetch(`?get_session_jobs&session_id=${currentSessionId}`);
+            const data = await response.json();
+
+            sessionJobs = data.jobs || [];
+            updateJobsDisplay();
+        } catch (error) {
+            console.error('[AutoTirage] Erreur chargement jobs:', error);
         }
     }
-}
 
-// Charger jobs en attente (depuis print_jobs - table temporaire)
-let pendingJobs = [];
+    // Afficher jobs
+    function updateJobsDisplay() {
+        const tbody = document.getElementById('jobs-tbody');
+        tbody.innerHTML = '';
 
-async function loadPendingJobs() {
-    try {
-        const response = await fetch('?get_pending_jobs');
-        const data = await response.json();
-        pendingJobs = data.jobs || [];
-        console.log('[AutoTirage] Jobs en attente chargés:', pending Jobs.length);
-        updatePendingJobsDisplay();
-    } catch (error) {
-        console.error('[AutoTirage] Erreur chargement jobs en attente:', error);
-    }
-}
+        let total = 0;
 
-// Charger jobs de la session courante (depuis photocop/dupli)
-async function loadCurrentSessionJobs() {
-    if (!currentSessionId) {
-        sessionJobs = [];
-        updateJobsDisplay();
-        return;
-    }
-    
-    try {
-        // Charger jobs photocop + dupli avec session_id
-        const response = await fetch(`?get_session_jobs&session_id=${currentSessionId}`);
-        const data = await response.json();
-        
-        sessionJobs = data.jobs || [];
-        updateJobsDisplay();
-    } catch (error) {
-        console.error('[AutoTirage] Erreur chargement jobs:', error);
-    }
-}
+        sessionJobs.forEach(job => {
+            const row = document.createElement('tr');
+            const price = parseFloat(job.prix || 0);
+            total += price;
 
-// Afficher jobs
-function updateJobsDisplay() {
-    const tbody = document.getElementById('jobs-tbody');
-    tbody.innerHTML = '';
-    
-    let total = 0;
-    
-    sessionJobs.forEach(job => {
-        const row = document.createElement('tr');
-        const price = parseFloat(job.prix || 0);
-        total += price;
-        
-        row.innerHTML = `
+            row.innerHTML = `
             <td>${job.printerName || job.marque || 'N/A'}</td>
             <td><small>${job.document || job.nom || ''}</small></td>
             <td>${job.pages || job.nbCopies || 0}p x ${job.copies || 1}</td>
@@ -391,48 +402,65 @@ function updateJobsDisplay() {
                 </button>
             </td>
         `;
-        
-        tbody.appendChild(row);
-    });
-    
-    document.getElementById('job-count').textContent = sessionJobs.length;
-    document.getElementById('session-total').textContent = total.toFixed(2);
-    document.getElementById('total-footer').textContent = total.toFixed(2);
-}
 
-// Fermer session
-async function closeCurrentSession() {
-    if (!currentSessionId) return;
-    
-    if (!confirm('Fermer cette session ?')) return;
-    
-    if (window.printSessionManager) {
-        await window.printSessionManager.closeSession(currentSessionId);
-        currentSessionId = null;
-        await loadSessions();
-        selectSession(null);
+            tbody.appendChild(row);
+        });
+
+        document.getElementById('job-count').textContent = sessionJobs.length;
+        document.getElementById('session-total').textContent = total.toFixed(2);
+        document.getElementById('total-footer').textContent = total.toFixed(2);
     }
-}
 
-// Terminer et fermer
-async function finishAndCloseSession() {
-    if (!currentSessionId) return;
-    
-    if (!confirm(`Valider ${sessionJobs.length} jobs et fermer la session ?`)) return;
-    
-    await closeCurrentSession();
-}
+    // Fermer session
+    async function closeCurrentSession() {
+        if (!currentSessionId) return;
 
-// Supprimer job
-async function deleteJob(jobId, table) {
-    if (!confirm('Supprimer ce job ?')) return;
-    
-    try {
-        // TODO: API delete job
-        console.log('Delete job', jobId, table);
-        await loadCurrentSessionJobs();
-    } catch (error) {
-        console.error('Erreur suppression:', error);
+        showAppModal({
+            message: 'Fermer cette session ?',
+            confirm: true,
+            type: 'warning'
+        }, async (confirmed) => {
+            if (!confirmed) return;
+
+            if (window.printSessionManager) {
+                await window.printSessionManager.closeSession(currentSessionId);
+                currentSessionId = null;
+                await loadSessions();
+                selectSession(null);
+            }
+        });
     }
-}
+
+    // Terminer et fermer
+    async function finishAndCloseSession() {
+        if (!currentSessionId) return;
+
+        showAppModal({
+            message: `Valider ${sessionJobs.length} jobs et fermer la session ?`,
+            confirm: true,
+            type: 'success'
+        }, async (confirmed) => {
+            if (confirmed) {
+                await closeCurrentSession();
+            }
+        });
+    }
+
+    // Supprimer job
+    async function deleteJob(jobId, table) {
+        showAppModal({
+            message: 'Supprimer ce job ?',
+            confirm: true,
+            type: 'danger'
+        }, async (confirmed) => {
+            if (!confirmed) return;
+
+            try {
+                // TODO: API delete job
+                console.log('Delete job', jobId, table);
+                await loadCurrentSessionJobs();
+            } catch (error) {
+                console.error('Erreur suppression:', error);
+            }
+        }
 </script>
