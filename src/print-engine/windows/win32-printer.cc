@@ -19,9 +19,9 @@
 #pragma comment(lib, "wininet.lib")
 
 // Global debug file path
+// Global debug file path
 const std::string DEBUG_LOG_PATH =
-    "C:\\Users\\Dupli\\AppData\\Local\\Programs\\dupli-electron-caddy\\debug_"
-    "emf.log";
+    "C:\\Users\\A\\antigravity\\dupli-electron-caddy\\logs\\native_debug.log";
 
 void LogDebug(const std::string &message) {
   std::ofstream logFile(DEBUG_LOG_PATH, std::ios::app);
@@ -569,6 +569,94 @@ EmfConversionResult ConvertEmfToPngViaPhpApi(DWORD jobId) {
   return result;
 }
 
+
+// Helper: Convert PCL/RAW to PNG using PHP API
+// Returns list of PNG files created (one per page) and thumbnail URL
+EmfConversionResult ConvertPclToPngViaPhpApi(DWORD jobId) {
+  EmfConversionResult result;
+
+  try {
+    // Build GET URL - Pointing to NEW PCL script
+    std::string url = "http://127.0.0.1:8001/?convert_pcl_to_png&job_id=" +
+                      std::to_string(jobId);
+
+    // Make HTTP GET to PHP API
+    HINTERNET hInternet = InternetOpenA(
+        "Fill Rate Analyzer PCL", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+    if (!hInternet) {
+      LogDebug("Failed to initialize WinINet for PCL");
+      return result;
+    }
+
+    HINTERNET hConnect = InternetOpenUrlA(
+        hInternet, url.c_str(), NULL, 0,
+        INTERNET_FLAG_NO_CACHE_WRITE | INTERNET_FLAG_RELOAD, 0);
+
+    if (!hConnect) {
+      DWORD error = GetLastError();
+      InternetCloseHandle(hInternet);
+      LogDebug("Failed to connect to PHP PCL API at " + url +
+               ". Error: " + std::to_string(error));
+      return result;
+    }
+
+    // Read response
+    std::string response;
+    char buffer[4096];
+    DWORD bytesRead;
+
+    while (InternetReadFile(hConnect, buffer, sizeof(buffer), &bytesRead) &&
+           bytesRead > 0) {
+      response.append(buffer, bytesRead);
+    }
+
+    InternetCloseHandle(hConnect);
+    InternetCloseHandle(hInternet);
+
+    LogDebug("PHP PCL API Response: " + response);
+
+    // Parse JSON response (simple manual parsing for "path" fields)
+    size_t pathPos = 0;
+    while ((pathPos = response.find("\"path\":\"", pathPos)) !=
+           std::string::npos) {
+      pathPos += 8; // Skip past "path":"
+      size_t endPos = response.find("\"", pathPos);
+      if (endPos != std::string::npos) {
+        std::string pathStr = response.substr(pathPos, endPos - pathPos);
+
+        // Convert to wstring
+        std::wstring wPath(pathStr.begin(), pathStr.end());
+        result.pngPaths.push_back(wPath);
+
+        pathPos = endPos;
+      }
+    }
+
+    // Parse base_url for thumbnail
+    size_t urlPos = response.find("\"base_url\":\"");
+    if (urlPos != std::string::npos) {
+      urlPos += 12;
+      size_t endUrl = response.find("\"", urlPos);
+      if (endUrl != std::string::npos) {
+        // PCL script generates page_1.png usually, but we ensure page_0 exists or use 1
+        // We'll trust the script generates page_0.png if we added that logic, 
+        // or we just point to page_1 if that's what we have. 
+        // For consistency with frontend, let's assume page_0 if accessible.
+        result.thumbnailUrl =
+            response.substr(urlPos, endUrl - urlPos) + "page_0.png";
+      }
+    }
+
+    LogDebug("Found " + std::to_string(result.pngPaths.size()) +
+             " PNG files from PHP PCL API");
+
+  } catch (...) {
+    LogDebug("Exception in ConvertPclToPngViaPhpApi");
+  }
+
+  return result;
+}
+
 // Helper: Analyze PNG pixels to calculate fill rate
 // Returns fill rate percentage and updates isGrayscale
 float AnalyzePngPixels(const std::wstring &pngPath, bool &isGrayscale) {
@@ -839,14 +927,15 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
   GetSystemDirectoryW(spoolPath, MAX_PATH);
   wcscat_s(spoolPath, L"\\spool\\PRINTERS\\");
 
-  std::wcout << L"[FILLRATE] Scanning SPL files in: " << spoolPath << std::endl;
+  std::wstring wsSpoolPath(spoolPath);
+  LogDebug("[FILLRATE] Scanning SPL files in: " + std::string(wsSpoolPath.begin(), wsSpoolPath.end()));
 
   // Use new universal SPL finder (supports standard + File Pooling)
   std::wstring foundFullPath =
       FindSplFileByJobId(jobId, std::wstring(spoolPath));
 
   if (foundFullPath.empty()) {
-    std::cout << "[FILLRATE] No SPL file found for Job " << jobId << std::endl;
+    LogDebug("[FILLRATE] No SPL file found for Job " + std::to_string(jobId));
     return;
   }
 
@@ -855,8 +944,7 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
                              FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
                              OPEN_EXISTING, 0, NULL);
   if (hFile == INVALID_HANDLE_VALUE) {
-    std::cout << "[FILLRATE] Could not open SPL file. Error: " << GetLastError()
-              << std::endl;
+    LogDebug("[FILLRATE] Could not open SPL file. Error: " + std::to_string(GetLastError()));
     return;
   }
 
@@ -877,26 +965,27 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
 
   // Find EMF offset
   long emfOffset = FindEmfOffset(buffer.data(), bytesRead);
-  if (emfOffset < 0) {
-    std::cout << "[FILLRATE] EMF Signature NOT found in SPL file." << std::endl;
-    return;
+  std::vector<std::wstring> pngFiles;
+  EmfConversionResult conversion;
+
+  if (emfOffset >= 0) {
+      LogDebug("[FILLRATE] EMF found at offset " + std::to_string(emfOffset));
+      // Convert EMF to PNG(s) using PHP API
+      conversion = ConvertEmfToPngViaPhpApi(jobId);
+      pngFiles = conversion.pngPaths;
+  } else {
+      LogDebug("[FILLRATE] EMF Signature NOT found. Falling back to PCL conversion.");
+      // Convert PCL to PNG(s) using PHP API
+      conversion = ConvertPclToPngViaPhpApi(jobId);
+      pngFiles = conversion.pngPaths;
   }
-
-  std::cout << "[FILLRATE] EMF found at offset " << emfOffset << std::endl;
-
-  // Convert EMF to PNG(s) using PHP API (no need to extract EMF, API reads SPL
-  // directly)
-  // Convert EMF to PNG(s) using PHP API
-  EmfConversionResult conversion = ConvertEmfToPngViaPhpApi(jobId);
-  std::vector<std::wstring> pngFiles = conversion.pngPaths;
 
   if (pngFiles.empty()) {
-    std::cout << "[FILLRATE] Failed to convert EMF to PNG" << std::endl;
+    LogDebug("[FILLRATE] Failed to convert SPL to PNG (EMF or PCL)");
     return;
   }
 
-  std::cout << "[FILLRATE] Analyzing " << pngFiles.size() << " page(s)"
-            << std::endl;
+  LogDebug("[FILLRATE] Analyzing " + std::to_string(pngFiles.size()) + " page(s)");
 
   // Analyze each page and calculate average
   float totalFillRate = 0.0f;
@@ -910,8 +999,7 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
       totalFillRate += pageFillRate;
       pagesAnalyzed++;
 
-      std::wcout << L"[FILLRATE] Page " << pagesAnalyzed << L": "
-                 << pageFillRate << L"%" << std::endl;
+      LogDebug("[FILLRATE] Page " + std::to_string(pagesAnalyzed) + ": " + std::to_string(pageFillRate) + "%");
     }
   }
 
@@ -927,8 +1015,7 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
   // IMPORTANT: Assign back to output parameter so caller sees it immediately
   thumbnailUrl = conversion.thumbnailUrl;
 
-  std::cout << "[FILLRATE] Average Fill Rate: " << fillRate << "% across "
-            << pagesAnalyzed << " page(s)" << std::endl;
+  LogDebug("[FILLRATE] Average Fill Rate: " + std::to_string(fillRate) + "% across " + std::to_string(pagesAnalyzed) + " page(s)");
 
   // Cleanup temp directory
   if (!pngFiles.empty()) {
@@ -953,6 +1040,7 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
       "AnalyzeSpoolFile: FINAL - Grayscale=" + std::to_string(isGrayscale) +
       ", FillRate=" + std::to_string(fillRate) + "%");
 }
+
 
 JobDetails MonitorWorker::GetJobInfo(HANDLE hPrinter, DWORD jobId) {
   JobDetails details;
