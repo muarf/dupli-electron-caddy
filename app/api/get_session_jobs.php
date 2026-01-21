@@ -18,42 +18,46 @@ try {
     }
     
     // Charger jobs photocop de cette session
-    $photocop_jobs = $db->query("
+    $stmt1 = $db->prepare("
         SELECT 
             id,
             'photocop' as table_source,
             marque as printerName,
-            nom as document,
-            nbCopies as pages,
-            quantiteCopies as copies,
+            '' as document,
+            nb_f as pages,
+            1 as copies,
             prix,
-            prixPapier as paper_cost,
-            prixEncre as ink_cost,
-            papierPaye,
+            0 as paper_cost,
+            0 as ink_cost,
+            paye as papierPaye,
             date
         FROM photocop
-        WHERE session_id = $session_id
+        WHERE session_id = ?
         ORDER BY date DESC
-    ")->fetchAll(PDO::FETCH_ASSOC);
+    ");
+    $stmt1->execute([$session_id]);
+    $photocop_jobs = $stmt1->fetchAll(PDO::FETCH_ASSOC);
     
     // Charger jobs dupli de cette session
-    $dupli_jobs = $db->query("
+    $stmt2 = $db->prepare("
         SELECT 
             id,
             'dupli' as table_source,
             nom_machine as printerName,
-            nom as document,
-            nbCopies as pages,
-            quantiteCopies as copies,
+            '' as document,
+            (CAST(passage_ap AS INTEGER) - CAST(passage_av AS INTEGER)) as pages,
+            1 as copies,
             prix,
-            prixPapier as paper_cost,
-            prixEncre as ink_cost,
-            papierPaye,
+            0 as paper_cost,
+            0 as ink_cost,
+            paye as papierPaye,
             date
         FROM dupli
-        WHERE session_id = $session_id
+        WHERE session_id = ?
         ORDER BY date DESC
-    ")->fetchAll(PDO::FETCH_ASSOC);
+    ");
+    $stmt2->execute([$session_id]);
+    $dupli_jobs = $stmt2->fetchAll(PDO::FETCH_ASSOC);
     
     // Combiner les deux
     $all_jobs = array_merge($photocop_jobs, $dupli_jobs);

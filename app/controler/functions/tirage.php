@@ -9,7 +9,7 @@
 /**
  * Insérer un tirage photocopieur
  */
-function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb, $mot, $date, $db = null, $tirage_global_id = null)
+function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb, $mot, $date, $db = null, $tirage_global_id = null, $session_id = null)
 {
     // CORRECTION DEADLOCK : Utiliser la connexion passée en paramètre si disponible (pour les transactions)
     if ($db === null) {
@@ -41,9 +41,9 @@ function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb
     }
     
     if ($hasTirageGlobalId) {
-        $query = $db->prepare('INSERT into photocop (type, marque, contact, nb_f, rv, prix, paye, cb, mot, date, tirage_global_id) VALUES (:type,:marque,:contact,:nb_f,:rv,:prix,:paye,:cb,:mot,:date,:tirage_global_id)');
+        $query = $db->prepare('INSERT into photocop (type, marque, contact, nb_f, rv, prix, paye, cb, mot, date, tirage_global_id, session_id) VALUES (:type,:marque,:contact,:nb_f,:rv,:prix,:paye,:cb,:mot,:date,:tirage_global_id,:session_id)');
     } else {
-        $query = $db->prepare('INSERT into photocop (type, marque, contact, nb_f, rv, prix, paye, cb, mot, date) VALUES (:type,:marque,:contact,:nb_f,:rv,:prix,:paye,:cb,:mot,:date)');
+        $query = $db->prepare('INSERT into photocop (type, marque, contact, nb_f, rv, prix, paye, cb, mot, date, session_id) VALUES (:type,:marque,:contact,:nb_f,:rv,:prix,:paye,:cb,:mot,:date,:session_id)');
     }
     
     $query->bindParam(':type', $type);
@@ -60,11 +60,16 @@ function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb
     if ($hasTirageGlobalId) {
         $query->bindParam(':tirage_global_id', $tirage_global_id);
     }
+    $query->bindParam(':session_id', $session_id);
+    
+    $query->bindParam(':session_id', $session_id);
     
     if (!$query->execute()) {
         $errorInfo = $query->errorInfo();
         throw new Exception("Erreur lors de l'insertion photocop : " . $errorInfo[2]);
     }
+    
+    return $db->lastInsertId();
 }
 
 /**

@@ -447,6 +447,19 @@ if ($page === 'get_session_jobs') {
     }
 }
 
+if ($page === 'delete_session_job') {
+    $api_file = __DIR__ . '/../api/delete_session_job.php';
+    if (file_exists($api_file)) {
+        require_once $api_file;
+        exit;
+    } else {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'API non trouvée']);
+        exit;
+    }
+}
+
 if ($page === 'sessions') {
     // API multi-session pour gestion des contacts/sessions d'impression
     $api_file = __DIR__ . '/../api/sessions.php';

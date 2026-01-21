@@ -84,9 +84,11 @@ class PrintSessionManager {
         }
 
         // L'utilisateur va sur auto_tirage pour assigner manuellement
+        /* 
         if (this.showSessionSelectionModal) {
             this.showSessionSelectionModal(jobData);
         }
+        */
 
         this.showToast('Impression détectée', jobData, true);
 

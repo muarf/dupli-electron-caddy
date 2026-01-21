@@ -380,7 +380,10 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
     
     <?php if (isset($machines) && !empty($machines)): ?>
         <div class="row">
-            <?php foreach ($machines as $index => $machine): ?>
+            <?php 
+            $session_total_corrected = 0; // Initialiser le total de la session
+            foreach ($machines as $index => $machine): 
+            ?>
                 <div class="col-md-6">
                     <div class="machine-card">
                         <h4 class="text-center"><i class="fa fa-print"></i> <?php _e('tirage_multimachines.tirage_number_prefix'); ?><?= ($index + 1) ?> - <?= ucfirst($machine['type']) ?></h4>
@@ -525,6 +528,10 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                                                         
                                                         // Récupérer le taux de remplissage (valeur par défaut 0.5 = 50%)
                                                         $fill_rate = isset($machine['fill_rate']) ? floatval($machine['fill_rate']) : 0.5;
+                                                        // Normalisation : si > 1, on suppose que c'est un pourcentage (ex: 36.5), on convertit en ratio (0.365)
+                                                        if ($fill_rate > 1.0) {
+                                                            $fill_rate = $fill_rate / 100.0;
+                                                        }
                                                         $fill_rate_multiplier = $couleur ? ($fill_rate / 0.5) : 1.0; // 50% = ×1, 100% = ×2
                                                         
                                                         // Déterminer la clé de la machine dynamiquement
@@ -597,28 +604,38 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                                                         }
                                                         
                                                         // Calculer le coût d'encre
-                                                        $nb_pages_encre = $nb_pages;
-                                                        if ($rv) {
-                                                            $nb_pages_encre = $nb_pages * 2;
+                                                        // Priorité au nombre de pages (faces) exact si disponible (via Auto Tirage)
+                                                        $nb_pages_per_copy = isset($brochure['nb_pages']) ? floatval($brochure['nb_pages']) : $nb_feuilles;
+                                                        $nb_pages_encre = $nb_exemplaires * $nb_pages_per_copy;
+                                                        
+                                                        // Si on n'a pas le nombre de pages exact et qu'on est en R/V, on double
+                                                        if (!isset($brochure['nb_pages']) && $rv) {
+                                                            $nb_pages_encre = $nb_pages_encre * 2;
                                                         }
+                                                        
                                                         $cout_encre = $nb_pages_encre * $prix_encre_brochure;
                                                         $total_encre += $cout_encre;
                                                         $total_pages += $nb_pages;
                                                         $total_pages_encre += $nb_pages_encre;
                                                         
-                                                        // Stocker les prix pour l'affichage (prendre la dernière brochure)
-                                                        $prix_papier = $prix_papier;
                                                         $prix_encre = $prix_encre_brochure;
                                                     }
                                                 }
                                             }
+                                            
+                                            // Calculer le total corrigé de cette machine et l'ajouter au total global
+                                            $machine_total_corrected = $total_papier + $total_encre;
+                                            $session_total_corrected += $machine_total_corrected;
                                             ?>
                                             <li><strong><?php _e('tirage_multimachines.paper_label'); ?> :</strong> <?= $total_pages ?> <?php _e('tirage_multimachines.pages'); ?> × <?= number_format($prix_papier, 3) ?> <?php _e('tirage_multimachines.currency'); ?> = <?= number_format($total_papier, 2) ?> <?php _e('tirage_multimachines.currency'); ?></li>
                                             <li><strong><?php _e('tirage_multimachines.ink_toner_label'); ?> :</strong> <?= $total_pages_encre ?> <?php _e('tirage_multimachines.pages'); ?> × <?= number_format($prix_encre, 4) ?> <?php _e('tirage_multimachines.currency'); ?> = <?= number_format($total_encre, 2) ?> <?php _e('tirage_multimachines.currency'); ?></li>
-                                            <li><strong><?php _e('tirage_multimachines.total'); ?> :</strong> <?= number_format($machine['prix'], 2) ?> <?php _e('tirage_multimachines.currency'); ?></li>
+                                            <li><strong><?php _e('tirage_multimachines.total'); ?> :</strong> <?= number_format($total_papier + $total_encre, 2) ?> <?php _e('tirage_multimachines.currency'); ?></li>
                                             <?php if (isset($machine['brochures']) && is_array($machine['brochures'])): ?>
                                                 <?php foreach ($machine['brochures'] as $brochure_index => $brochure): ?>
-                                                    <?php if (!empty($brochure['rv']) && $brochure['rv'] == 'oui'): ?>
+                                                    <?php 
+                                                        $is_really_multipages = !isset($brochure['nb_pages']) || floatval($brochure['nb_pages']) > 1;
+                                                        if (!empty($brochure['rv']) && $brochure['rv'] == 'oui' && $is_really_multipages): 
+                                                    ?>
                                                         <li><i class="fa fa-info-circle text-info"></i> <?php _e('tirage_multimachines.brochure_number'); ?><?= ($brochure_index + 1) ?> : <?php _e('tirage_multimachines.recto_verso_double_ink'); ?></li>
                                                     <?php endif; ?>
                                                     <?php if (!empty($brochure['feuilles_payees']) && $brochure['feuilles_payees'] == 'oui'): ?>
@@ -637,7 +654,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                             <div class="text-center" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
                                 <h4 class="text-primary">
                                     <i class="fa fa-euro"></i> 
-                                    <strong><?= number_format($machine['prix'], 2) ?> <?php _e('tirage_multimachines.currency'); ?></strong>
+                                    <strong><?= number_format($total_papier + $total_encre, 2) ?> <?php _e('tirage_multimachines.currency'); ?></strong>
                                 </h4>
                             </div>
                         </div>
@@ -649,7 +666,7 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
         <div class="alert alert-info text-center">
             <h3><i class="fa fa-calculator"></i> <?php _e('tirage_multimachines.total_global'); ?></h3>
             <h2 class="text-primary">
-                <strong><?= number_format($prix_total, 2) ?> <?php _e('tirage_multimachines.currency'); ?></strong>
+                <strong><?= number_format($session_total_corrected, 2) ?> <?php _e('tirage_multimachines.currency'); ?></strong>
             </h2>
         </div>
     <?php endif; ?>
@@ -663,6 +680,11 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
             <?php foreach ($machines as $index => $machine): ?>
                 <input type="hidden" name="machines[<?= $index ?>][type]" value="<?= $machine['type'] ?>" />
                 <input type="hidden" name="machines[<?= $index ?>][contact]" value="<?= isset($machine['contact']) && !empty($machine['contact']) ? $machine['contact'] : $contact ?>" />
+                
+                <!-- FIX: Relayer les IDs pour éviter les doublons -->
+                <input type="hidden" name="machines[<?= $index ?>][db_id]" value="<?= isset($machine['db_id']) ? $machine['db_id'] : '' ?>" />
+                <input type="hidden" name="machines[<?= $index ?>][job_id]" value="<?= isset($machine['job_id']) ? $machine['job_id'] : '' ?>" />
+
                 <?php if ($machine['type'] === 'duplicopieur'): ?>
                     <input type="hidden" name="machines[<?= $index ?>][nb_masters]" value="<?= $machine['nb_masters'] ?>" />
                     <input type="hidden" name="machines[<?= $index ?>][nb_passages]" value="<?= $machine['nb_passages'] ?>" />
@@ -687,12 +709,16 @@ if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
                         <?php foreach ($machine['brochures'] as $brochureIndex => $brochure): ?>
                             <input type="hidden" name="machines[<?= $index ?>][brochures][<?= $brochureIndex ?>][nb_exemplaires]" value="<?= $brochure['nb_exemplaires'] ?>" />
                             <input type="hidden" name="machines[<?= $index ?>][brochures][<?= $brochureIndex ?>][nb_feuilles]" value="<?= $brochure['nb_feuilles'] ?>" />
+                            <?php if (isset($brochure['nb_pages'])): ?>
+                                <input type="hidden" name="machines[<?= $index ?>][brochures][<?= $brochureIndex ?>][nb_pages]" value="<?= $brochure['nb_pages'] ?>" />
+                            <?php endif; ?>
                             <input type="hidden" name="machines[<?= $index ?>][brochures][<?= $brochureIndex ?>][taille]" value="<?= $brochure['taille'] ?>" />
                             <input type="hidden" name="machines[<?= $index ?>][brochures][<?= $brochureIndex ?>][rv]" value="<?= isset($brochure['rv']) ? $brochure['rv'] : 'non' ?>" />
                             <input type="hidden" name="machines[<?= $index ?>][brochures][<?= $brochureIndex ?>][couleur]" value="<?= isset($brochure['couleur']) ? $brochure['couleur'] : 'non' ?>" />
                             <input type="hidden" name="machines[<?= $index ?>][brochures][<?= $brochureIndex ?>][feuilles_payees]" value="<?= isset($brochure['feuilles_payees']) ? $brochure['feuilles_payees'] : 'non' ?>" />
                         <?php endforeach; ?>
                     <?php endif; ?>
+                    <input type="hidden" name="machines[<?= $index ?>][prix]" value="<?= $machine_total_corrected ?>" />
                 <?php endif; ?>
             <?php endforeach; ?>
             
@@ -1722,6 +1748,12 @@ function calculateMachinePrice(machineIndex) {
             // Récupérer le taux de remplissage
             var fillRateElement = machineElement.querySelector('#fill_rate_photocop_' + machineIndex);
             var fillRate = fillRateElement ? parseFloat(fillRateElement.value) : 0.5;
+            
+            // Normalisation : si > 1, on suppose que c'est un pourcentage (ex: 36.5), on convertit en ratio (0.365)
+            if (fillRate > 1.0) {
+                fillRate = fillRate / 100.0;
+            }
+            
             var fillRateMultiplier = couleur ? (fillRate / 0.5) : 1.0; // 50% = ×1, 100% = ×2
             
             // NOUVELLE STRUCTURE : Utiliser la fonction pour trouver la clé dynamique
@@ -1769,8 +1801,12 @@ function calculateMachinePrice(machineIndex) {
             // Calculer le coût
             var nbPages = nbExemplaires * nbFeuilles;
             var coutPapier = feuilles_payees ? 0 : (nbPages * prixPapier); // Papier = nombre de feuilles (0 si déjà payées)
-            var coutEncre = nbPages * prixEncre; // Encre de base
-            if (rv) coutEncre = coutEncre * 2; // Recto-verso = 2 fois plus d'encre
+            
+            // Calculer le nombre de faces pour l'encre : priorité au nb_pages exact (Auto Tirage)
+            var nbPagesExactInput = brochure.querySelector('input[name*="[nb_pages]"]');
+            var nbFacesTotalEncre = nbPagesExactInput ? (nbExemplaires * parseFloat(nbPagesExactInput.value)) : (rv ? nbPages * 2 : nbPages);
+            
+            var coutEncre = nbFacesTotalEncre * prixEncre; 
             var coutBrochure = coutPapier + coutEncre;
             
             console.log(`Brochure ${taille}: exemplaires=${nbExemplaires}, feuilles=${nbFeuilles}, rv=${rv}, nbPages=${nbPages}, prixPapier=${prixPapier}, prixEncre=${prixEncre}, coutBrochure=${coutBrochure}`);
@@ -1805,6 +1841,12 @@ function calculateMachinePrice(machineIndex) {
             // Récupérer le taux de remplissage (comme dans la première boucle)
             var fillRateElement = machineElement.querySelector('#fill_rate_photocop_' + machineIndex);
             var fillRate = fillRateElement ? parseFloat(fillRateElement.value) : 0.5;
+            
+            // Normalisation : si > 1, on suppose que c'est un pourcentage (ex: 36.5), on convertit en ratio (0.365)
+            if (fillRate > 1.0) {
+                fillRate = fillRate / 100.0;
+            }
+            
             var fillRateMultiplier = couleur ? (fillRate / 0.5) : 1.0; // 50% = ×1, 100% = ×2
             
             // NOUVELLE STRUCTURE : Utiliser la fonction pour trouver la clé dynamique
@@ -1896,8 +1938,10 @@ function calculateMachinePrice(machineIndex) {
             if (taille === 'A4') prixEncre = prixEncre / 2;
             
             var nbPages = nbExemplaires * nbFeuilles;
-            var nbPagesEncre = nbPages; // Pages pour l'encre
-            if (rv) nbPagesEncre = nbPages * 2; // Recto-verso = 2 fois plus de pages pour l'encre
+            
+            // Priorité au nb_pages exact (Auto Tirage) pour le détail aussi
+            var nbPagesExactInput = brochure.querySelector('input[name*="[nb_pages]"]');
+            var nbPagesEncre = nbPagesExactInput ? (nbExemplaires * parseFloat(nbPagesExactInput.value)) : (rv ? nbPages * 2 : nbPages);
             
             var coutEncreBrochure = nbPagesEncre * prixEncre;
             
