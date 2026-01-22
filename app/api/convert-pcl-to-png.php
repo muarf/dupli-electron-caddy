@@ -154,6 +154,28 @@ if (!$splFile || !file_exists($splFile)) {
     exit;
 }
 
+// LOG HEADER (HEX) to identify format
+$headerHandle = @fopen($splFile, 'rb');
+$isPcl = false;
+if ($headerHandle) {
+    $headerData = fread($headerHandle, 64);
+    fclose($headerHandle);
+    $hexHeader = bin2hex($headerData);
+    debugLog("SPL Header (Hex): " . $hexHeader);
+    debugLog("SPL Header (Text): " . addcslashes($headerData, "\0..\37!@\177..\377"));
+    
+    // Check for PJL or PCL signatures
+    if (strpos($headerData, "\x1B%-12345X") !== false || strpos($headerData, "\x1BE") !== false || strpos($headerData, "\x1B&") !== false) {
+        $isPcl = true;
+    }
+}
+
+if (!$isPcl) {
+    debugLog("SAFEGUARD: Non-PCL data detected in convert-pcl-to-png.php. Aborting to avoid GhostPCL loop.");
+    echo json_encode(['error' => 'Not a valid PCL file', 'job_id' => $jobId]);
+    exit;
+}
+
 // Créer le dossier de sortie (Accessible publiquement)
 $outputDir = __DIR__ . '/../public/thumbnails/' . $jobId . '/';
 if (is_dir($outputDir)) {

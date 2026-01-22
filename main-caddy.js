@@ -1373,6 +1373,42 @@ async function startCaddy() {
     console.log('Caddyfile original:', originalCaddyfile);
     console.log('Caddyfile existe:', fs.existsSync(originalCaddyfile));
 
+    // RÉPARATION: Vérifier et nettoyer le stockage Caddy corrompu (\x00 error)
+    if (isWindows) {
+        const caddyAppData = path.join(process.env.APPDATA, 'Caddy');
+        const lastCleanPath = path.join(caddyAppData, 'last_clean.json');
+        if (fs.existsSync(lastCleanPath)) {
+            try {
+                const content = fs.readFileSync(lastCleanPath, 'utf8');
+                if (content.includes('\0') || content.trim() === '') {
+                    console.log('Fichier last_clean.json corrompu détecté, suppression...');
+                    fs.unlinkSync(lastCleanPath);
+                }
+            } catch (e) {
+                console.log('Erreur lors de la vérification de last_clean.json:', e.message);
+                try { fs.unlinkSync(lastCleanPath); } catch (e2) { }
+            }
+        }
+
+        // Nettoyer aussi les vieux fichiers temporaires dans le dossier temp de l'utilisateur
+        const tempDir = os.tmpdir();
+        try {
+            const files = fs.readdirSync(tempDir);
+            files.forEach(file => {
+                if (file.startsWith('caddyfile_') && file.endsWith('.tmp')) {
+                    const filePath = path.join(tempDir, file);
+                    const stats = fs.statSync(filePath);
+                    // Supprimer si plus vieux de 1 heure
+                    if (Date.now() - stats.mtimeMs > 3600000) {
+                        fs.unlinkSync(filePath);
+                    }
+                }
+            });
+        } catch (e) {
+            console.log('Erreur lors du nettoyage des vieux Caddyfiles:', e.message);
+        }
+    }
+
     // Lire le contenu du Caddyfile original
     let caddyfileContent = fs.readFileSync(originalCaddyfile, 'utf8');
 

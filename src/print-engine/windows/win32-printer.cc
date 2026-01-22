@@ -434,11 +434,44 @@ long FindEmfOffset(const unsigned char *buffer, size_t size) {
       size_t start = i - 40;
       DWORD type = *((DWORD *)&buffer[start]);
       if (type == 1) { // EMR_HEADER
+        LogDebug("FindEmfOffset: Found EMF signature at offset " + std::to_string(start));
         return (long)start;
       }
     }
   }
+
+  // Backup scan for " EMF" at ANY offset if type check fails
+  for (size_t i = 0; i < scanLimit - 4; i++) {
+    if (buffer[i] == ' ' && buffer[i + 1] == 'E' && buffer[i + 2] == 'M' &&
+        buffer[i + 3] == 'F') {
+        LogDebug("FindEmfOffset: Backup found EMF signature at offset " + std::to_string(i - 40));
+        return (long)(i - 40);
+    }
+  }
+
   return -1;
+}
+
+// Helper: Check if buffer contains PCL signature (\x1B%-12345X or ESC)
+bool IsPclFile(const unsigned char *buffer, size_t size) {
+    if (size < 10) return false;
+    
+    // Check for PJL header
+    const char* pjlHeader = "\x1B%-12345X";
+    if (size >= 9 && memcmp(buffer, pjlHeader, 9) == 0) return true;
+    
+    // Check for common ESC commands in first 1KB
+    size_t scanLimit = (std::min)(size, (size_t)1024);
+    for (size_t i = 0; i < scanLimit - 1; i++) {
+        if (buffer[i] == 0x1B) { // ESC
+            // Check for some common PCL sequences: ESC E (Reset), ESC & (Config), ESC * (Raster)
+            if (buffer[i+1] == 'E' || buffer[i+1] == '&' || buffer[i+1] == '*') {
+                return true;
+            }
+        }
+    }
+    
+    return false;
 }
 
 // (Deprecated GDI rendering turned out to be unreliable for these memory
@@ -973,11 +1006,14 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
       // Convert EMF to PNG(s) using PHP API
       conversion = ConvertEmfToPngViaPhpApi(jobId);
       pngFiles = conversion.pngPaths;
-  } else {
-      LogDebug("[FILLRATE] EMF Signature NOT found. Falling back to PCL conversion.");
+  } else if (IsPclFile(buffer.data(), bytesRead)) {
+      LogDebug("[FILLRATE] No EMF signature, but PCL signature DETECTED. Proceeding to PCL conversion.");
       // Convert PCL to PNG(s) using PHP API
       conversion = ConvertPclToPngViaPhpApi(jobId);
       pngFiles = conversion.pngPaths;
+  } else {
+      LogDebug("[FILLRATE] NEITHER EMF NOR PCL signature found. Aborting conversion to avoid infinite loop.");
+      // Do nothing, pngFiles remains empty
   }
 
   if (pngFiles.empty()) {
