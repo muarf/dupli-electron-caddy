@@ -30,6 +30,12 @@ $app_modal_path = __DIR__ . '/components/app-modal.html.php';
 if (file_exists($app_modal_path)) {
     include $app_modal_path;
 }
+
+// Inclure la modale d'impression globale
+$print_modal_path = __DIR__ . '/components/print-modal.html.php';
+if (file_exists($print_modal_path)) {
+    include $print_modal_path;
+}
 ?>
 
 <!-- Print Session Manager - Toast Notifications CSS -->
@@ -57,9 +63,13 @@ if (file_exists($app_modal_path)) {
         var isConfirm = (!isString && options.confirm === true);
         var isPrompt = (!isString && options.prompt === true);
 
+        // Support pour onConfirm/onClose dans l'objet options (en plus du callback)
+        var onConfirmFn = (!isString && typeof options.onConfirm === 'function') ? options.onConfirm : null;
+        var onCloseFn = (!isString && typeof options.onClose === 'function') ? options.onClose : null;
+
         var $modal = $('#app-global-modal');
         $modal.find('#app-global-modal-title-text').text(title);
-        $modal.find('#app-global-modal-body').text(msg);
+        $modal.find('#app-global-modal-body').html(msg); // Changed to .html() to support <br> tags
 
         // Input pour prompt
         var $inputContainer = $modal.find('#app-global-modal-input-container');
@@ -92,16 +102,22 @@ if (file_exists($app_modal_path)) {
             $modal.find('#app-global-modal-ok').text("OK");
         }
 
-        // Gestion du callback
+        // Gestion du callback - Support onConfirm dans options OU callback en 2ème argument
         $modal.find('#app-global-modal-ok').off('click').on('click', function () {
-            if (callback) {
+            $modal.modal('hide');
+            if (onConfirmFn) {
+                onConfirmFn(isPrompt ? $input.val() : true);
+            } else if (callback) {
                 if (isPrompt) callback($input.val());
                 else callback(true);
             }
         });
 
         $modal.find('#app-global-modal-cancel').off('click').on('click', function () {
-            if (callback) {
+            $modal.modal('hide');
+            if (onCloseFn) {
+                onCloseFn();
+            } else if (callback) {
                 if (isPrompt) callback(null);
                 else callback(false);
             }
@@ -118,5 +134,20 @@ if (file_exists($app_modal_path)) {
 
         $modal.modal('show');
     };
+
+    // DEBUG: Écouter les logs du processus principal
+    if (window.isElectronMode && window.electronAPI.onConsoleLog) {
+        window.electronAPI.onConsoleLog(function (payload) {
+            var msg = payload.message;
+            var type = payload.type || 'info';
+            var styles = {
+                'success': 'color: #28a745; font-weight: bold;',
+                'warning': 'color: #ffc107; font-weight: bold;',
+                'danger': 'color: #dc3545; font-weight: bold;',
+                'info': 'color: #17a2b8; font-weight: bold;'
+            };
+            console.log('%c' + msg, styles[type] || styles.info);
+        });
+    }
 </script>
 <script src="js/print-session-manager.js"></script>

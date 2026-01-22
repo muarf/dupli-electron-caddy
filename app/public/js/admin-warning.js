@@ -136,18 +136,44 @@
         async restartAsAdmin() {
             if (typeof window.electronAPI === 'undefined' ||
                 typeof window.electronAPI.restartAsAdmin !== 'function') {
-                alert('Fonction non disponible');
+                if (window.showAppModal) {
+                    window.showAppModal('Fonction non disponible');
+                } else {
+                    alert('Fonction non disponible');
+                }
                 return;
             }
 
-            if (!confirm('L\'application va se fermer et redémarrer avec les droits administrateur.\n\nContinuer ?')) {
+            const confirmed = await new Promise(resolve => {
+                if (window.showAppModal) {
+                    window.showAppModal({
+                        type: 'warning',
+                        title: 'Redémarrage Administrateur',
+                        message: 'L\'application va se fermer et redémarrer avec les droits administrateur.<br><br>Continuer ?',
+                        confirm: true,
+                        onConfirm: () => resolve(true),
+                        onClose: () => resolve(false)
+                    });
+                } else {
+                    resolve(confirm('L\'application va se fermer et redémarrer avec les droits administrateur.\n\nContinuer ?'));
+                }
+            });
+
+            if (!confirmed) {
                 return;
             }
 
             try {
                 await window.electronAPI.restartAsAdmin();
             } catch (error) {
-                alert('Erreur lors du redémarrage : ' + error.message);
+                if (window.showAppModal) {
+                    window.showAppModal({
+                        type: 'danger',
+                        message: 'Erreur lors du redémarrage : ' + error.message
+                    });
+                } else {
+                    alert('Erreur lors du redémarrage : ' + error.message);
+                }
             }
         }
     };

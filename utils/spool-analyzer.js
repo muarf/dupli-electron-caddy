@@ -3,7 +3,7 @@
  * Uses Ghostscript to render spool files to images and analyze pixels for color detection
  */
 
-const { execFileSync } = require('child_process');
+// Note: execFile est importé localement dans la fonction pour éviter le blocage
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -64,10 +64,27 @@ async function analyzeSpoolFile(spoolFilePath) {
                 spoolFilePath
             ];
 
-            execFileSync(gsPath, args, {
-                timeout: 30000,  // 30 second timeout
-                windowsHide: true,
-                stdio: ['ignore', 'pipe', 'pipe']
+            // Utiliser execFile asynchrone avec timeout pour ne pas bloquer
+            const { execFile } = require('child_process');
+            await new Promise((resolve, reject) => {
+                const child = execFile(gsPath, args, {
+                    timeout: 10000,  // 10 second timeout (reduced from 30)
+                    windowsHide: true,
+                    maxBuffer: 1024 * 1024
+                }, (error, stdout, stderr) => {
+                    if (error) {
+                        reject(error);
+                    } else {
+                        resolve();
+                    }
+                });
+
+                // Forcer la terminaison si le processus ne répond pas
+                setTimeout(() => {
+                    try {
+                        child.kill('SIGTERM');
+                    } catch (e) { }
+                }, 10500);
             });
         } catch (gsError) {
             // Ghostscript might fail on proprietary formats - that's OK

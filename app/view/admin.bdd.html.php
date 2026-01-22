@@ -4,107 +4,111 @@
       <div class="col-md-10 col-md-offset-1">
         <h1 class="text-center"><?php _e('admin_bdd.title'); ?></h1>
         <hr>
-        
 
 
-        
+
+
         <!-- Messages de succès/erreur -->
-        <?php if(isset($GLOBALS['model_variables']['db_created'])): ?>
+        <?php if (isset($GLOBALS['model_variables']['db_created'])): ?>
           <div class="alert alert-success">
             <i class="fa fa-check"></i> <?= htmlspecialchars($GLOBALS['model_variables']['db_created']) ?>
           </div>
         <?php endif; ?>
-        
-            <?php if(isset($GLOBALS['model_variables']['db_switched'])): ?>
-      <div class="alert alert-info">
-        <i class="fa fa-info"></i> <?= htmlspecialchars($GLOBALS['model_variables']['db_switched']) ?>
-      </div>
-    <?php endif; ?>
-        
-        <?php if(isset($GLOBALS['model_variables']['db_deleted'])): ?>
+
+        <?php if (isset($GLOBALS['model_variables']['db_switched'])): ?>
+          <div class="alert alert-info">
+            <i class="fa fa-info"></i> <?= htmlspecialchars($GLOBALS['model_variables']['db_switched']) ?>
+          </div>
+        <?php endif; ?>
+
+        <?php if (isset($GLOBALS['model_variables']['db_deleted'])): ?>
           <div class="alert alert-warning">
             <i class="fa fa-trash"></i> <?= htmlspecialchars($GLOBALS['model_variables']['db_deleted']) ?>
           </div>
         <?php endif; ?>
-        
-        <?php if(isset($GLOBALS['model_variables']['db_renamed'])): ?>
+
+        <?php if (isset($GLOBALS['model_variables']['db_renamed'])): ?>
           <div class="alert alert-success">
             <i class="fa fa-edit"></i> <?= htmlspecialchars($GLOBALS['model_variables']['db_renamed']) ?>
           </div>
         <?php endif; ?>
-        
-        <?php if(isset($GLOBALS['model_variables']['db_emptied'])): ?>
+
+        <?php if (isset($GLOBALS['model_variables']['db_emptied'])): ?>
           <div class="alert alert-warning">
             <i class="fa fa-trash"></i> <?= htmlspecialchars($GLOBALS['model_variables']['db_emptied']) ?>
           </div>
         <?php endif; ?>
-        
-        <?php if(isset($GLOBALS['model_variables']['db_reset'])): ?>
+
+        <?php if (isset($GLOBALS['model_variables']['db_reset'])): ?>
           <div class="alert alert-danger">
             <i class="fa fa-refresh"></i> <?= htmlspecialchars($GLOBALS['model_variables']['db_reset']) ?>
           </div>
         <?php endif; ?>
-        
-        <?php if(isset($GLOBALS['model_variables']['db_error'])): ?>
+
+        <?php if (isset($GLOBALS['model_variables']['db_error'])): ?>
           <div class="alert alert-danger">
             <i class="fa fa-exclamation-triangle"></i> <?= htmlspecialchars($GLOBALS['model_variables']['db_error']) ?>
           </div>
         <?php endif; ?>
-        
-        <?php if(isset($GLOBALS['model_variables']['db_backup'])): ?>
+
+        <?php if (isset($GLOBALS['model_variables']['db_backup'])): ?>
           <div class="alert alert-success">
             <i class="fa fa-download"></i> <?= htmlspecialchars($GLOBALS['model_variables']['db_backup']) ?>
           </div>
         <?php endif; ?>
-        
-        <?php if(isset($GLOBALS['model_variables']['db_restored'])): ?>
+
+        <?php if (isset($GLOBALS['model_variables']['db_restored'])): ?>
           <div class="alert alert-success">
             <i class="fa fa-upload"></i> <?= htmlspecialchars($GLOBALS['model_variables']['db_restored']) ?>
           </div>
         <?php endif; ?>
-        
-        <?php if(isset($GLOBALS['model_variables']['db_backup_deleted'])): ?>
+
+        <?php if (isset($GLOBALS['model_variables']['db_backup_deleted'])): ?>
           <div class="alert alert-success">
             <i class="fa fa-trash"></i> <?= htmlspecialchars($GLOBALS['model_variables']['db_backup_deleted']) ?>
           </div>
         <?php endif; ?>
-        
-        <?php if(isset($GLOBALS['model_variables']['backup_created'])): ?>
+
+        <?php if (isset($GLOBALS['model_variables']['backup_created'])): ?>
           <div class="alert alert-success">
             <i class="fa fa-download"></i> <?= htmlspecialchars($GLOBALS['model_variables']['backup_created']) ?>
           </div>
         <?php endif; ?>
-        
-        <?php if(isset($GLOBALS['model_variables']['backup_error'])): ?>
+
+        <?php if (isset($GLOBALS['model_variables']['backup_error'])): ?>
           <div class="alert alert-danger">
-            <i class="fa fa-exclamation-triangle"></i> <?= htmlspecialchars($GLOBALS['model_variables']['backup_error']) ?>
+            <i class="fa fa-exclamation-triangle"></i>
+            <?= htmlspecialchars($GLOBALS['model_variables']['backup_error']) ?>
           </div>
         <?php endif; ?>
-        
-        <?php if(isset($GLOBALS['model_variables']['restore_error'])): ?>
+
+        <?php if (isset($GLOBALS['model_variables']['restore_error'])): ?>
           <div class="alert alert-danger">
-            <i class="fa fa-exclamation-triangle"></i> <?= htmlspecialchars($GLOBALS['model_variables']['restore_error']) ?>
+            <i class="fa fa-exclamation-triangle"></i>
+            <?= htmlspecialchars($GLOBALS['model_variables']['restore_error']) ?>
           </div>
         <?php endif; ?>
-        
-        <?php if(isset($GLOBALS['model_variables']['backup_delete_error'])): ?>
+
+        <?php if (isset($GLOBALS['model_variables']['backup_delete_error'])): ?>
           <div class="alert alert-danger">
-            <i class="fa fa-exclamation-triangle"></i> <?= htmlspecialchars($GLOBALS['model_variables']['backup_delete_error']) ?>
+            <i class="fa fa-exclamation-triangle"></i>
+            <?= htmlspecialchars($GLOBALS['model_variables']['backup_delete_error']) ?>
           </div>
         <?php endif; ?>
-        
-        <?php if(isset($GLOBALS['model_variables']['backup_uploaded'])): ?>
+
+        <?php if (isset($GLOBALS['model_variables']['backup_uploaded'])): ?>
           <div class="alert alert-success">
             <i class="fa fa-upload"></i> <?= htmlspecialchars($GLOBALS['model_variables']['backup_uploaded']) ?>
           </div>
         <?php endif; ?>
-        
-        <?php if(isset($GLOBALS['model_variables']['upload_error'])): ?>
+
+        <?php if (isset($GLOBALS['model_variables']['upload_error'])): ?>
           <div class="alert alert-danger">
-            <i class="fa fa-exclamation-triangle"></i> <?= htmlspecialchars($GLOBALS['model_variables']['upload_error']) ?>
+            <i class="fa fa-exclamation-triangle"></i>
+            <?= htmlspecialchars($GLOBALS['model_variables']['upload_error']) ?>
           </div>
         <?php endif; ?>
-        
+
         <!-- Base de données actuelle -->
         <div class="panel panel-info">
           <div class="panel-heading">
@@ -112,18 +116,19 @@
           </div>
           <div class="panel-body">
             <div class="alert alert-info">
-              <strong>Base actuelle :</strong> <?= htmlspecialchars($GLOBALS['model_variables']['current_db'] ?? 'duplinew') ?>
+              <strong>Base actuelle :</strong>
+              <?= htmlspecialchars($GLOBALS['model_variables']['current_db'] ?? 'duplinew') ?>
             </div>
           </div>
         </div>
-        
+
         <!-- Bases de données disponibles -->
         <div class="panel panel-primary">
           <div class="panel-heading">
             <h3 class="panel-title"><i class="fa fa-list"></i> Fichiers de base de données SQLite disponibles</h3>
           </div>
           <div class="panel-body">
-            <?php if(isset($GLOBALS['model_variables']['databases']) && count($GLOBALS['model_variables']['databases']) > 0): ?>
+            <?php if (isset($GLOBALS['model_variables']['databases']) && count($GLOBALS['model_variables']['databases']) > 0): ?>
               <div class="table-responsive">
                 <table class="table table-striped">
                   <thead>
@@ -136,37 +141,38 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <?php foreach($GLOBALS['model_variables']['databases'] as $db): ?>
+                    <?php foreach ($GLOBALS['model_variables']['databases'] as $db): ?>
                       <tr>
                         <td>
                           <strong><?= htmlspecialchars($db['name']) ?></strong>
-                          <?php if($db['name'] == ($GLOBALS['model_variables']['current_db'] ?? 'duplinew')): ?>
+                          <?php if ($db['name'] == ($GLOBALS['model_variables']['current_db'] ?? 'duplinew')): ?>
                             <span class="label label-success">Actuelle</span>
                           <?php endif; ?>
-                          <br><small class="text-muted"><?= htmlspecialchars($db['file'] ?? $db['name'] . '.sqlite') ?></small>
+                          <br><small
+                            class="text-muted"><?= htmlspecialchars($db['file'] ?? $db['name'] . '.sqlite') ?></small>
                         </td>
                         <td>
-                          <?php if($db['type'] == 'production'): ?>
+                          <?php if ($db['type'] == 'production'): ?>
                             <span class="label label-danger">Production</span>
-                          <?php elseif($db['type'] == 'dev'): ?>
+                          <?php elseif ($db['type'] == 'dev'): ?>
                             <span class="label label-warning">Développement</span>
-                          <?php elseif($db['type'] == 'test'): ?>
+                          <?php elseif ($db['type'] == 'test'): ?>
                             <span class="label label-info">Test</span>
-                          <?php elseif($db['type'] == 'staging'): ?>
+                          <?php elseif ($db['type'] == 'staging'): ?>
                             <span class="label label-primary">Staging</span>
                           <?php else: ?>
                             <span class="label label-default"><?= htmlspecialchars($db['type']) ?></span>
                           <?php endif; ?>
                         </td>
                         <td>
-                          <?php if(isset($db['size'])): ?>
+                          <?php if (isset($db['size'])): ?>
                             <?= number_format($db['size'] / 1024, 1) ?> KB
                           <?php else: ?>
                             <span class="text-muted">N/A</span>
                           <?php endif; ?>
                         </td>
                         <td>
-                          <?php if(isset($db['modified'])): ?>
+                          <?php if (isset($db['modified'])): ?>
                             <?= date('d/m/Y H:i', $db['modified']) ?>
                           <?php else: ?>
                             <span class="text-muted">N/A</span>
@@ -174,16 +180,19 @@
                         </td>
                         <td>
                           <form method="post" style="display: inline;">
-                            <button type="submit" name="switch_db" value="<?= $db['name'] ?>" class="btn btn-primary btn-xs">
+                            <button type="submit" name="switch_db" value="<?= $db['name'] ?>"
+                              class="btn btn-primary btn-xs">
                               <i class="fa fa-exchange"></i> Utiliser
                             </button>
                           </form>
-                          <button type="button" class="btn btn-warning btn-xs" onclick="showRenameForm('<?= htmlspecialchars($db['name']) ?>')">
+                          <button type="button" class="btn btn-warning btn-xs"
+                            onclick="showRenameForm('<?= htmlspecialchars($db['name']) ?>')">
                             <i class="fa fa-edit"></i> Renommer
                           </button>
-                          <?php if($db['name'] != ($GLOBALS['model_variables']['current_db'] ?? 'duplinew')): ?>
-                            <form method="post" style="display: inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette base de données ?');">
-                              <button type="submit" name="delete_db" value="<?= $db['name'] ?>" class="btn btn-danger btn-xs">
+                          <?php if ($db['name'] != ($GLOBALS['model_variables']['current_db'] ?? 'duplinew')): ?>
+                            <form method="post" style="display: inline;">
+                              <button type="button" name="delete_db" value="<?= $db['name'] ?>" class="btn btn-danger btn-xs"
+                                onclick="confirmDBAction(this, 'Êtes-vous sûr de vouloir supprimer cette base de données ?')">
                                 <i class="fa fa-trash"></i> Supprimer
                               </button>
                             </form>
@@ -201,7 +210,7 @@
             <?php endif; ?>
           </div>
         </div>
-        
+
         <!-- Base de données actuelle -->
         <div class="panel panel-primary">
           <div class="panel-heading">
@@ -209,29 +218,30 @@
           </div>
           <div class="panel-body">
             <p class="lead">
-              <strong>Base actuelle :</strong> 
-              <span class="label label-primary"><?= htmlspecialchars($GLOBALS['model_variables']['current_db'] ?? 'duplinew') ?></span>
-              <?php 
+              <strong>Base actuelle :</strong>
+              <span
+                class="label label-primary"><?= htmlspecialchars($GLOBALS['model_variables']['current_db'] ?? 'duplinew') ?></span>
+              <?php
               $current_db = $GLOBALS['model_variables']['current_db'] ?? 'duplinew';
-              if($current_db === 'duplinew'): ?>
+              if ($current_db === 'duplinew'): ?>
                 <span class="label label-success">Production</span>
-              <?php elseif(strpos($current_db, '_dev') !== false): ?>
+              <?php elseif (strpos($current_db, '_dev') !== false): ?>
                 <span class="label label-warning">Développement</span>
-              <?php elseif(strpos($current_db, '_test') !== false): ?>
+              <?php elseif (strpos($current_db, '_test') !== false): ?>
                 <span class="label label-info">Test</span>
               <?php endif; ?>
             </p>
             <p class="text-muted">
-              <i class="fa fa-info-circle"></i> 
+              <i class="fa fa-info-circle"></i>
               Cette base de données est actuellement utilisée par l'application.
-              <?php if(isset($_SESSION['active_database']) && $_SESSION['active_database'] !== $current_db): ?>
-                <br><i class="fa fa-exclamation-triangle text-warning"></i> 
+              <?php if (isset($_SESSION['active_database']) && $_SESSION['active_database'] !== $current_db): ?>
+                <br><i class="fa fa-exclamation-triangle text-warning"></i>
                 <strong>Attention :</strong> La session indique une base différente. Rechargez la page pour synchroniser.
               <?php endif; ?>
             </p>
           </div>
         </div>
-        
+
         <!-- Créer une nouvelle base de données SQLite -->
         <div class="panel panel-success">
           <div class="panel-heading">
@@ -239,19 +249,22 @@
           </div>
           <div class="panel-body">
             <div class="alert alert-info">
-              <i class="fa fa-info-circle"></i> <strong>Note :</strong> Cette fonctionnalité crée un nouveau fichier SQLite avec la structure complète des tables.
+              <i class="fa fa-info-circle"></i> <strong>Note :</strong> Cette fonctionnalité crée un nouveau fichier
+              SQLite avec la structure complète des tables.
               L'extension .sqlite sera ajoutée automatiquement.
             </div>
-            
+
             <form method="post" class="form-horizontal" action="?admin&bdd">
               <div class="form-group">
                 <label class="col-md-3 control-label" for="db_name">Nom du fichier :</label>
                 <div class="col-md-9">
-                  <input type="text" class="form-control" name="db_name" id="db_name" placeholder="ex: dupli_montreuil, fond_de_la_casse" required>
-                  <small class="text-muted">Le nom doit commencer par une lettre et ne contenir que des lettres, chiffres et underscores. L'extension .sqlite sera ajoutée automatiquement.</small>
+                  <input type="text" class="form-control" name="db_name" id="db_name"
+                    placeholder="ex: dupli_montreuil, fond_de_la_casse" required>
+                  <small class="text-muted">Le nom doit commencer par une lettre et ne contenir que des lettres,
+                    chiffres et underscores. L'extension .sqlite sera ajoutée automatiquement.</small>
                 </div>
               </div>
-              
+
               <div class="form-group">
                 <label class="col-md-3 control-label" for="db_type">Type :</label>
                 <div class="col-md-9">
@@ -264,7 +277,7 @@
                   </select>
                 </div>
               </div>
-              
+
               <div class="form-group">
                 <label class="col-md-3 control-label" for="db_template">Template :</label>
                 <div class="col-md-9">
@@ -274,10 +287,11 @@
                     <option value="duplinew">Copier depuis duplinew.sqlite (production)</option>
                     <option value="duplinew_dev">Copier depuis duplinew_dev.sqlite (développement)</option>
                   </select>
-                  <small class="text-muted">Choisir un fichier existant pour copier la structure et les données, ou "Structure complète" pour créer toutes les tables nécessaires</small>
+                  <small class="text-muted">Choisir un fichier existant pour copier la structure et les données, ou
+                    "Structure complète" pour créer toutes les tables nécessaires</small>
                 </div>
               </div>
-              
+
               <div class="form-group">
                 <div class="col-md-9 col-md-offset-3">
                   <input type="hidden" name="create_db" value="1">
@@ -289,7 +303,7 @@
             </form>
           </div>
         </div>
-        
+
         <!-- Actions sur le fichier SQLite actuel -->
         <div class="panel panel-warning">
           <div class="panel-heading">
@@ -300,7 +314,8 @@
               <div class="col-md-4">
                 <form method="post">
                   <div class="form-group">
-                    <input type="text" class="form-control" name="backup_name" placeholder="Nom de la sauvegarde (optionnel)" style="margin-bottom: 10px;">
+                    <input type="text" class="form-control" name="backup_name"
+                      placeholder="Nom de la sauvegarde (optionnel)" style="margin-bottom: 10px;">
                     <button type="submit" name="backup_db" class="btn btn-success btn-block">
                       <i class="fa fa-download"></i> Créer une sauvegarde
                     </button>
@@ -309,16 +324,18 @@
                 </form>
               </div>
               <div class="col-md-4">
-                <form method="post" onsubmit="return confirm('Êtes-vous sûr de vouloir vider cette base de données ?');">
-                  <button type="submit" name="empty_db" class="btn btn-warning btn-block">
+                <form method="post">
+                  <button type="button" name="empty_db" class="btn btn-warning btn-block"
+                    onclick="confirmDBAction(this, 'Êtes-vous sûr de vouloir vider cette base de données ?')">
                     <i class="fa fa-trash"></i> Vider la base de données
                   </button>
                   <small class="text-muted">Supprime toutes les données mais garde la structure</small>
                 </form>
               </div>
               <div class="col-md-4">
-                <form method="post" onsubmit="return confirm('Êtes-vous sûr de vouloir réinitialiser cette base de données ?');">
-                  <button type="submit" name="reset_db" class="btn btn-danger btn-block">
+                <form method="post">
+                  <button type="button" name="reset_db" class="btn btn-danger btn-block"
+                    onclick="confirmDBAction(this, 'Êtes-vous sûr de vouloir réinitialiser cette base de données ?')">
                     <i class="fa fa-refresh"></i> Réinitialiser complètement
                   </button>
                   <small class="text-muted">Supprime tout et recrée la structure</small>
@@ -327,24 +344,26 @@
             </div>
           </div>
         </div>
-        
+
         <!-- Gestion des sauvegardes existantes -->
         <div class="panel panel-info">
           <div class="panel-heading">
             <h3 class="panel-title"><i class="fa fa-files-o"></i> Sauvegardes disponibles</h3>
           </div>
           <div class="panel-body">
-            
+
             <!-- Formulaire d'upload de sauvegarde -->
             <div class="row" style="margin-bottom: 20px;">
               <div class="col-md-12">
                 <div class="alert alert-info">
-                  <i class="fa fa-info-circle"></i> <strong>Charger une sauvegarde :</strong> Vous pouvez uploader un fichier SQLite (.sqlite) pour l'ajouter à la liste des sauvegardes disponibles.
+                  <i class="fa fa-info-circle"></i> <strong>Charger une sauvegarde :</strong> Vous pouvez uploader un
+                  fichier SQLite (.sqlite) pour l'ajouter à la liste des sauvegardes disponibles.
                 </div>
                 <form method="post" enctype="multipart/form-data" class="form-inline">
                   <div class="form-group">
                     <label for="backup_file" class="sr-only">Fichier de sauvegarde</label>
-                    <input type="file" class="form-control" id="backup_file" name="backup_file" accept=".sqlite" required>
+                    <input type="file" class="form-control" id="backup_file" name="backup_file" accept=".sqlite"
+                      required>
                   </div>
                   <button type="submit" class="btn btn-primary">
                     <i class="fa fa-upload"></i> Charger la sauvegarde
@@ -353,10 +372,10 @@
                 <small class="text-muted">Format accepté : .sqlite (taille maximum : 50MB)</small>
               </div>
             </div>
-            
+
             <hr>
             <?php
-            if(!empty($backups)): ?>
+            if (!empty($backups)): ?>
               <div class="table-responsive">
                 <table class="table table-striped">
                   <thead>
@@ -368,24 +387,26 @@
                     </tr>
                   </thead>
                   <tbody>
-                    <?php foreach($backups as $backup): ?>
+                    <?php foreach ($backups as $backup): ?>
                       <tr>
                         <td><?= htmlspecialchars($backup['filename']) ?></td>
                         <td><?= htmlspecialchars($backup['size']) ?></td>
                         <td><?= htmlspecialchars($backup['date']) ?></td>
                         <td>
-                          <form method="post" style="display: inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir restaurer cette sauvegarde ? Cela écrasera toutes les données actuelles !');">
+                          <form method="post" style="display: inline;">
                             <input type="hidden" name="backup_file" value="<?= htmlspecialchars($backup['filename']) ?>">
-                            <button type="submit" name="restore_db" class="btn btn-warning btn-xs">
+                            <button type="button" name="restore_db" class="btn btn-warning btn-xs"
+                              onclick="confirmDBAction(this, 'Êtes-vous sûr de vouloir restaurer cette sauvegarde ? Cela écrasera toutes les données actuelles !')">
                               <i class="fa fa-upload"></i> Restaurer
                             </button>
                           </form>
                           <a href="?download_backup&file=<?= urlencode($backup['filename']) ?>" class="btn btn-info btn-xs">
                             <i class="fa fa-download"></i> Télécharger
                           </a>
-                          <form method="post" style="display: inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette sauvegarde ? Cette action est irréversible !');">
+                          <form method="post" style="display: inline;">
                             <input type="hidden" name="backup_file" value="<?= htmlspecialchars($backup['filename']) ?>">
-                            <button type="submit" name="delete_backup" class="btn btn-danger btn-xs">
+                            <button type="button" name="delete_backup" class="btn btn-danger btn-xs"
+                              onclick="confirmDBAction(this, 'Êtes-vous sûr de vouloir supprimer cette sauvegarde ? Cette action est irréversible !')">
                               <i class="fa fa-trash"></i> Supprimer
                             </button>
                           </form>
@@ -400,7 +421,7 @@
             <?php endif; ?>
           </div>
         </div>
-        
+
         <!-- Bouton retour -->
         <div class="row">
           <div class="col-md-12">
@@ -411,7 +432,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Modal de renommage -->
     <div class="modal fade" id="renameModal" tabindex="-1" role="dialog">
       <div class="modal-dialog" role="document">
@@ -428,8 +449,10 @@
               </div>
               <div class="form-group">
                 <label for="new_db_name">Nouveau nom :</label>
-                <input type="text" class="form-control" id="new_db_name" name="new_db_name" placeholder="ex: dupli_montreuil" required>
-                <small class="text-muted">Le nom doit commencer par une lettre et ne contenir que des lettres, chiffres et underscores</small>
+                <input type="text" class="form-control" id="new_db_name" name="new_db_name"
+                  placeholder="ex: dupli_montreuil" required>
+                <small class="text-muted">Le nom doit commencer par une lettre et ne contenir que des lettres, chiffres
+                  et underscores</small>
               </div>
             </div>
             <div class="modal-footer">
@@ -440,13 +463,34 @@
         </div>
       </div>
     </div>
-    
+
     <!-- JavaScript pour le renommage -->
     <script>
       function showRenameForm(dbName) {
         document.getElementById('old_db_name').value = dbName;
         document.getElementById('new_db_name').value = '';
         $('#renameModal').modal('show');
+      }
+
+      function confirmDBAction(btn, message) {
+        showAppModal({
+          type: 'warning',
+          title: 'Confirmation',
+          message: message,
+          confirm: true,
+          onConfirm: function () {
+            var $btn = $(btn);
+            var $form = $btn.closest('form');
+            if ($btn.attr('name')) {
+              $form.append($('<input>').attr({
+                type: 'hidden',
+                name: $btn.attr('name'),
+                value: $btn.attr('value') || ''
+              }));
+            }
+            $form.submit();
+          }
+        });
       }
     </script>
   </div>

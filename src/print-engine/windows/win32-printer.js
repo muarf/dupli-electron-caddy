@@ -136,7 +136,7 @@ async function getPrinterCapabilities(printerName) {
  * @returns {Promise<Object>}
  */
 async function printJob(pdfPath, options = {}) {
-    const { spawnSync } = require('child_process');
+    const { spawn } = require('child_process');
     const fs = require('fs');
 
     // Trouver Ghostscript
@@ -177,59 +177,113 @@ async function printJob(pdfPath, options = {}) {
     };
     console.log('🖨️ [PRINT_ENGINE] Options d\'impression via Ghostscript:', JSON.stringify(logData, null, 2));
 
-    // Nombre de copies - on doit imprimer plusieurs fois car mswinpr2 ne supporte pas NumCopies
+    // Nombre de copies
     const copies = parseInt(options.copies) || 1;
+    const jobName = options.fileName || 'Dupli-Print';
 
-    try {
-        for (let i = 0; i < copies; i++) {
-            // Arguments Ghostscript de base (mswinpr2 utilise le driver Windows pour les options)
-            const gsArgs = [
-                '-dBATCH',
-                '-dNOPAUSE',
-                '-dNOSAFER',
-                '-sDEVICE=mswinpr2',
-                `-sOutputFile=%printer%${printerName}`,
-                pdfPath
-            ];
+    return new Promise((resolve, reject) => {
+        // Arguments Ghostscript
+        // -sJobName permet de définir le nom du document dans la file d'attente
+        // -c "<< /NumCopies X >> setpagedevice" permet (parfois) de gérer les copies en un seul job
+        const safeJobName = jobName.replace(/[()]/g, '');
+        const gsArgs = [
+            '-dBATCH',
+            '-dNOPAUSE',
+            '-dNOSAFER',
+            '-dQUIET',
+            `-sJobName=${safeJobName}`,
+            '-sDEVICE=mswinpr2',
+            `-sOutputFile=%printer%${printerName}`
+        ];
 
-            console.log(`🖨️ [PRINT_ENGINE] Impression copie ${i + 1}/${copies}:`, gsPath, gsArgs.join(' '));
+        // Gestion du format papier
+        const paperSize = options.paperSize || 'A4';
+        const paperSizeMap = {
+            'A4': 'a4',
+            'A3': 'a3',
+            'A5': 'a5',
+            'Letter': 'letter',
+            'Legal': 'legal'
+        };
+        const gsPaperSize = paperSizeMap[paperSize] || 'a4';
+        gsArgs.push(`-sPAPERSIZE=${gsPaperSize}`);
 
-            // Exécuter Ghostscript
-            const result = spawnSync(gsPath, gsArgs, {
-                encoding: 'utf8',
-                windowsHide: true,
-                timeout: 120000 // 2 minutes timeout
-            });
-
-            // Log output
-            if (result.stdout) {
-                console.log('📄 [PRINT_ENGINE] stdout:', result.stdout);
-            }
-            if (result.stderr) {
-                console.log('📄 [PRINT_ENGINE] stderr:', result.stderr);
-            }
-
-            // Vérifier le code de sortie
-            if (result.status !== 0) {
-                throw new Error(`Ghostscript exit code ${result.status}: ${result.stderr || result.stdout || 'Unknown error'}`);
-            }
+        // Gestion de l'orientation
+        const orientation = options.orientation || 'portrait';
+        if (orientation === 'landscape') {
+            gsArgs.push('-dAutoRotatePages=/None');
+            gsArgs.push('-c', '<< /Orientation 3 >> setpagedevice');
         }
 
-        // Générer un ID de job pseudo-unique
-        const jobId = Date.now() % 100000;
+        // Gestion des copies et du titre au sein d'un seul flux
+        // Note: mswinpr2 utilise aussi souvent le titre du document PostScript
+        const psCommands = [
+            `/NumCopies ${copies}`,
+            `/Title (${safeJobName})`,
+            `/JobName (${safeJobName})`
+        ];
 
-        console.log('✅ [PRINT_ENGINE] Impression envoyée avec succès');
+        // Gestion du recto-verso (duplex)
+        // Duplex values: false (simplex), true (long edge), /Tumble (short edge)
+        const duplexMode = options.duplex || 'simplex';
+        if (duplexMode === 'duplex') {
+            // Duplex bord long (flip sur le côté long)
+            psCommands.push('/Duplex true');
+            psCommands.push('/Tumble false');
+        } else if (duplexMode === 'tumble') {
+            // Duplex bord court (flip sur le côté court)
+            psCommands.push('/Duplex true');
+            psCommands.push('/Tumble true');
+        } else {
+            // Simplex (recto seul)
+            psCommands.push('/Duplex false');
+        }
 
-        return {
-            success: true,
-            jobId: jobId,
-            message: `Impression envoyée (${copies} copie${copies > 1 ? 's' : ''})`,
-            printer: printerName
-        };
-    } catch (error) {
-        console.error('❌ [PRINT_ENGINE] Erreur Ghostscript:', error.message);
-        throw new Error(`Erreur lors de l'impression: ${error.message}`);
-    }
+        // Gestion des pages paires/impaires
+        const pageSubset = options.pageSubset || 'all';
+        if (pageSubset === 'odd') {
+            gsArgs.push('-sPageList=odd');
+        } else if (pageSubset === 'even') {
+            gsArgs.push('-sPageList=even');
+        }
+
+        gsArgs.push('-c', `<< ${psCommands.join(' ')} >> setpagedevice`, '-f');
+
+        gsArgs.push(pdfPath);
+
+        console.log(`🖨️ [PRINT_ENGINE] Lancement impression (Job: ${jobName}, Copies: ${copies}, Paper: ${paperSize}, Orientation: ${orientation}, Duplex: ${duplexMode}, Pages: ${pageSubset}):`, gsPath, gsArgs.join(' '));
+
+        const child = spawn(gsPath, gsArgs, {
+            windowsHide: true,
+            detached: false
+        });
+
+        let stdout = '';
+        let stderr = '';
+
+        child.stdout.on('data', (data) => { stdout += data.toString(); });
+        child.stderr.on('data', (data) => { stderr += data.toString(); });
+
+        child.on('close', (code) => {
+            if (code === 0) {
+                console.log('✅ [PRINT_ENGINE] Impression envoyée avec succès');
+                resolve({
+                    success: true,
+                    jobId: Date.now() % 100000,
+                    message: `Impression envoyée (${copies} copie${copies > 1 ? 's' : ''})`,
+                    printer: printerName
+                });
+            } else {
+                console.error('❌ [PRINT_ENGINE] Erreur Ghostscript code:', code, stderr);
+                reject(new Error(`Ghostscript erreur code ${code}: ${stderr || stdout || 'Unknown error'}`));
+            }
+        });
+
+        child.on('error', (err) => {
+            console.error('❌ [PRINT_ENGINE] Erreur lancement:', err.message);
+            reject(new Error(`Erreur lancement Ghostscript: ${err.message}`));
+        });
+    });
 }
 
 /**
