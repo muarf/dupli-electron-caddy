@@ -46,21 +46,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($action === 'delete_jobs') {
                 if (!isset($input['ids']) || !is_array($input['ids']) || empty($input['ids'])) {
-                     throw new Exception("Aucun ID spécifié pour la suppression");
+                    throw new Exception("Aucun ID spécifié pour la suppression");
                 }
 
                 $ids = array_map('intval', $input['ids']);
                 $ids_string = implode(',', $ids);
 
+                // --- NOUVEAU: Annuler les tâches dans Windows avant de supprimer de la base ---
+                try {
+                    // Récupérer les détails des jobs pour l'annulation Windows
+                    $jobsToCancel = $db->select("SELECT job_id, printer_name FROM print_jobs WHERE id IN ($ids_string)");
+
+                    foreach ($jobsToCancel as $job) {
+                        if (!empty($job['job_id']) && !empty($job['printer_name'])) {
+                            $jobId = intval($job['job_id']);
+                            $printer = $job['printer_name'];
+
+                            // Échapper le nom de l'imprimante pour PowerShell
+                            // On remplace ' par '' pour l'échappement PowerShell
+                            $escapedPrinter = str_replace("'", "''", $printer);
+
+                            // Commande PowerShell pour supprimer le job
+                            $cmd = "powershell.exe -Command \"Remove-PrintJob -PrinterName '$escapedPrinter' -ID $jobId\"";
+
+                            error_log("[API] Tentative d'annulation du job Windows ID $jobId sur '$printer'");
+
+                            // Exécuter silencieusement
+                            exec($cmd . " 2>&1", $output, $returnVar);
+
+                            if ($returnVar !== 0) {
+                                error_log("[API] Échec annulation job $jobId: " . implode(" ", $output));
+                            } else {
+                                error_log("[API] Job $jobId annulé avec succès");
+                            }
+                        }
+                    }
+                } catch (Exception $cancelEx) {
+                    error_log("[API] Erreur technique lors de l'annulation système: " . $cancelEx->getMessage());
+                    // On continue la suppression en base même si l'annulation système échoue
+                }
+                // ----------------------------------------------------------------------------
+
                 // Utiliser la méthode execute() de DatabaseManager
                 $db->execute("DELETE FROM print_jobs WHERE id IN ($ids_string)");
 
-                echo json_encode(['success' => true, 'message' => count($ids) . ' impression(s) supprimée(s)']);
+                echo json_encode(['success' => true, 'message' => count($ids) . ' impression(s) supprimée(s) et annulée(s) dans le spooler']);
                 exit;
 
             } elseif ($action === 'purge_all') {
                 $db->execute("DELETE FROM print_jobs");
-                 // Ou TRUNCATE si préféré et supporté: $db->query("TRUNCATE TABLE print_jobs");
+                // Ou TRUNCATE si préféré et supporté: $db->query("TRUNCATE TABLE print_jobs");
 
                 echo json_encode(['success' => true, 'message' => 'Historique purgé avec succès']);
                 exit;

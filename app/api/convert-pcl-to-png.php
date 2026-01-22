@@ -171,22 +171,101 @@ $baseUrl = 'http://127.0.0.1:8001/thumbnails/' . $jobId . '/';
 
 // Conversion avec Ghostscript
 // On utilise le fichier SPL directement. Ghostscript est assez intelligent pour ignorer les en-têtes RAW/PJL souvent.
-// Si ça échoue, on pourrait avoir besoin de skipper l'en-tête, mais essayons direct.
 
+$realGsPath = realpath($gsPath);
+$realSplFile = realpath($splFile);
 $outputImage = $outputDir . 'page_%d.png';
 
+if (!$realGsPath) {
+    debugLog("ERROR: Could not resolve absolute path for GhostPCL: $gsPath");
+}
+
 $command = sprintf(
-    '"%s" -dNOPAUSE -dBATCH -dSAFER -sDEVICE=png16m -r72 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile="%s" "%s" 2>&1',
-    $gsPath,
+    '"%s" -dNOPAUSE -dBATCH -dSAFER -dQUIET -sDEVICE=png16m -r72 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile="%s" "%s" 2>&1',
+    $realGsPath ?: $gsPath,
     $outputImage,
-    $splFile
+    $realSplFile ?: $splFile
 );
 
 debugLog("Running command: $command");
 
 $output = [];
 $returnVar = 0;
-exec($command, $output, $returnVar);
+
+// Utiliser proc_open avec timeout pour éviter de bloquer l'app
+$timeout = 30; // 30 secondes max
+$descriptors = [
+    0 => ['pipe', 'r'],
+    1 => ['pipe', 'w'],
+    2 => ['pipe', 'w']
+];
+
+// Sur Windows bypass_shell => true est souvent préférable quand la commande est déjà citée
+$process = proc_open($command, $descriptors, $pipes, null, null, ['bypass_shell' => true]);
+
+if (is_resource($process)) {
+    // Fermer stdin
+    fclose($pipes[0]);
+    
+    // Lire stdout de manière non-bloquante avec timeout
+    stream_set_blocking($pipes[1], false);
+    stream_set_blocking($pipes[2], false);
+    
+    $startTime = time();
+    $stdout = '';
+    $stderr = '';
+    $timedOut = false;
+    
+    while (true) {
+        $status = proc_get_status($process);
+        
+        // Lire les sorties
+        $stdout .= stream_get_contents($pipes[1]);
+        $stderr .= stream_get_contents($pipes[2]);
+        
+        // Vérifier si terminé
+        if (!$status['running']) {
+            $returnVar = $status['exitcode'];
+            break;
+        }
+        
+        // Vérifier timeout
+        if ((time() - $startTime) > $timeout) {
+            debugLog("TIMEOUT: Killing process after {$timeout}s");
+            
+            // Tuer le processus sur Windows
+            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                $pid = $status['pid'];
+                // Tuer le processus et ses enfants
+                exec("taskkill /F /T /PID $pid 2>&1", $killOutput, $killResult);
+                debugLog("Kill result: $killResult - " . implode(" ", $killOutput));
+            } else {
+                proc_terminate($process, 9);
+            }
+            
+            $timedOut = true;
+            $returnVar = -1;
+            break;
+        }
+        
+        usleep(100000); // 100ms
+    }
+    
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+    proc_close($process);
+    
+    $output = array_merge(explode("\n", $stdout), explode("\n", $stderr));
+    
+    if ($timedOut) {
+        debugLog("Process timed out after {$timeout} seconds");
+        echo json_encode(['error' => 'Conversion timeout', 'timeout' => $timeout]);
+        exit;
+    }
+} else {
+    debugLog("Failed to start process");
+    $returnVar = -1;
+}
 
 debugLog("Command result: $returnVar");
 debugLog("Command output: " . implode("\n", $output));

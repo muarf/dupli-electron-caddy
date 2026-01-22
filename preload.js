@@ -59,13 +59,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onPrintMonitorStarted: (callback) => {
         ipcRenderer.on('print-monitor-started', (event, payload) => callback(payload));
     },
+    onConsoleLog: (callback) => {
+        ipcRenderer.on('console-log', (event, payload) => callback(payload));
+    },
 
     // Module d'impression (cross-platform)
     getPrinterCapabilities: (printerName) => ipcRenderer.invoke('get-printer-capabilities', printerName),
     printJob: (pdfPath, options) => ipcRenderer.invoke('print-job', pdfPath, options),
 
     // Impression de fichiers
-    printFile: (fileUrl) => ipcRenderer.invoke('print-file', fileUrl),
+    printFile: (fileUrl, options) => ipcRenderer.invoke('print-file', fileUrl, options),
 
     // Ouvrir un fichier avec l'application système
     openExternalFile: (fileUrl) => ipcRenderer.invoke('open-external-file', fileUrl),

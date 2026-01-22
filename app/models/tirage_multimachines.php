@@ -421,6 +421,7 @@ function Action($conf = null)
         // Définir les machines pour l'affichage du formulaire
         $array['machines'] = $_POST['machines'];
         $array['contact'] = addslashes($_POST['contact']);
+        $array['session_id'] = isset($_POST['session_id']) ? intval($_POST['session_id']) : null;
 
         // Calculer le prix total pour l'affichage
         $array['prix_total'] = 0;
@@ -1072,6 +1073,33 @@ function Action($conf = null)
 
                 // Valider la transaction
                 $db->commit();
+
+                // Clôturer la session si elle existe
+                if ($session_id) {
+                    try {
+                        // Calculer le total final de la session
+                        $priceQuery = $db->prepare("
+                            SELECT 
+                                (SELECT COALESCE(SUM(CAST(prix AS REAL)), 0) FROM photocop WHERE session_id = ?) +
+                                (SELECT COALESCE(SUM(CAST(prix AS REAL)), 0) FROM dupli WHERE session_id = ?) as total
+                        ");
+                        $priceQuery->execute([$session_id, $session_id]);
+                        $total_price = (float)$priceQuery->fetchColumn();
+
+                        // Fermer la session
+                        $updateQuery = $db->prepare("
+                            UPDATE print_sessions 
+                            SET status = 'closed', 
+                                closed_at = datetime('now'),
+                                total_price = ?
+                            WHERE id = ?
+                        ");
+                        $updateQuery->execute([$total_price, $session_id]);
+                        error_log("[SESSIONS] Session $session_id clôturée après enregistrement multimachines. Total: $total_price");
+                    } catch (Exception $e) {
+                        error_log("[SESSIONS] Erreur lors de la clôture de la session $session_id: " . $e->getMessage());
+                    }
+                }
 
                 // Message de succès
                 $array['success_message'] = "Tirage enregistré avec succès !";

@@ -157,11 +157,13 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                                     <option value="10">10</option>
                                     <option value="20" selected>20</option>
                                     <option value="50">50</option>
-                            <option value="100">100</option>
+                                    <option value="100">100</option>
                                 </select>
-                                <div class="checkbox" style="display: inline-block; margin-left: 20px; vertical-align: middle; margin-top: 0;">
+                                <div class="checkbox"
+                                    style="display: inline-block; margin-left: 20px; vertical-align: middle; margin-top: 0;">
                                     <label>
-                                        <input type="checkbox" id="show-history" onchange="loadPrintJobs(1)"> Voir l'historique complet (y compris traitées)
+                                        <input type="checkbox" id="show-history" onchange="loadPrintJobs(1)"> Voir
+                                        l'historique complet (y compris traitées)
                                     </label>
                                 </div>
                             </div>
@@ -271,11 +273,23 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
             // Fonction pour relancer en admin
             async function restartAsAdmin() {
                 if (!hasElectronAPI) {
-                    alert('API Electron non disponible');
+                    showAppModal({ type: 'warning', message: 'API Electron non disponible' });
                     return;
                 }
 
-                if (!confirm('L\'application va se fermer et redémarrer avec les droits administrateur.\n\nVous pourriez voir une fenêtre de contrôle de compte d\'utilisateur (UAC).\n\nContinuer ?')) {
+                // Utiliser showAppModal avec une Promesse pour gérer la confirmation asynchrone
+                const confirmed = await new Promise(resolve => {
+                    showAppModal({
+                        type: 'warning',
+                        title: 'Redémarrage requis',
+                        message: 'L\'application va se fermer et redémarrer avec les droits administrateur.<br><br>Vous pourriez voir une fenêtre de contrôle de compte d\'utilisateur (UAC).<br><br>Continuer ?',
+                        confirm: true,
+                        onConfirm: () => resolve(true),
+                        onClose: () => resolve(false) // Si fermé sans confirmer
+                    });
+                });
+
+                if (!confirmed) {
                     return;
                 }
 
@@ -286,12 +300,12 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
 
                     const result = await window.electronAPI.restartAsAdmin();
                     if (!result.success) {
-                        alert('Erreur lors du redémarrage : ' + result.error);
+                        showAppModal({ type: 'danger', message: 'Erreur lors du redémarrage : ' + result.error });
                         btn.disabled = false;
                         btn.innerHTML = '<i class="fa fa-refresh"></i> Relancer en Administrateur';
                     }
                 } catch (error) {
-                    alert('Erreur : ' + error.message);
+                    showAppModal({ type: 'danger', message: 'Erreur : ' + error.message });
                 }
             }
 
@@ -332,7 +346,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
             // Fonction pour démarrer/arrêter le moniteur
             async function toggleMonitor(start) {
                 if (!hasElectronAPI) {
-                    alert('API Electron non disponible');
+                    showAppModal({ type: 'warning', message: 'API Electron non disponible' });
                     return;
                 }
 
@@ -348,10 +362,10 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                         }, 500);
                         loadPrintJobs();
                     } else {
-                        alert('Erreur: ' + result.error);
+                        showAppModal({ type: 'danger', message: 'Erreur: ' + result.error });
                     }
                 } catch (error) {
-                    alert('Erreur: ' + error.message);
+                    showAppModal({ type: 'danger', message: 'Erreur: ' + error.message });
                 }
             }
 
@@ -662,73 +676,81 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 }
             }
 
-            async function deleteSelectedJobs() {
+            function deleteSelectedJobs() {
                 const checkboxes = document.querySelectorAll('.job-checkbox:checked');
                 if (checkboxes.length === 0) return;
 
-                if (!confirm(`Êtes-vous sûr de vouloir supprimer ${checkboxes.length} impression(s) ?`)) {
-                    return;
-                }
+                showAppModal({
+                    type: 'warning',
+                    title: 'Supprimer la sélection',
+                    message: `Êtes-vous sûr de vouloir supprimer ${checkboxes.length} impression(s) ?`,
+                    confirm: true,
+                    onConfirm: async function () {
+                        const ids = Array.from(checkboxes).map(cb => cb.value);
 
-                const ids = Array.from(checkboxes).map(cb => cb.value);
+                        try {
+                            const response = await fetch('?check_print_jobs', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    action: 'delete_jobs',
+                                    ids: ids
+                                })
+                            });
 
-                try {
-                    const response = await fetch('?check_print_jobs', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            action: 'delete_jobs',
-                            ids: ids
-                        })
-                    });
+                            const result = await response.json();
 
-                    const result = await response.json();
-
-                    if (result.success) {
-                        // Recharger les données
-                        loadPrintJobs();
-                        loadStats();
-                        // Reset header checkbox
-                        const selectAll = document.getElementById('select-all-jobs');
-                        if (selectAll) selectAll.checked = false;
-                    } else {
-                        alert('Erreur lors de la suppression: ' + (result.error || result.message));
+                            if (result.success) {
+                                // Recharger les données
+                                loadPrintJobs();
+                                loadStats();
+                                // Reset header checkbox
+                                const selectAll = document.getElementById('select-all-jobs');
+                                if (selectAll) selectAll.checked = false;
+                            } else {
+                                showAppModal({ type: 'danger', message: 'Erreur lors de la suppression: ' + (result.error || result.message) });
+                            }
+                        } catch (error) {
+                            showAppModal({ type: 'danger', message: 'Erreur réseau: ' + error.message });
+                        }
                     }
-                } catch (error) {
-                    alert('Erreur réseau: ' + error.message);
-                }
+                });
             }
 
-            async function purgeAllJobs() {
-                if (!confirm('ATTENTION: Cette action est irréversible !\n\nÊtes-vous sûr de vouloir supprimer TOUT l\'historique des impressions ?')) {
-                    return;
-                }
+            function purgeAllJobs() {
+                showAppModal({
+                    type: 'danger',
+                    title: 'Purger l\'historique',
+                    message: 'ATTENTION: Cette action est irréversible !<br><br>Êtes-vous sûr de vouloir supprimer TOUT l\'historique des impressions ?',
+                    confirm: true,
+                    onConfirm: async function () {
+                        try {
+                            const response = await fetch('?check_print_jobs', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    action: 'purge_all'
+                                })
+                            });
 
-                try {
-                    const response = await fetch('?check_print_jobs', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            action: 'purge_all'
-                        })
-                    });
+                            const result = await response.json();
 
-                    const result = await response.json();
-
-                    if (result.success) {
-                        // Recharger les données
-                        loadPrintJobs();
-                        loadStats();
-                    } else {
-                        alert('Erreur lors de la purge: ' + (result.error || result.message));
+                            if (result.success) {
+                                // Recharger les données
+                                loadPrintJobs();
+                                loadStats();
+                            } else {
+                                showAppModal({ type: 'danger', message: 'Erreur lors de la purge: ' + (result.error || result.message) });
+                            }
+                        } catch (error) {
+                            showAppModal({ type: 'danger', message: 'Erreur réseau: ' + error.message });
+                        }
                     }
-                } catch (error) {
-                    alert('Erreur réseau: ' + error.message);
-                }
+                });
             }
 
             // Écouter les événements d'impression en temps réel
@@ -766,27 +788,31 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
             });
 
             // Fonction pour supprimer une imprimante
-            async function deletePrinter(printerName) {
-                if (!confirm(`Êtes-vous sûr de vouloir supprimer l'imprimante "${printerName}" ?\n\nCette action nécessite des droits administrateur.`)) {
-                    return;
-                }
+            function deletePrinter(printerName) {
+                showAppModal({
+                    type: 'warning',
+                    title: 'Supprimer l\'imprimante',
+                    message: `Êtes-vous sûr de vouloir supprimer l'imprimante "${printerName}" ?<br><br>Cette action nécessite des droits administrateur.`,
+                    confirm: true,
+                    onConfirm: async function () {
+                        if (!hasElectronAPI) {
+                            showAppModal({ type: 'warning', message: 'API Electron non disponible' });
+                            return;
+                        }
 
-                if (!hasElectronAPI) {
-                    alert('API Electron non disponible');
-                    return;
-                }
-
-                try {
-                    const result = await window.electronAPI.deletePrinter(printerName);
-                    if (result.success) {
-                        alert('Imprimante supprimée avec succès');
-                        loadPrinters(); // Recharger la liste
-                    } else {
-                        alert('Erreur lors de la suppression: ' + result.error);
+                        try {
+                            const result = await window.electronAPI.deletePrinter(printerName);
+                            if (result.success) {
+                                showAppModal({ type: 'success', message: 'Imprimante supprimée avec succès' });
+                                loadPrinters(); // Recharger la liste
+                            } else {
+                                showAppModal({ type: 'danger', message: 'Erreur lors de la suppression: ' + result.error });
+                            }
+                        } catch (error) {
+                            showAppModal({ type: 'danger', message: 'Erreur: ' + error.message });
+                        }
                     }
-                } catch (error) {
-                    alert('Erreur: ' + error.message);
-                }
+                });
             }
 
             // --- LOGIQUE MAPPINGS ---
@@ -881,7 +907,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 const value = select.value;
 
                 if (!value) {
-                    alert('Veuillez sélectionner une machine.');
+                    showAppModal('Veuillez sélectionner une machine.');
                     return;
                 }
 
@@ -915,10 +941,10 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                             btn.classList.remove('btn-success');
                         }, 2000);
                     } else {
-                        alert('Erreur: ' + result.error);
+                        showAppModal({ type: 'danger', message: 'Erreur: ' + result.error });
                     }
                 } catch (error) {
-                    alert('Erreur réseau: ' + error.message);
+                    showAppModal({ type: 'danger', message: 'Erreur réseau: ' + error.message });
                 }
             }
 

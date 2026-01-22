@@ -29,6 +29,11 @@ ob_start();
                             <a href="<?= htmlspecialchars($download_url) ?>" class="btn btn-success btn-lg" download>
                                 <i class="fa fa-download"></i> <?php _e('imposition_tracts.download_optimized_pdf'); ?>
                             </a>
+                            <button
+                                onclick="window.openPrintModal('<?= $current_base_url . $download_url ?>', null, 'pdf', 'Tracts Impose')"
+                                class="btn btn-primary btn-lg" style="margin-left: 10px;">
+                                <i class="fa fa-print"></i> Imprimer
+                            </button>
                         </div>
                     <?php endif; ?>
 

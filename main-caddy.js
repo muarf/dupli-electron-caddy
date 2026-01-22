@@ -1584,25 +1584,131 @@ function startPrinterMonitor() {
         printerMonitor = new PrinterMonitor({
             phpApiUrl: `http://127.0.0.1:${PHP_SERVER_PORT}`,
             onPrintJob: (printData) => {
+                // PATCH: Si le nom est un nom générique de Ghostscript ou Electron, 
+                // essayer de trouver le vrai nom dans le cache basé sur l'imprimante
+                let docName = printData.Document;
+                let bestMatch = null; // Déclaré ici pour être accessible pour l'enrichissement
+
+                const genericNames = [
+                    'ghostscript', 'ghostscript output', 'dupli-print', 'print job',
+                    'untitled', 'gswin64c', 'gswin64', 'gs output', 'output', 'outp'
+                ];
+
+                const lowerDocName = (docName || '').toLowerCase().trim();
+                const now = Date.now();
+                const windowMs = 300000; // 5 minutes (augmenté pour les impressions longues)
+
+                // Toujours chercher un match dans le cache (pour enrichir les options même si le nom n'est pas générique)
+                let bestTime = 0;
+                for (const [key, entry] of printOptionsCache.entries()) {
+                    const monitorPrinter = (printData.PrinterName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const cachePrinter = (entry.options && entry.options.printer || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+                    const printerMatches = cachePrinter && (
+                        monitorPrinter.includes(cachePrinter) ||
+                        cachePrinter.includes(monitorPrinter) ||
+                        monitorPrinter === cachePrinter
+                    );
+
+                    if (printerMatches) {
+                        const age = now - entry.timestamp;
+                        if (age < windowMs && entry.timestamp > bestTime) {
+                            bestMatch = entry;
+                            bestTime = entry.timestamp;
+                        }
+                    }
+                }
+
+                // FALLBACK ULTIME: Si aucun match par imprimante, prendre le job le plus récent du cache 
+                if (!bestMatch && printOptionsCache.size > 0) {
+                    const entries = Array.from(printOptionsCache.values()).sort((a, b) => b.timestamp - a.timestamp);
+                    const mostRecent = entries[0];
+                    if (now - mostRecent.timestamp < 20000) { // Si moins de 20s
+                        bestMatch = mostRecent;
+                        console.log(`⚠️ [PRINT_MONITOR] Match par proximité temporelle (20s)`);
+                    }
+                }
+
+                // Si nom générique, remplacer par le nom du cache
+                if (genericNames.some(g => lowerDocName.includes(g)) || !lowerDocName) {
+                    const debugMsg = `🔍 [PRINT_MONITOR] Nom générique détecté ("${docName}"), recherche dans le cache (${printOptionsCache.size} entrées)...`;
+                    console.log(debugMsg);
+                    sendToRenderer('console-log', { message: debugMsg, type: 'info' });
+
+                    if (bestMatch && bestMatch.options && (bestMatch.options.fileName || bestMatch.options.document)) {
+                        const recoveredName = bestMatch.options.fileName || bestMatch.options.document;
+                        const successMsg = `✅ [PRINT_MONITOR] Match trouvé ! Remplacement de "${docName}" par "${recoveredName}"`;
+                        console.log(successMsg);
+                        sendToRenderer('console-log', { message: successMsg, type: 'success' });
+                        docName = recoveredName;
+                    } else {
+                        let cacheDump = [];
+                        for (const [key, entry] of printOptionsCache.entries()) {
+                            const cPrinter = (entry.options && entry.options.printer) || 'N/A';
+                            const age = Math.round((now - entry.timestamp) / 1000);
+                            cacheDump.push(`- Key: ${key.substring(0, 20)}... | Printer: "${cPrinter}" | Age: ${age}s`);
+                        }
+
+                        const failMsg = `❌ [PRINT_MONITOR] Aucun match pour "${printData.PrinterName}". \nContenu du cache (${printOptionsCache.size} clés) :\n${cacheDump.join('\n')}`;
+                        console.log(failMsg);
+                        sendToRenderer('console-log', { message: failMsg, type: 'warning' });
+                    }
+                }
+
+                // Construire les données enrichies avec les options du cache si disponibles
+                let enrichedPrintData = { ...printData, Document: docName };
+
+                // Si on a trouvé un match dans le cache, utiliser les options stockées
+                // car le moniteur natif ne peut pas lire ces valeurs depuis Ghostscript
+                if (bestMatch && bestMatch.options) {
+                    const cachedOpts = bestMatch.options;
+
+                    // Enrichir avec duplex depuis le cache (le natif retourne toujours 0 pour GS)
+                    if (cachedOpts.duplex) {
+                        const isDuplex = cachedOpts.duplex === 'duplex' || cachedOpts.duplex === 'tumble';
+                        enrichedPrintData.IsDuplex = isDuplex;
+                        console.log(`📋 [CACHE] Duplex enrichi depuis cache: ${cachedOpts.duplex} → IsDuplex=${isDuplex}`);
+                    }
+
+                    // Enrichir avec paperSize depuis le cache
+                    if (cachedOpts.paperSize && (!enrichedPrintData.PaperSize || enrichedPrintData.PaperSize === 'Unknown')) {
+                        enrichedPrintData.PaperSize = cachedOpts.paperSize;
+                        console.log(`📋 [CACHE] PaperSize enrichi depuis cache: ${cachedOpts.paperSize}`);
+                    }
+
+                    // Enrichir avec colorMode depuis le cache
+                    if (cachedOpts.colorMode) {
+                        const isColor = cachedOpts.colorMode === 'color';
+                        enrichedPrintData.ColorMode = isColor ? 'Color' : 'Monochrome';
+                        console.log(`📋 [CACHE] ColorMode enrichi depuis cache: ${cachedOpts.colorMode}`);
+                    }
+
+                    // Enrichir avec copies depuis le cache si pas défini
+                    if (cachedOpts.copies && (!enrichedPrintData.Copies || enrichedPrintData.Copies <= 1)) {
+                        enrichedPrintData.Copies = cachedOpts.copies;
+                        console.log(`📋 [CACHE] Copies enrichi depuis cache: ${cachedOpts.copies}`);
+                    }
+                }
+
                 // Envoyer la notification au renderer
-                sendToRenderer('print-job-detected', printData);
-                console.log('Impression détectée:', printData);
+                sendToRenderer('print-job-detected', enrichedPrintData);
+                console.log('Impression détectée:', enrichedPrintData);
 
                 // Envoyer les données à l'API PHP pour enregistrement en base
                 const http = require('http');
                 const postData = JSON.stringify({
-                    jobId: String(printData.JobId),
-                    document: printData.Document,
-                    printerName: printData.PrinterName,
-                    status: printData.Status,
-                    totalPages: printData.TotalPages || 0,
-                    paperSize: printData.PaperSize,
-                    duplex: printData.IsDuplex,
-                    colorMode: printData.ColorMode,
-                    copies: printData.Copies || 1,
-                    fillRate: printData.FillRate || 0,
-                    thumbnailUrl: printData.ThumbnailUrl || '',
-                    timestamp: printData.TimeSubmitted || new Date().toISOString(),
+                    jobId: String(enrichedPrintData.JobId),
+                    document: enrichedPrintData.Document,
+                    printerName: enrichedPrintData.PrinterName,
+                    status: enrichedPrintData.Status,
+                    totalPages: enrichedPrintData.TotalPages || 0,
+                    paperSize: enrichedPrintData.PaperSize,
+                    duplex: enrichedPrintData.IsDuplex,
+                    colorMode: enrichedPrintData.ColorMode,
+                    copies: enrichedPrintData.Copies || 1,
+                    fillRate: enrichedPrintData.FillRate || 0,
+                    thumbnailUrl: enrichedPrintData.ThumbnailUrl || '',
+                    timestamp: enrichedPrintData.TimeSubmitted || new Date().toISOString(),
                     eventType: 'job_detected'
                 });
 
@@ -2771,7 +2877,7 @@ ipcMain.handle('get-printer-capabilities', async (event, printerName) => {
 
 // Cache pour stocker les options d'impression récentes (associées par nom de document)
 const printOptionsCache = new Map();
-const PRINT_OPTIONS_CACHE_TIMEOUT = 60000; // 60 secondes
+const PRINT_OPTIONS_CACHE_TIMEOUT = 300000; // 5 minutes (pour les impressions longues)
 
 // Nettoyer le cache périodiquement
 setInterval(() => {
@@ -2798,13 +2904,8 @@ function storePrintOptions(pdfPath, options) {
         fileName: fileName,
         baseName: baseName,
         options: {
-            printer: options.printer || null,
-            copies: options.copies || 1,
-            pageSize: options.pageSize || null,
-            colorMode: options.colorMode || null,
-            duplex: options.duplex || null,
-            inputSlot: options.inputSlot || null,
-            resolution: options.resolution || null
+            ...options, // Copier toutes les options (incluant printer, fileName, etc.)
+            printer: options.printer || null // S'assurer que printer est présent
         }
     };
 
@@ -2879,63 +2980,136 @@ ipcMain.handle('print-job', async (event, pdfPath, options) => {
     }
 });
 
-// Impression de fichiers avec boîte de dialogue système
-ipcMain.handle('print-file', async (event, fileUrl) => {
+// Impression de fichiers via le moteur natif (plus fiable)
+ipcMain.handle('print-file', async (event, fileUrl, printOptions) => {
     return new Promise((resolve, reject) => {
         try {
-            console.log('Impression demandée pour:', fileUrl);
+            console.log(`🖨️ [PRINT-FILE] Impression demandée pour: ${fileUrl}`);
+            console.log(`🖨️ [PRINT-FILE] Options reçues:`, JSON.stringify(printOptions, null, 2));
 
-            // Créer une fenêtre invisible pour charger le fichier
-            const printWindow = new BrowserWindow({
-                show: false,
-                webPreferences: {
-                    nodeIntegration: false,
-                    contextIsolation: true,
-                    sandbox: true
+            const http = require('http');
+            const https = require('https');
+            const fs = require('fs');
+            const path = require('path');
+            const os = require('os');
+
+            // 1. Validation et normalization de l'URL
+            let targetUrl = fileUrl;
+            if (!targetUrl.startsWith('http')) {
+                // Si c'est un chemin relatif ou incomplet, on suppose que c'est sur le serveur local
+                if (!targetUrl.startsWith('/')) {
+                    targetUrl = '/' + targetUrl;
                 }
-            });
+                targetUrl = 'http://127.0.0.1:8001' + targetUrl;
+            }
 
-            // Charger le fichier
-            printWindow.loadURL(fileUrl);
+            console.log(`URL cible normalisée: ${targetUrl}`);
 
-            // Attendre que le contenu soit chargé
-            printWindow.webContents.on('did-finish-load', () => {
-                console.log('Fichier chargé, ouverture de la boîte de dialogue d\'impression');
+            // 2. Extraire le nom de fichier des options pour le titre du job
+            let displayFileName = 'document';
+            if (typeof printOptions === 'object' && printOptions.fileName) {
+                displayFileName = printOptions.fileName;
+            }
 
-                // Ouvrir la boîte de dialogue d'impression système
-                printWindow.webContents.print({
-                    silent: false,  // Afficher la boîte de dialogue
-                    printBackground: true,
-                    color: true,
-                    margins: {
-                        marginType: 'printableArea'
-                    }
-                }, (success, errorType) => {
-                    // Fermer la fenêtre après l'impression
-                    printWindow.close();
+            // Nettoyer le nom pour le système de fichiers
+            const safeFileName = displayFileName.replace(/[^a-z0-9.-]/gi, '_').substring(0, 50);
+            const tempFileName = safeFileName + '_' + Date.now() + '.pdf';
+            const tempFilePath = path.join(os.tmpdir(), tempFileName);
+            const file = fs.createWriteStream(tempFilePath);
 
-                    if (success) {
-                        console.log('Impression réussie ou annulée par l\'utilisateur');
-                        resolve({ success: true });
-                    } else {
-                        console.error('Erreur d\'impression:', errorType);
-                        resolve({ success: false, error: errorType });
+            const protocol = targetUrl.startsWith('https') ? https : http;
+
+            // Gestion des erreurs d'URL invalide avant la requête
+            try {
+                new URL(targetUrl);
+            } catch (e) {
+                return resolve({ success: false, error: 'URL invalide: ' + targetUrl });
+            }
+
+            protocol.get(targetUrl, (response) => {
+                if (response.statusCode !== 200) {
+                    fs.unlink(tempFilePath, () => { });
+                    resolve({ success: false, error: `Erreur HTTP ${response.statusCode}` });
+                    return;
+                }
+
+                response.pipe(file);
+
+                file.on('finish', async () => {
+                    file.close();
+                    console.log('Fichier téléchargé pour impression:', tempFilePath);
+
+                    // 2. Imprimer avec le moteur natif
+                    try {
+                        if (!printEngine.isAvailable()) {
+                            throw new Error('Moteur d\'impression non disponible');
+                        }
+
+                        // Préparer les options - printOptions est déjà un objet
+                        let options = {};
+                        if (typeof printOptions === 'object' && printOptions !== null) {
+                            options = { ...printOptions }; // Copie
+                        } else if (typeof printOptions === 'string') {
+                            // Compatibilité avec l'ancien format (juste le nom d'imprimante)
+                            options = { printer: printOptions };
+                        }
+
+                        // Si aucun nom d'imprimante n'est fourni, prendre la par défaut
+                        if (!options.printer) {
+                            const printers = await printEngine.getPrinters();
+                            const defaultPrinter = printers.find(p => p.isDefault);
+                            if (defaultPrinter) {
+                                options.printer = defaultPrinter.name;
+                            } else if (printers.length > 0) {
+                                options.printer = printers[0].name;
+                            } else {
+                                throw new Error('Aucune imprimante trouvée');
+                            }
+                        }
+
+                        console.log(`🖨️ [PRINT-FILE] Lancement impression sur: ${options.printer}`);
+                        console.log(`🖨️ [PRINT-FILE] Options finales:`, JSON.stringify({
+                            copies: options.copies || 1,
+                            paperSize: options.paperSize || 'A4',
+                            orientation: options.orientation || 'portrait',
+                            pageSubset: options.pageSubset || 'all',
+                            duplex: options.duplex || 'simplex',
+                            colorMode: options.colorMode || 'color'
+                        }, null, 2));
+
+                        // IMPORTANT: Stocker les options dans le cache pour le mécanisme de secours du moniteur
+                        storePrintOptions(tempFilePath, options);
+
+                        // Fire and Forget : on lance l'impression mais on rend la main tout de suite à l'UI
+                        printEngine.printJob(tempFilePath, options)
+                            .then(result => {
+                                console.log('Succès impression arrière-plan:', result);
+                                // Nettoyage du fichier temporaire après succès
+                                fs.unlink(tempFilePath, () => { });
+                            })
+                            .catch(err => {
+                                console.error('Erreur impression arrière-plan:', err);
+                                // Nettoyage du fichier temporaire même en cas d'erreur
+                                fs.unlink(tempFilePath, () => { });
+                            });
+
+                        // On répond immédiatement à l'interface
+                        resolve({ success: true, message: 'Impression lancée en arrière-plan' });
+
+                    } catch (printError) {
+                        console.error('Erreur initialisation impression:', printError);
+                        resolve({ success: false, error: printError.message });
                     }
                 });
-            });
-
-
-
-            // Gérer les erreurs de chargement
-            printWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
-                console.error('Erreur de chargement du fichier:', errorDescription);
-                printWindow.close();
-                reject({ success: false, error: errorDescription });
+            }).on('error', (err) => {
+                fs.unlink(tempFilePath, () => { });
+                console.error('Erreur de téléchargement:', err.message);
+                resolve({ success: false, error: err.message });
             });
 
         } catch (error) {
             console.error('Erreur lors de la préparation de l\'impression:', error);
-            reject({ success: false, error: error.message });
+            resolve({ success: false, error: error.message });
         }
     });
 });

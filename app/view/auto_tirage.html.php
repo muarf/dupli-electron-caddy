@@ -213,11 +213,23 @@
                                 <h4 class="mb-0"><i class="fa fa-inbox"></i> Impressions en attente (Pool)</h4>
                             </div>
                             <div class="card-body">
-                                <p class="text-muted">Ces impressions ont été détectées mais ne sont pas encore dans
-                                    votre session.</p>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <p class="text-muted mb-0">Ces impressions ont été détectées mais ne sont pas encore
+                                        dans votre session.</p>
+                                    <div id="buffer-bulk-actions" style="display: none;">
+                                        <button class="btn btn-primary btn-sm mr-2" onclick="bulkMoveBufferToSession()">
+                                            <i class="fa fa-plus"></i> Ajouter sélectionnés
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm" onclick="bulkDeleteBufferJob()">
+                                            <i class="fa fa-trash"></i> Supprimer sélectionnés
+                                        </button>
+                                    </div>
+                                </div>
                                 <table class="table table-striped table-hover" id="buffer-table">
                                     <thead>
                                         <tr>
+                                            <th style="width: 40px;"><input type="checkbox" id="select-all-buffer"
+                                                    onclick="toggleAllBuffer(this)"></th>
                                             <th>Aperçu</th>
                                             <th>Date</th>
                                             <th>Document</th>
@@ -475,6 +487,7 @@
                     if (bufferJobs.size === 0) {
                         document.getElementById('buffer-zone').style.display = 'none';
                     }
+                    updateBulkActionsVisibility();
                 }
 
                 processPendingJobs();
@@ -526,8 +539,15 @@
             }
 
             // 2. Check Buffer Jobs
-            if (bufferJobs.has(apiJob.job_id) || bufferJobs.has(String(apiJob.job_id))) {
-                addToBuffer(apiJob);
+            const jobIdKey = String(apiJob.job_id);
+            if (bufferJobs.has(jobIdKey)) {
+                const existing = bufferJobs.get(jobIdKey);
+                // Only update if something relevant changed (pages, thumbnail, or ID)
+                if (existing.total_pages !== apiJob.total_pages ||
+                    existing.thumbnail_url !== apiJob.thumbnail_url ||
+                    String(existing.id) !== String(apiJob.id)) {
+                    addToBuffer(apiJob);
+                }
             }
         }
 
@@ -574,6 +594,14 @@
         function renderBufferRow(job) {
             const tbody = document.querySelector('#buffer-table tbody');
             let row = document.getElementById(`buffer-row-${job.job_id}`);
+
+            // NEW: Preserve checked state if row exists
+            let isChecked = false;
+            if (row) {
+                const cb = row.querySelector('.buffer-checkbox');
+                if (cb) isChecked = cb.checked;
+            }
+
             if (!row) {
                 row = document.createElement('tr');
                 row.id = `buffer-row-${job.job_id}`;
@@ -584,6 +612,7 @@
             const pages = job.total_pages * (job.copies || 1);
 
             row.innerHTML = `
+            <td><input type="checkbox" class="buffer-checkbox" data-id="${job.id}" data-job-id="${job.job_id}" onchange="updateBulkActionsVisibility()" ${isChecked ? 'checked' : ''}></td>
             <td>${job.thumbnail_url ? `<img src="${job.thumbnail_url}" height="30" style="cursor: pointer; border-radius: 3px;" onclick="showThumbnailModal('${job.thumbnail_url}', '${job.document.replace(/'/g, "\\'")}')">` : '<i class="fa fa-file-o"></i>'}</td>
             <td>${date}</td>
             <td><strong>${job.document}</strong></td>
@@ -677,6 +706,97 @@
                     }
                 } catch (error) {
                     console.error("Erreur suppression job:", error);
+                    showAppModal({ message: "Erreur de communication", type: "danger" });
+                }
+            });
+        };
+
+        window.toggleAllBuffer = function (master) {
+            const checkboxes = document.querySelectorAll('.buffer-checkbox');
+            checkboxes.forEach(cb => cb.checked = master.checked);
+            updateBulkActionsVisibility();
+        };
+
+        window.updateBulkActionsVisibility = function () {
+            const selected = document.querySelectorAll('.buffer-checkbox:checked');
+            const bulkActions = document.getElementById('buffer-bulk-actions');
+            if (!bulkActions) return;
+
+            if (selected.length > 0) {
+                bulkActions.style.display = 'block';
+                // Update text of buttons if many
+                const btnAdd = bulkActions.querySelector('button:first-child');
+                const btnDel = bulkActions.querySelector('button:last-child');
+                if (btnAdd) btnAdd.innerHTML = `<i class="fa fa-plus"></i> Ajouter (${selected.length})`;
+                if (btnDel) btnDel.innerHTML = `<i class="fa fa-trash"></i> Supprimer (${selected.length})`;
+            } else {
+                bulkActions.style.display = 'none';
+                const selectAll = document.getElementById('select-all-buffer');
+                if (selectAll) selectAll.checked = false;
+            }
+        };
+
+        window.bulkMoveBufferToSession = async function () {
+            const selected = document.querySelectorAll('.buffer-checkbox:checked');
+            if (selected.length === 0) return;
+
+            addLog('process', `🚀 Ajout de ${selected.length} jobs en cours...`);
+
+            // On traite séquentiellement pour éviter de surcharger/doublons
+            for (const cb of selected) {
+                const jobId = cb.getAttribute('data-job-id');
+                await window.moveBufferToSession(jobId);
+            }
+
+            const selectAll = document.getElementById('select-all-buffer');
+            if (selectAll) selectAll.checked = false;
+            updateBulkActionsVisibility();
+        };
+
+        window.bulkDeleteBufferJob = async function () {
+            const selected = document.querySelectorAll('.buffer-checkbox:checked');
+            if (selected.length === 0) return;
+
+            const dbIds = Array.from(selected).map(cb => cb.getAttribute('data-id'));
+            const spoolJobIds = Array.from(selected).map(cb => cb.getAttribute('data-job-id'));
+
+            showAppModal({
+                message: `Voulez-vous vraiment supprimer ces ${selected.length} impressions du pool ?`,
+                confirm: true,
+                type: "warning"
+            }, async (confirmed) => {
+                if (!confirmed) return;
+
+                try {
+                    const response = await fetch('?check_print_jobs', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'delete_jobs',
+                            ids: dbIds
+                        })
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        addLog('info', `🗑️ ${selected.length} jobs supprimés du pool`);
+                        spoolJobIds.forEach(spoolJobId => {
+                            bufferJobs.delete(spoolJobId);
+                            const row = document.getElementById(`buffer-row-${spoolJobId}`);
+                            if (row) row.remove();
+                        });
+
+                        if (bufferJobs.size === 0) {
+                            document.getElementById('buffer-zone').style.display = 'none';
+                        }
+                        const selectAll = document.getElementById('select-all-buffer');
+                        if (selectAll) selectAll.checked = false;
+                        updateBulkActionsVisibility();
+                    } else {
+                        showAppModal({ message: "Erreur lors de la suppression: " + result.error, type: "danger" });
+                    }
+                } catch (error) {
+                    console.error("Erreur suppression jobs:", error);
                     showAppModal({ message: "Erreur de communication", type: "danger" });
                 }
             });
@@ -1161,12 +1281,13 @@
             let job = sessionJobs[index];
 
             // Total Base
-            let total = (job.cout_masters || 0) + (job.cout_passages || 0) + (job.cout_papier || 0);
+            // FIX: Include cout_encre for photocopiers
+            let total = (job.cout_masters || 0) + (job.cout_passages || 0) + (job.cout_papier || 0) + (job.cout_encre || 0);
             job.price = parseFloat(total.toFixed(2)); // Store rounded
 
             let finalPrice = job.price;
             if (job.feuilles_payees) {
-                finalPrice = Math.max(0, finalPrice - job.cout_papier);
+                finalPrice = Math.max(0, finalPrice - (job.cout_papier || 0));
             }
 
             // Update UI
@@ -1175,7 +1296,8 @@
 
             const elEncre = document.getElementById(`cout-encre-${index}`);
             if (elEncre) {
-                const ink = (job.cout_masters + job.cout_passages);
+                // FIX: Display cout_encre for photocop, else masters+passages
+                const ink = (job.type === 'photocop') ? (job.cout_encre || 0) : ((job.cout_masters || 0) + (job.cout_passages || 0));
                 elEncre.textContent = ink.toFixed(2) + ' €';
             }
 
@@ -1186,7 +1308,7 @@
             let globalTotal = 0;
             sessionJobs.forEach(j => {
                 let p = j.price;
-                if (j.feuilles_payees) p -= j.cout_papier;
+                if (j.feuilles_payees) p -= (j.cout_papier || 0);
                 globalTotal += Math.max(0, p);
             });
             document.getElementById('session-total').textContent = globalTotal.toFixed(2);
@@ -1203,7 +1325,13 @@
 
         window.removeJob = async function (index) {
             const job = sessionJobs[index];
-            if (confirm('Supprimer ce job de la liste ?')) {
+            showAppModal({
+                message: 'Supprimer ce job de la liste ?',
+                confirm: true,
+                type: 'warning'
+            }, async (confirmed) => {
+                if (!confirmed) return;
+
                 // Si le job a un ID de base de données, on le supprime côté serveur
                 if (job.id && job.type) {
                     try {
@@ -1227,7 +1355,7 @@
                         sessionStorage.removeItem('auto_tirage_session_jobs_' + currentSessionId);
                     }
                 }
-            }
+            });
         };
 
         function addLog(type, message) {
@@ -1268,43 +1396,40 @@
             }
         };
 
-        window.quitSession = async function (idToClose) {
+        window.quitSession = function (idToClose) {
             const id = idToClose || currentSessionId;
-            if (!confirm("Voulez-vous CLÔTURER définitivement cette session ?\n\nCela la retirera de la liste des sessions actives.")) return;
+            
+            showAppModal({
+                title: "Clôturer la session",
+                message: "Voulez-vous CLÔTURER définitivement cette session ?<br><br>Cela la retirera de la liste des sessions actives.",
+                type: "warning",
+                confirm: true
+            }, async function(confirmed) {
+                if (!confirmed) return;
 
-            if (id) {
-                try {
-                    // Clôturer la session via API
-                    await fetch(`?sessions&action=close&id=${id}`);
-                } catch (e) {
-                    console.error('Erreur fermeture session:', e);
+                if (id) {
+                    try {
+                        // Clôturer la session via API
+                        await fetch(`?sessions&action=close&id=${id}`);
+                    } catch (e) {
+                        console.error('Erreur fermeture session:', e);
+                    }
                 }
-            }
 
-            if (id == currentSessionId) {
-                sessionStorage.removeItem('auto_tirage_session_user');
-                localStorage.removeItem('auto_tirage_user');
-                localStorage.removeItem('auto_tirage_last_session_id');
-                window.location.reload();
-            } else {
-                // Juste rafraîchir la liste si on ferme une autre session
-                loadActiveSessions();
-            }
+                if (id == currentSessionId) {
+                    sessionStorage.removeItem('auto_tirage_session_user');
+                    localStorage.removeItem('auto_tirage_user');
+                    localStorage.removeItem('auto_tirage_last_session_id');
+                    window.location.reload();
+                } else {
+                    // Juste rafraîchir la liste si on ferme une autre session
+                    loadActiveSessions();
+                }
+            });
         };
 
         window.finishSession = async function () {
-            if (sessionJobs.length === 0) return alert("Aucune impression à valider.");
-
-            // Si on est dans une session active, on la clôture
-            if (currentSessionId) {
-                try {
-                    await fetch(`?sessions&action=close&id=${currentSessionId}`);
-                    console.log('[AutoTirage] Session clôturée avant validation');
-                    localStorage.removeItem('auto_tirage_last_session_id');
-                } catch (e) {
-                    console.error('Erreur fermeture session:', e);
-                }
-            }
+            if (sessionJobs.length === 0) return showAppModal({ message: "Aucune impression à valider.", type: "warning" });
 
             const form = document.createElement('form');
             form.method = 'POST';
@@ -1312,6 +1437,11 @@
 
             addHidden(form, 'contact', sessionUser);
             addHidden(form, 'ok', '1');
+            
+            // Transmettre l'ID de session à la page de confirmation
+            if (currentSessionId) {
+                addHidden(form, 'session_id', currentSessionId);
+            }
 
             sessionJobs.forEach((job, index) => {
                 addHidden(form, `machines[${index}][type]`, job.type === 'photocop' ? 'photocopieur' : 'duplicopieur');
@@ -1405,8 +1535,8 @@
                     if (lastId && activeSessions.some(s => s.id == lastId)) {
                         switchSession(lastId);
                     } else if (activeSessions.length > 0) {
-                        // Sinon on prend la première session active (optionnel, peut-être rester sur l'écran d'accueil)
-                        // switchSession(activeSessions[0].id);
+                        // Par défaut, on prend la dernière session créée (la plus récente selon l'API)
+                        switchSession(activeSessions[0].id);
                     }
                 }
             } catch (error) {

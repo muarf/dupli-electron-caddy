@@ -4,9 +4,9 @@
       <div class="col-md-10 col-md-offset-1">
         <h1 class="text-center"><?php _e('admin_mots.title'); ?></h1>
         <hr>
-        
+
         <!-- Messages de statut -->
-        <?php if(isset($message)): ?>
+        <?php if (isset($message)): ?>
           <div class="alert alert-<?= $message['type'] ?> alert-dismissible" role="alert">
             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
               <span aria-hidden="true">&times;</span>
@@ -14,7 +14,7 @@
             <?= $message['text'] ?>
           </div>
         <?php endif; ?>
-        
+
         <!-- Section Changement de mot de passe -->
         <div class="row">
           <div class="col-md-8">
@@ -28,18 +28,20 @@
                     <label for="current_password"><?php _e('admin_mots.current_password'); ?> :</label>
                     <input type="password" class="form-control" id="current_password" name="current_password" required>
                   </div>
-                  
+
                   <div class="form-group">
                     <label for="new_password"><?php _e('admin_mots.new_password'); ?> :</label>
-                    <input type="password" class="form-control" id="new_password" name="new_password" required minlength="6">
+                    <input type="password" class="form-control" id="new_password" name="new_password" required
+                      minlength="6">
                     <small class="text-muted"><?php _e('admin_mots.min_length'); ?></small>
                   </div>
-                  
+
                   <div class="form-group">
                     <label for="confirm_password"><?php _e('admin_mots.confirm_password'); ?> :</label>
-                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required minlength="6">
+                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required
+                      minlength="6">
                   </div>
-                  
+
                   <button type="submit" name="change_password" class="btn btn-warning btn-block">
                     <i class="fa fa-save"></i> <?php _e('admin_mots.change_password_btn'); ?>
                   </button>
@@ -47,7 +49,7 @@
               </div>
             </div>
           </div>
-          
+
           <div class="col-md-4">
             <div class="panel panel-info">
               <div class="panel-heading">
@@ -60,7 +62,7 @@
                   <li>Utilisation de hachage bcrypt</li>
                   <li>Anciens mots de passe supprimés</li>
                 </ul>
-                
+
                 <p><strong><?php _e('admin_mots.recommendations'); ?> :</strong></p>
                 <ul>
                   <li>Utilisez au moins 8 caractères</li>
@@ -71,8 +73,8 @@
             </div>
           </div>
         </div>
-        
-        
+
+
         <!-- Section Navigation -->
         <div class="row">
           <div class="col-md-12">
@@ -91,36 +93,42 @@
       </div>
     </div>
   </div>
-  
+
   <script>
-  // Validation du formulaire
-  document.getElementById('password-form').addEventListener('submit', function(e) {
-    var newPassword = document.getElementById('new_password').value;
-    var confirmPassword = document.getElementById('confirm_password').value;
-    
-    if (newPassword !== confirmPassword) {
-      e.preventDefault();
-      alert('<?php _e('admin_mots.passwords_dont_match'); ?>');
-      return false;
-    }
-    
-    if (newPassword.length < 6) {
-      e.preventDefault();
-      alert('<?php _e('admin_mots.password_too_short'); ?>');
-      return false;
-    }
-  });
-  
-  // Vérification en temps réel
-  document.getElementById('confirm_password').addEventListener('input', function() {
-    var newPassword = document.getElementById('new_password').value;
-    var confirmPassword = this.value;
-    
-    if (confirmPassword && newPassword !== confirmPassword) {
-      this.setCustomValidity('<?php _e('admin_mots.passwords_dont_match_realtime'); ?>');
-    } else {
-      this.setCustomValidity('');
-    }
-  });
+    // Validation du formulaire
+    document.getElementById('password-form').addEventListener('submit', function (e) {
+      var newPassword = document.getElementById('new_password').value;
+      var confirmPassword = document.getElementById('confirm_password').value;
+
+      if (newPassword !== confirmPassword) {
+        e.preventDefault();
+        showAppModal({
+          type: 'warning',
+          message: '<?php _e('admin_mots.passwords_dont_match'); ?>'
+        });
+        return false;
+      }
+
+      if (newPassword.length < 6) {
+        e.preventDefault();
+        showAppModal({
+          type: 'warning',
+          message: '<?php _e('admin_mots.password_too_short'); ?>'
+        });
+        return false;
+      }
+    });
+
+    // Vérification en temps réel
+    document.getElementById('confirm_password').addEventListener('input', function () {
+      var newPassword = document.getElementById('new_password').value;
+      var confirmPassword = this.value;
+
+      if (confirmPassword && newPassword !== confirmPassword) {
+        this.setCustomValidity('<?php _e('admin_mots.passwords_dont_match_realtime'); ?>');
+      } else {
+        this.setCustomValidity('');
+      }
+    });
   </script>
 </div>

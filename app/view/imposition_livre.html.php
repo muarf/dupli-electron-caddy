@@ -257,6 +257,11 @@
                             <a href="<?= htmlspecialchars($download_url) ?>" class="btn btn-download">
                                 <i class="fa fa-download"></i> Télécharger le PDF imposé
                             </a>
+                            <button
+                                onclick="window.openPrintModal('<?= $current_base_url . $download_url ?>', null, 'pdf', 'Livre Impose')"
+                                class="btn btn-impose" style="margin-left: 10px;">
+                                <i class="fa fa-print"></i> Imprimer
+                            </button>
                         </div>
                     <?php endif; ?>
                 </div>

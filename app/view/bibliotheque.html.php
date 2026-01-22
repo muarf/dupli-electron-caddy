@@ -172,6 +172,8 @@
     </div>
 </div>
 
+
+
 <style>
     .upload-drop-zone {
         border: 3px dashed #dee2e6;
@@ -596,36 +598,40 @@
     }
 
     function printFile(id) {
-        // Vérifier si l'API Electron est disponible
-        if (!window.electronAPI || !window.electronAPI.printFile) {
-            showAppModal({ message: 'L\'impression système n\'est disponible que dans l\'application Electron. Utilisez le téléchargement pour imprimer depuis un navigateur.', type: 'info' });
-            // Fallback : télécharger le fichier
-            downloadFile(id);
-            return;
+        // Obtenir les infos du fichier
+        // On doit trouver le filename et le type à partir de l'ID si possible, ou faire un fetch
+        // Pour l'instant, simplifions en passant l'URL. 
+        // L'idéal serait d'avoir le filename passé en paramètre de printFile,
+        // mais cela demanderait de changer tous les appels onclick.
+
+        // On va essayer de récupérer le nom du fichier depuis le DOM si possible
+        // (Hack: on cherche l'image qui a cet ID dans son onclick)
+        let filename = 'Document';
+        let fileType = 'pdf';
+
+        // Essayer de trouver l'élément dans la grille (si affiché)
+        const fileCardContainer = document.querySelector(`button[onclick="printFile(${id})"]`);
+        if (fileCardContainer) {
+            // Remonter au container
+            const cardBody = fileCardContainer.closest('.card-body');
+            if (cardBody) {
+                const titleEl = cardBody.querySelector('.card-title');
+                if (titleEl) filename = titleEl.innerText;
+
+                const metaEl = cardBody.querySelector('.file-meta');
+                if (metaEl && metaEl.innerText.toLowerCase().includes('png')) fileType = 'png';
+            }
         }
 
-        try {
-            // Construire l'URL complète du fichier
-            const fileUrl = window.location.origin + '/?get_bibliotheque_file&id=' + encodeURIComponent(id);
-            console.log('Demande d\'impression pour:', fileUrl);
+        // Construire l'URL complète
+        const fileUrl = window.location.origin + '/?get_bibliotheque_file&id=' + encodeURIComponent(id);
 
-            // Appeler l'API Electron pour imprimer
-            window.electronAPI.printFile(fileUrl)
-                .then(result => {
-                    if (result.success) {
-                        console.log('Impression lancée avec succès');
-                    } else {
-                        console.error('Erreur lors de l\'impression:', result.error);
-                        showAppModal({ message: 'Erreur lors de l\'impression: ' + (result.error || 'Erreur inconnue'), type: 'danger' });
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur impression:', error);
-                    showAppModal({ message: 'Erreur lors de l\'impression: ' + error.message, type: 'danger' });
-                });
-        } catch (error) {
-            console.error('Erreur lors de la préparation de l\'impression:', error);
-            showAppModal({ message: 'Erreur lors de la préparation de l\'impression: ' + error.message, type: 'danger' });
+        // Utiliser la modale globale
+        if (window.openPrintModal) {
+            window.openPrintModal(fileUrl, id, fileType, filename);
+        } else {
+            // Fallback (ne devrait pas arriver si footer inclus)
+            downloadFile(id);
         }
     }
 

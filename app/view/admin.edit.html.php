@@ -330,8 +330,8 @@ if(isset($_POST['delete'])){?>
                                             </button>
                                         </div>
                                         <div class="btn-group" role="group">
-                                            <button type="submit" id="deleteBtn" name="delete" class="btn btn-danger btn-lg"
-                                                    onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce tirage ? Cette action est irréversible.');">
+                                            <button type="button" id="deleteBtn" name="delete" class="btn btn-danger btn-lg"
+                                                    onclick="confirmDeleteTirage(this)">
                                                 <i class="glyphicon glyphicon-trash"></i> Supprimer
                                             </button>
                                         </div>
@@ -353,6 +353,20 @@ if(isset($_POST['delete'])){?>
 
 <script>
 $(document).ready(function() {
+    window.confirmDeleteTirage = function(btn) {
+        showAppModal({
+            type: 'warning',
+            title: 'Confirmation de suppression',
+            message: 'Êtes-vous sûr de vouloir supprimer ce tirage ?<br><br><strong>Cette action est irréversible.</strong>',
+            confirm: true,
+            onConfirm: function() {
+                // Créer un champ caché pour simuler le clic sur le bouton delete
+                var $form = $(btn).closest('form');
+                $form.append('<input type="hidden" name="delete" value="1">');
+                $form.submit();
+            }
+        });
+    };
     // Initialiser les tooltips
     $('[data-toggle="tooltip"]').tooltip();
     

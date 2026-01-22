@@ -12,6 +12,9 @@ if (isset($array['duplicopieur_selectionne'])) {
 if (isset($array['prix_data'])) {
     $prix_data = $array['prix_data'];
 }
+if (isset($array['session_id'])) {
+    $session_id = $array['session_id'];
+}
 
 // Générer les mappings machine -> price_key côté serveur
 $machine_price_mappings = [];
@@ -749,6 +752,9 @@ try {
 
                                 <!-- Champs cachés -->
                                 <input type="hidden" value="<?php echo $contact; ?>" name="contact" />
+                                <?php if (isset($session_id) && $session_id): ?>
+                                    <input type="hidden" name="session_id" value="<?= $session_id ?>" />
+                                <?php endif; ?>
                             <?php foreach ($machines as $index => $machine): ?>
                                     <input type="hidden" name="machines[<?= $index ?>][type]" value="<?= $machine['type'] ?>" />
                                     <input type="hidden" name="machines[<?= $index ?>][contact]"
@@ -1486,9 +1492,8 @@ try {
                              * Fonction pour retourner au formulaire depuis la page de confirmation
                              */
                             function returnToForm() {
-                                // Les données sont déjà sauvegardées dans sessionStorage
-                                // Recharger la page principale avec un paramètre pour déclencher la restauration
-                                window.location.href = '?tirage_multimachines&retour=1';
+                                // Revenir simplement à la page précédente (Auto-Tirage ou Formulaire Manuel)
+                                history.back();
                             }
 
                             /**

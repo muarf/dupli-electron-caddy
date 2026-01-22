@@ -35,3 +35,328 @@ INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
 HEX: 70686f746f636f70
 Check 'photocop': TRUE
 PRE-INSERT: nb_f=10, price=0.14, session=18
+[2026-01-21 19:54:56] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":4,"contact":"quinoa","document":"Ghostscript output","copies":1,"total_pages":4,"duplex":false,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0,"timestamp":"2026-01-21T17:37:23.000Z","job_id":"18","session_id":17,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=4, price=0.04, session=17
+[2026-01-21 20:09:18] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":20,"contact":"quinoa","document":"du sang sur le pacte vert-conv.pdf","copies":10,"total_pages":200,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":0,"timestamp":"2026-01-21T20:08:41.000Z","job_id":"37","session_id":19,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=100, price=1.42, session=19
+[2026-01-21 20:57:20] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":20,"contact":"quinoa","document":"du sang sur le pacte vert-conv.pdf","copies":1,"total_pages":20,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":0,"timestamp":"2026-01-21T20:56:19.000Z","job_id":"39","session_id":19,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=10, price=0.14, session=19
+[2026-01-21 21:04:04] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":20,"contact":"quinoa","document":"du sang sur le pacte vert-conv.pdf","copies":1,"total_pages":20,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":0,"timestamp":"2026-01-21T21:02:46.000Z","job_id":"40","session_id":19,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=10, price=0.14, session=19
+[2026-01-21 21:11:20] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":20,"contact":"quinoa","document":"du sang sur le pacte vert-conv.pdf","copies":1,"total_pages":20,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":44.297687530518,"timestamp":"2026-01-21T21:10:12.000Z","job_id":"41","session_id":19,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=10, price=0.25, session=19
+[2026-01-21 21:14:40] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":1,"contact":"test","document":"127.0.0.1_8000__get_bibliotheque_file&id=19","copies":12,"total_pages":12,"duplex":true,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0,"timestamp":"2026-01-21T21:14:06.000Z","job_id":"42","session_id":"20","simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=12, price=0.17, session=20
+[2026-01-21 21:16:36] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":1,"contact":"test","document":"127.0.0.1_8000__get_bibliotheque_file&id=19","copies":10,"total_pages":10,"duplex":true,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0.042912792414427,"timestamp":"2026-01-21T21:15:33.000Z","job_id":"43","session_id":20,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=10, price=0.11, session=20
+[2026-01-21 21:41:53] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":64,"contact":"test","document":"Ghostscript output","copies":1,"total_pages":64,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":37.163455963135,"timestamp":"2026-01-21T21:40:35.000Z","job_id":"46","session_id":20,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=64, price=0.83, session=20
+[2026-01-21 22:38:13] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":32,"contact":"test","document":"Ghostscript output","copies":1,"total_pages":32,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":48.339115142822,"timestamp":"2026-01-21T22:36:32.000Z","job_id":"62","session_id":20,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=32, price=0.44, session=20
+[2026-01-21 23:05:47] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":1,"contact":"xxx","document":"127.0.0.1_8000__get_bibliotheque_file&id=21","copies":19,"total_pages":19,"duplex":true,"color_mode":"Monochrome","paper_size":"Letter","fill_rate":0,"timestamp":"2026-01-21T21:35:51.000Z","job_id":"45","session_id":22,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=19, price=0.21, session=22
+[2026-01-21 23:05:47] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":64,"contact":"xxx","document":"Ghostscript output","copies":1,"total_pages":64,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":37.163455963135,"timestamp":"2026-01-21T21:44:59.000Z","job_id":"47","session_id":22,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=64, price=0.83, session=22
+[2026-01-21 23:05:47] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":32,"contact":"xxx","document":"Ghostscript output","copies":1,"total_pages":32,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":48.339115142822,"timestamp":"2026-01-21T22:06:41.000Z","job_id":"48","session_id":22,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=32, price=0.44, session=22
+[2026-01-21 23:05:47] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":32,"contact":"xxx","document":"Ghostscript output","copies":1,"total_pages":32,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":48.339115142822,"timestamp":"2026-01-21T22:07:07.000Z","job_id":"49","session_id":22,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=32, price=0.44, session=22
+[2026-01-21 23:05:47] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":32,"contact":"xxx","document":"Ghostscript output","copies":1,"total_pages":32,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":48.339115142822,"timestamp":"2026-01-21T22:07:35.000Z","job_id":"50","session_id":22,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=32, price=0.44, session=22
+[2026-01-21 23:05:47] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":32,"contact":"xxx","document":"Ghostscript output","copies":1,"total_pages":32,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":48.339115142822,"timestamp":"2026-01-21T22:08:02.000Z","job_id":"51","session_id":22,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=32, price=0.44, session=22
+[2026-01-21 23:05:48] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":32,"contact":"xxx","document":"Ghostscript output","copies":1,"total_pages":32,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":48.339115142822,"timestamp":"2026-01-21T22:08:29.000Z","job_id":"52","session_id":22,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=32, price=0.44, session=22
+[2026-01-21 23:05:48] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":32,"contact":"xxx","document":"Ghostscript output","copies":1,"total_pages":32,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":48.339115142822,"timestamp":"2026-01-21T22:08:56.000Z","job_id":"53","session_id":22,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=32, price=0.44, session=22
+[2026-01-21 23:11:29] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":32,"contact":"tesr","document":"Ghostscript output","copies":1,"total_pages":32,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":48.339115142822,"timestamp":"2026-01-21T23:10:07.000Z","job_id":"66","session_id":24,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=32, price=0.44, session=24
+[2026-01-22 07:42:56] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":32,"contact":"manu","document":"Ghostscript output","copies":1,"total_pages":32,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":48.339115142822,"timestamp":"2026-01-22T07:41:53.000Z","job_id":"67","session_id":33,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=32, price=0.44, session=33
+[2026-01-22 07:48:09] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":64,"contact":"manu","document":"Ghostscript output","copies":1,"total_pages":64,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":37.163455963135,"timestamp":"2026-01-22T07:47:23.000Z","job_id":"68","session_id":33,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=64, price=0.83, session=33
+[2026-01-22 07:59:16] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":30,"contact":"manu","document":"Ghostscript output","copies":1,"total_pages":30,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":25.475458145142,"timestamp":"2026-01-22T07:56:28.000Z","job_id":"75","session_id":34,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=30, price=0.46, session=34
+[2026-01-22 08:16:18] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":64,"contact":"manu","document":"Ghostscript output","copies":1,"total_pages":64,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":7.2273554801941,"timestamp":"2026-01-22T08:05:54.000Z","job_id":"76","session_id":34,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=64, price=0.83, session=34
+[2026-01-22 08:22:07] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":64,"contact":"manu","document":"Ghostscript output","copies":1,"total_pages":64,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":7.2273554801941,"timestamp":"2026-01-22T08:12:06.000Z","job_id":"77","session_id":34,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=64, price=0.83, session=34
+[2026-01-22 08:22:09] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":22,"contact":"manu","document":"Ghostscript output","copies":1,"total_pages":22,"duplex":false,"color_mode":"Monochrome","paper_size":"A4","fill_rate":3.3797254562378,"timestamp":"2026-01-22T08:15:11.000Z","job_id":"78","session_id":34,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=22, price=0.3, session=34
+[2026-01-22 08:22:10] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":42,"contact":"manu","document":"Ghostscript output","copies":1,"total_pages":42,"duplex":false,"color_mode":"Monochrome","paper_size":"A4","fill_rate":2.25972032547,"timestamp":"2026-01-22T08:19:56.000Z","job_id":"79","session_id":34,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=42, price=0.58, session=34
+[2026-01-22 08:24:39] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":22,"contact":"manu","document":"Ghostscript output","copies":1,"total_pages":22,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":4.8781261444092,"timestamp":"2026-01-22T08:23:19.000Z","job_id":"80","session_id":34,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=22, price=0.28, session=34
+[2026-01-22 10:02:11] [PAYLOAD] {"printerName":"EPSON Universal Print Driver","pages":20,"contact":"manu","document":"du sang sur le pacte vert-conv.pdf","copies":1,"total_pages":20,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":47.455696105957,"timestamp":"2026-01-22T09:56:01.000Z","job_id":"2","session_id":35,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='EPSON Universal Print Driver', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=20, price=0.36, session=35
+[2026-01-22 10:12:57] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":64,"contact":"manu","document":"squat-et-ecriture_page-par-page.pdf","copies":1,"total_pages":64,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":37.163455963135,"timestamp":"2026-01-22T10:12:08.000Z","job_id":"4","session_id":36,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=64, price=0.83, session=36
+[2026-01-22 10:18:22] [PAYLOAD] {"printerName":"Test_Konica_Copier","pages":20,"contact":"manu","document":"du sang sur le pacte vert-conv.pdf","copies":1,"total_pages":20,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":44.31761932373,"timestamp":"2026-01-22T10:16:52.000Z","job_id":"5","session_id":36,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='Test_Konica_Copier', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=10, price=0.25, session=36
+[2026-01-22 11:06:58] [PAYLOAD] {"printerName":"Adobe PDF","pages":64,"contact":"manu","document":"Ghostscript output","copies":1,"total_pages":64,"duplex":false,"color_mode":"Color","paper_size":"Unknown","fill_rate":0,"timestamp":"2026-01-22T11:03:31.000Z","job_id":"6","session_id":37,"simulate":false}
+[2026-01-22 11:07:03] [PAYLOAD] {"printerName":"Adobe PDF","pages":64,"contact":"manu","document":"Ghostscript output","copies":1,"total_pages":64,"duplex":false,"color_mode":"Color","paper_size":"Unknown","fill_rate":0,"timestamp":"2026-01-22T11:03:31.000Z","job_id":"6","session_id":37,"simulate":false}
+[2026-01-22 11:08:24] [PAYLOAD] {"printerName":"Test_Konica_Copier","pages":20,"contact":"manu","document":"du sang sur le pacte vert-conv.pdf","copies":1,"total_pages":20,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":44.31761932373,"timestamp":"2026-01-22T11:07:18.000Z","job_id":"7","session_id":37,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='Test_Konica_Copier', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=10, price=0.25, session=37
+[2026-01-22 11:08:27] [PAYLOAD] {"printerName":"Adobe PDF","pages":64,"contact":"manu","document":"Ghostscript output","copies":1,"total_pages":64,"duplex":false,"color_mode":"Color","paper_size":"Unknown","fill_rate":0,"timestamp":"2026-01-22T11:03:31.000Z","job_id":"6","session_id":37,"simulate":false}
+[2026-01-22 11:12:32] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":64,"contact":"manu","document":"squat-et-ecriture_page-par-page.pdf","copies":1,"total_pages":64,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":37.163455963135,"timestamp":"2026-01-22T11:11:27.000Z","job_id":"8","session_id":37,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=64, price=0.83, session=37
+[2026-01-22 11:37:25] [PAYLOAD] {"printerName":"Test_Konica_Copier","pages":20,"contact":"TEST","document":"du sang sur le pacte vert-conv.pdf","copies":1,"total_pages":20,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":44.31761932373,"timestamp":"2026-01-22T11:36:34.000Z","job_id":"10","session_id":"38","simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='Test_Konica_Copier', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=10, price=0.25, session=38
+[2026-01-22 11:39:15] [PAYLOAD] {"printerName":"Test_Konica_Copier","pages":64,"contact":"TEST","document":"Ghostscript output","copies":1,"total_pages":64,"duplex":false,"color_mode":"Monochrome","paper_size":"A3","fill_rate":8.6269187927246,"timestamp":"2026-01-22T11:37:51.000Z","job_id":"11","session_id":38,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='Test_Konica_Copier', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=64, price=1.77, session=38
+[2026-01-22 11:40:49] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":64,"contact":"TEST","document":"squat-et-ecriture_page-par-page.pdf","copies":1,"total_pages":64,"duplex":false,"color_mode":"Color","paper_size":"A3","fill_rate":18.3082447052,"timestamp":"2026-01-22T11:39:57.000Z","job_id":"12","session_id":38,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=64, price=1.47, session=38
+[2026-01-22 11:44:12] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":20,"contact":"TEST","document":"du sang sur le pacte vert-conv.pdf","copies":1,"total_pages":20,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":47.546943664551,"timestamp":"2026-01-22T11:43:39.000Z","job_id":"13","session_id":38,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=10, price=0.18, session=38
+[2026-01-22 12:11:03] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":64,"contact":"manu","document":"squat-et-ecriture_page-par-page.pdf","copies":1,"total_pages":64,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":37.163455963135,"timestamp":"2026-01-22T12:10:25.000Z","job_id":"19","session_id":39,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=32, price=0.51, session=39
+[2026-01-22 12:12:51] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":22,"contact":"manu","document":"mettrelefeu.pdf","copies":1,"total_pages":22,"duplex":true,"color_mode":"Color","paper_size":"A3","fill_rate":0,"timestamp":"2026-01-22T12:11:49.000Z","job_id":"20","session_id":39,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=11, price=0.31, session=39
+[2026-01-22 12:32:06] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":64,"contact":"manu","document":"squat-et-ecriture_page-par-page.pdf","copies":1,"total_pages":64,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":34.206665039062,"timestamp":"2026-01-22T12:30:26.000Z","job_id":"22","session_id":39,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=32, price=0.72, session=39
+[2026-01-22 12:41:49] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":20,"contact":"manu","document":"du sang sur le pacte vert-conv.pdf","copies":1,"total_pages":20,"duplex":true,"color_mode":"Monochrome","paper_size":"A3","fill_rate":45.559391021729,"timestamp":"2026-01-22T12:40:56.000Z","job_id":"23","session_id":40,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=10, price=0.35, session=40
+[2026-01-22 13:05:06] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":20,"contact":"manu","document":"du sang sur le pacte vert-conv.pdf","copies":1,"total_pages":20,"duplex":true,"color_mode":"Monochrome","paper_size":"A3","fill_rate":45.559391021729,"timestamp":"2026-01-22T13:04:22.000Z","job_id":"24","session_id":"41","simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=10, price=0.35, session=41
+[2026-01-22 13:21:42] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":20,"contact":"manu","document":"du sang sur le pacte vert-conv.pdf","copies":1,"total_pages":20,"duplex":true,"color_mode":"Monochrome","paper_size":"A3","fill_rate":45.559391021729,"timestamp":"2026-01-22T13:20:51.000Z","job_id":"25","session_id":"42","simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=10, price=0.35, session=42
+[2026-01-22 13:23:08] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":20,"contact":"manu","document":"du sang sur le pacte vert-conv.pdf","copies":1,"total_pages":20,"duplex":true,"color_mode":"Monochrome","paper_size":"A3","fill_rate":45.559391021729,"timestamp":"2026-01-22T13:22:21.000Z","job_id":"26","session_id":"43","simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=10, price=0.35, session=43
+[2026-01-22 13:31:33] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":20,"contact":"manu","document":"du sang sur le pacte vert-conv.pdf","copies":1,"total_pages":20,"duplex":true,"color_mode":"Monochrome","paper_size":"A3","fill_rate":45.559391021729,"timestamp":"2026-01-22T13:30:58.000Z","job_id":"27","session_id":"44","simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=10, price=0.35, session=44
+[2026-01-22 13:46:29] [PAYLOAD] {"printerName":"Test_Epson_Click","pages":20,"contact":"manu","document":"du sang sur le pacte vert-conv.pdf","copies":1,"total_pages":20,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":47.455696105957,"timestamp":"2026-01-22T13:40:09.000Z","job_id":"28","session_id":44,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='Test_Epson_Click', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=20, price=0.36, session=44
+[2026-01-22 13:46:32] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":20,"contact":"manu","document":"du sang sur le pacte vert-conv.pdf","copies":1,"total_pages":20,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":47.546943664551,"timestamp":"2026-01-22T13:43:33.000Z","job_id":"30","session_id":44,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=10, price=0.18, session=44
+[2026-01-22 13:46:33] [PAYLOAD] {"printerName":"Test_Konica_Copier","pages":20,"contact":"manu","document":"du sang sur le pacte vert-conv.pdf","copies":1,"total_pages":20,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":23.071424484253,"timestamp":"2026-01-22T13:42:21.000Z","job_id":"29","session_id":44,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='Test_Konica_Copier', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=10, price=0.2, session=44

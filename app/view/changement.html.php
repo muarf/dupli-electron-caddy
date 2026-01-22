@@ -345,7 +345,11 @@ $(document).ready(function() {
         
         if (!machine || !type || !nb_p) {
             e.preventDefault();
-            alert('Veuillez remplir tous les champs obligatoires.');
+            if (window.showAppModal) {
+                window.showAppModal('Veuillez remplir tous les champs obligatoires.');
+            } else {
+                alert('Veuillez remplir tous les champs obligatoires.');
+            }
             return false;
         }
         
@@ -353,12 +357,20 @@ $(document).ready(function() {
         if (duplicopieursNames.indexOf(machine) !== -1) {
             if (type === 'master' && !$('#nb_m').val()) {
                 e.preventDefault();
-                alert('Veuillez entrer le nombre de masters pour les changements de master.');
+                if (window.showAppModal) {
+                    window.showAppModal('Veuillez entrer le nombre de masters pour les changements de master.');
+                } else {
+                    alert('Veuillez entrer le nombre de masters pour les changements de master.');
+                }
                 return false;
             }
             if (type === 'tambour' && !$('#tambour').val()) {
                 e.preventDefault();
-                alert('Veuillez sélectionner un tambour pour les changements de tambour.');
+                if (window.showAppModal) {
+                    window.showAppModal('Veuillez sélectionner un tambour pour les changements de tambour.');
+                } else {
+                    alert('Veuillez sélectionner un tambour pour les changements de tambour.');
+                }
                 return false;
             }
         }
