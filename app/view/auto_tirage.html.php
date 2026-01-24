@@ -324,6 +324,8 @@
 
     <!-- Inclure la modale de sélection de session -->
     <?php include __DIR__ . '/components/session-modal.html.php'; ?>
+    <!-- Inclure la modale d'édition de job -->
+    <?php include __DIR__ . '/components/edit-job-modal.html.php'; ?>
 
     <script>
         let sessionUser = "";
@@ -766,7 +768,7 @@
             });
         };
 
-        async function simulateJob(job, updateIndex = null, bufferJobId = null) {
+        async function simulateJob(job, updateIndex = null, bufferJobId = null, isSimulation = false) {
             addLog('process', `⚙️ Analyse du job : ${job.document}...`);
 
             try {
@@ -796,11 +798,12 @@
                     color_mode: job.color_mode,
                     paper_size: job.paper_size,
                     fill_rate: parsedFillRate,
+                    thumbnail_url: job.thumbnail_url, // SEND TO BACKEND
                     timestamp: job.timestamp,
 
                     job_id: job.job_id, // Send original Job ID for deletion
                     session_id: currentSessionId, // Send active session ID
-                    simulate: false
+                    simulate: isSimulation
                 };
 
                 // Pass the RAW total pages to the details for future comparison
@@ -824,15 +827,22 @@
                         addLog('error', '❌ Erreur interne: détails du job manquants');
                         return;
                     }
-                    // Store raw total pages for update checking
                     result.details.raw_total_pages = job.total_pages;
                     result.details.raw_fill_rate = parsedFillRate; // Store the parsed fill rate we used
-                    result.details.document_name = job.document;
-                    result.details.thumbnail_url = job.thumbnail_url; // Persist thumbnail
+                    result.details.document_name = job.document || job.document_name;
+                    result.details.thumbnail_url = job.thumbnail_url; // ENSURE PERSISTENCE
+                    
+                    console.log("SIMULATE_RESULT:", result.details);
+
+                    // Preserve DB ID if simulation returned null but we are updating an existing job
+                    if (updateIndex !== null && sessionJobs[updateIndex] && sessionJobs[updateIndex].id && !result.details.id) {
+                        result.details.id = sessionJobs[updateIndex].id;
+                    }
 
                     if (updateIndex !== undefined && updateIndex !== null) {
                         addLog('info', `🔄 Mise à jour job : ${job.total_pages} pages`);
                         updateJobInSession(result.details, updateIndex, job.printer_name);
+                        return true;
                     } else {
                         addLog('success', `✅ ${job.document} : ${result.details.price} €`);
                         addJobToSession(result.details, job.job_id, job.printer_name);
@@ -921,12 +931,22 @@
         }
 
         function updateJobInSession(newDetails, index, printerName) {
-            // Preserve local state
-            newDetails.localId = sessionJobs[index].localId;
-            newDetails.originalJobId = sessionJobs[index].originalJobId;
-            newDetails.printerName = printerName || sessionJobs[index].printerName;
-            newDetails.feuilles_payees = sessionJobs[index].feuilles_payees;
+            const oldJob = sessionJobs[index];
+            if (!oldJob) return;
 
+            // Preserve ALL existing properties not provided or falsy in the new details
+            // This ensures thumbnail_url, document_name, etc. are never lost
+            for (let key in oldJob) {
+                if (!newDetails[key] && oldJob[key]) {
+                    newDetails[key] = oldJob[key];
+                }
+            }
+
+            // Forced overrides
+            newDetails.localId = oldJob.localId;
+            newDetails.originalJobId = oldJob.originalJobId;
+            newDetails.printerName = printerName || oldJob.printerName;
+            
             // Si Duplicopieur, on doit recalculer les unitaires si on met à jour
             if (newDetails.type === 'duplicopieur') {
                 newDetails.unit_master = newDetails.nb_masters > 0 ? (newDetails.cout_masters / newDetails.nb_masters) : 0;
@@ -997,6 +1017,18 @@
                     thumbHtml = `<div class="d-inline-flex align-items-center justify-content-center bg-light text-muted border rounded mr-2" style="width: 50px; height: 50px;"><i class="fa fa-file-o fa-lg"></i></div>`;
                 }
 
+                // Make the ROW clickable (add a style class + onclick)
+                // We add cursor-pointer class to the TR
+                tr.classList.add('cursor-pointer');
+                tr.style.cursor = 'pointer';
+                tr.onclick = (e) => {
+                    // Prevent if clicking on interactive elements
+                    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'LABEL' || e.target.closest('.custom-control') || e.target.closest('button')) {
+                        return;
+                    }
+                   openEditJobModal(index); 
+                };
+
 
                 const colMachine = `
                 <td class="align-middle">
@@ -1011,7 +1043,7 @@
                         ${thumbHtml}
                         <div style="line-height: 1.2;">
                             <strong style="font-size: 0.95em;">${docName}</strong><br>
-                            <small class="text-muted">${job.nb_passages || job.pages} Pg ${job.copies > 1 ? `× ${job.copies} Ex` : ''}</small>
+                            <small class="text-muted">${Math.round(job.pages / job.copies)} Pg ${job.copies > 1 ? `× ${job.copies} Ex` : ''}</small>
                         </div>
 
                     </div>
@@ -1023,10 +1055,10 @@
 
                 if (job.type === 'photocop') {
                     // sheetsPerCopy = global sheets / copies
-                    const sheetsPerCopy = job.nb_feuilles ? Math.ceil(job.nb_feuilles / job.copies) : Math.ceil(job.pages / (job.duplex ? 2 : 1));
+                    const pPerEx = Math.round(job.pages / job.copies);
                     colDetails = `
                     <div style="font-size: 0.9em;">
-                        ${job.copies} ex × ${sheetsPerCopy} f.<br>
+                        ${job.copies} ex × ${pPerEx} pg.<br>
                         <small>${job.duplex ? 'R/V' : 'Recto'} - ${job.taille}</small>
                         ${job.color && job.fill_rate_percent ? '<br><small class="text-muted">Encrage: ' + job.fill_rate_percent + '%</small>' : ''}
                     </div>
@@ -1649,11 +1681,152 @@
         }
 
         // --- Fonctions UI additionnelles ---
+        // --- Fonctions UI additionnelles ---
         window.showThumbnailModal = function (url, title) {
             const modal = $('#thumbnail-modal');
             $('#modal-thumbnail-img').attr('src', url);
             $('#thumbnail-modal-title').text(title || 'Aperçu du document');
             modal.modal('show');
+        };
+
+        let currentEditingIndex = -1;
+
+        window.openEditJobModal = function(index) {
+          const job = sessionJobs[index];
+          if (!job) return;
+
+          currentEditingIndex = index;
+
+          // Populate common fields
+          document.getElementById('edit-document-name').value = job.document_name || job.document || 'Document';
+
+          // Reset visibility
+          document.getElementById('edit-photocop-fields').style.display = 'none';
+          document.getElementById('edit-dupli-fields').style.display = 'none';
+
+          if (job.type === 'photocop') {
+              document.getElementById('edit-photocop-fields').style.display = 'block';
+
+              const copies = parseInt(job.copies) || 1;
+              document.getElementById('edit-copies').value = copies;
+              
+              // Direct page count per specimen
+              const pEx = Math.round(job.pages / copies);
+              document.getElementById('edit-pages').value = pEx || 1;
+              document.getElementById('edit-paper-size').value = job.taille || 'A4';
+              document.getElementById('edit-color').checked = !!job.color;
+              document.getElementById('edit-duplex').checked = !!job.duplex;
+              
+              let fr = 0;
+              if (job.fill_rate_percent) fr = parseFloat(job.fill_rate_percent);
+              else if (job.raw_fill_rate) fr = parseFloat(job.raw_fill_rate) * 100;
+
+              document.getElementById('edit-fill-rate').value = Math.round(fr);
+
+          } else if (job.type === 'duplicopieur') {
+              document.getElementById('edit-dupli-fields').style.display = 'block';
+
+              document.getElementById('edit-masters').value = job.nb_masters || 0;
+              document.getElementById('edit-passages').value = job.nb_passages || 0;
+              document.getElementById('edit-dupli-duplex').checked = !!job.duplex;
+
+              // Populate Tambours
+              const tambourSelect = document.getElementById('edit-tambour');
+              tambourSelect.innerHTML = '';
+              if (job.tambours && job.tambours.length > 0) {
+                  job.tambours.forEach(t => {
+                      const opt = document.createElement('option');
+                      opt.value = t.value;
+                      opt.text = t.label;
+                      opt.dataset.price = t.price;
+                      if (t.value === (job.selected_tambour || 'tambour_noir')) {
+                          opt.selected = true;
+                      }
+                      tambourSelect.appendChild(opt);
+                  });
+              } else {
+                  // Fallback
+                  const opt = document.createElement('option');
+                  opt.value = 'tambour_noir';
+                  opt.text = 'Noir';
+                  tambourSelect.appendChild(opt);
+              }
+          }
+
+          $('#edit-job-modal').modal('show');
+        };
+
+        window.saveEditedJob = function() {
+            if (currentEditingIndex === -1) return;
+            let job = sessionJobs[currentEditingIndex];
+
+            // Update Job Object based on inputs
+            if (job.type === 'photocop') {
+                const copies = parseInt(document.getElementById('edit-copies').value) || 1;
+                const size = document.getElementById('edit-paper-size').value;
+                const color = document.getElementById('edit-color').checked;
+                const duplex = document.getElementById('edit-duplex').checked;
+                const fillRatePercent = parseFloat(document.getElementById('edit-fill-rate').value) || 0;
+
+                job.copies = copies;
+                job.taille = size;
+                job.color = color;
+                job.duplex = duplex;
+                job.fill_rate_percent = fillRatePercent;
+                job.raw_fill_rate = fillRatePercent / 100;
+                
+                const candidate = {
+                    job_id: job.originalJobId, // Reuse ID
+                    document: document.getElementById('edit-document-name').value, // FROM INPUT
+                    document_name: document.getElementById('edit-document-name').value, // FROM INPUT
+                    thumbnail_url: job.thumbnail_url, // PRESERVE THUMBNAIL
+                    timestamp: Date.now(),
+                    printer_name: job.printerName || job.machine,
+                    
+                    // EDITED VALUES:
+                    copies: copies, 
+                    duplex: duplex,
+                    color_mode: color ? 'Color' : 'Monochrome',
+                    paper_size: size,
+                    fill_rate: job.raw_fill_rate,
+                    
+                    // Important: simulateJob will multiply this by job.copies
+                    total_pages: parseInt(document.getElementById('edit-pages').value) || 1
+                };
+                
+                // Call simulateJob with updateIndex and IS_SIMULATION=true
+                simulateJob(candidate, currentEditingIndex, null, true).then(success => {
+                    if(success) $('#edit-job-modal').modal('hide');
+                });
+                return; // Early return as simulateJob handles UI
+                
+            } else if (job.type === 'duplicopieur') {
+                job.nb_masters = parseInt(document.getElementById('edit-masters').value) || 0;
+                job.nb_passages = parseInt(document.getElementById('edit-passages').value) || 0;
+                job.duplex = document.getElementById('edit-dupli-duplex').checked;
+                
+                // Tambour
+                const select = document.getElementById('edit-tambour');
+                job.selected_tambour = select.value;
+                const price = parseFloat(select.options[select.selectedIndex].dataset.price || 0);
+
+                // Tambour logic for unit price (same as updateTambour)
+                let effectivePrice = price;
+                 if (job.taille === 'A4') effectivePrice = effectivePrice / 2;
+                job.unit_passage = effectivePrice;
+
+                // Recalc
+                job.cout_masters = job.nb_masters * (job.unit_master || 0);
+                job.cout_passages = job.nb_passages * job.unit_passage;
+                
+                // Recalc Paper
+                recalcPaper(job);
+                recalcTotal(currentEditingIndex);
+                
+                // Update specific row logic that simulateJob might not handle well for Dupli (manual counters)
+                updateJobInSession(job, currentEditingIndex); 
+                $('#edit-job-modal').modal('hide');
+            }
         };
 
     </script>

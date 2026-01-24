@@ -31,6 +31,8 @@ class DatabaseMigrationManager
             require_once __DIR__ . '/add_multi_session_support.php';
             require_once __DIR__ . '/allow_multiple_active_sessions.php';
             require_once __DIR__ . '/create_recorded_print_jobs_table.php';
+            require_once __DIR__ . '/persist_job_extra_data.php';
+            require_once __DIR__ . '/add_nb_exemplaires.php';
 
             $migrations = [
                 'tirage_global_id' => [$this, 'migrateTirageGlobalId'],
@@ -45,6 +47,12 @@ class DatabaseMigrationManager
                 },
                 'recorded_print_jobs_table' => function () {
                     migrate_create_recorded_print_jobs_table($this->db);
+                },
+                'persist_job_extra_data' => function () {
+                    migrate_persist_job_extra_data($this->db);
+                },
+                'add_nb_exemplaires' => function () {
+                    migrate_add_nb_exemplaires($this->db);
                 },
                 // Ajouter d'autres migrations ici à l'avenir
             ];
