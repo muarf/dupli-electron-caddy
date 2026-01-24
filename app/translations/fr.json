@@ -38,6 +38,8 @@
         "mailing_list": "S'inscrire à la liste de Diffusion",
         "email_placeholder": "email",
         "submit": "S'inscrire",
+        "auto_tirage": "Auto Tirage",
+        "auto_tirage_desc": "Gérez vos sessions de tirage autonome et suivez vos impressions en temps réel.",
         "back_to_home": "Retour à l'accueil"
     },
     "admin": {
