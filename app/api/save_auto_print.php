@@ -190,8 +190,47 @@ try {
         $prix_papier_a4 = $prix_data['papier']['A4'] ?? 0.01;
         $prix_papier_a3 = $prix_data['papier']['A3'] ?? 0.02;
 
-        // Calcul du coût unitaire par page (encre + maintenance)
-        $cost_per_page = calculatePageCost($marque, $machine_type_detected, $machine_prices, $color, $duplex, $fill_rate);
+        // Calcul du multiplicateur de remplissage (Pivot 50% = 1.0)
+        $fill_rate_multiplier = $color ? ($fill_rate / 0.5) : 1.0;
+
+        // Calcul du coût unitaire par face imprimée (SANS diviser par 2 pour A4 ici)
+        $cost_per_face = 0;
+        $photocop_key = 'photocop_' . $machine_id;
+        $prices = isset($prix_data[$photocop_key]) ? $prix_data[$photocop_key] : $machine_prices;
+
+        if ($machine_type_detected === 'toner') {
+            if ($color) {
+                // Couleur : CMJ (avec taux) + Noir + Tambour + Dev (SANS taux)
+                $cost_per_face += (($prices['cyan']['unite'] ?? 0) * $fill_rate_multiplier);
+                $cost_per_face += (($prices['magenta']['unite'] ?? 0) * $fill_rate_multiplier);
+                $cost_per_face += (($prices['jaune']['unite'] ?? 0) * $fill_rate_multiplier);
+                
+                // Fixes
+                $cost_per_face += ($prices['noir']['unite'] ?? 0);
+                $cost_per_face += ($prices['tambour']['unite'] ?? 0);
+                $cost_per_face += ($prices['dev']['unite'] ?? 0);
+            } else {
+                // Noir et blanc : Noir + Tambour + Dev (Fixes)
+                $cost_per_face += ($prices['noir']['unite'] ?? 0);
+                $cost_per_face += ($prices['tambour']['unite'] ?? 0);
+                $cost_per_face += ($prices['dev']['unite'] ?? 0);
+            }
+        } else {
+            // Encre (ComColor)
+            if ($color) {
+                // Couleur : Bleue + Couleur + Jaune + Rouge (avec taux) + Noire (SANS taux)
+                $cost_per_face += (($prices['bleue']['unite'] ?? 0) * $fill_rate_multiplier);
+                $cost_per_face += (($prices['couleur']['unite'] ?? 0) * $fill_rate_multiplier);
+                $cost_per_face += (($prices['jaune']['unite'] ?? 0) * $fill_rate_multiplier);
+                $cost_per_face += (($prices['rouge']['unite'] ?? 0) * $fill_rate_multiplier);
+                
+                // Fixe
+                $cost_per_face += ($prices['noire']['unite'] ?? 0);
+            } else {
+                // Noir et blanc : Noire (Fixe)
+                $cost_per_face += ($prices['noire']['unite'] ?? 0);
+            }
+        }
 
         // Déterminer taille papier (approximatif si pas donné, supposons A4 par défaut)
         // Si le document contient "A3", on assume A3.
@@ -199,16 +238,15 @@ try {
         $taille = $is_A3 ? 'A3' : 'A4';
 
         if ($taille === 'A4') {
-            $cost_per_page = $cost_per_page / 2;
+            $cost_per_face = $cost_per_face / 2;
             $prix_papier = $prix_papier_a4;
         } else {
             $prix_papier = $prix_papier_a3;
         }
 
         // Calcul total
-        // Note: insert_photocop attend le nombre de feuilles total (nb_f_total), et le prix calculé si on veut forcer ?
-        // Non, insert_photocop prend $prix.
-
+        // Note: calculatePageCost est remplacé par le calcul inline plus précis pour Auto Tirage ci-dessus
+        
         // Calcul du nombre de feuilles (physique) pour le papier
         // On calcule d'abord les feuilles par exemplaire, puis on multiplie par le nombre de copies
         $pages_per_copy = $total_pages / $copies;
@@ -218,9 +256,8 @@ try {
         // Coût papier
         $cout_papier = $nb_feuilles_total * $prix_papier;
 
-        // Coût encre (pages logiques, mais si duplex = x2 encre ? NON, calculatePageCost renvoie le prix pour UNE FACE imprimée)
-        // Donc on multiplie par le nombre total de faces (total_pages)
-        $cout_encre = $total_pages * $cost_per_page;
+        // Coût encre (pages logiques)
+        $cout_encre = $total_pages * $cost_per_face;
 
         $price = round($cout_papier + $cout_encre, 2);
 

@@ -621,12 +621,14 @@ try {
                                                                             if (strtolower($machine_name) === 'comcolor') {
                                                                                 // Photocopieur à encre
                                                                                 if ($couleur) {
-                                                                                    // Couleur : bleue + couleur + jaune + noire + rouge (avec taux de remplissage)
+                                                                                    // Couleur : bleue + couleur + jaune + rouge (avec taux de remplissage) + noire (SANS taux)
                                                                                     $prix_encre_brochure += (($machine_prices['bleue']['unite'] ?? 0) * $fill_rate_multiplier);
                                                                                     $prix_encre_brochure += (($machine_prices['couleur']['unite'] ?? 0) * $fill_rate_multiplier);
                                                                                     $prix_encre_brochure += (($machine_prices['jaune']['unite'] ?? 0) * $fill_rate_multiplier);
-                                                                                    $prix_encre_brochure += (($machine_prices['noire']['unite'] ?? 0) * $fill_rate_multiplier);
                                                                                     $prix_encre_brochure += (($machine_prices['rouge']['unite'] ?? 0) * $fill_rate_multiplier);
+                                                                                    
+                                                                                    // Le noir reste fixe (pivot 50% = base BDD)
+                                                                                    $prix_encre_brochure += ($machine_prices['noire']['unite'] ?? 0);
                                                                                 } else {
                                                                                     // Noir et blanc : seulement noire (pas de taux de remplissage)
                                                                                     $prix_encre_brochure += ($machine_prices['noire']['unite'] ?? 0);
@@ -634,12 +636,13 @@ try {
                                                                             } else {
                                                                                 // Photocopieur à toner
                                                                                 if ($couleur) {
-                                                                                    // Couleur : cyan + jaune + magenta + noir (avec taux de remplissage) + tambour + dev (sans taux)
+                                                                                    // Couleur : cyan + jaune + magenta (avec taux de remplissage) + noir + tambour + dev (SANS taux)
                                                                                     $prix_encre_brochure += (($machine_prices['cyan']['unite'] ?? 0) * $fill_rate_multiplier);
                                                                                     $prix_encre_brochure += (($machine_prices['jaune']['unite'] ?? 0) * $fill_rate_multiplier);
                                                                                     $prix_encre_brochure += (($machine_prices['magenta']['unite'] ?? 0) * $fill_rate_multiplier);
-                                                                                    $prix_encre_brochure += (($machine_prices['noir']['unite'] ?? 0) * $fill_rate_multiplier);
-                                                                                    // Tambour et dev ne sont pas affectés par le taux de remplissage
+                                                                                    
+                                                                                    // Noir, Tambour et dev ne sont pas affectés par le taux de remplissage
+                                                                                    $prix_encre_brochure += ($machine_prices['noir']['unite'] ?? 0);
                                                                                     $prix_encre_brochure += ($machine_prices['tambour']['unite'] ?? 0);
                                                                                     $prix_encre_brochure += ($machine_prices['dev']['unite'] ?? 0);
                                                                                 } else {
@@ -1900,36 +1903,40 @@ try {
                                         if (machineKey && prixData[machineKey]) {
                                             var machinePrices = prixData[machineKey];
 
-                                            if (photocopName.toLowerCase() === 'comcolor') {
-                                                // Photocopieur à encre : additionner toutes les encres
-                                                if (couleur) {
-                                                    // Couleur : bleue + couleur + jaune + noire + rouge (avec taux de remplissage)
-                                                    prixEncre += (machinePrices['bleue']?.unite || 0) * fillRateMultiplier;
-                                                    prixEncre += (machinePrices['couleur']?.unite || 0) * fillRateMultiplier;
-                                                    prixEncre += (machinePrices['jaune']?.unite || 0) * fillRateMultiplier;
-                                                    prixEncre += (machinePrices['noire']?.unite || 0) * fillRateMultiplier;
-                                                    prixEncre += (machinePrices['rouge']?.unite || 0) * fillRateMultiplier;
-                                                } else {
-                                                    // Noir et blanc : seulement noire (pas de taux de remplissage)
-                                                    prixEncre += (machinePrices['noire']?.unite || 0);
-                                                }
-                                            } else if (photocopName.toLowerCase() === 'konika') {
-                                                // Photocopieur à toner : additionner tous les toners + tambour + developer
-                                                if (couleur) {
-                                                    // Couleur : cyan + jaune + magenta + noir + tambour + dev (avec taux de remplissage)
-                                                    prixEncre += (machinePrices['cyan']?.unite || 0) * fillRateMultiplier;
-                                                    prixEncre += (machinePrices['jaune']?.unite || 0) * fillRateMultiplier;
-                                                    prixEncre += (machinePrices['magenta']?.unite || 0) * fillRateMultiplier;
-                                                    prixEncre += (machinePrices['noir']?.unite || 0) * fillRateMultiplier;
-                                                    prixEncre += (machinePrices['tambour']?.unite || 0);
-                                                    prixEncre += (machinePrices['dev']?.unite || 0);
-                                                } else {
-                                                    // Noir et blanc : noir + tambour + dev
-                                                    prixEncre += (machinePrices['noir']?.unite || 0);
-                                                    prixEncre += (machinePrices['tambour']?.unite || 0);
-                                                    prixEncre += (machinePrices['dev']?.unite || 0);
-                                                }
-                                            }
+                                             if (photocopName.toLowerCase() === 'comcolor') {
+                                                 // Photocopieur à encre : additionner toutes les encres
+                                                 if (couleur) {
+                                                     // Couleur : bleue + couleur + jaune + rouge (avec taux de remplissage) + noire (SANS taux)
+                                                     prixEncre += (machinePrices['bleue']?.unite || 0) * fillRateMultiplier;
+                                                     prixEncre += (machinePrices['couleur']?.unite || 0) * fillRateMultiplier;
+                                                     prixEncre += (machinePrices['jaune']?.unite || 0) * fillRateMultiplier;
+                                                     prixEncre += (machinePrices['rouge']?.unite || 0) * fillRateMultiplier;
+                                                     
+                                                     // Le noir reste fixe (pivot 50% = base BDD)
+                                                     prixEncre += (machinePrices['noire']?.unite || 0);
+                                                 } else {
+                                                     // Noir et blanc : seulement noire (pas de taux de remplissage)
+                                                     prixEncre += (machinePrices['noire']?.unite || 0);
+                                                 }
+                                             } else if (photocopName.toLowerCase() === 'konika') {
+                                                 // Photocopieur à toner : additionner tous les toners + tambour + developer
+                                                 if (couleur) {
+                                                     // Couleur : cyan + jaune + magenta (avec taux de remplissage) + noir + tambour + dev (SANS taux)
+                                                     prixEncre += (machinePrices['cyan']?.unite || 0) * fillRateMultiplier;
+                                                     prixEncre += (machinePrices['jaune']?.unite || 0) * fillRateMultiplier;
+                                                     prixEncre += (machinePrices['magenta']?.unite || 0) * fillRateMultiplier;
+                                                     
+                                                     // Noir, Tambour et dev ne sont pas affectés par le taux de remplissage
+                                                     prixEncre += (machinePrices['noir']?.unite || 0);
+                                                     prixEncre += (machinePrices['tambour']?.unite || 0);
+                                                     prixEncre += (machinePrices['dev']?.unite || 0);
+                                                 } else {
+                                                     // Noir et blanc : noir + tambour + dev
+                                                     prixEncre += (machinePrices['noir']?.unite || 0);
+                                                     prixEncre += (machinePrices['tambour']?.unite || 0);
+                                                     prixEncre += (machinePrices['dev']?.unite || 0);
+                                                 }
+                                             }
                                         }
 
                                         // Ajuster selon la taille (A3 = prix normal, A4 = prix/2)
@@ -1993,83 +2000,83 @@ try {
                                         if (machineKey && prixData[machineKey]) {
                                             var machinePrices = prixData[machineKey];
 
-                                            if (photocopName.toLowerCase() === 'comcolor') {
-                                                // Photocopieur à encre : additionner toutes les encres
-                                                if (couleur) {
-                                                    // Couleur : bleue + couleur + jaune + noire + rouge (avec taux de remplissage)
-                                                    var bleue = (machinePrices['bleue']?.unite || 0) * fillRateMultiplier;
-                                                    var couleurPrice = (machinePrices['couleur']?.unite || 0) * fillRateMultiplier;
-                                                    var jaune = (machinePrices['jaune']?.unite || 0) * fillRateMultiplier;
-                                                    var noire = (machinePrices['noire']?.unite || 0) * fillRateMultiplier;
-                                                    var rouge = (machinePrices['rouge']?.unite || 0) * fillRateMultiplier;
-
-                                                    prixEncre = bleue + couleurPrice + jaune + noire + rouge;
-
-                                                    // Ajuster selon la taille AVANT d'afficher le détail
-                                                    var prixEncrePourDetail = prixEncre;
-                                                    if (taille === 'A4') prixEncrePourDetail = prixEncre / 2;
-
-                                                    var bleueDetail = taille === 'A4' ? bleue / 2 : bleue;
-                                                    var couleurPriceDetail = taille === 'A4' ? couleurPrice / 2 : couleurPrice;
-                                                    var jauneDetail = taille === 'A4' ? jaune / 2 : jaune;
-                                                    var noireDetail = taille === 'A4' ? noire / 2 : noire;
-                                                    var rougeDetail = taille === 'A4' ? rouge / 2 : rouge;
-
-                                                    detailEncreBrochure = `Bleue: ${bleueDetail.toFixed(4)}€ + Couleur: ${couleurPriceDetail.toFixed(4)}€ + Jaune: ${jauneDetail.toFixed(4)}€ + Noire: ${noireDetail.toFixed(4)}€ + Rouge: ${rougeDetail.toFixed(4)}€ = ${prixEncrePourDetail.toFixed(4)}€`;
-                                                } else {
-                                                    // Noir et blanc : seulement noire (pas de taux de remplissage)
-                                                    prixEncre = machinePrices['noire']?.unite || 0;
-
-                                                    // Ajuster selon la taille AVANT d'afficher le détail
-                                                    var prixEncrePourDetail = prixEncre;
-                                                    if (taille === 'A4') prixEncrePourDetail = prixEncre / 2;
-
-                                                    detailEncreBrochure = `Noire: ${prixEncrePourDetail.toFixed(4)}€`;
-                                                }
-                                            } else if (photocopName.toLowerCase() === 'konika') {
-                                                // Photocopieur à toner : additionner tous les toners + tambour + developer
-                                                if (couleur) {
-                                                    // Couleur : cyan + jaune + magenta + noir (avec taux de remplissage) + tambour + dev (sans taux)
-                                                    var cyan = (machinePrices['cyan']?.unite || 0) * fillRateMultiplier;
-                                                    var jaune = (machinePrices['jaune']?.unite || 0) * fillRateMultiplier;
-                                                    var magenta = (machinePrices['magenta']?.unite || 0) * fillRateMultiplier;
-                                                    var noir = (machinePrices['noir']?.unite || 0) * fillRateMultiplier;
-                                                    var tambour = machinePrices['tambour']?.unite || 0;
-                                                    var dev = machinePrices['dev']?.unite || 0;
-
-                                                    prixEncre = cyan + jaune + magenta + noir + tambour + dev;
-
-                                                    // Ajuster selon la taille AVANT d'afficher le détail
-                                                    var prixEncrePourDetail = prixEncre;
-                                                    if (taille === 'A4') prixEncrePourDetail = prixEncre / 2;
-
-                                                    var cyanDetail = taille === 'A4' ? cyan / 2 : cyan;
-                                                    var jauneDetail = taille === 'A4' ? jaune / 2 : jaune;
-                                                    var magentaDetail = taille === 'A4' ? magenta / 2 : magenta;
-                                                    var noirDetail = taille === 'A4' ? noir / 2 : noir;
-                                                    var tambourDetail = taille === 'A4' ? tambour / 2 : tambour;
-                                                    var devDetail = taille === 'A4' ? dev / 2 : dev;
-
-                                                    detailEncreBrochure = `Cyan: ${cyanDetail.toFixed(4)}€ + Jaune: ${jauneDetail.toFixed(4)}€ + Magenta: ${magentaDetail.toFixed(4)}€ + Noir: ${noirDetail.toFixed(4)}€ + Tambour: ${tambourDetail.toFixed(4)}€ + Dev: ${devDetail.toFixed(4)}€ = ${prixEncrePourDetail.toFixed(4)}€`;
-                                                } else {
-                                                    // Noir et blanc : noir + tambour + dev (pas de taux de remplissage)
-                                                    var noir = machinePrices['noir']?.unite || 0;
-                                                    var tambour = machinePrices['tambour']?.unite || 0;
-                                                    var dev = machinePrices['dev']?.unite || 0;
-
-                                                    prixEncre = noir + tambour + dev;
-
-                                                    // Ajuster selon la taille AVANT d'afficher le détail
-                                                    var prixEncrePourDetail = prixEncre;
-                                                    if (taille === 'A4') prixEncrePourDetail = prixEncre / 2;
-
-                                                    var noirDetail = taille === 'A4' ? noir / 2 : noir;
-                                                    var tambourDetail = taille === 'A4' ? tambour / 2 : tambour;
-                                                    var devDetail = taille === 'A4' ? dev / 2 : dev;
-
-                                                    detailEncreBrochure = `Noir: ${noirDetail.toFixed(4)}€ + Tambour: ${tambourDetail.toFixed(4)}€ + Dev: ${devDetail.toFixed(4)}€ = ${prixEncrePourDetail.toFixed(4)}€`;
-                                                }
-                                            }
+                                             if (photocopName.toLowerCase() === 'comcolor') {
+                                                 // Photocopieur à encre : additionner toutes les encres
+                                                 if (couleur) {
+                                                     // Couleur : bleue + couleur + jaune + rouge (avec taux de remplissage) + noire (SANS taux)
+                                                     var bleue = (machinePrices['bleue']?.unite || 0) * fillRateMultiplier;
+                                                     var couleurPrice = (machinePrices['couleur']?.unite || 0) * fillRateMultiplier;
+                                                     var jaune = (machinePrices['jaune']?.unite || 0) * fillRateMultiplier;
+                                                     var noire = machinePrices['noire']?.unite || 0; // Fixe
+                                                     var rouge = (machinePrices['rouge']?.unite || 0) * fillRateMultiplier;
+ 
+                                                     prixEncre = bleue + couleurPrice + jaune + noire + rouge;
+ 
+                                                     // Ajuster selon la taille AVANT d'afficher le détail
+                                                     var prixEncrePourDetail = prixEncre;
+                                                     if (taille === 'A4') prixEncrePourDetail = prixEncre / 2;
+ 
+                                                     var bleueDetail = taille === 'A4' ? bleue / 2 : bleue;
+                                                     var couleurPriceDetail = taille === 'A4' ? couleurPrice / 2 : couleurPrice;
+                                                     var jauneDetail = taille === 'A4' ? jaune / 2 : jaune;
+                                                     var noireDetail = taille === 'A4' ? noire / 2 : noire;
+                                                     var rougeDetail = taille === 'A4' ? rouge / 2 : rouge;
+ 
+                                                     detailEncreBrochure = `Bleue: ${bleueDetail.toFixed(4)}€ + Couleur: ${couleurPriceDetail.toFixed(4)}€ + Jaune: ${jauneDetail.toFixed(4)}€ + Noire: ${noireDetail.toFixed(4)}€ (fixe) + Rouge: ${rougeDetail.toFixed(4)}€ = ${prixEncrePourDetail.toFixed(4)}€`;
+                                                 } else {
+                                                     // Noir et blanc : seulement noire (pas de taux de remplissage)
+                                                     prixEncre = machinePrices['noire']?.unite || 0;
+ 
+                                                     // Ajuster selon la taille AVANT d'afficher le détail
+                                                     var prixEncrePourDetail = prixEncre;
+                                                     if (taille === 'A4') prixEncrePourDetail = prixEncre / 2;
+ 
+                                                     detailEncreBrochure = `Noire: ${prixEncrePourDetail.toFixed(4)}€`;
+                                                 }
+                                             } else if (photocopName.toLowerCase() === 'konika') {
+                                                 // Photocopieur à toner : additionner tous les toners + tambour + developer
+                                                 if (couleur) {
+                                                     // Couleur : cyan + jaune + magenta (avec taux de remplissage) + noir + tambour + dev (SANS taux)
+                                                     var cyan = (machinePrices['cyan']?.unite || 0) * fillRateMultiplier;
+                                                     var jaune = (machinePrices['jaune']?.unite || 0) * fillRateMultiplier;
+                                                     var magenta = (machinePrices['magenta']?.unite || 0) * fillRateMultiplier;
+                                                     var noir = machinePrices['noir']?.unite || 0; // Fixe
+                                                     var tambour = machinePrices['tambour']?.unite || 0; // Fixe
+                                                     var dev = machinePrices['dev']?.unite || 0; // Fixe
+ 
+                                                     prixEncre = cyan + jaune + magenta + noir + tambour + dev;
+ 
+                                                     // Ajuster selon la taille AVANT d'afficher le détail
+                                                     var prixEncrePourDetail = prixEncre;
+                                                     if (taille === 'A4') prixEncrePourDetail = prixEncre / 2;
+ 
+                                                     var cyanDetail = taille === 'A4' ? cyan / 2 : cyan;
+                                                     var jauneDetail = taille === 'A4' ? jaune / 2 : jaune;
+                                                     var magentaDetail = taille === 'A4' ? magenta / 2 : magenta;
+                                                     var noirDetail = taille === 'A4' ? noir / 2 : noir;
+                                                     var tambourDetail = taille === 'A4' ? tambour / 2 : tambour;
+                                                     var devDetail = taille === 'A4' ? dev / 2 : dev;
+ 
+                                                     detailEncreBrochure = `Cyan: ${cyanDetail.toFixed(4)}€ + Jaune: ${jauneDetail.toFixed(4)}€ + Magenta: ${magentaDetail.toFixed(4)}€ + Noir: ${noirDetail.toFixed(4)}€ (fixe) + Tambour: ${tambourDetail.toFixed(4)}€ (fixe) + Dev: ${devDetail.toFixed(4)}€ (fixe) = ${prixEncrePourDetail.toFixed(4)}€`;
+                                                 } else {
+                                                     // Noir et blanc : noir + tambour + dev (pas de taux de remplissage)
+                                                     var noir = machinePrices['noir']?.unite || 0;
+                                                     var tambour = machinePrices['tambour']?.unite || 0;
+                                                     var dev = machinePrices['dev']?.unite || 0;
+ 
+                                                     prixEncre = noir + tambour + dev;
+ 
+                                                     // Ajuster selon la taille AVANT d'afficher le détail
+                                                     var prixEncrePourDetail = prixEncre;
+                                                     if (taille === 'A4') prixEncrePourDetail = prixEncre / 2;
+ 
+                                                     var noirDetail = taille === 'A4' ? noir / 2 : noir;
+                                                     var tambourDetail = taille === 'A4' ? tambour / 2 : tambour;
+                                                     var devDetail = taille === 'A4' ? dev / 2 : dev;
+ 
+                                                     detailEncreBrochure = `Noir: ${noirDetail.toFixed(4)}€ + Tambour: ${tambourDetail.toFixed(4)}€ + Dev: ${devDetail.toFixed(4)}€ = ${prixEncrePourDetail.toFixed(4)}€`;
+                                                 }
+                                             }
                                         }
 
                                         if (taille === 'A4') prixEncre = prixEncre / 2;

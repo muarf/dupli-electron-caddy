@@ -217,15 +217,16 @@ function calculatePageCost($machine_name, $machine_type, $prices, $is_color, $is
         if ($machine_type === 'toner') {
             error_log("DEBUG calculatePageCost - BRANCHE TONER");
             if ($is_color) {
-                // Couleur : cyan + jaune + magenta + noir (avec taux de remplissage) + tambour + dev (sans taux)
+                // Couleur : cyan + magenta + yellow (avec taux de remplissage) + noir + tambour + dev (SANS taux)
                 $cost_per_page += (($prices['cyan']['unite'] ?? 0) * $fill_rate_multiplier);
                 $cost_per_page += (($prices['magenta']['unite'] ?? 0) * $fill_rate_multiplier);
                 $cost_per_page += (($prices['yellow']['unite'] ?? 0) * $fill_rate_multiplier);
-                $cost_per_page += (($prices['noir']['unite'] ?? 0) * $fill_rate_multiplier);
-                // Tambour et dev ne sont pas affectés par le taux de remplissage
+                
+                // Le noir, le tambour et le dev sont fixes (pivot 50% = base BDD)
+                $cost_per_page += ($prices['noir']['unite'] ?? 0);
                 $cost_per_page += ($prices['tambour']['unite'] ?? 0);
                 $cost_per_page += ($prices['dev']['unite'] ?? 0);
-                error_log("DEBUG calculatePageCost - COULEUR : fill_rate=$fill_rate, multiplier=$fill_rate_multiplier");
+                error_log("DEBUG calculatePageCost - COULEUR : fill_rate=$fill_rate, multiplier=$fill_rate_multiplier (sauf Noir/Tambour/Dev)");
             } else {
                 // Noir et blanc : noir + tambour + dev (pas de taux de remplissage)
                 $cost_per_page += ($prices['noir']['unite'] ?? 0);
@@ -236,13 +237,15 @@ function calculatePageCost($machine_name, $machine_type, $prices, $is_color, $is
         } else {
             error_log("DEBUG calculatePageCost - BRANCHE ENCRE");
             if ($is_color) {
-                // Couleur : bleue + couleur + jaune + noire + rouge (avec taux de remplissage)
+                // Couleur : bleue + couleur + jaune + rouge (avec taux de remplissage) + noire (SANS taux)
                 $cost_per_page += (($prices['bleue']['unite'] ?? 0) * $fill_rate_multiplier);
                 $cost_per_page += (($prices['couleur']['unite'] ?? 0) * $fill_rate_multiplier);
                 $cost_per_page += (($prices['jaune']['unite'] ?? 0) * $fill_rate_multiplier);
-                $cost_per_page += (($prices['noire']['unite'] ?? 0) * $fill_rate_multiplier);
                 $cost_per_page += (($prices['rouge']['unite'] ?? 0) * $fill_rate_multiplier);
-                error_log("DEBUG calculatePageCost - COULEUR : fill_rate=$fill_rate, multiplier=$fill_rate_multiplier");
+                
+                // Le noir reste fixe (pivot 50% = base BDD)
+                $cost_per_page += ($prices['noire']['unite'] ?? 0);
+                error_log("DEBUG calculatePageCost - COULEUR : fill_rate=$fill_rate, multiplier=$fill_rate_multiplier (sauf Noire)");
             } else {
                 // Noir et blanc : seulement noire (pas de taux de remplissage)
                 $cost_per_page += ($prices['noire']['unite'] ?? 0);

@@ -802,9 +802,12 @@
                 // Force robust boolean conversion for duplex
                 const isDuplex = (job.duplex == 1 || job.duplex == '1' || job.duplex === true || String(job.duplex).toLowerCase() === 'oui');
 
-                // Fill rate handling
+                // Fill rate handling: Default to 0.5 (50%) to match DB reference point
                 let rawFillRate = job.fill_rate;
                 let parsedFillRate = (rawFillRate !== undefined && rawFillRate !== null) ? parseFloat(rawFillRate) : 0.5;
+                
+                // Normalization: if coming from a field where it's 0-100, convert to 0-1
+                if (parsedFillRate > 1.0) parsedFillRate = parsedFillRate / 100.0;
 
 
 
