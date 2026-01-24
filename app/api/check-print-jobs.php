@@ -95,9 +95,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             } elseif ($action === 'purge_all') {
                 $db->execute("DELETE FROM print_jobs");
-                // Ou TRUNCATE si préféré et supporté: $db->query("TRUNCATE TABLE print_jobs");
-
-                echo json_encode(['success' => true, 'message' => 'Historique purgé avec succès']);
+                $db->execute("DELETE FROM recorded_print_jobs");
+                
+                echo json_encode(['success' => true, 'message' => 'Historique et table de sécurité purgés avec succès']);
                 exit;
 
             } else {
