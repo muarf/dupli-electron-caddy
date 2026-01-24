@@ -851,7 +851,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                         const name = (p.name || p.Name).toLowerCase();
                         const status = (p.status || p.Status || '').toString().toLowerCase();
                         // Basic filtering
-                        return status !== 'error' && !name.includes('onenote') && !name.includes('xps') && !name.includes('pdf');
+                        return status !== 'error' && !name.includes('onenote') && !name.includes('pdf');
                     });
 
                     validPrinters.forEach(printer => {

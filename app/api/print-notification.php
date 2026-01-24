@@ -52,8 +52,14 @@ try {
     // Créer le gestionnaire de base de données
     $db = create_database_manager();
 
-    // 0. Vérifier si le job a déjà été enregistré définitivement
-    $alreadyRecorded = $db->selectOne("SELECT 1 FROM recorded_print_jobs WHERE job_id = ? AND printer_name = ?", [
+    // 0. Vérifier si le job a déjà été enregistré définitivement RECEMMENT (2 heures max)
+    // Cela évite les faux positifs quand Windows recycle les Job IDs (48, 49...) après un certain temps.
+    $alreadyRecorded = $db->selectOne("
+        SELECT 1 FROM recorded_print_jobs 
+        WHERE job_id = ? 
+        AND printer_name = ? 
+        AND recorded_at > datetime('now', '-2 hours')
+    ", [
         strval($data['jobId']),
         $data['printerName']
     ]);

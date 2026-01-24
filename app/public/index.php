@@ -172,6 +172,19 @@ if ($page === 'convert_pcl_to_png') {
     }
 }
 
+if ($page === 'convert_xps_to_png') {
+    $api_file = __DIR__ . '/../api/convert-xps-to-png.php';
+    if (file_exists($api_file)) {
+        require_once $api_file;
+        exit;
+    } else {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'API file not found']);
+        exit;
+    }
+}
+
 if ($page === 'ajax_edit_tambours') {
     // Inclure le fichier API depuis le dossier api/
     $api_file = __DIR__ . '/../api/ajax_edit_tambours.php';
@@ -768,7 +781,7 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base', 'accueil', 'devis', 'tirage_multimachines', 'changement', 'admin', 'admin_aide_machines', 'admin_translations', 'installation', 'setup', 'setup_save', 'setup_upload', 'create_password', 'stats', 'imposition', 'imposition_brochure', 'imposition_livre', 'unimpose', 'imposition_tracts', 'png_to_pdf', 'pdf_to_png', 'riso_separator', 'image_processor', 'taux_remplissage', 'aide_machines', 'error', 'lang', 'ajax_edit_tambours', 'ajax_get_tambour_prices', 'download_pdf', 'download_png', 'download_unimposed', 'download_processed', 'download_backup', 'view_pdf', 'get-machine-template', 'upload_aide_pdf', 'view_aide_pdf', 'bibliotheque', 'upload_bibliotheque', 'search_bibliotheque', 'preview_directory', 'index_file', 'delete_bibliotheque_file', 'get_bibliotheque_thumbnail', 'get_bibliotheque_file', 'check_print_jobs', 'print_notification', 'auto_tirage', 'sessions', 'get_session_jobs', 'auto_tirage_multisession', 'get_pending_jobs');
+$page_secure = array('base', 'accueil', 'devis', 'tirage_multimachines', 'changement', 'admin', 'admin_aide_machines', 'admin_translations', 'installation', 'setup', 'setup_save', 'setup_upload', 'create_password', 'stats', 'imposition', 'imposition_brochure', 'imposition_livre', 'unimpose', 'imposition_tracts', 'png_to_pdf', 'pdf_to_png', 'riso_separator', 'image_processor', 'taux_remplissage', 'aide_machines', 'error', 'lang', 'ajax_edit_tambours', 'ajax_get_tambour_prices', 'download_pdf', 'download_png', 'download_unimposed', 'download_processed', 'download_backup', 'view_pdf', 'get-machine-template', 'upload_aide_pdf', 'view_aide_pdf', 'bibliotheque', 'upload_bibliotheque', 'search_bibliotheque', 'preview_directory', 'index_file', 'delete_bibliotheque_file', 'get_bibliotheque_thumbnail', 'get_bibliotheque_file', 'check_print_jobs', 'print_notification', 'auto_tirage', 'sessions', 'get_session_jobs', 'get_pending_jobs', 'convert_emf_to_png', 'convert_pcl_to_png', 'convert_xps_to_png');
 error_log("[PASSWORD_CHECK] ===== DEBUT VERIFICATION =====");
 error_log("[PASSWORD_CHECK] Page demandée (avant vérification): " . $page);
 error_log("[PASSWORD_CHECK] Page dans page_secure: " . (in_array($page, $page_secure, true) ? 'OUI' : 'NON'));

@@ -341,44 +341,8 @@
 
         // Au chargement, vérifier s'il y a un pseudo dans l'URL ou localStorage
         document.addEventListener('DOMContentLoaded', () => {
-            // Restaurer la session si elle existe
-            const savedJobs = sessionStorage.getItem('auto_tirage_session_jobs');
-            const savedUser = sessionStorage.getItem('auto_tirage_session_user');
-
-            if (savedJobs && savedUser) {
-                try {
-                    sessionJobs = JSON.parse(savedJobs);
-                    sessionUser = savedUser;
-
-                    // Restore processed IDs to enable live updates
-                    sessionJobs.forEach(job => {
-                        if (job.originalJobId) processedJobIds.add(job.originalJobId);
-                    });
-
-                    document.getElementById('pseudo-input').value = sessionUser;
-                    document.getElementById('step-identity').style.display = 'none';
-                    document.getElementById('step-listening').style.display = 'block';
-                    renderSessionTable();
-                    startPolling();
-                    addLog('info', `✅ Session restaurée (${sessionJobs.length} jobs)`);
-                    return;
-                } catch (e) {
-                    console.error('Erreur restauration session:', e);
-                }
-            }
-
-            const urlParams = new URLSearchParams(window.location.search);
-            const user = urlParams.get('user') || localStorage.getItem('auto_tirage_user');
-
-            if (user) {
-                document.getElementById('pseudo-input').value = user;
-                // On ne démarre plus automatiquement pour éviter les doublons au refresh
-                document.getElementById('step-identity').style.display = 'block';
-            } else {
-                document.getElementById('step-identity').style.display = 'block';
-            }
-
-            // Charger les sessions actives
+            // Toujours charger les sessions actives en premier
+            // loadActiveSessions() gère automatiquement la sélection de la dernière session
             loadActiveSessions();
         });
 
@@ -1526,18 +1490,17 @@
 
                 console.log('[AutoTirage] Sessions chargées:', activeSessions.length);
 
-                // Si aucune session n'est ouverte et qu'on n'est pas déjà sur le formulaire
+                // Auto-sélectionner une session si aucune n'est active
                 if (activeSessions.length === 0 && !currentSessionId) {
                     createNewSessionClick();
-                } else if (!currentSessionId) {
-                    // Tenter de restaurer la dernière session utilisée
+                } else if (!currentSessionId && activeSessions.length > 0) {
+                    // Tenter de restaurer la dernière session utilisée, sinon prendre la plus récente
                     const lastId = localStorage.getItem('auto_tirage_last_session_id');
-                    if (lastId && activeSessions.some(s => s.id == lastId)) {
-                        switchSession(lastId);
-                    } else if (activeSessions.length > 0) {
-                        // Par défaut, on prend la dernière session créée (la plus récente selon l'API)
-                        switchSession(activeSessions[0].id);
-                    }
+                    const sessionToSelect = (lastId && activeSessions.some(s => s.id == lastId))
+                        ? parseInt(lastId)
+                        : activeSessions[0].id;
+                    console.log('[AutoTirage] Auto-sélection session:', sessionToSelect);
+                    switchSession(sessionToSelect);
                 }
             } catch (error) {
                 console.error('[AutoTirage] Erreur chargement sessions:', error);
@@ -1598,7 +1561,8 @@
         // Changer de session
         async function switchSession(sessionId) {
             if (sessionId) {
-                const session = activeSessions.find(s => s.id === sessionId);
+                // Utiliser == pour comparer (sessionId peut être string ou number)
+                const session = activeSessions.find(s => s.id == sessionId);
                 if (session) {
                     // Sauvegarder la session actuelle avant de switcher
                     saveSession();

@@ -21,6 +21,10 @@ try {
         case 'list':
             listActiveSessions($db);
             break;
+
+        case 'last':
+            getLastSession($db);
+            break;
             
         case 'create':
             createSession($db);
@@ -271,8 +275,32 @@ function reassignJob($db) {
 }
 
 /**
- * Fermer toutes les sessions actives (appelé à la fermeture de l'app)
+ * Récupérer la dernière session active (la plus récemment ouverte)
  */
+function getLastSession($db) {
+    $query = $db->query("
+        SELECT
+            s.id,
+            s.contact,
+            s.session_name,
+            s.opened_at,
+            s.status,
+            s.total_price
+        FROM print_sessions s
+        WHERE s.status = 'active'
+        ORDER BY s.opened_at DESC
+        LIMIT 1
+    ");
+
+    $session = $query->fetch(PDO::FETCH_ASSOC);
+
+    if ($session) {
+        echo json_encode(['success' => true, 'session' => $session]);
+    } else {
+        echo json_encode(['success' => true, 'session' => null]);
+    }
+}
+
 function closeAllSessions($db) {
     try {
         // Récupérer toutes les sessions actives
