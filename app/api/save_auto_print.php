@@ -247,6 +247,12 @@ try {
                 $session_id
             );
 
+        // PERSISTENCE FIX: Update with document name, thumbnail URL and copies
+        if ($inserted_id) {
+            $stmt_extra = $con_pdo->prepare("UPDATE photocop SET document_name = ?, thumbnail_url = ?, nb_exemplaires = ? WHERE id = ?");
+            $stmt_extra->execute([$input['document'] ?? '', $input['thumbnail_url'] ?? '', $copies, $inserted_id]);
+        }
+
             $message = "Enregistré sur $marque : $total_pages pages ($taille) -> $price €";
         } else {
             $message = "Simulation : $total_pages pages ($taille)";
@@ -332,7 +338,7 @@ try {
             $tirage_global_id = DatabaseMigrationManager::generateTirageGlobalId($date, $contact, $nom_machine);
 
             // Insert
-            $sql = 'INSERT INTO dupli (type, contact, master_av, master_ap, passage_av, passage_ap, rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id, tambour, tirage_global_id, session_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+            $sql = 'INSERT INTO dupli (type, contact, master_av, master_ap, passage_av, passage_ap, rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id, tambour, tirage_global_id, session_id, document_name, thumbnail_url, nb_exemplaires) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
             $stmt = $con_pdo->prepare($sql);
             $stmt->execute([
                 "tirage",
@@ -351,7 +357,10 @@ try {
                 $machine_id,
                 'tambour_noir', // Défaut
                 $tirage_global_id,
-                $session_id
+                $session_id,
+                $input['document'] ?? '',
+                $input['thumbnail_url'] ?? '',
+                $input['copies'] ?? 1
             ]);
 
             $details['id'] = $con_pdo->lastInsertId();
