@@ -226,3 +226,34 @@ INIT: Printer='RISO ComColor FW5230', Type='photocop'
 HEX: 70686f746f636f70
 Check 'photocop': TRUE
 PRE-INSERT: nb_f=7992, price=102.77, session=50
+[2026-01-24 22:20:26] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":16,"contact":"manu","document":"la-justice-contre-la-revolte.pdf","copies":999,"total_pages":15984,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":0.17,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/107\/page_0.png","timestamp":1769293226496,"job_id":"107","session_id":50,"simulate":true}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+[2026-01-24 22:24:01] [PAYLOAD] {"printerName":"Test_Epson_Click","pages":16,"contact":"manu","document":"la-justice-contre-la-revolte.pdf","copies":10,"total_pages":160,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":0.17954078674316,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/108\/page_0.png","timestamp":"2026-01-24T22:23:19.000Z","job_id":"108","session_id":"51","simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='Test_Epson_Click', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=160, price=2.59, session=51
+[2026-01-24 22:24:12] [PAYLOAD] {"printerName":"Test_Epson_Click","pages":16,"contact":"manu","document":"la-justice-contre-la-revolte.pdf","copies":11,"total_pages":176,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":0.17,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/108\/page_0.png","timestamp":1769293452501,"job_id":"108","session_id":"51","simulate":true}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='Test_Epson_Click', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+[2026-01-24 22:42:09] [PAYLOAD] {"printerName":"Test_Epson_Click","pages":16,"contact":"manu","document":"la-justice-contre-la-revolte.pdf","copies":100,"total_pages":1600,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":0.17,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/108\/page_0.png","timestamp":1769294529282,"job_id":"108","session_id":51,"simulate":true}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='Test_Epson_Click', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+[2026-01-24 23:02:51] [PAYLOAD] {"printerName":"Test_Epson_Click","pages":16,"contact":"manu","document":"la-justice-contre-la-revolte.pdf","copies":190,"total_pages":3040,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":0.17,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/108\/page_0.png","timestamp":1769295771901,"job_id":"108","session_id":51,"simulate":true}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='Test_Epson_Click', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE

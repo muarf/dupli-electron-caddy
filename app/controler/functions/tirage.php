@@ -9,7 +9,7 @@
 /**
  * Insérer un tirage photocopieur
  */
-function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb, $mot, $date, $db = null, $tirage_global_id = null, $session_id = null)
+function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb, $mot, $date, $db = null, $tirage_global_id = null, $session_id = null, $document_name = null, $thumbnail_url = null)
 {
     // CORRECTION DEADLOCK : Utiliser la connexion passée en paramètre si disponible (pour les transactions)
     if ($db === null) {
@@ -41,9 +41,9 @@ function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb
     }
 
     if ($hasTirageGlobalId) {
-        $query = $db->prepare('INSERT into photocop (type, marque, contact, nb_f, rv, prix, paye, cb, mot, date, tirage_global_id, session_id) VALUES (:type,:marque,:contact,:nb_f,:rv,:prix,:paye,:cb,:mot,:date,:tirage_global_id,:session_id)');
+        $query = $db->prepare('INSERT into photocop (type, marque, contact, nb_f, rv, prix, paye, cb, mot, date, tirage_global_id, session_id, document_name, thumbnail_url) VALUES (:type,:marque,:contact,:nb_f,:rv,:prix,:paye,:cb,:mot,:date,:tirage_global_id,:session_id, :document_name, :thumbnail_url)');
     } else {
-        $query = $db->prepare('INSERT into photocop (type, marque, contact, nb_f, rv, prix, paye, cb, mot, date, session_id) VALUES (:type,:marque,:contact,:nb_f,:rv,:prix,:paye,:cb,:mot,:date,:session_id)');
+        $query = $db->prepare('INSERT into photocop (type, marque, contact, nb_f, rv, prix, paye, cb, mot, date, session_id, document_name, thumbnail_url) VALUES (:type,:marque,:contact,:nb_f,:rv,:prix,:paye,:cb,:mot,:date,:session_id, :document_name, :thumbnail_url)');
     }
 
     $query->bindParam(':type', $type);
@@ -61,6 +61,8 @@ function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb
         $query->bindParam(':tirage_global_id', $tirage_global_id);
     }
     $query->bindParam(':session_id', $session_id);
+    $query->bindParam(':document_name', $document_name);
+    $query->bindParam(':thumbnail_url', $thumbnail_url);
 
     if (!$query->execute()) {
         $errorInfo = $query->errorInfo();

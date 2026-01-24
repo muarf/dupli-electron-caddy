@@ -21,7 +21,18 @@
     <div class="section">
       <div class="container">
         <div class="row">
-          <div class="col-md-8 col-md-offset-2 text-center">
+          <div class="col-md-6 text-center">
+            <a href="?auto_tirage" style="text-decoration:none">
+              <div class="well" style="padding: 40px; margin: 20px 0; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border: 2px solid #28a745; border-radius: 15px; box-shadow: 0 4px 15px rgba(40,167,69,0.1); transition: all 0.3s ease;">
+                <div style="font-size: 48px; color: #28a745; margin-bottom: 20px;">
+                  <i class="fa fa-magic"></i>
+                </div>
+                <h2 style="color: #28a745; margin-bottom: 15px; font-weight: bold;"><?php _e('accueil.auto_tirage', [], true); ?></h2>
+                <p style="font-size: 16px; color: #6c757d; margin-bottom: 0;"><?php _e('accueil.auto_tirage_desc', [], true); ?></p>
+              </div>
+            </a>
+          </div>
+          <div class="col-md-6 text-center">
             <a href="?tirage_multimachines" style="text-decoration:none">
               <div class="well" style="padding: 40px; margin: 20px 0; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border: 2px solid #007bff; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,123,255,0.1); transition: all 0.3s ease;">
                 <div style="font-size: 48px; color: #007bff; margin-bottom: 20px;">

@@ -1475,6 +1475,12 @@
                     if (job.raw_fill_rate !== undefined) {
                         addHidden(form, `machines[${index}][fill_rate]`, job.raw_fill_rate);
                     }
+                    if (job.thumbnail_url) {
+                        addHidden(form, `machines[${index}][thumbnail_url]`, job.thumbnail_url);
+                    }
+                    if (job.document_name || job.document) {
+                        addHidden(form, `machines[${index}][document_name]`, job.document_name || job.document);
+                    }
 
                     const bPrefix = `machines[${index}][brochures][0]`;
                     // Use nb_feuilles from backend if available (handles duplex correctly), else fallback
@@ -1512,6 +1518,15 @@
                     if (currentSessionId) {
                         addHidden(form, `machines[${index}][session_id]`, currentSessionId);
                     }
+                    if (job.thumbnail_url) {
+                        addHidden(form, `machines[${index}][thumbnail_url]`, job.thumbnail_url);
+                    }
+                    if (job.document_name || job.document) {
+                        addHidden(form, `machines[${index}][document_name]`, job.document_name || job.document);
+                    }
+                    if (job.raw_fill_rate !== undefined) {
+                        addHidden(form, `machines[${index}][fill_rate]`, job.raw_fill_rate);
+                    }
                 }
 
                 // FIX: Envoyer l'ID de base de données pour permettre la mise à jour (évite les doublons)
@@ -1520,7 +1535,6 @@
                 }
             });
 
-            document.body.appendChild(form);
             document.body.appendChild(form);
             form.submit();
         };
