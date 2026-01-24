@@ -247,6 +247,76 @@ try {
         padding: 25px;
         background: #fafafa;
     }
+
+    /* Styles for Enhanced Recap */
+    .recap-thumbnail-container {
+        width: 100%;
+        max-width: 150px;
+        margin: 0 auto 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        overflow: hidden;
+        border: 2px solid white;
+        background: #f0f0f0;
+    }
+
+    .recap-thumbnail-container img {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+
+    .document-info {
+        background: rgba(0,0,0,0.03);
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin-bottom: 15px;
+        border-left: 4px solid #337ab7;
+    }
+
+    .document-info .doc-name {
+        font-weight: bold;
+        color: #333;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+    }
+
+    .ink-coverage-box {
+        margin-top: 15px;
+        padding: 10px;
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #eee;
+    }
+
+    .ink-bar-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        margin-bottom: 3px;
+        color: #666;
+    }
+
+    .ink-progress {
+        height: 6px;
+        border-radius: 3px;
+        background: #f0f0f0;
+        margin-bottom: 8px;
+        overflow: hidden;
+    }
+
+    .ink-progress-bar {
+        height: 100%;
+        border-radius: 3px;
+    }
+
+    .ink-c { background: #00ffff; }
+    .ink-m { background: #ff00ff; }
+    .ink-y { background: #ffff00; }
+    .ink-k { background: #000000; }
+    .ink-global { background: linear-gradient(90deg, #81c784, #a5d6a7); }
 </style>
 
 <div class="container-fluid">
@@ -359,9 +429,23 @@ try {
                                     <?php foreach ($machines as $index => $machine): ?>
                                         <div class="col-md-6 col-lg-4 mb-4">
                                             <div class="machine-card">
+                                                <?php if (!empty($machine['thumbnail_url'])): ?>
+                                                    <div class="recap-thumbnail-container">
+                                                        <img src="<?= htmlspecialchars($machine['thumbnail_url']) ?>" alt="Aperçu">
+                                                    </div>
+                                                <?php endif; ?>
+
                                                 <h5 class="text-center"><i class="fa fa-print"></i>
                                                     <?php _e('tirage_multimachines.tirage_number_prefix'); ?>                <?= ($index + 1) ?></h5>
+                                                
                                                 <p class="text-center"><strong><?= ucfirst($machine['type']) ?></strong></p>
+                                                
+                                                <?php if (!empty($machine['document_name'])): ?>
+                                                    <div class="document-info text-center">
+                                                        <span class="doc-name"><?= htmlspecialchars($machine['document_name']) ?></span>
+                                                    </div>
+                                                <?php endif; ?>
+
                                                 <div class="text-center" style="margin-top: 15px;">
                                                     <h3 style="color: #337ab7; margin: 0;">
                                                         <strong><?= number_format($machine['prix'], 2) ?>
@@ -400,9 +484,21 @@ try {
                                     ?>
                                         <div class="col-md-6">
                                             <div class="machine-card">
+                                                <?php if (!empty($machine['thumbnail_url'])): ?>
+                                                    <div class="recap-thumbnail-container">
+                                                        <img src="<?= htmlspecialchars($machine['thumbnail_url']) ?>" alt="Aperçu">
+                                                    </div>
+                                                <?php endif; ?>
+
                                                 <h4 class="text-center"><i class="fa fa-print"></i>
                                                 <?php _e('tirage_multimachines.tirage_number_prefix'); ?>            <?= ($index + 1) ?> -
                                                 <?= ucfirst($machine['type']) ?></h4>
+
+                                                <?php if (!empty($machine['document_name'])): ?>
+                                                    <div class="document-info text-center">
+                                                        <span class="doc-name"><?= htmlspecialchars($machine['document_name']) ?></span>
+                                                    </div>
+                                                <?php endif; ?>
                                             <?php if ($machine['type'] === 'duplicopieur'): ?>
                                                     <div class="row">
                                                         <div class="col-md-6">
@@ -545,191 +641,104 @@ try {
                                                         <?php endif; ?>
                                                         </div>
                                                         <div class="col-md-6">
-                                                            <h5><i class="fa fa-euro"></i> <?php _e('tirage_multimachines.cost_details'); ?>
-                                                            </h5>
+                                                            <h5><i class="fa fa-euro"></i> <?php _e('tirage_multimachines.cost_details'); ?></h5>
                                                             <ul class="list-unstyled">
-                                                            <?php
-                                                            // Calculer les coûts détaillés pour le photocopieur
-                                                            $prix_data = $prix_data ?? [];
-
-                                                            $total_papier = 0;
-                                                            $total_encre = 0;
-                                                            $total_pages = 0;
-                                                            $total_pages_encre = 0;
-                                                            $prix_papier = 0;
-                                                            $prix_encre = 0;
-
-                                                            if (isset($machine['brochures']) && is_array($machine['brochures'])) {
-                                                                foreach ($machine['brochures'] as $brochure) {
-                                                                    if (!empty($brochure['nb_exemplaires']) && !empty($brochure['nb_feuilles']) && !empty($brochure['taille'])) {
-                                                                        $nb_exemplaires = intval($brochure['nb_exemplaires']);
-                                                                        $nb_feuilles = intval($brochure['nb_feuilles']);
-                                                                        $nb_pages = $nb_exemplaires * $nb_feuilles;
-                                                                        $taille = $brochure['taille'];
-                                                                        $rv = isset($brochure['rv']) && $brochure['rv'] == 'oui';
-                                                                        $couleur = isset($brochure['couleur']) && $brochure['couleur'] == 'oui';
-                                                                        $feuilles_payees = isset($brochure['feuilles_payees']) && $brochure['feuilles_payees'] == 'oui';
-
-                                                                        // Prix du papier
-                                                                        $prix_papier = $prix_data['papier'][$taille] ?? 0;
-                                                                        $cout_papier = $feuilles_payees ? 0 : ($nb_pages * $prix_papier);
-                                                                        $total_papier += $cout_papier;
-
-                                                                        // Prix d'encre selon le type de machine
-                                                                        $prix_encre_brochure = 0;
-                                                                        $machine_name = $machine['machine'];
-
-                                                                        // Récupérer le taux de remplissage (valeur par défaut 0.5 = 50%)
-                                                                        $fill_rate = isset($machine['fill_rate']) ? floatval($machine['fill_rate']) : 0.5;
-                                                                        // Normalisation : si > 1, on suppose que c'est un pourcentage (ex: 36.5), on convertit en ratio (0.365)
-                                                                        if ($fill_rate > 1.0) {
-                                                                            $fill_rate = $fill_rate / 100.0;
-                                                                        }
-                                                                        $fill_rate_multiplier = $couleur ? ($fill_rate / 0.5) : 1.0; // 50% = ×1, 100% = ×2
-                                            
-                                                                        // Déterminer la clé de la machine dynamiquement
-                                                                        $machine_key = null;
-
-                                                                        // Récupérer l'ID du photocopieur par son nom
-                                                                        $stmt = $db->prepare("SELECT id FROM photocopieurs WHERE marque = ? AND actif = 1");
-                                                                        $stmt->execute([$machine_name]);
-                                                                        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-
-                                                                        if ($result) {
-                                                                            $photocopier_id = $result['id'];
-                                                                            $machine_key = "photocop_$photocopier_id";
-
-                                                                            // Vérifier si des prix existent pour cet ID
-                                                                            if (!isset($prix_data[$machine_key])) {
-                                                                                $machine_key = null; // Pas de prix trouvé
-                                                                            }
-                                                                        }
-
-                                                                        // Fallback si pas trouvé
-                                                                        if (!$machine_key) {
-                                                                            foreach ($prix_data as $key => $value) {
-                                                                                if (strpos($key, 'photocop_') === 0) {
-                                                                                    $machine_key = $key;
-                                                                                    break;
-                                                                                }
-                                                                            }
-                                                                        }
-
-                                                                        if ($machine_key && isset($prix_data[$machine_key])) {
-                                                                            $machine_prices = $prix_data[$machine_key];
-
-                                                                            if (strtolower($machine_name) === 'comcolor') {
-                                                                                // Photocopieur à encre
-                                                                                if ($couleur) {
-                                                                                    // Couleur : bleue + couleur + jaune + rouge (avec taux de remplissage) + noire (SANS taux)
-                                                                                    $prix_encre_brochure += (($machine_prices['bleue']['unite'] ?? 0) * $fill_rate_multiplier);
-                                                                                    $prix_encre_brochure += (($machine_prices['couleur']['unite'] ?? 0) * $fill_rate_multiplier);
-                                                                                    $prix_encre_brochure += (($machine_prices['jaune']['unite'] ?? 0) * $fill_rate_multiplier);
-                                                                                    $prix_encre_brochure += (($machine_prices['rouge']['unite'] ?? 0) * $fill_rate_multiplier);
-                                                                                    
-                                                                                    // Le noir reste fixe (pivot 50% = base BDD)
-                                                                                    $prix_encre_brochure += ($machine_prices['noire']['unite'] ?? 0);
-                                                                                } else {
-                                                                                    // Noir et blanc : seulement noire (pas de taux de remplissage)
-                                                                                    $prix_encre_brochure += ($machine_prices['noire']['unite'] ?? 0);
-                                                                                }
-                                                                            } else {
-                                                                                // Photocopieur à toner
-                                                                                if ($couleur) {
-                                                                                    // Couleur : cyan + jaune + magenta (avec taux de remplissage) + noir + tambour + dev (SANS taux)
-                                                                                    $prix_encre_brochure += (($machine_prices['cyan']['unite'] ?? 0) * $fill_rate_multiplier);
-                                                                                    $prix_encre_brochure += (($machine_prices['jaune']['unite'] ?? 0) * $fill_rate_multiplier);
-                                                                                    $prix_encre_brochure += (($machine_prices['magenta']['unite'] ?? 0) * $fill_rate_multiplier);
-                                                                                    
-                                                                                    // Noir, Tambour et dev ne sont pas affectés par le taux de remplissage
-                                                                                    $prix_encre_brochure += ($machine_prices['noir']['unite'] ?? 0);
-                                                                                    $prix_encre_brochure += ($machine_prices['tambour']['unite'] ?? 0);
-                                                                                    $prix_encre_brochure += ($machine_prices['dev']['unite'] ?? 0);
-                                                                                } else {
-                                                                                    // Noir et blanc : noir + tambour + dev (pas de taux de remplissage)
-                                                                                    $prix_encre_brochure += ($machine_prices['noir']['unite'] ?? 0);
-                                                                                    $prix_encre_brochure += ($machine_prices['tambour']['unite'] ?? 0);
-                                                                                    $prix_encre_brochure += ($machine_prices['dev']['unite'] ?? 0);
-                                                                                }
-                                                                            }
-                                                                        }
-
-                                                                        // Ajuster selon la taille
-                                                                        if ($taille === 'A4') {
-                                                                            $prix_encre_brochure = $prix_encre_brochure / 2;
-                                                                        }
-
-                                                                        // Calculer le coût d'encre
-                                                                        // Priorité au nombre de pages (faces) exact si disponible (via Auto Tirage)
-                                                                        $nb_pages_per_copy = isset($brochure['nb_pages']) ? floatval($brochure['nb_pages']) : $nb_feuilles;
-                                                                        $nb_pages_encre = $nb_exemplaires * $nb_pages_per_copy;
-
-                                                                        // Si on n'a pas le nombre de pages exact et qu'on est en R/V, on double
-                                                                        if (!isset($brochure['nb_pages']) && $rv) {
-                                                                            $nb_pages_encre = $nb_pages_encre * 2;
-                                                                        }
-
-                                                                        $cout_encre = $nb_pages_encre * $prix_encre_brochure;
-                                                                        $total_encre += $cout_encre;
-                                                                        $total_pages += $nb_pages;
-                                                                        $total_pages_encre += $nb_pages_encre;
-
-                                                                        $prix_encre = $prix_encre_brochure;
-                                                                    }
-                                                                }
-                                                            }
-
-                                                            // Calculer le total corrigé de cette machine et l'ajouter au total global
-                                                            $machine_total_corrected = $total_papier + $total_encre;
-                                                            $session_total_corrected += $machine_total_corrected;
+                                                            <?php if (isset($machine['breakdown'])): 
+                                                                $b = $machine['breakdown'];
                                                             ?>
                                                                 <li><strong><?php _e('tirage_multimachines.paper_label'); ?> :</strong>
-                                                                <?= $total_pages ?>                 <?php _e('tirage_multimachines.pages'); ?> ×
-                                                                <?= number_format($prix_papier, 3) ?>
-                                                                <?php _e('tirage_multimachines.currency'); ?> =
-                                                                <?= number_format($total_papier, 2) ?>
-                                                                <?php _e('tirage_multimachines.currency'); ?></li>
+                                                                    <?= $b['nb_pages_papier'] ?> <?php _e('tirage_multimachines.sheets'); ?> ×
+                                                                    <?= number_format($b['prix_papier_unite'], 3) ?> <?php _e('tirage_multimachines.currency'); ?> =
+                                                                    <?= number_format($b['papier'], 2) ?> <?php _e('tirage_multimachines.currency'); ?>
+                                                                </li>
                                                                 <li><strong><?php _e('tirage_multimachines.ink_toner_label'); ?> :</strong>
-                                                                <?= $total_pages_encre ?>                 <?php _e('tirage_multimachines.pages'); ?> ×
-                                                                <?= number_format($prix_encre, 4) ?>
-                                                                <?php _e('tirage_multimachines.currency'); ?> =
-                                                                <?= number_format($total_encre, 2) ?>
-                                                                <?php _e('tirage_multimachines.currency'); ?></li>
+                                                                    <?= $b['nb_pages_encre'] ?> <?php _e('tirage_multimachines.pages'); ?> ×
+                                                                    <?= number_format($b['prix_encre_page'], 4) ?> <?php _e('tirage_multimachines.currency'); ?> =
+                                                                    <?= number_format($b['total_encre'], 2) ?> <?php _e('tirage_multimachines.currency'); ?>
+                                                                </li>
                                                                 <li><strong><?php _e('tirage_multimachines.total'); ?> :</strong>
-                                                                <?= number_format($total_papier + $total_encre, 2) ?>
-                                                                <?php _e('tirage_multimachines.currency'); ?></li>
-                                                            <?php if (isset($machine['brochures']) && is_array($machine['brochures'])): ?>
-                                                                <?php foreach ($machine['brochures'] as $brochure_index => $brochure): ?>
-                                                                    <?php
-                                                                    $is_really_multipages = !isset($brochure['nb_pages']) || floatval($brochure['nb_pages']) > 1;
-                                                                    if (!empty($brochure['rv']) && $brochure['rv'] == 'oui' && $is_really_multipages):
-                                                                        ?>
+                                                                    <?= number_format($b['total'], 2) ?> <?php _e('tirage_multimachines.currency'); ?>
+                                                                </li>
+
+                                                                <?php if (isset($machine['brochures'])): ?>
+                                                                    <?php foreach ($machine['brochures'] as $brochure_index => $brochure): ?>
+                                                                        <?php if (!empty($brochure['rv']) && $brochure['rv'] == 'oui'): ?>
                                                                             <li><i class="fa fa-info-circle text-info"></i>
-                                                                            <?php _e('tirage_multimachines.brochure_number'); ?>                            <?= ($brochure_index + 1) ?>
-                                                                                : <?php _e('tirage_multimachines.recto_verso_double_ink'); ?></li>
-                                                                    <?php endif; ?>
-                                                                    <?php if (!empty($brochure['feuilles_payees']) && $brochure['feuilles_payees'] == 'oui'): ?>
-                                                                            <li><i class="fa fa-check text-warning"></i>
-                                                                            <?php _e('tirage_multimachines.brochure_number'); ?>                            <?= ($brochure_index + 1) ?>
-                                                                                : <?php _e('tirage_multimachines.sheets_already_paid'); ?></li>
-                                                                    <?php endif; ?>
-                                                                    <?php if (!empty($brochure['taille']) && $brochure['taille'] === 'A4'): ?>
+                                                                                <?php _e('tirage_multimachines.brochure_number'); ?> <?= ($brochure_index + 1) ?> : 
+                                                                                <?php _e('tirage_multimachines.recto_verso_double_ink'); ?>
+                                                                            </li>
+                                                                        <?php endif; ?>
+                                                                        <?php if (!empty($brochure['taille']) && $brochure['taille'] === 'A4'): ?>
                                                                             <li><i class="fa fa-info-circle text-info"></i>
-                                                                            <?php _e('tirage_multimachines.brochure_number'); ?>                            <?= ($brochure_index + 1) ?>
-                                                                                : <?php _e('tirage_multimachines.format_a4_ink_divided'); ?></li>
-                                                                    <?php endif; ?>
-                                                                <?php endforeach; ?>
+                                                                                <?php _e('tirage_multimachines.brochure_number'); ?> <?= ($brochure_index + 1) ?> : 
+                                                                                <?php _e('tirage_multimachines.format_a4_ink_divided'); ?>
+                                                                            </li>
+                                                                        <?php endif; ?>
+                                                                    <?php endforeach; ?>
+                                                                <?php endif; ?>
+                                                            <?php else: ?>
+                                                                <li class="text-danger">Erreur: Détails du prix non calculés.</li>
                                                             <?php endif; ?>
                                                             </ul>
+                                                        </div>
                                                         </div>
                                                     </div>
                                             <?php endif; ?>
 
                                                 <div class="text-center"
                                                     style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                                                    
+                                                    <?php if (isset($machine['breakdown'])): 
+                                                        $b = $machine['breakdown'];
+                                                    ?>
+                                                        <div class="ink-coverage-box text-left" style="margin-top: 20px;">
+                                                            <div class="ink-bar-label">
+                                                                <span><strong><i class="fa fa-tint"></i> Couverture d'encre: <?= round($b['fr_percent'], 1) ?>%</strong></span>
+                                                                <span class="label label-primary">x<?= number_format($b['multiplier'], 2) ?> sur couleurs</span>
+                                                            </div>
+                                                            <div class="ink-progress">
+                                                                <div class="ink-progress-bar ink-global" style="width: <?= min(100, $b['fr_percent']) ?>%"></div>
+                                                            </div>
+
+                                                            <table class="table table-condensed" style="margin-bottom: 0; font-size: 11px; margin-top: 10px;">
+                                                                <tr>
+                                                                    <td>Papier</td>
+                                                                    <td class="text-right"><?= number_format($b['papier'], 2) ?> €</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td>Noir & Composants (Fixe)</td>
+                                                                    <td class="text-right"><?= number_format($b['noir'], 2) ?> €</td>
+                                                                </tr>
+                                                                <?php if ($b['is_color']): ?>
+                                                                <tr class="info">
+                                                                    <td>Couleurs (Ajusté x<?= number_format($b['multiplier'], 2) ?>)</td>
+                                                                    <td class="text-right"><?= number_format($b['couleurs'], 2) ?> €</td>
+                                                                </tr>
+                                                                <?php endif; ?>
+                                                                <tr style="border-top: 2px solid #ddd; font-weight: bold;">
+                                                                    <td>Total cette machine</td>
+                                                                    <td class="text-right"><?= number_format($b['papier'] + $b['noir'] + $b['couleurs'], 2) ?> €</td>
+                                                                </tr>
+                                                            </table>
+                                                        </div>
+                                                    <?php elseif (isset($machine['fill_rate'])): 
+                                                        $fr = floatval($machine['fill_rate']);
+                                                        $fr_percent = ($fr <= 1.0) ? ($fr * 100) : $fr;
+                                                    ?>
+                                                        <div class="ink-coverage-box text-left">
+                                                            <div class="ink-bar-label">
+                                                                <span><strong><i class="fa fa-tint"></i> Couverture d'encre estimée</strong></span>
+                                                                <span><?= round($fr_percent, 1) ?>%</span>
+                                                            </div>
+                                                            <div class="ink-progress">
+                                                                <div class="ink-progress-bar ink-global" style="width: <?= min(100, $fr_percent) ?>%"></div>
+                                                            </div>
+                                                        </div>
+                                                    <?php endif; ?>
+
                                                     <h4 class="text-primary">
                                                         <i class="fa fa-euro"></i>
-                                                        <strong><?= number_format($total_papier + $total_encre, 2) ?>
+                                                        <strong><?= number_format($b['total'] ?? 0, 2) ?>
                                                         <?php _e('tirage_multimachines.currency'); ?></strong>
                                                     </h4>
                                                 </div>
@@ -742,7 +751,7 @@ try {
                             <div class="alert alert-info text-center">
                                 <h3><i class="fa fa-calculator"></i> <?php _e('tirage_multimachines.total_global'); ?></h3>
                                 <h2 class="text-primary">
-                                    <strong><?= number_format($session_total_corrected, 2) ?>
+                                    <strong><?= number_format($prix_total, 2) ?>
                                     <?php _e('tirage_multimachines.currency'); ?></strong>
                                 </h2>
                             </div>
@@ -768,6 +777,12 @@ try {
                                         value="<?= isset($machine['db_id']) ? $machine['db_id'] : '' ?>" />
                                     <input type="hidden" name="machines[<?= $index ?>][job_id]"
                                         value="<?= isset($machine['job_id']) ? $machine['job_id'] : '' ?>" />
+                                    <input type="hidden" name="machines[<?= $index ?>][thumbnail_url]"
+                                        value="<?= isset($machine['thumbnail_url']) ? $machine['thumbnail_url'] : '' ?>" />
+                                    <input type="hidden" name="machines[<?= $index ?>][document_name]"
+                                        value="<?= isset($machine['document_name']) ? $machine['document_name'] : '' ?>" />
+                                    <input type="hidden" name="machines[<?= $index ?>][fill_rate]"
+                                        value="<?= isset($machine['fill_rate']) ? $machine['fill_rate'] : '' ?>" />
 
                                 <?php if ($machine['type'] === 'duplicopieur'): ?>
                                         <input type="hidden" name="machines[<?= $index ?>][nb_masters]"

@@ -204,61 +204,71 @@ function determineMachineType($db, $machine_name)
     }
 }
 
-function calculatePageCost($machine_name, $machine_type, $prices, $is_color, $is_duplex, $fill_rate = 0.5)
+function calculatePageCost($machine_name, $machine_type, $prices, $is_color, $is_duplex, $fill_rate = 0.5, $return_breakdown = false)
 {
     error_log("DEBUG calculatePageCost - ENTREE avec prix fixes, fill_rate=$fill_rate, is_color=" . ($is_color ? 'OUI' : 'NON'));
 
-    $cost_per_page = 0;
+    $fixed_cost = 0;
+    $variable_cost = 0;
 
     // Calculer le multiplicateur de taux de remplissage (50% = ×1, 100% = ×2)
+    // Pivot à 50% : 0.5 -> 1.0x, 0.25 -> 0.5x, 0.75 -> 1.5x
     $fill_rate_multiplier = $is_color ? ($fill_rate / 0.5) : 1.0;
 
     try {
         if ($machine_type === 'toner') {
             error_log("DEBUG calculatePageCost - BRANCHE TONER");
             if ($is_color) {
-                // Couleur : cyan + magenta + yellow (avec taux de remplissage) + noir + tambour + dev (SANS taux)
-                $cost_per_page += (($prices['cyan']['unite'] ?? 0) * $fill_rate_multiplier);
-                $cost_per_page += (($prices['magenta']['unite'] ?? 0) * $fill_rate_multiplier);
-                $cost_per_page += (($prices['yellow']['unite'] ?? 0) * $fill_rate_multiplier);
+                // Couleur : cyan + magenta + yellow (AVEC taux de remplissage)
+                $variable_cost += ($prices['cyan']['unite'] ?? 0);
+                $variable_cost += ($prices['magenta']['unite'] ?? 0);
+                // Support both 'jaune' (DB) and 'yellow' (UI convention)
+                $variable_cost += ($prices['jaune']['unite'] ?? $prices['yellow']['unite'] ?? 0);
                 
-                // Le noir, le tambour et le dev sont fixes (pivot 50% = base BDD)
-                $cost_per_page += ($prices['noir']['unite'] ?? 0);
-                $cost_per_page += ($prices['tambour']['unite'] ?? 0);
-                $cost_per_page += ($prices['dev']['unite'] ?? 0);
-                error_log("DEBUG calculatePageCost - COULEUR : fill_rate=$fill_rate, multiplier=$fill_rate_multiplier (sauf Noir/Tambour/Dev)");
+                // Le noir, le tambour et le dev sont fixes (pas de taux)
+                $fixed_cost += ($prices['noir']['unite'] ?? 0);
+                $fixed_cost += ($prices['tambour']['unite'] ?? 0);
+                $fixed_cost += ($prices['dev']['unite'] ?? 0);
             } else {
                 // Noir et blanc : noir + tambour + dev (pas de taux de remplissage)
-                $cost_per_page += ($prices['noir']['unite'] ?? 0);
-                $cost_per_page += ($prices['tambour']['unite'] ?? 0);
-                $cost_per_page += ($prices['dev']['unite'] ?? 0);
-                error_log("DEBUG calculatePageCost - NOIR ET BLANC : multiplicateur=1.0 (prix BDD normal)");
+                $fixed_cost += ($prices['noir']['unite'] ?? 0);
+                $fixed_cost += ($prices['tambour']['unite'] ?? 0);
+                $fixed_cost += ($prices['dev']['unite'] ?? 0);
             }
         } else {
             error_log("DEBUG calculatePageCost - BRANCHE ENCRE");
             if ($is_color) {
-                // Couleur : bleue + couleur + jaune + rouge (avec taux de remplissage) + noire (SANS taux)
-                $cost_per_page += (($prices['bleue']['unite'] ?? 0) * $fill_rate_multiplier);
-                $cost_per_page += (($prices['couleur']['unite'] ?? 0) * $fill_rate_multiplier);
-                $cost_per_page += (($prices['jaune']['unite'] ?? 0) * $fill_rate_multiplier);
-                $cost_per_page += (($prices['rouge']['unite'] ?? 0) * $fill_rate_multiplier);
+                // Couleur : bleue + couleur + jaune + rouge (AVEC taux de remplissage)
+                $variable_cost += ($prices['bleue']['unite'] ?? 0);
+                $variable_cost += ($prices['couleur']['unite'] ?? 0);
+                $variable_cost += ($prices['jaune']['unite'] ?? 0);
+                $variable_cost += ($prices['rouge']['unite'] ?? 0);
                 
-                // Le noir reste fixe (pivot 50% = base BDD)
-                $cost_per_page += ($prices['noire']['unite'] ?? 0);
-                error_log("DEBUG calculatePageCost - COULEUR : fill_rate=$fill_rate, multiplier=$fill_rate_multiplier (sauf Noire)");
+                // Le noir reste fixe
+                $fixed_cost += ($prices['noire']['unite'] ?? 0);
             } else {
                 // Noir et blanc : seulement noire (pas de taux de remplissage)
-                $cost_per_page += ($prices['noire']['unite'] ?? 0);
-                error_log("DEBUG calculatePageCost - NOIR ET BLANC : multiplicateur=1.0 (prix BDD normal)");
+                $fixed_cost += ($prices['noire']['unite'] ?? 0);
             }
         }
 
-        error_log("DEBUG calculatePageCost - COÛT FINAL avec fill_rate_multiplier: $cost_per_page");
-        return $cost_per_page;
+        if ($return_breakdown) {
+            return [
+                'fixed_cost' => $fixed_cost,
+                'variable_cost_base' => $variable_cost,
+                'variable_cost_adjusted' => $variable_cost * $fill_rate_multiplier,
+                'multiplier' => $fill_rate_multiplier,
+                'total' => $fixed_cost + ($variable_cost * $fill_rate_multiplier)
+            ];
+        }
+
+        $total = $fixed_cost + ($variable_cost * $fill_rate_multiplier);
+        error_log("DEBUG calculatePageCost - COÛT FINAL: $total (fixed: $fixed_cost, variable_base: $variable_cost, multiplier: $fill_rate_multiplier)");
+        return $total;
 
     } catch (Exception $e) {
         error_log("DEBUG calculatePageCost - ERREUR: " . $e->getMessage());
-        return 0.01; // Prix de secours
+        return $return_breakdown ? ['fixed_cost' => 0.01, 'variable_cost_base' => 0, 'variable_cost_adjusted' => 0, 'multiplier' => 1, 'total' => 0.01] : 0.01;
     }
 }
 
@@ -608,20 +618,50 @@ function Action($conf = null)
                             $coutPapier = $feuilles_payees ? 0 : ($nbPages * $prixPapier);
 
                             // Calculer le coût par page selon le type de machine et les couleurs (avec taux de remplissage)
-                            $cost_per_page = calculatePageCost($machine['machine'], $machine_type_detected, $machine_prices, $couleur, $rv, $fill_rate);
+                            $breakdown = calculatePageCost($machine['machine'], $machine_type_detected, $machine_prices, $couleur, $rv, $fill_rate, true);
+                            $cost_per_page = $breakdown['total'];
 
                             // Ajuster selon la taille (A3 = prix normal, A4 = prix/2)
-                            if ($taille === 'A4')
+                            if ($taille === 'A4') {
                                 $cost_per_page = $cost_per_page / 2;
+                                $breakdown['fixed_cost'] /= 2;
+                                $breakdown['variable_cost_base'] /= 2;
+                                $breakdown['variable_cost_adjusted'] /= 2;
+                            }
 
                             // Calculer le coût d'encre
                             $nbPagesEncre = $nbPages; // Pages pour l'encre
                             if ($rv)
                                 $nbPagesEncre = $nbPages * 2; // Recto-verso = 2 fois plus de pages pour l'encre
+                            
                             $prixEncre = $nbPagesEncre * $cost_per_page;
-
                             $prixBrochure = $coutPapier + $prixEncre;
                             $prix_total += $prixBrochure;
+
+                            // Store breakdown for UI
+                            if (!isset($array['machines'][$index]['breakdown'])) {
+                                $array['machines'][$index]['breakdown'] = [
+                                    'papier' => 0,
+                                    'noir' => 0,
+                                    'couleurs' => 0,
+                                    'multiplier' => $breakdown['multiplier']
+                                ];
+                            }
+                            $array['machines'][$index]['breakdown']['papier'] += $coutPapier;
+                            $array['machines'][$index]['breakdown']['noir'] += $nbPagesEncre * $breakdown['fixed_cost'];
+                            $array['machines'][$index]['breakdown']['couleurs'] += $nbPagesEncre * $breakdown['variable_cost_adjusted'];
+                            $array['machines'][$index]['breakdown']['total_encre'] = $array['machines'][$index]['breakdown']['noir'] + $array['machines'][$index]['breakdown']['couleurs'];
+                            $array['machines'][$index]['breakdown']['total'] = $array['machines'][$index]['breakdown']['papier'] + $array['machines'][$index]['breakdown']['total_encre'];
+                            $array['machines'][$index]['breakdown']['prix_encre_page'] = $cost_per_page;
+                            $array['machines'][$index]['breakdown']['nb_pages_encre'] = $nbPagesEncre;
+                            $array['machines'][$index]['breakdown']['prix_papier_unite'] = $prixPapier;
+                            $array['machines'][$index]['breakdown']['nb_pages_papier'] = $nbPages;
+                            $array['machines'][$index]['breakdown']['variable_cost_base'] = $breakdown['variable_cost_base']; 
+                            $array['machines'][$index]['breakdown']['is_color'] = $couleur;
+                            $array['machines'][$index]['breakdown']['fr_percent'] = $fill_rate * 100;
+                            
+                            // Mettre à jour le prix de la machine avec la valeur calculée
+                            $array['machines'][$index]['prix'] = $array['machines'][$index]['breakdown']['total'];
 
                             if (isset($_GET['debug'])) {
                                 $array['debug']['photocopieur_' . $index] .= " - Calcul détaillé: " . $nbPages . " pages, papier=" . $prixPapier . "€, encre=" . $prixEncre . "€, coutPapier=" . $coutPapier . "€, total=" . $prixBrochure . "€";
@@ -987,14 +1027,14 @@ function Action($conf = null)
 
                         if ($db_id > 0) {
                             error_log("[DEDUPLICATION] Mise à jour d'un job dupli existant ID: $db_id");
-                            $sql = 'UPDATE dupli SET contact = ?, master_av = ?, master_ap = ?, passage_av = ?, passage_ap = ?, rv = ?, prix = ?, paye = ?, cb = ?, mot = ?, date = ?, nom_machine = ?, duplicopieur_id = ?, tambour = ?, tirage_global_id = ?, session_id = ? WHERE id = ?';
-                            $params = [$machine['contact'] ?? $contact, $master_av, $master_ap, $passage_av, $passage_ap, $rv, $prix, $paye, $cb, $mot, $date, $nom_machine, $duplicopieur_id, $machine['tambour'] ?? null, $tirage_global_id, $session_id, $db_id];
+                            $sql = 'UPDATE dupli SET contact = ?, master_av = ?, master_ap = ?, passage_av = ?, passage_ap = ?, rv = ?, prix = ?, paye = ?, cb = ?, mot = ?, date = ?, nom_machine = ?, duplicopieur_id = ?, tambour = ?, tirage_global_id = ?, session_id = ?, document_name = ?, thumbnail_url = ? WHERE id = ?';
+                            $params = [$machine['contact'] ?? $contact, $master_av, $master_ap, $passage_av, $passage_ap, $rv, $prix, $paye, $cb, $mot, $date, $nom_machine, $duplicopieur_id, $machine['tambour'] ?? null, $tirage_global_id, $session_id, $machine['document_name'] ?? null, $machine['thumbnail_url'] ?? null, $db_id];
                             $query = $db->prepare($sql);
                             $query->execute($params);
                         } else {
                             // Insérer dans la table dupli (Enregistrement Manuel)
-                            $sql = 'INSERT INTO dupli (type, contact, master_av, master_ap, passage_av, passage_ap, rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id, tambour, tirage_global_id, session_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-                            $params = [$type, $machine['contact'] ?? $contact, $master_av, $master_ap, $passage_av, $passage_ap, $rv, $prix, $paye, $cb, $mot, $date, $nom_machine, $duplicopieur_id, $machine['tambour'] ?? null, $tirage_global_id, $session_id];
+                            $sql = 'INSERT INTO dupli (type, contact, master_av, master_ap, passage_av, passage_ap, rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id, tambour, tirage_global_id, session_id, document_name, thumbnail_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+                            $params = [$type, $machine['contact'] ?? $contact, $master_av, $master_ap, $passage_av, $passage_ap, $rv, $prix, $paye, $cb, $mot, $date, $nom_machine, $duplicopieur_id, $machine['tambour'] ?? null, $tirage_global_id, $session_id, $machine['document_name'] ?? null, $machine['thumbnail_url'] ?? null];
                             $query = $db->prepare($sql);
                             $query->execute($params);
                         }
@@ -1037,15 +1077,15 @@ function Action($conf = null)
 
                                     if ($db_id > 0) {
                                         error_log("[DEDUPLICATION] Mise à jour d'un job photocop existant ID: $db_id");
-                                        $sql = 'UPDATE photocop SET contact = ?, nb_f = ?, rv = ?, prix = ?, paye = ?, cb = ?, mot = ?, date = ?, marque = ?, tirage_global_id = ?, session_id = ? WHERE id = ?';
-                                        $params = [$machine['contact'] ?? $contact, $nb_f_total, $rv, $prix_machine_calcule, $paye, $cb, $mot, $date, $marque, $tirage_global_id, $session_id, $db_id];
+                                        $sql = 'UPDATE photocop SET contact = ?, nb_f = ?, rv = ?, prix = ?, paye = ?, cb = ?, mot = ?, date = ?, marque = ?, tirage_global_id = ?, session_id = ?, document_name = ?, thumbnail_url = ? WHERE id = ?';
+                                        $params = [$machine['contact'] ?? $contact, $nb_f_total, $rv, $prix_machine_calcule, $paye, $cb, $mot, $date, $marque, $tirage_global_id, $session_id, $machine['document_name'] ?? null, $machine['thumbnail_url'] ?? null, $db_id];
                                         $query = $db->prepare($sql);
                                         $query->execute($params);
                                     } else {
                                         // Insérer dans la table photocop avec le prix transmis
                                         error_log("DEBUG ENREGISTREMENT - Tentative insertion photocop: type=photocopieur, marque=$marque, nb_f_total=$nb_f_total, prix=$prix_machine_calcule, session=$session_id");
                                         insert_photocop(
-                                            'photocopieur',  // CORRECTION: $type au lieu de $taille
+                                            'photocopieur',
                                             $marque,
                                             $machine['contact'] ?? $contact,
                                             $nb_f_total,
@@ -1055,9 +1095,11 @@ function Action($conf = null)
                                             $cb,
                                             $mot,
                                             $date,
-                                            $db,  // CORRECTION DEADLOCK : Passer la connexion de la transaction
-                                            $tirage_global_id,  // Identifiant global pour regrouper les tirages
-                                            $session_id // Link to active session
+                                            $db,
+                                            $tirage_global_id,
+                                            $session_id,
+                                            $machine['document_name'] ?? null,
+                                            $machine['thumbnail_url'] ?? null
                                         );
                                     }
                                     error_log("DEBUG ENREGISTREMENT - Fin traitement brochure");
