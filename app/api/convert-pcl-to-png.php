@@ -158,22 +158,86 @@ if (!$splFile || !file_exists($splFile)) {
 $headerHandle = @fopen($splFile, 'rb');
 $isPcl = false;
 if ($headerHandle) {
-    $headerData = fread($headerHandle, 64);
+    $headerData = fread($headerHandle, 65536); // Read 64KB to find signatures deeper in file
     fclose($headerHandle);
-    $hexHeader = bin2hex($headerData);
-    debugLog("SPL Header (Hex): " . $hexHeader);
-    debugLog("SPL Header (Text): " . addcslashes($headerData, "\0..\37!@\177..\377"));
+    $hexHeader = bin2hex(substr($headerData, 0, 64));
+    debugLog("SPL Header (Hex snippet): " . $hexHeader);
     
+    // Check for PCL XL signature (HP's binary PCL) - common in Kyocera
+    if (stripos($headerData, "hp-PCL XL") !== false) {
+        $isPcl = true;
+    }
     // Check for PJL or PCL signatures
-    if (strpos($headerData, "\x1B%-12345X") !== false || strpos($headerData, "\x1BE") !== false || strpos($headerData, "\x1B&") !== false) {
+    elseif (strpos($headerData, "\x1B%-12345X") !== false || strpos($headerData, "\x1BE") !== false || strpos($headerData, "\x1B&") !== false) {
         $isPcl = true;
     }
 }
 
 if (!$isPcl) {
-    debugLog("SAFEGUARD: Non-PCL data detected in convert-pcl-to-png.php. Aborting to avoid GhostPCL loop.");
-    echo json_encode(['error' => 'Not a valid PCL file', 'job_id' => $jobId]);
-    exit;
+    debugLog("Checking for Kyocera specific signature (!R!)...");
+    if (strpos($headerData, "!R!") !== false) {
+        $isPcl = true;
+        debugLog("Kyocera signature found. Enabling PCL mode.");
+    } else {
+        debugLog("SAFEGUARD: Non-PCL data detected in convert-pcl-to-png.php. Aborting to avoid GhostPCL loop.");
+        echo json_encode(['error' => 'Not a valid PCL file', 'job_id' => $jobId]);
+        exit;
+    }
+}
+
+// Special handling for PostScript/Kyocera or custom offsets
+$fileToConvert = $splFile;
+$offset = 0;
+
+// Auto-detect offset to align with PCL XL stream start
+if ($isPcl) {
+    // Strategy: Search for the ") HP-PCL XL" signature that Kyocera uses
+    // This signature appears after the !R!SIR2;EXIT; prefix and PJL commands
+    
+    $pclxlSig = strpos($headerData, ") HP-PCL XL");
+    if ($pclxlSig !== false) {
+        $offset = $pclxlSig;
+        debugLog("Found ) HP-PCL XL signature at offset $offset.");
+    } else {
+        // Fallback 1: Try case-insensitive search
+        $pclxlSigLower = stripos($headerData, ") hp-pcl xl");
+        if ($pclxlSigLower !== false) {
+            $offset = $pclxlSigLower;
+            debugLog("Found ) hp-pcl xl signature (case-insensitive) at offset $offset.");
+        } else {
+            // Fallback 2: Look for first ESC sequence (standard PCL)
+            $firstEsc = strpos($headerData, "\x1B");
+            if ($firstEsc !== false && $firstEsc > 0) {
+                $offset = $firstEsc;
+                debugLog("Auto-detected PCL start at first ESC sequence, offset $offset.");
+            }
+        }
+    }
+}
+
+if ($offset > 0) {
+    debugLog("Extracting data from offset $offset using streaming...");
+    $tempFile = __DIR__ . '/../../logs/temp_job_' . $jobId . '.pcl';
+    
+    $src = @fopen($splFile, 'rb');
+    $dst = @fopen($tempFile, 'wb');
+    
+    if ($src && $dst) {
+        fseek($src, $offset);
+        while (!feof($src)) {
+            $chunk = fread($src, 8192); // Read 8KB at a time
+            if ($chunk === false) break;
+            fwrite($dst, $chunk);
+        }
+        fclose($src);
+        fclose($dst);
+        $fileToConvert = $tempFile;
+        debugLog("Created temporary file for conversion via streaming: $tempFile");
+    } else {
+        if ($src) fclose($src);
+        if ($dst) fclose($dst);
+        debugLog("ERROR: Could not open files for streaming extraction");
+    }
 }
 
 // Créer le dossier de sortie (Accessible publiquement)
@@ -195,7 +259,7 @@ $baseUrl = 'http://127.0.0.1:8001/thumbnails/' . $jobId . '/';
 // On utilise le fichier SPL directement. Ghostscript est assez intelligent pour ignorer les en-têtes RAW/PJL souvent.
 
 $realGsPath = realpath($gsPath);
-$realSplFile = realpath($splFile);
+$realSplFile = realpath($fileToConvert);
 $outputImage = $outputDir . 'page_%d.png';
 
 if (!$realGsPath) {
@@ -215,7 +279,7 @@ $output = [];
 $returnVar = 0;
 
 // Utiliser proc_open avec timeout pour éviter de bloquer l'app
-$timeout = 30; // 30 secondes max
+$timeout = 120; // 120 secondes max pour les gros jobs
 $descriptors = [
     0 => ['pipe', 'r'],
     1 => ['pipe', 'w'],
@@ -276,6 +340,12 @@ if (is_resource($process)) {
     fclose($pipes[1]);
     fclose($pipes[2]);
     proc_close($process);
+    
+    // Clean up temp file if created
+    if ($fileToConvert !== $splFile && file_exists($fileToConvert)) {
+        @unlink($fileToConvert);
+        debugLog("Deleted temporary file: $fileToConvert");
+    }
     
     $output = array_merge(explode("\n", $stdout), explode("\n", $stderr));
     

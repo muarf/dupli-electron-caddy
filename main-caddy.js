@@ -9,6 +9,7 @@ const { checkWindowsCompatibility, applyCompatibilitySettings } = require('./uti
 const PrinterMonitor = require('./utils/printer-monitor');
 const printEngine = require('./src/print-engine');
 const { isRunningAsAdmin, restartAsAdmin } = require('./utils/admin-checker');
+const { autoUpdater } = require('electron-updater');
 
 // Vérifier si Ghostscript fonctionne (sous Windows uniquement)
 function checkGhostscript(port = 8000) {
@@ -2410,6 +2411,7 @@ if (process.platform === 'linux') {
 
 // Cette méthode sera appelée quand Electron aura fini de s'initialiser
 app.whenReady().then(() => {
+    console.log('DEBUG: app.whenReady started');
     // Appliquer les paramètres de compatibilité Windows
     applyCompatibilitySettings();
 
@@ -2422,7 +2424,51 @@ app.whenReady().then(() => {
     if (process.env.NODE_ENV !== 'development') {
         setupAutoUpdater();
     }
+
+    // Configurer les imprimantes (KeepPrintedJobs)
+    configurePrinters();
 });
+
+// Configurer les imprimantes au démarrage (KeepPrintedJobs = 1)
+function configurePrinters() {
+    console.log('Configuration des imprimantes (KeepPrintedJobs)...');
+
+    // Chemin vers le script PowerShell
+    const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    let scriptPath;
+
+    if (isAppImage) {
+        scriptPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'scripts', 'configure-printers.ps1');
+    } else {
+        scriptPath = path.join(__dirname, 'scripts', 'configure-printers.ps1');
+    }
+
+    console.log('Script Path:', scriptPath);
+
+    if (!fs.existsSync(scriptPath)) {
+        console.error('ERROR: PowerShell script not found at:', scriptPath);
+        return;
+    }
+
+    // Exécuter directement avec spawn
+    const child = spawn('powershell', ['-ExecutionPolicy', 'Bypass', '-File', scriptPath]);
+
+    child.stdout.on('data', (data) => {
+        console.log('Printer Config Wrapper:', data.toString());
+    });
+
+    child.stderr.on('data', (data) => {
+        console.error('Printer Config Wrapper Error:', data.toString());
+    });
+
+    child.on('error', (err) => {
+        console.error('FAILED to spawn PowerShell:', err);
+    });
+
+    child.on('close', (code) => {
+        console.log(`Configuration imprimantes terminée (wrapper code ${code})`);
+    });
+}
 
 // Quitter quand toutes les fenêtres sont fermées
 app.on('window-all-closed', () => {

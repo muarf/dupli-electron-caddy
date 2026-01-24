@@ -24,13 +24,13 @@ let phpServer;
 function cleanupTmpFiles() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
     let tmpPath;
-    
+
     if (isAppImage) {
         tmpPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public', 'tmp');
     } else {
         tmpPath = path.join(__dirname, 'app', 'public', 'tmp');
     }
-    
+
     if (fs.existsSync(tmpPath)) {
         const files = fs.readdirSync(tmpPath);
         files.forEach(file => {
@@ -48,7 +48,7 @@ function startPhpServer() {
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
     const isWindows = process.platform === 'win32';
     let phpPath, appPath, phpIniPath;
-    
+
     if (isAppImage) {
         // AppImage : utiliser le PHP système
         phpPath = '/usr/bin/php';
@@ -65,12 +65,12 @@ function startPhpServer() {
         appPath = path.join(__dirname, 'app', 'public');
         phpIniPath = path.join(__dirname, 'app', 'php.ini');
     }
-    
+
     console.log('Démarrage du serveur PHP...');
     console.log('PHP Path:', phpPath);
     console.log('App Path:', appPath);
     console.log('PHP Ini Path:', phpIniPath);
-    
+
     phpServer = spawn(phpPath, [
         '-c', phpIniPath,
         '-S', '127.0.0.1:8000',
@@ -78,19 +78,19 @@ function startPhpServer() {
     ], {
         stdio: ['pipe', 'pipe', 'pipe']
     });
-    
+
     phpServer.stdout.on('data', (data) => {
         console.log('PHP Server:', data.toString());
     });
-    
+
     phpServer.stderr.on('data', (data) => {
         console.error('PHP Error:', data.toString());
     });
-    
+
     phpServer.on('close', (code) => {
         console.log(`Serveur PHP fermé avec le code ${code}`);
     });
-    
+
     phpServer.on('error', (error) => {
         console.error('Erreur serveur PHP:', error);
     });
@@ -272,7 +272,7 @@ function createWindow() {
 
     // Démarrer le serveur PHP
     startPhpServer();
-    
+
     // Attendre que le serveur soit prêt puis charger l'application
     setTimeout(() => {
         mainWindow.loadURL('http://127.0.0.1:8000/');
@@ -284,7 +284,7 @@ function createWindow() {
         console.error('Erreur de chargement:', errorCode, errorDescription);
         mainWindow.loadURL('data:text/html,<h1>Erreur de connexion</h1><p>Impossible de se connecter au serveur PHP.</p><button onclick="location.reload()">Recharger</button>');
     });
-    
+
     // Ouvrir les DevTools en développement
     if (process.env.NODE_ENV === 'development') {
         mainWindow.webContents.openDevTools();
@@ -301,10 +301,10 @@ app.whenReady().then(createWindow);
 app.on('window-all-closed', () => {
     // Nettoyer les fichiers temporaires à la fermeture
     cleanupTmpFiles();
-    
+
     // Arrêter le serveur PHP
     stopPhpServer();
-    
+
     // Sur macOS, il est courant pour les applications et leur barre de menu
     // de rester actives jusqu'à ce que l'utilisateur quitte explicitement avec Cmd + Q
     if (process.platform !== 'darwin') {
@@ -316,7 +316,7 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
     try {
         stopPhpServer();
-    } catch {}
+    } catch { }
 });
 app.on('activate', () => {
     // Sur macOS, il est courant de recréer une fenêtre dans l'app quand l'icône
@@ -331,13 +331,13 @@ ipcMain.handle('open-file', async (event, filePath) => {
     try {
         const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
         let fullPath;
-        
+
         if (isAppImage) {
             fullPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public', filePath);
         } else {
             fullPath = path.join(__dirname, 'app', 'public', filePath);
         }
-        
+
         await shell.openPath(fullPath);
         return { success: true };
     } catch (error) {
@@ -362,7 +362,7 @@ ipcMain.handle('print-file', async (event, fileUrl) => {
     return new Promise((resolve, reject) => {
         try {
             console.log('Impression demandée pour:', fileUrl);
-            
+
             // Créer une fenêtre invisible pour charger le fichier
             const printWindow = new BrowserWindow({
                 show: false,
@@ -372,14 +372,14 @@ ipcMain.handle('print-file', async (event, fileUrl) => {
                     sandbox: true
                 }
             });
-            
+
             // Charger le fichier
             printWindow.loadURL(fileUrl);
-            
+
             // Attendre que le contenu soit chargé
             printWindow.webContents.on('did-finish-load', () => {
                 console.log('Fichier chargé, ouverture de la boîte de dialogue d\'impression');
-                
+
                 // Ouvrir la boîte de dialogue d'impression système
                 printWindow.webContents.print({
                     silent: false,  // Afficher la boîte de dialogue
@@ -391,7 +391,7 @@ ipcMain.handle('print-file', async (event, fileUrl) => {
                 }, (success, errorType) => {
                     // Fermer la fenêtre après l'impression
                     printWindow.close();
-                    
+
                     if (success) {
                         console.log('Impression réussie ou annulée par l\'utilisateur');
                         resolve({ success: true });
@@ -401,14 +401,14 @@ ipcMain.handle('print-file', async (event, fileUrl) => {
                     }
                 });
             });
-            
+
             // Gérer les erreurs de chargement
             printWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
                 console.error('Erreur de chargement du fichier:', errorDescription);
                 printWindow.close();
                 reject({ success: false, error: errorDescription });
             });
-            
+
         } catch (error) {
             console.error('Erreur lors de la préparation de l\'impression:', error);
             reject({ success: false, error: error.message });
@@ -420,28 +420,28 @@ ipcMain.handle('print-file', async (event, fileUrl) => {
 ipcMain.handle('open-external-file', async (event, fileUrl) => {
     try {
         console.log('Ouverture externe demandée pour:', fileUrl);
-        
+
         // Si c'est une URL HTTP, on doit d'abord télécharger le fichier
         if (fileUrl.startsWith('http')) {
             const http = require('http');
             const https = require('https');
             const os = require('os');
-            
+
             return new Promise((resolve, reject) => {
                 // Créer un nom de fichier temporaire
                 const tempFileName = 'temp_' + Date.now() + '.pdf';
                 const tempFilePath = path.join(os.tmpdir(), tempFileName);
                 const file = fs.createWriteStream(tempFilePath);
-                
+
                 const protocol = fileUrl.startsWith('https') ? https : http;
-                
+
                 protocol.get(fileUrl, (response) => {
                     response.pipe(file);
-                    
+
                     file.on('finish', () => {
                         file.close();
                         console.log('Fichier téléchargé vers:', tempFilePath);
-                        
+
                         // Ouvrir le fichier avec l'application par défaut
                         shell.openPath(tempFilePath).then(error => {
                             if (error) {
@@ -454,7 +454,7 @@ ipcMain.handle('open-external-file', async (event, fileUrl) => {
                         });
                     });
                 }).on('error', (err) => {
-                    fs.unlink(tempFilePath, () => {}); // Supprimer le fichier en cas d'erreur
+                    fs.unlink(tempFilePath, () => { }); // Supprimer le fichier en cas d'erreur
                     console.error('Erreur de téléchargement:', err.message);
                     reject({ success: false, error: err.message });
                 });

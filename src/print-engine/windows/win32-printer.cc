@@ -454,8 +454,11 @@ long FindEmfOffset(const unsigned char *buffer, size_t size) {
 
 // Helper: Check if buffer contains PCL signature (\x1B%-12345X or ESC)
 bool IsPclFile(const unsigned char *buffer, size_t size) {
-    if (size < 10) return false;
+    if (size < 4) return false;
     
+    // Check for Kyocera PRESCRIBE (!R!)
+    if (buffer[0] == '!' && buffer[1] == 'R' && buffer[2] == '!') return true;
+
     // Check for PJL header
     const char* pjlHeader = "\x1B%-12345X";
     if (size >= 9 && memcmp(buffer, pjlHeader, 9) == 0) return true;
@@ -469,6 +472,20 @@ bool IsPclFile(const unsigned char *buffer, size_t size) {
                 return true;
             }
         }
+    }
+    
+    return false;
+}
+
+// Helper: Check if buffer contains XPS signature (PK\x03\x04)
+bool IsXpsFile(const unsigned char *buffer, size_t size) {
+    if (size < 4) return false;
+    
+    // Check for ZIP signature (XPS files are ZIP archives)
+    // PK\x03\x04 is the standard ZIP file header
+    if (buffer[0] == 0x50 && buffer[1] == 0x4B && 
+        buffer[2] == 0x03 && buffer[3] == 0x04) {
+        return true;
     }
     
     return false;
@@ -685,6 +702,123 @@ EmfConversionResult ConvertPclToPngViaPhpApi(DWORD jobId) {
 
   } catch (...) {
     LogDebug("Exception in ConvertPclToPngViaPhpApi");
+  }
+
+  return result;
+}
+
+// Helper: Convert XPS to PNG using PHP API
+// Returns list of PNG files created (one per page) and thumbnail URL
+EmfConversionResult ConvertXpsToPngViaPhpApi(DWORD jobId) {
+  EmfConversionResult result;
+  int retryCount = 0;
+  const int maxRetries = 20; // 2 seconds total wait (20 * 100ms)
+
+  while (retryCount < maxRetries) {
+      try {
+        // Build GET URL - Pointing to XPS conversion script
+        std::string url = "http://127.0.0.1:8001/?convert_xps_to_png&job_id=" +
+                          std::to_string(jobId);
+
+        if (retryCount > 0) {
+             LogDebug("Calling XPS conversion API (Retry " + std::to_string(retryCount) + "): " + url);
+        } else {
+             LogDebug("Calling XPS conversion API: " + url);
+        }
+
+        // Open Internet connection
+        HINTERNET hInternet = InternetOpenA(
+            "Win32Printer/1.0", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+        if (!hInternet) {
+          LogDebug("InternetOpen failed");
+          return result;
+        }
+
+        // Open URL
+        HINTERNET hUrl = InternetOpenUrlA(hInternet, url.c_str(), NULL, 0,
+                                          INTERNET_FLAG_RELOAD, 0);
+        if (!hUrl) {
+          LogDebug("InternetOpenUrl failed");
+          InternetCloseHandle(hInternet);
+          return result;
+        }
+
+        // Read response
+        std::string response;
+        char buffer[4096];
+        DWORD bytesRead;
+        while (InternetReadFile(hUrl, buffer, sizeof(buffer), &bytesRead) &&
+               bytesRead > 0) {
+          response.append(buffer, bytesRead);
+        }
+
+        InternetCloseHandle(hUrl);
+        InternetCloseHandle(hInternet);
+
+        LogDebug("XPS API Response: " + response);
+
+        // Check for specific "Incomplete" error
+        // The PHP script returns: {"error":"Incomplete XPS file (No EOCD)"}
+        if (response.find("Incomplete XPS file") != std::string::npos) {
+            LogDebug("XPS file incomplete. Waiting for spooler to finish writing...");
+            Sleep(250); // Wait 250ms
+            retryCount++;
+            continue; // Retry loop
+        }
+
+        // Parse JSON response (simple parsing for our known format)
+        // Expected: {"success":true,"pages":[{"page":1,"path":"thumbnails/123/page_1.png"}]}
+        if (response.find("\"success\":true") != std::string::npos) {
+          // Extract thumbnail URL (first page)
+          size_t pathStart = response.find("\"path\":\"");
+          if (pathStart != std::string::npos) {
+            pathStart += 8; // Skip '"path":"'
+            size_t pathEnd = response.find("\"", pathStart);
+            if (pathEnd != std::string::npos) {
+              result.thumbnailUrl = response.substr(pathStart, pathEnd - pathStart);
+              LogDebug("XPS Thumbnail URL: " + result.thumbnailUrl);
+            }
+          }
+
+          // Extract all page paths
+          size_t pos = 0;
+          while ((pos = response.find("\"path\":\"", pos)) != std::string::npos) {
+            pos += 8;
+            size_t endPos = response.find("\"", pos);
+            if (endPos != std::string::npos) {
+              std::string relativePath = response.substr(pos, endPos - pos);
+              
+              // Convert to absolute Windows path
+              wchar_t exePath[MAX_PATH];
+              GetModuleFileNameW(NULL, exePath, MAX_PATH);
+              std::wstring exeDir = std::wstring(exePath);
+              size_t lastSlash = exeDir.find_last_of(L"\\");
+              if (lastSlash != std::wstring::npos) {
+                exeDir = exeDir.substr(0, lastSlash);
+              }
+
+              std::wstring fullPath = exeDir + L"\\app\\public\\" +
+                                      std::wstring(relativePath.begin(), relativePath.end());
+              result.pngPaths.push_back(fullPath);
+              
+              pos = endPos;
+            }
+          }
+
+          LogDebug("XPS conversion successful, " +
+                   std::to_string(result.pngPaths.size()) + " pages");
+          
+          // Success! Break loop
+          break; 
+        } else {
+          LogDebug("XPS conversion failed with unknown error (not incomplete). Stopping retries.");
+          // If it's another error (e.g. "Failed to execute GhostXPS"), don't retry blindly
+          break;
+        }
+      } catch (...) {
+        LogDebug("Exception in ConvertXpsToPngViaPhpApi");
+        break; 
+      }
   }
 
   return result;
@@ -1006,13 +1140,18 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
       // Convert EMF to PNG(s) using PHP API
       conversion = ConvertEmfToPngViaPhpApi(jobId);
       pngFiles = conversion.pngPaths;
+  } else if (IsXpsFile(buffer.data(), bytesRead)) {
+      LogDebug("[FILLRATE] No EMF signature, but XPS signature DETECTED. Proceeding to XPS conversion.");
+      // Convert XPS to PNG(s) using PHP API
+      conversion = ConvertXpsToPngViaPhpApi(jobId);
+      pngFiles = conversion.pngPaths;
   } else if (IsPclFile(buffer.data(), bytesRead)) {
-      LogDebug("[FILLRATE] No EMF signature, but PCL signature DETECTED. Proceeding to PCL conversion.");
+      LogDebug("[FILLRATE] No EMF/XPS signature, but PCL signature DETECTED. Proceeding to PCL conversion.");
       // Convert PCL to PNG(s) using PHP API
       conversion = ConvertPclToPngViaPhpApi(jobId);
       pngFiles = conversion.pngPaths;
   } else {
-      LogDebug("[FILLRATE] NEITHER EMF NOR PCL signature found. Aborting conversion to avoid infinite loop.");
+      LogDebug("[FILLRATE] NO KNOWN signature found (EMF/XPS/PCL). Aborting conversion to avoid infinite loop.");
       // Do nothing, pngFiles remains empty
   }
 
@@ -1173,9 +1312,14 @@ JobDetails MonitorWorker::GetJobInfo(HANDLE hPrinter, DWORD jobId) {
   }
 
   // Analyze spool file for ACTUAL color content and fill rate
-  // This will overwrite isGrayscale ONLY if analysis succeeds
-  AnalyzeSpoolFile(jobId, details.documentName, details.isGrayscale,
-                   details.fillRate, details.thumbnailUrl);
+  // This will overwrite isGrayscale ONLY if analysis succeeds.
+  // CRITICAL: Do NOT analyze if the job is still spooling (file incomplete).
+  if (!(jobInfo->Status & JOB_STATUS_SPOOLING)) {
+      AnalyzeSpoolFile(jobId, details.documentName, details.isGrayscale,
+                       details.fillRate, details.thumbnailUrl);
+  } else {
+      LogDebug("Skipping analysis for Job " + std::to_string(jobId) + " (Still Spooling)");
+  }
 
   return details;
 }
