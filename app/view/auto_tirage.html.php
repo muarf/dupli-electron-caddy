@@ -232,8 +232,10 @@
                                                     onclick="toggleAllBuffer(this)"></th>
                                             <th>Aperçu</th>
                                             <th>Date</th>
+                                            <th>Machine</th>
                                             <th>Document</th>
-                                            <th>Pages</th>
+                                            <th>Détails</th>
+                                            <th>Encrage</th>
                                             <th>Action</th>
                                         </tr>
                                     </thead>
@@ -576,18 +578,37 @@
 
             const date = new Date(job.timestamp).toLocaleTimeString();
             const pages = job.total_pages * (job.copies || 1);
+            
+            // Format technical details
+            const isDuplex = (job.duplex == 1 || job.duplex == '1' || job.duplex === true || String(job.duplex).toLowerCase() === 'oui');
+            const colorMode = (String(job.color_mode).toLowerCase().includes('color') || String(job.color_mode) === '1') ? 'Couleur' : 'N&B';
+            const duplexLabel = isDuplex ? 'R/V' : 'Recto';
+            const rawFillValue = parseFloat(job.fill_rate || 0);
+            const fillPct = rawFillValue.toFixed(1) + '%';
 
             row.innerHTML = `
             <td><input type="checkbox" class="buffer-checkbox" data-id="${job.id}" data-job-id="${job.job_id}" onchange="updateBulkActionsVisibility()" ${isChecked ? 'checked' : ''}></td>
             <td>${job.thumbnail_url ? `<img src="${job.thumbnail_url}" height="30" style="cursor: pointer; border-radius: 3px;" onclick="showThumbnailModal('${job.thumbnail_url}', '${job.document.replace(/'/g, "\\'")}')">` : '<i class="fa fa-file-o"></i>'}</td>
-            <td>${date}</td>
+            <td><small>${date}</small></td>
+            <td><div style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${job.printer_name}">${job.printer_name}</div></td>
             <td><strong>${job.document}</strong></td>
-            <td>${pages} pages</td>
             <td>
-                <button class="btn btn-primary btn-sm" onclick="moveBufferToSession('${job.job_id}')">
-                    <i class="fa fa-plus"></i> Ajouter
+                <span class="badge badge-secondary">${job.paper_size || 'A4'}</span>
+                <span class="badge badge-info">${colorMode}</span>
+                <span class="badge badge-light border">${duplexLabel}</span>
+                <div class="mt-1"><small>${pages} pages</small></div>
+            </td>
+            <td>
+                <div class="progress" style="height: 10px; width: 60px;" title="Taux d'encrage: ${fillPct}">
+                    <div class="progress-bar bg-info" role="progressbar" style="width: ${fillPct}" aria-valuenow="${rawFillValue}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <small>${fillPct}</small>
+            </td>
+            <td>
+                <button class="btn btn-primary btn-sm" onclick="moveBufferToSession('${job.job_id}')" title="Ajouter à la session">
+                    <i class="fa fa-plus"></i>
                 </button>
-                <button class="btn btn-outline-danger btn-sm" onclick="deleteBufferJob('${job.id}', '${job.job_id}')">
+                <button class="btn btn-outline-danger btn-sm" onclick="deleteBufferJob('${job.id}', '${job.job_id}')" title="Supprimer">
                     <i class="fa fa-trash"></i>
                 </button>
             </td>
