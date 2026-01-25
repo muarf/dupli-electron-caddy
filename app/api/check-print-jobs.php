@@ -90,6 +90,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // ----------------------------------------------------------------------------
 
                 // ----------------------------------------------------------------------------
+                // --- NOUVEAU: Suppression des enregistrements de paiement liés ---
+                $jobsForCleanup = $db->select("SELECT document, printer_name, total_pages, copies FROM print_jobs WHERE id IN ($ids_string)");
+                foreach ($jobsForCleanup as $job) {
+                    $doc = $job['document'];
+                    $printer = $job['printer_name'];
+                    
+                    // Suppression dans dupli (recherche par nom document et machine)
+                    $db->execute("DELETE FROM dupli WHERE document_name = ? AND nom_machine = ?", [$doc, $printer]);
+                    
+                    // Suppression dans photocop
+                    $db->execute("DELETE FROM photocop WHERE document_name = ? AND marque = ?", [$doc, $printer]);
+                }
+                // ----------------------------------------------------------------------------
+
+                // ----------------------------------------------------------------------------
                 // --- NOUVEAU: Suppression SÉCURISÉE des fichiers (Shredding) ---
                 $jobsToDelete = $db->select("SELECT document, thumbnail_url FROM print_jobs WHERE id IN ($ids_string)");
                 
