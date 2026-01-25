@@ -11,6 +11,56 @@ const printEngine = require('./src/print-engine');
 const { isRunningAsAdmin, restartAsAdmin } = require('./utils/admin-checker');
 const { autoUpdater } = require('electron-updater');
 
+// --- SECURE PURGE SCHEDULER ---
+function scheduleSecurePurge() {
+    console.log('[SECURE PURGE] Initializing scheduler...');
+
+    // Fonction pour appeler l'API PHP
+    const triggerPurge = () => {
+        // On attend que les ports soient définis
+        const port = PHP_SERVER_PORT || 8001;
+
+        const options = {
+            hostname: '127.0.0.1',
+            port: port,
+            path: '/app/api/secure_purge.php',
+            method: 'GET',
+            timeout: 30000 // 30s timeout pour laisser le temps de shredder
+        };
+
+        const req = http.request(options, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try {
+                    console.log('[SECURE PURGE] Result:', data);
+                } catch (e) {
+                    console.error('[SECURE PURGE] Error parsing result:', e.message);
+                }
+            });
+        });
+
+        req.on('error', (err) => {
+            console.error('[SECURE PURGE] Request failed:', err.message);
+        });
+
+        req.end();
+    };
+
+    // 1. Exécuter au démarrage (après un court délai pour être sûr que PHP est prêt)
+    setTimeout(() => {
+        console.log('[SECURE PURGE] Running startup purge...');
+        triggerPurge();
+    }, 10000); // 10 secondes après le lancement
+
+    // 2. Planifier toutes les heures (3600000 ms)
+    setInterval(() => {
+        console.log('[SECURE PURGE] Running scheduled hourly purge...');
+        triggerPurge();
+    }, 3600000);
+}
+
+
 // Vérifier si Ghostscript fonctionne (sous Windows uniquement)
 function checkGhostscript(port = 8000) {
     return new Promise((resolve, reject) => {
@@ -748,6 +798,7 @@ function getCaddyPath() {
                 return devCaddyPath;
             }
         }
+
 
         // Mode packagé : détecter si ASAR est utilisé ou non
         // Même avec asar: false, les fichiers sont dans resources/app/
@@ -2427,7 +2478,11 @@ app.whenReady().then(() => {
 
     // Configurer les imprimantes (KeepPrintedJobs)
     configurePrinters();
+
+    // Planifier la purge sécurisée (7 jours)
+    scheduleSecurePurge();
 });
+
 
 // Configurer les imprimantes au démarrage (KeepPrintedJobs = 1)
 function configurePrinters() {
