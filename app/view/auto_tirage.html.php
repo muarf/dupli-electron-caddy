@@ -1355,7 +1355,9 @@
                 // Si le job a un ID de base de données, on le supprime côté serveur
                 if (job.id && job.type) {
                     try {
-                        const resp = await fetch(`?delete_session_job&id=${job.id}&type=${job.type}`);
+                        // Mapper le type pour correspondre aux attentes de l'API (duplicopieur -> dupli)
+                        const apiType = job.type === 'duplicopieur' ? 'dupli' : job.type;
+                        const resp = await fetch(`?delete_session_job&id=${job.id}&type=${apiType}`);
                         const result = await resp.json();
                         if (!result.success) {
                             console.error("Erreur serveur lors de la suppression:", result.error);
