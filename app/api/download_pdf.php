@@ -45,9 +45,16 @@ if (substr(strtolower($filename), -4) !== '.pdf') {
 header('Content-Type: application/pdf');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
 header('Content-Length: ' . filesize($filepath));
-header('Cache-Control: no-cache, must-revalidate');
+header('Cache-Control: private, max-age=0, must-revalidate');
+header('Pragma: public');
 header('Expires: 0');
+
+// Nettoyer le buffer de sortie pour éviter toute pollution du flux PDF
+if (ob_get_level()) {
+    ob_end_clean();
+}
 
 // Lire et envoyer le fichier
 readfile($filepath);
+exit;
 ?>

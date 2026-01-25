@@ -257,3 +257,9 @@ DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
 INIT: Printer='Test_Epson_Click', Type='photocop'
 HEX: 70686f746f636f70
 Check 'photocop': TRUE
+[2026-01-25 07:52:52] [PAYLOAD] {"printerName":"Microsoft XPS Class Driver","pages":16,"contact":"manu","document":"la-justice-contre-la-revolte.pdf","copies":100,"total_pages":1600,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":0,"thumbnail_url":"thumbnails\\\/109\\\/page_0.png","timestamp":"2026-01-25T07:52:05.000Z","job_id":"109","session_id":51,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='Microsoft XPS Class Driver', Type='dupli'
+HEX: 6475706c69
+Check 'photocop': FALSE

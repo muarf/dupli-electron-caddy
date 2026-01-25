@@ -70,13 +70,23 @@
       "app/**/*",
       "php/**/*",
       "ghostscript/**/*",
-      "caddy/**/*"
+      "caddy/**/*",
+      "src/**/*",
+      "utils/**/*",
+      "!app/vendor/phpunit/**/*",
+      "!app/vendor/pestphp/**/*",
+      "!app/vendor/sebastian/**/*",
+      "!app/vendor/**/tests/**/*",
+      "!app/vendor/**/test/**/*",
+      "!app/vendor/**/docs/**/*"
     ],
     "asarUnpack": [
       "php/**/*",
       "app/**/*",
       "ghostscript/**/*",
-      "caddy/**/*"
+      "caddy/**/*",
+      "src/**/*",
+      "utils/**/*"
     ],
     "linux": {
       "target": "AppImage",
@@ -101,9 +111,11 @@
           ]
         }
       ],
-      "forceCodeSigning": false
+      "forceCodeSigning": false,
+      "requestedExecutionLevel": "requireAdministrator"
     },
     "nsis": {
+      "include": "build/installer.nsh",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
