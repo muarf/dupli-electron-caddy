@@ -144,11 +144,12 @@
                     </button>
                 </div>
 
+                <div class="progress mb-3" style="display:none;" id="indexProgress">
+                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                </div>
+
                 <div id="previewArea" style="display:none;">
                     <h6><i class="fa fa-files-o"></i> Fichiers trouvés : <span id="foundCount">0</span></h6>
-                    <div class="progress mb-3" style="display:none;" id="indexProgress">
-                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
-                    </div>
                     <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
                         <table class="table table-sm table-striped">
                             <thead>
@@ -296,17 +297,19 @@
 
     .file-actions-row .btn {
         flex: 1;
-        font-size: 0.85rem;
+        font-size: 0.82rem; /* Légèrement plus petit pour tenir sur deux colonnes */
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 8px 12px;
+        padding: 6px 4px; /* Réduit le padding pour éviter les débordements */
         white-space: nowrap;
         min-width: 0;
+        width: 100%; /* Force la largeur si dans un btn-group */
     }
 
     .file-actions .btn-group {
         flex: 1;
+        display: flex;
         position: relative;
     }
 
@@ -341,6 +344,38 @@
         background-color: rgba(13, 110, 253, 0.9);
         backdrop-filter: blur(2px);
         font-size: 0.75rem;
+    }
+
+    .border-start-primary {
+        border-left: 4px solid #0d6efd !important;
+    }
+
+    .btn-delete-card {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: rgba(220, 53, 69, 0.85);
+        color: white;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: bold;
+        line-height: 1;
+        z-index: 10;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .btn-delete-card:hover {
+        background: rgba(220, 53, 69, 1);
+        transform: scale(1.1);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
     }
 </style>
 
@@ -410,6 +445,9 @@
             document.getElementById('browseBtn').style.display = 'none';
             document.getElementById('webBrowseInfo').style.display = 'block';
         }
+        
+        // Vérifier si une indexation est en cours
+        checkActiveJob();
     });
 
     function handleFiles(files) {
@@ -534,17 +572,18 @@
 
             const thumbUrl = '?get_bibliotheque_thumbnail&file=' + encodeURIComponent(file.thumbnail_path);
             const isExternal = file.is_external == 1;
-            const badge = isExternal ? '<span class="badge badge-ext position-absolute top-0 end-0 m-2" title="Fichier externe"><i class="fa fa-link"></i></span>' : '';
-
+            
             col.innerHTML = `
-            <div class="card file-card">
+            <div class="card file-card ${isExternal ? 'border-start-primary' : ''}">
+                <button class="btn-delete-card" onclick="deleteFile(${file.id})" title="Supprimer">
+                    &times;
+                </button>
                 <div class="position-relative file-thumb-wrapper">
                     <img src="${thumbUrl}" class="file-thumb" alt="${file.filename}" onclick="openPdfViewer(${file.id}, '${file.file_type}')" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'%3E%3Crect fill=\'%23f0f0f0\' width=\'200\' height=\'200\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\' font-family=\'Arial\' font-size=\'14\'%3E${file.file_type.toUpperCase()}%3C/text%3E%3C/svg%3E'">
-                    ${badge}
                 </div>
                 <div class="card-body">
                     <h6 class="card-title" title="${file.filename}">${file.filename}</h6>
-                    <div class="file-meta">
+                    <div class="file-meta d-flex align-items-center">
                         ${formatBytes(file.file_size)} • ${file.file_type.toUpperCase()}
                     </div>
                     ${file.match_contexts && file.match_contexts.length > 0 ? `
@@ -561,13 +600,13 @@
                             <button class="btn btn-info btn-sm" onclick="printFile(${file.id})" title="Imprimer le fichier">
                                 <i class="fa fa-print"></i> Imprimer
                             </button>
+                        </div>
+                        <div class="file-actions-row">
                             <div class="btn-group btn-group-sm file-actions-menu-trigger" role="group" data-file-id="${file.id}" data-file-type="${file.file_type}">
                                 <button type="button" class="btn btn-success" onclick="showActionsMenu(event, ${file.id}, '${file.file_type}')">
                                     <i class="fa fa-print"></i> Imposer <i class="fa fa-caret-down"></i>
                                 </button>
                             </div>
-                        </div>
-                        <div class="file-actions-row">
                             ${file.file_type === 'pdf' || file.file_type === 'png' ? `
                             <div class="btn-group btn-group-sm file-actions-menu-trigger" role="group" data-file-id="${file.id}" data-file-type="${file.file_type}">
                                 <button type="button" class="btn btn-warning" onclick="showModifyMenu(event, ${file.id}, '${file.file_type}')">
@@ -575,9 +614,6 @@
                                 </button>
                             </div>
                             ` : '<div style="flex: 1;"></div>'}
-                            <button class="btn btn-danger btn-sm" onclick="deleteFile(${file.id})" title="Supprimer">
-                                <i class="fa fa-trash"></i>
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -661,6 +697,48 @@
             console.log('Ouverture dans un nouvel onglet:', fileUrl);
             window.open(fileUrl, '_blank');
         }
+    }
+
+    function renameFile(id) {
+        // Trouver le nom actuel dans le DOM en cherchant la carte qui a cet ID
+        let currentName = "";
+        const trigger = document.querySelector(`.file-actions-menu-trigger[data-file-id="${id}"]`);
+        
+        if (trigger) {
+            const card = trigger.closest('.card');
+            if (card) {
+                const titleEl = card.querySelector('.card-title');
+                if (titleEl) currentName = titleEl.innerText;
+            }
+        }
+
+        showAppModal({
+            title: 'Renommer le fichier',
+            message: 'Entrez le nouveau nom pour ce fichier :',
+            prompt: true,
+            defaultValue: currentName,
+            okText: 'Renommer'
+        }, function(newName) {
+            if (newName === null || newName.trim() === "" || newName === currentName) return;
+
+            fetch('?rename_bibliotheque_file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id, newName: newName.trim() })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadFiles();
+                    } else {
+                        showAppModal({ message: 'Erreur renommage: ' + data.error, type: 'danger' });
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    showAppModal({ message: 'Erreur lors du renommage', type: 'danger' });
+                });
+        });
     }
 
     function deleteFile(id) {
@@ -782,50 +860,143 @@
 
     async function startIndexing() {
         const btn = document.getElementById('indexBtn');
-        const progress = document.getElementById('indexProgress');
-        const progressBar = progress.querySelector('.progress-bar');
+        const path = document.getElementById('folderPath').value;
+        const recursive = document.getElementById('recursiveCheck').checked;
+
+        if (!path) return;
 
         btn.disabled = true;
-        progress.style.display = 'flex';
 
-        let processed = 0;
-        let errors = 0;
+        try {
+            // 1. Démarrer le job en arrière-plan
+            const response = await fetch('?start_indexing', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path, recursive })
+            });
 
-        for (const file of filesToIndex) {
-            try {
-                const response = await fetch('?index_file', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ path: file.path })
-                });
-                const result = await response.json();
-                if (!result.success) errors++;
-            } catch (e) {
-                errors++;
-                console.error(e);
+            const result = await response.json();
+            
+            if (!result.success) {
+                throw new Error(result.error || 'Erreur inconnue au démarrage');
             }
 
-            processed++;
-            const percent = (processed / filesToIndex.length) * 100;
-            progressBar.style.width = percent + '%';
-            progressBar.textContent = Math.round(percent) + '%';
-        }
+            const jobId = result.job_id;
+            
+            // 2. Démarrer le monitoring
+            monitorIndexing(jobId);
 
-        showAppModal({ message: `Indexation terminée ! ${processed - errors} fichiers ajoutés, ${errors} erreurs.`, type: 'info' });
-        const modalElement = document.getElementById('indexModal');
-        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-            const modal = bootstrap.Modal.getInstance(modalElement);
-            if (modal) modal.hide();
-        } else {
-            $(modalElement).modal('hide');
+        } catch (e) {
+            console.error(e);
+            showAppModal({ message: 'Erreur: ' + e.message, type: 'danger' });
+            btn.disabled = false;
         }
-        loadFiles();
+    }
+    
+    function checkActiveJob() {
+        fetch('?get_indexing_status&job_id=latest')
+            .then(response => response.json())
+            .then(data => {
+                if (data && (data.status === 'indexing' || data.status === 'scanning')) {
+                    // Restaurer l'UI d'indexation
+                    // On doit peut-être ouvrir la modale ou juste afficher une notif ?
+                    // Pour l'instant on rouvre la modale d'indexation pour montrer la progression
+                    // C'est un peu intrusif, mais le user veut voir que ça avance.
+                    
+                    // On ne connait pas le path d'origine ici, mais on peut afficher le status
+                    const modalElement = document.getElementById('indexModal');
+                    
+                    // Si on veut être discret, on pourrait juste mettre une barre globale.
+                    // Mais la demande est "l'ui ne le voit pas".
+                    // On va réactiver la modale si elle n'est pas ouverte
+                    
+                    // Mettre à jour les éléments de la modale sans l'ouvrir forcément ?
+                    // Si on veut que l'utilisateur le voie, autant l'ouvrir ou mettre un encart visible.
+                    // Option : Bouton clignotant "Indexation en cours..." ?
+                    // Pour faire simple et efficace selon la demande : on relance le monitoring sur la modale
+                    // et on l'ouvre si l'utilisateur est sur la page.
+                    
+                    // Pré-remplir la modale avec "Indexation en cours..."
+                    document.getElementById('folderPath').value = "Indexation en cours...";
+                    document.getElementById('indexBtn').disabled = true;
+                    
+                    openIndexModal();
+                    monitorIndexing(data.job_id);
+                }
+            })
+            .catch(e => console.error("Erreur checkActiveJob:", e));
+    }
+    
+    function monitorIndexing(jobId) {
+        const btn = document.getElementById('indexBtn');
+        const progress = document.getElementById('indexProgress');
+        const progressBar = progress.querySelector('.progress-bar');
+        
+        progress.style.display = 'flex';
+        progressBar.classList.add('progress-bar-animated', 'progress-bar-striped');
+        
+        // Poller le statut
+        const pollInterval = setInterval(async () => {
+            try {
+                const statusRes = await fetch('?get_indexing_status&job_id=' + jobId);
+                const statusData = await statusRes.json();
+                
+                if (statusData.percent) {
+                    progressBar.style.width = statusData.percent + '%';
+                    progressBar.textContent = statusData.percent + '%';
+                }
+                
+                // Mettre à jour le texte d'état si disponible
+                if (statusData.status === 'scanning') {
+                        progressBar.textContent = 'Scanning... (' + (statusData.scanned_count || 0) + ')';
+                } else if (statusData.status === 'indexing') {
+                    progressBar.textContent = statusData.percent + '%';
+                    if (statusData.current_file) {
+                         // On pourrait afficher le fichier en cours quelque part
+                    }
+                }
 
-        // Reset
-        btn.disabled = false;
-        progress.style.display = 'none';
-        progressBar.style.width = '0%';
-        filesToIndex = [];
+                if (statusData.status === 'completed') {
+                    clearInterval(pollInterval);
+                    progressBar.classList.remove('progress-bar-animated', 'progress-bar-striped');
+                    progressBar.classList.add('bg-success');
+                    
+                    showAppModal({ 
+                        message: `Indexation terminée ! ${statusData.indexed_count || 0} fichiers ajoutés, ${statusData.error_count || 0} erreurs.`, 
+                        type: 'success' 
+                    });
+                    
+                    // Fermer la modale et recharger
+                    const modalElement = document.getElementById('indexModal');
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        const modal = bootstrap.Modal.getInstance(modalElement);
+                        if (modal) modal.hide();
+                    } else {
+                        $(modalElement).modal('hide');
+                    }
+                    
+                    loadFiles();
+                    
+                    // Reset UI
+                    btn.disabled = false;
+                    progress.style.display = 'none';
+                    progressBar.style.width = '0%';
+                    progressBar.classList.remove('bg-success');
+                    filesToIndex = [];
+                } else if (statusData.status === 'error' || statusData.status === 'fatal_error') {
+                    clearInterval(pollInterval);
+                    showAppModal({ message: 'Erreur durant l\'indexation: ' + (statusData.error_msg || 'Inconnue'), type: 'danger' });
+                    btn.disabled = false;
+                } else if (statusData.status === 'none' || statusData.status === 'unknown') {
+                    // Job disparu ?
+                    clearInterval(pollInterval);
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                console.error("Erreur polling:", e);
+                // On ne coupe pas forcément l'intervalle sur une erreur réseau passagère
+            }
+        }, 1000);
     }
 
     function formatBytes(bytes, decimals = 2) {
@@ -945,6 +1116,9 @@
         if (fileType === 'pdf' || fileType === 'png') {
             items += `<a class="dropdown-item" href="?image_processor&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
             <i class="fa fa-sliders" style="margin-right: 8px;"></i> Bitmap/Luminosité
+        </a>`;
+            items += `<a class="dropdown-item" href="javascript:void(0)" onclick="renameFile(${fileId})" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
+            <i class="fa fa-font" style="margin-right: 8px;"></i> Renommer
         </a>`;
         }
         if (fileType === 'png') {
