@@ -23,7 +23,7 @@ function scheduleSecurePurge() {
         const options = {
             hostname: '127.0.0.1',
             port: port,
-            path: '/app/api/secure_purge.php',
+            path: '/?secure_purge',
             method: 'GET',
             timeout: 30000 // 30s timeout pour laisser le temps de shredder
         };
@@ -1157,8 +1157,6 @@ function startPhpFpm() {
             '-d', 'log_errors=1',
             '-d', 'upload_max_filesize=50M',
             '-d', 'post_max_size=50M',
-            '-d', 'max_execution_time=300',
-            '-d', 'memory_limit=256M',
             '-d', `session.save_path=${sessionPath}`
         ];
     } else if (isWindows) {
@@ -1202,8 +1200,6 @@ function startPhpFpm() {
             '-d', 'log_errors=1',
             '-d', 'upload_max_filesize=50M',
             '-d', 'post_max_size=50M',
-            '-d', 'max_execution_time=300',
-            '-d', 'memory_limit=256M',
             '-d', `session.save_path=${sessionPath}`
         ];
     } else {
@@ -1236,8 +1232,6 @@ function startPhpFpm() {
                 '-d', 'log_errors=1',
                 '-d', 'upload_max_filesize=50M',
                 '-d', 'post_max_size=50M',
-                '-d', 'max_execution_time=300',
-                '-d', 'memory_limit=256M',
                 '-d', `session.save_path=${sessionPath}`
             ];
         } else {
@@ -1252,8 +1246,6 @@ function startPhpFpm() {
                 '-d', 'log_errors=1',
                 '-d', 'upload_max_filesize=50M',
                 '-d', 'post_max_size=50M',
-                '-d', 'max_execution_time=300',
-                '-d', 'memory_limit=256M',
                 '-d', `session.save_path=${sessionPath}`
             ];
         }

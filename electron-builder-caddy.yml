@@ -21,6 +21,13 @@ files:
   - ghostscript/**/*
   - caddy/**/*
   - utils/**/*
+  - src/**/*
+  - "!app/vendor/phpunit/**/*"
+  - "!app/vendor/pestphp/**/*"
+  - "!app/vendor/sebastian/**/*"
+  - "!app/vendor/**/tests/**/*"
+  - "!app/vendor/**/test/**/*"
+  - "!app/vendor/**/docs/**/*"
 
 extraResources:
   - from: icons/icon.png
@@ -87,6 +94,7 @@ mac:
     - caddy/**/*
     - utils/**/*
     - "php/**/*"  # Inclure PHP pour macOS
+    - src/**/*
   asarUnpack:
     - "php/**/*"
     - "app/**/*"
@@ -95,6 +103,7 @@ mac:
     - "caddy/**/*"
     - "Caddyfile"
     - "php-fpm.conf"
+    - "src/**/*"
 win:
   target:
     - target: nsis
@@ -107,7 +116,7 @@ win:
   # Désactiver ASAR sur Windows pour éviter l'erreur "pattern is too long"
   asar: false
   # Configuration pour la compatibilité Windows 8.1 Essai de correction
-  requestedExecutionLevel: asInvoker
+  requestedExecutionLevel: requireAdministrator
   # Configuration spécifique Windows - inclut PHP embarqué
   files:
     - main-caddy.js
@@ -123,7 +132,15 @@ win:
     - caddy/**/*
     - utils/**/*
     - "php/**/*"  # Inclure PHP pour Windows
+    - src/**/*
+    - "!app/vendor/phpunit/**/*"
+    - "!app/vendor/pestphp/**/*"
+    - "!app/vendor/sebastian/**/*"
+    - "!app/vendor/**/tests/**/*"
+    - "!app/vendor/**/test/**/*"
+    - "!app/vendor/**/docs/**/*"
 nsis:
+  include: build/installer.nsh
   oneClick: false
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
