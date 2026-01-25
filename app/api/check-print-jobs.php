@@ -37,6 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             require_once(__DIR__ . '/../controler/conf.php');
             require_once(__DIR__ . '/../controler/functions/database.php');
+            require_once(__DIR__ . '/../controler/functions/secure_delete.php'); // Inclusion de la purge sécurisée
+
 
             // Nettoyer le buffer
             ob_end_clean();
@@ -87,17 +89,99 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 // ----------------------------------------------------------------------------
 
+                // ----------------------------------------------------------------------------
+                // --- NOUVEAU: Suppression SÉCURISÉE des fichiers (Shredding) ---
+                $jobsToDelete = $db->select("SELECT document, thumbnail_url FROM print_jobs WHERE id IN ($ids_string)");
+                
+                // Fonction locale pour résoudre le chemin (similaire à secure_purge.php)
+                // Idéalement à mettre dans utilities.php mais on le fait inline pour éviter de toucher trop de fichiers pour l'instant
+                $resolvePath = function($urlOrPath) {
+                    if (empty($urlOrPath)) return null;
+                    if (preg_match('/^[a-zA-Z]:\\\\/', $urlOrPath)) return $urlOrPath;
+                    $relativePath = parse_url($urlOrPath, PHP_URL_PATH);
+                    $relativePath = ltrim($relativePath, '/'); 
+                    $baseDir = dirname(__DIR__) . '/../public/'; 
+                    return str_replace('/', DIRECTORY_SEPARATOR, $baseDir . $relativePath);
+                };
+
+                foreach ($jobsToDelete as $job) {
+                    if (!empty($job['document'])) {
+                        secure_delete($job['document']);
+                    }
+                    if (!empty($job['thumbnail_url'])) {
+                        $thumbPath = $resolvePath($job['thumbnail_url']);
+                        if ($thumbPath) {
+                            secure_delete($thumbPath);
+                        }
+                    }
+                }
+                // ----------------------------------------------------------------------------
+
                 // Utiliser la méthode execute() de DatabaseManager
+
                 $db->execute("DELETE FROM print_jobs WHERE id IN ($ids_string)");
 
                 echo json_encode(['success' => true, 'message' => count($ids) . ' impression(s) supprimée(s) et annulée(s) dans le spooler']);
                 exit;
 
             } elseif ($action === 'purge_all') {
+                // === PURGE COMPLÈTE (Historique d'impressions seulement) ===
+                // Supprime: print_jobs, recorded_print_jobs, et tous les fichiers associés
+                // Préserve: photocop, dupli (tables de paiement)
+                
+                // 1. Récupérer tous les fichiers à supprimer AVANT de vider la DB
+                $jobsWithFiles = $db->select("SELECT document, thumbnail_url FROM print_jobs");
+                
+                $filesDeleted = 0;
+                $dirsDeleted = 0;
+                
+                // 2. Suppression sécurisée des fichiers
+                foreach ($jobsWithFiles as $job) {
+                    if (!empty($job['document'])) {
+                        if (secure_delete($job['document'])) {
+                            $filesDeleted++;
+                        }
+                    }
+                    if (!empty($job['thumbnail_url'])) {
+                        $thumbPath = $resolvePath($job['thumbnail_url']);
+                        if ($thumbPath && secure_delete($thumbPath)) {
+                            $filesDeleted++;
+                        }
+                    }
+                }
+                
+                // 3. Nettoyer les dossiers thumbnails orphelins
+                $thumbnailsDir = __DIR__ . '/../public/thumbnails';
+                if (is_dir($thumbnailsDir)) {
+                    $dirs = scandir($thumbnailsDir);
+                    foreach ($dirs as $d) {
+                        if ($d === '.' || $d === '..') continue;
+                        $dirPath = $thumbnailsDir . '/' . $d;
+                        if (is_dir($dirPath)) {
+                            // Supprimer tous les fichiers du dossier
+                            $files = scandir($dirPath);
+                            foreach ($files as $f) {
+                                if ($f === '.' || $f === '..') continue;
+                                @unlink($dirPath . '/' . $f);
+                            }
+                            // Supprimer le dossier vide
+                            if (@rmdir($dirPath)) {
+                                $dirsDeleted++;
+                            }
+                        }
+                    }
+                }
+                
+                // 4. Vider les tables d'historique
                 $db->execute("DELETE FROM print_jobs");
                 $db->execute("DELETE FROM recorded_print_jobs");
                 
-                echo json_encode(['success' => true, 'message' => 'Historique et table de sécurité purgés avec succès']);
+                // Note: On ne touche PAS aux tables photocop, dupli, etc. (tables de facturation)
+                
+                echo json_encode([
+                    'success' => true, 
+                    'message' => "Purge complète effectuée : $filesDeleted fichiers et $dirsDeleted dossiers supprimés"
+                ]);
                 exit;
 
             } else {
