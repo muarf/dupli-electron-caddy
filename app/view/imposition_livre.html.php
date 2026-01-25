@@ -322,10 +322,16 @@
                                     des poses au verso pour correspondance parfaite.
                                 </label>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label for="preview">
                                     <input type="checkbox" name="preview" id="preview">
                                     <i class="fa fa-eye"></i> Preview avec numéros de pages
+                                </label>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="tete_beche">
+                                    <input type="checkbox" name="tete_beche" id="tete_beche" value="1">
+                                    <i class="fa fa-refresh"></i> <strong>Tête-bêche</strong> (Rotation 180°)
                                 </label>
                             </div>
                         </div>
@@ -410,6 +416,30 @@
                                         id="add_page_numbers_in_gutters" value="1">
                                     <i class="fa fa-sort-numeric-asc"></i> Numéros dans les gouttières
                                 </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="gutter_num_settings" style="display:none; margin-top: 15px; padding-left: 30px;">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <label><i class="fa fa-arrows"></i> Décalage des numéros (mm) :</label>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="gutter_num_offset_x">X (Horizontal) :</label>
+                                    <input type="number" class="form-control" id="gutter_num_offset_x" name="gutter_num_offset_x"
+                                        value="0" step="0.5">
+                                    <small class="form-text text-muted">Positif = vers droite, Négatif = vers gauche</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="gutter_num_offset_y">Y (Vertical) :</label>
+                                    <input type="number" class="form-control" id="gutter_num_offset_y" name="gutter_num_offset_y"
+                                        value="-2" step="0.5">
+                                    <small class="form-text text-muted">Pour remonter au dessus du trait, mettre négatif (ex: -2)</small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -507,6 +537,36 @@
             const blockPercent = document.getElementById('block_percent');
             const blockMm = document.getElementById('block_mm');
 
+            // Gestion de l'affichage des réglages
+            $(document).ready(function() {
+                // Affichage conditionnel des réglages de traits de coupe
+                $('#crop_marks').change(function() {
+                    if ($(this).is(':checked')) {
+                        $('#crop_settings').slideDown();
+                    } else {
+                        $('#crop_settings').slideUp();
+                    }
+                });
+                
+                // État initial
+                if ($('#crop_marks').is(':checked')) {
+                    $('#crop_settings').show();
+                }
+
+                // Affichage conditionnel des réglages de numéros de gouttière
+                $('#add_page_numbers_in_gutters').change(function() {
+                    if ($(this).is(':checked')) {
+                        $('#gutter_num_settings').slideDown();
+                    } else {
+                        $('#gutter_num_settings').slideUp();
+                    }
+                });
+                
+                // État initial
+                if ($('#add_page_numbers_in_gutters').is(':checked')) {
+                    $('#gutter_num_settings').show();
+                }
+            });
             function updateResizeMode() {
                 if (modePercent.checked) {
                     blockPercent.style.display = 'block';

@@ -8,6 +8,27 @@ class Imposition
     private $previewPdf;
     private $sourceFile;
     private $settings;
+    
+    // Propriétés explicites pour l'IDE/cache
+    private $scale;
+    private $targetWidth;
+    private $targetHeight;
+    private $gutterX;
+    private $gutterY;
+    private $gutterStrategy;
+    private $cropMarks;
+    private $cropMarkLen;
+    private $cropMarkWidth;
+    private $orientation;
+    private $nUp;
+    private $duplex;
+    private $previewMode;
+    private $addPageNumbersInGutters;
+    private $teteBeche;
+    private $outputFormat;
+    private $addPageNumberCallback;
+    private $gutterNumOffsetX;
+    private $gutterNumOffsetY;
 
     public function __construct($sourceFile, $settings = [])
     {
@@ -26,8 +47,32 @@ class Imposition
             'duplex' => true, // Mode Recto-Verso par défaut
             'preview_mode' => false,
             'add_page_numbers_in_gutters' => false,
+            'gutter_num_offset_x' => 0.0,
+            'gutter_num_offset_y' => -2.0,
+            'tete_beche' => false,
             'addPageNumberCallback' => null // Callback pour ajouter les numéros de pages
         ], $settings);
+
+        // Hydrater les propriétés
+        $this->scale = $this->settings['scale'];
+        $this->targetWidth = isset($this->settings['target_width']) ? $this->settings['target_width'] : 0;
+        $this->targetHeight = isset($this->settings['target_height']) ? $this->settings['target_height'] : 0;
+        $this->gutterX = $this->settings['gutter_x'];
+        $this->gutterY = $this->settings['gutter_y'];
+        $this->gutterStrategy = $this->settings['gutter_strategy'];
+        $this->cropMarks = $this->settings['crop_marks'];
+        $this->cropMarkLen = $this->settings['crop_mark_len'];
+        $this->cropMarkWidth = $this->settings['crop_mark_width'];
+        $this->orientation = $this->settings['orientation'];
+        $this->nUp = $this->settings['n_up'];
+        $this->duplex = $this->settings['duplex'];
+        $this->previewMode = $this->settings['preview_mode'];
+        $this->addPageNumbersInGutters = $this->settings['add_page_numbers_in_gutters'];
+        $this->teteBeche = $this->settings['tete_beche'];
+        $this->addPageNumberCallback = $this->settings['addPageNumberCallback'];
+        $this->outputFormat = isset($this->settings['output_format']) ? $this->settings['output_format'] : 'SRA3';
+        $this->gutterNumOffsetX = isset($this->settings['gutter_num_offset_x']) ? $this->settings['gutter_num_offset_x'] : 0.0;
+        $this->gutterNumOffsetY = isset($this->settings['gutter_num_offset_y']) ? $this->settings['gutter_num_offset_y'] : -2.0;
 
         $this->pdf = new TCPDI();
         $this->pdf->setPrintHeader(false);
@@ -300,16 +345,37 @@ class Imposition
         $x = $globalStartX + ($colIndex * ($finalW + $posGx));
         $y = $globalStartY + ($rowIndex * ($finalH + $posGy));
 
+        // Rotation Tête-bêche (180°)
+        $applyRotation = false;
+        if (!empty($this->settings['tete_beche']) && $rowIndex == 0 && $totalRows > 1) {
+            $applyRotation = true;
+        }
+
         // Ajout de la page dans le PDF final
+        if ($applyRotation) {
+            $this->pdf->StartTransform();
+            $this->pdf->Rotate(180, $x + ($finalW / 2), $y + ($finalH / 2));
+        }
         $this->pdf->useTemplate($tplIdx, $x, $y, $finalW, $finalH);
+        if ($applyRotation) {
+            $this->pdf->StopTransform();
+        }
 
         // Ajout de la page dans le PDF preview
         if ($this->previewPdf && $previewTplIdx) {
+            if ($applyRotation) {
+                $this->previewPdf->StartTransform();
+                $this->previewPdf->Rotate(180, $x + ($finalW / 2), $y + ($finalH / 2));
+            }
             $this->previewPdf->useTemplate($previewTplIdx, $x, $y, $finalW, $finalH);
+            if ($applyRotation) {
+                $this->previewPdf->StopTransform();
+            }
 
             // Add page number to preview if callback is provided
             if ($this->settings['addPageNumberCallback'] && is_callable($this->settings['addPageNumberCallback'])) {
-                call_user_func($this->settings['addPageNumberCallback'], $this->previewPdf, $pageNo, $x, $y, $finalW, $finalH, 0);
+                $previewRotation = $applyRotation ? 180 : 0;
+                call_user_func($this->settings['addPageNumberCallback'], $this->previewPdf, $pageNo, $x, $y, $finalW, $finalH, $previewRotation);
             }
         }
 
@@ -381,42 +447,48 @@ class Imposition
 
     private function addPageNumberInGutter($pageNo, $x, $y, $w, $h, $colIndex, $rowIndex, $totalCols, $totalRows, $gutterX, $gutterY, $globalStartX, $globalStartY)
     {
-        // Utiliser le PDF preview si disponible, sinon le PDF final
-        $targetPdf = $this->previewPdf ? $this->previewPdf : $this->pdf;
-        
-        $targetPdf->setAutoPageBreak(false);
-        $targetPdf->SetFont('helvetica', '', 6); // Police petite (taille 6)
-        $targetPdf->SetTextColor(0, 0, 0); // Noir
-        
-        // Logique : Impaire (Recto) -> Bas Droite, Paire (Verso) -> Bas Gauche
-        // Positionnement : Dans la gouttière, juste à côté du trait de coupe vertical
-        
-        $isOdd = ($pageNo % 2 != 0);
-        
-        if ($isOdd) {
-            // Page Impaire : Bas Droite
-            // On place le numéro dans la gouttière à droite de la page, aligné en bas
-            // Si on est sur la dernière colonne, on le met à droite quand même (marge ext)
+        // On écrit sur le PDF final ET sur le PDF preview s'il existe
+        $targetPdfs = [$this->pdf];
+        if ($this->previewPdf) {
+            $targetPdfs[] = $this->previewPdf;
+        }
+
+        foreach ($targetPdfs as $targetPdf) {
+            $targetPdf->setAutoPageBreak(false);
+            $targetPdf->SetFont('helvetica', '', 6); // Police petite (taille 6)
+            $targetPdf->SetTextColor(0, 0, 0); // Noir
             
-            $posX = $x + $w - 1; // Correction: 1mm à droite (était -2)
-            $posY = $y + $h;     // Correction: 1mm plus haut (était +1)
+            // Logique : Impaire (Recto) -> Bas Droite, Paire (Verso) -> Bas Gauche
+            // Positionnement : Dans la gouttière, juste à côté du trait de coupe vertical
             
-            // Si c'est la dernière colonne et pas de gouttière à droite, on le met quand même
-            // L'utilisateur a parlé de "gouttière", donc on suppose qu'il y a de l'espace
+            $isOdd = ($pageNo % 2 != 0);
             
-            $targetPdf->SetXY($posX, $posY);
-            $targetPdf->Cell(10, 4, (string)$pageNo, 0, 0, 'L', false);
-        } else {
-            // Page Paire : Bas Gauche
-            // On place le numéro dans la gouttière à gauche de la page, aligné en bas
             
-            $posX = $x - 9; // Correction: 1mm à gauche (était -8)
-            $posY = $y + $h;     // Correction: 1mm plus haut (était +1)
-            
-            $targetPdf->SetXY($posX, $posY);
-            $targetPdf->Cell(10, 4, (string)$pageNo, 0, 0, 'R', false);
+            if ($isOdd) {
+                // Page Impaire (Recto)
+                // Nouvelle logique : offsets relatifs au coin haut gauche du trait de coupe ($x, $y)
+                
+                $posX = $x + $this->gutterNumOffsetX; 
+                $posY = $y + $this->gutterNumOffsetY;     
+                
+                $targetPdf->SetXY($posX, $posY);
+                // Utiliser l'alignement à Gauche (L) par défaut
+                $targetPdf->Cell(10, 4, (string)$pageNo, 0, 0, 'L', false);
+            } else {
+                // Page Paire (Verso)
+                // Meme logique pour l'instant (symétrie via offsets si nécessaire, mais l'utilisateur a demandé 1 réglage)
+                
+                $posX = $x + $this->gutterNumOffsetX; 
+                $posY = $y + $this->gutterNumOffsetY;      
+                
+                $targetPdf->SetXY($posX, $posY);
+                $targetPdf->Cell(10, 4, (string)$pageNo, 0, 0, 'L', false);
+            }
         }
     }
+
+
+
 
 }
 
