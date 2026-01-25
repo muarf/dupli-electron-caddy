@@ -75,6 +75,56 @@
             background: #f8f9fa;
             margin: 20px 0;
         }
+
+        .printer-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+        }
+
+        .printer-card:hover {
+            border-color: #007bff;
+            background: #f0f7ff;
+            transform: translateX(5px);
+        }
+
+        .printer-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .printer-icon {
+            font-size: 24px;
+            margin-right: 15px;
+            color: #6c757d;
+        }
+
+        .printer-name {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .printer-status {
+            font-size: 0.85em;
+            color: #6c757d;
+        }
+
+        .machine-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            margin-top: 4px;
+        }
+
+        .badge-dupli { background-color: #e3f2fd; color: #0d47a1; }
+        .badge-photocop { background-color: #f3e5f5; color: #4a148c; }
     </style>
 </head>
 
@@ -210,9 +260,31 @@
                     </div>
                 </div>
 
-                <!-- Sélection du type de machine -->
-                <div class="machine-type-selector">
-                    <h3>📋 Sélectionnez le type de machine à ajouter</h3>
+                <!-- Imprimantes système détectées -->
+                <div id="system-printers-section" class="mb-4">
+                    <h3>🔍 Imprimantes système détectées</h3>
+                    <p class="text-muted">Sélectionnez une imprimante pour la configurer comme machine (Duplicopieur ou Photocopieur).</p>
+                    
+                    <div id="loading-printers" class="text-center p-4">
+                        <i class="fa fa-spinner fa-spin fa-2x text-primary"></i>
+                        <p>Recherche des imprimantes installées...</p>
+                    </div>
+
+                    <div id="printers-container">
+                        <!-- Les imprimantes système apparaîtront ici -->
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <button type="button" class="btn btn-link" id="add-manual-btn">
+                            <i class="fa fa-keyboard-o"></i> Ajouter une machine manuellement
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sélection du type de machine (Caché par défaut, affiché lors du choix d'une imprimante) -->
+                <div class="machine-type-selector" id="type-selector-section" style="display: none;">
+                    <hr>
+                    <h3 id="type-selector-title">📋 Configurer l'imprimante : <span id="selected-printer-name"></span></h3>
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-check">
@@ -554,6 +626,88 @@
                 $(document).ready(function () {
                     let machines = [];
                     let machineCounter = 0;
+                    let selectedPrinter = null;
+                    let systemPrinters = [];
+
+                    // Charger les imprimantes système au démarrage
+                    fetchSystemPrinters();
+
+                    async function fetchSystemPrinters() {
+                        if (window.electronAPI && window.electronAPI.getPrinters) {
+                            try {
+                                const response = await window.electronAPI.getPrinters();
+                                if (response && response.success && Array.isArray(response.printers)) {
+                                    systemPrinters = response.printers;
+                                    displaySystemPrinters();
+                                } else {
+                                    console.error('Format réponse imprimantes invalide:', response);
+                                    $('#loading-printers').html('<div class="alert alert-warning">Format de réponse des imprimantes invalide.</div>');
+                                }
+                            } catch (err) {
+                                console.error('Erreur récupération imprimantes:', err);
+                                $('#loading-printers').html('<div class="alert alert-warning">Impossible de récupérer les imprimantes système.</div>');
+                            }
+                        } else {
+                            $('#loading-printers').html('<div class="alert alert-info">API Electron non disponible (Mode Web).</div>');
+                        }
+                    }
+
+                    function displaySystemPrinters() {
+                        $('#loading-printers').hide();
+                        let html = '';
+                        
+                        if (systemPrinters.length === 0) {
+                            html = '<div class="alert alert-info">Aucune imprimante système détectée.</div>';
+                        } else {
+                            systemPrinters.forEach(printer => {
+                                const isMapped = machines.some(m => m.systemPrinterName === printer.name);
+                                html += `
+                                    <div class="printer-card ${isMapped ? 'active' : ''}" id="printer-${printer.name.replace(/\s+/g, '_')}">
+                                        <div class="printer-info">
+                                            <div class="printer-icon"><i class="fa fa-print"></i></div>
+                                            <div>
+                                                <div class="printer-name">${printer.name}</div>
+                                                <div class="printer-status">${printer.description || 'Imprimante système'}</div>
+                                                ${isMapped ? '<span class="machine-badge badge-dupli"><i class="fa fa-check"></i> Déjà configurée</span>' : ''}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <button type="button" class="btn btn-primary btn-sm" onclick="selectPrinter('${printer.name}')">
+                                                ${isMapped ? 'Re-configurer' : 'Configurer'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                        }
+                        
+                        $('#printers-container').html(html);
+                    }
+
+                    window.selectPrinter = function(printerName) {
+                        selectedPrinter = printerName;
+                        $('#selected-printer-name').text(printerName);
+                        $('#type-selector-section').fadeIn();
+                        $('#machine-form').hide();
+                        $('input[name="machine_type"]').prop('checked', false);
+                        
+                        // Scroll to type selector
+                        $('html, body').animate({
+                            scrollTop: $("#type-selector-section").offset().top - 100
+                        }, 500);
+                        
+                        // Pre-fill machine name
+                        $('#machine_name').val(printerName);
+                    };
+
+                    $('#add-manual-btn').click(function() {
+                        selectedPrinter = null;
+                        $('#selected-printer-name').text('Manuel');
+                        $('#type-selector-section').fadeIn();
+                        $('#machine-form').hide();
+                        $('input[name="machine_type"]').prop('checked', false);
+                        $('#machine_name').val('');
+                    });
 
                     // Gestion du changement de type de machine
                     $('input[name="machine_type"]').change(function () {
@@ -563,11 +717,8 @@
 
                     function showMachineForm(type) {
                         $('#machine-form').show();
-
-                        // Masquer toutes les sections de prix
                         $('#duplicopieur-prices, #photocop-encre-prices, #photocop-toner-prices').hide();
 
-                        // Afficher la section appropriée
                         if (type === 'duplicopieur') {
                             $('#machine-title').text('Configuration du duplicopieur');
                             $('#duplicopieur-prices').show();
@@ -584,6 +735,11 @@
                             $('#master-counter-field').hide();
                             $('#master_counter').prop('required', false);
                         }
+
+                        // Scroll to form
+                        $('html, body').animate({
+                            scrollTop: $("#machine-form").offset().top - 50
+                        }, 500);
                     }
 
                     // Ajouter une machine
@@ -594,12 +750,23 @@
                         const passageCounter = $('#passage_counter').val();
 
                         if (!name || !passageCounter) {
-                            showAppModal({ message: 'Veuillez remplir tous les champs obligatoires', type: 'warning' });
+                            let missing = [];
+                            if (!name) missing.push("Nom de la machine");
+                            if (!passageCounter) missing.push("Compteur Passage");
+                            showAppModal({ 
+                                title: 'Champs manquants',
+                                message: 'Veuillez remplir les champs suivants :<br>• ' + missing.join('<br>• '), 
+                                type: 'warning' 
+                            });
                             return;
                         }
 
                         if (type === 'duplicopieur' && !masterCounter) {
-                            showAppModal({ message: 'Veuillez renseigner le compteur master pour le duplicopieur', type: 'warning' });
+                            showAppModal({ 
+                                title: 'Champ manquant',
+                                message: 'Veuillez renseigner le compteur master pour le duplicopieur', 
+                                type: 'warning' 
+                            });
                             return;
                         }
 
@@ -607,6 +774,7 @@
                             id: machineCounter++,
                             type: type,
                             name: name,
+                            systemPrinterName: selectedPrinter,
                             masterCounter: masterCounter || 0,
                             passageCounter: passageCounter,
                             tambours: getTambours(),
@@ -617,6 +785,12 @@
                         updateMachinesList();
                         clearForm();
                         updateSubmitButton();
+                        displaySystemPrinters(); // Refresh printer list to show badges
+                        
+                        // Scroll back to printers or paper price
+                        $('html, body').animate({
+                            scrollTop: $("#machines-list").offset().top - 100
+                        }, 500);
                     });
 
                     function getTambours() {
@@ -632,13 +806,11 @@
                                 pack: tambourPack.eq(index).val()
                             });
                         });
-
                         return tambours;
                     }
 
                     function getPricesForType(type) {
                         const prices = {};
-
                         if (type === 'duplicopieur') {
                             prices.master_unite = $('#prix_master_unite').val();
                             prices.master_pack = $('#prix_master_pack').val();
@@ -665,7 +837,6 @@
                             prices.dev_prix = $('#dev_prix').val();
                             prices.dev_prix_copie = $('#dev_prix_copie').val();
                         }
-
                         return prices;
                     }
 
@@ -681,16 +852,17 @@
                         machines.forEach((machine, index) => {
                             const typeLabel = getTypeLabel(machine.type);
                             html += `
-                        <div class="alert alert-info d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>${typeLabel}:</strong> ${machine.name} 
-                                <small class="text-muted">(Compteur: ${machine.counter})</small>
-                            </div>
-                            <button type="button" class="btn btn-sm btn-danger" onclick="removeMachine(${machine.id})">
-                                ❌ Supprimer
-                            </button>
-                        </div>
-                    `;
+                                <div class="alert alert-info d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>${typeLabel}:</strong> ${machine.name} 
+                                        ${machine.systemPrinterName ? `<br><small class="text-muted"><i class="fa fa-link"></i> Mappée sur : ${machine.systemPrinterName}</small>` : ''}
+                                        <br><small class="text-muted">Compteur: ${machine.passageCounter}</small>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="removeMachine(${machine.id})">
+                                        ❌ Supprimer
+                                    </button>
+                                </div>
+                            `;
                         });
 
                         $('#machines-container').html(html);
@@ -709,17 +881,18 @@
                         machines = machines.filter(m => m.id !== id);
                         updateMachinesList();
                         updateSubmitButton();
+                        displaySystemPrinters();
                     }
 
                     function clearForm() {
                         $('#machine_name, #master_counter, #passage_counter').val('');
                         $('input[name="machine_type"]').prop('checked', false);
                         $('#machine-form').hide();
-                        $('#master-counter-field').hide();
-                        $('#master_counter').prop('required', false);
-
-                        // Retirer l'attribut required des champs masqués pour éviter les erreurs de validation
-                        $('#machine_name, #passage_counter').prop('required', false);
+                        $('#type-selector-section').hide();
+                        selectedPrinter = null;
+                        
+                        // Reset required
+                        $('#machine_name, #passage_counter, #master_counter').prop('required', false);
                     }
 
                     function updateSubmitButton() {
@@ -732,171 +905,85 @@
                         $('#submitBtn').prop('disabled', !hasMachines || !hasPaperPrice || !hasPassword || !passwordsMatch || !passwordValid);
                     }
 
-                    // Événements pour mettre à jour le bouton
-                    $('#prix_papier_A3').on('input', updateSubmitButton);
-                    $('#admin_password, #admin_password_confirm').on('input', updateSubmitButton);
-
-                    // Validation des mots de passe
-                    $('#admin_password_confirm').on('input', function () {
-                        const password = $('#admin_password').val();
-                        const confirm = $(this).val();
-
-                        if (password !== confirm) {
-                            $(this).addClass('is-invalid');
-                            $(this).next('.invalid-feedback').remove();
-                            $(this).after('<div class="invalid-feedback">Les mots de passe ne correspondent pas</div>');
-                        } else {
-                            $(this).removeClass('is-invalid');
-                            $(this).next('.invalid-feedback').remove();
-                        }
-                    });
-
-                    $('#admin_password').on('input', function () {
-                        const password = $(this).val();
-                        const confirm = $('#admin_password_confirm').val();
-
-                        if (confirm && password !== confirm) {
-                            $('#admin_password_confirm').addClass('is-invalid');
-                            $('#admin_password_confirm').next('.invalid-feedback').remove();
-                            $('#admin_password_confirm').after('<div class="invalid-feedback">Les mots de passe ne correspondent pas</div>');
-                        } else if (confirm) {
-                            $('#admin_password_confirm').removeClass('is-invalid');
-                            $('#admin_password_confirm').next('.invalid-feedback').remove();
-                        }
-                    });
+                    $('#prix_papier_A3, #admin_password, #admin_password_confirm').on('input', updateSubmitButton);
 
                     // Soumission du formulaire
                     $('#setupForm').submit(function (e) {
-                        console.log('Tentative de soumission du formulaire');
-                        console.log('Machines ajoutées:', machines.length);
-
                         if (machines.length === 0) {
                             e.preventDefault();
-                            showAppModal({ message: 'Veuillez ajouter au moins une machine', type: 'warning' });
+                            showAppModal({ 
+                                title: 'Aucune machine',
+                                message: 'Veuillez ajouter au moins une machine avant de terminer.', 
+                                type: 'warning' 
+                            });
                             return;
                         }
 
-                        // Retirer l'attribut required des champs visibles pour éviter les conflits
+                        // Nettoyer les champs visibles pour éviter les erreurs de validation HTML5 lors de la soumission de champs cachés
                         $('#machine_name, #passage_counter, #master_counter').prop('required', false);
 
-                        console.log('Ajout des machines au formulaire...');
-
-                        // Ajouter les machines au formulaire
                         machines.forEach((machine, index) => {
-                            $('<input>').attr({
-                                type: 'hidden',
-                                name: `machines[${index}][type]`,
-                                value: machine.type
-                            }).appendTo('#setupForm');
+                            $('<input>').attr({ type: 'hidden', name: `machines[${index}][type]`, value: machine.type }).appendTo('#setupForm');
+                            $('<input>').attr({ type: 'hidden', name: `machines[${index}][name]`, value: machine.name }).appendTo('#setupForm');
+                            $('<input>').attr({ type: 'hidden', name: `machines[${index}][system_printer_name]`, value: machine.systemPrinterName || '' }).appendTo('#setupForm');
+                            $('<input>').attr({ type: 'hidden', name: `machines[${index}][master_counter]`, value: machine.masterCounter }).appendTo('#setupForm');
+                            $('<input>').attr({ type: 'hidden', name: `machines[${index}][passage_counter]`, value: machine.passageCounter }).appendTo('#setupForm');
 
-                            $('<input>').attr({
-                                type: 'hidden',
-                                name: `machines[${index}][name]`,
-                                value: machine.name
-                            }).appendTo('#setupForm');
-
-                            $('<input>').attr({
-                                type: 'hidden',
-                                name: `machines[${index}][master_counter]`,
-                                value: machine.masterCounter
-                            }).appendTo('#setupForm');
-
-                            $('<input>').attr({
-                                type: 'hidden',
-                                name: `machines[${index}][passage_counter]`,
-                                value: machine.passageCounter
-                            }).appendTo('#setupForm');
-
-                            // Ajouter les tambours pour les duplicopieurs
                             if (machine.type === 'duplicopieur' && machine.tambours) {
                                 machine.tambours.forEach((tambour, tambourIndex) => {
-                                    $('<input>').attr({
-                                        type: 'hidden',
-                                        name: `machines[${index}][tambours][${tambourIndex}][name]`,
-                                        value: tambour.name
-                                    }).appendTo('#setupForm');
-
-                                    $('<input>').attr({
-                                        type: 'hidden',
-                                        name: `machines[${index}][tambours][${tambourIndex}][unite]`,
-                                        value: tambour.unite
-                                    }).appendTo('#setupForm');
-
-                                    $('<input>').attr({
-                                        type: 'hidden',
-                                        name: `machines[${index}][tambours][${tambourIndex}][pack]`,
-                                        value: tambour.pack
-                                    }).appendTo('#setupForm');
+                                    $('<input>').attr({ type: 'hidden', name: `machines[${index}][tambours][${tambourIndex}][name]`, value: tambour.name }).appendTo('#setupForm');
+                                    $('<input>').attr({ type: 'hidden', name: `machines[${index}][tambours][${tambourIndex}][unite]`, value: tambour.unite }).appendTo('#setupForm');
+                                    $('<input>').attr({ type: 'hidden', name: `machines[${index}][tambours][${tambourIndex}][pack]`, value: tambour.pack }).appendTo('#setupForm');
                                 });
                             }
 
-                            // Ajouter les prix
                             Object.keys(machine.prices).forEach(key => {
-                                $('<input>').attr({
-                                    type: 'hidden',
-                                    name: `machines[${index}][${key}]`,
-                                    value: machine.prices[key]
-                                }).appendTo('#setupForm');
+                                $('<input>').attr({ type: 'hidden', name: `machines[${index}][${key}]`, value: machine.prices[key] }).appendTo('#setupForm');
                             });
                         });
-
-                        console.log('Formulaire prêt à être soumis');
                     });
 
                     // Gestion des tambours
                     $('#add-tambour').click(function () {
                         var tambourHtml = `
-                    <div class="tambour-item" style="margin-bottom: 10px;">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <label>Nom du tambour :</label>
-                                <input type="text" class="form-control" name="tambours[]" placeholder="ex: tambour_bleu" required>
+                            <div class="tambour-item" style="margin-bottom: 10px;">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label>Nom du tambour :</label>
+                                        <input type="text" class="form-control" name="tambours[]" placeholder="ex: tambour_bleu" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>Prix unité (€) :</label>
+                                        <input type="number" class="form-control" name="prix_tambour_unite[]" placeholder="Prix unité" step="0.001" min="0" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>Prix pack (€) :</label>
+                                        <input type="number" class="form-control" name="prix_tambour_pack[]" placeholder="Prix pack" step="0.01" min="0" value="11">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label>&nbsp;</label>
+                                        <button type="button" class="btn btn-danger btn-sm remove-tambour"><i class="fa fa-trash"></i></button>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-3">
-                                <label>Prix unité (€) :</label>
-                                <input type="number" class="form-control" name="prix_tambour_unite[]" placeholder="Prix unité" step="0.001" min="0" required>
-                            </div>
-                            <div class="col-md-3">
-                                <label>Prix pack (€) :</label>
-                                <input type="number" class="form-control" name="prix_tambour_pack[]" placeholder="Prix pack" step="0.01" min="0" value="11">
-                            </div>
-                            <div class="col-md-2">
-                                <label>&nbsp;</label>
-                                <button type="button" class="btn btn-danger btn-sm remove-tambour">
-                                    <i class="fa fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                        `;
                         $('#tambours-container').append(tambourHtml);
                         updateRemoveButtons();
                     });
 
-                    // Suppression des tambours
-                    $(document).on('click', '.remove-tambour', function () {
-                        $(this).closest('.tambour-item').remove();
-                        updateRemoveButtons();
-                    });
+                    $(document).on('click', '.remove-tambour', function () { $(this).closest('.tambour-item').remove(); updateRemoveButtons(); });
 
-                    // Mettre à jour la visibilité des boutons de suppression
                     function updateRemoveButtons() {
                         var tambourItems = $('.tambour-item');
-                        if (tambourItems.length > 1) {
-                            $('.remove-tambour').show();
-                        } else {
-                            $('.remove-tambour').hide();
-                        }
+                        if (tambourItems.length > 1) { $('.remove-tambour').show(); } else { $('.remove-tambour').hide(); }
                     }
 
-                    // Initialiser l'état des boutons
                     updateRemoveButtons();
-
-                    // Fonction globale pour supprimer une machine
                     window.removeMachine = removeMachine;
                 });
             </script>
-        <?php endif; // Fin du script pour mode create ?>
+        <?php endif; ?>
+        <?php include __DIR__ . '/footer.html.php'; ?>
 
     </div> <!-- Fin setup-container -->
 </body>

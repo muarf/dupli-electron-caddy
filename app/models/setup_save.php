@@ -210,6 +210,22 @@ function Action($conf = null){
                     } else {
                         error_log("[SETUP] addMachine OK: " . ($data['machine_name'] ?? $data['machine_type']));
                         $added_machines++;
+                        
+                        // Enregistrer le mapping de l'imprimante système si présent
+                        if (!empty($machine_data['system_printer_name'])) {
+                            try {
+                                $stmt = $db->prepare("INSERT OR REPLACE INTO printer_mappings (system_printer_name, machine_type, machine_id) VALUES (?, ?, ?)");
+                                $stmt->execute([
+                                    $machine_data['system_printer_name'],
+                                    $result['machine_type'],
+                                    $result['machine_id']
+                                ]);
+                                error_log("[SETUP] Mapping imprimante OK: " . $machine_data['system_printer_name'] . " -> " . $result['machine_id']);
+                            } catch (Exception $em) {
+                                error_log("[SETUP] Erreur enregistrement mapping: " . $em->getMessage());
+                                // On ne bloque pas le setup pour une erreur de mapping
+                            }
+                        }
                     }
                 }
                 
