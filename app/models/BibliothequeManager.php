@@ -140,9 +140,28 @@ class BibliothequeManager {
         $filename = basename($path);
         
         // Vérifier si le fichier est déjà indexé
-        $stmt = $this->db->prepare("SELECT id FROM bibliotheque_files WHERE filepath = ?");
+        $stmt = $this->db->prepare("SELECT id, thumbnail_path FROM bibliotheque_files WHERE filepath = ?");
         $stmt->execute([$path]);
-        if ($stmt->fetch()) {
+        $row = $stmt->fetch();
+        
+        if ($row) {
+            // Le fichier existe. A-t-il une miniature ?
+            if (empty($row['thumbnail_path']) || !file_exists($this->baseDir . '/' . $row['thumbnail_path'])) {
+                // Pas de miniature (ou fichier manquant), on réessaie !
+                $thumbPath = $this->generateThumbnail($path, $ext);
+                
+                if ($thumbPath) {
+                    // Update DB
+                    $upd = $this->db->prepare("UPDATE bibliotheque_files SET thumbnail_path = ? WHERE id = ?");
+                    $upd->execute([$thumbPath, $row['id']]);
+                    return ['status' => 'updated', 'message' => 'Miniature régénérée'];
+                } else {
+                    // Echec génération (sera loggué comme erreur si on throw, ou juste warning)
+                    // L'utilisateur voulait une erreur visible
+                    throw new Exception("Impossible de générer la miniature pour ce fichier existant.");
+                }
+            }
+            
             return ['status' => 'exists', 'message' => 'Fichier déjà indexé'];
         }
         
@@ -261,7 +280,7 @@ class BibliothequeManager {
             
             $sourceDir = $isExternal ? dirname($path) : null;
             
-            $stmt->execute([
+            $params = [
                 $originalName,
                 $path,
                 $type,
@@ -271,7 +290,28 @@ class BibliothequeManager {
                 $extractedText,
                 $isExternal ? 1 : 0,
                 $sourceDir
-            ]);
+            ];
+
+            try {
+                $stmt->execute($params);
+            } catch (\Exception $e) {
+                // Auto-guérison pour l'erreur FTS5 "invalid file format"
+                // On utilise stripos pour être insensible à la casse et on attrape Exception générique
+                if (stripos($e->getMessage(), 'invalid fts5 file format') !== false) {
+                    error_log("[BitbiothequeManager] FTS5 corruption detected. Attempting auto-rebuild...");
+                    try {
+                        $this->db->exec("INSERT INTO bibliotheque_files_fts(bibliotheque_files_fts) VALUES('rebuild')");
+                        error_log("[BitbiothequeManager] FTS5 index rebuilt successfully. Retrying insert...");
+                        // Réessayer l'insertion
+                        $stmt->execute($params);
+                    } catch (\Exception $rebuildEx) {
+                        error_log("[BitbiothequeManager] Failed to rebuild FTS5 index: " . $rebuildEx->getMessage());
+                        throw $e; // Relancer l'erreur originale si la réparation échoue
+                    }
+                } else {
+                    throw $e; // Relancer si ce n'est pas l'erreur FTS5
+                }
+            }
             
             // Restaurer la limite de mémoire originale
             ini_set('memory_limit', $originalMemoryLimit);
@@ -349,10 +389,22 @@ class BibliothequeManager {
             }
         }
         
-        // Commande EXACTEMENT comme dans pdf_to_png.php (concaténation, pas interpolation)
-        $command = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=png16m -dFirstPage=1 -dLastPage=1 -r72 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($outPath) . " " . escapeshellarg($pdfPath) . " 2>&1";
+        // WORKAROUND: Copier le fichier vers un chemin temporaire ASCII simple
+        // Ghostscript sur Windows via cmd.exe gère très mal les caractères spéciaux (accents, !, etc.)
+        // dans les chemins passés en argument via exec().
+        $tmpPdf = sys_get_temp_dir() . '/gs_temp_' . uniqid() . '.pdf';
+        if (!copy($pdfPath, $tmpPdf)) {
+            error_log("Impossible de copier le PDF vers temp pour thumbnail: $pdfPath");
+            return false;
+        }
+        
+        // Commande avec le chemin temporaire safe
+        $command = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=png16m -dFirstPage=1 -dLastPage=1 -r72 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($outPath) . " " . escapeshellarg($tmpPdf) . " 2>&1";
         
         exec($command, $output, $returnVar);
+        
+        // Nettoyage immédiat
+        @unlink($tmpPdf);
         
         if ($returnVar !== 0 || !file_exists($outPath)) {
             error_log("Erreur génération miniature PDF (code=$returnVar): " . implode("\n", $output));
@@ -575,7 +627,7 @@ class BibliothequeManager {
         }
         
         $sql = "SELECT b.*, 
-                bm25(bibliotheque_files_fts) as rank
+                bm25(bibliotheque_files_fts, 10.0, 1.0) as rank
                 FROM bibliotheque_files b
                 JOIN bibliotheque_files_fts ON bibliotheque_files_fts.rowid = b.id
                 WHERE bibliotheque_files_fts MATCH ?";
@@ -787,6 +839,20 @@ class BibliothequeManager {
         // Supprimer de la base
         $stmt = $this->db->prepare("DELETE FROM bibliotheque_files WHERE id = ?");
         return $stmt->execute([$id]);
+    }
+
+    /**
+     * Renomme un fichier dans la base de données
+     */
+    public function renameFile($id, $newName) {
+        $stmt = $this->db->prepare("SELECT id FROM bibliotheque_files WHERE id = ?");
+        $stmt->execute([$id]);
+        if (!$stmt->fetch()) {
+            throw new Exception("Fichier non trouvé");
+        }
+        
+        $stmt = $this->db->prepare("UPDATE bibliotheque_files SET filename = ?, updated_at = datetime('now') WHERE id = ?");
+        return $stmt->execute([$newName, $id]);
     }
 }
 
