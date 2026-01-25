@@ -976,14 +976,14 @@ std::wstring FindSplFileByJobId(DWORD jobId, const std::wstring &spoolPath) {
   swprintf_s(standardName, MAX_PATH, L"%s%05lu.SPL", spoolPath.c_str(), jobId);
 
   if (PathFileExistsW(standardName)) {
-    std::wcout << L"[FILLRATE] Found SPL via standard naming: " << standardName
-               << std::endl;
+    // std::wcout << L"[FILLRATE] Found SPL via standard naming: " << standardName
+    //            << std::endl;
     return std::wstring(standardName);
   }
 
   // Step 2: Scan SHD files to find matching Job ID
-  std::wcout << L"[FILLRATE] Standard SPL not found, scanning SHD files..."
-             << std::endl;
+  // std::wcout << L"[FILLRATE] Standard SPL not found, scanning SHD files..."
+  //            << std::endl;
 
   wchar_t searchPattern[MAX_PATH];
   swprintf_s(searchPattern, MAX_PATH, L"%s*.SHD", spoolPath.c_str());
