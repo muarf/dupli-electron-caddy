@@ -669,6 +669,14 @@
                 if (!confirmed) return;
 
                 try {
+                    // 1. Supprimer de Windows via Electron IPC (si disponible)
+                    if (window.electronAPI && window.electronAPI.deletePrintJob) {
+                        console.log('[DELETE] Appel IPC deletePrintJob pour job Windows:', spoolJobId);
+                        const ipcResult = await window.electronAPI.deletePrintJob(null, spoolJobId);
+                        console.log('[DELETE] Résultat IPC:', ipcResult);
+                    }
+
+                    // 2. Supprimer de la base de données via PHP (par DB id)
                     const response = await fetch('?check_print_jobs', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -679,6 +687,19 @@
                     });
 
                     const result = await response.json();
+                    
+                    // 3. Nettoyage final: supprimer tout job avec ce spoolJobId 
+                    // (au cas où il aurait été réinséré pendant la suppression Windows)
+                    await fetch('?check_print_jobs', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'delete_by_job_id',
+                            job_id: spoolJobId
+                        })
+                    });
+                    console.log('[DELETE] Nettoyage final par job_id:', spoolJobId);
+
                     if (result.success) {
                         addLog('info', `🗑️ Job supprimé du pool`);
                         bufferJobs.delete(spoolJobId);

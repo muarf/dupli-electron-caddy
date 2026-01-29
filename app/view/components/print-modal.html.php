@@ -54,13 +54,27 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="print-duplex-mode">Recto-Verso</label>
-                        <select class="form-control" id="print-duplex-mode">
-                            <option value="simplex">Non (Recto seul)</option>
-                            <option value="duplex">Oui - Bord Long</option>
-                            <option value="tumble">Oui - Bord court</option>
-                        </select>
+                    <div class="row">
+                        <div class="col-xs-6">
+                            <div class="form-group">
+                                <label for="print-duplex-mode">Recto-Verso</label>
+                                <select class="form-control" id="print-duplex-mode">
+                                    <option value="simplex">Non (Recto seul)</option>
+                                    <option value="duplex">Oui - Bord Long</option>
+                                    <option value="tumble">Oui - Bord court</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-xs-6">
+                            <div class="form-group">
+                                <label for="print-scaling">Mise à l'échelle</label>
+                                <select class="form-control" id="print-scaling">
+                                    <option value="fit" selected>Ajuster à la page</option>
+                                    <option value="shrink">Réduire si nécessaire</option>
+                                    <option value="noscale">Taille réelle (100%)</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="row">
@@ -71,8 +85,12 @@
                                     <option value="A4" selected>A4</option>
                                     <option value="A3">A3</option>
                                     <option value="A5">A5</option>
-                                    <option value="Letter">Letter</option>
-                                    <option value="Legal">Legal</option>
+                                    <option value="A6">A6</option>
+                                    <option value="A2">A2</option>
+                                    <option value="Letter">Letter (US)</option>
+                                    <option value="Legal">Legal (US)</option>
+                                    <option value="Tabloid">Tabloid</option>
+                                    <option value="Statement">Statement</option>
                                 </select>
                             </div>
                         </div>
@@ -87,13 +105,25 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="print-page-subset">Pages à imprimer</label>
-                        <select class="form-control" id="print-page-subset">
-                            <option value="all" selected>Toutes les pages</option>
-                            <option value="odd">Pages impaires (1, 3, 5...)</option>
-                            <option value="even">Pages paires (2, 4, 6...)</option>
-                        </select>
+                    <div class="row">
+                        <div class="col-xs-6">
+                            <div class="form-group">
+                                <label for="print-page-subset">Sélection de pages</label>
+                                <select class="form-control" id="print-page-subset">
+                                    <option value="all" selected>Toutes les pages</option>
+                                    <option value="odd">Pages impaires (1, 3, 5...)</option>
+                                    <option value="even">Pages paires (2, 4, 6...)</option>
+                                    <option value="custom">Plage personnalisée</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-xs-6">
+                            <div class="form-group" id="print-page-range-group" style="display: none;">
+                                <label for="print-page-range">Plage de pages</label>
+                                <input type="text" class="form-control" id="print-page-range" 
+                                    placeholder="Ex: 1-5, 8, 10-12">
+                            </div>
+                        </div>
                     </div>
 
                     <div class="alert alert-info" id="print-file-info">
@@ -226,6 +256,8 @@
             const paperSize = $('#print-paper-size').val();
             const orientation = $('#print-orientation').val();
             const pageSubset = $('#print-page-subset').val();
+            const scaling = $('#print-scaling').val();
+            const pageRange = $('#print-page-range').val();
 
             if (!printerName) return;
 
@@ -239,10 +271,16 @@
                 paperSize: paperSize,
                 orientation: orientation,
                 pageSubset: pageSubset,
+                scaling: scaling,
                 fileName: $('#print-filename').text()
             };
 
-            console.log('Printing with options:', options);
+            // Ajouter la plage de pages si mode personnalisé
+            if (pageSubset === 'custom' && pageRange && pageRange.trim()) {
+                options.pageRange = pageRange.trim();
+            }
+
+            console.log('🖨️ Impression avec SumatraPDF, options:', options);
 
             // Nous avons mis à jour le backend pour accepter un objet options en 2ème argument
             window.electronAPI.printFile(currentFileUrl, options)
@@ -272,6 +310,19 @@
                     }
                 });
         };
+
+        // Toggle affichage du champ plage de pages personnalisée
+        $(document).ready(function() {
+            $('#print-page-subset').on('change', function() {
+                if ($(this).val() === 'custom') {
+                    $('#print-page-range-group').show();
+                    $('#print-page-range').focus();
+                } else {
+                    $('#print-page-range-group').hide();
+                    $('#print-page-range').val('');
+                }
+            });
+        });
 
         function showError(msg) {
             $('#print-modal-error').show();
