@@ -2939,8 +2939,8 @@ ipcMain.handle('delete-print-job', async (event, printerName, jobId) => {
         return { success: false, error: 'Disponible uniquement sur Windows' };
     }
 
-    if (!printerName || !jobId) {
-        return { success: false, error: 'Paramètres manquants' };
+    if (!jobId) {
+        return { success: false, error: 'Paramètres manquants (jobId requis)' };
     }
 
     // Convertir jobId en entier si c'est une chaîne
@@ -2949,42 +2949,83 @@ ipcMain.handle('delete-print-job', async (event, printerName, jobId) => {
         return { success: false, error: 'ID de job invalide' };
     }
 
-    return new Promise((resolve) => {
-        const escapedName = printerName.replace(/'/g, "''").replace(/"/g, '\\"');
+    console.log(`[IPC] delete-print-job: Suppression du job ${id}...`);
 
-        // Commande PowerShell pour supprimer le job
-        const psScript = `Remove-PrintJob -PrinterName "${escapedName}" -ID ${id} -ErrorAction Stop; Write-Output "SUCCESS"`;
+    // Fonction helper pour exécuter PowerShell
+    const runPowerShell = (psScript) => {
+        return new Promise((resolve) => {
+            const ps = spawn('powershell.exe', [
+                '-NoProfile',
+                '-ExecutionPolicy', 'Bypass',
+                '-Command', psScript
+            ], {
+                stdio: ['pipe', 'pipe', 'pipe'],
+                shell: false
+            });
 
-        const ps = spawn('powershell.exe', [
-            '-NoProfile',
-            '-ExecutionPolicy', 'Bypass',
-            '-Command', psScript
-        ], {
-            stdio: ['pipe', 'pipe', 'pipe'],
-            shell: false
+            let stdout = '';
+            let stderr = '';
+
+            ps.stdout.on('data', (data) => stdout += data.toString());
+            ps.stderr.on('data', (data) => stderr += data.toString());
+
+            ps.on('close', (code) => {
+                resolve({ code, stdout, stderr });
+            });
+
+            ps.on('error', (err) => resolve({ code: -1, stdout: '', stderr: err.message }));
         });
+    };
 
-        let stdout = '';
-        let stderr = '';
+    // Fonction pour vérifier si le job existe encore
+    const jobExists = async () => {
+        // @() force le résultat en tableau pour que .Count fonctionne même avec un seul élément
+        const checkScript = `@(Get-Printer | Get-PrintJob | Where-Object { $_.Id -eq ${id} }).Count`;
+        const result = await runPowerShell(checkScript);
+        const count = parseInt(result.stdout.trim()) || 0;
+        console.log(`[IPC] Vérification job ${id}: count=${count}, stdout="${result.stdout.trim()}"`);
+        return count > 0;
+    };
 
-        ps.stdout.on('data', (data) => stdout += data.toString());
-        ps.stderr.on('data', (data) => stderr += data.toString());
+    // Script de suppression
+    const removeScript = `Get-Printer | ForEach-Object { Remove-PrintJob -PrinterName $_.Name -ID ${id} -ErrorAction SilentlyContinue }`;
 
-        ps.on('close', (code) => {
-            if (code === 0 || stdout.includes('SUCCESS')) {
-                resolve({ success: true });
-            } else {
-                // Si erreur "Not Found", on considère succès (déjà supprimé)
-                if (stderr.includes('ObjectNotFound') || stderr.includes('n\'existe pas')) {
-                    resolve({ success: true, note: 'Job already gone' });
-                } else {
-                    resolve({ success: false, error: stderr || stdout });
-                }
+    try {
+        const maxAttempts = 5;
+
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            // Vérifier si le job existe
+            const exists = await jobExists();
+            if (!exists) {
+                console.log(`[IPC] Job ${id} déjà supprimé (vérification avant tentative ${attempt})`);
+                return { success: true };
             }
-        });
 
-        ps.on('error', (err) => resolve({ success: false, error: err.message }));
-    });
+            console.log(`[IPC] Tentative ${attempt}/${maxAttempts} de suppression du job ${id}...`);
+            await runPowerShell(removeScript);
+
+            // Attendre un peu que Windows traite la suppression
+            const delay = 300 + (attempt * 200); // 500ms, 700ms, 900ms, 1100ms, 1300ms
+            await new Promise(resolve => setTimeout(resolve, delay));
+
+            // Vérifier si le job a été supprimé
+            const stillExists = await jobExists();
+            if (!stillExists) {
+                console.log(`[IPC] Job ${id} supprimé avec succès à la tentative ${attempt}`);
+                return { success: true };
+            }
+
+            console.log(`[IPC] Job ${id} existe encore après tentative ${attempt}`);
+        }
+
+        // Après toutes les tentatives, le job existe encore
+        console.error(`[IPC] Échec: Job ${id} persiste après ${maxAttempts} tentatives`);
+        return { success: false, error: `Job persiste après ${maxAttempts} tentatives` };
+
+    } catch (err) {
+        console.error(`[IPC] Erreur lors de la suppression du job ${id}:`, err);
+        return { success: false, error: err.message };
+    }
 });
 
 // ============ Handlers pour le module d'impression ============

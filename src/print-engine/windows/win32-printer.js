@@ -130,19 +130,30 @@ async function getPrinterCapabilities(printerName) {
 }
 
 /**
- * Lancer un job d'impression via Ghostscript (Windows GDI)
- * @param {string} pdfPath
- * @param {Object} options
+ * Lancer un job d'impression via SumatraPDF (copies natives Windows)
+ * @param {string} pdfPath - Chemin du fichier PDF à imprimer
+ * @param {Object} options - Options d'impression
+ * @param {string} [options.printer] - Nom de l'imprimante
+ * @param {number} [options.copies=1] - Nombre de copies (natives)
+ * @param {string} [options.paperSize='A4'] - Format papier (A2, A3, A4, A5, A6, letter, legal, tabloid, statement)
+ * @param {string} [options.orientation='portrait'] - Orientation (portrait, landscape)
+ * @param {string} [options.duplex='simplex'] - Recto-verso (simplex, duplex, tumble)
+ * @param {string} [options.colorMode='color'] - Mode couleur (color, monochrome)
+ * @param {string} [options.pageSubset='all'] - Pages à imprimer (all, odd, even)
+ * @param {string} [options.pageRange] - Plage de pages (ex: "1-5,8,10-12")
+ * @param {string} [options.scaling='fit'] - Mise à l'échelle (fit, shrink, noscale)
+ * @param {string} [options.paperTray] - Bac papier (nom ou numéro)
+ * @param {string} [options.fileName] - Nom du document pour l'affichage
  * @returns {Promise<Object>}
  */
 async function printJob(pdfPath, options = {}) {
     const { spawn } = require('child_process');
     const fs = require('fs');
 
-    // Trouver Ghostscript
-    const gsPath = path.join(__dirname, '..', '..', '..', 'ghostscript', 'gswin64c.exe');
-    if (!fs.existsSync(gsPath)) {
-        throw new Error(`Ghostscript non trouvé: ${gsPath}`);
+    // Trouver SumatraPDF
+    const sumatraPath = path.join(__dirname, '..', '..', '..', 'sumatra', 'SumatraPDF.exe');
+    if (!fs.existsSync(sumatraPath)) {
+        throw new Error(`SumatraPDF non trouvé: ${sumatraPath}`);
     }
 
     // Vérifier que le PDF existe
@@ -163,97 +174,99 @@ async function printJob(pdfPath, options = {}) {
         throw new Error('Aucune imprimante disponible');
     }
 
+    // Construire les paramètres d'impression SumatraPDF
+    const settings = [];
+
+    // Copies natives (ex: "4x" pour 4 copies)
+    const copies = parseInt(options.copies) || 1;
+    if (copies > 1) {
+        settings.push(`${copies}x`);
+    }
+
+    // Format papier
+    const paperSize = options.paperSize || 'A4';
+    const paperSizeMap = {
+        'A2': 'A2', 'A3': 'A3', 'A4': 'A4', 'A5': 'A5', 'A6': 'A6',
+        'Letter': 'letter', 'Legal': 'legal', 'Tabloid': 'tabloid', 'Statement': 'statement'
+    };
+    const sumatraPaperSize = paperSizeMap[paperSize] || paperSize.toLowerCase();
+    settings.push(`paper=${sumatraPaperSize}`);
+
+    // Orientation
+    const orientation = options.orientation || 'portrait';
+    settings.push(orientation);
+
+    // Duplex (recto-verso)
+    const duplexMode = options.duplex || 'simplex';
+    const duplexMap = {
+        'simplex': 'simplex',
+        'duplex': 'duplexlong',
+        'tumble': 'duplexshort'
+    };
+    settings.push(duplexMap[duplexMode] || 'simplex');
+
+    // Mode couleur
+    const colorMode = options.colorMode || 'color';
+    settings.push(colorMode === 'monochrome' ? 'monochrome' : 'color');
+
+    // Mise à l'échelle
+    const scaling = options.scaling || 'fit';
+    if (['fit', 'shrink', 'noscale'].includes(scaling)) {
+        settings.push(scaling);
+    }
+
+    // Bac papier
+    if (options.paperTray) {
+        settings.push(`bin=${options.paperTray}`);
+    }
+
+    // Pages paires/impaires
+    const pageSubset = options.pageSubset || 'all';
+    if (pageSubset === 'odd') {
+        settings.push('odd');
+    } else if (pageSubset === 'even') {
+        settings.push('even');
+    }
+
+    // Plage de pages spécifique
+    if (options.pageRange && options.pageRange.trim()) {
+        settings.push(options.pageRange.trim());
+    }
+
+    const jobName = options.fileName || 'Dupli-Print';
+
     // Log détaillé des options
     const logData = {
         timestamp: new Date().toISOString(),
         pdfPath: pdfPath,
         printer: printerName,
+        engine: 'SumatraPDF',
         options: {
-            copies: options.copies || 1,
-            pageSize: options.pageSize || 'Default',
-            colorMode: options.colorMode || 'Default',
-            duplex: options.duplex || 'Default'
+            copies: copies,
+            paperSize: sumatraPaperSize,
+            orientation: orientation,
+            duplex: duplexMode,
+            colorMode: colorMode,
+            scaling: scaling,
+            paperTray: options.paperTray || 'Auto',
+            pageSubset: pageSubset,
+            pageRange: options.pageRange || 'all'
         }
     };
-    console.log('🖨️ [PRINT_ENGINE] Options d\'impression via Ghostscript:', JSON.stringify(logData, null, 2));
+    console.log('🖨️ [SUMATRA] Options d\'impression:', JSON.stringify(logData, null, 2));
 
-    // Nombre de copies
-    const copies = parseInt(options.copies) || 1;
-    const jobName = options.fileName || 'Dupli-Print';
+    // Arguments SumatraPDF
+    const args = [
+        '-print-to', printerName,
+        '-print-settings', settings.join(','),
+        '-silent',
+        pdfPath
+    ];
+
+    console.log(`🖨️ [SUMATRA] Commande: ${sumatraPath} ${args.map(a => `"${a}"`).join(' ')}`);
 
     return new Promise((resolve, reject) => {
-        // Arguments Ghostscript
-        // -sJobName permet de définir le nom du document dans la file d'attente
-        // -c "<< /NumCopies X >> setpagedevice" permet (parfois) de gérer les copies en un seul job
-        const safeJobName = jobName.replace(/[()]/g, '');
-        const gsArgs = [
-            '-dBATCH',
-            '-dNOPAUSE',
-            '-dNOSAFER',
-            '-dQUIET',
-            `-sJobName=${safeJobName}`,
-            '-sDEVICE=mswinpr2',
-            `-sOutputFile=%printer%${printerName}`
-        ];
-
-        // Gestion du format papier
-        const paperSize = options.paperSize || 'A4';
-        const paperSizeMap = {
-            'A4': 'a4',
-            'A3': 'a3',
-            'A5': 'a5',
-            'Letter': 'letter',
-            'Legal': 'legal'
-        };
-        const gsPaperSize = paperSizeMap[paperSize] || 'a4';
-        gsArgs.push(`-sPAPERSIZE=${gsPaperSize}`);
-
-        // Gestion de l'orientation
-        const orientation = options.orientation || 'portrait';
-        if (orientation === 'landscape') {
-            gsArgs.push('-dAutoRotatePages=/None');
-            gsArgs.push('-c', '<< /Orientation 3 >> setpagedevice');
-        }
-
-        // Gestion des copies et du titre au sein d'un seul flux
-        // Note: mswinpr2 utilise aussi souvent le titre du document PostScript
-        const psCommands = [
-            `/NumCopies ${copies}`,
-            `/Title (${safeJobName})`,
-            `/JobName (${safeJobName})`
-        ];
-
-        // Gestion du recto-verso (duplex)
-        // Duplex values: false (simplex), true (long edge), /Tumble (short edge)
-        const duplexMode = options.duplex || 'simplex';
-        if (duplexMode === 'duplex') {
-            // Duplex bord long (flip sur le côté long)
-            psCommands.push('/Duplex true');
-            psCommands.push('/Tumble false');
-        } else if (duplexMode === 'tumble') {
-            // Duplex bord court (flip sur le côté court)
-            psCommands.push('/Duplex true');
-            psCommands.push('/Tumble true');
-        } else {
-            // Simplex (recto seul)
-            psCommands.push('/Duplex false');
-        }
-
-        // Gestion des pages paires/impaires
-        const pageSubset = options.pageSubset || 'all';
-        if (pageSubset === 'odd') {
-            gsArgs.push('-sPageList=odd');
-        } else if (pageSubset === 'even') {
-            gsArgs.push('-sPageList=even');
-        }
-
-        gsArgs.push('-c', `<< ${psCommands.join(' ')} >> setpagedevice`, '-f');
-
-        gsArgs.push(pdfPath);
-
-        console.log(`🖨️ [PRINT_ENGINE] Lancement impression (Job: ${jobName}, Copies: ${copies}, Paper: ${paperSize}, Orientation: ${orientation}, Duplex: ${duplexMode}, Pages: ${pageSubset}):`, gsPath, gsArgs.join(' '));
-
-        const child = spawn(gsPath, gsArgs, {
+        const child = spawn(sumatraPath, args, {
             windowsHide: true,
             detached: false
         });
@@ -266,22 +279,23 @@ async function printJob(pdfPath, options = {}) {
 
         child.on('close', (code) => {
             if (code === 0) {
-                console.log('✅ [PRINT_ENGINE] Impression envoyée avec succès');
+                console.log('✅ [SUMATRA] Impression envoyée avec succès');
                 resolve({
                     success: true,
                     jobId: Date.now() % 100000,
                     message: `Impression envoyée (${copies} copie${copies > 1 ? 's' : ''})`,
-                    printer: printerName
+                    printer: printerName,
+                    engine: 'SumatraPDF'
                 });
             } else {
-                console.error('❌ [PRINT_ENGINE] Erreur Ghostscript code:', code, stderr);
-                reject(new Error(`Ghostscript erreur code ${code}: ${stderr || stdout || 'Unknown error'}`));
+                console.error('❌ [SUMATRA] Erreur SumatraPDF code:', code, stderr);
+                reject(new Error(`SumatraPDF erreur code ${code}: ${stderr || stdout || 'Erreur inconnue'}`));
             }
         });
 
         child.on('error', (err) => {
-            console.error('❌ [PRINT_ENGINE] Erreur lancement:', err.message);
-            reject(new Error(`Erreur lancement Ghostscript: ${err.message}`));
+            console.error('❌ [SUMATRA] Erreur lancement:', err.message);
+            reject(new Error(`Erreur lancement SumatraPDF: ${err.message}`));
         });
     });
 }

@@ -63,31 +63,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $jobsToCancel = $db->select("SELECT job_id, printer_name FROM print_jobs WHERE id IN ($ids_string)");
 
                     foreach ($jobsToCancel as $job) {
-                        if (!empty($job['job_id']) && !empty($job['printer_name'])) {
+                        if (!empty($job['job_id'])) {
                             $jobId = intval($job['job_id']);
-                            $printer = $job['printer_name'];
+                            $printerName = $job['printer_name'] ?? '';
 
-                            // Échapper le nom de l'imprimante pour PowerShell
-                            // On remplace ' par '' pour l'échappement PowerShell
-                            $escapedPrinter = str_replace("'", "''", $printer);
-
-                            // 1. D'ABORD : Commande PowerShell robuste pour supprimer le job de la file Windows
-                            // On itère sur toutes les imprimantes car le nom peut différer entre la DB et Windows
-                            $cmd = "powershell.exe -Command \"Get-Printer | ForEach-Object { Remove-PrintJob -PrinterName \$_.Name -ID $jobId -ErrorAction SilentlyContinue }\"";
-
-                            error_log("[API] Tentative d'annulation robuste du job Windows ID $jobId");
-
-                            // Exécuter silencieusement
-                            exec($cmd . " 2>&1", $output, $returnVar);
-
-                            if ($returnVar !== 0) {
-                                error_log("[API] Échec annulation job $jobId (ou job déjà supprimé)");
-                            } else {
-                                error_log("[API] Commande d'annulation job $jobId envoyée");
-                            }
-
-                            // 2. ENSUITE : Nettoyage manuel des fichiers de spool (SPL/SHD)
-                            // Nécessaire car KeepPrintedJobs=true empêche Windows de les supprimer lui-même
+                            // Suppression des fichiers SPL/SHD
+                            // Note: La suppression du job Windows est gérée par Electron IPC (frontend)
+                            // car PHP-FPM n'a pas accès à powershell.exe via PATH
+                            error_log("[API] Suppression fichiers spool pour job $jobId");
                             SpoolManager::deleteSpoolFiles($jobId);
                         }
                     }
@@ -145,6 +128,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $db->execute("DELETE FROM print_jobs WHERE id IN ($ids_string)");
 
                 echo json_encode(['success' => true, 'message' => count($ids) . ' impression(s) supprimée(s) et annulée(s) dans le spooler']);
+                exit;
+
+            } elseif ($action === 'delete_by_job_id') {
+                if (!isset($input['job_id'])) {
+                    throw new Exception("Aucun Job ID spécifié");
+                }
+
+                $jobId = strval($input['job_id']);
+                
+                // On récupère d'abord les infos pour le shredding des fichiers
+                $jobsToDelete = $db->select("SELECT id, document, thumbnail_url FROM print_jobs WHERE job_id = ?", [$jobId]);
+                
+                if (empty($jobsToDelete)) {
+                    echo json_encode(['success' => true, 'message' => 'Aucun job trouvé en base pour cet ID']);
+                    exit;
+                }
+
+                $idsToDelete = [];
+                
+                // Inclusion des fonctions nécessaires si pas déjà là
+                require_once(__DIR__ . '/../controler/functions/secure_delete.php');
+                
+                $resolvePath = function($urlOrPath) {
+                    if (empty($urlOrPath)) return null;
+                    if (preg_match('/^[a-zA-Z]:\\\\/', $urlOrPath)) return $urlOrPath;
+                    $relativePath = parse_url($urlOrPath, PHP_URL_PATH);
+                    $relativePath = ltrim($relativePath, '/'); 
+                    $baseDir = dirname(__DIR__) . '/../public/'; 
+                    return str_replace('/', DIRECTORY_SEPARATOR, $baseDir . $relativePath);
+                };
+
+                foreach ($jobsToDelete as $job) {
+                    $idsToDelete[] = $job['id'];
+                    
+                    if (!empty($job['document'])) {
+                        secure_delete($job['document']);
+                    }
+                    if (!empty($job['thumbnail_url'])) {
+                        $thumbPath = $resolvePath($job['thumbnail_url']);
+                        if ($thumbPath) {
+                            secure_delete($thumbPath);
+                        }
+                    }
+                }
+
+                // Suppression finale en base
+                $ids_string = implode(',', $idsToDelete);
+                $db->execute("DELETE FROM print_jobs WHERE id IN ($ids_string)");
+
+                echo json_encode(['success' => true, 'message' => 'Job(s) nettoyé(s) par job_id Windows']);
                 exit;
 
             } elseif ($action === 'purge_all') {
