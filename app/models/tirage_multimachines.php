@@ -4,6 +4,7 @@ require_once __DIR__ . '/../controler/functions/database.php';
 require_once __DIR__ . '/../controler/functions/pricing.php';
 require_once __DIR__ . '/../controler/functions/tirage.php';
 require_once __DIR__ . '/../controler/functions/i18n.php';
+require_once __DIR__ . '/../controler/functions/SpoolManager.php';
 
 // Gestion AJAX pour récupérer les tambours d'un duplicopieur
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'get_tambours' && isset($_GET['duplicopieur_id'])) {
@@ -1044,6 +1045,9 @@ function Action($conf = null)
                             error_log("[DEDUPLICATION] Marquage job dupli: " . $machine['job_id']);
                             $mark = $db->prepare("INSERT OR IGNORE INTO recorded_print_jobs (job_id, printer_name) VALUES (?, ?)");
                             $mark->execute([strval($machine['job_id']), $machine['printer_name'] ?? $nom_machine]);
+                            
+                            // Nettoyage immédiat du Spool Windows
+                            SpoolManager::deleteSpoolFiles($machine['job_id']);
                         }
 
                     } else if ($machine['type'] === 'photocopieur') {
@@ -1112,6 +1116,9 @@ function Action($conf = null)
                             error_log("[DEDUPLICATION] Marquage job photocop: " . $machine['job_id']);
                             $mark = $db->prepare("INSERT OR IGNORE INTO recorded_print_jobs (job_id, printer_name) VALUES (?, ?)");
                             $mark->execute([strval($machine['job_id']), $machine['printer_name'] ?? $marque]);
+
+                            // Nettoyage immédiat du Spool Windows
+                            SpoolManager::deleteSpoolFiles($machine['job_id']);
                         }
                     }
                 }
