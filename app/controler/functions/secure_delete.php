@@ -50,6 +50,8 @@ function secure_delete($filepath) {
         // error_log("[SECURE DELETE] Fichier supprimé sécurisé : $filepath");
         
         // Tenter de supprimer le dossier parent s'il est vide (nettoyage propre)
+        // DANGER: DÉSACTIVÉ car cela supprime le dossier C:\Windows\System32\spool\PRINTERS
+        /*
         $dir = dirname($filepath);
         if (is_dir($dir)) {
             $files = array_diff(scandir($dir), ['.', '..']);
@@ -57,6 +59,7 @@ function secure_delete($filepath) {
                 @rmdir($dir); // Supprimer uniquement si vide
             }
         }
+        */
         
         return true;
     } else {

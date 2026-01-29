@@ -56,6 +56,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // --- NOUVEAU: Annuler les tâches dans Windows avant de supprimer de la base ---
                 try {
+                    // Charger le SpoolManager
+                    require_once(__DIR__ . '/../controler/functions/SpoolManager.php');
+
                     // Récupérer les détails des jobs pour l'annulation Windows
                     $jobsToCancel = $db->select("SELECT job_id, printer_name FROM print_jobs WHERE id IN ($ids_string)");
 
@@ -68,19 +71,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             // On remplace ' par '' pour l'échappement PowerShell
                             $escapedPrinter = str_replace("'", "''", $printer);
 
-                            // Commande PowerShell pour supprimer le job
-                            $cmd = "powershell.exe -Command \"Remove-PrintJob -PrinterName '$escapedPrinter' -ID $jobId\"";
+                            // 1. D'ABORD : Commande PowerShell robuste pour supprimer le job de la file Windows
+                            // On itère sur toutes les imprimantes car le nom peut différer entre la DB et Windows
+                            $cmd = "powershell.exe -Command \"Get-Printer | ForEach-Object { Remove-PrintJob -PrinterName \$_.Name -ID $jobId -ErrorAction SilentlyContinue }\"";
 
-                            error_log("[API] Tentative d'annulation du job Windows ID $jobId sur '$printer'");
+                            error_log("[API] Tentative d'annulation robuste du job Windows ID $jobId");
 
                             // Exécuter silencieusement
                             exec($cmd . " 2>&1", $output, $returnVar);
 
                             if ($returnVar !== 0) {
-                                error_log("[API] Échec annulation job $jobId: " . implode(" ", $output));
+                                error_log("[API] Échec annulation job $jobId (ou job déjà supprimé)");
                             } else {
-                                error_log("[API] Job $jobId annulé avec succès");
+                                error_log("[API] Commande d'annulation job $jobId envoyée");
                             }
+
+                            // 2. ENSUITE : Nettoyage manuel des fichiers de spool (SPL/SHD)
+                            // Nécessaire car KeepPrintedJobs=true empêche Windows de les supprimer lui-même
+                            SpoolManager::deleteSpoolFiles($jobId);
                         }
                     }
                 } catch (Exception $cancelEx) {
