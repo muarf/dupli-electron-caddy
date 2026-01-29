@@ -476,15 +476,22 @@
                     lastUpdate: now
                 });
                 addLog('info', `⏳ Job détecté: ${job.document} (${job.total_pages} pages). Attente stabilisation (10s)...`);
+                
+                // NOUVEAU: Affichage immédiat dans le pool avec indicateur de stabilisation
+                job.stabilizing = true;
+                addToBuffer(job);
             } else {
                 const candidate = pendingJobs.get(job.job_id);
                 if (candidate.job.total_pages !== job.total_pages || candidate.job.status !== job.status) {
                     const oldPages = candidate.job.total_pages;
                     candidate.job = job;
+                    candidate.job.stabilizing = true;
                     candidate.lastUpdate = now;
                     if (oldPages !== job.total_pages) {
                         addLog('info', `... maj pages : ${job.total_pages}`);
                     }
+                    // Mettre à jour la ligne dans le buffer
+                    renderBufferRow(candidate.job);
                 }
             }
         }
@@ -526,25 +533,24 @@
                     pendingJobs.delete(jobId);
                     processedJobIds.add(jobId);
 
+                    candidate.job.stabilizing = false;
+
                     if (currentSessionId && candidate.job.session_id == currentSessionId) {
                         addLog('success', `📥 Job assigné détecté : ${candidate.job.document}`);
 
-                        // Supprimer de la base de données pool
-                        /*
-                        fetch('?check_print_jobs', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                action: 'delete_jobs',
-                                ids: [candidate.job.id]
-                            })
-                        }).catch(e => console.error("Erreur suppression job assigné:", e));
-                        */
+                        // Retirer du pool (buffer) puisqu'il passe en session
+                        bufferJobs.delete(jobId);
+                        const row = document.getElementById(`buffer-row-${jobId}`);
+                        if (row) row.remove();
+                        if (bufferJobs.size === 0) {
+                            document.getElementById('buffer-zone').style.display = 'none';
+                        }
 
                         simulateJob(candidate.job);
                     } else {
                         addLog('info', `⏸️ Job en attente (Buffer) : ${candidate.job.document}`);
-                        addToBuffer(candidate.job);
+                        // Mettre à jour la ligne pour afficher les boutons d'action
+                        renderBufferRow(candidate.job);
                     }
                 }
             });
@@ -586,8 +592,22 @@
             const rawFillValue = parseFloat(job.fill_rate || 0);
             const fillPct = rawFillValue.toFixed(1) + '%';
 
+            const actions = job.stabilizing ? `
+                <div class="text-center">
+                    <i class="fa fa-spinner fa-spin text-primary"></i>
+                    <div style="font-size: 10px;" class="text-muted">Stabilisation...</div>
+                </div>
+            ` : `
+                <button class="btn btn-primary btn-sm" onclick="moveBufferToSession('${job.job_id}')" title="Ajouter à la session">
+                    <i class="fa fa-plus"></i>
+                </button>
+                <button class="btn btn-outline-danger btn-sm" onclick="deleteBufferJob('${job.id}', '${job.job_id}')" title="Supprimer">
+                    <i class="fa fa-trash"></i>
+                </button>
+            `;
+
             row.innerHTML = `
-            <td><input type="checkbox" class="buffer-checkbox" data-id="${job.id}" data-job-id="${job.job_id}" onchange="updateBulkActionsVisibility()" ${isChecked ? 'checked' : ''}></td>
+            <td><input type="checkbox" class="buffer-checkbox" data-id="${job.id}" data-job-id="${job.job_id}" onchange="updateBulkActionsVisibility()" ${isChecked ? 'checked' : ''} ${job.stabilizing ? 'disabled' : ''}></td>
             <td>${job.thumbnail_url ? `<img src="${job.thumbnail_url}" height="30" style="cursor: pointer; border-radius: 3px;" onclick="showThumbnailModal('${job.thumbnail_url}', '${job.document.replace(/'/g, "\\'")}')">` : '<i class="fa fa-file-o"></i>'}</td>
             <td><small>${date}</small></td>
             <td><div style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${job.printer_name}">${job.printer_name}</div></td>
@@ -604,13 +624,8 @@
                 </div>
                 <small>${fillPct}</small>
             </td>
-            <td>
-                <button class="btn btn-primary btn-sm" onclick="moveBufferToSession('${job.job_id}')" title="Ajouter à la session">
-                    <i class="fa fa-plus"></i>
-                </button>
-                <button class="btn btn-outline-danger btn-sm" onclick="deleteBufferJob('${job.id}', '${job.job_id}')" title="Supprimer">
-                    <i class="fa fa-trash"></i>
-                </button>
+            <td class="align-middle">
+                ${actions}
             </td>
         `;
         }
