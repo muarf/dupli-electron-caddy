@@ -264,3 +264,22 @@ INIT: Printer='Microsoft XPS Class Driver', Type='dupli'
 HEX: 6475706c69
 Check 'photocop': FALSE
 [2026-01-29 18:12:11] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":1,"contact":"manu","document":"C:\\Users\\A\\AppData\\Local\\Temp\\poster_bleu.pdf_1769710294366.pdf","copies":6,"total_pages":6,"duplex":false,"color_mode":"Color","paper_size":"A3","fill_rate":0.28185705184937,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/6\/page_0.png","timestamp":"2026-01-29T18:11:34.000Z","job_id":"6","session_id":3,"simulate":false}
+[2026-01-29 19:35:02] [PAYLOAD] {"printerName":"Microsoft XPS Class Driver","pages":16,"contact":"manu","document":"C:\\Users\\A\\Downloads\\regard_insolite_deuxieme_edition_imposed.pdf","copies":1,"total_pages":16,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":0,"thumbnail_url":"","timestamp":"2026-01-29T19:32:11.000Z","job_id":"15","session_id":51,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='Microsoft XPS Class Driver', Type='dupli'
+HEX: 6475706c69
+Check 'photocop': FALSE
+[2026-01-29 19:42:51] [PAYLOAD] {"printerName":"KONICA MINOLTA Universal PCL","pages":8,"contact":"manu","document":"C:\\Users\\A\\AppData\\Local\\Temp\\transultraviolence_-_cahier.pdf_1769715735987.pdf","copies":7,"total_pages":56,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":0.11621706962585,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/16\/page_0.png","timestamp":"2026-01-29T19:42:17.000Z","job_id":"16","session_id":51,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='KONICA MINOLTA Universal PCL', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=56, price=0.86, session=51
+[2026-01-29 19:54:10] [PAYLOAD] {"printerName":"Microsoft XPS Class Driver","pages":80,"contact":"manu","document":"C:\\Users\\A\\AppData\\Local\\Temp\\switch_off_-_A3_-_ppp.pdf_1769716211828.pdf","copies":1,"total_pages":80,"duplex":false,"color_mode":"Color","paper_size":"A4","fill_rate":0,"thumbnail_url":"thumbnails\\\/17\\\/page_0.png","timestamp":"2026-01-29T19:50:15.000Z","job_id":"17","session_id":51,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\A\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='Microsoft XPS Class Driver', Type='dupli'
+HEX: 6475706c69
+Check 'photocop': FALSE
