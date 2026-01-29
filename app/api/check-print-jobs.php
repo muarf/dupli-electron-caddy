@@ -39,10 +39,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             require_once(__DIR__ . '/../controler/functions/database.php');
             require_once(__DIR__ . '/../controler/functions/secure_delete.php'); // Inclusion de la purge sécurisée
 
+            // Définir la fonction de résolution de chemin pour toutes les actions de suppression
+            $resolvePath = function($urlOrPath) {
+                if (empty($urlOrPath)) return null;
+                if (preg_match('/^[a-zA-Z]:\\\\/', $urlOrPath)) return $urlOrPath;
+                $relativePath = parse_url($urlOrPath, PHP_URL_PATH);
+                $relativePath = ltrim($relativePath, '/'); 
+                $baseDir = dirname(__DIR__) . '/../public/'; 
+                return str_replace('/', DIRECTORY_SEPARATOR, $baseDir . $relativePath);
+            };
 
             // Nettoyer le buffer
             ob_end_clean();
-            $db = create_database_manager(); // Assurez-vous que cette fonction existe et retourne une instance PDO ou wrapper
+            $db = create_database_manager();
 
             $action = $input['action'];
 
@@ -95,21 +104,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 // ----------------------------------------------------------------------------
 
-                // ----------------------------------------------------------------------------
                 // --- NOUVEAU: Suppression SÉCURISÉE des fichiers (Shredding) ---
                 $jobsToDelete = $db->select("SELECT document, thumbnail_url FROM print_jobs WHERE id IN ($ids_string)");
                 
-                // Fonction locale pour résoudre le chemin (similaire à secure_purge.php)
-                // Idéalement à mettre dans utilities.php mais on le fait inline pour éviter de toucher trop de fichiers pour l'instant
-                $resolvePath = function($urlOrPath) {
-                    if (empty($urlOrPath)) return null;
-                    if (preg_match('/^[a-zA-Z]:\\\\/', $urlOrPath)) return $urlOrPath;
-                    $relativePath = parse_url($urlOrPath, PHP_URL_PATH);
-                    $relativePath = ltrim($relativePath, '/'); 
-                    $baseDir = dirname(__DIR__) . '/../public/'; 
-                    return str_replace('/', DIRECTORY_SEPARATOR, $baseDir . $relativePath);
-                };
-
                 foreach ($jobsToDelete as $job) {
                     if (!empty($job['document'])) {
                         secure_delete($job['document']);
@@ -147,18 +144,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $idsToDelete = [];
                 
-                // Inclusion des fonctions nécessaires si pas déjà là
-                require_once(__DIR__ . '/../controler/functions/secure_delete.php');
-                
-                $resolvePath = function($urlOrPath) {
-                    if (empty($urlOrPath)) return null;
-                    if (preg_match('/^[a-zA-Z]:\\\\/', $urlOrPath)) return $urlOrPath;
-                    $relativePath = parse_url($urlOrPath, PHP_URL_PATH);
-                    $relativePath = ltrim($relativePath, '/'); 
-                    $baseDir = dirname(__DIR__) . '/../public/'; 
-                    return str_replace('/', DIRECTORY_SEPARATOR, $baseDir . $relativePath);
-                };
-
                 foreach ($jobsToDelete as $job) {
                     $idsToDelete[] = $job['id'];
                     
