@@ -1388,7 +1388,18 @@
             }, async (confirmed) => {
                 if (!confirmed) return;
 
-                // Si le job a un ID de base de données, on le supprime côté serveur
+                // 1. Supprimer du spooler Windows via Electron IPC (si job_id disponible)
+                if (job.job_id && window.electronAPI && window.electronAPI.deletePrintJob) {
+                    try {
+                        console.log('[DELETE SESSION] Appel IPC deletePrintJob pour job Windows:', job.job_id);
+                        const ipcResult = await window.electronAPI.deletePrintJob(job.printer_name || null, job.job_id);
+                        console.log('[DELETE SESSION] Résultat IPC:', ipcResult);
+                    } catch (ipcError) {
+                        console.warn('[DELETE SESSION] Erreur IPC (non bloquante):', ipcError);
+                    }
+                }
+
+                // 2. Si le job a un ID de base de données, on le supprime côté serveur
                 if (job.id && job.type) {
                     try {
                         // Mapper le type pour correspondre aux attentes de l'API (duplicopieur -> dupli)
