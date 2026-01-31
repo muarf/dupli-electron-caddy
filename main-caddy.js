@@ -2979,36 +2979,64 @@ ipcMain.handle('delete-print-job', async (event, printerName, jobId) => {
 
     // Fonction pour vérifier si le job existe encore
     const jobExists = async () => {
-        // @() force le résultat en tableau pour que .Count fonctionne même avec un seul élément
         const checkScript = `@(Get-Printer | Get-PrintJob | Where-Object { $_.Id -eq ${id} }).Count`;
         const result = await runPowerShell(checkScript);
         const count = parseInt(result.stdout.trim()) || 0;
-        console.log(`[IPC] Vérification job ${id}: count=${count}, stdout="${result.stdout.trim()}"`);
+        console.log(`[IPC] Vérification job ${id}: count=${count}`);
         return count > 0;
     };
 
-    // Script de suppression
-    const removeScript = `Get-Printer | ForEach-Object { Remove-PrintJob -PrinterName $_.Name -ID ${id} -ErrorAction SilentlyContinue }`;
+    // Fonction pour supprimer les fichiers SPL/SHD directement (fallback robuste)
+    const deleteSpoolFiles = async () => {
+        const spoolDir = 'C:\\Windows\\System32\\spool\\PRINTERS';
+        // Formatage du jobId en 5 chiffres (ex: 00233, FP00233.SPL)
+        const paddedId = String(id).padStart(5, '0');
+        const patterns = [`FP${paddedId}.SPL`, `${paddedId}.SPL`, `FP${paddedId}.SHD`, `${paddedId}.SHD`];
+
+        for (const pattern of patterns) {
+            const filePath = path.join(spoolDir, pattern);
+            try {
+                if (require('fs').existsSync(filePath)) {
+                    require('fs').unlinkSync(filePath);
+                    console.log(`[IPC] Fichier spool supprimé: ${filePath}`);
+                }
+            } catch (e) {
+                console.log(`[IPC] Impossible de supprimer ${filePath}: ${e.message}`);
+            }
+        }
+    };
 
     try {
-        const maxAttempts = 5;
+        const maxAttempts = 3;
 
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             // Vérifier si le job existe
             const exists = await jobExists();
             if (!exists) {
-                console.log(`[IPC] Job ${id} déjà supprimé (vérification avant tentative ${attempt})`);
+                console.log(`[IPC] Job ${id} déjà supprimé (avant tentative ${attempt})`);
                 return { success: true };
             }
 
             console.log(`[IPC] Tentative ${attempt}/${maxAttempts} de suppression du job ${id}...`);
-            await runPowerShell(removeScript);
 
-            // Attendre un peu que Windows traite la suppression
-            const delay = 300 + (attempt * 200); // 500ms, 700ms, 900ms, 1100ms, 1300ms
-            await new Promise(resolve => setTimeout(resolve, delay));
+            // ÉTAPE 1: Annuler le job d'abord (important pour les jobs "Printed" ou "Retained")
+            const cancelScript = `
+                Get-Printer | ForEach-Object {
+                    $job = Get-PrintJob -PrinterName $_.Name -Id ${id} -ErrorAction SilentlyContinue
+                    if ($job) {
+                        # Essayer d'annuler le job
+                        try { Set-PrintJob -InputObject $job -PrinterName $_.Name -Id ${id} -Confirm:$false -ErrorAction SilentlyContinue } catch {}
+                        # Puis le supprimer
+                        Remove-PrintJob -PrinterName $_.Name -Id ${id} -ErrorAction SilentlyContinue
+                    }
+                }
+            `;
+            await runPowerShell(cancelScript);
 
-            // Vérifier si le job a été supprimé
+            // Attendre que Windows traite
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Vérifier si supprimé
             const stillExists = await jobExists();
             if (!stillExists) {
                 console.log(`[IPC] Job ${id} supprimé avec succès à la tentative ${attempt}`);
@@ -3018,12 +3046,52 @@ ipcMain.handle('delete-print-job', async (event, printerName, jobId) => {
             console.log(`[IPC] Job ${id} existe encore après tentative ${attempt}`);
         }
 
-        // Après toutes les tentatives, le job existe encore
-        console.error(`[IPC] Échec: Job ${id} persiste après ${maxAttempts} tentatives`);
-        return { success: false, error: `Job persiste après ${maxAttempts} tentatives` };
+        // FALLBACK: Supprimer les fichiers SPL/SHD directement du dossier spool
+        console.log(`[IPC] Fallback: suppression directe des fichiers spool pour job ${id}...`);
+        await deleteSpoolFiles();
+
+        // Vérification finale
+        await new Promise(resolve => setTimeout(resolve, 300));
+        const finalCheck = await jobExists();
+        if (!finalCheck) {
+            console.log(`[IPC] Job ${id} supprimé via fallback fichiers spool`);
+            return { success: true };
+        }
+
+        console.error(`[IPC] Échec: Job ${id} persiste après toutes les tentatives`);
+        return { success: false, error: `Job persiste (peut nécessiter redémarrage du spooler)` };
 
     } catch (err) {
         console.error(`[IPC] Erreur lors de la suppression du job ${id}:`, err);
+        return { success: false, error: err.message };
+    }
+});
+
+// Handler pour réanalyser un job d'impression (force re-calcul fill rate, couleur, thumbnail)
+ipcMain.handle('reanalyze-print-job', async (event, jobId) => {
+    console.log(`[IPC] reanalyze-print-job: Réanalyse du job ${jobId}...`);
+
+    try {
+        if (!printerMonitor) {
+            return { success: false, error: 'PrinterMonitor non initialisé' };
+        }
+
+        const result = printerMonitor.reanalyzeJob(jobId);
+
+        if (result && result.success) {
+            console.log(`[IPC] Job ${jobId} réanalysé: fillRate=${result.fillRate}%, isGrayscale=${result.isGrayscale}`);
+            return {
+                success: true,
+                isGrayscale: result.isGrayscale,
+                fillRate: result.fillRate,
+                thumbnailUrl: result.thumbnailUrl
+            };
+        } else {
+            console.log(`[IPC] Réanalyse échouée pour job ${jobId}`);
+            return { success: false, error: 'Analyse échouée (fichier SPL introuvable ou format non supporté)' };
+        }
+    } catch (err) {
+        console.error(`[IPC] Erreur lors de la réanalyse du job ${jobId}:`, err);
         return { success: false, error: err.message };
     }
 });

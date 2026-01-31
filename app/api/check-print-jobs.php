@@ -225,6 +225,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
                 exit;
 
+            } elseif ($action === 'regenerate_thumbnails') {
+                // === LISTE DES JOBS SANS THUMBNAIL ===
+                // Retourne la liste des jobs récents sans thumbnail pour que le JS fasse les conversions
+                
+                $thirtyMinutesAgo = date('Y-m-d H:i:s', strtotime('-30 minutes'));
+                
+                // Trouver les jobs sans thumbnail
+                $jobsWithoutThumbnail = $db->select("
+                    SELECT id, job_id, document, printer_name 
+                    FROM print_jobs 
+                    WHERE (thumbnail_url IS NULL OR thumbnail_url = '') 
+                    AND created_at >= ?
+                    ORDER BY created_at DESC
+                    LIMIT 5
+                ", [$thirtyMinutesAgo]);
+                
+                echo json_encode([
+                    'success' => true, 
+                    'jobs' => $jobsWithoutThumbnail
+                ]);
+                exit;
+
+            } elseif ($action === 'update_thumbnail') {
+                // === MISE À JOUR D'UNE THUMBNAIL ===
+                // Appelé par le JS après avoir généré une thumbnail via l'API de conversion
+                
+                if (!isset($input['id']) || !isset($input['thumbnail_url'])) {
+                    throw new Exception("Paramètres manquants (id, thumbnail_url)");
+                }
+                
+                $id = intval($input['id']);
+                $thumbnailUrl = $input['thumbnail_url'];
+                
+                $db->execute("UPDATE print_jobs SET thumbnail_url = ? WHERE id = ?", [$thumbnailUrl, $id]);
+                
+                echo json_encode(['success' => true]);
+                exit;
+
+            } elseif ($action === 'update_job_analysis') {
+                // === MISE À JOUR COMPLÈTE APRÈS RÉANALYSE C++ ===
+                // Met à jour thumbnail, fill_rate et color_mode
+                
+                if (!isset($input['id'])) {
+                    throw new Exception("Paramètre manquant (id)");
+                }
+                
+                $id = intval($input['id']);
+                $thumbnailUrl = $input['thumbnail_url'] ?? null;
+                $fillRate = isset($input['fill_rate']) ? floatval($input['fill_rate']) : null;
+                $isGrayscale = isset($input['is_grayscale']) ? (bool)$input['is_grayscale'] : null;
+                
+                // Construire la requête dynamiquement
+                $updates = [];
+                $params = [];
+                
+                if ($thumbnailUrl !== null) {
+                    $updates[] = "thumbnail_url = ?";
+                    $params[] = $thumbnailUrl;
+                }
+                if ($fillRate !== null) {
+                    $updates[] = "fill_rate = ?";
+                    $params[] = $fillRate;
+                }
+                if ($isGrayscale !== null) {
+                    $updates[] = "color_mode = ?";
+                    $params[] = $isGrayscale ? 'Monochrome' : 'Color';
+                }
+                
+                if (!empty($updates)) {
+                    $params[] = $id;
+                    $sql = "UPDATE print_jobs SET " . implode(', ', $updates) . " WHERE id = ?";
+                    $db->execute($sql, $params);
+                }
+                
+                echo json_encode(['success' => true]);
+                exit;
+
             } else {
                 throw new Exception("Action inconnue: " . $action);
             }

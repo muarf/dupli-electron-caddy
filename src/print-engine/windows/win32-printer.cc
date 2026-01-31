@@ -434,7 +434,8 @@ long FindEmfOffset(const unsigned char *buffer, size_t size) {
       size_t start = i - 40;
       DWORD type = *((DWORD *)&buffer[start]);
       if (type == 1) { // EMR_HEADER
-        LogDebug("FindEmfOffset: Found EMF signature at offset " + std::to_string(start));
+        LogDebug("FindEmfOffset: Found EMF signature at offset " +
+                 std::to_string(start));
         return (long)start;
       }
     }
@@ -444,8 +445,9 @@ long FindEmfOffset(const unsigned char *buffer, size_t size) {
   for (size_t i = 0; i < scanLimit - 4; i++) {
     if (buffer[i] == ' ' && buffer[i + 1] == 'E' && buffer[i + 2] == 'M' &&
         buffer[i + 3] == 'F') {
-        LogDebug("FindEmfOffset: Backup found EMF signature at offset " + std::to_string(i - 40));
-        return (long)(i - 40);
+      LogDebug("FindEmfOffset: Backup found EMF signature at offset " +
+               std::to_string(i - 40));
+      return (long)(i - 40);
     }
   }
 
@@ -454,41 +456,47 @@ long FindEmfOffset(const unsigned char *buffer, size_t size) {
 
 // Helper: Check if buffer contains PCL signature (\x1B%-12345X or ESC)
 bool IsPclFile(const unsigned char *buffer, size_t size) {
-    if (size < 4) return false;
-    
-    // Check for Kyocera PRESCRIBE (!R!)
-    if (buffer[0] == '!' && buffer[1] == 'R' && buffer[2] == '!') return true;
-
-    // Check for PJL header
-    const char* pjlHeader = "\x1B%-12345X";
-    if (size >= 9 && memcmp(buffer, pjlHeader, 9) == 0) return true;
-    
-    // Check for common ESC commands in first 1KB
-    size_t scanLimit = (std::min)(size, (size_t)1024);
-    for (size_t i = 0; i < scanLimit - 1; i++) {
-        if (buffer[i] == 0x1B) { // ESC
-            // Check for some common PCL sequences: ESC E (Reset), ESC & (Config), ESC * (Raster)
-            if (buffer[i+1] == 'E' || buffer[i+1] == '&' || buffer[i+1] == '*') {
-                return true;
-            }
-        }
-    }
-    
+  if (size < 4)
     return false;
+
+  // Check for Kyocera PRESCRIBE (!R!)
+  if (buffer[0] == '!' && buffer[1] == 'R' && buffer[2] == '!')
+    return true;
+
+  // Check for PJL header
+  const char *pjlHeader = "\x1B%-12345X";
+  if (size >= 9 && memcmp(buffer, pjlHeader, 9) == 0)
+    return true;
+
+  // Check for common ESC commands in first 1KB
+  size_t scanLimit = (std::min)(size, (size_t)1024);
+  for (size_t i = 0; i < scanLimit - 1; i++) {
+    if (buffer[i] == 0x1B) { // ESC
+      // Check for some common PCL sequences: ESC E (Reset), ESC & (Config), ESC
+      // * (Raster)
+      if (buffer[i + 1] == 'E' || buffer[i + 1] == '&' ||
+          buffer[i + 1] == '*') {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 // Helper: Check if buffer contains XPS signature (PK\x03\x04)
 bool IsXpsFile(const unsigned char *buffer, size_t size) {
-    if (size < 4) return false;
-    
-    // Check for ZIP signature (XPS files are ZIP archives)
-    // PK\x03\x04 is the standard ZIP file header
-    if (buffer[0] == 0x50 && buffer[1] == 0x4B && 
-        buffer[2] == 0x03 && buffer[3] == 0x04) {
-        return true;
-    }
-    
+  if (size < 4)
     return false;
+
+  // Check for ZIP signature (XPS files are ZIP archives)
+  // PK\x03\x04 is the standard ZIP file header
+  if (buffer[0] == 0x50 && buffer[1] == 0x4B && buffer[2] == 0x03 &&
+      buffer[3] == 0x04) {
+    return true;
+  }
+
+  return false;
 }
 
 // (Deprecated GDI rendering turned out to be unreliable for these memory
@@ -619,7 +627,6 @@ EmfConversionResult ConvertEmfToPngViaPhpApi(DWORD jobId) {
   return result;
 }
 
-
 // Helper: Convert PCL/RAW to PNG using PHP API
 // Returns list of PNG files created (one per page) and thumbnail URL
 EmfConversionResult ConvertPclToPngViaPhpApi(DWORD jobId) {
@@ -688,10 +695,10 @@ EmfConversionResult ConvertPclToPngViaPhpApi(DWORD jobId) {
       urlPos += 12;
       size_t endUrl = response.find("\"", urlPos);
       if (endUrl != std::string::npos) {
-        // PCL script generates page_1.png usually, but we ensure page_0 exists or use 1
-        // We'll trust the script generates page_0.png if we added that logic, 
-        // or we just point to page_1 if that's what we have. 
-        // For consistency with frontend, let's assume page_0 if accessible.
+        // PCL script generates page_1.png usually, but we ensure page_0 exists
+        // or use 1 We'll trust the script generates page_0.png if we added that
+        // logic, or we just point to page_1 if that's what we have. For
+        // consistency with frontend, let's assume page_0 if accessible.
         result.thumbnailUrl =
             response.substr(urlPos, endUrl - urlPos) + "page_0.png";
       }
@@ -715,110 +722,117 @@ EmfConversionResult ConvertXpsToPngViaPhpApi(DWORD jobId) {
   const int maxRetries = 20; // 2 seconds total wait (20 * 100ms)
 
   while (retryCount < maxRetries) {
-      try {
-        // Build GET URL - Pointing to XPS conversion script
-        std::string url = "http://127.0.0.1:8001/?convert_xps_to_png&job_id=" +
-                          std::to_string(jobId);
+    try {
+      // Build GET URL - Pointing to XPS conversion script
+      std::string url = "http://127.0.0.1:8001/?convert_xps_to_png&job_id=" +
+                        std::to_string(jobId);
 
-        if (retryCount > 0) {
-             LogDebug("Calling XPS conversion API (Retry " + std::to_string(retryCount) + "): " + url);
-        } else {
-             LogDebug("Calling XPS conversion API: " + url);
-        }
-
-        // Open Internet connection
-        HINTERNET hInternet = InternetOpenA(
-            "Win32Printer/1.0", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
-        if (!hInternet) {
-          LogDebug("InternetOpen failed");
-          return result;
-        }
-
-        // Open URL
-        HINTERNET hUrl = InternetOpenUrlA(hInternet, url.c_str(), NULL, 0,
-                                          INTERNET_FLAG_RELOAD, 0);
-        if (!hUrl) {
-          LogDebug("InternetOpenUrl failed");
-          InternetCloseHandle(hInternet);
-          return result;
-        }
-
-        // Read response
-        std::string response;
-        char buffer[4096];
-        DWORD bytesRead;
-        while (InternetReadFile(hUrl, buffer, sizeof(buffer), &bytesRead) &&
-               bytesRead > 0) {
-          response.append(buffer, bytesRead);
-        }
-
-        InternetCloseHandle(hUrl);
-        InternetCloseHandle(hInternet);
-
-        LogDebug("XPS API Response: " + response);
-
-        // Check for specific "Incomplete" error
-        // The PHP script returns: {"error":"Incomplete XPS file (No EOCD)"}
-        if (response.find("Incomplete XPS file") != std::string::npos) {
-            LogDebug("XPS file incomplete. Waiting for spooler to finish writing...");
-            Sleep(250); // Wait 250ms
-            retryCount++;
-            continue; // Retry loop
-        }
-
-        // Parse JSON response (simple parsing for our known format)
-        // Expected: {"success":true,"pages":[{"page":1,"path":"thumbnails/123/page_1.png"}]}
-        if (response.find("\"success\":true") != std::string::npos) {
-          // Extract thumbnail URL (first page)
-          size_t pathStart = response.find("\"path\":\"");
-          if (pathStart != std::string::npos) {
-            pathStart += 8; // Skip '"path":"'
-            size_t pathEnd = response.find("\"", pathStart);
-            if (pathEnd != std::string::npos) {
-              result.thumbnailUrl = response.substr(pathStart, pathEnd - pathStart);
-              LogDebug("XPS Thumbnail URL: " + result.thumbnailUrl);
-            }
-          }
-
-          // Extract all page paths
-          size_t pos = 0;
-          while ((pos = response.find("\"path\":\"", pos)) != std::string::npos) {
-            pos += 8;
-            size_t endPos = response.find("\"", pos);
-            if (endPos != std::string::npos) {
-              std::string relativePath = response.substr(pos, endPos - pos);
-              
-              // Convert to absolute Windows path
-              wchar_t exePath[MAX_PATH];
-              GetModuleFileNameW(NULL, exePath, MAX_PATH);
-              std::wstring exeDir = std::wstring(exePath);
-              size_t lastSlash = exeDir.find_last_of(L"\\");
-              if (lastSlash != std::wstring::npos) {
-                exeDir = exeDir.substr(0, lastSlash);
-              }
-
-              std::wstring fullPath = exeDir + L"\\app\\public\\" +
-                                      std::wstring(relativePath.begin(), relativePath.end());
-              result.pngPaths.push_back(fullPath);
-              
-              pos = endPos;
-            }
-          }
-
-          LogDebug("XPS conversion successful, " +
-                   std::to_string(result.pngPaths.size()) + " pages");
-          
-          // Success! Break loop
-          break; 
-        } else {
-          LogDebug("XPS conversion failed with unknown error (not incomplete). Stopping retries.");
-          // If it's another error (e.g. "Failed to execute GhostXPS"), don't retry blindly
-          break;
-        }
-      } catch (...) {
-        LogDebug("Exception in ConvertXpsToPngViaPhpApi");
-        break; 
+      if (retryCount > 0) {
+        LogDebug("Calling XPS conversion API (Retry " +
+                 std::to_string(retryCount) + "): " + url);
+      } else {
+        LogDebug("Calling XPS conversion API: " + url);
       }
+
+      // Open Internet connection
+      HINTERNET hInternet = InternetOpenA(
+          "Win32Printer/1.0", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+      if (!hInternet) {
+        LogDebug("InternetOpen failed");
+        return result;
+      }
+
+      // Open URL
+      HINTERNET hUrl = InternetOpenUrlA(hInternet, url.c_str(), NULL, 0,
+                                        INTERNET_FLAG_RELOAD, 0);
+      if (!hUrl) {
+        LogDebug("InternetOpenUrl failed");
+        InternetCloseHandle(hInternet);
+        return result;
+      }
+
+      // Read response
+      std::string response;
+      char buffer[4096];
+      DWORD bytesRead;
+      while (InternetReadFile(hUrl, buffer, sizeof(buffer), &bytesRead) &&
+             bytesRead > 0) {
+        response.append(buffer, bytesRead);
+      }
+
+      InternetCloseHandle(hUrl);
+      InternetCloseHandle(hInternet);
+
+      LogDebug("XPS API Response: " + response);
+
+      // Check for specific "Incomplete" error
+      // The PHP script returns: {"error":"Incomplete XPS file (No EOCD)"}
+      if (response.find("Incomplete XPS file") != std::string::npos) {
+        LogDebug(
+            "XPS file incomplete. Waiting for spooler to finish writing...");
+        Sleep(250); // Wait 250ms
+        retryCount++;
+        continue; // Retry loop
+      }
+
+      // Parse JSON response (simple parsing for our known format)
+      // Expected:
+      // {"success":true,"pages":[{"page":1,"path":"thumbnails/123/page_1.png"}]}
+      if (response.find("\"success\":true") != std::string::npos) {
+        // Extract thumbnail URL (first page)
+        size_t pathStart = response.find("\"path\":\"");
+        if (pathStart != std::string::npos) {
+          pathStart += 8; // Skip '"path":"'
+          size_t pathEnd = response.find("\"", pathStart);
+          if (pathEnd != std::string::npos) {
+            result.thumbnailUrl =
+                response.substr(pathStart, pathEnd - pathStart);
+            LogDebug("XPS Thumbnail URL: " + result.thumbnailUrl);
+          }
+        }
+
+        // Extract all page paths
+        size_t pos = 0;
+        while ((pos = response.find("\"path\":\"", pos)) != std::string::npos) {
+          pos += 8;
+          size_t endPos = response.find("\"", pos);
+          if (endPos != std::string::npos) {
+            std::string relativePath = response.substr(pos, endPos - pos);
+
+            // Convert to absolute Windows path
+            wchar_t exePath[MAX_PATH];
+            GetModuleFileNameW(NULL, exePath, MAX_PATH);
+            std::wstring exeDir = std::wstring(exePath);
+            size_t lastSlash = exeDir.find_last_of(L"\\");
+            if (lastSlash != std::wstring::npos) {
+              exeDir = exeDir.substr(0, lastSlash);
+            }
+
+            std::wstring fullPath =
+                exeDir + L"\\app\\public\\" +
+                std::wstring(relativePath.begin(), relativePath.end());
+            result.pngPaths.push_back(fullPath);
+
+            pos = endPos;
+          }
+        }
+
+        LogDebug("XPS conversion successful, " +
+                 std::to_string(result.pngPaths.size()) + " pages");
+
+        // Success! Break loop
+        break;
+      } else {
+        LogDebug("XPS conversion failed with unknown error (not incomplete). "
+                 "Stopping retries.");
+        // If it's another error (e.g. "Failed to execute GhostXPS"), don't
+        // retry blindly
+        break;
+      }
+    } catch (...) {
+      LogDebug("Exception in ConvertXpsToPngViaPhpApi");
+      break;
+    }
   }
 
   return result;
@@ -976,7 +990,8 @@ std::wstring FindSplFileByJobId(DWORD jobId, const std::wstring &spoolPath) {
   swprintf_s(standardName, MAX_PATH, L"%s%05lu.SPL", spoolPath.c_str(), jobId);
 
   if (PathFileExistsW(standardName)) {
-    // std::wcout << L"[FILLRATE] Found SPL via standard naming: " << standardName
+    // std::wcout << L"[FILLRATE] Found SPL via standard naming: " <<
+    // standardName
     //            << std::endl;
     return std::wstring(standardName);
   }
@@ -1085,8 +1100,7 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
       return;
     } else {
       LogDebug("AnalyzeSpoolFile: Cache Document Mismatch (" +
-               cached.documentName + " vs " + documentName +
-               "). Invaliding.");
+               cached.documentName + " vs " + documentName + "). Invaliding.");
     }
   }
 
@@ -1095,7 +1109,8 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
   wcscat_s(spoolPath, L"\\spool\\PRINTERS\\");
 
   std::wstring wsSpoolPath(spoolPath);
-  LogDebug("[FILLRATE] Scanning SPL files in: " + std::string(wsSpoolPath.begin(), wsSpoolPath.end()));
+  LogDebug("[FILLRATE] Scanning SPL files in: " +
+           std::string(wsSpoolPath.begin(), wsSpoolPath.end()));
 
   // Use new universal SPL finder (supports standard + File Pooling)
   std::wstring foundFullPath =
@@ -1111,7 +1126,8 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
                              FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
                              OPEN_EXISTING, 0, NULL);
   if (hFile == INVALID_HANDLE_VALUE) {
-    LogDebug("[FILLRATE] Could not open SPL file. Error: " + std::to_string(GetLastError()));
+    LogDebug("[FILLRATE] Could not open SPL file. Error: " +
+             std::to_string(GetLastError()));
     return;
   }
 
@@ -1136,23 +1152,26 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
   EmfConversionResult conversion;
 
   if (emfOffset >= 0) {
-      LogDebug("[FILLRATE] EMF found at offset " + std::to_string(emfOffset));
-      // Convert EMF to PNG(s) using PHP API
-      conversion = ConvertEmfToPngViaPhpApi(jobId);
-      pngFiles = conversion.pngPaths;
+    LogDebug("[FILLRATE] EMF found at offset " + std::to_string(emfOffset));
+    // Convert EMF to PNG(s) using PHP API
+    conversion = ConvertEmfToPngViaPhpApi(jobId);
+    pngFiles = conversion.pngPaths;
   } else if (IsXpsFile(buffer.data(), bytesRead)) {
-      LogDebug("[FILLRATE] No EMF signature, but XPS signature DETECTED. Proceeding to XPS conversion.");
-      // Convert XPS to PNG(s) using PHP API
-      conversion = ConvertXpsToPngViaPhpApi(jobId);
-      pngFiles = conversion.pngPaths;
+    LogDebug("[FILLRATE] No EMF signature, but XPS signature DETECTED. "
+             "Proceeding to XPS conversion.");
+    // Convert XPS to PNG(s) using PHP API
+    conversion = ConvertXpsToPngViaPhpApi(jobId);
+    pngFiles = conversion.pngPaths;
   } else if (IsPclFile(buffer.data(), bytesRead)) {
-      LogDebug("[FILLRATE] No EMF/XPS signature, but PCL signature DETECTED. Proceeding to PCL conversion.");
-      // Convert PCL to PNG(s) using PHP API
-      conversion = ConvertPclToPngViaPhpApi(jobId);
-      pngFiles = conversion.pngPaths;
+    LogDebug("[FILLRATE] No EMF/XPS signature, but PCL signature DETECTED. "
+             "Proceeding to PCL conversion.");
+    // Convert PCL to PNG(s) using PHP API
+    conversion = ConvertPclToPngViaPhpApi(jobId);
+    pngFiles = conversion.pngPaths;
   } else {
-      LogDebug("[FILLRATE] NO KNOWN signature found (EMF/XPS/PCL). Aborting conversion to avoid infinite loop.");
-      // Do nothing, pngFiles remains empty
+    LogDebug("[FILLRATE] NO KNOWN signature found (EMF/XPS/PCL). Aborting "
+             "conversion to avoid infinite loop.");
+    // Do nothing, pngFiles remains empty
   }
 
   if (pngFiles.empty()) {
@@ -1160,7 +1179,8 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
     return;
   }
 
-  LogDebug("[FILLRATE] Analyzing " + std::to_string(pngFiles.size()) + " page(s)");
+  LogDebug("[FILLRATE] Analyzing " + std::to_string(pngFiles.size()) +
+           " page(s)");
 
   // Analyze each page and calculate average
   float totalFillRate = 0.0f;
@@ -1174,7 +1194,8 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
       totalFillRate += pageFillRate;
       pagesAnalyzed++;
 
-      LogDebug("[FILLRATE] Page " + std::to_string(pagesAnalyzed) + ": " + std::to_string(pageFillRate) + "%");
+      LogDebug("[FILLRATE] Page " + std::to_string(pagesAnalyzed) + ": " +
+               std::to_string(pageFillRate) + "%");
     }
   }
 
@@ -1190,7 +1211,8 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
   // IMPORTANT: Assign back to output parameter so caller sees it immediately
   thumbnailUrl = conversion.thumbnailUrl;
 
-  LogDebug("[FILLRATE] Average Fill Rate: " + std::to_string(fillRate) + "% across " + std::to_string(pagesAnalyzed) + " page(s)");
+  LogDebug("[FILLRATE] Average Fill Rate: " + std::to_string(fillRate) +
+           "% across " + std::to_string(pagesAnalyzed) + " page(s)");
 
   // Cleanup temp directory
   if (!pngFiles.empty()) {
@@ -1215,7 +1237,6 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
       "AnalyzeSpoolFile: FINAL - Grayscale=" + std::to_string(isGrayscale) +
       ", FillRate=" + std::to_string(fillRate) + "%");
 }
-
 
 JobDetails MonitorWorker::GetJobInfo(HANDLE hPrinter, DWORD jobId) {
   JobDetails details;
@@ -1315,10 +1336,11 @@ JobDetails MonitorWorker::GetJobInfo(HANDLE hPrinter, DWORD jobId) {
   // This will overwrite isGrayscale ONLY if analysis succeeds.
   // CRITICAL: Do NOT analyze if the job is still spooling (file incomplete).
   if (!(jobInfo->Status & JOB_STATUS_SPOOLING)) {
-      AnalyzeSpoolFile(jobId, details.documentName, details.isGrayscale,
-                       details.fillRate, details.thumbnailUrl);
+    AnalyzeSpoolFile(jobId, details.documentName, details.isGrayscale,
+                     details.fillRate, details.thumbnailUrl);
   } else {
-      LogDebug("Skipping analysis for Job " + std::to_string(jobId) + " (Still Spooling)");
+    LogDebug("Skipping analysis for Job " + std::to_string(jobId) +
+             " (Still Spooling)");
   }
 
   return details;
@@ -1520,6 +1542,53 @@ Napi::Value PrintJob(const Napi::CallbackInfo &info) {
   return res;
 }
 
+// --- ReanalyzeJob ---
+// Force re-analysis of a job, bypassing cache
+// Returns: { success, isGrayscale, fillRate, thumbnailUrl }
+Napi::Value ReanalyzeJob(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+
+  if (info.Length() < 1 || !info[0].IsNumber()) {
+    Napi::TypeError::New(env, "Job ID (number) required")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  DWORD jobId = info[0].As<Napi::Number>().Uint32Value();
+
+  LogDebug("[ReanalyzeJob] Forcing re-analysis of Job " +
+           std::to_string(jobId));
+
+  // Clear cache for this job to force re-analysis
+  if (splAnalysisCache.find(jobId) != splAnalysisCache.end()) {
+    splAnalysisCache.erase(jobId);
+    LogDebug("[ReanalyzeJob] Cleared cache for Job " + std::to_string(jobId));
+  }
+
+  // Perform analysis
+  bool isGrayscale = true;
+  float fillRate = 0.0f;
+  std::string thumbnailUrl = "";
+  std::string documentName =
+      "ReanalyzedJob"; // Placeholder, we don't have doc name here
+
+  AnalyzeSpoolFile(jobId, documentName, isGrayscale, fillRate, thumbnailUrl);
+
+  // Build result object
+  Napi::Object result = Napi::Object::New(env);
+  result.Set("success", Napi::Boolean::New(env, !thumbnailUrl.empty()));
+  result.Set("isGrayscale", Napi::Boolean::New(env, isGrayscale));
+  result.Set("fillRate", Napi::Number::New(env, fillRate));
+  result.Set("thumbnailUrl", Napi::String::New(env, thumbnailUrl));
+
+  LogDebug("[ReanalyzeJob] Result: success=" +
+           std::to_string(!thumbnailUrl.empty()) +
+           ", isGrayscale=" + std::to_string(isGrayscale) + ", fillRate=" +
+           std::to_string(fillRate) + ", thumbnailUrl=" + thumbnailUrl);
+
+  return result;
+}
+
 // --- Init ---
 
 MonitorWorker *globalWorker = nullptr;
@@ -1565,6 +1634,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
               Napi::Function::New(env, GetPrinterCapabilities));
   exports.Set(Napi::String::New(env, "printJob"),
               Napi::Function::New(env, PrintJob));
+  exports.Set(Napi::String::New(env, "reanalyzeJob"),
+              Napi::Function::New(env, ReanalyzeJob));
 
   return exports;
 }
