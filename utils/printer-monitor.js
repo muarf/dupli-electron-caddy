@@ -180,6 +180,26 @@ class PrinterMonitor {
     registerPrintJob() { } // Added for compatibility with impression-complete
 
     /**
+     * Force re-analysis of a specific job (bypasses cache)
+     * @param {number} jobId - Windows print job ID
+     * @returns {Object|null} { success, isGrayscale, fillRate, thumbnailUrl }
+     */
+    reanalyzeJob(jobId) {
+        if (!win32Printer || !win32Printer.reanalyzeJob) {
+            console.error('❌ Module natif reanalyzeJob non disponible');
+            return null;
+        }
+        try {
+            const result = win32Printer.reanalyzeJob(jobId);
+            console.log(`🔄 [ReanalyzeJob] Job #${jobId}:`, result);
+            return result;
+        } catch (e) {
+            console.error('❌ Erreur reanalyzeJob:', e);
+            return null;
+        }
+    }
+
+    /**
      * Récupérer la liste des imprimantes
      * @returns {Promise<Array>}
      */

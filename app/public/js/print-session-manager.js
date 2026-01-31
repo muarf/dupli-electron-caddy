@@ -30,6 +30,97 @@ class PrintSessionManager {
 
         // Charger sessions actives
         this.loadActiveSessions();
+
+        // Démarrer le polling de régénération des thumbnails (Electron uniquement)
+        if (this.isElectron) {
+            this.startThumbnailPolling();
+        }
+    }
+
+    /**
+     * Démarrer le polling pour régénérer les thumbnails manquantes
+     */
+    startThumbnailPolling() {
+        // Polling toutes les 10 secondes
+        this.thumbnailPollingInterval = setInterval(() => {
+            this.regenerateMissingThumbnails();
+        }, 10000);
+
+        // Premier appel après 3 secondes
+        setTimeout(() => this.regenerateMissingThumbnails(), 3000);
+
+        console.log('[PrintSessionManager] Thumbnail polling démarré (10s)');
+    }
+
+    /**
+     * Appeler le C++ pour régénérer les thumbnails manquantes
+     */
+    async regenerateMissingThumbnails() {
+        try {
+            // 1. Récupérer la liste des jobs sans thumbnail via PHP (rapide)
+            const response = await fetch('?check_print_jobs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'regenerate_thumbnails' })
+            });
+
+            const result = await response.json();
+
+            if (!result.success || !result.jobs || result.jobs.length === 0) {
+                return; // Aucun job à traiter
+            }
+
+            console.log(`[PrintSessionManager] ${result.jobs.length} job(s) sans thumbnail détecté(s)`);
+
+            let regenerated = 0;
+
+            // 2. Pour chaque job, appeler le C++ via IPC pour réanalyser
+            for (const job of result.jobs) {
+                const jobId = parseInt(job.job_id);
+                if (!jobId || jobId <= 0) continue;
+
+                try {
+                    // Appeler le C++ via Electron IPC pour analyse complète
+                    if (window.electronAPI && window.electronAPI.reanalyzePrintJob) {
+                        console.log(`[PrintSessionManager] Appel IPC reanalyzePrintJob pour job ${jobId}...`);
+                        const analysisResult = await window.electronAPI.reanalyzePrintJob(jobId);
+                        console.log(`[PrintSessionManager] Résultat IPC pour job ${jobId}:`, analysisResult);
+
+                        if (analysisResult && analysisResult.success) {
+                            // Mettre à jour en base avec toutes les données
+                            await fetch('?check_print_jobs', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    action: 'update_job_analysis',
+                                    id: job.id,
+                                    thumbnail_url: analysisResult.thumbnailUrl,
+                                    fill_rate: analysisResult.fillRate,
+                                    is_grayscale: analysisResult.isGrayscale
+                                })
+                            });
+                            regenerated++;
+                            console.log(`[PrintSessionManager] Job ${jobId} réanalysé: fillRate=${analysisResult.fillRate?.toFixed(1)}%`);
+                        } else {
+                            console.log(`[PrintSessionManager] Réanalyse échouée pour job ${jobId}:`, analysisResult?.error || 'Pas de résultat');
+                        }
+                    } else {
+                        console.log(`[PrintSessionManager] electronAPI.reanalyzePrintJob non disponible`);
+                    }
+                } catch (e) {
+                    console.warn(`[PrintSessionManager] Erreur réanalyse job ${jobId}:`, e);
+                }
+            }
+
+            if (regenerated > 0) {
+                // Émettre événement pour rafraîchir l'UI
+                window.dispatchEvent(new CustomEvent('thumbnails-updated', {
+                    detail: { count: regenerated }
+                }));
+            }
+        } catch (error) {
+            // Erreur silencieuse pour ne pas spammer la console
+        }
     }
 
     /**

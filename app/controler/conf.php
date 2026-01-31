@@ -10,7 +10,7 @@
 
 if (getenv('DUPLICATOR_DB_PATH')) {
     // Chemin fourni par Electron - Utiliser celui-ci en priorité
-    $sqlite_db_path = 'C:\Users\A\AppData\Roaming\dupli-electron/duplinew.sqlite';
+    $sqlite_db_path = 'C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite';
     
     // Créer le répertoire s'il n'existe pas (seulement si on est en dehors de l'AppImage)
     $db_dir = dirname($sqlite_db_path);
@@ -23,7 +23,7 @@ if (getenv('DUPLICATOR_DB_PATH')) {
     if (strpos($current_dir, '.mount') !== false || strpos($current_dir, 'AppDir') !== false) {
         // AppImage : utiliser le répertoire home de l'utilisateur
         $home_dir = $_SERVER['HOME'] ?? getenv('HOME') ?? '/tmp';
-        $sqlite_db_path = 'C:\Users\A\AppData\Roaming\dupli-electron/duplinew.sqlite';
+        $sqlite_db_path = 'C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite';
         
         // Créer le répertoire s'il n'existe pas
         $db_dir = dirname($sqlite_db_path);
@@ -32,7 +32,7 @@ if (getenv('DUPLICATOR_DB_PATH')) {
         }
     } else {
         // Développement : utiliser le répertoire de l'app
-        $sqlite_db_path = 'C:\Users\A\AppData\Roaming\dupli-electron/duplinew.sqlite';
+        $sqlite_db_path = 'C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite';
     }
 }
 

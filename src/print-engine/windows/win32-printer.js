@@ -336,10 +336,30 @@ function stopPrinterMonitor() {
     }
 }
 
+/**
+ * Réanalyser un job d'impression (forcer la génération de thumbnail et calcul fill rate)
+ * @param {number} jobId - ID du job Windows
+ * @returns {Object} { success, isGrayscale, fillRate, thumbnailUrl }
+ */
+function reanalyzeJob(jobId) {
+    try {
+        const addon = loadNativeAddon();
+        if (addon.reanalyzeJob) {
+            return addon.reanalyzeJob(jobId);
+        }
+        console.warn('⚠️ L\'addon natif ne supporte pas reanalyzeJob');
+        return { success: false, error: 'reanalyzeJob not supported' };
+    } catch (error) {
+        console.error('❌ Erreur lors de la réanalyse:', error);
+        return { success: false, error: error.message };
+    }
+}
+
 module.exports = {
     getPrinters,
     getPrinterCapabilities,
     printJob,
     startPrinterMonitor,
-    stopPrinterMonitor
+    stopPrinterMonitor,
+    reanalyzeJob
 };
