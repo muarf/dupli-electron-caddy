@@ -60,9 +60,42 @@ try {
     ");
     $stmt2->execute([$session_id]);
     $dupli_jobs = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+
+    // Charger les jobs "staged" (en attente de validation) depuis print_jobs
+    $stmt3 = $db->prepare("
+        SELECT 
+            id,
+            'print_jobs' as table_source,
+            printer_name as printerName,
+            document,
+            thumbnail_url,
+            total_pages as pages,
+            copies,
+            calculated_price as prix,
+            0 as paper_cost,
+            0 as ink_cost,
+            'non' as papierPaye,
+            created_at as date,
+            machine_type
+        FROM print_jobs
+        WHERE session_id = ? AND staged = 1
+        ORDER BY created_at DESC
+    ");
+    $stmt3->execute([$session_id]);
+    $staged_jobs = $stmt3->fetchAll(PDO::FETCH_ASSOC);
     
-    // Combiner les deux
-    $all_jobs = array_merge($photocop_jobs, $dupli_jobs);
+    // Normaliser le type pour staged_jobs pour auto_tirage
+    foreach ($staged_jobs as &$job) {
+        $job['staged'] = true;
+        if ($job['machine_type'] === 'photocop') {
+            $job['table_source'] = 'photocop';
+        } else if ($job['machine_type'] === 'dupli') {
+            $job['table_source'] = 'duplicopieur';
+        }
+    }
+
+    // Combiner les trois
+    $all_jobs = array_merge($photocop_jobs, $dupli_jobs, $staged_jobs);
     
     // Trier par date
     usort($all_jobs, function($a, $b) {

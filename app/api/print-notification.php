@@ -92,18 +92,31 @@ try {
             paper_size TEXT,
             copies INTEGER DEFAULT 1,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            session_id INTEGER,
+            calculated_price REAL DEFAULT 0,
+            machine_type TEXT,
+            machine_id INTEGER,
+            machine_name TEXT,
+            contact TEXT,
+            staged INTEGER DEFAULT 0,
             UNIQUE(job_id, printer_name, timestamp)
         )
     ");
 
+    // Extraire le nom de fichier pour l'affichage (avec trace du chemin complet)
+    $documentFull = $data['document'];
+    $documentDisplay = basename($data['document']); // Extrait toujours le nom de fichier
+    
     // Insérer ou mettre à jour le job d'impression
     $db->execute("
         INSERT OR REPLACE INTO print_jobs 
-        (job_id, document, owner, printer_name, status, pages_printed, total_pages, size, time_submitted, event_type, timestamp, fill_rate, color_mode, duplex, thumbnail_url, paper_size, copies)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (job_id, document, document_full_path, document_display_name, owner, printer_name, status, pages_printed, total_pages, size, time_submitted, event_type, timestamp, fill_rate, color_mode, duplex, thumbnail_url, paper_size, copies)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ", [
         $data['jobId'],
-        $data['document'],
+        $documentDisplay,              // 'document' contient maintenant le nom court (rétrocompatibilité)
+        $documentFull,                 // 'document_full_path' garde le chemin complet (trace)
+        $documentDisplay,              // 'document_display_name' pour l'affichage UI
         $data['owner'] ?? null,
         $data['printerName'],
         $data['status'],

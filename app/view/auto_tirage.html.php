@@ -164,6 +164,20 @@
         border-color: #80bdff;
         box-shadow: none;
     }
+
+    /* Styles pour les lignes de session modifiables */
+    .editable-job-row {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .editable-job-row:hover {
+        background-color: #f0f8ff !important;
+        box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+        transform: translateY(-1px);
+    }
+
 </style>
 
 <div class="container">
@@ -611,7 +625,12 @@
             <td>${job.thumbnail_url ? `<img src="${job.thumbnail_url}" height="30" style="cursor: pointer; border-radius: 3px;" onclick="showThumbnailModal('${job.thumbnail_url}', '${job.document.replace(/'/g, "\\'")}')">` : '<i class="fa fa-file-o"></i>'}</td>
             <td><small>${date}</small></td>
             <td><div style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${job.printer_name}">${job.printer_name}</div></td>
-            <td><strong>${job.document}</strong></td>
+            <td>
+                <div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" 
+                     title="${job.document_full_path || job.document}">
+                    <strong>${job.document_display_name || job.document}</strong>
+                </div>
+            </td>
             <td>
                 <span class="badge badge-secondary">${job.paper_size || 'A4'}</span>
                 <span class="badge badge-info">${colorMode}</span>
@@ -1072,18 +1091,25 @@
                 // Use local thumbnail_url if available, else standard fallback
                 const thumbUrl = job.thumbnail_url;
                 if (thumbUrl) {
-                    thumbHtml = `<img src="${thumbUrl}" alt="Aperçu" class="img-thumbnail rounded mr-2" style="width: 50px; height: 50px; object-fit: contain; cursor: pointer;" onclick="showThumbnailModal('${thumbUrl}', '${docName.replace(/'/g, "\\'")}')">`;
+                    thumbHtml = `<img src="${thumbUrl}" alt="Aperçu" class="img-thumbnail rounded mr-2" style="width: 50px; height: 50px; object-fit: contain; cursor: pointer;" onclick="event.stopPropagation(); showThumbnailModal('${thumbUrl}', '${docName.replace(/'/g, "\\'")}')">`;
                 } else {
                     thumbHtml = `<div class="d-inline-flex align-items-center justify-content-center bg-light text-muted border rounded mr-2" style="width: 50px; height: 50px;"><i class="fa fa-file-o fa-lg"></i></div>`;
                 }
 
                 // Make the ROW clickable (add a style class + onclick)
-                // We add cursor-pointer class to the TR
-                tr.classList.add('cursor-pointer');
-                tr.style.cursor = 'pointer';
+                tr.classList.add('editable-job-row');
+                tr.style.position = 'relative'; // Pour le badge
+                
+                // Prevent if clicking on interactive elements or thumbnails
                 tr.onclick = (e) => {
-                    // Prevent if clicking on interactive elements
-                    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'LABEL' || e.target.closest('.custom-control') || e.target.closest('button')) {
+                    if (e.target.tagName === 'BUTTON' || 
+                        e.target.tagName === 'INPUT' || 
+                        e.target.tagName === 'SELECT' || 
+                        e.target.tagName === 'LABEL' || 
+                        e.target.tagName === 'IMG' || 
+                        e.target.closest('.custom-control') || 
+                        e.target.closest('button') ||
+                        e.target.closest('.img-thumbnail')) {
                         return;
                     }
                    openEditJobModal(index); 
@@ -1098,14 +1124,13 @@
             `;
 
                 const colDoc = `
-                <td class="align-middle">
-                    <div class="d-flex align-items-center">
+                <td class="align-middle" style="max-width: 250px;">
+                    <div class="d-flex align-items-center" style="max-width: 100%;">
                         ${thumbHtml}
-                        <div style="line-height: 1.2;">
-                            <strong style="font-size: 0.95em;">${docName}</strong><br>
+                        <div style="line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+                            <strong style="font-size: 0.95em;" title="${docName.replace(/"/g, '&quot;')}">${docName}</strong><br>
                             <small class="text-muted">${Math.round(job.pages / job.copies)} Pg ${job.copies > 1 ? `× ${job.copies} Ex` : ''}</small>
                         </div>
-
                     </div>
                 </td>
             `;
@@ -1229,11 +1254,21 @@
                 }
 
                 const colAction = `
-                <td class="align-middle text-center">
-                    <button class="btn btn-sm btn-outline-danger shadow-sm" style="border-radius: 50%; width: 30px; height: 30px; padding: 0;" onclick="removeJob(${index})"><i class="fa fa-trash"></i></button>
+                <td class="align-middle text-center" style="white-space: nowrap; width: 80px;">
+                    <div class="d-flex justify-content-center align-items-center gap-2">
+                        <button class="btn btn-sm btn-outline-primary shadow-sm mr-1" 
+                                style="border-radius: 50%; width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;" 
+                                onclick="openEditJobModal(${index})" title="Éditer">
+                            <i class="fa fa-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger shadow-sm" 
+                                style="border-radius: 50%; width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;" 
+                                onclick="removeJob(${index})" title="Supprimer">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
                 </td>
             `;
-
                 tr.innerHTML = colMachine + colDoc + `<td class="p-2 align-middle">${colDetails}</td>` + colPapier + colEncre + colTotal + colPaid + colAction;
                 tbody.appendChild(tr);
             });
@@ -1400,10 +1435,15 @@
                 }
 
                 // 2. Si le job a un ID de base de données, on le supprime côté serveur
-                if (job.id && job.type) {
+                if (job.id) {
                     try {
-                        // Mapper le type pour correspondre aux attentes de l'API (duplicopieur -> dupli)
-                        const apiType = job.type === 'duplicopieur' ? 'dupli' : job.type;
+                        // Si le job est 'staged' (dans print_jobs), on force le type à 'print_jobs'
+                        // Sinon on utilise le type normal (photocop/duplicopieur -> dupli)
+                        let apiType = 'print_jobs';
+                        if (!job.staged) {
+                            apiType = job.type === 'duplicopieur' ? 'dupli' : job.type;
+                        }
+                        
                         const resp = await fetch(`?delete_session_job&id=${job.id}&type=${apiType}`);
                         const result = await resp.json();
                         if (!result.success) {
@@ -1751,6 +1791,7 @@
                                 cout_papier: parseFloat(job.paper_cost) || 0,
                                 cout_encre: parseFloat(job.ink_cost) || 0,
                                 feuilles_payees: job.papierPaye === 'oui',
+                                staged: !!job.staged,
                                 timestamp: job.date
                             });
                         }

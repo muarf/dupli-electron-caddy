@@ -898,6 +898,29 @@ try {
                                 </div>
                             </fieldset>
                         </form>
+
+                        <!-- Modale de confirmation de sortie du formulaire de paiement -->
+                        <div id="confirmLeaveModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;">
+                            <div class="modal-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);"></div>
+                            <div class="modal-dialog" style="position: relative; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 12px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 500px; width: 90%; z-index: 10000;">
+                                <h3 style="margin-top: 0; color: #f39c12;">
+                                    <i class="fa fa-exclamation-triangle"></i> Attention
+                                </h3>
+                                <p>Vous êtes sur le formulaire de paiement final.</p>
+                                <p><strong>Si vous quittez maintenant, les informations saisies seront perdues.</strong></p>
+                                <p>Voulez-vous vraiment annuler et quitter cette page ?</p>
+                                
+                                <div style="margin-top: 25px; text-align: right;">
+                                    <button id="btnStay" class="btn btn-primary" style="margin-right: 10px;">
+                                        <i class="fa fa-check"></i> Rester sur la page
+                                    </button>
+                                    <button id="btnLeave" class="btn btn-danger">
+                                        <i class="fa fa-times"></i> Annuler et quitter
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                 <?php
                     } else {
                         ?>
@@ -2760,4 +2783,105 @@ try {
             updateTotalFeuillesForMachine(machineIndex);
         });
     });
+
+    // ============================================================================
+    // PROTECTION CONTRE LA SORTIE DU FORMULAIRE DE PAIEMENT
+    // ============================================================================
+
+    // Flag pour savoir si on est sur le formulaire de paiement
+    let isOnPaymentForm = false;
+
+    // Détecter si le formulaire de paiement est visible
+    document.addEventListener('DOMContentLoaded', function() {
+        const paymentForm = document.getElementById('form-enregistrement');
+        
+        if (paymentForm) {
+            // On est sur la page de confirmation avec le formulaire de paiement
+            isOnPaymentForm = true;
+            console.log('📝 Formulaire de paiement détecté - Protection contre sortie activée');
+        }
+    });
+
+    // 1. Bloquer la fermeture de fenêtre/onglet
+    window.addEventListener('beforeunload', function(e) {
+        if (isOnPaymentForm) {
+            // Message générique du navigateur (on ne peut pas le personnaliser pour des raisons de sécurité)
+            e.preventDefault();
+            e.returnValue = '';
+            return '';
+        }
+    });
+
+    // 2. Intercepter les clics sur les liens
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('a');
+        
+        // Si c'est un lien ET qu'on est sur le formulaire de paiement
+        if (link && isOnPaymentForm) {
+            // NE PAS bloquer le bouton "Retour au formulaire" (il a un onclick)
+            const btnRetour = document.getElementById('btn-retour');
+            if (link === btnRetour || link.onclick || link.getAttribute('onclick')) {
+                return; // Laisser passer
+            }
+            
+            // Bloquer la navigation et afficher la modale
+            e.preventDefault();
+            showLeaveConfirmModal(link.href);
+        }
+    });
+
+    // 3. Fonction pour afficher la modale de confirmation
+    function showLeaveConfirmModal(targetUrl) {
+        const modal = document.getElementById('confirmLeaveModal');
+        if (!modal) {
+            console.error('❌ Modale confirmLeaveModal introuvable');
+            return;
+        }
+        
+        modal.style.display = 'block';
+        
+        // Bouton "Rester sur la page"
+        const btnStay = document.getElementById('btnStay');
+        if (btnStay) {
+            btnStay.onclick = function() {
+                modal.style.display = 'none';
+                console.log('✅ Utilisateur a choisi de rester sur la page');
+            };
+        }
+        
+        // Bouton "Annuler et quitter"
+        const btnLeave = document.getElementById('btnLeave');
+        if (btnLeave) {
+            btnLeave.onclick = function() {
+                console.log('⚠️ Utilisateur a choisi de quitter - désactivation de la protection');
+                isOnPaymentForm = false; // Désactiver la protection
+                modal.style.display = 'none';
+                window.location.href = targetUrl;
+            };
+        }
+    }
+
+    // 4. Désactiver la protection après soumission réussie du formulaire
+    const paymentFormElement = document.getElementById('form-enregistrement');
+    if (paymentFormElement) {
+        paymentFormElement.addEventListener('submit', function() {
+            console.log('📤 Formulaire soumis - désactivation de la protection');
+            // Désactiver la protection pour permettre la redirection après succès
+            isOnPaymentForm = false;
+        });
+    }
+
+    // 5. Amélioration de la fonction returnToForm existante
+    // Cette fonction est appelée par le bouton "Retour au formulaire"
+    const originalReturnToForm = window.returnToForm;
+    window.returnToForm = function() {
+        console.log('◀️ Retour au formulaire - désactivation de la protection');
+        isOnPaymentForm = false; // Désactiver la protection
+        
+        // Appeler la fonction originale si elle existe
+        if (typeof originalReturnToForm === 'function') {
+            originalReturnToForm();
+        }
+    };
+
 </script>

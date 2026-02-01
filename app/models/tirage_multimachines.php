@@ -419,6 +419,123 @@ function Action($conf = null)
     // Récupérer les prix depuis la base de données
     $array['prix_data'] = get_price();
 
+    // CHARGEMENT DES JOBS STAGÉS SI SESSION_ID PRÉSENT
+    // Si on a un session_id dans l'URL et qu'on n'est PAS en train de POST (confirmation ou enregistrement),
+    // alors charger les jobs stagés depuis print_jobs pour pré-remplir le formulaire
+    if (isset($_GET['session_id']) && !isset($_POST['ok']) && !isset($_POST['enregistrer'])) {
+        $session_id_to_load = intval($_GET['session_id']);
+        
+        if ($session_id_to_load > 0) {
+            try {
+                error_log("DEBUG - Chargement des jobs stagés pour session_id=$session_id_to_load");
+                
+                // Charger les jobs stagés
+                $stmt_staged = $db->prepare("
+                    SELECT 
+                        id, job_id, document, printer_name, total_pages, copies,
+                        fill_rate, color_mode, duplex, paper_size, thumbnail_url,
+                        calculated_price, machine_type, machine_id, machine_name, contact
+                    FROM print_jobs
+                    WHERE session_id = ? AND staged = 1
+                    ORDER BY created_at ASC
+                ");
+                $stmt_staged->execute([$session_id_to_load]);
+                $staged_jobs = $stmt_staged->fetchAll(PDO::FETCH_ASSOC);
+                $stmt_staged->closeCursor();
+                
+                if (!empty($staged_jobs)) {
+                    error_log("DEBUG - Trouvé " . count($staged_jobs) . " jobs stagés");
+                    
+                    // Utiliser le contact du premier job
+                    $array['contact'] = $staged_jobs[0]['contact'] ?? '';
+                    $array['session_id'] = $session_id_to_load;
+                    
+                    // Transformer chaque job en machine
+                    foreach ($staged_jobs as $job) {
+                        $machine = [
+                            'db_id' => $job['id'],
+                            'job_id' => $job['job_id'],
+                            'document_name' => $job['document'],
+                            'thumbnail_url' => $job['thumbnail_url'],
+                            'contact' => $job['contact'],
+                            'fill_rate' => $job['fill_rate'],
+                            'prix' => $job['calculated_price']
+                        ];
+                        
+                        if ($job['machine_type'] === 'dupli') {
+                            // Job de duplicopieur
+                            $machine['type'] = 'duplicopieur';
+                            $machine['machine_id'] = $job['machine_id'];
+                            $machine['duplicopieur_id'] = $job['machine_id'];
+                            $machine['machine'] = $job['machine_name'];
+                            
+                            // Estimer les valeurs (approximation)
+                            $machine['nb_masters'] = ceil($job['total_pages'] / $job['copies']);
+                            $machine['nb_passages'] = $job['total_pages'];
+                            $machine['rv'] = $job['duplex'] ? 'oui' : 'non';
+                            $machine['A4'] = (stripos($job['paper_size'], 'A4') !== false) ? 'A4' : 'A3';
+                            $machine['feuilles_payees'] = 'non';
+                            $machine['mode_saisie'] = 'manuel';
+                            
+                            // Récupérer les derniers compteurs pour cette machine
+                            $query_counters = $db->prepare('SELECT master_ap, passage_ap FROM dupli WHERE nom_machine = ? ORDER BY id DESC LIMIT 1');
+                            $query_counters->execute([$job['machine_name']]);
+                            $last_counters = $query_counters->fetch(PDO::FETCH_ASSOC);
+                            $query_counters->closeCursor();
+                            
+                            if ($last_counters) {
+                                $machine['master_av'] = ceil($last_counters['master_ap']);
+                                $machine['passage_av'] = ceil($last_counters['passage_ap']);
+                                $machine['master_ap'] = $machine['master_av'] + $machine['nb_masters'];
+                                $machine['passage_ap'] = $machine['passage_av'] + $machine['nb_passages'];
+                            } else {
+                                $machine['master_av'] = 0;
+                                $machine['passage_av'] = 0;
+                                $machine['master_ap'] = $machine['nb_masters'];
+                                $machine['passage_ap'] = $machine['nb_passages'];
+                            }
+                            
+                        } else if ($job['machine_type'] === 'photocop') {
+                            // Job de photocopieur
+                            $machine['type'] = 'photocopieur';
+                            $machine['machine_id'] = $job['machine_id'];
+                            $machine['machine'] = $job['machine_name'];
+                            
+                            // Créer une brochure unique
+                            $is_color = (stripos($job['color_mode'], 'color') !== false);
+                            $is_duplex = $job['duplex'];
+                            $taille = (stripos($job['paper_size'], 'A4') !== false) ? 'A4' : 'A3';
+                            
+                            $nb_exemplaires = $job['copies'];
+                            $pages_per_copy = $job['total_pages'] / $nb_exemplaires;
+                            $nb_feuilles = $is_duplex ? ceil($pages_per_copy / 2) : $pages_per_copy;
+                            
+                            $machine['brochures'] = [[
+                                'nb_exemplaires' => $nb_exemplaires,
+                                'nb_feuilles' => $nb_feuilles,
+                                'nb_pages' => $pages_per_copy,
+                                'taille' => $taille,
+                                'rv' => $is_duplex ? 'oui' : 'non',
+                                'couleur' => $is_color ? 'oui' : 'non',
+                                'feuilles_payees' => 'non'
+                            ]];
+                        } else {
+                            // Type inconnu, on saute
+                            continue;
+                        }
+                        
+                        $array['machines'][] = $machine;
+                        $array['prix_total'] += floatval($job['calculated_price']);
+                    }
+                    
+                    error_log("DEBUG - Jobs stagés chargés et transformés en " . count($array['machines']) . " machines");
+                }
+            } catch (Exception $e) {
+                error_log("ERREUR chargement jobs stagés: " . $e->getMessage());
+            }
+        }
+    }
+
     // Debug pour comprendre pourquoi la condition ne fonctionne pas (seulement si debug dans l'URL)
     if (isset($_GET['debug'])) {
         $array['debug']['post_check'] = "Contact isset: " . (isset($_POST['contact']) ? 'OUI' : 'NON') .
@@ -1048,6 +1165,11 @@ function Action($conf = null)
                             
                             // Nettoyage immédiat du Spool Windows
                             SpoolManager::deleteSpoolFiles($machine['job_id']);
+                            
+                            // Supprimer le job de la table de staging print_jobs
+                            $del_staging = $db->prepare("DELETE FROM print_jobs WHERE job_id = ? AND printer_name = ?");
+                            $del_staging->execute([strval($machine['job_id']), $machine['printer_name'] ?? $nom_machine]);
+                            error_log("[STAGING] Job dupli supprimé de print_jobs après insertion définitive");
                         }
 
                     } else if ($machine['type'] === 'photocopieur') {
@@ -1119,6 +1241,11 @@ function Action($conf = null)
 
                             // Nettoyage immédiat du Spool Windows
                             SpoolManager::deleteSpoolFiles($machine['job_id']);
+                            
+                            // Supprimer le job de la table de staging print_jobs
+                            $del_staging = $db->prepare("DELETE FROM print_jobs WHERE job_id = ? AND printer_name = ?");
+                            $del_staging->execute([strval($machine['job_id']), $machine['printer_name'] ?? $marque]);
+                            error_log("[STAGING] Job photocop supprimé de print_jobs après insertion définitive");
                         }
                     }
                 }
