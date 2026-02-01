@@ -21,7 +21,8 @@
 // Global debug file path
 // Global debug file path
 const std::string DEBUG_LOG_PATH =
-    "C:\\Users\\A\\antigravity\\dupli-electron-caddy\\logs\\native_debug.log";
+    "C:\\Users\\Dupli\\AppData\\Local\\Programs\\dupli-electron-"
+    "caddy\\logs\\native_debug.log";
 
 void LogDebug(const std::string &message) {
   std::ofstream logFile(DEBUG_LOG_PATH, std::ios::app);

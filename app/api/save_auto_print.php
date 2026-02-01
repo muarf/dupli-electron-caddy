@@ -262,35 +262,32 @@ try {
         $price = round($cout_papier + $cout_encre, 2);
 
         if (!$simulate) {
-            // Générer tirage_global_id
-            $tirage_global_id = DatabaseMigrationManager::generateTirageGlobalId($date, $contact, $marque);
+            // STAGING: Mettre à jour print_jobs au lieu d'insérer dans photocop
+            // L'insertion définitive se fera lors de la validation sur tirage_multimachines
+            file_put_contents(__DIR__ . '/debug_log.txt', "STAGING: nb_f=$nb_feuilles_total, price=$price, session=$session_id\n", FILE_APPEND);
 
-            // Insertion
-            file_put_contents(__DIR__ . '/debug_log.txt', "PRE-INSERT: nb_f=$nb_feuilles_total, price=$price, session=$session_id\n", FILE_APPEND);
-
-            $inserted_id = insert_photocop(
-                'photocopieur',
+            $stmt_staging = $con_pdo->prepare("
+                UPDATE print_jobs SET 
+                    session_id = ?,
+                    calculated_price = ?,
+                    machine_type = 'photocop',
+                    machine_id = ?,
+                    machine_name = ?,
+                    contact = ?,
+                    staged = 1
+                WHERE job_id = ? AND printer_name = ?
+            ");
+            $stmt_staging->execute([
+                $session_id,
+                $price,
+                $machine_id,
                 $marque,
                 $contact,
-                $nb_feuilles_total, // Note: le champ s'appelle 'quantite' dans la table, souvent utilisé pour feuilles.
-                $duplex ? 'oui' : 'non',
-                $price,
-                $paye,
-                $cb,
-                $mot,
-                $date,
-                $con_pdo,
-                $tirage_global_id,
-                $session_id
-            );
+                strval($original_job_id),
+                $printerName
+            ]);
 
-        // PERSISTENCE FIX: Update with document name, thumbnail URL and copies
-        if ($inserted_id) {
-            $stmt_extra = $con_pdo->prepare("UPDATE photocop SET document_name = ?, thumbnail_url = ?, nb_exemplaires = ? WHERE id = ?");
-            $stmt_extra->execute([$input['document'] ?? '', $input['thumbnail_url'] ?? '', $copies, $inserted_id]);
-        }
-
-            $message = "Enregistré sur $marque : $total_pages pages ($taille) -> $price €";
+            $message = "Ajouté à la session : $total_pages pages ($taille) -> $price €";
         } else {
             $message = "Simulation : $total_pages pages ($taille)";
         }
@@ -371,38 +368,32 @@ try {
         $price = round($cout_masters + $cout_passages + $cout_papier, 2);
 
         if (!$simulate) {
-            // Tirage ID
-            $tirage_global_id = DatabaseMigrationManager::generateTirageGlobalId($date, $contact, $nom_machine);
+            // STAGING: Mettre à jour print_jobs au lieu d'insérer dans dupli
+            // L'insertion définitive se fera lors de la validation sur tirage_multimachines
+            file_put_contents(__DIR__ . '/debug_log.txt', "STAGING DUPLI: price=$price, session=$session_id\n", FILE_APPEND);
 
-            // Insert
-            $sql = 'INSERT INTO dupli (type, contact, master_av, master_ap, passage_av, passage_ap, rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id, tambour, tirage_global_id, session_id, document_name, thumbnail_url, nb_exemplaires) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-            $stmt = $con_pdo->prepare($sql);
-            $stmt->execute([
-                "tirage",
-                $contact,
-                $master_av,
-                $master_ap,
-                $passage_av,
-                $passage_ap,
-                $duplex ? 'oui' : 'non',
-                $price,
-                $paye,
-                $cb,
-                $mot,
-                $date,
-                $nom_machine,
-                $machine_id,
-                'tambour_noir', // Défaut
-                $tirage_global_id,
+            $stmt_staging = $con_pdo->prepare("
+                UPDATE print_jobs SET 
+                    session_id = ?,
+                    calculated_price = ?,
+                    machine_type = 'dupli',
+                    machine_id = ?,
+                    machine_name = ?,
+                    contact = ?,
+                    staged = 1
+                WHERE job_id = ? AND printer_name = ?
+            ");
+            $stmt_staging->execute([
                 $session_id,
-                $input['document'] ?? '',
-                $input['thumbnail_url'] ?? '',
-                $input['copies'] ?? 1
+                $price,
+                $machine_id,
+                $nom_machine,
+                $contact,
+                strval($original_job_id),
+                $printerName
             ]);
 
-            $details['id'] = $con_pdo->lastInsertId();
-
-            $message = "Enregistré sur $nom_machine : 1 Master, $nb_passages Passages -> $price €";
+            $message = "Ajouté à la session : 1 Master, $nb_passages Passages -> $price €";
         } else {
             $message = "Simulation : $nb_masters M, $nb_passages P";
         }

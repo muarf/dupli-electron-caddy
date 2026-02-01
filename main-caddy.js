@@ -1157,6 +1157,8 @@ function startPhpFpm() {
             '-d', 'log_errors=1',
             '-d', 'upload_max_filesize=50M',
             '-d', 'post_max_size=50M',
+            '-d', 'max_input_vars=10000',
+            '-d', 'max_input_nesting_level=256',
             '-d', `session.save_path=${sessionPath}`
         ];
     } else if (isWindows) {
@@ -1200,6 +1202,8 @@ function startPhpFpm() {
             '-d', 'log_errors=1',
             '-d', 'upload_max_filesize=50M',
             '-d', 'post_max_size=50M',
+            '-d', 'max_input_vars=10000',
+            '-d', 'max_input_nesting_level=256',
             '-d', `session.save_path=${sessionPath}`
         ];
     } else {
@@ -1232,6 +1236,8 @@ function startPhpFpm() {
                 '-d', 'log_errors=1',
                 '-d', 'upload_max_filesize=50M',
                 '-d', 'post_max_size=50M',
+                '-d', 'max_input_vars=10000',
+                '-d', 'max_input_nesting_level=256',
                 '-d', `session.save_path=${sessionPath}`
             ];
         } else {
@@ -1246,6 +1252,8 @@ function startPhpFpm() {
                 '-d', 'log_errors=1',
                 '-d', 'upload_max_filesize=50M',
                 '-d', 'post_max_size=50M',
+                '-d', 'max_input_vars=10000',
+                '-d', 'max_input_nesting_level=256',
                 '-d', `session.save_path=${sessionPath}`
             ];
         }
@@ -1346,6 +1354,8 @@ function startPhpServer() {
         '-d', 'display_errors=1',
         '-d', 'upload_max_filesize=50M',
         '-d', 'post_max_size=50M',
+        '-d', 'max_input_vars=10000',
+        '-d', 'max_input_nesting_level=256',
         '-d', 'max_execution_time=300',
         '-d', 'memory_limit=256M',
         '-d', `session.save_path=${sessionPath}`

@@ -350,6 +350,8 @@ try {
             pj.id,
             pj.job_id,
             pj.document,
+            pj.document_full_path,
+            pj.document_display_name,
             pj.owner,
             pj.printer_name,
             pj.status,

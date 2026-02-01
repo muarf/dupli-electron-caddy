@@ -20462,3 +20462,114 @@ INIT: Printer='RISO ComColor FW5230', Type='photocop'
 HEX: 70686f746f636f70
 Check 'photocop': TRUE
 PRE-INSERT: nb_f=5, price=0.1, session=50
+[2026-02-01 08:45:54] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":10,"contact":"manutest","document":"LiasseIran23012026-1.pdf","copies":1,"total_pages":10,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":0,"thumbnail_url":"","timestamp":"2026-02-01T08:45:33.000Z","job_id":"7","session_id":51,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+PRE-INSERT: nb_f=5, price=0.1, session=51
+[2026-02-01 09:22:49] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":10,"contact":"manutest","document":"LiasseIran23012026-1.pdf","copies":1,"total_pages":10,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":0,"thumbnail_url":"","timestamp":"2026-02-01T09:21:18.000Z","job_id":"10","session_id":"52","simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=5, price=0.1, session=52
+[2026-02-01 09:47:10] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":10,"contact":"manutest","document":"LiasseIran23012026-1.pdf","copies":10,"total_pages":100,"duplex":true,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0.50793689727783,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/12\/page_0.png","timestamp":"2026-02-01T09:45:57.000Z","job_id":"12","session_id":52,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=50, price=1, session=52
+[2026-02-01 09:49:45] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":18,"contact":"manutest","document":"C:\\Users\\Dupli\\AppData\\Local\\Temp\\digest_2025_week_49_imposed.pdf_1769939337911.pdf","copies":10,"total_pages":180,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":0.010398789644241,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/15\/page_0.png","timestamp":"2026-02-01T09:48:58.000Z","job_id":"15","session_id":52,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=90, price=1.83, session=52
+[2026-02-01 09:49:47] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":24,"contact":"manutest","document":"Constellations souterraines.pdf","copies":10,"total_pages":240,"duplex":true,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0.075633087158203,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/14\/page_0.png","timestamp":"2026-02-01T09:48:32.000Z","job_id":"14","session_id":52,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=120, price=2.4, session=52
+[2026-02-01 09:49:48] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":10,"contact":"manutest","document":"LiasseIran23012026-1.pdf","copies":10,"total_pages":100,"duplex":true,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0.50793689727783,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/13\/page_0.png","timestamp":"2026-02-01T09:48:05.000Z","job_id":"13","session_id":52,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=50, price=1, session=52
+[2026-02-01 10:13:06] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":18,"contact":"quinoa","document":"C:\\Users\\Dupli\\AppData\\Local\\Temp\\Un_autre_fin_de_ce_monde_est_possible__La_solidari_1769940695078.pdf","copies":2,"total_pages":36,"duplex":true,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0.13048163414001,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/16\/page_0.png","timestamp":"2026-02-01T10:11:35.000Z","job_id":"16","session_id":53,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=18, price=0.36, session=53
+[2026-02-01 10:30:53] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":18,"contact":"manu test","document":"Un_autre_fin_de_ce_monde_est_possible__La_solidari_1769940908806.pdf","copies":2,"total_pages":36,"duplex":true,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0.25859869003296,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/17\/page_0.png","timestamp":"2026-02-01T10:15:09.000Z","job_id":"17","session_id":54,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=18, price=0.36, session=54
+[2026-02-01 10:30:58] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":10,"contact":"manu test","document":"LiasseIran23012026-1.pdf","copies":1,"total_pages":10,"duplex":true,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0.50793689727783,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/18\/page_0.png","timestamp":"2026-02-01T10:28:11.000Z","job_id":"18","session_id":54,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=5, price=0.1, session=54
+[2026-02-01 10:31:09] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":10,"contact":"manu test","document":"LiasseIran23012026-1.pdf","copies":1,"total_pages":10,"duplex":true,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0.5,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/18\/page_0.png","timestamp":1769941869667,"job_id":"18","session_id":54,"simulate":true}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+[2026-02-01 10:53:02] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":10,"contact":"manu test","document":"LiasseIran23012026-1.pdf","copies":10,"total_pages":100,"duplex":true,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0.50793689727783,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/19\/page_0.png","timestamp":"2026-02-01T10:52:31.000Z","job_id":"19","session_id":54,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=50, price=1, session=54
+[2026-02-01 10:55:45] [PAYLOAD] {"printerName":"duplicopieur","pages":5,"contact":"manu test","document":"LiasseIran23012026-1.pdf","copies":100,"total_pages":500,"duplex":false,"color_mode":"Monochrome","paper_size":"A3","fill_rate":0.5069503784179701,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/20\/page_0.png","timestamp":"2026-02-01T10:55:00.000Z","job_id":"20","session_id":54,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='duplicopieur', Type='dupli'
+HEX: 6475706c69
+Check 'photocop': FALSE
+STAGING DUPLI: price=13, session=54
+[2026-02-01 10:55:56] [PAYLOAD] {"printerName":"duplicopieur","pages":5,"contact":"manu test","document":"LiasseIran23012026-1.pdf","copies":100,"total_pages":500,"duplex":false,"color_mode":"Monochrome","paper_size":"A3","fill_rate":0.22781831741333,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/21\/page_0.png","timestamp":"2026-02-01T10:55:12.000Z","job_id":"21","session_id":54,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='duplicopieur', Type='dupli'
+HEX: 6475706c69
+Check 'photocop': FALSE
+STAGING DUPLI: price=13, session=54
+[2026-02-01 11:05:18] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":28,"contact":"manu test","document":"sur-le-fil-TEST-manquedeschoses-A3.pdf","copies":1,"total_pages":28,"duplex":true,"color_mode":"Monochrome","paper_size":"A3","fill_rate":0.072340683937073,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/23\/page_0.png","timestamp":"2026-02-01T11:03:47.000Z","job_id":"23","session_id":54,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=14, price=0.56, session=54
+[2026-02-01 11:05:32] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":28,"contact":"manu test","document":"sur-le-fil-TEST-manquedeschoses-A3.pdf","copies":1,"total_pages":28,"duplex":true,"color_mode":"Monochrome","paper_size":"A3","fill_rate":0.072340683937073,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/22\/page_0.png","timestamp":"2026-02-01T11:02:46.000Z","job_id":"22","session_id":54,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=14, price=0.56, session=54
+[2026-02-01 11:11:15] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":48,"contact":"manu test","document":"Constellations souterraines.pdf","copies":1,"total_pages":48,"duplex":true,"color_mode":"Monochrome","paper_size":"A3","fill_rate":0.018013523817062,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/24\/page_0.png","timestamp":"2026-02-01T11:10:29.000Z","job_id":"24","session_id":54,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron/duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=24, price=0.96, session=54
