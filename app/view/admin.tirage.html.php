@@ -23,6 +23,46 @@ function getTableForMachine($machine)
   <div class="col-md-10 col-md-offset-1">
     <h1><?php _e('admin.print_management'); ?></h1>
 
+    <div class="well">
+      <form class="form-inline" method="get">
+        <input type="hidden" name="admin" value="">
+        <input type="hidden" name="tirages" value="">
+        
+        <div class="form-group">
+          <label for="search">Rechercher un contact :</label>
+          <input type="text" name="search" id="search" class="form-control" value="<?= htmlspecialchars($_GET['search'] ?? '') ?>" placeholder="Nom du contact...">
+        </div>
+        
+        <div class="form-group" style="margin-left: 10px;">
+          <label for="paye">Statut :</label>
+          <select name="paye" id="paye" class="form-control">
+            <option value="non" <?= ($_GET['paye'] ?? 'non') === 'non' ? 'selected' : '' ?>>Non-payés</option>
+            <option value="deja_paye" <?= ($_GET['paye'] ?? '') === 'deja_paye' ? 'selected' : '' ?>>Déjà payés</option>
+            <option value="tous" <?= ($_GET['paye'] ?? '') === 'tous' ? 'selected' : '' ?>>Tous</option>
+          </select>
+        </div>
+        
+        <div class="form-group" style="margin-left: 10px;">
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" name="order" value="1" <?= isset($_GET['order']) ? 'checked' : '' ?>> Trier par prix
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-left: 20px;">
+          <div class="checkbox">
+            <label>
+              <input type="checkbox" id="selectAllGlobal" onchange="toggleAllGlobal(this.checked)"> <strong>Tout sélectionner</strong>
+            </label>
+          </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="margin-left: 10px;"><i class="fa fa-search"></i> Filtrer</button>
+        <a href="?admin&tirages" class="btn btn-default" style="margin-left: 5px;">Réinitialiser</a>
+      </form>
+    </div>
+
     <h4><?= $phrase ?></h4>
 
     <?php if (isset($delete_success)): ?>
@@ -231,10 +271,16 @@ function getTableForMachine($machine)
         <?php if ($pagination && $pagination['total_pages'] > 1): ?>
           <div class="text-center">
             <ul class="pagination">
+              <?php
+              $baseUrl = "?admin&tirages";
+              if (isset($_GET['order'])) $baseUrl .= "&order";
+              $baseUrl .= "&paye=" . urlencode($_GET['paye'] ?? 'non');
+              if (!empty($_GET['search'])) $baseUrl .= "&search=" . urlencode($_GET['search']);
+              $pageVar = "&page_" . strtolower(str_replace(' ', '_', $machine)) . "=";
+              ?>
+
               <?php if ($pagination['current_page'] > 1): ?>
-                <li><a
-                    href="?admin&tirages<?= isset($_GET['order']) ? '&order' : '' ?><?= isset($_GET['paye']) ? '&paye' : '' ?>&page_<?= strtolower(str_replace(' ', '_', $machine)) ?>=<?= $pagination['current_page'] - 1 ?>">&laquo;
-                    Précédent</a></li>
+                <li><a href="<?= $baseUrl . $pageVar . ($pagination['current_page'] - 1) ?>">&laquo; Précédent</a></li>
               <?php endif; ?>
 
               <?php
@@ -243,22 +289,17 @@ function getTableForMachine($machine)
 
               for ($i = $start_page; $i <= $end_page; $i++): ?>
                 <li class="<?= $i == $pagination['current_page'] ? 'active' : '' ?>">
-                  <a
-                    href="?admin&tirages<?= isset($_GET['order']) ? '&order' : '' ?><?= isset($_GET['paye']) ? '&paye' : '' ?>&page_<?= strtolower(str_replace(' ', '_', $machine)) ?>=<?= $i ?>"><?= $i ?></a>
+                  <a href="<?= $baseUrl . $pageVar . $i ?>"><?= $i ?></a>
                 </li>
               <?php endfor; ?>
 
               <?php if ($pagination['current_page'] < $pagination['total_pages']): ?>
-                <li><a
-                    href="?admin&tirages<?= isset($_GET['order']) ? '&order' : '' ?><?= isset($_GET['paye']) ? '&paye' : '' ?>&page_<?= strtolower(str_replace(' ', '_', $machine)) ?>=<?= $pagination['current_page'] + 1 ?>">Suivant
-                    &raquo;</a></li>
+                <li><a href="<?= $baseUrl . $pageVar . ($pagination['current_page'] + 1) ?>">Suivant &raquo;</a></li>
               <?php endif; ?>
 
               <?php if ($pagination['total_pages'] > 5 && $pagination['current_page'] < $pagination['total_pages'] - 2): ?>
                 <li class="disabled"><span>...</span></li>
-                <li><a
-                    href="?admin&tirages<?= isset($_GET['order']) ? '&order' : '' ?><?= isset($_GET['paye']) ? '&paye' : '' ?>&page_<?= strtolower(str_replace(' ', '_', $machine)) ?>=<?= $pagination['total_pages'] ?>"><?= $pagination['total_pages'] ?></a>
-                </li>
+                <li><a href="<?= $baseUrl . $pageVar . $pagination['total_pages'] ?>"><?= $pagination['total_pages'] ?></a></li>
               <?php endif; ?>
             </ul>
             <p class="text-muted">Page <?= $pagination['current_page'] ?> sur <?= $pagination['total_pages'] ?>
@@ -336,10 +377,13 @@ function getTableForMachine($machine)
 
       // Préserver les paramètres importants
       if (urlParams.has('paye')) {
-        actionParams.push('paye');
+        actionParams.push('paye=' + encodeURIComponent(urlParams.get('paye')));
       }
       if (urlParams.has('order')) {
         actionParams.push('order');
+      }
+      if (urlParams.has('search')) {
+        actionParams.push('search=' + encodeURIComponent(urlParams.get('search')));
       }
 
       return '?' + actionParams.join('&');
@@ -582,8 +626,44 @@ function getTableForMachine($machine)
       });
     }
 
-    // Écouter les changements sur les checkboxes individuelles pour mettre à jour la checkbox du groupe
+    // Fonction pour sélectionner/désélectionner absolument tout sur la page
+    function toggleAllGlobal(checked) {
+      // Sélectionner toutes les checkboxes de tirages individuels
+      const individualCheckboxes = document.querySelectorAll('input[name="chkbox[]"]');
+      individualCheckboxes.forEach(cb => {
+        cb.checked = checked;
+      });
+
+      // Sélectionner toutes les checkboxes de groupe
+      const groupCheckboxes = document.querySelectorAll('input.group-checkbox');
+      groupCheckboxes.forEach(cb => {
+        cb.checked = checked;
+        cb.indeterminate = false;
+      });
+    }
+
+    // Écouter les changements sur les checkboxes individuelles pour mettre à jour la checkbox du groupe et la globale
     document.addEventListener('DOMContentLoaded', function () {
+      const globalCheckbox = document.getElementById('selectAllGlobal');
+
+      // Fonction pour mettre à jour l'état de la checkbox globale
+      function updateGlobalCheckboxStatus() {
+        if (!globalCheckbox) return;
+
+        const allCheckboxes = document.querySelectorAll('input[name="chkbox[]"]');
+        if (allCheckboxes.length === 0) return;
+
+        const checkedCount = Array.from(allCheckboxes).filter(cb => cb.checked).length;
+
+        globalCheckbox.checked = checkedCount === allCheckboxes.length;
+        globalCheckbox.indeterminate = checkedCount > 0 && checkedCount < allCheckboxes.length;
+      }
+
+      // Ajouter des écouteurs sur toutes les checkboxes individuelles
+      const allCheckboxes = document.querySelectorAll('input[name="chkbox[]"], input.group-checkbox');
+      allCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateGlobalCheckboxStatus);
+      });
       // Ajouter des écouteurs sur toutes les checkboxes de groupe
       const groupCheckboxes = document.querySelectorAll('input.group-member-checkbox');
       groupCheckboxes.forEach(checkbox => {
