@@ -153,7 +153,7 @@
                             <?php if (isset($from_lib_file)): ?>
                                 <div class="text-end mb-2">
                                     <a href="?bibliotheque" class="btn btn-outline-primary btn-sm">
-                                        <i class="fa fa-book"></i> Ouvrir la bibliothèque
+                                        <i class="fa fa-book"></i> <?php _e('imposition_brochure.open_library'); ?>
                                     </a>
                                 </div>
                             <?php endif; ?>
@@ -188,7 +188,7 @@
             <!-- Bouton retour -->
             <div class="text-center" style="margin-top: 20px;">
                 <a href="?accueil" class="btn btn-default">
-                    <i class="fa fa-home"></i> Retour à l'accueil
+                    <i class="fa fa-home"></i> <?php _e('accueil.back_to_home'); ?>
                 </a>
             </div>
         </div>

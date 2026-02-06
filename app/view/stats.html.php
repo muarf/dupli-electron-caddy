@@ -11,10 +11,10 @@
         $stats_text = str_replace('{nb_t_par_mois}', '<strong>' . ($stats['nb_t_par_mois'] ?? 0) . ' ' . __('stats.printings') . '</strong>', $stats_text);
         $stats_text = str_replace('{nbf_par_mois}', '<strong>' . ceil($stats['nbf_par_mois'] ?? 0) . ' ' . __('stats.sheets') . '</strong>', $stats_text);
         $stats_text = str_replace('{nb_moy_par_mois}', '<strong>' . ($stats['nb_moy_par_mois'] ?? 0) . ' ' . __('stats.copies') . '</strong>', $stats_text);
-        $stats_text = str_replace('{ca}', round($stats['ca'] ?? 0) . ' euros', $stats_text);
+        $stats_text = str_replace('{ca}', round($stats['ca'] ?? 0) . ' ' . __('stats.euros'), $stats_text);
         $stats_text = str_replace('{doit}', '<strong><font style="color:red;">' . round($stats['doit'] ?? 0) . ' ' . __('stats.euros') . '</font></strong>', $stats_text);
-        $stats_text = str_replace('{ca2}', round($stats['ca2'] ?? 0) . ' euros', $stats_text);
-        $stats_text = str_replace('{ca1}', round($stats['ca1'] ?? 0) . ' euros', $stats_text);
+        $stats_text = str_replace('{ca2}', round($stats['ca2'] ?? 0) . ' ' . __('stats.euros'), $stats_text);
+        $stats_text = str_replace('{ca1}', round($stats['ca1'] ?? 0) . ' ' . __('stats.euros'), $stats_text);
         $stats_text = str_replace('{benf}', ($stats['benf'] ?? 0) . '€', $stats_text);
         
         echo $stats_text;
@@ -82,7 +82,7 @@
             </tbody>
           </table>
           <?php $iii = 1;?>
-          <nav aria-label="Navigation des pages">
+          <nav aria-label="<?php echo __('common.navigation'); ?>">
             <ul class="pagination pagination-sm">
             <?php while($iii < ($stat['duplicopieurs'][$machine_name]['nb_page'] ?? 0)) { ?>
               <li><a href="?stats&<?=$page_param?>=<?= $iii?>"><?= $iii?></a></li>
@@ -177,7 +177,7 @@
             </tbody>
           </table>
           <?php $iii = 1;?>
-          <nav aria-label="Navigation des pages">
+          <nav aria-label="<?php echo __('common.navigation'); ?>">
             <ul class="pagination pagination-sm">
             <?php while($iii < ($stat['photocopiers'][$photocop_name]['nb_page'] ?? 0)) { ?>
               <li><a href="?stats&<?=$page_param?>=<?= $iii?>"><?= $iii?></a></li>

@@ -11,20 +11,20 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
                 <h4 class="modal-title">
-                    <i class="fa fa-print"></i> Impression détectée : <span id="modal-doc"></span>
+                    <i class="fa fa-print"></i> <?php _e('session_modal.title'); ?> <span id="modal-doc"></span>
                 </h4>
             </div>
             <div class="modal-body">
-                <p class="text-muted">Assigner cette impression à :</p>
+                <p class="text-muted"><?php _e('session_modal.assign_to'); ?></p>
                 
                 <!-- Liste des sessions existantes -->
                 <div id="existing-sessions" style="margin-bottom: 20px;">
-                    <h5>Sessions actives</h5>
+                    <h5><?php _e('session_modal.active_sessions'); ?></h5>
                     <div class="list-group" id="session-list">
                         <!-- Généré dynamiquement par JS -->
                     </div>
                     <p class="text-muted small" id="no-sessions-msg" style="display: none;">
-                        <em>Aucune session active pour le moment</em>
+                        <em><?php _e('session_modal.no_active_sessions'); ?></em>
                     </p>
                 </div>
                 
@@ -32,32 +32,32 @@
                 
                 <!-- Ou créer nouvelle session -->
                 <div class="new-session-form">
-                    <h5>Ou créer une nouvelle session :</h5>
+                    <h5><?php _e('session_modal.create_new'); ?></h5>
                     <div class="form-group">
-                        <label for="new-session-contact">Contact <span class="text-danger">*</span></label>
+                        <label for="new-session-contact"><?php _e('session_modal.contact'); ?> <span class="text-danger">*</span></label>
                         <input type="text" 
                                id="new-session-contact" 
                                class="form-control" 
-                               placeholder="Nom ou pseudo du contact"
+                               placeholder="<?php echo __('session_modal.contact_placeholder', [], false); ?>"
                                required>
                     </div>
                     <div class="form-group">
-                        <label for="new-session-name">Nom de session (optionnel)</label>
+                        <label for="new-session-name"><?php _e('session_modal.session_name'); ?></label>
                         <input type="text" 
                                id="new-session-name" 
                                class="form-control" 
-                               placeholder="Ex: Formation Matin, Commande Client A">
-                        <p class="help-block small">Un nom descriptif pour identifier cette session</p>
+                               placeholder="<?php echo __('session_modal.session_name_placeholder', [], false); ?>">
+                        <p class="help-block small"><?php _e('session_modal.session_name_help'); ?></p>
                     </div>
                 </div>
             </div>
             
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">
-                    <i class="fa fa-times"></i> Ignorer cette impression
+                    <i class="fa fa-times"></i> <?php _e('session_modal.ignore_job'); ?>
                 </button>
                 <button type="button" class="btn btn-primary">
-                    <i class="fa fa-check"></i> Créer et assigner
+                    <i class="fa fa-check"></i> <?php _e('session_modal.create_assign'); ?>
                 </button>
             </div>
         </div>

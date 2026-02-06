@@ -539,7 +539,7 @@
                 } else {
                     console.error('Erreur serveur:', data.error);
                     const grid = document.getElementById('fileGrid');
-                    grid.innerHTML = '<div class="col-12"><div class="alert alert-danger text-center"><i class="fa fa-exclamation-triangle"></i> Erreur lors du chargement: ' + (data.error || 'Erreur inconnue') + '</div></div>';
+                    grid.innerHTML = '<div class="col-12"><div class="alert alert-danger text-center"><i class="fa fa-exclamation-triangle"></i> <?php echo __('admin_printers.error_loading'); ?> : ' + (data.error || '<?php echo __('admin_printers.unknown_error'); ?>') + '</div></div>';
                 }
             })
             .catch(error => {
@@ -550,7 +550,7 @@
 
                 console.error('Erreur lors du chargement des fichiers:', error);
                 const grid = document.getElementById('fileGrid');
-                grid.innerHTML = '<div class="col-12"><div class="alert alert-danger text-center"><i class="fa fa-exclamation-triangle"></i> Erreur de connexion: ' + error.message + '</div></div>';
+                grid.innerHTML = '<div class="col-12"><div class="alert alert-danger text-center"><i class="fa fa-exclamation-triangle"></i> <?php echo __('tirage_multimachines.communication_error'); ?> : ' + error.message + '</div></div>';
             });
     }
 
@@ -846,7 +846,7 @@
 
                     if (filesToIndex.length > 100) {
                         const tr = document.createElement('tr');
-                        tr.innerHTML = `<td colspan="3" class="text-center text-muted">... et ${filesToIndex.length - 100} autres fichiers</td>`;
+                        tr.innerHTML = `<td colspan="3" class="text-center text-muted"><?php echo __('library.and_others'); ?>`.replace(':count', filesToIndex.length - 100);
                         tbody.appendChild(tr);
                     }
                 } else {
@@ -1045,13 +1045,13 @@
 
         menu.innerHTML = `
         <a class="dropdown-item" href="?imposition_brochure&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-book" style="color: #28a745; margin-right: 8px;"></i> Imposition Brochure
+            <i class="fa fa-book" style="color: #28a745; margin-right: 8px;"></i> <?php echo __('header.imposition_brochure'); ?>
         </a>
         <a class="dropdown-item" href="?imposition_livre&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-book" style="color: #007bff; margin-right: 8px;"></i> Imposition Livre
+            <i class="fa fa-book" style="color: #007bff; margin-right: 8px;"></i> <?php echo __('header.imposition_book'); ?>
         </a>
         <a class="dropdown-item" href="?imposition_tracts&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-copy" style="color: #ffd93d; margin-right: 8px;"></i> Imposition Tracts
+            <i class="fa fa-copy" style="color: #ffd93d; margin-right: 8px;"></i> <?php echo __('header.impose_tracts'); ?>
         </a>
     `;
 
@@ -1102,25 +1102,25 @@
         let items = '';
         if (fileType === 'pdf') {
             items += `<a class="dropdown-item" href="?pdf_to_png&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-file-image-o" style="margin-right: 8px;"></i> PDF vers PNG
+            <i class="fa fa-file-image-o" style="margin-right: 8px;"></i> <?php echo __('header.pdf_to_images'); ?>
         </a>`;
         }
         if (fileType === 'png') {
             items += `<a class="dropdown-item" href="?png_to_pdf&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-file-pdf-o" style="margin-right: 8px;"></i> PNG vers PDF
+            <i class="fa fa-file-pdf-o" style="margin-right: 8px;"></i> <?php echo __('header.images_to_pdf'); ?>
         </a>`;
         }
         if (fileType === 'pdf' || fileType === 'png') {
             items += `<a class="dropdown-item" href="?image_processor&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-sliders" style="margin-right: 8px;"></i> Bitmap/Luminosité
+            <i class="fa fa-sliders" style="margin-right: 8px;"></i> <?php echo __('header.image_processor'); ?>
         </a>`;
             items += `<a class="dropdown-item" href="javascript:void(0)" onclick="renameFile(${fileId})" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-font" style="margin-right: 8px;"></i> Renommer
+            <i class="fa fa-font" style="margin-right: 8px;"></i> <?php echo __('library.rename'); ?>
         </a>`;
         }
         if (fileType === 'png') {
             items += `<a class="dropdown-item" href="?riso_separator&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-palette" style="margin-right: 8px;"></i> Séparer les couleurs
+            <i class="fa fa-palette" style="margin-right: 8px;"></i> <?php echo __('header.riso_separator'); ?>
         </a>`;
         }
 
@@ -1201,7 +1201,7 @@
         pdfDoc = null;
 
         const fileUrl = '?get_bibliotheque_file&id=' + encodeURIComponent(fileId);
-        document.getElementById('pdfViewerTitle').textContent = 'Visualisation PDF';
+        document.getElementById('pdfViewerTitle').textContent = '<?php echo __('library.visualisation_pdf'); ?>';
 
         // Ajouter les boutons d'action pour PDF
         const actionsHtml = `

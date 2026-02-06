@@ -950,16 +950,16 @@
                             <div class="tambour-item" style="margin-bottom: 10px;">
                                 <div class="row">
                                     <div class="col-md-4">
-                                        <label>Nom du tambour :</label>
-                                        <input type="text" class="form-control" name="tambours[]" placeholder="ex: tambour_bleu" required>
+                                        <label><?php echo __('setup.drum_name'); ?></label>
+                                        <input type="text" class="form-control" name="tambours[]" placeholder="<?php echo __('setup.drum_name_placeholder'); ?>" required>
                                     </div>
                                     <div class="col-md-3">
-                                        <label>Prix unité (€) :</label>
-                                        <input type="number" class="form-control" name="prix_tambour_unite[]" placeholder="Prix unité" step="0.001" min="0" required>
+                                        <label><?php echo __('setup.unit_price'); ?></label>
+                                        <input type="number" class="form-control" name="prix_tambour_unite[]" placeholder="<?php echo __('setup.unit_price'); ?>" step="0.001" min="0" required>
                                     </div>
                                     <div class="col-md-3">
-                                        <label>Prix pack (€) :</label>
-                                        <input type="number" class="form-control" name="prix_tambour_pack[]" placeholder="Prix pack" step="0.01" min="0" value="11">
+                                        <label><?php echo __('setup.pack_price'); ?></label>
+                                        <input type="number" class="form-control" name="prix_tambour_pack[]" placeholder="<?php echo __('setup.pack_price'); ?>" step="0.01" min="0" value="11">
                                     </div>
                                     <div class="col-md-2">
                                         <label>&nbsp;</label>

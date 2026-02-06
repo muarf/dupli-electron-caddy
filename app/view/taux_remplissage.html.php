@@ -280,7 +280,7 @@
             <!-- Bouton retour -->
             <div class="text-center" style="margin-top: 20px;">
                 <a href="?accueil" class="btn btn-default">
-                    <i class="fa fa-home"></i> Retour à l'accueil
+                    <i class="fa fa-home"></i> <?php _e('accueil.back_to_home'); ?>
                 </a>
             </div>
         </div>

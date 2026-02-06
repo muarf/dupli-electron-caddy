@@ -155,7 +155,7 @@
                 <?php if (!$result['is_pdf'] && isset($result['preview_url'])): ?>
                     <h4><?php _e('image_processor.result_preview'); ?></h4>
                     <div class="preview-container">
-                        <img src="<?= htmlspecialchars($result['preview_url']) ?>" alt="Résultat" class="preview-canvas"
+                        <img src="<?= htmlspecialchars($result['preview_url']) ?>" alt="<?php echo __('common.completed'); ?>" class="preview-canvas"
                             style="max-width: 600px;">
                     </div>
                 <?php endif; ?>
@@ -176,7 +176,7 @@
         <?php if (isset($from_lib_file)): ?>
             <div class="text-end mb-2">
                 <a href="?bibliotheque" class="btn btn-outline-primary btn-sm">
-                    <i class="fa fa-book"></i> Ouvrir la bibliothèque
+                    <i class="fa fa-book"></i> <?php _e('imposition_brochure.open_library'); ?>
                 </a>
             </div>
         <?php endif; ?>
@@ -1071,7 +1071,7 @@
                             <h3 class="panel-title"><i class="fa fa-check-circle"></i> <?php _e('image_processor.processing_success_msg'); ?></h3>
                         </div>
                         <div class="panel-body">
-                            <p>${ "<?php echo __('image_processor.file_processed_success', ['filename' => '']); ?>" .replace(':filename', `<strong>${data.filename || 'traitée'}</strong>`)}</p>
+                            <p>${ "<?php echo __('image_processor.file_processed_success', ['filename' => '']); ?>" .replace(':filename', `<strong>${data.filename || "<?php echo __('common.completed'); ?>"}</strong>`)}</p>
                             <div class="btn-group">
                                 <a href="${data.download_url}" class="btn btn-primary btn-lg" download>
                                     <i class="fa fa-download"></i> <?php _e('image_processor.download_file'); ?>

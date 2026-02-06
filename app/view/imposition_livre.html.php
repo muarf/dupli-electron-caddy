@@ -258,7 +258,7 @@
                                 <i class="fa fa-download"></i> <?php _e('imposition_livre.download_pdf'); ?>
                             </a>
                             <button
-                                onclick="window.openPrintModal('<?= $current_base_url . $download_url ?>', null, 'pdf',  'FIXME_EMPTY_KEY' )"
+                                onclick="window.openPrintModal('<?= $current_base_url . $download_url ?>', null, 'pdf',  '<?php echo __('imposition_livre.print_file_name'); ?>' )"
                                 class="btn btn-impose" style="margin-left: 10px;">
                                 <i class="fa fa-print"></i> <?php _e('imposition_livre.print'); ?>
                             </button>
@@ -485,7 +485,7 @@
                 // Pré-remplissage si fichier bibliothèque
                 fileUploadArea.classList.add('file-selected');
                 uploadText.innerHTML = '<i class="fa fa-file-pdf-o"></i> ' + <?= json_encode($from_lib_file['filename']) ?>;
-                uploadSubtext.textContent =  'FIXME_EMPTY_KEY' ;
+                uploadSubtext.textContent =  "<?php echo __('common.file_selected'); ?>" ;
                 document.getElementById('pdf').removeAttribute('required');
             <?php endif; ?>
 
@@ -498,7 +498,7 @@
                     const fileName = this.files[0].name;
                     fileUploadArea.classList.add('file-selected');
                     uploadText.innerHTML = '<i class="fa fa-file-pdf-o"></i> ' + fileName;
-                    uploadSubtext.textContent =  'FIXME_EMPTY_KEY' ;
+                    uploadSubtext.textContent =  "<?php echo __('common.file_selected'); ?>" ;
                 }
             });
 
@@ -523,9 +523,9 @@
                         fileInput.files = files;
                         fileUploadArea.classList.add('file-selected');
                         uploadText.innerHTML = '<i class="fa fa-file-pdf-o"></i> ' + file.name;
-                        uploadSubtext.textContent =  'FIXME_EMPTY_KEY' ;
+                        uploadSubtext.textContent =  "<?php echo __('common.file_selected'); ?>" ;
                     } else {
-                        showAppModal({ message:  'FIXME_EMPTY_KEY' , type: 'warning' });
+                        showAppModal({ message:  "<?php echo __('imposition.select_pdf_error'); ?>" , type: 'warning' });
                     }
                 }
             });
