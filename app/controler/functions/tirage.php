@@ -75,7 +75,7 @@ function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb
 /**
  * Récupérer les derniers tirages avec pagination
  */
-function last($machine, $sql, $page = 1, $per_page = 20)
+function last($machine, $sql, $page = 1, $per_page = 20, $params = [])
 {
     $con = pdo_connect();
     $db = pdo_connect();
@@ -122,14 +122,16 @@ function last($machine, $sql, $page = 1, $per_page = 20)
             } else {
                 $query = $db->prepare('SELECT * FROM dupli WHERE duplicopieur_id = ? ' . $sql);
             }
-            $query->execute([$duplicopieur_id]);
+            $query->execute(array_merge([$duplicopieur_id], $params));
         } else {
             // Fallback si pas trouvé
-            $query = $db->query('SELECT * FROM dupli ' . $sql);
+            $query = $db->prepare('SELECT * FROM dupli ' . $sql);
+            $query->execute($params);
         }
     } else if ($machine === 'A3' || $machine === 'A4' || $machine === 'dupli') {
         // Pour A3, A4, et dupli (ancien système), utiliser la table dupli sans filtre
-        $query = $db->query('SELECT * FROM dupli ' . $sql);
+        $query = $db->prepare('SELECT * FROM dupli ' . $sql);
+        $query->execute($params);
     } else {
         // Pour les photocopieurs, utiliser la table photocop avec filtre par marque
         if (strpos($sql, 'WHERE') !== false) {
@@ -138,7 +140,7 @@ function last($machine, $sql, $page = 1, $per_page = 20)
         } else {
             $query = $db->prepare('SELECT * FROM photocop WHERE marque = ? ' . $sql);
         }
-        $query->execute(array($machine));
+            $query->execute(array_merge([$machine], $params));
     }
 
     $i = 0;
@@ -186,16 +188,17 @@ function last($machine, $sql, $page = 1, $per_page = 20)
         } else {
             $count_query = $db->prepare('SELECT COUNT(DISTINCT CASE WHEN tirage_global_id IS NOT NULL AND tirage_global_id != "" THEN tirage_global_id ELSE CONCAT("single_", id) END) as total FROM photocop WHERE marque = ? ' . $sql_modified);
         }
-        $count_query->execute(array($machine));
+        $count_query->execute(array_merge([$machine], $params));
     } else {
         // Pour les duplicopieurs - vérifier si la colonne tirage_global_id existe
         try {
             // SQLite compatible
             if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
-                $count_query = $db->query('SELECT COUNT(DISTINCT CASE WHEN tirage_global_id IS NOT NULL AND tirage_global_id != "" THEN tirage_global_id ELSE "single_" || id END) as total FROM dupli ' . $sql);
+                $count_query = $db->prepare('SELECT COUNT(DISTINCT CASE WHEN tirage_global_id IS NOT NULL AND tirage_global_id != "" THEN tirage_global_id ELSE "single_" || id END) as total FROM dupli ' . $sql);
             } else {
-                $count_query = $db->query('SELECT COUNT(DISTINCT CASE WHEN tirage_global_id IS NOT NULL AND tirage_global_id != "" THEN tirage_global_id ELSE CONCAT("single_", id) END) as total FROM dupli ' . $sql);
+                $count_query = $db->prepare('SELECT COUNT(DISTINCT CASE WHEN tirage_global_id IS NOT NULL AND tirage_global_id != "" THEN tirage_global_id ELSE CONCAT("single_", id) END) as total FROM dupli ' . $sql);
             }
+            $count_query->execute($params);
         } catch (Exception $e) {
             // Si la colonne n'existe pas, compter normalement
             $count_query = $db->query('SELECT COUNT(*) as total FROM dupli ' . $sql);
