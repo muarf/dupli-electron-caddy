@@ -36,7 +36,7 @@ class TirageManager {
     /**
      * Obtenir les derniers tirages pour une machine
      */
-    public function getLastTirages($machine, $sql, $page = 1, $limit = 20) {
+    public function getLastTirages($machine, $sql, $page = 1, $limit = 20, $params = []) {
         // Debug: log l'appel
         if ($machine == 'comcolor' && $page == 4) {
             error_log("DEBUG getLastTirages: machine=$machine, page=$page, limit=$limit");
@@ -45,14 +45,14 @@ class TirageManager {
         // Déterminer si c'est un duplicopieur ou un photocopieur
         if ($this->isDuplicopieur($machine)) {
             // Pour les duplicopieurs, utiliser la table dupli avec le nom spécifique de la machine
-            $result = last($machine, $sql, $page, $limit);
+            $result = last($machine, $sql, $page, $limit, $params);
             if ($machine == 'comcolor' && $page == 4) {
                 error_log("DEBUG getLastTirages: après last(), count=" . count($result));
             }
             return $result;
         } else {
             // Pour les photocopieurs, utiliser la table photocop avec filtre par marque
-            $result = last($machine, $sql, $page, $limit);
+            $result = last($machine, $sql, $page, $limit, $params);
             if ($machine == 'comcolor' && $page == 4) {
                 error_log("DEBUG getLastTirages: après last(), count=" . count($result));
             }
@@ -226,24 +226,47 @@ class TirageManager {
      * Construire la clause SQL selon les paramètres
      */
     public function buildSqlClause() {
-        if(!isset($_GET['order']) && !isset($_GET['paye'])){ 
-            $phrase = 'Voir seulement les <a href="?admin&tirages&paye">nons-payés</a> ou les classer par <a href="?admin&tirages&order">ordre de prix</a>'; 
-            $sql = "ORDER By date DESC, id DESC";
-        }
-        if(!isset($_GET['order']) && isset($_GET['paye'])) {  
-            $phrase = 'Voir tous les <a href="?admin&tirages">derniers tirages</a> ou classer les nons payés par <a href="?admin&tirages&paye&order">ordre de prix</a>'; 
-            $sql = ' WHERE paye = "non" ORDER By date DESC, id DESC';
-        }
-        if(isset($_GET['order']) && !isset($_GET['paye'])){ 
-            $phrase = 'Voir seulement les <a href="?admin&tirages&paye">nons-payés</a>'; 
-            $sql = ' ORDER by prix * 1 DESC, date DESC'; 
-        }
-        if(isset($_GET['order']) && isset($_GET['paye'])){ 
-            $phrase = 'Voir tous les <a href="?admin&tirages">derniers tirages</a>';  
-            $sql = ' WHERE paye = "non" ORDER by prix * 1 DESC, date DESC';
+        $where = [];
+        $params = [];
+        $phrase_parts = [];
+        
+        // Filtrage par statut de paiement
+        $paye_status = $_GET['paye'] ?? 'non';
+        if ($paye_status === 'deja_paye') {
+            $where[] = 'paye = "oui"';
+            $phrase_parts[] = 'payés';
+        } elseif ($paye_status === 'tous') {
+            // Tous les tirages
+            $phrase_parts[] = 'tous';
+        } else {
+            // Par défaut ou explicitement "non"
+            $where[] = 'paye = "non"';
+            $phrase_parts[] = 'non-payés';
         }
         
-        return array('sql' => $sql, 'phrase' => $phrase);
+        // Recherche par contact (Fuzzy simple avec LIKE pour l'instant)
+        if (!empty($_GET['search'])) {
+            $search = $_GET['search'];
+            $where[] = 'contact LIKE ?';
+            $params[] = '%' . $search . '%';
+            $phrase_parts[] = 'recherche : "' . htmlspecialchars($search) . '"';
+        }
+        
+        $sql_where = !empty($where) ? ' WHERE ' . implode(' AND ', $where) : '';
+        
+        // Ordre
+        if (isset($_GET['order'])) {
+            $sql_order = ' ORDER BY prix * 1 DESC, date DESC';
+            $phrase_parts[] = 'triés par prix';
+        } else {
+            $sql_order = ' ORDER BY date DESC, id DESC';
+            $phrase_parts[] = 'les plus récents';
+        }
+        
+        $sql = $sql_where . $sql_order;
+        $phrase = 'Affichage : ' . implode(', ', $phrase_parts);
+        
+        return array('sql' => $sql, 'params' => $params, 'phrase' => $phrase);
     }
     
     /**
@@ -266,7 +289,7 @@ class TirageManager {
             $page_param = 'page_' . strtolower(str_replace(' ', '_', $machine));
             $current_page = isset($_GET[$page_param]) ? intval($_GET[$page_param]) : 1;
             
-            $tirages = $this->getLastTirages($machine, $sqlData['sql'], $current_page, 20);
+            $tirages = $this->getLastTirages($machine, $sqlData['sql'], $current_page, 20, $sqlData['params']);
             
             // Debug: log avant regroupement
             if ($machine == 'comcolor' && $current_page == 4) {
