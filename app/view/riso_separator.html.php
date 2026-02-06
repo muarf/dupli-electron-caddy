@@ -86,7 +86,7 @@
         <?php if (isset($from_lib_file)): ?>
             <div class="text-end mb-2">
                 <a href="?bibliotheque" class="btn btn-outline-primary btn-sm">
-                    <i class="fa fa-book"></i> Ouvrir la bibliothèque
+                    <i class="fa fa-book"></i> <?php _e('imposition_brochure.open_library'); ?>
                 </a>
             </div>
         <?php endif; ?>
@@ -150,7 +150,7 @@
                         </div>
                         <div class="col-md-4">
                             <div class="input-group">
-                                <span class="input-group-addon">Taille</span>
+                                <span class="input-group-addon"><?php _e('common.size'); ?></span>
                                 <input type="number" class="form-control" id="halftoneSize" value="3" min="1" max="10">
                                 <span class="input-group-btn">
                                     <button class="btn btn-info" onclick="applyHalftoneEffect()"><i

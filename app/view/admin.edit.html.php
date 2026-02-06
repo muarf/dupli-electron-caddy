@@ -77,7 +77,7 @@ if(isset($_POST['delete'])){?>
         <div class="row">
             <div class="col-md-12">
                 <a href="?accueil" class="btn btn-success btn-lg btn-block">
-                    <i class="glyphicon glyphicon-home"></i> Retour à l'accueil
+                    <i class="glyphicon glyphicon-home"></i> <?php _e('accueil.back_to_home'); ?>
                 </a>
             </div>
         </div>

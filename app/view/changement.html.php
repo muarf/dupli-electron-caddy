@@ -117,7 +117,7 @@ if(isset($success_message)): ?>
                         <div class="form-group">
                             <div class="col-md-4 col-md-offset-4">
                                 <button type="submit" class="btn btn-success btn-block btn-lg">
-                                    <i class="fa fa-save"></i> Enregistrer le changement
+                                    <i class="fa fa-save"></i> <?php _e('changement.submit_change'); ?>
                                 </button>
                             </div>
                         </div>

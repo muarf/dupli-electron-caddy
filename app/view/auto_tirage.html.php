@@ -1143,8 +1143,8 @@
                     colDetails = `
                     <div style="font-size: 0.9em;">
                         ${job.copies} ex × ${pPerEx} pg.<br>
-                        <small>${job.duplex ? 'R/V' : 'Recto'} - ${job.taille}</small>
-                        ${job.color && job.fill_rate_percent ? '<br><small class="text-muted">Encrage: ' + job.fill_rate_percent + '%</small>' : ''}
+                        <small>${job.duplex ? '<?php echo __('common.duplex'); ?>' : '<?php echo __('common.simplex'); ?>'} - ${job.taille}</small>
+                        ${job.color && job.fill_rate_percent ? '<br><small class="text-muted"><?php echo __('auto_tirage.fill_rate'); ?>: ' + job.fill_rate_percent + '%</small>' : ''}
                     </div>
 
                 `;
@@ -1178,17 +1178,17 @@
                     colDetails = `
                     <div style="min-width: 320px;">
                         <div style="display: flex; align-items: center; white-space: nowrap; margin-bottom: 5px; padding: 4px; background: #fff; border: 1px solid #dee2e6; border-radius: 4px;">
-                            <span class="mr-1" style="font-size: 11px; font-weight:bold;">Tambour:</span>
+                            <span class="mr-1" style="font-size: 11px; font-weight:bold;"><?php echo __('tirage_multimachines.tambour_used'); ?>:</span>
                             ${tambourSelect}
                             
                             <div class="custom-control custom-checkbox mr-3" style="display: inline-flex; align-items: center;">
                                 <input type="checkbox" class="custom-control-input" id="duplex-${index}" ${job.duplex ? 'checked' : ''} onchange="toggleDuplex(${index})">
-                                <label class="custom-control-label" for="duplex-${index}" style="font-size: 11px; padding-top: 2px; margin-bottom: 0;">R/V</label>
+                                <label class="custom-control-label" for="duplex-${index}" style="font-size: 11px; padding-top: 2px; margin-bottom: 0;"><?php echo __('common.duplex'); ?></label>
                             </div>
 
                             <div class="custom-control custom-checkbox" style="display: inline-flex; align-items: center;">
                                 <input type="checkbox" class="custom-control-input" id="paid-details-${index}" ${job.feuilles_payees ? 'checked' : ''} onchange="togglePaid(${index})">
-                                <label class="custom-control-label" for="paid-details-${index}" style="font-size: 11px; padding-top: 2px; margin-bottom: 0;">Papier Payé</label>
+                                <label class="custom-control-label" for="paid-details-${index}" style="font-size: 11px; padding-top: 2px; margin-bottom: 0;"><?php echo __('auto_tirage.paper_paid'); ?></label>
                             </div>
                         </div>
                         
@@ -1196,10 +1196,10 @@
                             <table class="table table-borderless table-sm mb-0" style="font-size: 11px;">
                                 <thead>
                                     <tr class="text-muted text-center" style="line-height: 1;">
-                                        <th class="py-0 px-1 text-left">Compteur</th>
-                                        <th class="py-0 px-1">Avant</th>
-                                        <th class="py-0 px-1">Après</th>
-                                        <th class="py-0 px-1 text-right">Total</th>
+                                        <th class="py-0 px-1 text-left"><?php echo __('admin_machines.counter'); ?></th>
+                                        <th class="py-0 px-1"><?php echo __('common.before'); ?></th>
+                                        <th class="py-0 px-1"><?php echo __('common.after'); ?></th>
+                                        <th class="py-0 px-1 text-right"><?php echo __('common.total'); ?></th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1257,12 +1257,12 @@
                     <div class="d-flex justify-content-center align-items-center gap-2">
                         <button class="btn btn-sm btn-outline-primary shadow-sm mr-1" 
                                 style="border-radius: 50%; width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;" 
-                                onclick="openEditJobModal(${index})" title="Éditer">
+                                onclick="openEditJobModal(${index})" title="<?php echo __('common.edit', [], false); ?>">
                             <i class="fa fa-pencil"></i>
                         </button>
                         <button class="btn btn-sm btn-outline-danger shadow-sm" 
                                 style="border-radius: 50%; width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;" 
-                                onclick="removeJob(${index})" title="Supprimer">
+                                onclick="removeJob(${index})" title="<?php echo __('common.delete', [], false); ?>">
                             <i class="fa fa-trash"></i>
                         </button>
                     </div>
@@ -1416,7 +1416,7 @@
         window.removeJob = async function (index) {
             const job = sessionJobs[index];
             showAppModal({
-                message: 'Supprimer ce job de la liste ?',
+                message: "<?php echo __('common.delete'); ?> ?",
                 confirm: true,
                 type: 'warning'
             }, async (confirmed) => {
@@ -1489,7 +1489,7 @@
             const logContainer = document.getElementById('activity-log');
             logContainer.innerHTML = '';
             // Réinsère "Système prêt"
-            addLog('info', "✅ Système prêt. Lancez une impression...");
+            addLog('info', "✅ <?php echo __('auto_tirage.system_ready'); ?>");
         }
 
         window.toggleLogs = function () {
@@ -1537,7 +1537,7 @@
         };
 
         window.finishSession = async function () {
-            if (sessionJobs.length === 0) return showAppModal({ message: "Aucune impression à valider.", type: "warning" });
+            if (sessionJobs.length === 0) return showAppModal({ message: "<?php echo __('admin_tirage.no_prints_selected'); ?>", type: "warning" });
 
             const form = document.createElement('form');
             form.method = 'POST';
@@ -1812,7 +1812,7 @@
         window.showThumbnailModal = function (url, title) {
             const modal = $('#thumbnail-modal');
             $('#modal-thumbnail-img').attr('src', url);
-            $('#thumbnail-modal-title').text(title || 'Aperçu du document');
+            $('#thumbnail-modal-title').text(title || "<?php echo __('auto_tirage.document_preview'); ?>");
             modal.modal('show');
         };
 
