@@ -262,12 +262,13 @@ function template($template_file, $variables = array())
     if (file_exists($template_file)) {
         include $template_file;
     } else {
-        // Essayer avec un chemin relatif depuis le répertoire courant
-        $relative_path = __DIR__ . '/../../' . $template_file;
-        if (file_exists($relative_path)) {
-            include $relative_path;
+        // Essayer avec un chemin relatif depuis le répertoire de l'application
+        $app_root = dirname(dirname(__DIR__)); // Remonte de functions/functions à app/
+        $absolute_path = $app_root . '/' . ltrim($template_file, './');
+        if (file_exists($absolute_path)) {
+            include $absolute_path;
         } else {
-            throw new Exception("Template file not found: " . $template_file);
+            throw new Exception("Template file not found: " . $template_file . " (tried " . $absolute_path . ")");
         }
     }
     

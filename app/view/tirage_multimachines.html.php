@@ -847,33 +847,32 @@ try {
 
                                 <!-- Champ "As-tu payé" -->
                                 <div class="form-group">
-                                    <label class="col-md-4 control-label" for="payeoui">As-tu payé ?</label>
+                                    <label class="col-md-4 control-label" for="payeoui"><?php _e('tirage_multimachines.have_you_paid'); ?></label>
                                     <div class="col-md-4">
                                         <label class="radio-inline">
                                             <input type="radio" name="paye" value="oui" id="payeoui"
-                                                onchange="updatePaymentAmount()"> Oui
+                                                onchange="updatePaymentAmount()"> <?php _e('tirage_multimachines.yes'); ?>
                                         </label>
                                         <label class="radio-inline">
                                             <input type="radio" name="paye" value="non" id="payenon"
-                                                onchange="updatePaymentAmount()" checked> Non
+                                                onchange="updatePaymentAmount()" checked> <?php _e('tirage_multimachines.no'); ?>
                                         </label>
                                     </div>
                                 </div>
 
                                 <!-- Champ montant -->
                                 <div class="form-group">
-                                    <label class="col-md-4 control-label" for="cb1">Montant payé</label>
+                                    <label class="col-md-4 control-label" for="cb1"><?php _e('tirage_multimachines.amount_paid'); ?></label>
                                     <div class="col-md-4">
                                         <input id="cb1" name="cb" class="form-control input-md" type="number" step="0.01"
                                             min="0" placeholder="0.00">
-                                        <span class="help-block">Montant en euros</span>
+                                        <span class="help-block"><?php _e('tirage_multimachines.amount_in_euros'); ?></span>
                                     </div>
                                 </div>
 
                                 <!-- Champ "Un petit mot" -->
                                 <div class="form-group">
-                                    <label class="col-md-4 control-label" for="mot">Un petit mot, une réclamation, un
-                                        encouragement, une info?</label>
+                                    <label class="col-md-4 control-label" for="mot"><?php _e('tirage_multimachines.message_placeholder'); ?></label>
                                     <div class="col-md-4">
                                         <textarea id="mot" name="mot" class="form-control input-md"></textarea>
                                     </div>
@@ -886,12 +885,12 @@ try {
                                             <div class="col-md-6">
                                                 <button type="button" id="btn-retour" class="btn btn-warning btn-block"
                                                     onclick="returnToForm()">
-                                                    <i class="fa fa-arrow-left"></i> Retour au formulaire
+                                                    <i class="fa fa-arrow-left"></i> <?php _e('tirage_multimachines.back_to_form'); ?>
                                                 </button>
                                             </div>
                                             <div class="col-md-6">
                                                 <button id="singlebutton" name="enregistrer" value="1"
-                                                    class="btn btn-success btn-block">Enregistrer !</button>
+                                                    class="btn btn-success btn-block"><?php _e('tirage_multimachines.save_btn'); ?></button>
                                             </div>
                                         </div>
                                     </div>

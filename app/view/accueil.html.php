@@ -85,9 +85,9 @@
               <div class="form-group">
                 <div class="input-group">
                     
-                  <input type="email" name = "email" class="form-control" placeholder="<?php _e('accueil.email_placeholder', [], false); ?>">
+                  <input type="email" name = "email" class="form-control" placeholder="<?php echo __('accueil.email_placeholder', [], false); ?>">
                   <span class="input-group-btn">
-                    <input class="btn btn-success" type="submit" value="<?php _e('accueil.submit', [], false); ?>">
+                    <input class="btn btn-success" type="submit" value="<?php echo __('accueil.submit', [], false); ?>">
                   </span>
                 </div>
               </div>

@@ -165,48 +165,44 @@ ob_start();
 
                             <!-- Option "Garder la taille originale" -->
                             <div class="form-group">
-                                <label class="col-md-4 control-label">Taille originale</label>
+                                <label class="col-md-4 control-label"><?php _e('imposition_tracts.keep_original'); ?></label>
                                 <div class="col-md-8">
                                     <div class="checkbox">
                                         <label>
                                             <input type="checkbox" name="keep_original_size" id="keep_original_size"
                                                 value="1">
-                                            Ne pas redimensionner (garder les dimensions du fichier source)
+                                            <?php _e('imposition_tracts.keep_original_desc'); ?>
                                         </label>
                                     </div>
-                                    <small class="help-block text-muted">Utile pour les couvertures ou formats
-                                        personnalisés. L'image sera centrée.</small>
+                                    <small class="help-block text-muted"><?php _e('imposition_tracts.keep_original_help'); ?></small>
                                 </div>
                             </div>
 
                             <!-- Option Traits de coupe -->
                             <div class="form-group">
-                                <label class="col-md-4 control-label">Traits de coupe</label>
+                                <label class="col-md-4 control-label"><?php _e('imposition_tracts.crop_marks'); ?></label>
                                 <div class="col-md-8">
                                     <div class="checkbox">
                                         <label>
                                             <input type="checkbox" name="draw_crop_marks" id="draw_crop_marks"
                                                 value="1">
-                                            Afficher les traits de coupe
+                                            <?php _e('imposition_tracts.show_crop_marks'); ?>
                                         </label>
                                     </div>
-                                    <small class="help-block text-muted">Ajoute des traits de coupe autour de chaque
-                                        pose.</small>
+                                    <small class="help-block text-muted"><?php _e('imposition_tracts.crop_marks_desc'); ?></small>
 
                                     <!-- Options détaillées pour les traits de coupe (caché par défaut) -->
                                     <div id="cropMarksOptions"
                                         style="display: none; margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 6px;">
                                         <div class="row">
                                             <div class="col-md-6">
-                                                <label for="crop_marks_length" style="font-weight: normal;">Longueur
-                                                    (mm)</label>
+                                                <label for="crop_marks_length" style="font-weight: normal;"><?php _e('imposition_tracts.length_mm'); ?></label>
                                                 <input type="number" step="0.5" name="crop_marks_length"
                                                     id="crop_marks_length" class="form-control" value="10"
                                                     style="height: 34px !important; padding: 6px 12px !important;">
                                             </div>
                                             <div class="col-md-6">
-                                                <label for="crop_marks_width" style="font-weight: normal;">Épaisseur
-                                                    (mm)</label>
+                                                <label for="crop_marks_width" style="font-weight: normal;"><?php _e('imposition_tracts.width_mm'); ?></label>
                                                 <input type="number" step="0.1" name="crop_marks_width"
                                                     id="crop_marks_width" class="form-control" value="0.5"
                                                     style="height: 34px !important; padding: 6px 12px !important;">
@@ -218,26 +214,24 @@ ob_start();
 
                             <!-- Format de sortie -->
                             <div class="form-group">
-                                <label class="col-md-4 control-label" for="output_format">Format de sortie</label>
+                                <label class="col-md-4 control-label" for="output_format"><?php _e('imposition_tracts.output_format'); ?></label>
                                 <div class="col-md-8">
                                     <select name="output_format" id="output_format" class="form-control">
                                         <option value="A3" selected>A3 (420×297 mm / 297×420 mm)</option>
                                         <option value="A4">A4 (210×297 mm / 297×210 mm)</option>
                                     </select>
-                                    <small class="help-block text-muted">Choisissez le format de la feuille
-                                        d'impression</small>
+                                    <small class="help-block text-muted"><?php _e('imposition_brochure.choose_format_help'); ?></small>
                                 </div>
                             </div>
 
                             <!-- Orientation de la feuille -->
                             <div class="form-group">
-                                <label class="col-md-4 control-label" for="orientation">Orientation de la
-                                    feuille</label>
+                                <label class="col-md-4 control-label" for="orientation"><?php _e('imposition_tracts.sheet_orientation'); ?></label>
                                 <div class="col-md-8">
                                     <select name="orientation" id="orientation" class="form-control">
-                                        <option value="auto">Automatique (recommandé)</option>
-                                        <option value="portrait">Portrait</option>
-                                        <option value="landscape">Paysage</option>
+                                        <option value="auto"><?php _e('imposition_tracts.auto_recommended'); ?></option>
+                                        <option value="portrait"><?php _e('imposition_tracts.portrait'); ?></option>
+                                        <option value="landscape"><?php _e('imposition_tracts.landscape'); ?></option>
                                     </select>
                                     <small class="help-block text-muted">Choisissez l'orientation de la feuille pour
                                         l'impression</small>
@@ -264,8 +258,8 @@ ob_start();
                                     <select name="cut_margin" id="cut_margin" class="form-control" required>
                                         <option value="0"><?php _e('imposition_tracts.no_margin'); ?></option>
                                         <option value="2" selected>2 mm</option>
-                                        <option value="3">3 mm</option>
-                                        <option value="5">5 mm</option>
+                                        <option value="3"><?php _e('imposition_tracts.3mm'); ?></option>
+                                        <option value="5"><?php _e('imposition_tracts.5mm'); ?></option>
                                     </select>
                                 </div>
                             </div>
@@ -547,7 +541,7 @@ ob_start();
                             detectedFormat = data.format;
                             pageCount = data.page_count;
 
-                            pageCountEl.textContent = `${data.page_count} page(s) détectée(s)`;
+                            pageCountEl.textContent = `${data.page_count} <?php _e('imposition_tracts.pages_detected'); ?>`;
 
                             if (data.format === 'unknown') {
                                 tractType.innerHTML = `<strong><?php _e('imposition_tracts.non_standard_format'); ?> (${data.dimensions.width}×${data.dimensions.height}mm)</strong><br><small style="color: #ff9800;"><?php _e('imposition_tracts.select_manually'); ?></small>`;

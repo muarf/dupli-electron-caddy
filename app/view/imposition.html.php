@@ -354,14 +354,14 @@
                                     style="margin-bottom: 25px; border: 2px solid #e9ecef; border-radius: 8px; overflow: hidden;">
                                     <div class="sheet-header"
                                         style="background: linear-gradient(135deg, #a8e6cf 0%, #dcedc1 100%); padding: 10px; text-align: center; font-weight: bold; color: #2c5530;">
-                                        Exemple - Feuille 1 (<?= $page_count ?> pages)
+                                        <?php _e('imposition.example_sheet'); ?> 1 (<?= $page_count ?> pages)
                                     </div>
                                     <div class="sheet-content" style="display: flex; background: white;">
                                         <div class="recto-side"
                                             style="flex: 1; padding: 15px; border-right: 1px solid #e9ecef;">
                                             <div class="side-label"
                                                 style="background: #007bff; color: white; padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 10px; display: inline-block;">
-                                                RECTO (<?= $recto_count ?> pages)
+                                                <?php _e('imposition.recto_side'); ?> (<?= $recto_count ?> pages)
                                             </div>
                                             <div class="page-numbers"
                                                 style="font-family: monospace; font-size: 16px; line-height: 1.8;">
@@ -376,7 +376,7 @@
                                         <div class="verso-side" style="flex: 1; padding: 15px;">
                                             <div class="side-label"
                                                 style="background: #28a745; color: white; padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 10px; display: inline-block;">
-                                                VERSO (<?= $verso_count ?> pages)
+                                                <?php _e('imposition.verso_side'); ?> (<?= $verso_count ?> pages)
                                             </div>
                                             <div class="page-numbers"
                                                 style="font-family: monospace; font-size: 16px; line-height: 1.8;">
@@ -395,7 +395,7 @@
                                 <div class="full-sequence"
                                     style="margin-top: 20px; padding-top: 15px; border-top: 2px solid #e9ecef;">
                                     <div class="sequence-label" style="font-weight: bold; color: #495057; margin-bottom: 10px;">
-                                        <i class="fa fa-list"></i> Séquence complète :
+                                        <i class="fa fa-list"></i> <?php _e('imposition.full_sequence'); ?>
                                     </div>
                                     <div class="sequence-text"
                                         style="font-family: monospace; font-size: 14px; background: #f8f9fa; padding: 15px; border-radius: 4px; word-break: break-all; line-height: 1.4;">

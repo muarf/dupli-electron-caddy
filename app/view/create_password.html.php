@@ -87,14 +87,17 @@
 </head>
 <body style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh;">
     <div class="password-container">
+        <div class="pull-right">
+            <?php echo generateLanguageSelector(); ?>
+        </div>
         <div class="password-header">
-            <h1>🔐 Création du mot de passe administrateur</h1>
-            <p>Veuillez définir un mot de passe pour accéder à l'administration</p>
+            <h1>🔐 <?php _e('create_password.title'); ?></h1>
+            <p><?php _e('create_password.subtitle'); ?></p>
         </div>
 
         <?php if (isset($errors) && !empty($errors)): ?>
             <div class="alert alert-danger">
-                <h5><i class="fa fa-exclamation-triangle"></i> Erreurs détectées :</h5>
+                <h5><i class="fa fa-exclamation-triangle"></i> <?php _e('setup.errors_detected'); ?></h5>
                 <ul class="mb-0">
                     <?php foreach ($errors as $error): ?>
                         <li><?= htmlspecialchars($error) ?></li>
@@ -104,13 +107,13 @@
         <?php endif; ?>
 
         <div class="info-box">
-            <p><i class="fa fa-info-circle"></i> <strong>Important :</strong> Ce mot de passe vous permettra d'accéder à toutes les fonctionnalités d'administration de l'application.</p>
+            <p><i class="fa fa-info-circle"></i> <strong><?php _e('create_password.important'); ?></strong> <?php _e('create_password.important_desc'); ?></p>
         </div>
 
         <form method="POST" action="?create_password">
             <div class="form-group">
                 <label for="admin_password">
-                    <i class="fa fa-lock"></i> Mot de passe administrateur
+                    <i class="fa fa-lock"></i> <?php _e('create_password.password_label'); ?>
                 </label>
                 <input 
                     type="password" 
@@ -119,14 +122,14 @@
                     class="form-control" 
                     required 
                     minlength="6"
-                    placeholder="Minimum 6 caractères"
+                    placeholder="<?php echo __('create_password.min_chars'); ?>"
                     autocomplete="new-password"
                 >
             </div>
 
             <div class="form-group">
                 <label for="admin_password_confirm">
-                    <i class="fa fa-lock"></i> Confirmer le mot de passe
+                    <i class="fa fa-lock"></i> <?php _e('create_password.confirm_label'); ?>
                 </label>
                 <input 
                     type="password" 
@@ -135,13 +138,13 @@
                     class="form-control" 
                     required 
                     minlength="6"
-                    placeholder="Répétez le mot de passe"
+                    placeholder="<?php echo __('create_password.repeat_password'); ?>"
                     autocomplete="new-password"
                 >
             </div>
 
             <button type="submit" class="btn-submit">
-                <i class="fa fa-check"></i> Créer le mot de passe
+                <i class="fa fa-check"></i> <?php _e('create_password.submit_btn'); ?>
             </button>
         </form>
     </div>
@@ -159,12 +162,12 @@
             }
 
             const modal = $('#app-global-modal');
-            const title = options.title || 'Message';
+            const title = options.title ||  "<?php echo __('common.info'); ?>" ;
             const message = options.message || '';
             const type = options.type || 'info'; // info, success, warning, danger
             const confirm = options.confirm || false;
             const okText = options.okText || 'OK';
-            const cancelText = options.cancelText || 'Annuler';
+            const cancelText = options.cancelText ||  "<?php echo __('common.cancel'); ?>" ;
 
             // Configurer le titre et le message
             $('#app-global-modal-title-text').text(title);
@@ -221,13 +224,13 @@
             
             if (password !== confirm) {
                 e.preventDefault();
-                showAppModal('Les mots de passe ne correspondent pas.');
+                showAppModal( "<?php echo __('create_password.passwords_dont_match'); ?>" );
                 return false;
             }
             
             if (password.length < 6) {
                 e.preventDefault();
-                showAppModal('Le mot de passe doit contenir au moins 6 caractères.');
+                showAppModal( "<?php echo __('create_password.password_too_short'); ?>" );
                 return false;
             }
         });

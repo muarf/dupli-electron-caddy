@@ -36,10 +36,10 @@ $download_url = $download_url ?? '';
                             <i class="fa fa-file-text-o"></i>
                         </div>
                         <h4 style="color: #333; margin-bottom: 20px;">
-                            Votre PDF a été désimposé avec succès
+                            <?php _e('unimpose.success_msg'); ?>
                         </h4>
                         <p style="color: #666; margin-bottom: 25px;">
-                            Le fichier <strong><?= htmlspecialchars($result) ?></strong> est prêt au téléchargement.
+                            <?php _e('unimpose.ready_msg'); ?>
                         </p>
                         <a href="<?= htmlspecialchars($download_url) ?>" class="btn btn-success btn-lg">
                             <i class="fa fa-download"></i> <?php _e('unimpose.download_unimposed'); ?>
@@ -78,7 +78,7 @@ $download_url = $download_url ?? '';
                         <!-- Mode de désimposition -->
                         <div class="form-group" style="margin-bottom: 25px;">
                             <label style="display: block; margin-bottom: 10px; font-weight: bold; color: #333;">
-                                <i class="fa fa-cog"></i> Mode de désimposition :
+                                <i class="fa fa-cog"></i> <?php _e('unimpose.mode_label'); ?>
                             </label>
                             <div style="display: flex; gap: 20px; flex-wrap: wrap;">
                                 <label
@@ -86,9 +86,8 @@ $download_url = $download_url ?? '';
                                     <input type="radio" name="unimpose_mode" value="booklet" checked
                                         style="margin-right: 8px;">
                                     <div>
-                                        <strong>Livret classique</strong>
-                                        <small style="display: block; color: #666; margin-top: 3px;">Réorganisation des
-                                            pages selon le pattern de livret</small>
+                                        <strong><?php _e('unimpose.mode_booklet'); ?></strong>
+                                        <small style="display: block; color: #666; margin-top: 3px;"><?php _e('unimpose.mode_booklet_desc'); ?></small>
                                     </div>
                                 </label>
                                 <label
@@ -96,9 +95,8 @@ $download_url = $download_url ?? '';
                                     <input type="radio" name="unimpose_mode" value="split_double_pages"
                                         style="margin-right: 8px;">
                                     <div>
-                                        <strong>Couverture + doubles pages</strong>
-                                        <small style="display: block; color: #666; margin-top: 3px;">Page 1 intacte,
-                                            pages suivantes coupées en deux</small>
+                                        <strong><?php _e('unimpose.mode_split'); ?></strong>
+                                        <small style="display: block; color: #666; margin-top: 3px;"><?php _e('unimpose.mode_split_desc'); ?></small>
                                     </div>
                                 </label>
                             </div>
@@ -120,7 +118,7 @@ $download_url = $download_url ?? '';
                             <div id="fileInfo" style="display: none;">
                                 <h4 style="color: #333; margin-bottom: 10px;">
                                     <i class="fa fa-check-circle" style="color: #28a745; margin-right: 10px;"></i>
-                                    Fichier sélectionné
+                                    <?php _e('unimpose.file_selected'); ?>
                                 </h4>
                                 <p id="fileName" style="color: #666; margin-bottom: 15px;"></p>
                                 <button type="submit" class="btn btn-success btn-lg">

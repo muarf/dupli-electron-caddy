@@ -26,16 +26,16 @@
                             <i class="fa fa-file-pdf-o"></i>
                         </div>
                         <h4 style="color: #333; margin-bottom: 20px;">
-                            Votre PDF est prêt !
+                            <?php _e('png_to_pdf.ready_title'); ?>
                         </h4>
                         <p style="color: #666; margin-bottom: 25px;">
-                            Le fichier <strong><?= htmlspecialchars($result) ?></strong> a été créé avec succès.
+                            <?php _e('png_to_pdf.success_msg'); ?>
                         </p>
                         <a href="<?= htmlspecialchars($download_url) ?>" class="btn btn-success btn-lg" download>
-                            <i class="fa fa-download"></i> Télécharger le PDF
+                            <i class="fa fa-download"></i> <?php _e('png_to_pdf.download_pdf'); ?>
                         </a>
                         <a href="?png_to_pdf" class="btn btn-default btn-lg" style="margin-left: 10px;">
-                            <i class="fa fa-plus"></i> Convertir d'autres images
+                            <i class="fa fa-plus"></i> <?php _e('png_to_pdf.convert_more'); ?>
                         </a>
                     </div>
                 </div>
@@ -65,7 +65,7 @@
                                 <div class="panel panel-info">
                                     <div class="panel-heading">
                                         <h4 class="panel-title">
-                                            <i class="fa fa-file-o"></i> Format de page
+                                            <i class="fa fa-file-o"></i> <?php _e('png_to_pdf.page_format'); ?>
                                         </h4>
                                     </div>
                                     <div class="panel-body">
@@ -143,7 +143,7 @@
                                 </button>
                                 <button type="button" class="btn btn-default btn-lg" onclick="resetForm()"
                                     style="margin-left: 10px;">
-                                    <i class="fa fa-times"></i> Annuler
+                                    <i class="fa fa-times"></i> <?php _e('png_to_pdf.cancel'); ?>
                                 </button>
                             </div>
                         </div>
@@ -257,7 +257,7 @@
                     fileInput.files = dt.files;
                     handleFileSelect(dt.files);
                 } else {
-                    showAppModal({ message: 'Veuillez sélectionner des fichiers image valides (PNG ou JPG).', type: 'warning' });
+                    showAppModal({ message:  'FIXME_EMPTY_KEY' , type: 'warning' });
                 }
             }
         });
@@ -299,7 +299,7 @@
             uploadText.innerHTML = '<i class="fa fa-picture-o"></i> ' + <?= json_encode($from_lib_file['filename']) ?>;
             fileInfo.style.display = 'block';
             fileCount.textContent = '1';
-            fileList.innerHTML = '<ul style="text-align: left; display: inline-block; margin: 0;"><li><i class="fa fa-image"></i> ' + <?= json_encode($from_lib_file['filename']) ?> + ' <span class="text-muted">(Fichier bibliothèque)</span></li></ul>';
+            fileList.innerHTML = '<ul style="text-align: left; display: inline-block; margin: 0;"><li><i class="fa fa-image"></i> ' + <?= json_encode($from_lib_file['filename']) ?> + ' <span class="text-muted">(<?php _e('imposition_brochure.library_file'); ?>)</span></li></ul>';
             fileInput.removeAttribute('required');
         <?php endif; ?>
 
@@ -311,7 +311,7 @@
                 return false;
             }
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Conversion en cours...';
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> <?php _e('png_to_pdf.converting'); ?>';
         });
     });
 </script>

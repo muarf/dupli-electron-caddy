@@ -177,7 +177,6 @@ function Action($conf = null)
             if ($result && password_verify($_POST['password'], $result['password_hash'])) {
                 $_SESSION['user'] = "1";
                 $_SESSION['admin'] = true;
-                $_SESSION['disable_inline_editing'] = true;
                 
             } else {
                 $array['login_error'] = 'Mot de passe incorrect. Veuillez réessayer.';
