@@ -28,23 +28,23 @@ function getTableForMachine($machine)
         <input type="hidden" name="tirages" value="">
         
         <div class="form-group">
-          <label for="search">Rechercher un contact :</label>
-          <input type="text" name="search" id="search" class="form-control" value="<?= htmlspecialchars($_GET['search'] ?? '') ?>" placeholder="Nom du contact...">
+          <label for="search"><?php _e('admin_tirage.search_contact'); ?></label>
+          <input type="text" name="search" id="search" class="form-control" value="<?= htmlspecialchars($_GET['search'] ?? '') ?>" placeholder="<?php _e('admin_tirage.contact_name_placeholder'); ?>">
         </div>
         
         <div class="form-group" style="margin-left: 10px;">
-          <label for="paye">Statut :</label>
+          <label for="paye"><?php _e('admin_tirage.status_label'); ?></label>
           <select name="paye" id="paye" class="form-control">
-            <option value="non" <?= ($_GET['paye'] ?? 'non') === 'non' ? 'selected' : '' ?>>Non-payés</option>
-            <option value="deja_paye" <?= ($_GET['paye'] ?? '') === 'deja_paye' ? 'selected' : '' ?>>Déjà payés</option>
-            <option value="tous" <?= ($_GET['paye'] ?? '') === 'tous' ? 'selected' : '' ?>>Tous</option>
+            <option value="non" <?= ($_GET['paye'] ?? 'non') === 'non' ? 'selected' : '' ?>><?php _e('admin_tirage.unpaid'); ?></option>
+            <option value="deja_paye" <?= ($_GET['paye'] ?? '') === 'deja_paye' ? 'selected' : '' ?>><?php _e('admin_tirage.already_paid'); ?></option>
+            <option value="tous" <?= ($_GET['paye'] ?? '') === 'tous' ? 'selected' : '' ?>><?php _e('admin_tirage.all'); ?></option>
           </select>
         </div>
         
         <div class="form-group" style="margin-left: 10px;">
           <div class="checkbox">
             <label>
-              <input type="checkbox" name="order" value="1" <?= isset($_GET['order']) ? 'checked' : '' ?>> Trier par prix
+              <input type="checkbox" name="order" value="1" <?= isset($_GET['order']) ? 'checked' : '' ?>> <?php _e('admin_tirage.sort_by_price'); ?>
             </label>
           </div>
         </div>
@@ -52,13 +52,13 @@ function getTableForMachine($machine)
         <div class="form-group" style="margin-left: 20px;">
           <div class="checkbox">
             <label>
-              <input type="checkbox" id="selectAllGlobal" onchange="toggleAllGlobal(this.checked)"> <strong>Tout sélectionner</strong>
+              <input type="checkbox" id="selectAllGlobal" onchange="toggleAllGlobal(this.checked)"> <strong><?php _e('admin_tirage.select_all'); ?></strong>
             </label>
           </div>
         </div>
         
-        <button type="submit" class="btn btn-primary" style="margin-left: 10px;"><i class="fa fa-search"></i> Filtrer</button>
-        <a href="?admin&tirages" class="btn btn-default" style="margin-left: 5px;">Réinitialiser</a>
+        <button type="submit" class="btn btn-primary" style="margin-left: 10px;"><i class="fa fa-search"></i> <?php _e('admin_tirage.filter'); ?></button>
+        <a href="?admin&tirages" class="btn btn-default" style="margin-left: 5px;"><?php _e('admin_tirage.reset_filter'); ?></a>
       </form>
     </div>
 
@@ -245,7 +245,7 @@ function getTableForMachine($machine)
               ?>
 
               <?php if ($pagination['current_page'] > 1): ?>
-                <li><a href="<?= $baseUrl . $pageVar . ($pagination['current_page'] - 1) ?>">&laquo; Précédent</a></li>
+                <li><a href="<?= $baseUrl . $pageVar . ($pagination['current_page'] - 1) ?>">&laquo; <?php _e('admin_tirage.previous'); ?></a></li>
               <?php endif; ?>
 
               <?php
@@ -259,7 +259,7 @@ function getTableForMachine($machine)
               <?php endfor; ?>
 
               <?php if ($pagination['current_page'] < $pagination['total_pages']): ?>
-                <li><a href="<?= $baseUrl . $pageVar . ($pagination['current_page'] + 1) ?>">Suivant &raquo;</a></li>
+                <li><a href="<?= $baseUrl . $pageVar . ($pagination['current_page'] + 1) ?>"><?php _e('admin_tirage.next'); ?> &raquo;</a></li>
               <?php endif; ?>
 
               <?php if ($pagination['total_pages'] > 5 && $pagination['current_page'] < $pagination['total_pages'] - 2): ?>
