@@ -26,7 +26,7 @@
                             <i class="fa fa-images"></i>
                         </div>
                         <h4 style="color: #333; margin-bottom: 20px; text-center;">
-                            <?= count($result) ?> image(s) extraite(s) avec succès
+                            <?= count($result) ?> <?php _e('pdf_to_png.ready_title'); ?>
                         </h4>
 
                         <!-- Liste des images avec aperçu -->
@@ -35,7 +35,7 @@
                                 <div class="col-md-4 col-sm-6" style="margin-bottom: 15px;">
                                     <div class="thumbnail" style="text-align: center;">
                                         <img src="<?= htmlspecialchars($url) ?>"
-                                            alt="<?php _e('pdf_to_png.page'); ?> <?= ($index + 1) ?>"
+                                            alt="<?php echo __('pdf_to_png.page'); ?> <?= ($index + 1) ?>"
                                             style="max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px;">
                                         <div class="caption">
                                             <p><strong><?php _e('pdf_to_png.page'); ?>         <?= ($index + 1) ?></strong></p>
@@ -139,15 +139,15 @@
                             <div id="fileInfo" style="display: none;">
                                 <h4 style="color: #333; margin-bottom: 10px;">
                                     <i class="fa fa-check-circle" style="color: #28a745; margin-right: 10px;"></i>
-                                    Fichier sélectionné
+                                    <?php _e('pdf_to_png.file_selected'); ?>
                                 </h4>
                                 <p id="fileName" style="color: #666; margin-bottom: 15px;"></p>
                                 <button type="submit" class="btn btn-success btn-lg">
-                                    <i class="fa fa-magic"></i> Extraire les pages
+                                    <i class="fa fa-magic"></i> <?php _e('pdf_to_png.extract_pages'); ?>
                                 </button>
                                 <button type="button" class="btn btn-default btn-lg" onclick="resetForm()"
                                     style="margin-left: 10px;">
-                                    <i class="fa fa-times"></i> Annuler
+                                    <i class="fa fa-times"></i> <?php _e('pdf_to_png.cancel'); ?>
                                 </button>
                             </div>
                             <?php if (isset($from_lib_file)): ?>

@@ -127,14 +127,14 @@
 <div class="image-processor-container">
     <!-- En-tête -->
     <div class="processor-header">
-        <h1><i class="fa fa-adjust"></i> Contraste / Luminosité / Bitmap</h1>
-        <p>Ajustez le contraste, la luminosité, le gamma, la saturation et convertissez en bitmap</p>
+        <h1><i class="fa fa-adjust"></i> <?php _e('image_processor.title'); ?></h1>
+        <p><?php _e('image_processor.subtitle'); ?></p>
     </div>
 
     <!-- Messages d'erreur -->
     <?php if (!empty($errors)): ?>
         <div class="alert alert-danger">
-            <h4><i class="fa fa-exclamation-triangle"></i> Erreurs détectées</h4>
+            <h4><i class="fa fa-exclamation-triangle"></i> <?php _e('image_processor.errors_detected'); ?></h4>
             <ul>
                 <?php foreach ($errors as $error): ?>
                     <li><?= htmlspecialchars($error) ?></li>
@@ -148,12 +148,12 @@
         <div class="panel panel-success">
             <div class="panel-heading">
                 <h3 class="panel-title">
-                    <i class="fa fa-check-circle"></i> Traitement terminé !
+                    <i class="fa fa-check-circle"></i> <?php _e('image_processor.processing_completed'); ?>
                 </h3>
             </div>
             <div class="panel-body text-center">
                 <?php if (!$result['is_pdf'] && isset($result['preview_url'])): ?>
-                    <h4>Aperçu du résultat :</h4>
+                    <h4><?php _e('image_processor.result_preview'); ?></h4>
                     <div class="preview-container">
                         <img src="<?= htmlspecialchars($result['preview_url']) ?>" alt="Résultat" class="preview-canvas"
                             style="max-width: 600px;">
@@ -161,10 +161,10 @@
                 <?php endif; ?>
                 <div style="margin-top: 20px;">
                     <a href="<?= htmlspecialchars($result['download_url']) ?>" class="btn btn-primary btn-lg" download>
-                        <i class="fa fa-download"></i> Télécharger <?= $result['is_pdf'] ? 'le PDF' : 'l\'image' ?>
+                        <i class="fa fa-download"></i> <?= $result['is_pdf'] ? __('image_processor.download_pdf') : __('image_processor.download_image') ?>
                     </a>
                     <a href="?image_processor" class="btn btn-default btn-lg">
-                        <i class="fa fa-plus"></i> Traiter un autre fichier
+                        <i class="fa fa-plus"></i> <?php _e('image_processor.process_another'); ?>
                     </a>
                 </div>
             </div>
@@ -184,9 +184,9 @@
             <div style="font-size: 64px; color: #667eea; margin-bottom: 20px;">
                 <i class="fa fa-cloud-upload"></i>
             </div>
-            <h3>Glissez-déposez votre fichier ici</h3>
-            <p class="text-muted">ou cliquez pour sélectionner</p>
-            <p class="text-muted"><small>Formats supportés : PDF, PNG, JPEG, GIF, WebP</small></p>
+            <h3><?php _e('image_processor.drag_drop'); ?></h3>
+            <p class="text-muted"><?php _e('image_processor.click_select'); ?></p>
+            <p class="text-muted"><small><?php _e('image_processor.supported_formats'); ?></small></p>
             <input type="file" id="fileInput" name="file" accept=".pdf,.png,.jpg,.jpeg,.gif,.webp"
                 style="display: none;">
         </div>
@@ -197,26 +197,26 @@
         <!-- Prévisualisation -->
         <div class="panel panel-default">
             <div class="panel-heading">
-                <h4><i class="fa fa-eye"></i> Prévisualisation</h4>
+                <h4><i class="fa fa-eye"></i> <?php _e('image_processor.preview'); ?></h4>
             </div>
             <div class="panel-body">
                 <div class="preview-container">
                     <canvas id="previewCanvas" class="preview-canvas"></canvas>
                 </div>
                 <p class="text-muted text-center" style="margin-top: 10px;">
-                    <i class="fa fa-info-circle"></i> Les ajustements sont appliqués en temps réel
+                    <i class="fa fa-info-circle"></i> <?php _e('image_processor.real_time_adjustments'); ?>
                 </p>
             </div>
         </div>
 
         <!-- Contrôles -->
         <div class="controls-panel">
-            <h4><i class="fa fa-sliders"></i> Ajustements</h4>
+            <h4><i class="fa fa-sliders"></i> <?php _e('image_processor.adjustments'); ?></h4>
 
             <!-- Contraste -->
             <div class="slider-group">
                 <div class="slider-label">
-                    <span><i class="fa fa-adjust"></i> Contraste</span>
+                    <span><i class="fa fa-adjust"></i> <?php _e('image_processor.contrast'); ?></span>
                     <span class="slider-value" id="contrastValue">0</span>
                 </div>
                 <input type="range" id="contrastSlider" min="-100" max="100" value="0" step="1">
@@ -225,7 +225,7 @@
             <!-- Luminosité -->
             <div class="slider-group">
                 <div class="slider-label">
-                    <span><i class="fa fa-sun-o"></i> Luminosité</span>
+                    <span><i class="fa fa-sun-o"></i> <?php _e('image_processor.brightness'); ?></span>
                     <span class="slider-value" id="brightnessValue">0</span>
                 </div>
                 <input type="range" id="brightnessSlider" min="-100" max="100" value="0" step="1">
@@ -234,7 +234,7 @@
             <!-- Gamma -->
             <div class="slider-group">
                 <div class="slider-label">
-                    <span><i class="fa fa-sliders"></i> Gamma</span>
+                    <span><i class="fa fa-sliders"></i> <?php _e('image_processor.gamma'); ?></span>
                     <span class="slider-value" id="gammaValue">1.0</span>
                 </div>
                 <input type="range" id="gammaSlider" min="0.1" max="3.0" value="1.0" step="0.1">
@@ -243,7 +243,7 @@
             <!-- Saturation -->
             <div class="slider-group">
                 <div class="slider-label">
-                    <span><i class="fa fa-tint"></i> Saturation</span>
+                    <span><i class="fa fa-tint"></i> <?php _e('image_processor.saturation'); ?></span>
                     <span class="slider-value" id="saturationValue">0</span>
                 </div>
                 <input type="range" id="saturationSlider" min="-100" max="100" value="0" step="1">
@@ -254,25 +254,25 @@
                 <div class="checkbox">
                     <label>
                         <input type="checkbox" id="bitmapEnabled">
-                        <strong>Convertir en bitmap (noir et blanc)</strong>
+                        <strong><?php _e('image_processor.bitmap_enabled'); ?></strong>
                     </label>
                 </div>
                 <div id="bitmapOptions" style="display: none; margin-top: 15px; padding-left: 30px;">
                     <div class="radio" style="margin-bottom: 10px;">
                         <label>
                             <input type="radio" name="bitmapMethod" value="threshold" checked>
-                            Seuil simple
+                            <?php _e('image_processor.threshold_simple'); ?>
                         </label>
                     </div>
                     <div class="radio" style="margin-bottom: 10px;">
                         <label>
                             <input type="radio" name="bitmapMethod" value="dithering">
-                            Dithering (tramage)
+                            <?php _e('image_processor.dithering'); ?>
                         </label>
                     </div>
                     <div id="thresholdOption" style="margin-top: 10px;">
                         <div class="slider-label">
-                            <span>Seuil</span>
+                            <span><?php _e('image_processor.threshold'); ?></span>
                             <span class="slider-value" id="thresholdValue">128</span>
                         </div>
                         <input type="range" id="thresholdSlider" min="0" max="255" value="128" step="1">
@@ -283,13 +283,13 @@
             <!-- Bouton Appliquer -->
             <div class="text-center" style="margin-top: 30px;">
                 <button type="button" id="applyButton" class="btn btn-primary btn-lg">
-                    <i class="fa fa-magic"></i> Appliquer le traitement
+                    <i class="fa fa-magic"></i> <?php _e('image_processor.apply_processing'); ?>
                 </button>
                 <button type="button" id="resetButton" class="btn btn-default btn-lg">
-                    <i class="fa fa-undo"></i> Réinitialiser
+                    <i class="fa fa-undo"></i> <?php _e('image_processor.reset'); ?>
                 </button>
                 <button type="button" class="btn btn-warning btn-lg" onclick="window.location.reload()">
-                    <i class="fa fa-upload"></i> Uploader un nouveau fichier
+                    <i class="fa fa-upload"></i> <?php _e('image_processor.upload_new'); ?>
                 </button>
             </div>
         </div>
@@ -313,12 +313,12 @@
 <!-- Modal de progression -->
 <div id="progressModal" class="progress-modal">
     <div class="progress-modal-content">
-        <h3><i class="fa fa-spinner fa-spin"></i> Traitement en cours...</h3>
-        <p id="progressMessage">Initialisation...</p>
+        <h3><i class="fa fa-spinner fa-spin"></i> <?php _e('image_processor.processing_in_progress'); ?></h3>
+        <p id="progressMessage"><?php _e('image_processor.initialization'); ?></p>
         <div class="progress-bar-container">
             <div class="progress-bar-fill" id="progressBar">0%</div>
         </div>
-        <p class="text-muted"><small>Veuillez patienter, cela peut prendre quelques instants...</small></p>
+        <p class="text-muted"><small><?php _e('image_processor.please_wait'); ?></small></p>
     </div>
 </div>
 
@@ -569,7 +569,7 @@
                         const pageCountInfo = document.createElement('p');
                         pageCountInfo.className = 'text-info text-center pdf-page-info';
                         pageCountInfo.style.marginTop = '10px';
-                        pageCountInfo.innerHTML = `<i class="fa fa-info-circle"></i> PDF avec ${pdf.numPages} page(s) - La prévisualisation montre la page 1`;
+                        pageCountInfo.innerHTML = `<i class="fa fa-info-circle"></i> ${ "<?php echo __('image_processor.pdf_page_info', ['count' => '']); ?>" .replace(':count', pdf.numPages)}`;
                         previewCanvas.parentElement.appendChild(pageCountInfo);
 
                         // Mettre à jour la prévisualisation
@@ -1068,16 +1068,16 @@
                         resultDiv.className = 'panel panel-success';
                         resultDiv.innerHTML = `
                         <div class="panel-heading">
-                            <h3 class="panel-title"><i class="fa fa-check-circle"></i> Traitement terminé avec succès !</h3>
+                            <h3 class="panel-title"><i class="fa fa-check-circle"></i> <?php _e('image_processor.processing_success_msg'); ?></h3>
                         </div>
                         <div class="panel-body">
-                            <p>Le fichier <strong>${data.filename || 'traitée'}</strong> a été traité avec succès.</p>
+                            <p>${ "<?php echo __('image_processor.file_processed_success', ['filename' => '']); ?>" .replace(':filename', `<strong>${data.filename || 'traitée'}</strong>`)}</p>
                             <div class="btn-group">
                                 <a href="${data.download_url}" class="btn btn-primary btn-lg" download>
-                                    <i class="fa fa-download"></i> Télécharger le fichier
+                                    <i class="fa fa-download"></i> <?php _e('image_processor.download_file'); ?>
                                 </a>
                                 <button type="button" class="btn btn-warning btn-lg" onclick="window.location.reload()">
-                                    <i class="fa fa-upload"></i> Uploader un nouveau fichier
+                                    <i class="fa fa-upload"></i> <?php _e('image_processor.upload_new'); ?>
                                 </button>
                             </div>
                         </div>

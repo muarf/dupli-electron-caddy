@@ -55,7 +55,7 @@ if(isset($success_message)): ?>
                                     
                                     <!-- Duplicopieurs -->
                                     <?php if(isset($duplicopieurs) && count($duplicopieurs) > 0): ?>
-                                        <optgroup label="Duplicopieurs">
+                                        <optgroup label= "<?php echo __('changement.duplicators'); ?>" >
                                             <?php foreach($duplicopieurs as $dup): ?>
                                                 <option value="<?= htmlspecialchars($dup['name']) ?>"><?= htmlspecialchars($dup['name']) ?></option>
                                             <?php endforeach; ?>
@@ -64,7 +64,7 @@ if(isset($success_message)): ?>
                                     
                                     <!-- Photocopieurs -->
                                     <?php if(isset($photocopiers) && count($photocopiers) > 0): ?>
-                                        <optgroup label="Photocopieurs">
+                                        <optgroup label= "<?php echo __('changement.photocopiers'); ?>" >
                                             <?php foreach($photocopiers as $photocop): ?>
                                                 <option value="<?= htmlspecialchars($photocop) ?>"><?= htmlspecialchars($photocop) ?></option>
                                             <?php endforeach; ?>
@@ -130,7 +130,7 @@ if(isset($success_message)): ?>
                         <div id="aide-container">
                             <div class="alert alert-info">
                                 <h4><i class="fa fa-info-circle"></i> <?php _e('changement.instructions_title'); ?></h4>
-                                <p>Sélectionnez une machine pour voir les instructions spécifiques.</p>
+                                <p><?php _e('changement.select_machine_to_see_instructions'); ?></p>
                             </div>
                         </div>
                     </div>
@@ -140,10 +140,10 @@ if(isset($success_message)): ?>
                 <div class="row">
                     <div class="col-md-12 text-center">
                         <a href="?accueil" class="btn btn-default">
-                            <i class="fa fa-arrow-left"></i> Retour à l'accueil
+                            <i class="fa fa-arrow-left"></i> <?php _e('changement.back_home'); ?>
                         </a>
                         <a href="?stats" class="btn btn-info">
-                            <i class="fa fa-bar-chart"></i> Voir les statistiques
+                            <i class="fa fa-bar-chart"></i> <?php _e('stats.title'); ?>
                         </a>
                     </div>
                 </div>
@@ -176,31 +176,31 @@ $(document).ready(function() {
                     
                     if (type === 'duplicopieur') {
                         // Duplicopieurs : master et encre
-                        options = '<option value="master">Master</option>' +
-                                 '<option value="encre">Encre</option>';
+                        options = '<option value="master"><?php _e('changement.master'); ?></option>' +
+                                 '<option value="encre"><?php _e('changement.ink'); ?></option>';
                     } else if (type === 'photocop_encre') {
                         // Photocopieurs à encre : 4 couleurs seulement
-                        options = '<option value="noire">Encre noire</option>' +
-                                 '<option value="bleue">Encre bleue</option>' +
-                                 '<option value="rouge">Encre rouge</option>' +
-                                 '<option value="jaune">Encre jaune</option>';
+                        options = '<option value="noire"><?php _e('changement.black_ink'); ?></option>' +
+                                 '<option value="bleue"><?php _e('changement.blue_ink'); ?></option>' +
+                                 '<option value="rouge"><?php _e('changement.red_ink'); ?></option>' +
+                                 '<option value="jaune"><?php _e('changement.yellow_ink'); ?></option>';
                     } else if (type === 'photocop_toner') {
                         // Photocopieurs à toner : 4 couleurs + dev + tambour
-                        options = '<option value="noir">Noir</option>' +
-                                 '<option value="cyan">Cyan</option>' +
-                                 '<option value="magenta">Magenta</option>' +
-                                 '<option value="yellow">Yellow</option>' +
-                                 '<option value="dev">Dev</option>' +
-                                 '<option value="tambour">Tambour</option>';
+                        options = '<option value="noir"><?php _e('changement.black'); ?></option>' +
+                                 '<option value="cyan"><?php _e('changement.cyan'); ?></option>' +
+                                 '<option value="magenta"><?php _e('changement.magenta'); ?></option>' +
+                                 '<option value="yellow"><?php _e('changement.yellow'); ?></option>' +
+                                 '<option value="dev"><?php _e('changement.dev'); ?></option>' +
+                                 '<option value="tambour"><?php _e('changement.drum'); ?></option>';
                     } else {
-                        options = '<option value="">Type de machine non reconnu</option>';
+                        options = '<option value=""><?php _e('changement.machine_type_not_recognized'); ?></option>';
                     }
                     
-                    selectElement.html('<option value="">Sélectionnez un type</option>' + options);
+                    selectElement.html('<option value=""><?php _e('changement.select_type'); ?></option>' + options);
                 }
             })
             .fail(function() {
-                selectElement.html('<option value="">Erreur lors du chargement</option>');
+                selectElement.html('<option value=""><?php _e('changement.error_loading'); ?></option>');
             });
     }
     
@@ -221,7 +221,7 @@ $(document).ready(function() {
             
             // Remplir les options de tambours
             if (duplicopieurs_tambours[machine]) {
-                tambourField.html('<option value="">Sélectionnez un tambour</option>');
+                tambourField.html('<option value=""><?php _e('changement.select_drum'); ?></option>');
                 $.each(duplicopieurs_tambours[machine], function(index, tambour) {
                     tambourField.append('<option value="' + tambour + '">' + tambour + '</option>');
                 });
@@ -241,8 +241,8 @@ $(document).ready(function() {
         var tambourSelect = $('#tambour');
         
         // Vider les options
-        typeSelect.html('<option value="">Sélectionnez un type</option>');
-        tambourSelect.html('<option value="">Sélectionnez un tambour</option>');
+        typeSelect.html('<option value=""><?php _e('changement.select_type'); ?></option>');
+        tambourSelect.html('<option value=""><?php _e('changement.select_drum'); ?></option>');
         
         if (machine) {
             // Utiliser la nouvelle fonction pour mettre à jour les types
@@ -255,7 +255,7 @@ $(document).ready(function() {
                 
                 // Remplir les options de tambours
                 if (duplicopieurs_tambours[machine]) {
-                    tambourSelect.html('<option value="">Sélectionnez un tambour</option>');
+                    tambourSelect.html('<option value=""><?php _e('changement.select_drum'); ?></option>');
                     $.each(duplicopieurs_tambours[machine], function(index, tambour) {
                         tambourSelect.append('<option value="' + tambour + '">' + tambour + '</option>');
                     });
@@ -346,9 +346,9 @@ $(document).ready(function() {
         if (!machine || !type || !nb_p) {
             e.preventDefault();
             if (window.showAppModal) {
-                window.showAppModal('Veuillez remplir tous les champs obligatoires.');
+                window.showAppModal( "<?php echo __('changement.fill_all_required'); ?>" );
             } else {
-                alert('Veuillez remplir tous les champs obligatoires.');
+                alert( "<?php echo __('changement.fill_all_required'); ?>" );
             }
             return false;
         }
@@ -358,18 +358,18 @@ $(document).ready(function() {
             if (type === 'master' && !$('#nb_m').val()) {
                 e.preventDefault();
                 if (window.showAppModal) {
-                    window.showAppModal('Veuillez entrer le nombre de masters pour les changements de master.');
+                    window.showAppModal( "<?php echo __('changement.enter_master_count'); ?>" );
                 } else {
-                    alert('Veuillez entrer le nombre de masters pour les changements de master.');
+                    alert( "<?php echo __('changement.enter_master_count'); ?>" );
                 }
                 return false;
             }
             if (type === 'tambour' && !$('#tambour').val()) {
                 e.preventDefault();
                 if (window.showAppModal) {
-                    window.showAppModal('Veuillez sélectionner un tambour pour les changements de tambour.');
+                    window.showAppModal( "<?php echo __('changement.select_drum_for_ink'); ?>" );
                 } else {
-                    alert('Veuillez sélectionner un tambour pour les changements de tambour.');
+                    alert( "<?php echo __('changement.select_drum_for_ink'); ?>" );
                 }
                 return false;
             }
@@ -383,7 +383,7 @@ $(document).ready(function() {
         var aideContainer = $('#aide-container');
         
         if (!machine) {
-            aideContainer.html('<div class="alert alert-info"><h4><i class="fa fa-info-circle"></i> Instructions</h4><p>Sélectionnez une machine pour voir les instructions spécifiques.</p></div>');
+            aideContainer.html('<div class="alert alert-info"><h4><i class="fa fa-info-circle"></i> <?php _e('changement.instructions_title'); ?></h4><p><?php _e('changement.select_machine_to_see_instructions'); ?></p></div>');
             return;
         }
         
@@ -393,7 +393,7 @@ $(document).ready(function() {
         if (aide && aide.length > 0) {
             // Construire l'affichage avec les Q&A
             var html = '<div class="aide-item">';
-            html += '<h4><i class="fa fa-tint"></i> Instructions pour ' + machine + '</h4>';
+            html += '<h4><i class="fa fa-tint"></i> <?php _e('changement.instructions_for'); ?> ' + machine + '</h4>';
             
             aide.forEach(function(qa) {
                 html += '<div class="qa-item" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid #007bff; background: #f8f9fa; border-radius: 4px;">';
@@ -407,25 +407,25 @@ $(document).ready(function() {
         } else {
             // Aide par défaut si aucune aide spécifique
             var defaultAide = '<div class="alert alert-info">' +
-                '<h4><i class="fa fa-info-circle"></i> Instructions pour ' + machine + '</h4>' +
-                '<p><strong>Pour connaître le nombre à entrer :</strong></p>' +
+                '<h4><i class="fa fa-info-circle"></i> <?php _e('changement.instructions_for'); ?> ' + machine + '</h4>' +
+                '<p><strong><?php _e('changement.how_to_find_count'); ?></strong></p>' +
                 '<ul>' +
-                '<li>Allez sur la machine</li>' +
-                '<li>Appuyez sur F1</li>' +
-                '<li>Imprimez la liste des compteurs</li>' +
-                '<li>Notez le nombre correspondant au consommable changé</li>' +
+                '<li><?php _e('changement.go_to_machine'); ?></li>' +
+                '<li><?php _e('changement.press_f1'); ?></li>' +
+                '<li><?php _e('changement.print_counters'); ?></li>' +
+                '<li><?php _e('changement.note_number'); ?></li>' +
                 '</ul>' +
-                '<p><strong>Pour les duplicopieurs :</strong></p>' +
+                '<p><strong><?php _e('changement.for_duplicators'); ?></strong></p>' +
                 '<ul>' +
-                '<li>Entrez le nombre de passages actuels</li>' +
-                '<li>Sélectionnez le type de consommable changé (Master, Encre)</li>' +
+                '<li><?php _e('changement.enter_current_passes'); ?></li>' +
+                '<li><?php _e('changement.select_consumable_type'); ?></li>' +
                 '</ul>' +
-                '<p><strong>Pour les photocopieurs :</strong></p>' +
+                '<p><strong><?php _e('changement.for_photocopiers'); ?></strong></p>' +
                 '<ul>' +
-                '<li>Entrez le nombre total de copies depuis le dernier changement</li>' +
-                '<li>Sélectionnez le type de consommable changé (encre, toner, tambour, etc.)</li>' +
+                '<li><?php _e('changement.enter_total_copies'); ?></li>' +
+                '<li><?php _e('changement.select_consumable_type_photo'); ?></li>' +
                 '</ul>' +
-                '<p><em>Aucune aide spécifique disponible pour cette machine.</em></p>' +
+                '<p><em><?php _e('changement.no_specific_help'); ?></em></p>' +
                 '</div>';
             aideContainer.html(defaultAide);
         }

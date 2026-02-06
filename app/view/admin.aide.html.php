@@ -221,7 +221,7 @@
         ['clean']
       ]
     },
-    placeholder: '<?php _e('admin_aide.default_instructions'); ?>'
+    placeholder: '<?php echo __('admin_aide.default_instructions'); ?>'
   });
 
   // Ajouter le bouton PDF personnalisé à la toolbar
@@ -267,7 +267,7 @@
       })
       .catch(error => {
         console.error('<?php _e('admin_aide.error_loading_content'); ?>:', error);
-        showAppModal({ type: 'danger', message: '<?php _e('admin_aide.error_loading_content'); ?>' });
+        showAppModal({ type: 'danger', message: '<?php echo __('admin_aide.error_loading_content'); ?>' });
       });
   }
 
@@ -381,7 +381,7 @@
   }
 
   function resetForm() {
-    document.getElementById('form-title').textContent = '<?php _e('admin_aide.add_aide'); ?>';
+    document.getElementById('form-title').textContent = '<?php echo __('admin_aide.add_aide'); ?>';
     document.getElementById('action').value = 'add';
     document.getElementById('aide_id').value = '';
     document.getElementById('machine').value = '';
@@ -538,14 +538,14 @@
       quill.insertText(length - 1, '[PDF: ' + name + ']', 'link', url);
     }
 
-    showMessage('<?php _e('admin_aide.pdf_inserted'); ?>', 'success');
+    showMessage('<?php echo __('admin_aide.pdf_inserted'); ?>', 'success');
   }
 
   function deletePdf(filename) {
     showAppModal({
       type: 'warning',
       title: 'Confirmation de suppression',
-      message: '<?php _e('admin_aide.confirm_delete_pdf'); ?>',
+      message: '<?php echo __('admin_aide.confirm_delete_pdf'); ?>',
       confirm: true,
       onConfirm: function () {
         var formData = new FormData();

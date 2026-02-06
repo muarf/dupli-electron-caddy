@@ -16,10 +16,10 @@ class InlineTranslationEditor {
             // Pas encore défini : désactiver par défaut
             this.editingEnabled = false;
             localStorage.setItem('inline-editing-enabled', 'false');
-            console.log('Édition inline désactivée par défaut pour tous les admins');
+            console.log('Édition inline désactivée par défaut');
         } else {
             // Utiliser l'état sauvegardé
-            this.editingEnabled = savedState !== 'false';
+            this.editingEnabled = savedState === 'true';
         }
         
         console.log('Constructor: savedState =', savedState, 'editingEnabled =', this.editingEnabled);

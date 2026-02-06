@@ -32,7 +32,7 @@
     </script>
 
   </head>
-  <body style="padding-bottom: 60px;" <?php if(isset($_SESSION['admin']) && $_SESSION['admin'] === true): ?>class="admin-mode" data-disable-inline-editing="true"<?php endif; ?>>
+  <body style="padding-bottom: 60px;">
 
 <?= $header  ?>
  <div class="section">

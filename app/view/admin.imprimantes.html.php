@@ -9,29 +9,29 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
     <div class="container">
         <div class="row">
             <div class="col-md-12">
-                <h1 class="text-center"><i class="fa fa-print"></i> Gestion du Moniteur d'Imprimantes</h1>
+                <h1 class="text-center"><i class="fa fa-print"></i> <?php _e('admin_printers.title'); ?></h1>
                 <hr>
 
                 <!-- Statut du moniteur -->
                 <div class="panel panel-info" id="monitor-status-panel">
                     <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-info-circle"></i> Statut du Moniteur</h3>
+                        <h3 class="panel-title"><i class="fa fa-info-circle"></i> <?php _e('admin_printers.monitor_status'); ?></h3>
                     </div>
                     <div class="panel-body">
                         <div id="monitor-status">
-                            <p><i class="fa fa-spinner fa-spin"></i> Vérification du statut...</p>
+                            <p><i class="fa fa-spinner fa-spin"></i> <?php _e('admin_printers.checking_status'); ?></p>
                         </div>
                         <div id="monitor-actions" style="margin-top: 15px;">
                             <button class="btn btn-success" id="btn-start-monitor" onclick="toggleMonitor(true)"
                                 style="display: none;">
-                                <i class="fa fa-play"></i> Démarrer le moniteur
+                                <i class="fa fa-play"></i> <?php _e('admin_printers.start_monitor'); ?>
                             </button>
                             <button class="btn btn-warning" id="btn-stop-monitor" onclick="toggleMonitor(false)"
                                 style="display: none;">
-                                <i class="fa fa-stop"></i> Arrêter le moniteur
+                                <i class="fa fa-stop"></i> <?php _e('admin_printers.stop_monitor'); ?>
                             </button>
                             <button class="btn btn-info" onclick="refreshStatus()">
-                                <i class="fa fa-refresh"></i> Actualiser
+                                <i class="fa fa-refresh"></i> <?php _e('admin_printers.refresh'); ?>
                             </button>
                         </div>
                     </div>
@@ -40,52 +40,40 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                 <!-- Avertissement droits administrateur (Windows uniquement) -->
                 <div class="panel panel-danger" id="admin-warning-panel" style="display: none;">
                     <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-exclamation-triangle"></i> Droits Administrateur Requis
+                        <h3 class="panel-title"><i class="fa fa-exclamation-triangle"></i> <?php _e('admin_printers.admin_rights_required'); ?>
                         </h3>
                     </div>
                     <div class="panel-body">
-                        <p><strong>L'application n'est pas lancée en mode administrateur.</strong></p>
-                        <p>Pour que le système puisse calculer le <strong>taux de remplissage (fill rate)</strong> des
-                            impressions,
-                            l'application doit avoir les droits administrateur pour accéder aux fichiers spool de
-                            Windows.</p>
+                        <p><strong><?php _e('admin_printers.not_admin_msg'); ?></strong></p>
+                        <p><?php _e('admin_printers.admin_rights_desc'); ?></p>
 
                         <div class="row" style="margin-top: 15px;">
                             <div class="col-md-6">
-                                <h4><i class="fa fa-magic"></i> Solution Rapide</h4>
-                                <button class="btn btn-warning bt
-
-n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
-                                    <i class="fa fa-refresh"></i> Relancer en Administrateur
+                                <h4><i class="fa fa-magic"></i> <?php _e('admin_printers.quick_solution'); ?></h4>
+                                <button class="btn btn-warning btn-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
+                                    <i class="fa fa-refresh"></i> <?php _e('admin_printers.restart_admin'); ?>
                                 </button>
                                 <p class="text-muted" style="margin-top: 10px; font-size: 12px;">
-                                    <i class="fa fa-info-circle"></i> Cette action va fermer et relancer l'application
-                                    avec les droits requis.
+                                    <i class="fa fa-info-circle"></i> <?php _e('admin_printers.restart_admin_desc'); ?>
                                 </p>
                             </div>
                             <div class="col-md-6">
-                                <h4><i class="fa fa-graduation-cap"></i> Tutoriel Manuel</h4>
+                                <h4><i class="fa fa-graduation-cap"></i> <?php _e('admin_printers.manual_tutorial'); ?></h4>
                                 <ol style="font-size: 13px;">
-                                    <li>Fermez cette application</li>
-                                    <li>Trouvez l'icône de l'application sur votre bureau ou dans le menu Démarrer</li>
-                                    <li><strong>Clic droit</strong> sur l'icône</li>
-                                    <li>Cliquez sur <strong>"Exécuter en tant qu'administrateur"</strong></li>
+                                    <li><?php _e('admin_printers.step1'); ?></li>
+                                    <li><?php _e('admin_printers.step2'); ?></li>
+                                    <li><?php _e('admin_printers.step3'); ?></li>
+                                    <li><?php _e('admin_printers.step4'); ?></li>
                                 </ol>
                                 <p class="text-muted" style="font-size: 12px;">
-                                    <i class="fa fa-lightbulb-o"></i> Vous pouvez configurer l'appli pour toujours
-                                    démarrer en admin :
-                                    <br>Clic droit sur l'icône → Propriétés → Compatibilité →
-                                    Cocher "Exécuter ce programme en tant qu'administrateur"
+                                    <i class="fa fa-lightbulb-o"></i> <?php _e('admin_printers.admin_tip'); ?>
                                 </p>
                             </div>
                         </div>
 
                         <div class="alert alert-info" style="margin-top: 15px; margin-bottom: 0;">
-                            <strong><i class="fa fa-info-circle"></i> Que se passe-t-il sans les droits admin
-                                ?</strong><br>
-                            L'application fonctionnera normalement, mais le <strong>taux de remplissage</strong> sur les
-                            impressions
-                            sera affiché comme <code>N/A</code> ou <code>0%</code>.
+                            <strong><i class="fa fa-info-circle"></i> <?php _e('admin_printers.what_if_no_admin'); ?></strong><br>
+                            <?php _e('admin_printers.what_if_no_admin_desc'); ?>
                         </div>
                     </div>
                 </div>
@@ -93,11 +81,11 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 <!-- Liste des imprimantes -->
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-list"></i> Imprimantes Disponibles</h3>
+                        <h3 class="panel-title"><i class="fa fa-list"></i> <?php _e('admin_printers.available_printers'); ?></h3>
                     </div>
                     <div class="panel-body">
                         <div id="printers-list">
-                            <p><i class="fa fa-spinner fa-spin"></i> Chargement des imprimantes...</p>
+                            <p><i class="fa fa-spinner fa-spin"></i> <?php _e('admin_printers.loading_printers'); ?></p>
                         </div>
                     </div>
                 </div>
@@ -105,24 +93,23 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 <!-- Configuration Mappings -->
                 <div class="panel panel-warning">
                     <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-link"></i> Configuration des Mappings (Auto-Tirage)</h3>
+                        <h3 class="panel-title"><i class="fa fa-link"></i> <?php _e('admin_printers.mappings_config'); ?></h3>
                     </div>
                     <div class="panel-body">
-                        <p class="text-muted">Associez les imprimantes système aux machines de la base de données pour
-                            l'enregistrement automatique.</p>
+                        <p class="text-muted"><?php _e('admin_printers.mappings_desc'); ?></p>
                         <div id="mappings-container">
                             <table class="table table-bordered" id="mappings-table">
                                 <thead>
                                     <tr>
-                                        <th>Imprimante Système</th>
-                                        <th>Machine Associée</th>
-                                        <th>Action</th>
+                                        <th><?php _e('admin_printers.system_printer'); ?></th>
+                                        <th><?php _e('admin_printers.associated_machine'); ?></th>
+                                        <th><?php _e('admin_machines.actions'); ?></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
                                         <td colspan="3" class="text-center"><i class="fa fa-spinner fa-spin"></i>
-                                            Chargement...</td>
+                                            <?php _e('common.loading'); ?></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -133,11 +120,11 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 <!-- Statistiques -->
                 <div class="panel panel-success">
                     <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-bar-chart"></i> Statistiques d'Impression</h3>
+                        <h3 class="panel-title"><i class="fa fa-bar-chart"></i> <?php _e('admin_printers.stats_title'); ?></h3>
                     </div>
                     <div class="panel-body">
                         <div id="stats-container">
-                            <p><i class="fa fa-spinner fa-spin"></i> Chargement des statistiques...</p>
+                            <p><i class="fa fa-spinner fa-spin"></i> <?php _e('admin_printers.loading_stats'); ?></p>
                         </div>
                     </div>
                 </div>
@@ -145,13 +132,13 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 <!-- Liste des impressions récentes -->
                 <div class="panel panel-primary">
                     <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-history"></i> Impressions Récentes</h3>
+                        <h3 class="panel-title"><i class="fa fa-history"></i> <?php _e('admin_printers.recent_prints'); ?></h3>
                     </div>
                     <div class="panel-body">
                         <!-- Controls de pagination en haut -->
                         <div class="row" style="margin-bottom: 15px;">
                             <div class="col-sm-6">
-                                <label for="items-per-page">Afficher par page:</label>
+                                <label for="items-per-page"><?php _e('admin_printers.items_per_page'); ?></label>
                                 <select id="items-per-page" class="form-control"
                                     style="width: auto; display: inline-block;">
                                     <option value="10">10</option>
@@ -162,8 +149,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                                 <div class="checkbox"
                                     style="display: inline-block; margin-left: 20px; vertical-align: middle; margin-top: 0;">
                                     <label>
-                                        <input type="checkbox" id="show-history" onchange="loadPrintJobs(1)"> Voir
-                                        l'historique complet (y compris traitées)
+                                        <input type="checkbox" id="show-history" onchange="loadPrintJobs(1)"> <?php _e('admin_printers.show_history'); ?>
                                     </label>
                                 </div>
                             </div>
@@ -177,16 +163,16 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                             <div class="col-sm-12 text-right">
                                 <button class="btn btn-danger" id="btn-delete-selection" onclick="deleteSelectedJobs()"
                                     disabled>
-                                    <i class="fa fa-trash"></i> Supprimer la sélection
+                                    <i class="fa fa-trash"></i> <?php _e('admin_printers.delete_selection'); ?>
                                 </button>
                                 <button class="btn btn-danger" onclick="purgeAllJobs()">
-                                    <i class="fa fa-bomb"></i> Purger tout l'historique
+                                    <i class="fa fa-bomb"></i> <?php _e('admin_printers.purge_history'); ?>
                                 </button>
                             </div>
                         </div>
 
                         <div id="print-jobs-list">
-                            <p><i class="fa fa-spinner fa-spin"></i> Chargement des impressions...</p>
+                            <p><i class="fa fa-spinner fa-spin"></i> <?php _e('admin_printers.loading_jobs'); ?></p>
                         </div>
 
                         <!-- Pagination en bas -->
@@ -196,9 +182,9 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                                     <li id="btn-first-page"><a href="#" onclick="goToPage(1); return false;"><i
                                                 class="fa fa-angle-double-left"></i></a></li>
                                     <li id="btn-prev-page"><a href="#" onclick="goToPreviousPage(); return false;"><i
-                                                class="fa fa-angle-left"></i> Précédent</a></li>
+                                                class="fa fa-angle-left"></i> <?php _e('common.previous'); ?></a></li>
                                     <li class="active"><a href="#" id="current-page-display">Page 1</a></li>
-                                    <li id="btn-next-page"><a href="#" onclick="goToNextPage(); return false;">Suivant
+                                    <li id="btn-next-page"><a href="#" onclick="goToNextPage(); return false;"><?php _e('common.next'); ?>
                                             <i class="fa fa-angle-right"></i></a></li>
                                     <li id="btn-last-page"><a href="#" onclick="goToLastPage(); return false;"><i
                                                 class="fa fa-angle-double-right"></i></a></li>
@@ -216,7 +202,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
                                 aria-hidden="true">&times;</span></button>
-                        <h4 class="modal-title" id="previewModalLabel">Aperçu du document</h4>
+                        <h4 class="modal-title" id="previewModalLabel"><?php _e('admin_printers.preview_doc'); ?></h4>
                     </div>
                     <div class="modal-body text-center"
                         style="background-color: #f5f5f5; min-height: 400px; display: flex; align-items: center; justify-content: center;">
@@ -226,7 +212,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                                 class="fa fa-exclamation-triangle"></i> Impossible de charger l'image</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Fermer</button>
+                        <button type="button" class="btn btn-default" data-dismiss="modal"><?php _e('admin_printers.close'); ?></button>
                     </div>
                 </div>
             </div>
@@ -865,15 +851,15 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                     <td style="vertical-align: middle;"><strong>${pName}</strong></td>
                     <td>
                         <select class="form-control input-sm mapping-select" data-printer="${pName}">
-                            <option value="">-- Non Assigné --</option>
-                            <optgroup label="Photocopieurs">
+                            <option value=""><?php _e('admin_printers.not_assigned'); ?></option>
+                            <optgroup label="<?php _e('tirage_multimachines.photocopieur'); ?>s">
                                 ${photocopieurs.map(p => `
                                     <option value="photocop_${p.id}" ${currentMapping && currentMapping.type === 'photocop' && currentMapping.id == p.id ? 'selected' : ''}>
                                         ${p.marque} (${p.type_encre})
                                     </option>
                                 `).join('')}
                             </optgroup>
-                            <optgroup label="Duplicopieurs">
+                            <optgroup label="<?php _e('tirage_multimachines.duplicopieur'); ?>s">
                                 ${duplicopieurs.map(d => `
                                     <option value="dupli_${d.id}" ${currentMapping && currentMapping.type === 'dupli' && currentMapping.id == d.id ? 'selected' : ''}>
                                         ${d.marque} ${d.modele}
@@ -884,7 +870,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                     </td>
                     <td>
                         <button class="btn btn-primary btn-sm btn-save-mapping" onclick="saveMapping('${pName.replace(/'/g, "\\'")}')">
-                            <i class="fa fa-save"></i> Enregistrer
+                            <i class="fa fa-save"></i> <?php _e('admin_printers.save'); ?>
                         </button>
                     </td>
                 </tr>`;
@@ -953,3 +939,5 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 loadMappings();
             });
         </script>
+    </div>
+</div>

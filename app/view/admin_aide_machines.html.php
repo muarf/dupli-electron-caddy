@@ -362,7 +362,7 @@
           } else {
             showAppModal({
               type: 'danger',
-              message: '<?php _e('admin_aide_machines.error_loading_qa'); ?>: ' + (response.error || '<?php _e('admin_aide_machines.unknown_error'); ?>')
+              message: "<?php echo __('admin_aide_machines.error_loading_qa'); ?>: " + (response.error || "<?php echo __('admin_aide_machines.unknown_error'); ?>")
             });
           }
         })
