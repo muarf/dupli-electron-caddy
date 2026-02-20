@@ -1,0 +1,281 @@
+name: Build and Release Beta
+
+on:
+  push:
+    branches:
+      - feature/multi-session-management  # Build auto sur push de la branche beta
+    tags:
+      - 'v2.0.0-beta*'  # Ou tags beta manuels
+
+permissions:
+  contents: write
+
+jobs:
+  get-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      tag: ${{ steps.get-version.outputs.tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: get-version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v2.0.0-beta* ]]; then
+            # Tag explicite beta
+            VERSION="${{ github.ref_name }}"
+            VERSION="${VERSION#v}"
+            TAG="${{ github.ref_name }}"
+          else
+            # Build auto depuis la branche - génère un tag beta avec timestamp
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            BUILD_NUM=$(date +%Y%m%d%H%M%S)
+            VERSION="2.0.0-beta.${BUILD_NUM}+${SHORT_SHA}"
+            TAG="v2.0.0-beta.${BUILD_NUM}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "✅ Version beta: $VERSION"
+          echo "✅ Tag: $TAG"
+
+  create-beta-release:
+    needs: get-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub Release (Beta)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = '${{ needs.get-version.outputs.tag }}';
+            const version = '${{ needs.get-version.outputs.version }}';
+            const shortSha = '${{ github.sha }}'.substring(0, 7);
+            
+            try {
+              const release = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: tag
+              });
+              console.log(`✅ Release beta ${tag} existe déjà`);
+            } catch (error) {
+              if (error.status === 404) {
+                await github.rest.repos.createRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  tag_name: tag,
+                  name: `Duplicator Beta v${version}`,
+                  body: `## 🧪 Version Beta v${version}
+            
+⚠️ **Ceci est une version BETA** - Contient les dernières fonctionnalités mais peut être instable.
+
+### 🔄 Channel Beta
+Cette version coexiste avec la stable. Elle a son propre dossier de données et son propre mécanisme de mise à jour.
+
+### 📦 Fichiers disponibles
+- **Duplicator-Beta-Setup-${version}.exe** - Installeur Windows
+- **Duplicator-Beta-${version}-linux-x86_64.AppImage** - Linux AppImage
+- **Duplicator-Beta-${version}-linux-amd64.deb** - Paquet Debian
+
+Commit: \`${shortSha}\`
+Branch: \`feature/multi-session-management\``,
+                  draft: false,
+                  prerelease: true  # Marqué comme prerelease
+                });
+                console.log(`✅ Release beta ${tag} créée`);
+              } else {
+                throw error;
+              }
+            }
+
+  build-linux-beta:
+    needs: [get-version, create-beta-release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          clean: true
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Update package.json for Beta
+        run: |
+          VERSION="${{ needs.get-version.outputs.version }}"
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '$VERSION';
+            pkg.name = 'dupli-electron-beta';
+            pkg.productName = 'Duplicator Beta';
+            pkg.description = 'Duplicator Beta - Test new features';
+            // Modifier le build pour la beta
+            if (!pkg.build) pkg.build = {};
+            pkg.build.appId = 'com.dupli.beta';
+            pkg.build.productName = 'Duplicator Beta';
+            // Channel de mise à jour spécifique
+            pkg.build.publish = {
+              provider: 'github',
+              owner: 'muarf',
+              repo: 'dupli-electron-caddy',
+              channel: 'beta',
+              releaseType: 'prerelease'
+            };
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            console.log('✅ package.json configuré pour la beta');
+          "
+          grep -E '"version"|"name"|"productName"|"appId"' package.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Composer and PHP dependencies
+        run: |
+          curl -sS https://getcomposer.org/installer | php
+          cd app
+          php ../composer.phar install --no-dev --optimize-autoloader --ignore-platform-reqs
+          cd ..
+
+      - name: Download Caddy
+        run: |
+          wget -q https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_linux_amd64.tar.gz
+          tar -xzf caddy_2.7.6_linux_amd64.tar.gz -C caddy/
+          rm caddy_2.7.6_linux_amd64.tar.gz
+          chmod +x caddy/caddy
+
+      - name: Build Linux Beta
+        run: |
+          # Build avec le builder spécifique beta
+          npx electron-builder --config electron-builder-beta.yml -l deb AppImage
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Linux Beta artifacts
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.get-version.outputs.tag }}
+          files: |
+            dist/Duplicator-Beta-*
+            dist/latest-linux-beta.yml
+            dist/latest-linux-beta-deb.yml
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-windows-beta:
+    needs: [get-version, create-beta-release, build-linux-beta]
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Update package.json for Beta
+        run: |
+          $VERSION = '${{ needs.get-version.outputs.version }}'
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '$VERSION';
+            pkg.name = 'dupli-electron-beta';
+            pkg.productName = 'Duplicator Beta';
+            pkg.description = 'Duplicator Beta - Test new features';
+            if (!pkg.build) pkg.build = {};
+            pkg.build.appId = 'com.dupli.beta';
+            pkg.build.productName = 'Duplicator Beta';
+            pkg.build.publish = {
+              provider: 'github',
+              owner: 'muarf',
+              repo: 'dupli-electron-caddy',
+              channel: 'beta',
+              releaseType: 'prerelease'
+            };
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            console.log('✅ package.json configuré pour la beta');
+          "
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Composer and PHP dependencies
+        run: |
+          Invoke-WebRequest -Uri "https://getcomposer.org/download/latest-stable/composer.phar" -OutFile "composer.phar"
+          cd app
+          php ../composer.phar install --no-dev --optimize-autoloader --ignore-platform-reqs
+          cd ..
+
+      - name: Download Caddy
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_windows_amd64.zip" -OutFile "caddy_windows.zip"
+          Expand-Archive -Path "caddy_windows.zip" -DestinationPath "caddy" -Force
+          Remove-Item "caddy_windows.zip"
+
+      - name: Build Windows Beta
+        run: npx electron-builder --config electron-builder-beta.yml --win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows Beta artifacts
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.get-version.outputs.tag }}
+          files: |
+            dist/Duplicator-Beta-*.exe
+            dist/Duplicator-Beta-*.zip
+            dist/latest-beta.yml
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-latest-beta:
+    needs: [get-version, build-linux-beta, build-windows-beta]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update latest-beta.yml
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Récupérer la release beta pour créer/mettre à jour latest-beta.yml
+            const tag = '${{ needs.get-version.outputs.tag }}';
+            const version = '${{ needs.get-version.outputs.version }}';
+            
+            try {
+              const { data: release } = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: tag
+              });
+              
+              // Créer un fichier latest-beta.yml qui pointe vers la dernière beta
+              const latestBetaYml = `version: ${version}
+files: []
+path: Duplicator-Beta-Setup-${version}.exe
+sha512: placeholder
+releaseDate: ${new Date().toISOString()}
+channel: beta`;
+              
+              console.log('✅ Latest beta metadata préparé');
+            } catch (error) {
+              console.log('⚠️ Impossible de mettre à jour latest-beta:', error.message);
+            }

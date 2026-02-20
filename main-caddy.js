@@ -2275,6 +2275,12 @@ function setupAutoUpdater() {
     autoUpdater.autoDownload = false; // Ne pas télécharger automatiquement (demander d'abord)
     autoUpdater.autoInstallOnAppQuit = true; // Installer automatiquement au redémarrage
 
+    // Détecter si c'est la version beta (basé sur appId ou nom du dossier)
+    const isBeta = app.getName() === 'dupli-electron-beta' || app.getAppPath().includes('beta') || app.getName().includes('beta');
+    const channel = isBeta ? 'beta' : 'latest';
+    
+    console.log(`[AutoUpdater] Mode détecté: ${isBeta ? 'BETA (channel: beta)' : 'STABLE (channel: latest)'}`);
+
     // Détecter le format de l'application
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
 
@@ -2297,13 +2303,19 @@ function setupAutoUpdater() {
             provider: 'github',
             owner: 'muarf',
             repo: 'dupli-electron-caddy',
-            // Utiliser updateConfigPath pour pointer vers latest-linux-appimage.yml
-            // Cette option n'est pas directement dans setFeedURL, mais peut être dans providerOptions
+            channel: channel,  // 'beta' ou 'latest'
+            releaseType: isBeta ? 'prerelease' : 'release'
         });
     } else {
-        console.log('Version .deb détectée - utilisation de DebUpdater avec latest-linux.yml');
-        // Pour .deb, electron-updater utilisera latest-linux.yml (qui pointe vers .deb après le build)
-        // Pas besoin de configuration spéciale, c'est le comportement par défaut
+        console.log('Version .deb détectée - configuration du channel:', channel);
+        // Configurer le channel pour .deb aussi (beta ou stable)
+        autoUpdater.setFeedURL({
+            provider: 'github',
+            owner: 'muarf',
+            repo: 'dupli-electron-caddy',
+            channel: channel,
+            releaseType: isBeta ? 'prerelease' : 'release'
+        });
     }
 
     // Avant de quitter pour installer, arrêter proprement Caddy/PHP
