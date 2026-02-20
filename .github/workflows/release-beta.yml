@@ -209,7 +209,7 @@ jobs:
           "
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --omit=optional
 
       - name: Install Composer and PHP dependencies
         run: |
