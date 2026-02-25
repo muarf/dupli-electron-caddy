@@ -4,24 +4,24 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Duplicator</title>
-    <script type="text/javascript" src="js/jquery.min.js"></script>
-    <script type="text/javascript" src="js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="js/calcul.js"></script>
+    <script type="text/javascript" src="public/js/jquery.min.js"></script>
+    <script type="text/javascript" src="public/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="public/js/calcul.js"></script>
     <!-- Lazy Loading pour optimiser les images -->
-    <script type="text/javascript" src="js/lazy-loading.js"></script>
+    <script type="text/javascript" src="public/js/lazy-loading.js"></script>
     <!-- Preload critique - seulement la police principale utilisée immédiatement -->
-    <link rel="preload" href="fonts/fontawesome-webfont.woff2" as="font" type="font/woff2" crossorigin="anonymous" media="all">
+    <link rel="preload" href="public/fonts/fontawesome-webfont.woff2" as="font" type="font/woff2" crossorigin="anonymous" media="all">
     <!-- Preload du CSS critique -->
-    <link rel="preload" href="css/bootstrap.css" as="style">
-    <link rel="preload" href="css/font-awesome.min.css" as="style">
+    <link rel="preload" href="public/css/bootstrap.css" as="style">
+    <link rel="preload" href="public/css/font-awesome.min.css" as="style">
     
     <!-- CSS critique bloquant pour éviter le FOUC -->
-    <link href="css/bootstrap.css" rel="stylesheet" type="text/css">
+    <link href="public/css/bootstrap.css" rel="stylesheet" type="text/css">
     
     <!-- CSS non-bloquant pour les ressources non-critiques -->
-    <link href="css/font-awesome.min.css" rel="stylesheet" type="text/css" media="print" onload="this.media='all'">
+    <link href="public/css/font-awesome.min.css" rel="stylesheet" type="text/css" media="print" onload="this.media='all'">
     <noscript>
-        <link href="css/font-awesome.min.css" rel="stylesheet" type="text/css">
+        <link href="public/css/font-awesome.min.css" rel="stylesheet" type="text/css">
     </noscript>
     <script>
       $(document).ready(function(){

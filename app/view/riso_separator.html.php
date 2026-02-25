@@ -1,7 +1,7 @@
 <!-- JSZip pour export multiple (local) -->
-<script src="js/jszip.min.js"></script>
+<script src="public/js/jszip.min.js"></script>
 <!-- Riso Tools - Fonctions avancées -->
-<script src="js/riso-tools.js"></script>
+<script src="public/js/riso-tools.js"></script>
 
 <style>
     .riso-container {

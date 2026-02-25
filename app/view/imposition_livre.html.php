@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Imposition Livre (Cut & Stack) - Version PHP</title>
-    <link href="css/bootstrap.min.css" rel="stylesheet">
-    <link href="css/font-awesome.min.css" rel="stylesheet">
+    <link href="public/css/bootstrap.min.css" rel="stylesheet">
+    <link href="public/css/font-awesome.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #f8f9fa;
@@ -472,7 +472,7 @@
         </div>
     </div>
 
-    <script src="js/bootstrap.min.js"></script>
+    <script src="public/js/bootstrap.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const fileUploadArea = document.getElementById('fileUploadArea');

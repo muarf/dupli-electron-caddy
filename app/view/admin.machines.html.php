@@ -975,4 +975,4 @@
     </div>
   </div>
 </div>
-<script src="js/machine-rename.js"></script>
+<script src="public/js/machine-rename.js"></script>

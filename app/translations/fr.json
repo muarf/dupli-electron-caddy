@@ -49,7 +49,11 @@
     "submit": "S'inscrire",
     "auto_tirage": "Auto Tirage",
     "auto_tirage_desc": "Gérez vos sessions de tirage autonome et suivez vos impressions en temps réel.",
-    "back_to_home": "Retour à l'accueil"
+    "back_to_home": "Retour à l'accueil",
+    "health": {
+      "critical_error_title": "Problèmes de configuration détectés",
+      "critical_error_desc": "Certaines dépendances critiques sont manquantes. L'application risque de ne pas fonctionner correctement :"
+    }
   },
   "admin": {
     "title": "Administration",

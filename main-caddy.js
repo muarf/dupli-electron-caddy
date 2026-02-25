@@ -1072,8 +1072,8 @@ function startPhpFpm() {
     let appPath;
     if (isAppImage || isMacOS || (isLinux && isPackaged)) {
         // Pour AppImage, essayer d'abord app/app/public (structure réelle sans ASAR)
-        const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
-        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
+        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app');
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'app');
 
         if (fs.existsSync(noAsarPath)) {
             appPath = noAsarPath;
@@ -1088,8 +1088,8 @@ function startPhpFpm() {
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
         // Même avec asar: false, les fichiers sont dans resources/app/
-        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
-        const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
+        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app');
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'app');
 
         // Essayer d'abord sans ASAR (configuration actuelle: resources/app/app/public)
         if (fs.existsSync(noAsarPath)) {
@@ -1103,10 +1103,10 @@ function startPhpFpm() {
         }
         else {
             console.error('App Path non trouvé ni avec ASAR ni sans ASAR');
-            appPath = path.join(__dirname, 'app', 'public'); // Fallback développement
+            appPath = path.join(__dirname, 'app'); // Fallback développement
         }
     } else {
-        appPath = path.join(__dirname, 'app', 'public');
+        appPath = path.join(__dirname, 'app');
     }
 
     console.log('Démarrage du serveur PHP intégré...');
@@ -1144,7 +1144,7 @@ function startPhpFpm() {
         // Le PHP système a déjà ses extensions configurées
         // Pour que vendor/autoload.php soit accessible, on utilise le répertoire parent de public
         // car public est le document root mais vendor est au niveau de public
-        const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+        const appBasePath = appPath; // Root is app/
         const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
         console.log('Configuration PHP pour Linux packagé/AppImage (PHP système)');
         console.log('Document root (public):', appPath);
@@ -1179,7 +1179,7 @@ function startPhpFpm() {
         }
 
         // Ajouter le répertoire parent au include_path pour que vendor/autoload.php soit accessible
-        const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+        const appBasePath = appPath; // Root is app/
         const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
 
         console.log('Configuration PHP pour Windows');
@@ -1222,7 +1222,7 @@ function startPhpFpm() {
         console.log('PHP Ext Path:', phpExtPath);
 
         // Ajouter le répertoire parent au include_path pour que vendor/autoload.php soit accessible
-        const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+        const appBasePath = appPath; // Root is app/
         const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
 
         if (fs.existsSync(phpIniPath)) {
@@ -1242,7 +1242,7 @@ function startPhpFpm() {
             ];
         } else {
             // Pour macOS/dev, ajouter aussi le répertoire parent au include_path
-            const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+            const appBasePath = appPath; // Root is app/
             const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
             phpArgs = [
                 '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
@@ -1314,10 +1314,10 @@ function startPhpServer() {
     // Le chemin de l'app dépend si on est en AppImage, Windows ou développement
     const isWindows = process.platform === 'win32';
     const appPath = isAppImage
-        ? path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public')
+        ? (fs.existsSync(path.join(process.resourcesPath, 'app', 'app')) ? path.join(process.resourcesPath, 'app', 'app') : path.join(process.resourcesPath, 'app.asar.unpacked', 'app'))
         : isWindows
-            ? path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public')
-            : path.join(__dirname, 'app', 'public');
+            ? (fs.existsSync(path.join(process.resourcesPath, 'app', 'app')) ? path.join(process.resourcesPath, 'app', 'app') : path.join(process.resourcesPath, 'app.asar.unpacked', 'app'))
+            : path.join(__dirname, 'app');
 
     console.log('Démarrage du serveur PHP intégré (fallback)...');
     console.log('PHP Path:', phpPath);
@@ -1487,8 +1487,8 @@ async function startCaddy() {
     let appPath;
     if (isAppImage || isMacOS || (isLinux && isPackaged)) {
         // Pour AppImage, essayer d'abord app/app/public (structure réelle sans ASAR)
-        const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
-        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'app');
+        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app');
 
         if (fs.existsSync(noAsarPath)) {
             appPath = noAsarPath;
@@ -1503,8 +1503,8 @@ async function startCaddy() {
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
         // Même avec asar: false, les fichiers sont dans resources/app/
-        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
-        const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
+        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app');
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'app');
 
         // Essayer d'abord sans ASAR (configuration actuelle: resources/app/app/public)
         if (fs.existsSync(noAsarPath)) {
@@ -1515,10 +1515,10 @@ async function startCaddy() {
             appPath = asarPath;
         }
         else {
-            appPath = path.join(__dirname, 'app', 'public'); // Fallback développement
+            appPath = path.join(__dirname, 'app'); // Fallback développement
         }
     } else {
-        appPath = path.join(__dirname, 'app', 'public');
+        appPath = path.join(__dirname, 'app');
     }
 
     console.log('Caddy App Path:', appPath);
@@ -2278,7 +2278,7 @@ function setupAutoUpdater() {
     // Détecter si c'est la version beta (basé sur appId ou nom du dossier)
     const isBeta = app.getName() === 'dupli-electron-beta' || app.getAppPath().includes('beta') || app.getName().includes('beta');
     const channel = isBeta ? 'beta' : 'latest';
-    
+
     console.log(`[AutoUpdater] Mode détecté: ${isBeta ? 'BETA (channel: beta)' : 'STABLE (channel: latest)'}`);
 
     // Détecter le format de l'application
@@ -2576,9 +2576,9 @@ ipcMain.handle('open-file', async (event, filePath) => {
         let fullPath;
 
         if (isAppImage || isPackaged) {
-            fullPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public', filePath);
+            fullPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', filePath);
         } else {
-            fullPath = path.join(__dirname, 'app', 'public', filePath);
+            fullPath = path.join(__dirname, 'app', filePath);
         }
 
         await shell.openPath(fullPath);

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuration initiale - Dupli</title>
-    <link href="css/bootstrap.css" rel="stylesheet" type="text/css">
+    <link href="public/css/bootstrap.css" rel="stylesheet" type="text/css">
     <style>
         .setup-container {
             max-width: 1000px;
@@ -619,8 +619,8 @@
 
         <?php endif; // Fin du mode create ?>
 
-        <script src="js/jquery.min.js"></script>
-        <script src="js/bootstrap.min.js"></script>
+        <script src="public/js/jquery.min.js"></script>
+        <script src="public/js/bootstrap.min.js"></script>
 
         <?php if ($mode === 'create'): // Script uniquement pour le mode create ?>
             <script>
