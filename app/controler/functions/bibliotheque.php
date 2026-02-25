@@ -39,7 +39,7 @@ function getBibliothequeDir() {
     }
     
     // Développement local (à côté de duplinew.sqlite qui est dans ../)
-    return normalizePath(__DIR__ . '/../../bibliotheque');
+    return normalizePath(__DIR__ . '/../../../bibliotheque');
 }
 
 /**
