@@ -163,7 +163,7 @@ function check_system_dependencies(): array
     $folders_to_check = [
         'tmp' => '/../../public/tmp',
         'uploads' => '/../../public/uploads',
-        'bibliotheque' => '/../../bibliotheque'
+        'bibliotheque' => '/../../../bibliotheque'
     ];
 
     foreach ($folders_to_check as $key => $rel_path) {
