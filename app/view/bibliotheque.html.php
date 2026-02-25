@@ -125,7 +125,7 @@
 
                         <!-- Bouton pour Web Standard (Simulé pour l'UX, mais limité par sécurité) -->
                         <button class="btn btn-outline-secondary" type="button" id="webBrowseInfo"
-                            onclick="showAppModal({ title: '<?php echo __('library.path_help_title'); ?>', message: '<?php echo __('library.path_help_msg'); ?>', type: 'info' })">
+                            onclick="showAppModal({ title: '<?php echo addslashes(__('library.path_help_title')); ?>', message: '<?php echo addslashes(__('library.path_help_msg')); ?>', type: 'info' })">
                             <i class="fa fa-info-circle"></i> <?php _e('library.path_help_btn'); ?>
                         </button>
                     </div>
@@ -377,7 +377,7 @@
 </style>
 
 <!-- PDF.js -->
-<script src="js/build/pdf.js"></script>
+<script src="public/js/build/pdf.js"></script>
 <script>
     let currentFiles = [];
     let filesToIndex = [];
@@ -740,7 +740,7 @@
 
     function deleteFile(id) {
         showAppModal({
-            message:  '<?php echo __('library.path_help_msg'); ?>' ,
+            message: "<?php echo addslashes(__('library.delete_confirm')); ?>",
             confirm: true,
             type: 'danger'
         }, (confirmed) => {
@@ -812,7 +812,7 @@
         const path = document.getElementById('folderPath').value;
         const recursive = document.getElementById('recursiveCheck').checked;
 
-        if (!path) return showAppModal({ message:  '<?php echo __('library.path_help_msg'); ?>' , type: 'warning' });
+        if (!path) return showAppModal({ message: "<?php echo addslashes(__('library.path_help_msg')); ?>", type: 'warning' });
 
         document.getElementById('previewArea').style.display = 'block';
         document.getElementById('previewList').innerHTML = '<tr><td colspan="3" class="text-center"><i class="fa fa-spinner fa-spin"></i> <?php _e('library.searching'); ?></td></tr>';
@@ -914,7 +914,7 @@
                     // et on l'ouvre si l'utilisateur est sur la page.
                     
                     // Pré-remplir la modale avec "Indexation en cours..."
-                    document.getElementById('folderPath').value =  "<?php echo __('library.indexation_in_progress'); ?>" ;
+                    document.getElementById('folderPath').value = "<?php echo addslashes(__('library.indexation_in_progress')); ?>";
                     document.getElementById('indexBtn').disabled = true;
                     
                     openIndexModal();
@@ -959,7 +959,7 @@
                     progressBar.classList.add('bg-success');
                     
                     showAppModal({ 
-                        message:  "<?php echo __('library.indexation_completed', ['count' => '', 'errors' => '']); ?>" .replace(':count', statusData.indexed_count || 0).replace(':errors', statusData.error_count || 0), 
+                        message: "<?php echo addslashes(__('library.indexation_completed', ['count' => '', 'errors' => ''])); ?>".replace(':count', statusData.indexed_count || 0).replace(':errors', statusData.error_count || 0), 
                         type: 'success' 
                     });
                     
@@ -982,7 +982,7 @@
                     filesToIndex = [];
                 } else if (statusData.status === 'error' || statusData.status === 'fatal_error') {
                     clearInterval(pollInterval);
-                    showAppModal({ message:  '<?php echo __('library.path_help_msg'); ?>'  + (statusData.error_msg || 'Inconnue'), type: 'danger' });
+                    showAppModal({ message: "<?php echo addslashes(__('library.path_help_msg')); ?>" + (statusData.error_msg || 'Inconnue'), type: 'danger' });
                     btn.disabled = false;
                 } else if (statusData.status === 'none' || statusData.status === 'unknown') {
                     // Job disparu ?
