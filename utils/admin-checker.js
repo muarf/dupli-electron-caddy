@@ -12,8 +12,21 @@ const execAsync = promisify(exec);
  * @returns {Promise<boolean>} true si admin, false sinon
  */
 async function isRunningAsAdmin() {
+    // Sur Linux, on vérifie l'accès au dossier spool CUPS
+    if (process.platform === 'linux') {
+        try {
+            const fs = require('fs');
+            // On tente de lister le répertoire pour vérifier les droits de lecture/exécution
+            await fs.promises.access('/var/spool/cups', fs.constants.R_OK | fs.constants.X_OK);
+            return true;
+        } catch (error) {
+            console.log('Linux: Accès refusé à /var/spool/cups');
+            return false;
+        }
+    }
+
     if (process.platform !== 'win32') {
-        return false; // Pas applicable sur non-Windows
+        return false; // Autres OS non supportés pour le moment
     }
 
     try {

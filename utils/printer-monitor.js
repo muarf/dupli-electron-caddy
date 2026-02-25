@@ -40,11 +40,42 @@ class PrinterMonitor {
      * Démarrer la surveillance du spooler d'impression (Mode Natif)
      */
     start() {
-        if (!this.isWindows) {
-            console.log('La surveillance des imprimantes n\'est disponible que sur Windows');
+        if (this.isWindows) {
+            return this.startWindowsMonitor();
+        } else if (process.platform === 'linux') {
+            return this.startLinuxMonitor();
+        } else {
+            console.log('La surveillance des imprimantes n\'est pas supportée sur cet OS');
             return false;
         }
+    }
 
+    startLinuxMonitor() {
+        if (this.monitoring) return false;
+
+        try {
+            const LinuxSpoolAnalyzer = require('./spool-analyzer-linux');
+            this.linuxAnalyzer = new LinuxSpoolAnalyzer();
+
+            this.linuxAnalyzer.on('job', (jobInfo) => {
+                if (this.callbacks.onPrintJob) {
+                    this.callbacks.onPrintJob(jobInfo);
+                }
+            });
+
+            if (this.linuxAnalyzer.start()) {
+                console.log('✅ Surveillance Linux active via CUPS Spool');
+                this.monitoring = true;
+                return true;
+            }
+            return false;
+        } catch (e) {
+            console.error('❌ Erreur démarrage moniteur Linux:', e);
+            return false;
+        }
+    }
+
+    startWindowsMonitor() {
         if (this.monitoring) {
             console.log('La surveillance est déjà active');
             return false;
@@ -91,9 +122,13 @@ class PrinterMonitor {
         if (!this.monitoring) return;
 
         console.log('Arrêt de la surveillance...');
-        if (win32Printer) {
+
+        if (this.isWindows && win32Printer) {
             win32Printer.stopPrinterMonitor();
+        } else if (this.linuxAnalyzer) {
+            this.linuxAnalyzer.stop();
         }
+
         this.monitoring = false;
         this.processedJobs.clear();
     }
@@ -204,16 +239,27 @@ class PrinterMonitor {
      * @returns {Promise<Array>}
      */
     async getPrinters() {
-        if (!win32Printer) {
-            console.error('❌ Module natif non chargé');
-            return [];
+        if (this.isWindows) {
+            if (!win32Printer) {
+                console.error('❌ Module natif non chargé');
+                return [];
+            }
+            try {
+                return await win32Printer.getPrinters();
+            } catch (e) {
+                console.error('❌ Erreur getPrinters:', e);
+                return [];
+            }
+        } else if (process.platform === 'linux') {
+            try {
+                const cupsPrinter = require('../src/print-engine/linux/cups-printer');
+                return await cupsPrinter.getPrinters();
+            } catch (e) {
+                console.error('❌ Erreur getPrinters Linux:', e);
+                return [];
+            }
         }
-        try {
-            return await win32Printer.getPrinters();
-        } catch (e) {
-            console.error('❌ Erreur getPrinters:', e);
-            return [];
-        }
+        return [];
     }
 }
 
