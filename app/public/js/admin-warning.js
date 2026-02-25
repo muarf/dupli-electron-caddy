@@ -57,7 +57,8 @@
          */
         async show(allowDismiss = false) {
             // Vérifier les droits admin
-            const { isAdmin } = await this.checkAdminStatus();
+            const result = await this.checkAdminStatus();
+            const isAdmin = result.isAdmin;
 
             if (isAdmin) {
                 return; // Admin détecté, pas d'avertissement
@@ -69,7 +70,7 @@
             }
 
             // Créer le HTML de l'avertissement
-            const html = this.createWarningHTML(allowDismiss);
+            const html = this.createWarningHTML(allowDismiss, result);
 
             // Insérer dans la page
             const container = document.querySelector('.container') || document.body;
@@ -84,13 +85,38 @@
         /**
          * Crée le HTML de l'avertissement
          */
-        createWarningHTML(allowDismiss) {
+        createWarningHTML(allowDismiss, result = {}) {
             const dismissButton = allowDismiss ? `
                 <button type="button" class="close" onclick="AdminWarning.handleDismiss()" aria-label="Fermer">
                     <span aria-hidden="true">&times;</span>
                 </button>
             ` : '';
 
+            if (result.platform === 'linux') {
+                const user = result.user || 'utilisateur';
+                return `
+                <div class="alert alert-warning alert-dismissible" id="admin-warning-banner" style="margin-bottom: 20px; border-left: 4px solid #f0ad4e;">
+                    ${dismissButton}
+                    <h4><i class="fa fa-exclamation-triangle"></i> Permissions d'impression manquantes</h4>
+                    <p>
+                        Pour analyser les impressions (taux de remplissage et couleurs), l'application a besoin d'un accès en lecture à la file d'attente (spool).<br>
+                        <strong>Solution recommandée :</strong> Ajoutez votre utilisateur au groupe <code>lp</code> en exécutant cette commande dans un terminal :
+                    </p>
+                    <pre style="background: #fff3cd; border: 1px solid #ffeeba; padding: 10px; margin: 10px 0;"><code>sudo usermod -aG lp ${user}</code></pre>
+                    <p>
+                        <em>Note : Vous devrez redémarrer votre session (ou l'ordinateur) pour que ce changement prenne effet.</em>
+                    </p>
+                    <div style="margin-top: 15px;">
+                        <a href="?admin&imprimantes" class="btn btn-sm btn-default">
+                            <i class="fa fa-info-circle"></i> Plus d'infos
+                        </a>
+                    </div>
+                    ${allowDismiss ? '<p class="text-muted" style="margin-top: 10px; margin-bottom: 0; font-size: 12px;"><i class="fa fa-info-circle"></i> Vous pouvez fermer cet avertissement, il ne s\'affichera plus.</p>' : ''}
+                </div>
+                `;
+            }
+
+            // Windows/Default Fallback
             return `
                 <div class="alert alert-warning alert-dismissible" id="admin-warning-banner" style="margin-bottom: 20px; border-left: 4px solid #f0ad4e;">
                     ${dismissButton}

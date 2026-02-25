@@ -2805,7 +2805,12 @@ ipcMain.handle('get-app-version', () => {
 ipcMain.handle('check-admin-status', async () => {
     try {
         const isAdmin = await isRunningAsAdmin();
-        return { success: true, isAdmin };
+        return {
+            success: true,
+            isAdmin,
+            platform: process.platform,
+            user: process.env.USER || process.env.USERNAME || 'utilisateur'
+        };
     } catch (error) {
         console.error('Erreur lors de la vérification admin:', error);
         return { success: false, error: error.message, isAdmin: false };
