@@ -1,0 +1,161 @@
+# Configuration electron-builder pour la version BETA
+# Cette config crée une app séparée "Duplicator Beta" avec son propre channel de mise à jour
+
+appId: com.dupli.beta
+productName: Duplicator Beta
+
+directories:
+  output: dist
+
+icon: icons/icon.png
+
+# Configuration de publication spécifique beta
+publish:
+  provider: github
+  owner: muarf
+  repo: dupli-electron-caddy
+  channel: beta
+  releaseType: prerelease
+  publishAutoUpdate: true
+
+files:
+  - main-caddy.js
+  - main.js
+  - preload.js
+  - icons/**/*
+  - Caddyfile
+  - php-fpm.conf
+  - php-install-guide.html
+  - "app/**/*"
+  - "!app/.git/**/*"
+  - "!app/.phpunit.result.cache"
+  - ghostscript/**/*
+  - caddy/**/*
+  - utils/**/*
+  - src/**/*
+  - "!app/vendor/phpunit/**/*"
+  - "!app/vendor/pestphp/**/*"
+  - "!app/vendor/sebastian/**/*"
+  - "!app/vendor/**/tests/**/*"
+  - "!app/vendor/**/test/**/*"
+  - "!app/vendor/**/docs/**/*"
+
+extraResources:
+  - from: icons/icon.png
+    to: icons/icon.png
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+  icon: icons
+  category: Office
+  executableName: duplicator-beta  # Nom différent pour coexister
+  executableArgs: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"]
+  desktop:
+    entry:
+      Name: Duplicator Beta
+      Comment: Duplicator Beta - Test new features
+      StartupWMClass: duplicator-beta
+      Icon: duplicator-beta
+      Terminal: false
+      Type: Application
+      Categories: Office;
+  maintainer: "Duplicator Beta <beta@duplicator.app>"
+  asar: false
+  # Noms de fichiers spécifiques beta
+  artifactName: Duplicator-Beta-${version}-${arch}.${ext}
+
+deb:
+  synopsis: Duplicator Beta - Test version
+  priority: optional
+  depends:
+    - libc6
+    - libgtk-3-0
+    - libnss3
+    - libxss1
+    - libasound2
+    - libgbm1
+    - libxshmfence1
+  afterInstall: build/deb/postinst
+
+mac:
+  target:
+    - target: dmg
+      arch: [x64]
+  category: public.app-category.productivity
+  files:
+    - main-caddy.js
+    - main.js
+    - preload.js
+    - icons/**/*
+    - Caddyfile
+    - php-fpm.conf
+    - php-install-guide.html
+    - app/**/*
+    - ghostscript/**/*
+    - caddy/**/*
+    - utils/**/*
+    - "php/**/*"
+    - src/**/*
+  asarUnpack:
+    - "php/**/*"
+    - "app/**/*"
+    - ghostscript/**/*
+    - caddy/**/*
+    - Caddyfile
+    - php-fpm.conf
+    - src/**/*
+  # Noms spécifiques beta
+  artifactName: Duplicator-Beta-${version}-${arch}.${ext}
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+    - target: zip
+      arch: [x64]
+  forceCodeSigning: false
+  asar: false
+  requestedExecutionLevel: requireAdministrator
+  files:
+    - main-caddy.js
+    - main.js
+    - preload.js
+    - icons/**/*
+    - Caddyfile
+    - php-fpm.conf
+    - app/php.ini
+    - php-install-guide.html
+    - app/**/*
+    - ghostscript/**/*
+    - caddy/**/*
+    - utils/**/*
+    - "php/**/*"
+    - src/**/*
+    - "!app/vendor/phpunit/**/*"
+    - "!app/vendor/pestphp/**/*"
+    - "!app/vendor/sebastian/**/*"
+    - "!app/vendor/**/tests/**/*"
+    - "!app/vendor/**/test/**/*"
+    - "!app/vendor/**/docs/**/*"
+  # Noms spécifiques beta
+  artifactName: Duplicator-Beta-${version}-${arch}.${ext}
+
+nsis:
+  include: build/installer.nsh
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Duplicator Beta
+  deleteAppDataOnUninstall: false
+  # Nom spécifique pour l'installeur
+  artifactName: Duplicator-Beta-Setup-${version}.exe
+  # Dossier d'installation différent
+  # Par défaut: %LOCALAPPDATA%\dupli-electron-beta
+  # C'est automatique grâce à appId différent

@@ -234,14 +234,14 @@ class TirageManager {
         $paye_status = $_GET['paye'] ?? 'non';
         if ($paye_status === 'deja_paye') {
             $where[] = 'paye = "oui"';
-            $phrase_parts[] = 'payés';
+            $phrase_parts[] = __('admin_tirage.status_paid');
         } elseif ($paye_status === 'tous') {
             // Tous les tirages
-            $phrase_parts[] = 'tous';
+            $phrase_parts[] = __('admin_tirage.status_all');
         } else {
             // Par défaut ou explicitement "non"
             $where[] = 'paye = "non"';
-            $phrase_parts[] = 'non-payés';
+            $phrase_parts[] = __('admin_tirage.status_unpaid');
         }
         
         // Recherche par contact (Fuzzy simple avec LIKE pour l'instant)
@@ -249,7 +249,7 @@ class TirageManager {
             $search = $_GET['search'];
             $where[] = 'contact LIKE ?';
             $params[] = '%' . $search . '%';
-            $phrase_parts[] = 'recherche : "' . htmlspecialchars($search) . '"';
+            $phrase_parts[] = __('admin_tirage.search_prefix') . '"' . htmlspecialchars($search) . '"';
         }
         
         $sql_where = !empty($where) ? ' WHERE ' . implode(' AND ', $where) : '';
@@ -257,14 +257,14 @@ class TirageManager {
         // Ordre
         if (isset($_GET['order'])) {
             $sql_order = ' ORDER BY prix * 1 DESC, date DESC';
-            $phrase_parts[] = 'triés par prix';
+            $phrase_parts[] = __('admin_tirage.sorted_by_price');
         } else {
             $sql_order = ' ORDER BY date DESC, id DESC';
-            $phrase_parts[] = 'les plus récents';
+            $phrase_parts[] = __('admin_tirage.most_recent');
         }
         
         $sql = $sql_where . $sql_order;
-        $phrase = 'Affichage : ' . implode(', ', $phrase_parts);
+        $phrase = __('admin_tirage.display_prefix') . implode(', ', $phrase_parts);
         
         return array('sql' => $sql, 'params' => $params, 'phrase' => $phrase);
     }

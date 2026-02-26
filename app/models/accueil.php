@@ -20,6 +20,11 @@ function Action(){
   $result_setting = $query->fetch(PDO::FETCH_OBJ);
   $result['show_mailing_list'] = $result_setting ? $result_setting->setting_value : '1';
   
+  // Exécuter le diagnostic de santé
+  $health_check = check_system_dependencies();
+  $result['health_check'] = $health_check;
+  $result['global_install_command'] = get_global_install_command($health_check);
+  
   return template("../view/accueil.html.php",$result);
 }
 ?>

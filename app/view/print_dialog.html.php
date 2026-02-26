@@ -212,7 +212,8 @@
 
                 if (printersList.length === 0) {
                     select.append('<option value="">Aucune imprimante disponible</option>');
-                    $('#printDialogError').text('Aucune imprimante trouvée sur ce système').show();
+                    $('#printDialogErrorText').text('Aucune imprimante trouvée sur ce système').show();
+                    $('#printDialogError').show();
                 } else {
                     printersList.forEach(function (printer) {
                         const option = $('<option></option>')
@@ -237,7 +238,8 @@
             } catch (error) {
                 console.error('Erreur chargement imprimantes:', error);
                 $('#printDialogLoading').hide();
-                $('#printDialogError').text('Erreur: ' + error.message).show();
+                $('#printDialogErrorText').text('Erreur: ' + error.message);
+                $('#printDialogError').show();
             }
         }
 
@@ -408,7 +410,9 @@
                 if (result.success) {
                     // Succès
                     showAppModal({
-                        message: 'Impression lancée avec succès !\n\n' + (result.message || 'Le document a été envoyé à l\'imprimante.'),
+                        message: 'Impression lancée avec succès !
+
+' + (result.message || 'Le document a été envoyé à l\'imprimante.'),
                         type: 'success'
                     });
                     $('#printDialogModal').modal('hide');
@@ -417,7 +421,9 @@
                 }
             } catch (error) {
                 console.error('Erreur impression:', error);
-                showAppModal({ message: 'Erreur lors de l\'impression:\n\n' + error.message, type: 'danger' });
+                showAppModal({ message: 'Erreur lors de l\'impression:
+
+' + error.message, type: 'danger' });
             } finally {
                 btn.prop('disabled', false).html('<i class="fa fa-print"></i> Imprimer');
             }

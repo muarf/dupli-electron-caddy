@@ -22,7 +22,7 @@
             </div>
             <div class="modal-footer" style="border-top: 1px solid #f0f0f0; padding: 15px 20px;">
                 <button type="button" class="btn btn-default btn-modern" id="app-global-modal-cancel"
-                    data-dismiss="modal" style="display: none; border-radius: 8px;">Annuler</button>
+                    data-dismiss="modal" style="display: none; border-radius: 8px;"><?php _e('common.cancel'); ?></button>
                 <button type="button" class="btn btn-primary btn-modern" id="app-global-modal-ok" data-dismiss="modal"
                     style="border-radius: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">OK</button>
             </div>

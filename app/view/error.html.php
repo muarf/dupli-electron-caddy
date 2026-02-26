@@ -94,23 +94,23 @@
         
         <?php if (isset($error_message)): ?>
             <div class="error-message">
-                <strong><i class="fa fa-info-circle"></i> Message :</strong><br>
+                <strong><i class="fa fa-info-circle"></i> <?php _e('error.message'); ?></strong><br>
                 <?= htmlspecialchars($error_message) ?>
             </div>
         <?php endif; ?>
         
         <?php if (isset($error_file)): ?>
             <div class="error-file">
-                <strong><i class="fa fa-file-code-o"></i> Fichier :</strong> <?= htmlspecialchars($error_file) ?>
+                <strong><i class="fa fa-file-code-o"></i> <?php _e('error.file'); ?></strong> <?= htmlspecialchars($error_file) ?>
                 <?php if (isset($error_line)): ?>
-                    à la ligne <strong><?= htmlspecialchars($error_line) ?></strong>
+                    <?php _e('error.line'); ?> <strong><?= htmlspecialchars($error_line) ?></strong>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
         
         <?php if (isset($error_trace) && !empty($error_trace)): ?>
             <div class="error-trace">
-                <strong><i class="fa fa-list"></i> Trace d'exécution :</strong>
+                <strong><i class="fa fa-list"></i> <?php _e('error.trace'); ?></strong>
                 <pre><?= htmlspecialchars($error_trace) ?></pre>
             </div>
         <?php endif; ?>
@@ -118,21 +118,21 @@
     
     <div class="error-actions">
         <button onclick="history.back()" class="btn btn-primary btn-error-action">
-            <i class="fa fa-arrow-left"></i> Retour
+            <i class="fa fa-arrow-left"></i> <?php _e('common.back'); ?>
         </button>
         <a href="?accueil" class="btn btn-default btn-error-action">
-            <i class="fa fa-home"></i> Accueil
+            <i class="fa fa-home"></i> <?php _e('common.home'); ?>
         </a>
         <?php if (isset($_SESSION['user'])): ?>
             <a href="?admin" class="btn btn-info btn-error-action">
-                <i class="fa fa-cog"></i> Administration
+                <i class="fa fa-cog"></i> <?php _e('header.administration'); ?>
             </a>
         <?php endif; ?>
     </div>
     
     <?php if (isset($error_help)): ?>
         <div class="alert alert-info" style="margin-top: 30px;">
-            <strong><i class="fa fa-lightbulb-o"></i> Suggestion :</strong>
+            <strong><i class="fa fa-lightbulb-o"></i> <?php _e('error.suggestion'); ?></strong>
             <?= htmlspecialchars($error_help) ?>
         </div>
     <?php endif; ?>

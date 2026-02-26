@@ -1,7 +1,7 @@
 <!-- JSZip pour export multiple (local) -->
-<script src="js/jszip.min.js"></script>
+<script src="public/js/jszip.min.js"></script>
 <!-- Riso Tools - Fonctions avancées -->
-<script src="js/riso-tools.js"></script>
+<script src="public/js/riso-tools.js"></script>
 
 <style>
     .riso-container {
@@ -86,7 +86,7 @@
         <?php if (isset($from_lib_file)): ?>
             <div class="text-end mb-2">
                 <a href="?bibliotheque" class="btn btn-outline-primary btn-sm">
-                    <i class="fa fa-book"></i> Ouvrir la bibliothèque
+                    <i class="fa fa-book"></i> <?php _e('imposition_brochure.open_library'); ?>
                 </a>
             </div>
         <?php endif; ?>
@@ -150,7 +150,7 @@
                         </div>
                         <div class="col-md-4">
                             <div class="input-group">
-                                <span class="input-group-addon">Taille</span>
+                                <span class="input-group-addon"><?php _e('common.size'); ?></span>
                                 <input type="number" class="form-control" id="halftoneSize" value="3" min="1" max="10">
                                 <span class="input-group-btn">
                                     <button class="btn btn-info" onclick="applyHalftoneEffect()"><i
@@ -182,19 +182,19 @@
                 <div class="row">
                     <?php
                     $tambours = [
-                        'red' => 'Rouge',
-                        'black' => 'Noir',
-                        'blue' => 'Bleu',
-                        'yellow' => 'Jaune',
-                        'green' => 'Vert',
-                        'violet' => 'Violet',
-                        'none' => 'Aucun'
+                        'red' => __('riso_separator.red'),
+                        'black' => __('riso_separator.black'),
+                        'blue' => __('riso_separator.blue'),
+                        'yellow' => __('riso_separator.yellow'),
+                        'green' => __('riso_separator.green'),
+                        'violet' => __('riso_separator.violet'),
+                        'none' => __('riso_separator.none')
                     ];
 
                     $rgbChannels = [
-                        ['id' => 'rgbRed', 'name' => 'Canal Rouge', 'color' => '#ff0000', 'default' => 'red'],
-                        ['id' => 'rgbGreen', 'name' => 'Canal Vert', 'color' => '#00ff00', 'default' => 'green'],
-                        ['id' => 'rgbBlue', 'name' => 'Canal Bleu', 'color' => '#0000ff', 'default' => 'blue']
+                        ['id' => 'rgbRed', 'name' => __('riso_separator.red_channel'), 'color' => '#ff0000', 'default' => 'red'],
+                        ['id' => 'rgbGreen', 'name' => __('riso_separator.green_channel'), 'color' => '#ff0000', 'default' => 'green'],
+                        ['id' => 'rgbBlue', 'name' => __('riso_separator.blue_channel'), 'color' => '#0000ff', 'default' => 'blue']
                     ];
 
                     foreach ($rgbChannels as $chan) { ?>
@@ -209,7 +209,7 @@
                                         onchange="updatePreview()">
                                         <?php foreach ($tambours as $val => $label) {
                                             $selected = ($val == $chan['default']) ? 'selected' : '';
-                                            echo "<option value=\"$val\" $selected>$label</option>";
+                                            echo "<option value="$val" $selected>$label</option>";
                                         } ?>
                                     </select>
                                     <label style="margin-top: 10px;"><?php _e('riso_separator.opacity_label'); ?> <span
@@ -233,10 +233,10 @@
                 <div class="row">
                     <?php
                     $cmykChannels = [
-                        ['id' => 'cmykCyan', 'name' => 'Cyan', 'color' => 'cyan', 'default' => 'blue'],
-                        ['id' => 'cmykMagenta', 'name' => 'Magenta', 'color' => 'magenta', 'default' => 'red'],
-                        ['id' => 'cmykYellow', 'name' => 'Jaune', 'color' => 'yellow', 'default' => 'yellow'],
-                        ['id' => 'cmykBlack', 'name' => 'Noir', 'color' => 'black', 'default' => 'black']
+                        ['id' => 'cmykCyan', 'name' => __('riso_separator.cyan_channel'), 'color' => 'cyan', 'default' => 'blue'],
+                        ['id' => 'cmykMagenta', 'name' => __('riso_separator.magenta_channel'), 'color' => 'magenta', 'default' => 'red'],
+                        ['id' => 'cmykYellow', 'name' => __('riso_separator.yellow_channel'), 'color' => 'yellow', 'default' => 'yellow'],
+                        ['id' => 'cmykBlack', 'name' => __('riso_separator.black_channel'), 'color' => 'black', 'default' => 'black']
                     ];
 
                     foreach ($cmykChannels as $chan) { ?>
@@ -251,7 +251,7 @@
                                         onchange="updatePreview()">
                                         <?php foreach ($tambours as $val => $label) {
                                             $selected = ($val == $chan['default']) ? 'selected' : '';
-                                            echo "<option value=\"$val\" $selected>$label</option>";
+                                            echo "<option value="$val" $selected>$label</option>";
                                         } ?>
                                     </select>
                                     <label style="margin-top: 10px;"><?php _e('riso_separator.opacity_label'); ?> <span
@@ -275,8 +275,8 @@
                 <div class="row">
                     <?php
                     $twoChannels = [
-                        ['id' => 'twoDark', 'name' => 'Tons Foncés', 'color' => 'black', 'default' => 'black'],
-                        ['id' => 'twoLight', 'name' => 'Tons Clairs', 'color' => 'gray', 'default' => 'red']
+                        ['id' => 'twoDark', 'name' => __('riso_separator.dark_tones'), 'color' => 'black', 'default' => 'black'],
+                        ['id' => 'twoLight', 'name' => __('riso_separator.light_tones'), 'color' => 'gray', 'default' => 'red']
                     ];
 
                     foreach ($twoChannels as $chan) { ?>
@@ -291,7 +291,7 @@
                                         onchange="updatePreview()">
                                         <?php foreach ($tambours as $val => $label) {
                                             $selected = ($val == $chan['default']) ? 'selected' : '';
-                                            echo "<option value=\"$val\" $selected>$label</option>";
+                                            echo "<option value="$val" $selected>$label</option>";
                                         } ?>
                                     </select>
                                     <label style="margin-top: 10px;"><?php _e('riso_separator.opacity_label'); ?> <span
@@ -318,7 +318,7 @@
                     </div>
                     <div class="panel-body">
                         <button class="btn btn-primary btn-block btn-lg" id="pipetteBtn" onclick="togglePipette()">
-                            <i class="fa fa-eyedropper"></i> Activer la pipette
+                            <i class="fa fa-eyedropper"></i> <?php _e('riso_separator.activate_pipette'); ?>
                         </button>
 
                         <div id="pipetteInfo" style="display: none; margin-top: 15px;">
@@ -329,7 +329,7 @@
                                                 style="display: inline-block; width: 30px; height: 30px; border: 1px solid #000; vertical-align: middle;"></span></small>
                                     </div>
                                     <div class="col-md-6">
-                                        <label><?php _e('riso_separator.tolerance_label'); ?> <span
+                                        <label><?php _e('riso_separator.tolerance'); ?> <span
                                                 id="toleranceValue">30</span></label>
                                         <input type="range" class="form-control" id="toleranceSlider" min="0" max="100"
                                             value="30">
@@ -1000,7 +1000,7 @@
 
         // Reset pipette
         togglePipette();
-        showAppModal({ message: 'Couche isolée créée !', type: 'success' });
+        showAppModal({ message: '<?php echo __js('riso_separator.layer_created'); ?>', type: 'success' });
     }
 
     function createWithoutColorLayer(imageData, targetR, targetG, targetB, tolerance) {
@@ -1049,12 +1049,12 @@
                 <div class="row">
                     <div class="col-md-1" style="background: ${colorHex}; height: 50px;"></div>
                     <div class="col-md-7">
-                        <strong>Sélection ${index + 1}</strong><br>
-                        Tolérance: ${layer.tolerance}
+                        <strong><?php _ejs('riso_separator.selection'); ?> ${index + 1}</strong><br>
+                        <?php _ejs('riso_separator.tolerance'); ?>: ${layer.tolerance}
                     </div>
                     <div class="col-md-4 text-right">
-                         <button class="btn btn-sm btn-success" onclick="downloadIsolatedLayer(${layer.id}, 'with')"><i class="fa fa-download"></i> Avec</button>
-                         <button class="btn btn-sm btn-default" onclick="downloadIsolatedLayer(${layer.id}, 'without')"><i class="fa fa-download"></i> Sans</button>
+                         <button class="btn btn-sm btn-success" onclick="downloadIsolatedLayer(${layer.id}, 'with')"><i class="fa fa-download"></i> <?php _ejs('riso_separator.with'); ?></button>
+                         <button class="btn btn-sm btn-default" onclick="downloadIsolatedLayer(${layer.id}, 'without')"><i class="fa fa-download"></i> <?php _ejs('riso_separator.without'); ?></button>
                     </div>
                 </div>
             </div>
@@ -1168,7 +1168,7 @@
         // Pour twoDarkCanvas le prefix 'two' + 'Dark' = 'twoDark' OK.
 
         updatePreview();
-        showAppModal({ message: 'Postérisation appliquée.', type: 'success' });
+        showAppModal({ message: '<?php echo __js('riso_separator.posterize_applied'); ?>', type: 'success' });
     }
 
     function applyHalftoneEffect() {
@@ -1199,7 +1199,7 @@
         displayChannel('twoDarkCanvas', channels.two.dark, originalImage.width, originalImage.height);
 
         updatePreview();
-        showAppModal({ message: 'Trame appliquée.', type: 'success' });
+        showAppModal({ message: '<?php echo __js('riso_separator.halftone_applied'); ?>', type: 'success' });
     }
 
     function resetSeparator() {

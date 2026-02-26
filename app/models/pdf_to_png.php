@@ -9,13 +9,9 @@ use setasign\Fpdi\Tcpdf\Fpdi;
  */
 function convert_pdf_to_png($pdf_file, $output_dir, $dpi = 150, $base_filename = 'page') {
     try {
-        // Vérifier que Ghostscript est disponible
-        $gs_command = 'gs';
-        if (PHP_OS_FAMILY === 'Windows') {
-            $gs_command = __DIR__ . '/../ghostscript/gswin64c.exe';
-            if (!file_exists($gs_command)) {
-                throw new Exception("Ghostscript Windows non trouvé : " . $gs_command);
-            }
+        $gs_command = get_ghostscript_path();
+        if (!$gs_command) {
+            throw new Exception("Ghostscript n'a pas été trouvé sur ce système. Veuillez l'installer.");
         }
         
         // Vérifier que le fichier PDF existe

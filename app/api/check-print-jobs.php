@@ -343,7 +343,7 @@ try {
 
     // Gestion du filtre d'historique
     $show_history = isset($_GET['history']) && $_GET['history'] === 'true';
-    $where_clause = $show_history ? "" : "WHERE rpj.job_id IS NULL";
+    $where_clause = $show_history ? "" : "WHERE rpj.job_id IS NULL AND pj.session_id IS NULL";
 
     $sql = "
         SELECT
@@ -370,7 +370,8 @@ try {
             pj.created_at,
             (CASE WHEN rpj.job_id IS NOT NULL THEN 1 ELSE 0 END) as is_recorded
         FROM print_jobs pj
-        LEFT JOIN recorded_print_jobs rpj ON pj.job_id = rpj.job_id AND pj.printer_name = rpj.printer_name
+        LEFT JOIN recorded_print_jobs rpj ON pj.job_id = rpj.job_id 
+             AND (pj.printer_name = rpj.printer_name OR " . (PHP_OS_FAMILY === 'Linux' ? '1=1' : '1=0') . ")
         $where_clause
         ORDER BY pj.timestamp DESC
         LIMIT 50

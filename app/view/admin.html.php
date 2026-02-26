@@ -5,7 +5,6 @@
         <h1 class="text-center"><?php _e('admin.title'); ?></h1>
         <hr>
         
-        
         <!-- Gestion des machines -->
         <div class="panel panel-success">
           <div class="panel-heading">
@@ -68,9 +67,9 @@
               </div>
               <div class="col-md-3">
                 <a href="?admin&imprimantes" class="btn btn-primary btn-block">
-                  <i class="fa fa-print"></i> Moniteur d'Imprimantes
+                  <i class="fa fa-print"></i> <?php _e('admin.printer_monitor'); ?>
                 </a>
-                <small class="text-muted">Surveillance et gestion des impressions Windows</small>
+                <small class="text-muted"><?php _e('admin.printer_monitor_desc'); ?></small>
               </div>
             </div>
           </div>
@@ -78,7 +77,7 @@
 
         <div class="panel panel-info">
           <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-cog"></i> Configuration</h3>
+            <h3 class="panel-title"><i class="fa fa-cog"></i> <?php _e('admin.configuration'); ?></h3>
           </div>
           <div class="panel-body">
             <div class="row">
@@ -118,13 +117,13 @@
             <div class="row">
               <div class="col-md-6">
                 <a href="?admin&mots" class="btn btn-warning btn-block">
-                  <i class="fa fa-key"></i> Gestion des mots de passe
+                  <i class="fa fa-key"></i> <?php _e('admin.password_management_btn'); ?>
                 </a>
                 <small class="text-muted"><?php _e('admin.security_access'); ?></small>
               </div>
               <div class="col-md-6">
                 <a href="?admin&bdd" class="btn btn-danger btn-block">
-                  <i class="fa fa-database"></i> Gestion des BDD
+                  <i class="fa fa-database"></i> <?php _e('admin.database_management_btn'); ?>
                 </a>
                 <small class="text-muted"><?php _e('admin.creation_backup_restore'); ?></small>
               </div>
@@ -136,7 +135,7 @@
         <div class="row">
           <div class="col-md-12">
             <a href="?accueil" class="btn btn-default btn-block">
-              <i class="fa fa-home"></i> Retour à l'accueil
+              <i class="fa fa-home"></i> <?php _e('accueil.back_to_home'); ?>
             </a>
           </div>
         </div>

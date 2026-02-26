@@ -1,7 +1,7 @@
 <div class="container-fluid mt-4">
     <div class="row mb-4">
         <div class="col-12">
-            <h1 class="mb-0"><i class="fa fa-book"></i> Bibliothèque</h1>
+            <h1 class="mb-0"><i class="fa fa-book"></i> <?php _e('library.title'); ?></h1>
         </div>
     </div>
 
@@ -10,8 +10,8 @@
         <div class="card-body">
             <div class="upload-drop-zone" id="dropZone">
                 <i class="fa fa-cloud-upload"></i>
-                <span class="drop-zone-text">Glisser-déposer des fichiers PDF ou PNG ici</span>
-                <span class="drop-zone-subtext">ou cliquez pour sélectionner des fichiers</span>
+                <span class="drop-zone-text"><?php _e('library.drag_drop_files'); ?></span>
+                <span class="drop-zone-subtext"><?php _e('library.click_to_select'); ?></span>
                 <input type="file" id="fileInput" class="d-none" style="display: none !important;" accept=".pdf,.png"
                     multiple>
             </div>
@@ -22,10 +22,9 @@
     <div class="card mb-4">
         <div class="card-body text-center">
             <button class="btn btn-primary btn-lg" onclick="openIndexModal()">
-                <i class="fa fa-folder-open"></i> Indexer un dossier
+                <i class="fa fa-folder-open"></i> <?php _e('library.index_folder'); ?>
             </button>
-            <p class="text-muted mt-2 mb-0"><small>Ajoutez des fichiers à la bibliothèque en indexant un dossier
-                    externe</small></p>
+            <p class="text-muted mt-2 mb-0"><small><?php _e('library.index_folder_desc'); ?></small></p>
         </div>
     </div>
 
@@ -35,7 +34,7 @@
             <div class="input-group input-group-lg">
                 <span class="input-group-text"><i class="fa fa-search"></i></span>
                 <input type="text" class="form-control" id="searchInput"
-                    placeholder="Rechercher dans la bibliothèque...">
+                    placeholder="<?php echo __('library.search_placeholder'); ?>">
             </div>
         </div>
     </div>
@@ -51,8 +50,8 @@
     <div class="modal-dialog modal-xl" style="max-width: 95vw;">
         <div class="modal-content" style="border-radius: 15px; overflow: hidden;">
             <div class="modal-header">
-                <h5 class="modal-title" id="pdfViewerTitle">Visualisation PDF</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                <h5 class="modal-title" id="pdfViewerTitle"><?php _e('library.visualisation_pdf'); ?></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label= "<?php echo __('common.close'); ?>" >
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -62,7 +61,7 @@
                     <div id="pdfLoadingIndicator"
                         style="display: none; text-align: center; padding: 50px; color: white;">
                         <i class="fa fa-spinner fa-spin fa-3x"></i>
-                        <p style="margin-top: 20px;">Chargement du PDF...</p>
+                        <p style="margin-top: 20px;"><?php _e('library.loading_pdf'); ?></p>
                     </div>
                     <canvas id="pdfCanvas" style="display: none; margin: 0 auto;"></canvas>
                     <div id="pdfImageView" style="display: none; text-align: center; padding: 20px;">
@@ -76,15 +75,15 @@
                         style="flex-wrap: nowrap;">
                         <div class="d-flex align-items-center gap-2" style="flex-shrink: 0;">
                             <button class="btn btn-sm btn-primary" id="prevPage" onclick="changePage(-1)">
-                                <i class="fa fa-chevron-left"></i> Précédent
+                                <i class="fa fa-chevron-left"></i> <?php _e('common.previous'); ?>
                             </button>
-                            <span class="mx-2" style="white-space: nowrap; color: #212529; font-weight: 500;">Page
+                            <span class="mx-2" style="white-space: nowrap; color: #212529; font-weight: 500;"><?php _e('library.page'); ?>
                                 <input type="number" id="pageInput" min="1" value="1"
                                     style="width: 60px; text-align: center; display: inline-block; padding: 4px 8px; border: 1px solid #ced4da; border-radius: 4px; background: white; color: #212529; font-weight: 600;"
                                     onchange="goToPage(parseInt(this.value))"> / <span id="totalPages"
                                     style="color: #495057; font-weight: 600;">1</span></span>
                             <button class="btn btn-sm btn-primary" id="nextPage" onclick="changePage(1)">
-                                Suivant <i class="fa fa-chevron-right"></i>
+                                <?php _e('common.next'); ?> <i class="fa fa-chevron-right"></i>
                             </button>
                         </div>
                         <div class="d-flex align-items-center gap-2" id="modalActions"
@@ -103,44 +102,43 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Indexer un dossier externe</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Fermer">
+                <h5 class="modal-title"><?php _e('library.index_external_folder'); ?></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label= "<?php echo __('common.close'); ?>" >
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-info">
-                    <i class="fa fa-info-circle"></i> L'indexation permet d'ajouter des fichiers à la bibliothèque sans
-                    les copier. Les fichiers doivent être accessibles par le serveur.
+                    <i class="fa fa-info-circle"></i> <?php _e('library.index_info'); ?>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Chemin du dossier</label>
+                    <label class="form-label"><?php _e('library.folder_path'); ?></label>
                     <div class="input-group">
                         <input type="text" class="form-control" id="folderPath" placeholder="/chemin/vers/le/dossier">
 
                         <!-- Bouton pour Tauri -->
                         <button class="btn btn-outline-secondary" type="button" onclick="browseFolder()" id="browseBtn"
                             style="display:none;">
-                            <i class="fa fa-folder-open"></i> Parcourir
+                            <i class="fa fa-folder-open"></i> <?php _e('library.browse'); ?>
                         </button>
 
                         <!-- Bouton pour Web Standard (Simulé pour l'UX, mais limité par sécurité) -->
                         <button class="btn btn-outline-secondary" type="button" id="webBrowseInfo"
-                            onclick="showAppModal({ title: 'Aide chemin', message: 'Sur un navigateur web standard, pour des raisons de sécurité, vous ne pouvez pas sélectionner un dossier local pour l\'indexation serveur. Veuillez copier-coller le chemin absolu du dossier sur le serveur (ex: /var/www/html/...)', type: 'info' })">
-                            <i class="fa fa-info-circle"></i> Aide chemin
+                            onclick="showAppModal({ title: '<?php echo addslashes(__('library.path_help_title')); ?>', message: '<?php echo addslashes(__('library.path_help_msg')); ?>', type: 'info' })">
+                            <i class="fa fa-info-circle"></i> <?php _e('library.path_help_btn'); ?>
                         </button>
                     </div>
-                    <small class="text-muted">Saisissez le chemin absolu du dossier sur le serveur.</small>
+                    <small class="text-muted"><?php _e('library.path_absolute_help'); ?></small>
                 </div>
                 <div class="mb-3 form-check">
                     <input type="checkbox" class="form-check-input" id="recursiveCheck">
-                    <label class="form-check-label" for="recursiveCheck">Indexer récursivement (sous-dossiers)</label>
+                    <label class="form-check-label" for="recursiveCheck"><?php _e('library.recursive_index'); ?></label>
                 </div>
 
                 <div class="d-grid gap-2 mb-3">
                     <button class="btn btn-secondary" onclick="previewDirectory()">
-                        <i class="fa fa-search"></i> Analyser le dossier
+                        <i class="fa fa-search"></i> <?php _e('library.analyze_folder'); ?>
                     </button>
                 </div>
 
@@ -149,14 +147,14 @@
                 </div>
 
                 <div id="previewArea" style="display:none;">
-                    <h6><i class="fa fa-files-o"></i> Fichiers trouvés : <span id="foundCount">0</span></h6>
+                    <h6><i class="fa fa-files-o"></i> <?php _e('library.files_found'); ?> <span id="foundCount">0</span></h6>
                     <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
                         <table class="table table-sm table-striped">
                             <thead>
                                 <tr>
-                                    <th>Fichier</th>
-                                    <th>Type</th>
-                                    <th>Taille</th>
+                                    <th><?php _e('library.file'); ?></th>
+                                    <th><?php _e('library.type'); ?></th>
+                                    <th><?php _e('library.size'); ?></th>
                                 </tr>
                             </thead>
                             <tbody id="previewList"></tbody>
@@ -165,9 +163,8 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
-                <button type="button" class="btn btn-primary" onclick="startIndexing()" id="indexBtn" disabled>Lancer
-                    l'indexation</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal"><?php _e('common.close'); ?></button>
+                <button type="button" class="btn btn-primary" onclick="startIndexing()" id="indexBtn" disabled><?php _e('library.start_index'); ?></button>
             </div>
         </div>
     </div>
@@ -380,7 +377,7 @@
 </style>
 
 <!-- PDF.js -->
-<script src="js/build/pdf.js"></script>
+<script src="public/js/build/pdf.js"></script>
 <script>
     let currentFiles = [];
     let filesToIndex = [];
@@ -469,7 +466,7 @@
                 if (data.success) {
                     loadFiles();
                 } else {
-                    showAppModal({ message: 'Erreur upload: ' + data.error, type: 'danger' });
+                    showAppModal({ message: '<?php _ejs('common.error'); ?> upload: ' + data.error, type: 'danger' });
                 }
             })
             .catch(error => console.error('Error:', error));
@@ -499,7 +496,7 @@
         <div class="col-12">
             <div class="text-center" style="padding: 50px;">
                 <i class="fa fa-spinner fa-spin fa-3x" style="color: #0d6efd; margin-bottom: 15px;"></i>
-                <p style="color: #6c757d; font-size: 1.1em;">Recherche en cours...</p>
+                <p style="color: #6c757d; font-size: 1.1em;"><?php _ejs('library.searching'); ?></p>
             </div>
         </div>
     `;
@@ -542,7 +539,7 @@
                 } else {
                     console.error('Erreur serveur:', data.error);
                     const grid = document.getElementById('fileGrid');
-                    grid.innerHTML = '<div class="col-12"><div class="alert alert-danger text-center"><i class="fa fa-exclamation-triangle"></i> Erreur lors du chargement: ' + (data.error || 'Erreur inconnue') + '</div></div>';
+                    grid.innerHTML = '<div class="col-12"><div class="alert alert-danger text-center"><i class="fa fa-exclamation-triangle"></i> <?php echo __js('admin_printers.error_loading'); ?> : ' + (data.error || '<?php echo __js('admin_printers.unknown_error'); ?>') + '</div></div>';
                 }
             })
             .catch(error => {
@@ -553,7 +550,7 @@
 
                 console.error('Erreur lors du chargement des fichiers:', error);
                 const grid = document.getElementById('fileGrid');
-                grid.innerHTML = '<div class="col-12"><div class="alert alert-danger text-center"><i class="fa fa-exclamation-triangle"></i> Erreur de connexion: ' + error.message + '</div></div>';
+                grid.innerHTML = '<div class="col-12"><div class="alert alert-danger text-center"><i class="fa fa-exclamation-triangle"></i> <?php echo __js('tirage_multimachines.communication_error'); ?> : ' + error.message + '</div></div>';
             });
     }
 
@@ -562,7 +559,7 @@
         grid.innerHTML = '';
 
         if (files.length === 0) {
-            grid.innerHTML = '<div class="col-12"><div class="alert alert-info text-center"><i class="fa fa-info-circle"></i> Aucun fichier dans la bibliothèque. Ajoutez des fichiers pour commencer.</div></div>';
+            grid.innerHTML = '<div class="col-12"><div class="alert alert-info text-center"><i class="fa fa-info-circle"></i> <?php _ejs('library.no_files'); ?></div></div>';
             return;
         }
 
@@ -570,16 +567,23 @@
             const col = document.createElement('div');
             col.className = 'col-lg-3 col-md-4 col-sm-6 mb-4';
 
-            const thumbUrl = '?get_bibliotheque_thumbnail&file=' + encodeURIComponent(file.thumbnail_path);
+            let thumbUrl = '';
+            if (file.thumbnail_path) {
+                thumbUrl = '?get_bibliotheque_thumbnail&file=' + encodeURIComponent(file.thumbnail_path);
+            } else if (file.file_type.toLowerCase() === 'png' || file.file_type.toLowerCase() === 'jpg' || file.file_type.toLowerCase() === 'jpeg') {
+                thumbUrl = '?get_bibliotheque_file&id=' + file.id;
+            } else {
+                thumbUrl = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-family=%22Arial%22 font-size=%2214%22%3E' + file.file_type.toUpperCase() + '%3C/text%3E%3C/svg%3E';
+            }
             const isExternal = file.is_external == 1;
             
             col.innerHTML = `
             <div class="card file-card ${isExternal ? 'border-start-primary' : ''}">
-                <button class="btn-delete-card" onclick="deleteFile(${file.id})" title="Supprimer">
+                <button class="btn-delete-card" onclick="deleteFile(${file.id})" title="<?php echo __js('common.delete'); ?>">
                     &times;
                 </button>
                 <div class="position-relative file-thumb-wrapper">
-                    <img src="${thumbUrl}" class="file-thumb" alt="${file.filename}" onclick="openPdfViewer(${file.id}, '${file.file_type}')" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'%3E%3Crect fill=\'%23f0f0f0\' width=\'200\' height=\'200\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\' font-family=\'Arial\' font-size=\'14\'%3E${file.file_type.toUpperCase()}%3C/text%3E%3C/svg%3E'">
+                    <img src="${thumbUrl}" class="file-thumb" alt="${file.filename}" onclick="openPdfViewer(${file.id}, '${file.file_type}')" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-family=%22Arial%22 font-size=%2214%22%3E${file.file_type.toUpperCase()}%3C/text%3E%3C/svg%3E'">
                 </div>
                 <div class="card-body">
                     <h6 class="card-title" title="${file.filename}">${file.filename}</h6>
@@ -588,29 +592,29 @@
                     </div>
                     ${file.match_contexts && file.match_contexts.length > 0 ? `
                     <div class="file-match-contexts" style="font-size: 0.8rem; color: #6c757d; margin-top: 8px; margin-bottom: 8px; padding-top: 8px; border-top: 1px solid #e9ecef;">
-                        <div style="font-weight: 600; margin-bottom: 4px; color: #495057;">Résultats trouvés dans :</div>
+                        <div style="font-weight: 600; margin-bottom: 4px; color: #495057;"><?php _ejs('library.results_found_in'); ?></div>
                         ${file.match_contexts.map(ctx => `<div style="margin-bottom: 4px; line-height: 1.4;">${ctx}</div>`).join('')}
                     </div>
                     ` : ''}
                     <div class="file-actions">
                         <div class="file-actions-row">
-                            <button class="btn btn-primary btn-sm" onclick="openFile(${file.id})" title="Ouvrir le fichier">
-                                <i class="fa fa-external-link"></i> Ouvrir
+                            <button class="btn btn-primary btn-sm" onclick="openFile(${file.id})" title="<?php echo __js('library.open'); ?>">
+                                <i class="fa fa-external-link"></i> <?php _ejs('library.open'); ?>
                             </button>
-                            <button class="btn btn-info btn-sm" onclick="printFile(${file.id})" title="Imprimer le fichier">
-                                <i class="fa fa-print"></i> Imprimer
+                            <button class="btn btn-info btn-sm" onclick="printFile(${file.id})" title="<?php echo __js('library.print'); ?>">
+                                <i class="fa fa-print"></i> <?php _ejs('library.print'); ?>
                             </button>
                         </div>
                         <div class="file-actions-row">
                             <div class="btn-group btn-group-sm file-actions-menu-trigger" role="group" data-file-id="${file.id}" data-file-type="${file.file_type}">
                                 <button type="button" class="btn btn-success" onclick="showActionsMenu(event, ${file.id}, '${file.file_type}')">
-                                    <i class="fa fa-print"></i> Imposer <i class="fa fa-caret-down"></i>
+                                    <i class="fa fa-print"></i> <?php _ejs('library.impose'); ?> <i class="fa fa-caret-down"></i>
                                 </button>
                             </div>
                             ${file.file_type === 'pdf' || file.file_type === 'png' ? `
                             <div class="btn-group btn-group-sm file-actions-menu-trigger" role="group" data-file-id="${file.id}" data-file-type="${file.file_type}">
                                 <button type="button" class="btn btn-warning" onclick="showModifyMenu(event, ${file.id}, '${file.file_type}')">
-                                    <i class="fa fa-edit"></i> Modifier <i class="fa fa-caret-down"></i>
+                                    <i class="fa fa-edit"></i> <?php _ejs('library.modify'); ?> <i class="fa fa-caret-down"></i>
                                 </button>
                             </div>
                             ` : '<div style="flex: 1;"></div>'}
@@ -713,11 +717,11 @@
         }
 
         showAppModal({
-            title: 'Renommer le fichier',
-            message: 'Entrez le nouveau nom pour ce fichier :',
+            title: '<?php echo __js('library.rename_file'); ?>',
+            message: '<?php echo __js('library.enter_new_name'); ?>',
             prompt: true,
             defaultValue: currentName,
-            okText: 'Renommer'
+            okText: '<?php echo __js('library.rename'); ?>'
         }, function(newName) {
             if (newName === null || newName.trim() === "" || newName === currentName) return;
 
@@ -731,19 +735,19 @@
                     if (data.success) {
                         loadFiles();
                     } else {
-                        showAppModal({ message: 'Erreur renommage: ' + data.error, type: 'danger' });
+                        showAppModal({ message: '<?php _ejs('common.error'); ?> renommage: ' + data.error, type: 'danger' });
                     }
                 })
                 .catch(error => {
                     console.error('Erreur:', error);
-                    showAppModal({ message: 'Erreur lors du renommage', type: 'danger' });
+                    showAppModal({ message: '<?php _ejs('common.error'); ?> lors du renommage', type: 'danger' });
                 });
         });
     }
 
     function deleteFile(id) {
         showAppModal({
-            message: 'Êtes-vous sûr de vouloir supprimer ce fichier ?',
+            message: "<?php echo addslashes(__('library.delete_confirm')); ?>",
             confirm: true,
             type: 'danger'
         }, (confirmed) => {
@@ -759,7 +763,7 @@
                     if (data.success) {
                         loadFiles();
                     } else {
-                        showAppModal({ message: 'Erreur suppression: ' + data.error, type: 'danger' });
+                        showAppModal({ message: '<?php _ejs('common.error'); ?> suppression: ' + data.error, type: 'danger' });
                     }
                 });
         });
@@ -815,10 +819,10 @@
         const path = document.getElementById('folderPath').value;
         const recursive = document.getElementById('recursiveCheck').checked;
 
-        if (!path) return showAppModal({ message: 'Veuillez saisir un chemin', type: 'warning' });
+        if (!path) return showAppModal({ message: "<?php echo addslashes(__('library.path_help_msg')); ?>", type: 'warning' });
 
         document.getElementById('previewArea').style.display = 'block';
-        document.getElementById('previewList').innerHTML = '<tr><td colspan="3" class="text-center"><i class="fa fa-spinner fa-spin"></i> Analyse en cours...</td></tr>';
+        document.getElementById('previewList').innerHTML = '<tr><td colspan="3" class="text-center"><i class="fa fa-spinner fa-spin"></i> <?php _ejs('library.searching'); ?></td></tr>';
 
         fetch('?preview_directory', {
             method: 'POST',
@@ -849,11 +853,11 @@
 
                     if (filesToIndex.length > 100) {
                         const tr = document.createElement('tr');
-                        tr.innerHTML = `<td colspan="3" class="text-center text-muted">... et ${filesToIndex.length - 100} autres fichiers</td>`;
+                        tr.innerHTML = `<td colspan="3" class="text-center text-muted"><?php echo __js('library.and_others'); ?>`.replace(':count', filesToIndex.length - 100);
                         tbody.appendChild(tr);
                     }
                 } else {
-                    document.getElementById('previewList').innerHTML = `<tr><td colspan="3" class="text-danger">Erreur: ${data.error}</td></tr>`;
+                    document.getElementById('previewList').innerHTML = `<tr><td colspan="3" class="text-danger"><?php _ejs('common.error'); ?>: ${data.error}</td></tr>`;
                 }
             });
     }
@@ -917,7 +921,7 @@
                     // et on l'ouvre si l'utilisateur est sur la page.
                     
                     // Pré-remplir la modale avec "Indexation en cours..."
-                    document.getElementById('folderPath').value = "Indexation en cours...";
+                    document.getElementById('folderPath').value = "<?php echo addslashes(__('library.indexation_in_progress')); ?>";
                     document.getElementById('indexBtn').disabled = true;
                     
                     openIndexModal();
@@ -948,7 +952,7 @@
                 
                 // Mettre à jour le texte d'état si disponible
                 if (statusData.status === 'scanning') {
-                        progressBar.textContent = 'Scanning... (' + (statusData.scanned_count || 0) + ')';
+                        progressBar.textContent = '<?php _ejs('library.scanning'); ?> (' + (statusData.scanned_count || 0) + ')';
                 } else if (statusData.status === 'indexing') {
                     progressBar.textContent = statusData.percent + '%';
                     if (statusData.current_file) {
@@ -962,7 +966,7 @@
                     progressBar.classList.add('bg-success');
                     
                     showAppModal({ 
-                        message: `Indexation terminée ! ${statusData.indexed_count || 0} fichiers ajoutés, ${statusData.error_count || 0} erreurs.`, 
+                        message: "<?php echo addslashes(__('library.indexation_completed', ['count' => ':count', 'errors' => ':errors'])); ?>".replace(':count', statusData.indexed_count || 0).replace(':errors', statusData.error_count || 0), 
                         type: 'success' 
                     });
                     
@@ -985,7 +989,7 @@
                     filesToIndex = [];
                 } else if (statusData.status === 'error' || statusData.status === 'fatal_error') {
                     clearInterval(pollInterval);
-                    showAppModal({ message: 'Erreur durant l\'indexation: ' + (statusData.error_msg || 'Inconnue'), type: 'danger' });
+                    showAppModal({ message: "<?php echo addslashes(__('library.path_help_msg')); ?>" + (statusData.error_msg || 'Inconnue'), type: 'danger' });
                     btn.disabled = false;
                 } else if (statusData.status === 'none' || statusData.status === 'unknown') {
                     // Job disparu ?
@@ -1048,13 +1052,13 @@
 
         menu.innerHTML = `
         <a class="dropdown-item" href="?imposition_brochure&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-book" style="color: #28a745; margin-right: 8px;"></i> Imposition Brochure
+            <i class="fa fa-book" style="color: #28a745; margin-right: 8px;"></i> <?php echo __js('header.imposition_brochure'); ?>
         </a>
         <a class="dropdown-item" href="?imposition_livre&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-book" style="color: #007bff; margin-right: 8px;"></i> Imposition Livre
+            <i class="fa fa-book" style="color: #007bff; margin-right: 8px;"></i> <?php echo __js('header.imposition_book'); ?>
         </a>
         <a class="dropdown-item" href="?imposition_tracts&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-copy" style="color: #ffd93d; margin-right: 8px;"></i> Imposition Tracts
+            <i class="fa fa-copy" style="color: #ffd93d; margin-right: 8px;"></i> <?php echo __js('header.impose_tracts'); ?>
         </a>
     `;
 
@@ -1105,25 +1109,25 @@
         let items = '';
         if (fileType === 'pdf') {
             items += `<a class="dropdown-item" href="?pdf_to_png&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-file-image-o" style="margin-right: 8px;"></i> PDF vers PNG
+            <i class="fa fa-file-image-o" style="margin-right: 8px;"></i> <?php echo __js('header.pdf_to_images'); ?>
         </a>`;
         }
         if (fileType === 'png') {
             items += `<a class="dropdown-item" href="?png_to_pdf&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-file-pdf-o" style="margin-right: 8px;"></i> PNG vers PDF
+            <i class="fa fa-file-pdf-o" style="margin-right: 8px;"></i> <?php echo __js('header.images_to_pdf'); ?>
         </a>`;
         }
         if (fileType === 'pdf' || fileType === 'png') {
             items += `<a class="dropdown-item" href="?image_processor&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-sliders" style="margin-right: 8px;"></i> Bitmap/Luminosité
+            <i class="fa fa-sliders" style="margin-right: 8px;"></i> <?php echo __js('header.image_processor'); ?>
         </a>`;
             items += `<a class="dropdown-item" href="javascript:void(0)" onclick="renameFile(${fileId})" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-font" style="margin-right: 8px;"></i> Renommer
+            <i class="fa fa-font" style="margin-right: 8px;"></i> <?php echo __js('library.rename'); ?>
         </a>`;
         }
         if (fileType === 'png') {
             items += `<a class="dropdown-item" href="?riso_separator&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-palette" style="margin-right: 8px;"></i> Séparer les couleurs
+            <i class="fa fa-palette" style="margin-right: 8px;"></i> <?php echo __js('header.riso_separator'); ?>
         </a>`;
         }
 
@@ -1163,26 +1167,26 @@
         if (fileType !== 'pdf') {
             // Pour les PNG, on peut afficher directement dans une modal simple
             const fileUrl = '?get_bibliotheque_file&id=' + encodeURIComponent(fileId);
-            document.getElementById('pdfViewerTitle').textContent = 'Visualisation Image';
+            document.getElementById('pdfViewerTitle').textContent = '<?php echo __js('library.visualisation_image'); ?>';
             document.getElementById('pdfImageElement').src = fileUrl;
             document.getElementById('pdfImageView').style.display = 'block';
 
             // Ajouter les boutons d'action pour PNG
             const actionsHtml = `
-            <button type="button" class="btn btn-sm btn-primary" onclick="openFile(${fileId})" title="Ouvrir le fichier" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
-                <i class="fa fa-external-link"></i> Ouvrir
+            <button type="button" class="btn btn-sm btn-primary" onclick="openFile(${fileId})" title="<?php echo __js('library.open'); ?>" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
+                <i class="fa fa-external-link"></i> <?php _ejs('library.open'); ?>
             </button>
-            <button type="button" class="btn btn-sm btn-info" onclick="printFile(${fileId})" title="Imprimer le fichier" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
-                <i class="fa fa-print"></i> Imprimer
+            <button type="button" class="btn btn-sm btn-info" onclick="printFile(${fileId})" title="<?php echo __js('library.print'); ?>" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
+                <i class="fa fa-print"></i> <?php _ejs('library.print'); ?>
             </button>
             <div class="btn-group btn-group-sm" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 8px;">
                 <button type="button" class="btn btn-sm btn-success" onclick="showActionsMenu(event, ${fileId}, '${fileType}')">
-                    <i class="fa fa-print"></i> Imposer
+                    <i class="fa fa-print"></i> <?php _ejs('library.impose'); ?>
                 </button>
             </div>
             <div class="btn-group btn-group-sm">
                 <button type="button" class="btn btn-sm btn-warning" onclick="showModifyMenu(event, ${fileId}, '${fileType}')">
-                    <i class="fa fa-edit"></i> Modifier
+                    <i class="fa fa-edit"></i> <?php _ejs('library.modify'); ?>
                 </button>
             </div>
         `;
@@ -1204,24 +1208,24 @@
         pdfDoc = null;
 
         const fileUrl = '?get_bibliotheque_file&id=' + encodeURIComponent(fileId);
-        document.getElementById('pdfViewerTitle').textContent = 'Visualisation PDF';
+        document.getElementById('pdfViewerTitle').textContent = '<?php echo __js('library.visualisation_pdf'); ?>';
 
         // Ajouter les boutons d'action pour PDF
         const actionsHtml = `
-        <button type="button" class="btn btn-sm btn-primary" onclick="openFile(${fileId})" title="Ouvrir le fichier" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
-            <i class="fa fa-external-link"></i> Ouvrir
+        <button type="button" class="btn btn-sm btn-primary" onclick="openFile(${fileId})" title="<?php echo __js('library.open'); ?>" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
+            <i class="fa fa-external-link"></i> <?php _ejs('library.open'); ?>
         </button>
-        <button type="button" class="btn btn-sm btn-info" onclick="printFile(${fileId})" title="Imprimer le fichier" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
-            <i class="fa fa-print"></i> Imprimer
+        <button type="button" class="btn btn-sm btn-info" onclick="printFile(${fileId})" title="<?php echo __js('library.print'); ?>" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
+            <i class="fa fa-print"></i> <?php _ejs('library.print'); ?>
         </button>
         <div class="btn-group btn-group-sm" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 8px;">
             <button type="button" class="btn btn-sm btn-success" onclick="showActionsMenu(event, ${fileId}, '${fileType}')">
-                <i class="fa fa-print"></i> Imposer
+                <i class="fa fa-print"></i> <?php _ejs('library.impose'); ?>
             </button>
         </div>
         <div class="btn-group btn-group-sm">
             <button type="button" class="btn btn-sm btn-warning" onclick="showModifyMenu(event, ${fileId}, '${fileType}')">
-                <i class="fa fa-edit"></i> Modifier
+                <i class="fa fa-edit"></i> <?php _ejs('library.modify'); ?>
             </button>
         </div>
     `;
@@ -1275,7 +1279,7 @@
                 })
                 .catch(function (error) {
                     console.error('Erreur chargement PDF:', error);
-                    document.getElementById('pdfLoadingIndicator').innerHTML = '<div style="text-align: center; padding: 50px; color: white;"><i class="fa fa-exclamation-triangle fa-3x"></i><p style="margin-top: 20px;">Erreur lors du chargement du PDF: ' + error.message + '</p></div>';
+                    document.getElementById('pdfLoadingIndicator').innerHTML = `<div style="text-align: center; padding: 50px; color: white;"><i class="fa fa-exclamation-triangle fa-3x"></i><p style="margin-top: 20px;">${ "<?php echo __js('common.error'); ?>" } lors du chargement du PDF: ${error.message}</p></div>`;
                 });
         }, 100);
     }

@@ -31,27 +31,25 @@ if (!file_exists($path) || !is_dir($path)) {
 $jobId = uniqid('idx_', true);
 
 // Déterminer le chemin vers PHP
-$phpPath = __DIR__ . '/../../php/php.exe';
-if (!file_exists($phpPath)) {
-    // Fallback sur le PHP système si la version embarquée n'est pas trouvée
-    $phpPath = 'php';
-} else {
-    $phpPath = realpath($phpPath);
+$phpPath = 'php'; // Default system PHP
+if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+    $localPhpPath = __DIR__ . '/../../php/php.exe';
+    if (file_exists($localPhpPath)) {
+        $phpPath = realpath($localPhpPath);
+    }
 }
 
 // Chemin du script worker
 $scriptPath = __DIR__ . '/../maintenance/background_indexer.php';
-$scriptPath = realpath($scriptPath);
-
-if (!$scriptPath) {
+// On s'assure que le fichier existe avant de récupérer un realpath vide
+if (!file_exists($scriptPath)) {
     http_response_code(500);
-    echo json_encode(['error' => 'Worker script not found']);
+    echo json_encode(['error' => "Worker script not found at : $scriptPath"]);
     exit;
 }
+$scriptPath = realpath($scriptPath);
 
 // Construire la commande
-// Windows uniquement pour l'instant (comme demandé par le context)
-// start /B permet de lancer en arrière-plan sans bloquer
 $cmdArgs = [
     $phpPath,
     $scriptPath,
@@ -60,14 +58,16 @@ $cmdArgs = [
     $jobId
 ];
 
-// Échapper les arguments
-// Attention : escapeshellarg sous Windows entoure de "
-// La commande finale sera : start /B "" "php.exe" "script.php" "path" "1" "jobId"
-$cmd = 'start /B "" ' . implode(' ', array_map('escapeshellarg', $cmdArgs));
-
-// Exécuter
-try {
+// Exécuter en arrière-plan selon l'OS
+if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+    // Windows: start /B permet de lancer en arrière-plan sans bloquer
+    $cmd = 'start /B "" ' . implode(' ', array_map('escapeshellarg', $cmdArgs));
     pclose(popen($cmd, 'r'));
+} else {
+    // Linux/Mac: > /dev/null 2>&1 &
+    $cmd = implode(' ', array_map('escapeshellarg', $cmdArgs)) . ' > /dev/null 2>&1 &';
+    exec($cmd);
+}
     
     // Créer un fichier de statut initial pour éviter les race conditions
     $logDir = __DIR__ . '/../logs/indexing_status';
@@ -85,7 +85,4 @@ try {
         'job_id' => $jobId,
         'message' => 'Indexation démarrée en arrière-plan'
     ]);
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-}
+

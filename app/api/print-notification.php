@@ -54,19 +54,36 @@ try {
 
     // 0. Vérifier si le job a déjà été enregistré définitivement RECEMMENT (2 heures max)
     // Cela évite les faux positifs quand Windows recycle les Job IDs (48, 49...) après un certain temps.
-    $alreadyRecorded = $db->selectOne("
-        SELECT 1 FROM recorded_print_jobs 
-        WHERE job_id = ? 
-        AND printer_name = ? 
-        AND recorded_at > datetime('now', '-2 hours')
-    ", [
-        strval($data['jobId']),
-        $data['printerName']
-    ]);
+    $platform = $data['platform'] ?? 'windows';
+    
+    $checkSql = "SELECT 1 FROM recorded_print_jobs WHERE job_id = ? AND recorded_at > datetime('now', '-2 hours')";
+    $checkParams = [strval($data['jobId'])];
+    
+    if ($platform !== 'linux') {
+        // Sur Windows, l'ID n'est courageusement unique que PAR imprimante
+        $checkSql .= " AND printer_name = ?";
+        $checkParams[] = $data['printerName'];
+    }
+    // Sur Linux, l'ID CUPS est unique au système, donc on ignore printer_name pour fusionner les détections multiples
+
+    $alreadyRecorded = $db->selectOne($checkSql, $checkParams);
 
     if ($alreadyRecorded) {
-        error_log(sprintf("[DOUBLON] Job %s sur %s déjà enregistré, ignoré.", $data['jobId'], $data['printerName']));
+        error_log(sprintf("[DOUBLON] Job %s sur %s déjà enregistré (%s), ignoré.", $data['jobId'], $data['printerName'], $platform));
         echo json_encode(['success' => true, 'message' => 'Job déjà enregistré, ignoré']);
+        exit;
+    }
+
+    // 0b. Vérifier si le job est déjà dans print_jobs (non validé) pour éviter les doublons de détection simultanée
+    $checkPendingSql = "SELECT 1 FROM print_jobs WHERE job_id = ? AND created_at > datetime('now', '-5 minutes')";
+    $checkPendingParams = [strval($data['jobId'])];
+    if ($platform !== 'linux') {
+        $checkPendingSql .= " AND printer_name = ?";
+        $checkPendingParams[] = $data['printerName'];
+    }
+    
+    if ($db->selectOne($checkPendingSql, $checkPendingParams)) {
+        echo json_encode(['success' => true, 'message' => 'Job déjà en attente, ignoré']);
         exit;
     }
 

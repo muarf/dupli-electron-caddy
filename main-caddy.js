@@ -1072,8 +1072,8 @@ function startPhpFpm() {
     let appPath;
     if (isAppImage || isMacOS || (isLinux && isPackaged)) {
         // Pour AppImage, essayer d'abord app/app/public (structure réelle sans ASAR)
-        const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
-        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
+        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app');
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'app');
 
         if (fs.existsSync(noAsarPath)) {
             appPath = noAsarPath;
@@ -1088,8 +1088,8 @@ function startPhpFpm() {
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
         // Même avec asar: false, les fichiers sont dans resources/app/
-        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
-        const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
+        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app');
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'app');
 
         // Essayer d'abord sans ASAR (configuration actuelle: resources/app/app/public)
         if (fs.existsSync(noAsarPath)) {
@@ -1103,10 +1103,10 @@ function startPhpFpm() {
         }
         else {
             console.error('App Path non trouvé ni avec ASAR ni sans ASAR');
-            appPath = path.join(__dirname, 'app', 'public'); // Fallback développement
+            appPath = path.join(__dirname, 'app'); // Fallback développement
         }
     } else {
-        appPath = path.join(__dirname, 'app', 'public');
+        appPath = path.join(__dirname, 'app');
     }
 
     console.log('Démarrage du serveur PHP intégré...');
@@ -1144,7 +1144,7 @@ function startPhpFpm() {
         // Le PHP système a déjà ses extensions configurées
         // Pour que vendor/autoload.php soit accessible, on utilise le répertoire parent de public
         // car public est le document root mais vendor est au niveau de public
-        const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+        const appBasePath = appPath; // Root is app/
         const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
         console.log('Configuration PHP pour Linux packagé/AppImage (PHP système)');
         console.log('Document root (public):', appPath);
@@ -1179,7 +1179,7 @@ function startPhpFpm() {
         }
 
         // Ajouter le répertoire parent au include_path pour que vendor/autoload.php soit accessible
-        const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+        const appBasePath = appPath; // Root is app/
         const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
 
         console.log('Configuration PHP pour Windows');
@@ -1222,7 +1222,7 @@ function startPhpFpm() {
         console.log('PHP Ext Path:', phpExtPath);
 
         // Ajouter le répertoire parent au include_path pour que vendor/autoload.php soit accessible
-        const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+        const appBasePath = appPath; // Root is app/
         const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
 
         if (fs.existsSync(phpIniPath)) {
@@ -1242,7 +1242,7 @@ function startPhpFpm() {
             ];
         } else {
             // Pour macOS/dev, ajouter aussi le répertoire parent au include_path
-            const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
+            const appBasePath = appPath; // Root is app/
             const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
             phpArgs = [
                 '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
@@ -1314,10 +1314,10 @@ function startPhpServer() {
     // Le chemin de l'app dépend si on est en AppImage, Windows ou développement
     const isWindows = process.platform === 'win32';
     const appPath = isAppImage
-        ? path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public')
+        ? (fs.existsSync(path.join(process.resourcesPath, 'app', 'app')) ? path.join(process.resourcesPath, 'app', 'app') : path.join(process.resourcesPath, 'app.asar.unpacked', 'app'))
         : isWindows
-            ? path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public')
-            : path.join(__dirname, 'app', 'public');
+            ? (fs.existsSync(path.join(process.resourcesPath, 'app', 'app')) ? path.join(process.resourcesPath, 'app', 'app') : path.join(process.resourcesPath, 'app.asar.unpacked', 'app'))
+            : path.join(__dirname, 'app');
 
     console.log('Démarrage du serveur PHP intégré (fallback)...');
     console.log('PHP Path:', phpPath);
@@ -1487,8 +1487,8 @@ async function startCaddy() {
     let appPath;
     if (isAppImage || isMacOS || (isLinux && isPackaged)) {
         // Pour AppImage, essayer d'abord app/app/public (structure réelle sans ASAR)
-        const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
-        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'app');
+        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app');
 
         if (fs.existsSync(noAsarPath)) {
             appPath = noAsarPath;
@@ -1503,8 +1503,8 @@ async function startCaddy() {
     } else if (isWindows) {
         // Windows : détecter si ASAR est utilisé ou non
         // Même avec asar: false, les fichiers sont dans resources/app/
-        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public');
-        const noAsarPath = path.join(process.resourcesPath, 'app', 'app', 'public');
+        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app');
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'app');
 
         // Essayer d'abord sans ASAR (configuration actuelle: resources/app/app/public)
         if (fs.existsSync(noAsarPath)) {
@@ -1515,10 +1515,10 @@ async function startCaddy() {
             appPath = asarPath;
         }
         else {
-            appPath = path.join(__dirname, 'app', 'public'); // Fallback développement
+            appPath = path.join(__dirname, 'app'); // Fallback développement
         }
     } else {
-        appPath = path.join(__dirname, 'app', 'public');
+        appPath = path.join(__dirname, 'app');
     }
 
     console.log('Caddy App Path:', appPath);
@@ -1658,10 +1658,10 @@ async function stopAllChildrenGracefully() {
     } catch { }
 }
 
-// Démarrer le moniteur d'imprimantes Windows
+// Démarrer le moniteur d'imprimantes (Windows + Linux)
 function startPrinterMonitor() {
-    if (process.platform !== 'win32') {
-        console.log('Le moniteur d\'imprimantes n\'est disponible que sur Windows');
+    if (process.platform !== 'win32' && process.platform !== 'linux') {
+        console.log('Le moniteur d\'imprimantes n\'est pas supporté sur cet OS');
         return;
     }
 
@@ -1799,7 +1799,8 @@ function startPrinterMonitor() {
                     fillRate: enrichedPrintData.FillRate || 0,
                     thumbnailUrl: enrichedPrintData.ThumbnailUrl || '',
                     timestamp: enrichedPrintData.TimeSubmitted || new Date().toISOString(),
-                    eventType: 'job_detected'
+                    eventType: 'job_detected',
+                    platform: process.platform
                 });
 
                 const options = {
@@ -2275,6 +2276,12 @@ function setupAutoUpdater() {
     autoUpdater.autoDownload = false; // Ne pas télécharger automatiquement (demander d'abord)
     autoUpdater.autoInstallOnAppQuit = true; // Installer automatiquement au redémarrage
 
+    // Détecter si c'est la version beta (basé sur appId ou nom du dossier)
+    const isBeta = app.getName() === 'dupli-electron-beta' || app.getAppPath().includes('beta') || app.getName().includes('beta');
+    const channel = isBeta ? 'beta' : 'latest';
+
+    console.log(`[AutoUpdater] Mode détecté: ${isBeta ? 'BETA (channel: beta)' : 'STABLE (channel: latest)'}`);
+
     // Détecter le format de l'application
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
 
@@ -2297,13 +2304,19 @@ function setupAutoUpdater() {
             provider: 'github',
             owner: 'muarf',
             repo: 'dupli-electron-caddy',
-            // Utiliser updateConfigPath pour pointer vers latest-linux-appimage.yml
-            // Cette option n'est pas directement dans setFeedURL, mais peut être dans providerOptions
+            channel: channel,  // 'beta' ou 'latest'
+            releaseType: isBeta ? 'prerelease' : 'release'
         });
     } else {
-        console.log('Version .deb détectée - utilisation de DebUpdater avec latest-linux.yml');
-        // Pour .deb, electron-updater utilisera latest-linux.yml (qui pointe vers .deb après le build)
-        // Pas besoin de configuration spéciale, c'est le comportement par défaut
+        console.log('Version .deb détectée - configuration du channel:', channel);
+        // Configurer le channel pour .deb aussi (beta ou stable)
+        autoUpdater.setFeedURL({
+            provider: 'github',
+            owner: 'muarf',
+            repo: 'dupli-electron-caddy',
+            channel: channel,
+            releaseType: isBeta ? 'prerelease' : 'release'
+        });
     }
 
     // Avant de quitter pour installer, arrêter proprement Caddy/PHP
@@ -2564,9 +2577,9 @@ ipcMain.handle('open-file', async (event, filePath) => {
         let fullPath;
 
         if (isAppImage || isPackaged) {
-            fullPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', 'public', filePath);
+            fullPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', filePath);
         } else {
-            fullPath = path.join(__dirname, 'app', 'public', filePath);
+            fullPath = path.join(__dirname, 'app', filePath);
         }
 
         await shell.openPath(fullPath);
@@ -2793,7 +2806,12 @@ ipcMain.handle('get-app-version', () => {
 ipcMain.handle('check-admin-status', async () => {
     try {
         const isAdmin = await isRunningAsAdmin();
-        return { success: true, isAdmin };
+        return {
+            success: true,
+            isAdmin,
+            platform: process.platform,
+            user: process.env.USER || process.env.USERNAME || 'utilisateur'
+        };
     } catch (error) {
         console.error('Erreur lors de la vérification admin:', error);
         return { success: false, error: error.message, isAdmin: false };
@@ -2834,7 +2852,7 @@ ipcMain.handle('get-printers', async () => {
         console.error('Erreur lors de la récupération des imprimantes via Electron:', error);
 
         // Fallback sur le moniteur si Electron échoue (cas rare)
-        if (process.platform === 'win32') {
+        if (process.platform === 'win32' || process.platform === 'linux') {
             try {
                 let monitorToUse = printerMonitor;
                 if (!monitorToUse) {
@@ -2855,8 +2873,8 @@ ipcMain.handle('get-printers', async () => {
 
 // Démarrer/Arrêter le moniteur d'imprimantes
 ipcMain.handle('toggle-printer-monitor', async (event, start) => {
-    if (process.platform !== 'win32') {
-        return { success: false, error: 'Disponible uniquement sur Windows' };
+    if (process.platform !== 'win32' && process.platform !== 'linux') {
+        return { success: false, error: 'Disponible uniquement sur Windows/Linux' };
     }
 
     try {
@@ -2880,7 +2898,7 @@ ipcMain.handle('toggle-printer-monitor', async (event, start) => {
 
 // Obtenir le statut du moniteur
 ipcMain.handle('get-printer-monitor-status', () => {
-    if (process.platform !== 'win32') {
+    if (process.platform !== 'win32' && process.platform !== 'linux') {
         return { available: false, status: 'not_supported' };
     }
 
@@ -3086,7 +3104,7 @@ ipcMain.handle('reanalyze-print-job', async (event, jobId) => {
             return { success: false, error: 'PrinterMonitor non initialisé' };
         }
 
-        const result = printerMonitor.reanalyzeJob(jobId);
+        const result = await printerMonitor.reanalyzeJob(jobId);
 
         if (result && result.success) {
             console.log(`[IPC] Job ${jobId} réanalysé: fillRate=${result.fillRate}%, isGrayscale=${result.isGrayscale}`);
@@ -3376,14 +3394,22 @@ ipcMain.handle('open-external-file', async (event, fileUrl) => {
             const os = require('os');
 
             return new Promise((resolve, reject) => {
-                // Créer un nom de fichier temporaire
-                const tempFileName = 'temp_' + Date.now() + '.pdf';
-                const tempFilePath = path.join(os.tmpdir(), tempFileName);
-                const file = fs.createWriteStream(tempFilePath);
-
                 const protocol = fileUrl.startsWith('https') ? https : http;
 
                 protocol.get(fileUrl, (response) => {
+                    // Extract Content-Type to compute correct extension
+                    const contentType = response.headers['content-type'] || '';
+                    let ext = '.pdf'; // Default fallback
+                    if (contentType.includes('image/png')) ext = '.png';
+                    else if (contentType.includes('image/jpeg') || contentType.includes('image/jpg')) ext = '.jpg';
+                    else if (contentType.includes('image/gif')) ext = '.gif';
+                    else if (contentType.includes('image/webp')) ext = '.webp';
+
+                    // Create temporary file with accurate extension
+                    const tempFileName = 'temp_' + Date.now() + ext;
+                    const tempFilePath = path.join(os.tmpdir(), tempFileName);
+                    const file = fs.createWriteStream(tempFilePath);
+
                     response.pipe(file);
 
                     file.on('finish', () => {
