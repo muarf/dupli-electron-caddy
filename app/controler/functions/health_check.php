@@ -160,19 +160,23 @@ function check_system_dependencies(): array
     }
 
     // Vérifier les permissions
+    require_once __DIR__ . '/bibliotheque.php';
     $folders_to_check = [
         'tmp' => '/../../public/tmp',
         'uploads' => '/../../public/uploads',
-        'bibliotheque' => '/../../../bibliotheque'
+        'bibliotheque' => getBibliothequeDir()
     ];
 
-    foreach ($folders_to_check as $key => $rel_path) {
-        $abs_path = realpath(__DIR__ . '/' . $rel_path);
+    foreach ($folders_to_check as $key => $path) {
+        $abs_path = realpath($path);
+        if (!$abs_path) {
+            $abs_path = realpath(__DIR__ . '/' . $path);
+        }
         if ($abs_path) {
             $is_writable = is_writable($abs_path);
             $results['permissions'][$key] = [
                 'name' => ucfirst($key),
-                'path' => $rel_path,
+                'path' => $path,
                 'status' => $is_writable,
                 'critical' => true
             ];
@@ -180,7 +184,7 @@ function check_system_dependencies(): array
         } else {
             $results['permissions'][$key] = [
                 'name' => ucfirst($key),
-                'path' => $rel_path,
+                'path' => $path,
                 'status' => false,
                 'critical' => true,
                 'error' => 'Dossier inexistant'

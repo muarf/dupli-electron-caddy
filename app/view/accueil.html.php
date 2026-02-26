@@ -37,7 +37,10 @@
                         <?php endforeach; ?>
                         <?php foreach ($health_check['permissions'] as $perm): ?>
                             <?php if (!$perm['status'] && $perm['critical']): ?>
-                                <li> Permission manquante : <strong><?= $perm['name'] ?></strong> (<?= $perm['path'] ?>) n'est pas accessible en écriture.</li>
+                                <li> 
+                                    Permission manquante : <strong><?= $perm['name'] ?></strong> (<?= $perm['path'] ?>) : 
+                                    <?= isset($perm['error']) ? $perm['error'] : "n'est pas accessible en écriture." ?>
+                                </li>
                             <?php endif; ?>
                         <?php endforeach; ?>
                     </ul>
