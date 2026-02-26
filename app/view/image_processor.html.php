@@ -569,7 +569,7 @@
                         const pageCountInfo = document.createElement('p');
                         pageCountInfo.className = 'text-info text-center pdf-page-info';
                         pageCountInfo.style.marginTop = '10px';
-                        pageCountInfo.innerHTML = `<i class="fa fa-info-circle"></i> ${ "<?php echo __('image_processor.pdf_page_info', ['count' => '']); ?>" .replace(':count', pdf.numPages)}`;
+                        pageCountInfo.innerHTML = `<i class="fa fa-info-circle"></i> ${ "<?php echo __js('image_processor.pdf_page_info', ['count' => '']); ?>" .replace(':count', pdf.numPages)}`;
                         previewCanvas.parentElement.appendChild(pageCountInfo);
 
                         // Mettre à jour la prévisualisation
@@ -1068,16 +1068,16 @@
                         resultDiv.className = 'panel panel-success';
                         resultDiv.innerHTML = `
                         <div class="panel-heading">
-                            <h3 class="panel-title"><i class="fa fa-check-circle"></i> <?php _e('image_processor.processing_success_msg'); ?></h3>
+                            <h3 class="panel-title"><i class="fa fa-check-circle"></i> <?php _ejs('image_processor.processing_success_msg'); ?></h3>
                         </div>
                         <div class="panel-body">
-                            <p>${ "<?php echo __('image_processor.file_processed_success', ['filename' => '']); ?>" .replace(':filename', `<strong>${data.filename || "<?php echo __('common.completed'); ?>"}</strong>`)}</p>
+                            <p>${ "<?php echo __js('image_processor.file_processed_success', ['filename' => '']); ?>" .replace(':filename', `<strong>${data.filename || "<?php echo __js('common.completed'); ?>"}</strong>`)}</p>
                             <div class="btn-group">
                                 <a href="${data.download_url}" class="btn btn-primary btn-lg" download>
-                                    <i class="fa fa-download"></i> <?php _e('image_processor.download_file'); ?>
+                                    <i class="fa fa-download"></i> <?php _ejs('image_processor.download_file'); ?>
                                 </a>
                                 <button type="button" class="btn btn-warning btn-lg" onclick="window.location.reload()">
-                                    <i class="fa fa-upload"></i> <?php _e('image_processor.upload_new'); ?>
+                                    <i class="fa fa-upload"></i> <?php _ejs('image_processor.upload_new'); ?>
                                 </button>
                             </div>
                         </div>

@@ -1893,7 +1893,7 @@ try {
                                         // Détail du calcul
                                         detailCalcul = `
                 <div class="price-detail" style="font-size: 0.9em; color: #666; margin-top: 5px;">
-                    <strong><?php _e('tirage_multimachines.calculation_detail'); ?> :</strong><br>
+                    <strong><?php _ejs('tirage_multimachines.calculation_detail'); ?> :</strong><br>
                     • ${nbMasters} masters × ${prixMaster.toFixed(2)}€ = ${coutMasters.toFixed(2)}€<br>
                     • ${nbPassages} passages × ${prixPassage.toFixed(2)}€ = ${coutPassages.toFixed(2)}€<br>
                     • ${nb_f.toFixed(0)} feuilles papier × ${prixPapier.toFixed(2)}€ = ${coutPapier.toFixed(2)}€<br>

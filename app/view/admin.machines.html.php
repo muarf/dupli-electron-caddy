@@ -591,12 +591,12 @@
 
       showAppModal({
         type: 'danger',
-        title:  "<?php echo __('admin_machines.delete_confirm_title'); ?>" ,
-        message:  "<?php echo __('admin_machines.delete_confirm_msg', ['name' => '']); ?>" .replace(':name', machineName),
+        title:  "<?php echo __js('admin_machines.delete_confirm_title'); ?>" ,
+        message:  "<?php echo __js('admin_machines.delete_confirm_msg', ['name' => '']); ?>" .replace(':name', machineName),
         confirm: true,
         onConfirm: function () {
           // Désactiver le bouton pendant le traitement
-          $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> <?php _e('admin_machines.deleting'); ?>');
+          $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> <?php _ejs('admin_machines.deleting'); ?>');
 
           $.ajax({
             url: '?ajax_delete_machine',
@@ -624,7 +624,7 @@
                   message: 'Erreur : ' + response.error
                 });
                 // Réactiver le bouton
-                $('.delete-machine[data-id="' + machineId + '"]').prop('disabled', false).html('<i class="fa fa-trash"></i> <?php _e('admin_machines.delete'); ?>');
+                $('.delete-machine[data-id="' + machineId + '"]').prop('disabled', false).html('<i class="fa fa-trash"></i> <?php _ejs('admin_machines.delete'); ?>');
               }
             },
             error: function (xhr, status, error) {
@@ -636,7 +636,7 @@
                 message: 'Erreur lors de la suppression de la machine. Vérifiez la console pour plus de détails.'
               });
               // Réactiver le bouton
-              $('.delete-machine[data-id="' + machineId + '"]').prop('disabled', false).html('<i class="fa fa-trash"></i> <?php _e('admin_machines.delete'); ?>');
+              $('.delete-machine[data-id="' + machineId + '"]').prop('disabled', false).html('<i class="fa fa-trash"></i> <?php _ejs('admin_machines.delete'); ?>');
             }
           });
         }
@@ -652,10 +652,10 @@
                         <input type="text" class="form-control" name="tambours[]" placeholder="ex: tambour_bleu" required>
                     </div>
                     <div class="col-md-3">
-                        <input type="number" class="form-control" name="prix_tambour_unite[]" placeholder="<?php echo __('common.unit_price'); ?>" step="0.001" min="0" required>
+                        <input type="number" class="form-control" name="prix_tambour_unite[]" placeholder="<?php echo __js('common.unit_price'); ?>" step="0.001" min="0" required>
                     </div>
                     <div class="col-md-3">
-                        <input type="number" class="form-control" name="prix_tambour_pack[]" placeholder="<?php echo __('admin_machines.price_pack'); ?>" step="0.01" min="0" value="11">
+                        <input type="number" class="form-control" name="prix_tambour_pack[]" placeholder="<?php echo __js('admin_machines.price_pack'); ?>" step="0.01" min="0" value="11">
                     </div>
                     <div class="col-md-2">
                         <button type="button" class="btn btn-danger btn-sm remove-tambour">
@@ -715,7 +715,7 @@
     }
 
     // Ouvrir le modal d'édition
-    $('#edit-tambours-modal .modal-title').text("<?php _e('admin_machines.edit_tambours'); ?> - " + machineName);
+    $('#edit-tambours-modal .modal-title').text("<?php _ejs('admin_machines.edit_tambours'); ?> - " + machineName);
     $('#edit-tambours-modal').data('machine-id', machineId);
 
     // Vider le conteneur des tambours
@@ -805,10 +805,10 @@
                     <input type="text" class="form-control" name="edit_tambours[]" placeholder="ex: tambour_noir" value="${tambourName}" required>
                 </div>
                 <div class="col-md-3">
-                    <input type="number" class="form-control" name="edit_prix_tambour_unite[]" placeholder="<?php echo __('common.unit_price'); ?>" step="0.001" min="0" value="${prixUnite}" required>
+                    <input type="number" class="form-control" name="edit_prix_tambour_unite[]" placeholder="<?php echo __js('common.unit_price'); ?>" step="0.001" min="0" value="${prixUnite}" required>
                 </div>
                 <div class="col-md-3">
-                    <input type="number" class="form-control" name="edit_prix_tambour_pack[]" placeholder="<?php echo __('admin_machines.price_pack'); ?>" step="0.01" min="0" value="${prixPack}">
+                    <input type="number" class="form-control" name="edit_prix_tambour_pack[]" placeholder="<?php echo __js('admin_machines.price_pack'); ?>" step="0.01" min="0" value="${prixPack}">
                 </div>
                 <div class="col-md-1">
                     <button type="button" class="btn btn-danger btn-sm remove-edit-tambour">

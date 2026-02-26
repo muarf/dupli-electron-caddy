@@ -162,12 +162,12 @@
             }
 
             const modal = $('#app-global-modal');
-            const title = options.title ||  "<?php echo __('common.info'); ?>" ;
+            const title = options.title ||  "<?php echo __js('common.info'); ?>" ;
             const message = options.message || '';
             const type = options.type || 'info'; // info, success, warning, danger
             const confirm = options.confirm || false;
             const okText = options.okText || 'OK';
-            const cancelText = options.cancelText ||  "<?php echo __('common.cancel'); ?>" ;
+            const cancelText = options.cancelText ||  "<?php echo __js('common.cancel'); ?>" ;
 
             // Configurer le titre et le message
             $('#app-global-modal-title-text').text(title);
@@ -224,13 +224,13 @@
             
             if (password !== confirm) {
                 e.preventDefault();
-                showAppModal( "<?php echo __('create_password.passwords_dont_match'); ?>" );
+                showAppModal( "<?php echo __js('create_password.passwords_dont_match'); ?>" );
                 return false;
             }
             
             if (password.length < 6) {
                 e.preventDefault();
-                showAppModal( "<?php echo __('create_password.password_too_short'); ?>" );
+                showAppModal( "<?php echo __js('create_password.password_too_short'); ?>" );
                 return false;
             }
         });

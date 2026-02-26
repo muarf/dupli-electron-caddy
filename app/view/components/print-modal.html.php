@@ -229,22 +229,22 @@
                         $select.empty();
 
                         if (result.printers.length === 0) {
-                            $select.append('<option disabled selected><?php echo __('print_modal.no_printers_found'); ?></option>');
+                            $select.append('<option disabled selected><?php echo __js('print_modal.no_printers_found'); ?></option>');
                         } else {
                             result.printers.forEach(p => {
                                 const isDefault = p.isDefault ? ' selected' : '';
-                                const text = p.name + (p.isDefault ? ' <?php echo __('print_modal.default_suffix'); ?>' : '');
+                                const text = p.name + (p.isDefault ? ' <?php echo __js('print_modal.default_suffix'); ?>' : '');
                                 $select.append(`<option value="${p.name}"${isDefault}>${text}</option>`);
                             });
                             $('#print-confirm-btn').prop('disabled', false);
                         }
                     } else {
-                        showError('<?php echo __('admin_printers.error_loading'); ?> : ' + result.error);
+                        showError('<?php echo __js('admin_printers.error_loading'); ?> : ' + result.error);
                     }
                 })
                 .catch(err => {
                     $('#print-modal-loading').hide();
-                    showError('<?php echo __('common.error'); ?> : ' + err.message);
+                    showError('<?php echo __js('common.error'); ?> : ' + err.message);
                 });
         };
 
@@ -261,7 +261,7 @@
 
             if (!printerName) return;
 
-            $('#print-confirm-btn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> <?php echo __('print_modal.sending'); ?>');
+            $('#print-confirm-btn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> <?php echo __js('print_modal.sending'); ?>');
 
             const options = {
                 printer: printerName,
@@ -285,26 +285,26 @@
             // Nous avons mis à jour le backend pour accepter un objet options en 2ème argument
             window.electronAPI.printFile(currentFileUrl, options)
                 .then(result => {
-                    $('#print-confirm-btn').prop('disabled', false).html('<i class="fa fa-print"></i> <?php echo __('print_modal.title'); ?>');
+                    $('#print-confirm-btn').prop('disabled', false).html('<i class="fa fa-print"></i> <?php echo __js('print_modal.title'); ?>');
                     $('#app-print-modal').modal('hide');
 
                     if (result.success) {
                         if (window.showAppModal) {
-                            window.showAppModal({ message: '<?php echo __('print_modal.success'); ?>', type: 'success' });
+                            window.showAppModal({ message: '<?php echo __js('print_modal.success'); ?>', type: 'success' });
                         }
                     } else {
                         if (window.showAppModal) {
-                            window.showAppModal({ message: '<?php echo __('common.error'); ?> : ' + (result.error || 'Inconnue'), type: 'danger' });
+                            window.showAppModal({ message: '<?php echo __js('common.error'); ?> : ' + (result.error || 'Inconnue'), type: 'danger' });
                         } else {
                             console.error('Erreur impression:', result.error);
                         }
                     }
                 })
                 .catch(err => {
-                    $('#print-confirm-btn').prop('disabled', false).html('<i class="fa fa-print"></i> <?php echo __('print_modal.title'); ?>');
+                    $('#print-confirm-btn').prop('disabled', false).html('<i class="fa fa-print"></i> <?php echo __js('print_modal.title'); ?>');
                     $('#app-print-modal').modal('hide');
                     if (window.showAppModal) {
-                        window.showAppModal({ title: '<?php echo __('common.error'); ?>', message: err.message, type: 'danger' });
+                        window.showAppModal({ title: '<?php echo __js('common.error'); ?>', message: err.message, type: 'danger' });
                     } else {
                         console.error('Erreur critique:', err);
                     }

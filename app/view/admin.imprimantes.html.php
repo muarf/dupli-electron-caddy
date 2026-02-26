@@ -259,7 +259,7 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
             // Fonction pour relancer en admin
             async function restartAsAdmin() {
                 if (!hasElectronAPI) {
-                    showAppModal({ type: 'warning', message: '<?php echo __('admin_printers.electron_api_unavailable'); ?>' });
+                    showAppModal({ type: 'warning', message: '<?php echo __js('admin_printers.electron_api_unavailable'); ?>' });
                     return;
                 }
 
@@ -267,8 +267,8 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                 const confirmed = await new Promise(resolve => {
                     showAppModal({
                         type: 'warning',
-                        title: '<?php echo __('admin_printers.restart_required'); ?>',
-                        message: '<?php echo __('admin_printers.restart_admin_confirm'); ?>',
+                        title: '<?php echo __js('admin_printers.restart_required'); ?>',
+                        message: '<?php echo __js('admin_printers.restart_admin_confirm'); ?>',
                         confirm: true,
                         onConfirm: () => resolve(true),
                         onClose: () => resolve(false) // Si fermé sans confirmer
@@ -282,16 +282,16 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                 try {
                     const btn = document.getElementById('btn-restart-admin');
                     btn.disabled = true;
-                    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> <?php echo __('admin_printers.restarting'); ?>';
+                    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> <?php echo __js('admin_printers.restarting'); ?>';
 
                     const result = await window.electronAPI.restartAsAdmin();
                     if (!result.success) {
-                        showAppModal({ type: 'danger', message: '<?php echo __('admin_printers.restart_error'); ?>' + result.error });
+                        showAppModal({ type: 'danger', message: '<?php echo __js('admin_printers.restart_error'); ?>' + result.error });
                         btn.disabled = false;
-                        btn.innerHTML = '<i class="fa fa-refresh"></i> <?php echo __('admin_printers.restart_admin'); ?>';
+                        btn.innerHTML = '<i class="fa fa-refresh"></i> <?php echo __js('admin_printers.restart_admin'); ?>';
                     }
                 } catch (error) {
-                    showAppModal({ type: 'danger', message: '<?php echo __('common.error'); ?> : ' + error.message });
+                    showAppModal({ type: 'danger', message: '<?php echo __js('common.error'); ?> : ' + error.message });
                 }
             }
 
@@ -302,7 +302,7 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                 const stopBtn = document.getElementById('btn-stop-monitor');
 
                 if (!hasElectronAPI) {
-                    statusDiv.innerHTML = '<div class="alert alert-warning"><i class="fa fa-exclamation-triangle"></i> <?php echo __('admin_printers.electron_api_unavailable'); ?></div>';
+                    statusDiv.innerHTML = '<div class="alert alert-warning"><i class="fa fa-exclamation-triangle"></i> <?php echo __js('admin_printers.electron_api_unavailable'); ?></div>';
                     startBtn.style.display = 'none';
                     stopBtn.style.display = 'none';
                     return;
@@ -312,27 +312,27 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                     const status = await window.electronAPI.getPrinterMonitorStatus();
 
                     if (!status.available) {
-                        statusDiv.innerHTML = '<div class="alert alert-warning"><i class="fa fa-exclamation-triangle"></i> <?php echo __('admin_printers.windows_only'); ?></div>';
+                        statusDiv.innerHTML = '<div class="alert alert-warning"><i class="fa fa-exclamation-triangle"></i> <?php echo __js('admin_printers.windows_only'); ?></div>';
                         startBtn.style.display = 'none';
                         stopBtn.style.display = 'none';
                     } else if (status.status === 'active') {
-                        statusDiv.innerHTML = '<div class="alert alert-success"><i class="fa fa-check-circle"></i> <?php echo __('admin_printers.monitor_active_desc'); ?></div>';
+                        statusDiv.innerHTML = '<div class="alert alert-success"><i class="fa fa-check-circle"></i> <?php echo __js('admin_printers.monitor_active_desc'); ?></div>';
                         startBtn.style.display = 'none';
                         stopBtn.style.display = 'inline-block';
                     } else {
-                        statusDiv.innerHTML = '<div class="alert alert-warning"><i class="fa fa-pause-circle"></i> <?php echo __('admin_printers.monitor_inactive_desc'); ?></div>';
+                        statusDiv.innerHTML = '<div class="alert alert-warning"><i class="fa fa-pause-circle"></i> <?php echo __js('admin_printers.monitor_inactive_desc'); ?></div>';
                         startBtn.style.display = 'inline-block';
                         stopBtn.style.display = 'none';
                     }
                 } catch (error) {
-                    statusDiv.innerHTML = '<div class="alert alert-danger"><i class="fa fa-times-circle"></i> <?php echo __('common.error'); ?> : ' + error.message + '</div>';
+                    statusDiv.innerHTML = '<div class="alert alert-danger"><i class="fa fa-times-circle"></i> <?php echo __js('common.error'); ?> : ' + error.message + '</div>';
                 }
             }
 
             // Fonction pour démarrer/arrêter le moniteur
             async function toggleMonitor(start) {
                 if (!hasElectronAPI) {
-                    showAppModal({ type: 'warning', message: '<?php echo __('admin_printers.electron_api_unavailable'); ?>' });
+                    showAppModal({ type: 'warning', message: '<?php echo __js('admin_printers.electron_api_unavailable'); ?>' });
                     return;
                 }
 
@@ -348,10 +348,10 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                         }, 500);
                         loadPrintJobs();
                     } else {
-                        showAppModal({ type: 'danger', message: '<?php echo __('common.error'); ?> : ' + result.error });
+                        showAppModal({ type: 'danger', message: '<?php echo __js('common.error'); ?> : ' + result.error });
                     }
                 } catch (error) {
-                    showAppModal({ type: 'danger', message: '<?php echo __('common.error'); ?> : ' + error.message });
+                    showAppModal({ type: 'danger', message: '<?php echo __js('common.error'); ?> : ' + error.message });
                 }
             }
 
@@ -360,7 +360,7 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                 const printersDiv = document.getElementById('printers-list');
 
                 if (!hasElectronAPI) {
-                    printersDiv.innerHTML = '<p class="text-muted"><?php echo __('admin_printers.electron_api_unavailable'); ?></p>';
+                    printersDiv.innerHTML = '<p class="text-muted"><?php echo __js('admin_printers.electron_api_unavailable'); ?></p>';
                     return;
                 }
 
@@ -368,7 +368,7 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                     // Vérifier d'abord le statut du moniteur
                     const status = await window.electronAPI.getPrinterMonitorStatus();
                     if (!status.available || status.status !== 'active') {
-                        printersDiv.innerHTML = '<p class="text-muted"><?php echo __('admin_printers.no_printers_found'); ?>. <button class="btn btn-sm btn-success" onclick="toggleMonitor(true)"><?php echo __('admin_printers.start'); ?></button></p>';
+                        printersDiv.innerHTML = '<p class="text-muted"><?php echo __js('admin_printers.no_printers_found'); ?>. <button class="btn btn-sm btn-success" onclick="toggleMonitor(true)"><?php echo __js('admin_printers.start'); ?></button></p>';
                         return;
                     }
 
@@ -382,20 +382,20 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                             return status !== 'error' && !name.includes('photocopilleuse');
                         });
 
-                        let html = '<table class="table table-striped"><thead><tr><th><?php echo __('admin_printers.name'); ?></th><th><?php echo __('admin_printers.status'); ?></th><th><?php echo __('admin_printers.is_default'); ?></th><th><?php echo __('admin_printers.actions'); ?></th></tr></thead><tbody>';
+                        let html = '<table class="table table-striped"><thead><tr><th><?php echo __js('admin_printers.name'); ?></th><th><?php echo __js('admin_printers.status'); ?></th><th><?php echo __js('admin_printers.is_default'); ?></th><th><?php echo __js('admin_printers.actions'); ?></th></tr></thead><tbody>';
                         result.printers.forEach(printer => {
                             const pName = printer.name || printer.Name;
                             const pStatus = (printer.status || printer.Status || '').toString();
                             const pDefault = printer.isDefault || printer.Default;
 
-                            const isDefault = pDefault ? '<span class="label label-success"><?php echo __('admin_printers.yes'); ?></span>' : '<span class="label label-default"><?php echo __('admin_printers.no'); ?></span>';
+                            const isDefault = pDefault ? '<span class="label label-success"><?php echo __js('admin_printers.yes'); ?></span>' : '<span class="label label-default"><?php echo __js('admin_printers.no'); ?></span>';
                             const status = pStatus.toLowerCase();
                             const name = (pName || '').toLowerCase();
                             const isError = status === 'error' || name.includes('photocopilleuse');
                             const statusClass = isError ? 'danger' : status === '0' || status === 'ok' || status === 'idle' ? 'success' : 'warning';
                             // Note: status 0 often means idle/ready in Windows CUPS-like stats, or we display what we get.
 
-                            const deleteBtn = isError ? `<button class="btn btn-xs btn-danger" onclick="deletePrinter('${pName.replace(/'/g, "\\'")}')" title="<?php echo __('common.delete'); ?>"><i class="fa fa-trash"></i></button>` : '';
+                            const deleteBtn = isError ? `<button class="btn btn-xs btn-danger" onclick="deletePrinter('${pName.replace(/'/g, "\\'")}')" title="<?php echo __js('common.delete'); ?>"><i class="fa fa-trash"></i></button>` : '';
                             html += `<tr class="${isError ? 'danger' : ''}">
                     <td>${pName || 'N/A'}</td>
                     <td><span class="label label-${statusClass}">${pStatus || 'N/A'}</span></td>
@@ -406,10 +406,10 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                         html += '</tbody></table>';
                         printersDiv.innerHTML = html;
                     } else {
-                        printersDiv.innerHTML = '<p class="text-muted"><?php echo __('admin_printers.no_printers_found'); ?>: ' + (result.error || 'Inconnu') + '</p>';
+                        printersDiv.innerHTML = '<p class="text-muted"><?php echo __js('admin_printers.no_printers_found'); ?>: ' + (result.error || 'Inconnu') + '</p>';
                     }
                 } catch (error) {
-                    printersDiv.innerHTML = '<div class="alert alert-danger"><?php echo __('common.error'); ?> : ' + error.message + '</div>';
+                    printersDiv.innerHTML = '<div class="alert alert-danger"><?php echo __js('common.error'); ?> : ' + error.message + '</div>';
                 }
             }
 
@@ -429,28 +429,28 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                         data = JSON.parse(text);
                     } catch (e) {
                         console.error('Erreur parsing JSON:', text);
-                        statsDiv.innerHTML = '<div class="alert alert-danger"><?php echo __('common.error'); ?> : <?php echo __('admin_printers.invalid_json'); ?></div>';
+                        statsDiv.innerHTML = '<div class="alert alert-danger"><?php echo __js('common.error'); ?> : <?php echo __js('admin_printers.invalid_json'); ?></div>';
                         return;
                     }
 
                     if (data.success) {
                         let html = '<div class="row">';
-                        html += '<div class="col-md-4"><div class="well text-center"><h3>' + data.total_jobs + '</h3><p><?php echo __('admin_tirage.total_prints'); ?></p></div></div>';
+                        html += '<div class="col-md-4"><div class="well text-center"><h3>' + data.total_jobs + '</h3><p><?php echo __js('admin_tirage.total_prints'); ?></p></div></div>';
 
                         if (data.stats && data.stats.by_printer && data.stats.by_printer.length > 0) {
-                            html += '<div class="col-md-8"><h4><?php echo __('admin_printers.associated_machine'); ?>:</h4><ul>';
+                            html += '<div class="col-md-8"><h4><?php echo __js('admin_printers.associated_machine'); ?>:</h4><ul>';
                             data.stats.by_printer.forEach(stat => {
-                                html += `<li><strong>${stat.printer_name}</strong>: ${stat.total_jobs} jobs, ${stat.total_pages || 0} <?php echo __('common.pages'); ?></li>`;
+                                html += `<li><strong>${stat.printer_name}</strong>: ${stat.total_jobs} jobs, ${stat.total_pages || 0} <?php echo __js('common.pages'); ?></li>`;
                             });
                             html += '</ul></div>';
                         }
                         html += '</div>';
                         statsDiv.innerHTML = html;
                     } else {
-                        statsDiv.innerHTML = '<p class="text-muted">' + (data.message || data.error || '<?php echo __('stats.no_data'); ?>') + '</p>';
+                        statsDiv.innerHTML = '<p class="text-muted">' + (data.message || data.error || '<?php echo __js('stats.no_data'); ?>') + '</p>';
                     }
                 } catch (error) {
-                    statsDiv.innerHTML = '<div class="alert alert-danger"><?php echo __('common.error'); ?> : ' + error.message + '</div>';
+                    statsDiv.innerHTML = '<div class="alert alert-danger"><?php echo __js('common.error'); ?> : ' + error.message + '</div>';
                 }
             }
 
@@ -498,7 +498,7 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                         const jobsToDisplay = allJobs.slice(startIndex, endIndex);
 
                         // Construire le tableau
-                        let html = '<table class="table table-striped table-hover"><thead><tr><th><input type="checkbox" id="select-all-jobs" onclick="toggleSelectAll(this)"></th><th><?php echo __('admin_printers.preview_doc'); ?></th><th><?php echo __('common.date'); ?></th><th><?php echo __('common.document'); ?></th><th><?php echo __('common.format'); ?></th><th><?php echo __('common.duplex'); ?></th><th><?php echo __('common.color'); ?></th><th><?php echo __('admin_printers.ink_coverage'); ?></th><th><?php echo __('common.status'); ?></th><th><?php echo __('common.pages'); ?></th></tr></thead><tbody>';
+                        let html = '<table class="table table-striped table-hover"><thead><tr><th><input type="checkbox" id="select-all-jobs" onclick="toggleSelectAll(this)"></th><th><?php echo __js('admin_printers.preview_doc'); ?></th><th><?php echo __js('common.date'); ?></th><th><?php echo __js('common.document'); ?></th><th><?php echo __js('common.format'); ?></th><th><?php echo __js('common.duplex'); ?></th><th><?php echo __js('common.color'); ?></th><th><?php echo __js('admin_printers.ink_coverage'); ?></th><th><?php echo __js('common.status'); ?></th><th><?php echo __js('common.pages'); ?></th></tr></thead><tbody>';
                         jobsToDisplay.forEach(job => {
                             const date = new Date(job.timestamp).toLocaleString('<?php echo $lang == 'fr' ? 'fr-FR' : 'en-US'; ?>');
                             const copies = job.copies || 1;
@@ -513,23 +513,23 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                             const sheets = isDuplex ? Math.ceil(totalDocPages / 2) * copies : totalDocPages * copies;
 
                             // Affichage : "X pages, Y feuilles"
-                            const pages = totalPages + ' <?php echo __('common.pages'); ?>, ' + sheets + ' <?php echo __('tirage_multimachines.sheets'); ?>' + (copies > 1 ? ' (' + copies + ' copies)' : '');
+                            const pages = totalPages + ' <?php echo __js('common.pages'); ?>, ' + sheets + ' <?php echo __js('tirage_multimachines.sheets'); ?>' + (copies > 1 ? ' (' + copies + ' copies)' : '');
                             const statusClass = job.status === 'Completed' ? 'success' : job.status === 'Printing' ? 'info' : 'warning';
 
                             // Format papier
                             const paperSize = job.paper_size || 'N/A';
 
                             // Recto-verso
-                            const duplex = (job.duplex === 1 || job.duplex === '1' || job.duplex === true) ? '<?php echo __('admin_printers.yes'); ?>' : '<?php echo __('admin_printers.no'); ?>';
+                            const duplex = (job.duplex === 1 || job.duplex === '1' || job.duplex === true) ? '<?php echo __js('admin_printers.yes'); ?>' : '<?php echo __js('admin_printers.no'); ?>';
 
                             // Couleur
                             let colorMode = 'N/A';
                             if (job.color_mode) {
                                 const colorValue = job.color_mode.toLowerCase();
                                 if (colorValue === 'color' || colorValue.includes('color') || colorValue === '2') {
-                                    colorMode = '<?php echo __('common.color'); ?>';
+                                    colorMode = '<?php echo __js('common.color'); ?>';
                                 } else if (colorValue === 'monochrome' || colorValue.includes('mono') || colorValue === '1') {
-                                    colorMode = '<?php echo __('common.bw'); ?>';
+                                    colorMode = '<?php echo __js('common.bw'); ?>';
                                 }
                             }
 
@@ -567,12 +567,12 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                         if (selectAll) selectAll.checked = false;
                         updateDeleteButton();
                     } else {
-                        jobsDiv.innerHTML = '<p class="text-muted">' + (data.message || '<?php echo __('admin_printers.no_prints_found'); ?>') + '</p>';
+                        jobsDiv.innerHTML = '<p class="text-muted">' + (data.message || '<?php echo __js('admin_printers.no_prints_found'); ?>') + '</p>';
                         document.getElementById('pagination-controls').style.display = 'none';
                         document.getElementById('pagination-info').textContent = '';
                     }
                 } catch (error) {
-                    jobsDiv.innerHTML = '<div class="alert alert-danger"><?php echo __('common.error'); ?> : ' + error.message + '</div>';
+                    jobsDiv.innerHTML = '<div class="alert alert-danger"><?php echo __js('common.error'); ?> : ' + error.message + '</div>';
                 }
             }
 
@@ -593,13 +593,13 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                 }
 
                 // Mettre à jour l'affichage de la page courante
-                currentPageDisplay.textContent = `<?php echo __('admin_tirage.page'); ?> ${currentPage} <?php echo __('admin_tirage.of'); ?> ${totalPages}`;
+                currentPageDisplay.textContent = `<?php echo __js('admin_tirage.page'); ?> ${currentPage} <?php echo __js('admin_tirage.of'); ?> ${totalPages}`;
 
                 // Mettre à jour les informations de pagination
                 const startIndex = (currentPage - 1) * itemsPerPage + 1;
                 const endIndex = Math.min(currentPage * itemsPerPage, totalJobs);
                 
-                let infoText = '<?php echo __('admin_printers.pagination_info'); ?>';
+                let infoText = '<?php echo __js('admin_printers.pagination_info'); ?>';
                 infoText = infoText.replace(':start', startIndex).replace(':end', endIndex).replace(':total', totalJobs);
                 paginationInfo.textContent = infoText;
 
@@ -661,7 +661,7 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                 const btn = document.getElementById('btn-delete-selection');
                 if (btn) {
                     btn.disabled = checkboxes.length === 0;
-                    btn.innerHTML = `<i class="fa fa-trash"></i> <?php echo __('admin_printers.delete_selection_count'); ?>`.replace(':count', checkboxes.length);
+                    btn.innerHTML = `<i class="fa fa-trash"></i> <?php echo __js('admin_printers.delete_selection_count'); ?>`.replace(':count', checkboxes.length);
                 }
             }
 
@@ -671,8 +671,8 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
 
                 showAppModal({
                     type: 'warning',
-                    title: '<?php echo __('admin_printers.delete_selection'); ?>',
-                    message: `<?php echo __('admin_printers.confirm_delete_count'); ?>`.replace(':count', checkboxes.length),
+                    title: '<?php echo __js('admin_printers.delete_selection'); ?>',
+                    message: `<?php echo __js('admin_printers.confirm_delete_count'); ?>`.replace(':count', checkboxes.length),
                     confirm: true,
                     onConfirm: async function () {
                         const ids = Array.from(checkboxes).map(cb => cb.value);
@@ -780,25 +780,25 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
             function deletePrinter(printerName) {
                 showAppModal({
                     type: 'warning',
-                    title: '<?php echo __('admin_printers.delete_printer'); ?>',
-                    message: `<?php echo __('admin_printers.delete_printer_confirm'); ?>`.replace(':name', printerName),
+                    title: '<?php echo __js('admin_printers.delete_printer'); ?>',
+                    message: `<?php echo __js('admin_printers.delete_printer_confirm'); ?>`.replace(':name', printerName),
                     confirm: true,
                     onConfirm: async function () {
                         if (!hasElectronAPI) {
-                            showAppModal({ type: 'warning', message: '<?php echo __('admin_printers.electron_api_unavailable'); ?>' });
+                            showAppModal({ type: 'warning', message: '<?php echo __js('admin_printers.electron_api_unavailable'); ?>' });
                             return;
                         }
 
                         try {
                             const result = await window.electronAPI.deletePrinter(printerName);
                             if (result.success) {
-                                showAppModal({ type: 'success', message: '<?php echo __('admin_printers.delete_printer_success'); ?>' });
+                                showAppModal({ type: 'success', message: '<?php echo __js('admin_printers.delete_printer_success'); ?>' });
                                 loadPrinters(); // Recharger la liste
                             } else {
-                                showAppModal({ type: 'danger', message: '<?php echo __('admin_printers.restart_error'); ?>' + result.error });
+                                showAppModal({ type: 'danger', message: '<?php echo __js('admin_printers.restart_error'); ?>' + result.error });
                             }
                         } catch (error) {
-                            showAppModal({ type: 'danger', message: '<?php echo __('common.error'); ?> : ' + error.message });
+                            showAppModal({ type: 'danger', message: '<?php echo __js('common.error'); ?> : ' + error.message });
                         }
                     }
                 });
@@ -812,7 +812,7 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
 
             async function loadMappings() {
                 if (!hasElectronAPI) {
-                    document.querySelector('#mappings-table tbody').innerHTML = '<tr><td colspan="3" class="text-center text-warning"><?php echo __('admin_printers.electron_api_required'); ?></td></tr>';
+                    document.querySelector('#mappings-table tbody').innerHTML = '<tr><td colspan="3" class="text-center text-warning"><?php echo __js('admin_printers.electron_api_required'); ?></td></tr>';
                     return;
                 }
 
@@ -854,15 +854,15 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                     <td style="vertical-align: middle;"><strong>${pName}</strong></td>
                     <td>
                         <select class="form-control input-sm mapping-select" data-printer="${pName}">
-                            <option value=""><?php _e('admin_printers.not_assigned'); ?></option>
-                            <optgroup label="<?php _e('tirage_multimachines.photocopieur'); ?>s">
+                            <option value=""><?php _ejs('admin_printers.not_assigned'); ?></option>
+                            <optgroup label="<?php _ejs('tirage_multimachines.photocopieur'); ?>s">
                                 ${photocopieurs.map(p => `
                                     <option value="photocop_${p.id}" ${currentMapping && currentMapping.type === 'photocop' && currentMapping.id == p.id ? 'selected' : ''}>
                                         ${p.marque} (${p.type_encre})
                                     </option>
                                 `).join('')}
                             </optgroup>
-                            <optgroup label="<?php _e('tirage_multimachines.duplicopieur'); ?>s">
+                            <optgroup label="<?php _ejs('tirage_multimachines.duplicopieur'); ?>s">
                                 ${duplicopieurs.map(d => `
                                     <option value="dupli_${d.id}" ${currentMapping && currentMapping.type === 'dupli' && currentMapping.id == d.id ? 'selected' : ''}>
                                         ${d.marque} ${d.modele}
@@ -873,7 +873,7 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                     </td>
                     <td>
                         <button class="btn btn-primary btn-sm btn-save-mapping" onclick="saveMapping('${pName.replace(/'/g, "\\'")}')">
-                            <i class="fa fa-save"></i> <?php _e('admin_printers.save'); ?>
+                            <i class="fa fa-save"></i> <?php _ejs('admin_printers.save'); ?>
                         </button>
                     </td>
                 </tr>`;

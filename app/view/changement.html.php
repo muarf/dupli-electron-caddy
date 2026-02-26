@@ -176,31 +176,31 @@ $(document).ready(function() {
                     
                     if (type === 'duplicopieur') {
                         // Duplicopieurs : master et encre
-                        options = '<option value="master"><?php _e('changement.master'); ?></option>' +
-                                 '<option value="encre"><?php _e('changement.ink'); ?></option>';
+                        options = '<option value="master"><?php _ejs('changement.master'); ?></option>' +
+                                 '<option value="encre"><?php _ejs('changement.ink'); ?></option>';
                     } else if (type === 'photocop_encre') {
                         // Photocopieurs à encre : 4 couleurs seulement
-                        options = '<option value="noire"><?php _e('changement.black_ink'); ?></option>' +
-                                 '<option value="bleue"><?php _e('changement.blue_ink'); ?></option>' +
-                                 '<option value="rouge"><?php _e('changement.red_ink'); ?></option>' +
-                                 '<option value="jaune"><?php _e('changement.yellow_ink'); ?></option>';
+                        options = '<option value="noire"><?php _ejs('changement.black_ink'); ?></option>' +
+                                 '<option value="bleue"><?php _ejs('changement.blue_ink'); ?></option>' +
+                                 '<option value="rouge"><?php _ejs('changement.red_ink'); ?></option>' +
+                                 '<option value="jaune"><?php _ejs('changement.yellow_ink'); ?></option>';
                     } else if (type === 'photocop_toner') {
                         // Photocopieurs à toner : 4 couleurs + dev + tambour
-                        options = '<option value="noir"><?php _e('changement.black'); ?></option>' +
-                                 '<option value="cyan"><?php _e('changement.cyan'); ?></option>' +
-                                 '<option value="magenta"><?php _e('changement.magenta'); ?></option>' +
-                                 '<option value="yellow"><?php _e('changement.yellow'); ?></option>' +
-                                 '<option value="dev"><?php _e('changement.dev'); ?></option>' +
-                                 '<option value="tambour"><?php _e('changement.drum'); ?></option>';
+                        options = '<option value="noir"><?php _ejs('changement.black'); ?></option>' +
+                                 '<option value="cyan"><?php _ejs('changement.cyan'); ?></option>' +
+                                 '<option value="magenta"><?php _ejs('changement.magenta'); ?></option>' +
+                                 '<option value="yellow"><?php _ejs('changement.yellow'); ?></option>' +
+                                 '<option value="dev"><?php _ejs('changement.dev'); ?></option>' +
+                                 '<option value="tambour"><?php _ejs('changement.drum'); ?></option>';
                     } else {
-                        options = '<option value=""><?php _e('changement.machine_type_not_recognized'); ?></option>';
+                        options = '<option value=""><?php _ejs('changement.machine_type_not_recognized'); ?></option>';
                     }
                     
-                    selectElement.html('<option value=""><?php _e('changement.select_type'); ?></option>' + options);
+                    selectElement.html('<option value=""><?php _ejs('changement.select_type'); ?></option>' + options);
                 }
             })
             .fail(function() {
-                selectElement.html('<option value=""><?php _e('changement.error_loading'); ?></option>');
+                selectElement.html('<option value=""><?php _ejs('changement.error_loading'); ?></option>');
             });
     }
     
@@ -221,7 +221,7 @@ $(document).ready(function() {
             
             // Remplir les options de tambours
             if (duplicopieurs_tambours[machine]) {
-                tambourField.html('<option value=""><?php _e('changement.select_drum'); ?></option>');
+                tambourField.html('<option value=""><?php _ejs('changement.select_drum'); ?></option>');
                 $.each(duplicopieurs_tambours[machine], function(index, tambour) {
                     tambourField.append('<option value="' + tambour + '">' + tambour + '</option>');
                 });
@@ -241,8 +241,8 @@ $(document).ready(function() {
         var tambourSelect = $('#tambour');
         
         // Vider les options
-        typeSelect.html('<option value=""><?php _e('changement.select_type'); ?></option>');
-        tambourSelect.html('<option value=""><?php _e('changement.select_drum'); ?></option>');
+        typeSelect.html('<option value=""><?php _ejs('changement.select_type'); ?></option>');
+        tambourSelect.html('<option value=""><?php _ejs('changement.select_drum'); ?></option>');
         
         if (machine) {
             // Utiliser la nouvelle fonction pour mettre à jour les types
@@ -255,7 +255,7 @@ $(document).ready(function() {
                 
                 // Remplir les options de tambours
                 if (duplicopieurs_tambours[machine]) {
-                    tambourSelect.html('<option value=""><?php _e('changement.select_drum'); ?></option>');
+                    tambourSelect.html('<option value=""><?php _ejs('changement.select_drum'); ?></option>');
                     $.each(duplicopieurs_tambours[machine], function(index, tambour) {
                         tambourSelect.append('<option value="' + tambour + '">' + tambour + '</option>');
                     });
@@ -346,9 +346,9 @@ $(document).ready(function() {
         if (!machine || !type || !nb_p) {
             e.preventDefault();
             if (window.showAppModal) {
-                window.showAppModal( "<?php echo __('changement.fill_all_required'); ?>" );
+                window.showAppModal( "<?php echo __js('changement.fill_all_required'); ?>" );
             } else {
-                alert( "<?php echo __('changement.fill_all_required'); ?>" );
+                alert( "<?php echo __js('changement.fill_all_required'); ?>" );
             }
             return false;
         }
@@ -358,18 +358,18 @@ $(document).ready(function() {
             if (type === 'master' && !$('#nb_m').val()) {
                 e.preventDefault();
                 if (window.showAppModal) {
-                    window.showAppModal( "<?php echo __('changement.enter_master_count'); ?>" );
+                    window.showAppModal( "<?php echo __js('changement.enter_master_count'); ?>" );
                 } else {
-                    alert( "<?php echo __('changement.enter_master_count'); ?>" );
+                    alert( "<?php echo __js('changement.enter_master_count'); ?>" );
                 }
                 return false;
             }
             if (type === 'tambour' && !$('#tambour').val()) {
                 e.preventDefault();
                 if (window.showAppModal) {
-                    window.showAppModal( "<?php echo __('changement.select_drum_for_ink'); ?>" );
+                    window.showAppModal( "<?php echo __js('changement.select_drum_for_ink'); ?>" );
                 } else {
-                    alert( "<?php echo __('changement.select_drum_for_ink'); ?>" );
+                    alert( "<?php echo __js('changement.select_drum_for_ink'); ?>" );
                 }
                 return false;
             }
@@ -383,7 +383,7 @@ $(document).ready(function() {
         var aideContainer = $('#aide-container');
         
         if (!machine) {
-            aideContainer.html('<div class="alert alert-info"><h4><i class="fa fa-info-circle"></i> <?php _e('changement.instructions_title'); ?></h4><p><?php _e('changement.select_machine_to_see_instructions'); ?></p></div>');
+            aideContainer.html('<div class="alert alert-info"><h4><i class="fa fa-info-circle"></i> <?php _ejs('changement.instructions_title'); ?></h4><p><?php _ejs('changement.select_machine_to_see_instructions'); ?></p></div>');
             return;
         }
         
@@ -393,7 +393,7 @@ $(document).ready(function() {
         if (aide && aide.length > 0) {
             // Construire l'affichage avec les Q&A
             var html = '<div class="aide-item">';
-            html += '<h4><i class="fa fa-tint"></i> <?php _e('changement.instructions_for'); ?> ' + machine + '</h4>';
+            html += '<h4><i class="fa fa-tint"></i> <?php _ejs('changement.instructions_for'); ?> ' + machine + '</h4>';
             
             aide.forEach(function(qa) {
                 html += '<div class="qa-item" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid #007bff; background: #f8f9fa; border-radius: 4px;">';
@@ -407,25 +407,25 @@ $(document).ready(function() {
         } else {
             // Aide par défaut si aucune aide spécifique
             var defaultAide = '<div class="alert alert-info">' +
-                '<h4><i class="fa fa-info-circle"></i> <?php _e('changement.instructions_for'); ?> ' + machine + '</h4>' +
-                '<p><strong><?php _e('changement.how_to_find_count'); ?></strong></p>' +
+                '<h4><i class="fa fa-info-circle"></i> <?php _ejs('changement.instructions_for'); ?> ' + machine + '</h4>' +
+                '<p><strong><?php _ejs('changement.how_to_find_count'); ?></strong></p>' +
                 '<ul>' +
-                '<li><?php _e('changement.go_to_machine'); ?></li>' +
-                '<li><?php _e('changement.press_f1'); ?></li>' +
-                '<li><?php _e('changement.print_counters'); ?></li>' +
-                '<li><?php _e('changement.note_number'); ?></li>' +
+                '<li><?php _ejs('changement.go_to_machine'); ?></li>' +
+                '<li><?php _ejs('changement.press_f1'); ?></li>' +
+                '<li><?php _ejs('changement.print_counters'); ?></li>' +
+                '<li><?php _ejs('changement.note_number'); ?></li>' +
                 '</ul>' +
-                '<p><strong><?php _e('changement.for_duplicators'); ?></strong></p>' +
+                '<p><strong><?php _ejs('changement.for_duplicators'); ?></strong></p>' +
                 '<ul>' +
-                '<li><?php _e('changement.enter_current_passes'); ?></li>' +
-                '<li><?php _e('changement.select_consumable_type'); ?></li>' +
+                '<li><?php _ejs('changement.enter_current_passes'); ?></li>' +
+                '<li><?php _ejs('changement.select_consumable_type'); ?></li>' +
                 '</ul>' +
-                '<p><strong><?php _e('changement.for_photocopiers'); ?></strong></p>' +
+                '<p><strong><?php _ejs('changement.for_photocopiers'); ?></strong></p>' +
                 '<ul>' +
-                '<li><?php _e('changement.enter_total_copies'); ?></li>' +
-                '<li><?php _e('changement.select_consumable_type_photo'); ?></li>' +
+                '<li><?php _ejs('changement.enter_total_copies'); ?></li>' +
+                '<li><?php _ejs('changement.select_consumable_type_photo'); ?></li>' +
                 '</ul>' +
-                '<p><em><?php _e('changement.no_specific_help'); ?></em></p>' +
+                '<p><em><?php _ejs('changement.no_specific_help'); ?></em></p>' +
                 '</div>';
             aideContainer.html(defaultAide);
         }

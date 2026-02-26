@@ -1658,10 +1658,10 @@ async function stopAllChildrenGracefully() {
     } catch { }
 }
 
-// Démarrer le moniteur d'imprimantes Windows
+// Démarrer le moniteur d'imprimantes (Windows + Linux)
 function startPrinterMonitor() {
-    if (process.platform !== 'win32') {
-        console.log('Le moniteur d\'imprimantes n\'est disponible que sur Windows');
+    if (process.platform !== 'win32' && process.platform !== 'linux') {
+        console.log('Le moniteur d\'imprimantes n\'est pas supporté sur cet OS');
         return;
     }
 
@@ -1799,7 +1799,8 @@ function startPrinterMonitor() {
                     fillRate: enrichedPrintData.FillRate || 0,
                     thumbnailUrl: enrichedPrintData.ThumbnailUrl || '',
                     timestamp: enrichedPrintData.TimeSubmitted || new Date().toISOString(),
-                    eventType: 'job_detected'
+                    eventType: 'job_detected',
+                    platform: process.platform
                 });
 
                 const options = {
@@ -2851,7 +2852,7 @@ ipcMain.handle('get-printers', async () => {
         console.error('Erreur lors de la récupération des imprimantes via Electron:', error);
 
         // Fallback sur le moniteur si Electron échoue (cas rare)
-        if (process.platform === 'win32') {
+        if (process.platform === 'win32' || process.platform === 'linux') {
             try {
                 let monitorToUse = printerMonitor;
                 if (!monitorToUse) {
@@ -2872,8 +2873,8 @@ ipcMain.handle('get-printers', async () => {
 
 // Démarrer/Arrêter le moniteur d'imprimantes
 ipcMain.handle('toggle-printer-monitor', async (event, start) => {
-    if (process.platform !== 'win32') {
-        return { success: false, error: 'Disponible uniquement sur Windows' };
+    if (process.platform !== 'win32' && process.platform !== 'linux') {
+        return { success: false, error: 'Disponible uniquement sur Windows/Linux' };
     }
 
     try {
@@ -2897,7 +2898,7 @@ ipcMain.handle('toggle-printer-monitor', async (event, start) => {
 
 // Obtenir le statut du moniteur
 ipcMain.handle('get-printer-monitor-status', () => {
-    if (process.platform !== 'win32') {
+    if (process.platform !== 'win32' && process.platform !== 'linux') {
         return { available: false, status: 'not_supported' };
     }
 
@@ -3103,7 +3104,7 @@ ipcMain.handle('reanalyze-print-job', async (event, jobId) => {
             return { success: false, error: 'PrinterMonitor non initialisé' };
         }
 
-        const result = printerMonitor.reanalyzeJob(jobId);
+        const result = await printerMonitor.reanalyzeJob(jobId);
 
         if (result && result.success) {
             console.log(`[IPC] Job ${jobId} réanalysé: fillRate=${result.fillRate}%, isGrayscale=${result.isGrayscale}`);
@@ -3393,14 +3394,22 @@ ipcMain.handle('open-external-file', async (event, fileUrl) => {
             const os = require('os');
 
             return new Promise((resolve, reject) => {
-                // Créer un nom de fichier temporaire
-                const tempFileName = 'temp_' + Date.now() + '.pdf';
-                const tempFilePath = path.join(os.tmpdir(), tempFileName);
-                const file = fs.createWriteStream(tempFilePath);
-
                 const protocol = fileUrl.startsWith('https') ? https : http;
 
                 protocol.get(fileUrl, (response) => {
+                    // Extract Content-Type to compute correct extension
+                    const contentType = response.headers['content-type'] || '';
+                    let ext = '.pdf'; // Default fallback
+                    if (contentType.includes('image/png')) ext = '.png';
+                    else if (contentType.includes('image/jpeg') || contentType.includes('image/jpg')) ext = '.jpg';
+                    else if (contentType.includes('image/gif')) ext = '.gif';
+                    else if (contentType.includes('image/webp')) ext = '.webp';
+
+                    // Create temporary file with accurate extension
+                    const tempFileName = 'temp_' + Date.now() + ext;
+                    const tempFilePath = path.join(os.tmpdir(), tempFileName);
+                    const file = fs.createWriteStream(tempFilePath);
+
                     response.pipe(file);
 
                     file.on('finish', () => {
