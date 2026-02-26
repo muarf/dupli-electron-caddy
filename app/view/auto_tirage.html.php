@@ -973,9 +973,14 @@
         }
 
         function addJobToSession(details, jobId, printerName) {
-            // ANTI-DOUBLON LOCAL : Vérifier si ce Job ID est déjà dans la session
-            if (sessionJobs.some(existingJob => existingJob.originalJobId == jobId)) {
-                console.warn(`[AUTO_TIRAGE] Job ID ${jobId} déjà présent dans la session, ignoré.`);
+            // ANTI-DOUBLON LOCAL : Clé composite job_id + printer_name (cross-plateforme)
+            // job_id seul suffit sur Linux (compteur CUPS global monotone)
+            // mais peut recycler sur Windows → on ajoute printer_name
+            if (sessionJobs.some(existingJob =>
+                existingJob.originalJobId == jobId &&
+                (existingJob.printerName || existingJob.machine) === (printerName || details.machine)
+            )) {
+                console.warn(`[AUTO_TIRAGE] Job (${jobId}, ${printerName}) déjà présent dans la session, ignoré.`);
                 return;
             }
 
@@ -1797,13 +1802,23 @@
 
                 if (data.jobs && data.jobs.length > 0) {
                     // Convertir au format attendu par sessionJobs (en évitant les doublons avec ce qu'on a en local)
-                    // On compare sur le job_id (numéro de job spooler CUPS/Windows), clé stable sur les deux plateformes.
-                    // Avant on comparait sur id+type mais l'id local (de photocop/dupli) ne correspond pas à l'id DB retourné.
+                    // Clé composite job_id + printer_name (cross-plateforme) :
+                    //   - Linux CUPS : job_id est un compteur global monotone → très stable
+                    //   - Windows   : job_id can recycle after spooler restart → printer_name seals the gap
+                    // Fallback sur id+type si pas de job_id (jobs ajoutés manuellement).
                     data.jobs.forEach(job => {
-                        const exists = sessionJobs.some(sj =>
-                            sj.originalJobId != null && job.job_id != null &&
-                            String(sj.originalJobId) === String(job.job_id)
-                        );
+                        const exists = sessionJobs.some(sj => {
+                            // Clé primaire : job_id + printer_name
+                            if (sj.originalJobId != null && job.job_id != null) {
+                                return String(sj.originalJobId) === String(job.job_id) &&
+                                       (sj.printerName || sj.machine) === (job.printer_name || job.printerName);
+                            }
+                            // Fallback pour jobs sans spooler_id (manual)
+                            if (sj.id != null && job.id != null) {
+                                return String(sj.id) === String(job.id) && sj.type === job.table_source;
+                            }
+                            return false;
+                        });
                         if (!exists) {
                             sessionJobs.push({
                                 id: job.id,
