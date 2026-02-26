@@ -40,11 +40,42 @@ class PrinterMonitor {
      * Démarrer la surveillance du spooler d'impression (Mode Natif)
      */
     start() {
-        if (!this.isWindows) {
-            console.log('La surveillance des imprimantes n\'est disponible que sur Windows');
+        if (this.isWindows) {
+            return this.startWindowsMonitor();
+        } else if (process.platform === 'linux') {
+            return this.startLinuxMonitor();
+        } else {
+            console.log('La surveillance des imprimantes n\'est pas supportée sur cet OS');
             return false;
         }
+    }
 
+    startLinuxMonitor() {
+        if (this.monitoring) return false;
+
+        try {
+            const LinuxSpoolAnalyzer = require('./spool-analyzer-linux');
+            this.linuxAnalyzer = new LinuxSpoolAnalyzer();
+
+            this.linuxAnalyzer.on('job', (jobInfo) => {
+                if (this.callbacks.onPrintJob) {
+                    this.callbacks.onPrintJob(jobInfo);
+                }
+            });
+
+            if (this.linuxAnalyzer.start()) {
+                console.log('✅ Surveillance Linux active via CUPS Spool');
+                this.monitoring = true;
+                return true;
+            }
+            return false;
+        } catch (e) {
+            console.error('❌ Erreur démarrage moniteur Linux:', e);
+            return false;
+        }
+    }
+
+    startWindowsMonitor() {
         if (this.monitoring) {
             console.log('La surveillance est déjà active');
             return false;
@@ -91,9 +122,13 @@ class PrinterMonitor {
         if (!this.monitoring) return;
 
         console.log('Arrêt de la surveillance...');
-        if (win32Printer) {
+
+        if (this.isWindows && win32Printer) {
             win32Printer.stopPrinterMonitor();
+        } else if (this.linuxAnalyzer) {
+            this.linuxAnalyzer.stop();
         }
+
         this.monitoring = false;
         this.processedJobs.clear();
     }
@@ -181,22 +216,193 @@ class PrinterMonitor {
 
     /**
      * Force re-analysis of a specific job (bypasses cache)
-     * @param {number} jobId - Windows print job ID
+     * @param {number} jobId - Print job ID
      * @returns {Object|null} { success, isGrayscale, fillRate, thumbnailUrl }
      */
-    reanalyzeJob(jobId) {
-        if (!win32Printer || !win32Printer.reanalyzeJob) {
-            console.error('❌ Module natif reanalyzeJob non disponible');
-            return null;
+    async reanalyzeJob(jobId) {
+        if (this.isWindows) {
+            // Windows: module natif C++
+            if (!win32Printer || !win32Printer.reanalyzeJob) {
+                console.error('❌ Module natif reanalyzeJob non disponible');
+                return null;
+            }
+            try {
+                const result = win32Printer.reanalyzeJob(jobId);
+                console.log(`🔄 [ReanalyzeJob] Job #${jobId}:`, result);
+                return result;
+            } catch (e) {
+                console.error('❌ Erreur reanalyzeJob:', e);
+                return null;
+            }
+        } else if (process.platform === 'linux') {
+            return this.reanalyzeJobLinux(jobId);
         }
+        return null;
+    }
+
+    /**
+     * Linux: réanalyse via Ghostscript ink_cov sur le fichier spool CUPS
+     */
+    async reanalyzeJobLinux(jobId) {
+        const fs = require('fs');
+        const pathMod = require('path');
+        const { spawn, execSync } = require('child_process');
+
+        const paddedId = jobId.toString().padStart(5, '0');
+        const filename = `d${paddedId}-001`;
+        const spoolPath = pathMod.join('/var/spool/cups', filename);
+        const tmpPath = pathMod.join(os.tmpdir(), `reanalyze_${filename}`);
+
+        console.log(`🔄 [ReanalyzeJob Linux] Job #${jobId} → ${spoolPath}`);
+
         try {
-            const result = win32Printer.reanalyzeJob(jobId);
-            console.log(`🔄 [ReanalyzeJob] Job #${jobId}:`, result);
-            return result;
-        } catch (e) {
-            console.error('❌ Erreur reanalyzeJob:', e);
-            return null;
+            fs.copyFileSync(spoolPath, tmpPath);
+            console.log(`📋 Copié vers ${tmpPath} (${fs.statSync(tmpPath).size} bytes)`);
+        } catch (err) {
+            console.error(`⚠️ Fichier spool ${filename} non lisible:`, err.message);
+            return { success: false, error: 'Fichier spool introuvable: ' + err.message };
         }
+
+        try {
+            // Détecter le format via magic bytes
+            const header = Buffer.alloc(8);
+            const fd = fs.openSync(tmpPath, 'r');
+            fs.readSync(fd, header, 0, 8, 0);
+            fs.closeSync(fd);
+
+            let format = 'unknown';
+            if (header.slice(0, 4).toString() === '%PDF') format = 'pdf';
+            else if (header.slice(0, 4).toString() === '%!PS') format = 'ps';
+            else if (header[0] === 0x89 && header.slice(1, 4).toString() === 'PNG') format = 'png';
+            else if (header[0] === 0xFF && header[1] === 0xD8 && header[2] === 0xFF) format = 'jpeg';
+
+            console.log(`📄 [ReanalyzeJob Linux] Format détecté: ${format}`);
+
+            let fillRate = 0;
+            let isColor = false;
+            let thumbnailUrl = '';
+
+            if (format === 'pdf' || format === 'ps') {
+                // === PDF/PS: Ghostscript ink_cov ===
+                const inkResult = await this._gsInkCov(tmpPath);
+                if (!inkResult) {
+                    try { fs.unlinkSync(tmpPath); } catch (e) { }
+                    return { success: false, error: 'Ghostscript ink_cov failed' };
+                }
+                fillRate = inkResult.fillRate;
+                isColor = inkResult.isColor;
+                thumbnailUrl = await this._gsThumbnail(tmpPath, jobId);
+
+            } else if (format === 'png' || format === 'jpeg') {
+                // === PNG/JPEG: ImageMagick analyse pixel ===
+                const imgResult = await this._imageMagickAnalyze(tmpPath);
+                fillRate = imgResult.fillRate;
+                isColor = imgResult.isColor;
+                thumbnailUrl = await this._imageMagickThumbnail(tmpPath, jobId);
+
+            } else {
+                console.warn(`⚠️ Format non supporté: ${format}`);
+                try { fs.unlinkSync(tmpPath); } catch (e) { }
+                return { success: false, error: `Format non supporté: ${format}` };
+            }
+
+            try { fs.unlinkSync(tmpPath); } catch (e) { }
+
+            console.log(`✅ [ReanalyzeJob Linux] Job #${jobId}: fillRate=${fillRate.toFixed(2)}%, isColor=${isColor}, format=${format}, thumb=${thumbnailUrl ? 'yes' : 'no'}`);
+            return {
+                success: true,
+                isGrayscale: !isColor,
+                fillRate: fillRate,
+                thumbnailUrl: thumbnailUrl
+            };
+        } catch (err) {
+            console.error(`❌ [ReanalyzeJob Linux] Erreur inattendue:`, err);
+            try { fs.unlinkSync(tmpPath); } catch (e) { }
+            return { success: false, error: err.message };
+        }
+    }
+
+    /** Ghostscript ink_cov pour PDF/PS */
+    async _gsInkCov(filePath) {
+        const { spawn } = require('child_process');
+        return new Promise((resolve) => {
+            const gs = spawn('gs', ['-dNOSAFER', '-dBATCH', '-dNOPAUSE', '-o', '-', '-sDEVICE=ink_cov', filePath]);
+            let output = '', stderr = '';
+            gs.stdout.on('data', d => output += d.toString());
+            gs.stderr.on('data', d => stderr += d.toString());
+            gs.on('error', (e) => { console.error('❌ GS spawn error:', e.message); resolve(null); });
+            gs.on('close', code => {
+                if (code !== 0) { console.error(`❌ GS ink_cov exit ${code}:`, stderr.slice(0, 300)); resolve(null); return; }
+                const lines = output.split('\n').filter(l => l.trim().match(/^\s*\d+\.\d+/));
+                let tC = 0, tM = 0, tY = 0, tK = 0, pages = 0;
+                for (const line of lines) {
+                    const p = line.trim().split(/\s+/).map(parseFloat);
+                    if (p.length >= 4) { tC += p[0]; tM += p[1]; tY += p[2]; tK += p[3]; pages++; }
+                }
+                if (pages === 0) pages = 1;
+                resolve({ isColor: (tC + tM + tY) > 0.5, fillRate: (tC + tM + tY + tK) / (pages * 4), pages });
+            });
+        });
+    }
+
+    /** Ghostscript thumbnail pour PDF/PS */
+    async _gsThumbnail(filePath, jobId) {
+        const fs = require('fs');
+        const { spawn } = require('child_process');
+        const thumbPath = require('path').join(os.tmpdir(), `thumb_${jobId}.png`);
+        try {
+            await new Promise((resolve) => {
+                const p = spawn('gs', ['-dNOSAFER', '-dBATCH', '-dNOPAUSE', '-dQUIET',
+                    '-dFirstPage=1', '-dLastPage=1', '-sDEVICE=png16m', '-r72',
+                    '-dTextAlphaBits=4', '-dGraphicsAlphaBits=4', `-sOutputFile=${thumbPath}`, filePath]);
+                p.on('error', () => resolve(-1));
+                p.on('close', resolve);
+            });
+            if (fs.existsSync(thumbPath)) {
+                const data = fs.readFileSync(thumbPath);
+                try { fs.unlinkSync(thumbPath); } catch (e) { }
+                return 'data:image/png;base64,' + data.toString('base64');
+            }
+        } catch (e) { console.warn('⚠️ GS thumbnail failed:', e.message); }
+        return '';
+    }
+
+    /** ImageMagick analyse pixel pour PNG/JPEG */
+    async _imageMagickAnalyze(filePath) {
+        const { execSync } = require('child_process');
+        try {
+            const meanStr = execSync(`convert "${filePath}" -colorspace Gray -format "%[fx:mean]" info:`,
+                { encoding: 'utf-8', timeout: 15000 }).trim();
+            const mean = parseFloat(meanStr);
+            const fillRate = (1 - mean) * 100;
+            let isColor = false;
+            try {
+                const satStr = execSync(`convert "${filePath}" -colorspace HSL -channel G -separate -format "%[fx:mean]" info:`,
+                    { encoding: 'utf-8', timeout: 15000 }).trim();
+                isColor = parseFloat(satStr) > 0.02;
+            } catch (e) { /* assume grayscale */ }
+            console.log(`📊 [ImageMagick] mean=${mean.toFixed(4)}, fillRate=${fillRate.toFixed(2)}%, isColor=${isColor}`);
+            return { fillRate, isColor };
+        } catch (err) {
+            console.error('❌ ImageMagick analysis failed:', err.message);
+            return { fillRate: 0, isColor: false };
+        }
+    }
+
+    /** ImageMagick thumbnail pour PNG/JPEG (resize 200px) */
+    async _imageMagickThumbnail(filePath, jobId) {
+        const fs = require('fs');
+        const thumbPath = require('path').join(os.tmpdir(), `thumb_${jobId}.png`);
+        try {
+            const { execSync } = require('child_process');
+            execSync(`convert "${filePath}" -resize 200x -quality 80 "${thumbPath}"`, { timeout: 10000 });
+            if (fs.existsSync(thumbPath)) {
+                const data = fs.readFileSync(thumbPath);
+                try { fs.unlinkSync(thumbPath); } catch (e) { }
+                return 'data:image/png;base64,' + data.toString('base64');
+            }
+        } catch (e) { console.warn('⚠️ ImageMagick thumbnail failed:', e.message); }
+        return '';
     }
 
     /**
@@ -204,16 +410,27 @@ class PrinterMonitor {
      * @returns {Promise<Array>}
      */
     async getPrinters() {
-        if (!win32Printer) {
-            console.error('❌ Module natif non chargé');
-            return [];
+        if (this.isWindows) {
+            if (!win32Printer) {
+                console.error('❌ Module natif non chargé');
+                return [];
+            }
+            try {
+                return await win32Printer.getPrinters();
+            } catch (e) {
+                console.error('❌ Erreur getPrinters:', e);
+                return [];
+            }
+        } else if (process.platform === 'linux') {
+            try {
+                const cupsPrinter = require('../src/print-engine/linux/cups-printer');
+                return await cupsPrinter.getPrinters();
+            } catch (e) {
+                console.error('❌ Erreur getPrinters Linux:', e);
+                return [];
+            }
         }
-        try {
-            return await win32Printer.getPrinters();
-        } catch (e) {
-            console.error('❌ Erreur getPrinters:', e);
-            return [];
-        }
+        return [];
     }
 }
 

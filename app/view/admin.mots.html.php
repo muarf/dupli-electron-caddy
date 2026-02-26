@@ -104,7 +104,7 @@
         e.preventDefault();
         showAppModal({
           type: 'warning',
-          message: '<?php _e('admin_mots.passwords_dont_match'); ?>'
+          message: '<?php echo __js('admin_mots.passwords_dont_match'); ?>'
         });
         return false;
       }
@@ -113,7 +113,7 @@
         e.preventDefault();
         showAppModal({
           type: 'warning',
-          message: '<?php _e('admin_mots.password_too_short'); ?>'
+          message: '<?php echo __js('admin_mots.password_too_short'); ?>'
         });
         return false;
       }
@@ -125,7 +125,7 @@
       var confirmPassword = this.value;
 
       if (confirmPassword && newPassword !== confirmPassword) {
-        this.setCustomValidity('<?php _e('admin_mots.passwords_dont_match_realtime'); ?>');
+        this.setCustomValidity('<?php echo __js('admin_mots.passwords_dont_match_realtime'); ?>');
       } else {
         this.setCustomValidity('');
       }

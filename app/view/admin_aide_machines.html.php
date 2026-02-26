@@ -362,14 +362,14 @@
           } else {
             showAppModal({
               type: 'danger',
-              message: '<?php _e('admin_aide_machines.error_loading_qa'); ?>: ' + (response.error || '<?php _e('admin_aide_machines.unknown_error'); ?>')
+              message: "<?php echo __js('admin_aide_machines.error_loading_qa'); ?>: " + (response.error || "<?php echo __js('admin_aide_machines.unknown_error'); ?>")
             });
           }
         })
         .fail(function (xhr, status, error) {
           showAppModal({
             type: 'danger',
-            message: '<?php _e('admin_aide_machines.error_loading'); ?>: ' + error
+            message: '<?php _ejs('admin_aide_machines.error_loading'); ?>: ' + error
           });
         });
     });
@@ -394,7 +394,7 @@
         .fail(function (xhr, status, error) {
           showAppModal({
             type: 'danger',
-            message: '<?php _e('admin_aide_machines.error_modification'); ?>: ' + xhr.responseText
+            message: '<?php _ejs('admin_aide_machines.error_modification'); ?>: ' + xhr.responseText
           });
         });
     });
@@ -426,7 +426,7 @@
         $('#confirm-delete').prop('disabled', false);
         showAppModal({
           type: 'danger',
-          message: '<?php _e('admin_aide_machines.error'); ?>: ' + (xhr.responseText || error)
+          message: '<?php _ejs('admin_aide_machines.error'); ?>: ' + (xhr.responseText || error)
         });
       });
     });
@@ -565,10 +565,10 @@
               '<td>' + pdf.size + '</td>' +
               '<td>' +
               '<button class="btn btn-sm btn-success insert-pdf-btn" data-url="' + pdf.url + '" data-name="' + pdf.name + '">' +
-              '<i class="fa fa-plus"></i> <?php _e('admin_aide.insert_pdf'); ?>' +
+              '<i class="fa fa-plus"></i> <?php _ejs('admin_aide.insert_pdf'); ?>' +
               '</button> ' +
               '<button class="btn btn-sm btn-danger delete-pdf-btn" data-filename="' + pdf.filename + '">' +
-              '<i class="fa fa-trash"></i> <?php _e('admin_aide.delete_pdf'); ?>' +
+              '<i class="fa fa-trash"></i> <?php _ejs('admin_aide.delete_pdf'); ?>' +
               '</button>' +
               '</td>' +
               '</tr>';
@@ -589,7 +589,7 @@
             deletePdf(filename);
           });
         } else {
-          pdfList.innerHTML = '<div class="alert alert-info"><i class="fa fa-info-circle"></i> <?php _e('admin_aide.no_pdfs'); ?></div>';
+          pdfList.innerHTML = '<div class="alert alert-info"><i class="fa fa-info-circle"></i> <?php _ejs('admin_aide.no_pdfs'); ?></div>';
         }
       })
       .catch(error => {

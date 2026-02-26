@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Imposition Brochure (Leaflet) - Version PHP</title>
-    <link href="css/bootstrap.min.css" rel="stylesheet">
-    <link href="css/font-awesome.min.css" rel="stylesheet">
+    <link href="public/css/bootstrap.min.css" rel="stylesheet">
+    <link href="public/css/font-awesome.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #f8f9fa;
@@ -267,10 +267,10 @@
                 </div>
             <?php endif; ?>
 
-            <div class="form-section">
+                <div class="form-section">
                 <?php if (!empty($errors)): ?>
                     <div class="alert alert-danger">
-                        <h4><i class="fa fa-exclamation-triangle"></i> Erreurs détectées</h4>
+                        <h4><i class="fa fa-exclamation-triangle"></i> <?php _e('imposition.errors_detected'); ?></h4>
                         <ul class="mb-3">
                             <?php foreach ($errors as $error): ?>
                                 <li><?= htmlspecialchars($error) ?></li>
@@ -285,7 +285,7 @@
 
                     <div class="text-end mb-2">
                         <a href="?bibliotheque" class="btn btn-outline-primary btn-sm">
-                            <i class="fa fa-book"></i> Ouvrir la bibliothèque
+                            <i class="fa fa-book"></i> <?php _e('imposition_brochure.open_library'); ?>
                         </a>
                     </div>
 
@@ -294,50 +294,49 @@
                             <i class="fa fa-cloud-upload"></i>
                         </div>
                         <div class="file-upload-text" id="uploadText">
-                            Glissez-déposez votre fichier PDF ici
+                            <?php _e('imposition_brochure.drag_drop_pdf'); ?>
                         </div>
                         <div class="file-upload-subtext" id="uploadSubtext">
-                            ou cliquez pour sélectionner un fichier
+                            <?php _e('imposition_brochure.or_click'); ?>
                         </div>
                         <input type="file" name="pdf" id="pdf" accept="application/pdf" required style="display: none;">
                     </div>
 
                     <div class="form-group">
-                        <label for="output_format"><i class="fa fa-file-o"></i> Format de sortie :</label>
+                        <label for="output_format"><i class="fa fa-file-o"></i> <?php _e('imposition_brochure.output_format'); ?></label>
                         <select name="output_format" id="output_format" class="form-control">
-                            <option value="A3" selected>A3 (420×297 mm / 297×420 mm)</option>
-                            <option value="A4">A4 (210×297 mm / 297×210 mm)</option>
+                            <option value="A3" selected><?php _e('imposition_brochure.format_a3_desc'); ?></option>
+                            <option value="A4"><?php _e('imposition_brochure.format_a4_desc'); ?></option>
                         </select>
-                        <small class="form-text text-muted">Choisissez le format de la feuille d'impression</small>
+                        <small class="form-text text-muted"><?php _e('imposition_brochure.choose_format_help'); ?></small>
                     </div>
 
                     <div class="form-group">
-                        <label for="n_up"><i class="fa fa-cogs"></i> Format de Livret :</label>
+                        <label for="n_up"><i class="fa fa-cogs"></i> <?php _e('imposition_brochure.booklet_format'); ?></label>
                         <select name="n_up" id="n_up" class="form-control">
-                            <option value="2" selected>2 poses (Standard 1 pli)</option>
-                            <option value="4">4 poses (2 livrets Tête-Bêche)</option>
-                            <option value="8">8 poses (4 livrets Tête-Bêche)</option>
+                            <option value="2" selected><?php _e('imposition_brochure.2_up'); ?></option>
+                            <option value="4"><?php _e('imposition_brochure.4_up'); ?></option>
+                            <option value="8"><?php _e('imposition_brochure.8_up'); ?></option>
                         </select>
-                        <small class="form-text text-muted">Note : L'imposition génère automatiquement les pages Recto
-                            et Verso.</small>
+                        <small class="form-text text-muted"><?php _e('imposition_brochure.auto_generate_note'); ?></small>
                     </div>
 
                     <div class="form-group">
-                        <label><i class="fa fa-expand"></i> Mode de redimensionnement :</label>
+                        <label><i class="fa fa-expand"></i> <?php _e('imposition_brochure.resize_mode'); ?></label>
                         <div class="form-check form-check-inline">
                             <input class="form-check-input" type="radio" name="resize_mode" id="mode_percent"
                                 value="percent" checked>
-                            <label class="form-check-label" for="mode_percent">Échelle en Pourcentage (%)</label>
+                            <label class="form-check-label" for="mode_percent"><?php _e('imposition_brochure.scale_percent'); ?></label>
                         </div>
                         <div class="form-check form-check-inline">
                             <input class="form-check-input" type="radio" name="resize_mode" id="mode_mm" value="mm">
-                            <label class="form-check-label" for="mode_mm">Dimensions Cibles (mm)</label>
+                            <label class="form-check-label" for="mode_mm"><?php _e('imposition_brochure.target_mm'); ?></label>
                         </div>
                     </div>
 
                     <div id="block_percent">
                         <div class="form-group">
-                            <label for="scale">Échelle (%) :</label>
+                            <label for="scale"><?php _e('imposition_brochure.scale_label'); ?></label>
                             <input type="number" class="form-control" id="scale" name="scale" value="100" min="1"
                                 max="200" step="1">
                         </div>
@@ -347,14 +346,14 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="target_width">Largeur Cible (mm) :</label>
+                                    <label for="target_width"><?php _e('imposition_brochure.target_width'); ?></label>
                                     <input type="number" class="form-control" id="target_width" name="target_width"
                                         placeholder="ex: 105" step="0.1">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="target_height">Hauteur Cible (mm) :</label>
+                                    <label for="target_height"><?php _e('imposition_brochure.target_height'); ?></label>
                                     <input type="number" class="form-control" id="target_height" name="target_height"
                                         placeholder="ex: 148" step="0.1">
                                 </div>
@@ -363,23 +362,23 @@
                     </div>
 
                     <div class="form-group">
-                        <label><i class="fa fa-arrows-alt"></i> Gouttières :</label>
+                        <label><i class="fa fa-arrows-alt"></i> <?php _e('imposition_brochure.gutters'); ?></label>
                         <div class="row">
                             <div class="col-md-4">
-                                <label for="gutter_x">Horizontale (X) (mm) :</label>
+                                <label for="gutter_x"><?php _e('imposition_brochure.horizontal_x'); ?></label>
                                 <input type="number" class="form-control" id="gutter_x" name="gutter_x" value="0"
                                     min="0" step="0.5">
                             </div>
                             <div class="col-md-4">
-                                <label for="gutter_y">Verticale (Y) (mm) :</label>
+                                <label for="gutter_y"><?php _e('imposition_brochure.vertical_y'); ?></label>
                                 <input type="number" class="form-control" id="gutter_y" name="gutter_y" value="0"
                                     min="0" step="0.5">
                             </div>
                             <div class="col-md-4">
-                                <label for="gutter_strategy">Si manque de place :</label>
+                                <label for="gutter_strategy"><?php _e('imposition_brochure.if_space_lacking'); ?></label>
                                 <select name="gutter_strategy" id="gutter_strategy" class="form-control">
-                                    <option value="reduce">Réduire (Scale)</option>
-                                    <option value="crop">Rogner (Crop)</option>
+                                    <option value="reduce"><?php _e('imposition_brochure.reduce_scale'); ?></option>
+                                    <option value="crop"><?php _e('imposition_brochure.crop'); ?></option>
                                 </select>
                             </div>
                         </div>
@@ -390,20 +389,20 @@
                             <div class="col-md-4">
                                 <label for="preview">
                                     <input type="checkbox" name="preview" id="preview">
-                                    <i class="fa fa-eye"></i> Preview avec numéros de pages
+                                    <i class="fa fa-eye"></i> <?php _e('imposition_brochure.preview_with_numbers'); ?>
                                 </label>
                             </div>
                             <div class="col-md-4">
                                 <label for="crop_marks">
                                     <input type="checkbox" name="crop_marks" id="crop_marks" value="1">
-                                    <i class="fa fa-scissors"></i> Ajouter des traits de coupe
+                                    <i class="fa fa-scissors"></i> <?php _e('imposition_brochure.add_crop_marks'); ?>
                                 </label>
                             </div>
                             <div class="col-md-4">
                                 <label for="add_page_numbers_in_gutters">
                                     <input type="checkbox" name="add_page_numbers_in_gutters"
                                         id="add_page_numbers_in_gutters" value="1">
-                                    <i class="fa fa-sort-numeric-asc"></i> Numéros dans les gouttières
+                                    <i class="fa fa-sort-numeric-asc"></i> <?php _e('imposition_brochure.numbers_in_gutters'); ?>
                                 </label>
                             </div>
                         </div>
@@ -411,24 +410,24 @@
 
                     <div id="crop_settings" style="display:none; margin-top: 15px; padding-left: 30px;">
                         <div class="form-group">
-                            <label for="crop_style">Style des traits :</label>
+                            <label for="crop_style"><?php _e('imposition_brochure.mark_style'); ?></label>
                             <select class="form-control" name="crop_style" id="crop_style">
-                                <option value="standard">Standard (Autour de chaque pose)</option>
-                                <option value="spreads" selected>Double Pose (Autour de chaque paire)</option>
-                                <option value="booklet">Ligne Entière (Coins extérieurs de la ligne)</option>
+                                <option value="standard"><?php _e('imposition_brochure.style_standard'); ?></option>
+                                <option value="spreads" selected><?php _e('imposition_brochure.style_spreads'); ?></option>
+                                <option value="booklet"><?php _e('imposition_brochure.style_booklet'); ?></option>
                             </select>
                         </div>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="crop_mark_len">Longueur du trait (mm) :</label>
+                                    <label for="crop_mark_len"><?php _e('imposition_brochure.mark_length'); ?></label>
                                     <input type="number" class="form-control" id="crop_mark_len" name="crop_mark_len"
                                         value="5" min="1">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="crop_mark_width">Épaisseur (mm) :</label>
+                                    <label for="crop_mark_width"><?php _e('imposition_brochure.mark_width'); ?></label>
                                     <input type="number" class="form-control" id="crop_mark_width"
                                         name="crop_mark_width" value="0.1" min="0.1" step="0.1">
                                 </div>
@@ -438,7 +437,7 @@
 
                     <div class="text-center">
                         <button type="submit" class="btn btn-impose">
-                            <i class="fa fa-magic"></i> Générer le PDF
+                            <i class="fa fa-magic"></i> <?php _e('imposition_brochure.generate_pdf'); ?>
                         </button>
                     </div>
                 </form>
@@ -447,7 +446,7 @@
         </div>
     </div>
 
-    <script src="js/bootstrap.min.js"></script>
+    <script src="public/js/bootstrap.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const fileUploadArea = document.getElementById('fileUploadArea');
@@ -460,7 +459,7 @@
                 // Pré-remplissage si fichier bibliothèque
                 fileUploadArea.classList.add('file-selected');
                 uploadText.innerHTML = '<i class="fa fa-file-pdf-o"></i> ' + <?= json_encode($from_lib_file['filename']) ?>;
-                uploadSubtext.textContent = 'Fichier sélectionné depuis la bibliothèque';
+                uploadSubtext.textContent =  'FIXME_EMPTY_KEY' ;
                 document.getElementById('pdf').removeAttribute('required');
             <?php endif; ?>
 

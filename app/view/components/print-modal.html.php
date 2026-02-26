@@ -8,27 +8,27 @@
                     <span aria-hidden="true">&times;</span>
                 </button>
                 <h4 class="modal-title" id="app-print-modal-title">
-                    <i class="fa fa-print text-primary"></i> Impression
+                    <i class="fa fa-print text-primary"></i> <?php _e('print_modal.title'); ?>
                 </h4>
             </div>
             <div class="modal-body">
                 <div id="print-modal-loading" class="text-center py-4">
                     <i class="fa fa-spinner fa-spin fa-2x text-primary"></i>
-                    <p class="mt-2 text-muted">Chargement des imprimantes...</p>
+                    <p class="mt-2 text-muted"><?php _e('print_modal.loading_printers'); ?></p>
                 </div>
 
                 <div id="print-modal-form" style="display: none;">
                     <div class="form-group">
-                        <label for="print-printer-select">Imprimante</label>
+                        <label for="print-printer-select"><?php _e('print_modal.printer'); ?></label>
                         <select class="form-control" id="print-printer-select">
-                            <option value="">Chargement...</option>
+                            <option value=""><?php _e('common.loading'); ?></option>
                         </select>
                     </div>
 
                     <div class="row">
                         <div class="col-xs-6">
                             <div class="form-group">
-                                <label for="print-copies">Copies</label>
+                                <label for="print-copies"><?php _e('print_modal.copies'); ?></label>
                                 <div class="input-group">
                                     <span class="input-group-btn">
                                         <button class="btn btn-default" type="button"
@@ -45,10 +45,10 @@
                         </div>
                         <div class="col-xs-6">
                             <div class="form-group">
-                                <label for="print-color-mode">Couleur</label>
+                                <label for="print-color-mode"><?php _e('common.color'); ?></label>
                                 <select class="form-control" id="print-color-mode">
-                                    <option value="color">Couleur</option>
-                                    <option value="monochrome">Noir & Blanc</option>
+                                    <option value="color"><?php _e('common.color'); ?></option>
+                                    <option value="monochrome"><?php _e('common.bw'); ?></option>
                                 </select>
                             </div>
                         </div>
@@ -57,21 +57,21 @@
                     <div class="row">
                         <div class="col-xs-6">
                             <div class="form-group">
-                                <label for="print-duplex-mode">Recto-Verso</label>
+                                <label for="print-duplex-mode"><?php _e('common.duplex'); ?></label>
                                 <select class="form-control" id="print-duplex-mode">
-                                    <option value="simplex">Non (Recto seul)</option>
-                                    <option value="duplex">Oui - Bord Long</option>
-                                    <option value="tumble">Oui - Bord court</option>
+                                    <option value="simplex"><?php _e('print_modal.simplex'); ?></option>
+                                    <option value="duplex"><?php _e('print_modal.duplex_long'); ?></option>
+                                    <option value="tumble"><?php _e('print_modal.duplex_short'); ?></option>
                                 </select>
                             </div>
                         </div>
                         <div class="col-xs-6">
                             <div class="form-group">
-                                <label for="print-scaling">Mise à l'échelle</label>
+                                <label for="print-scaling"><?php _e('print_modal.scaling'); ?></label>
                                 <select class="form-control" id="print-scaling">
-                                    <option value="fit" selected>Ajuster à la page</option>
-                                    <option value="shrink">Réduire si nécessaire</option>
-                                    <option value="noscale">Taille réelle (100%)</option>
+                                    <option value="fit" selected><?php _e('print_modal.fit_page'); ?></option>
+                                    <option value="shrink"><?php _e('print_modal.shrink_overflow'); ?></option>
+                                    <option value="noscale"><?php _e('print_modal.no_scale'); ?></option>
                                 </select>
                             </div>
                         </div>
@@ -80,7 +80,7 @@
                     <div class="row">
                         <div class="col-xs-6">
                             <div class="form-group">
-                                <label for="print-paper-size">Format papier</label>
+                                <label for="print-paper-size"><?php _e('common.format'); ?></label>
                                 <select class="form-control" id="print-paper-size">
                                     <option value="A4" selected>A4</option>
                                     <option value="A3">A3</option>
@@ -96,10 +96,10 @@
                         </div>
                         <div class="col-xs-6">
                             <div class="form-group">
-                                <label for="print-orientation">Orientation</label>
+                                <label for="print-orientation"><?php _e('print_modal.orientation'); ?></label>
                                 <select class="form-control" id="print-orientation">
-                                    <option value="portrait" selected>Portrait</option>
-                                    <option value="landscape">Paysage</option>
+                                    <option value="portrait" selected><?php _e('common.portrait'); ?></option>
+                                    <option value="landscape"><?php _e('common.landscape'); ?></option>
                                 </select>
                             </div>
                         </div>
@@ -108,26 +108,26 @@
                     <div class="row">
                         <div class="col-xs-6">
                             <div class="form-group">
-                                <label for="print-page-subset">Sélection de pages</label>
+                                <label for="print-page-subset"><?php _e('print_modal.page_subset'); ?></label>
                                 <select class="form-control" id="print-page-subset">
-                                    <option value="all" selected>Toutes les pages</option>
-                                    <option value="odd">Pages impaires (1, 3, 5...)</option>
-                                    <option value="even">Pages paires (2, 4, 6...)</option>
-                                    <option value="custom">Plage personnalisée</option>
+                                    <option value="all" selected><?php _e('print_modal.all_pages'); ?></option>
+                                    <option value="odd"><?php _e('print_modal.odd_pages'); ?></option>
+                                    <option value="even"><?php _e('print_modal.even_pages'); ?></option>
+                                    <option value="custom"><?php _e('print_modal.custom_range'); ?></option>
                                 </select>
                             </div>
                         </div>
                         <div class="col-xs-6">
                             <div class="form-group" id="print-page-range-group" style="display: none;">
-                                <label for="print-page-range">Plage de pages</label>
+                                <label for="print-page-range"><?php _e('print_modal.page_range'); ?></label>
                                 <input type="text" class="form-control" id="print-page-range" 
-                                    placeholder="Ex: 1-5, 8, 10-12">
+                                    placeholder="<?php echo __('print_modal.page_range_placeholder', [], false); ?>">
                             </div>
                         </div>
                     </div>
 
                     <div class="alert alert-info" id="print-file-info">
-                        <small><i class="fa fa-file-o"></i> Fichier : <strong
+                        <small><i class="fa fa-file-o"></i> <?php _e('print_modal.file'); ?> <strong
                                 id="print-filename">document.pdf</strong></small>
                     </div>
 
@@ -141,21 +141,21 @@
             <div class="modal-footer">
                 <div class="btn-group dropup pull-left" id="print-impose-group">
                     <button type="button" class="btn btn-warning dropdown-toggle" data-toggle="dropdown"
-                        aria-haspopup="true" aria-expanded="false" title="Imposer ce document">
-                        <i class="fa fa-magic"></i> Imposer <span class="caret"></span>
+                        aria-haspopup="true" aria-expanded="false" title="<?php echo __('print_modal.impose'); ?>">
+                        <i class="fa fa-magic"></i> <?php _e('print_modal.impose'); ?> <span class="caret"></span>
                     </button>
                     <ul class="dropdown-menu">
                         <li><a href="#" onclick="openImposition('brochure'); return false;"><i
-                                    class="fa fa-book text-success"></i> Imposition Brochure</a></li>
+                                    class="fa fa-book text-success"></i> <?php _e('print_modal.imposition_brochure'); ?></a></li>
                         <li><a href="#" onclick="openImposition('livre'); return false;"><i
-                                    class="fa fa-book text-primary"></i> Imposition Livre</a></li>
+                                    class="fa fa-book text-primary"></i> <?php _e('print_modal.imposition_livre'); ?></a></li>
                         <li><a href="#" onclick="openImposition('tracts'); return false;"><i
-                                    class="fa fa-copy text-warning"></i> Imposition Tracts</a></li>
+                                    class="fa fa-copy text-warning"></i> <?php _e('print_modal.imposition_tracts'); ?></a></li>
                     </ul>
                 </div>
-                <button type="button" class="btn btn-default" data-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal"><?php _e('common.cancel'); ?></button>
                 <button type="button" class="btn btn-primary" id="print-confirm-btn" onclick="executePrint()">
-                    <i class="fa fa-print"></i> Imprimer
+                    <i class="fa fa-print"></i> <?php _e('print_modal.title'); ?>
                 </button>
             </div>
         </div>
@@ -229,22 +229,22 @@
                         $select.empty();
 
                         if (result.printers.length === 0) {
-                            $select.append('<option disabled selected>Aucune imprimante trouvée</option>');
+                            $select.append('<option disabled selected><?php echo __js('print_modal.no_printers_found'); ?></option>');
                         } else {
                             result.printers.forEach(p => {
                                 const isDefault = p.isDefault ? ' selected' : '';
-                                const text = p.name + (p.isDefault ? ' (Défaut)' : '');
+                                const text = p.name + (p.isDefault ? ' <?php echo __js('print_modal.default_suffix'); ?>' : '');
                                 $select.append(`<option value="${p.name}"${isDefault}>${text}</option>`);
                             });
                             $('#print-confirm-btn').prop('disabled', false);
                         }
                     } else {
-                        showError('Erreur chargement imprimantes: ' + result.error);
+                        showError('<?php echo __js('admin_printers.error_loading'); ?> : ' + result.error);
                     }
                 })
                 .catch(err => {
                     $('#print-modal-loading').hide();
-                    showError('Erreur communication: ' + err.message);
+                    showError('<?php echo __js('common.error'); ?> : ' + err.message);
                 });
         };
 
@@ -261,7 +261,7 @@
 
             if (!printerName) return;
 
-            $('#print-confirm-btn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Envoi...');
+            $('#print-confirm-btn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> <?php echo __js('print_modal.sending'); ?>');
 
             const options = {
                 printer: printerName,
@@ -285,26 +285,26 @@
             // Nous avons mis à jour le backend pour accepter un objet options en 2ème argument
             window.electronAPI.printFile(currentFileUrl, options)
                 .then(result => {
-                    $('#print-confirm-btn').prop('disabled', false).html('<i class="fa fa-print"></i> Imprimer');
+                    $('#print-confirm-btn').prop('disabled', false).html('<i class="fa fa-print"></i> <?php echo __js('print_modal.title'); ?>');
                     $('#app-print-modal').modal('hide');
 
                     if (result.success) {
                         if (window.showAppModal) {
-                            window.showAppModal({ message: 'Impression lancée avec succès !', type: 'success' });
+                            window.showAppModal({ message: '<?php echo __js('print_modal.success'); ?>', type: 'success' });
                         }
                     } else {
                         if (window.showAppModal) {
-                            window.showAppModal({ message: 'Erreur: ' + (result.error || 'Inconnue'), type: 'danger' });
+                            window.showAppModal({ message: '<?php echo __js('common.error'); ?> : ' + (result.error || 'Inconnue'), type: 'danger' });
                         } else {
                             console.error('Erreur impression:', result.error);
                         }
                     }
                 })
                 .catch(err => {
-                    $('#print-confirm-btn').prop('disabled', false).html('<i class="fa fa-print"></i> Imprimer');
+                    $('#print-confirm-btn').prop('disabled', false).html('<i class="fa fa-print"></i> <?php echo __js('print_modal.title'); ?>');
                     $('#app-print-modal').modal('hide');
                     if (window.showAppModal) {
-                        window.showAppModal({ title: 'Erreur Critique', message: err.message, type: 'danger' });
+                        window.showAppModal({ title: '<?php echo __js('common.error'); ?>', message: err.message, type: 'danger' });
                     } else {
                         console.error('Erreur critique:', err);
                     }

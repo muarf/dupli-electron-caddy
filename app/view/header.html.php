@@ -1,5 +1,5 @@
 <!-- CSS pour l'édition inline des traductions -->
-<link rel="stylesheet" href="css/inline-translation.css">
+<link rel="stylesheet" href="public/css/inline-translation.css">
 
 <style>
   .navbar-brand {
@@ -93,7 +93,7 @@
         <li>
           <a href="?bibliotheque">
             <i class="fa fa-book" style="margin-right: 5px;"></i>
-            <strong>Bibliothèque</strong>
+            <strong><?php _e('header.library'); ?></strong>
           </a>
         </li>
         <!-- Menu Impositions -->
@@ -101,21 +101,21 @@
           <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
             aria-expanded="false">
             <i class="fa fa-book" style="margin-right: 5px;"></i>
-            Impositions <span class="caret"></span>
+            <?php _e('header.impositions'); ?> <span class="caret"></span>
           </a>
           <ul class="dropdown-menu">
             <li>
               <a href="?imposition_brochure">
                 <i class="fa fa-book" style="color: #28a745; margin-right: 8px;"></i>
-                <strong>Imposition Brochure</strong>
-                <small class="text-muted d-block">Livrets pour impression recto-verso</small>
+                <strong><?php _e('header.imposition_brochure'); ?></strong>
+                <small class="text-muted d-block"><?php _e('header.imposition_brochure_desc'); ?></small>
               </a>
             </li>
             <li>
               <a href="?imposition_livre">
                 <i class="fa fa-book" style="color: #007bff; margin-right: 8px;"></i>
-                <strong>Imposition Livre</strong>
-                <small class="text-muted d-block">Cut & Stack pour découpe</small>
+                <strong><?php _e('header.imposition_book'); ?></strong>
+                <small class="text-muted d-block"><?php _e('header.imposition_book_desc'); ?></small>
               </a>
             </li>
             <li>
@@ -168,8 +168,8 @@
             <li>
               <a href="?image_processor">
                 <i class="fa fa-sliders" style="color: #667eea; margin-right: 8px;"></i>
-                <strong>Contraste / Luminosité / Bitmap</strong>
-                <small class="text-muted d-block">Traitement d'image</small>
+                <strong><?php _e('header.image_processor'); ?></strong>
+                <small class="text-muted d-block"><?php _e('header.image_processor_desc'); ?></small>
               </a>
             </li>
             <li role="separator" class="divider"></li>
@@ -191,7 +191,7 @@
         <li>
           <a href="?auto_tirage">
             <i class="fa fa-magic" style="margin-right: 5px;"></i>
-            Auto Tirage
+            <?php _e('header.auto_tirage'); ?>
           </a>
         </li>
         <li>
@@ -224,7 +224,7 @@
 </div>
 
 <!-- Auto-updater UI (Electron uniquement - ne s'active pas en mode PHP standalone) -->
-<script src="js/updater-ui.js"></script>
+<script src="public/js/updater-ui.js"></script>
 
 <!-- JavaScript pour l'édition inline des traductions -->
-<script src="js/inline-translation.js"></script>
+<script src="public/js/inline-translation.js"></script>

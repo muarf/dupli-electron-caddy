@@ -9,29 +9,29 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
     <div class="container">
         <div class="row">
             <div class="col-md-12">
-                <h1 class="text-center"><i class="fa fa-print"></i> Gestion du Moniteur d'Imprimantes</h1>
+                <h1 class="text-center"><i class="fa fa-print"></i> <?php _e('admin_printers.title'); ?></h1>
                 <hr>
 
                 <!-- Statut du moniteur -->
                 <div class="panel panel-info" id="monitor-status-panel">
                     <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-info-circle"></i> Statut du Moniteur</h3>
+                        <h3 class="panel-title"><i class="fa fa-info-circle"></i> <?php _e('admin_printers.monitor_status'); ?></h3>
                     </div>
                     <div class="panel-body">
                         <div id="monitor-status">
-                            <p><i class="fa fa-spinner fa-spin"></i> Vérification du statut...</p>
+                            <p><i class="fa fa-spinner fa-spin"></i> <?php _e('admin_printers.checking_status'); ?></p>
                         </div>
                         <div id="monitor-actions" style="margin-top: 15px;">
                             <button class="btn btn-success" id="btn-start-monitor" onclick="toggleMonitor(true)"
                                 style="display: none;">
-                                <i class="fa fa-play"></i> Démarrer le moniteur
+                                <i class="fa fa-play"></i> <?php _e('admin_printers.start_monitor'); ?>
                             </button>
                             <button class="btn btn-warning" id="btn-stop-monitor" onclick="toggleMonitor(false)"
                                 style="display: none;">
-                                <i class="fa fa-stop"></i> Arrêter le moniteur
+                                <i class="fa fa-stop"></i> <?php _e('admin_printers.stop_monitor'); ?>
                             </button>
                             <button class="btn btn-info" onclick="refreshStatus()">
-                                <i class="fa fa-refresh"></i> Actualiser
+                                <i class="fa fa-refresh"></i> <?php _e('admin_printers.refresh'); ?>
                             </button>
                         </div>
                     </div>
@@ -40,52 +40,40 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                 <!-- Avertissement droits administrateur (Windows uniquement) -->
                 <div class="panel panel-danger" id="admin-warning-panel" style="display: none;">
                     <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-exclamation-triangle"></i> Droits Administrateur Requis
+                        <h3 class="panel-title"><i class="fa fa-exclamation-triangle"></i> <?php _e('admin_printers.admin_rights_required'); ?>
                         </h3>
                     </div>
                     <div class="panel-body">
-                        <p><strong>L'application n'est pas lancée en mode administrateur.</strong></p>
-                        <p>Pour que le système puisse calculer le <strong>taux de remplissage (fill rate)</strong> des
-                            impressions,
-                            l'application doit avoir les droits administrateur pour accéder aux fichiers spool de
-                            Windows.</p>
+                        <p><strong><?php _e('admin_printers.not_admin_msg'); ?></strong></p>
+                        <p><?php _e('admin_printers.admin_rights_desc'); ?></p>
 
                         <div class="row" style="margin-top: 15px;">
                             <div class="col-md-6">
-                                <h4><i class="fa fa-magic"></i> Solution Rapide</h4>
-                                <button class="btn btn-warning bt
-
-n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
-                                    <i class="fa fa-refresh"></i> Relancer en Administrateur
+                                <h4><i class="fa fa-magic"></i> <?php _e('admin_printers.quick_solution'); ?></h4>
+                                <button class="btn btn-warning btn-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
+                                    <i class="fa fa-refresh"></i> <?php _e('admin_printers.restart_admin'); ?>
                                 </button>
                                 <p class="text-muted" style="margin-top: 10px; font-size: 12px;">
-                                    <i class="fa fa-info-circle"></i> Cette action va fermer et relancer l'application
-                                    avec les droits requis.
+                                    <i class="fa fa-info-circle"></i> <?php _e('admin_printers.restart_admin_desc'); ?>
                                 </p>
                             </div>
                             <div class="col-md-6">
-                                <h4><i class="fa fa-graduation-cap"></i> Tutoriel Manuel</h4>
+                                <h4><i class="fa fa-graduation-cap"></i> <?php _e('admin_printers.manual_tutorial'); ?></h4>
                                 <ol style="font-size: 13px;">
-                                    <li>Fermez cette application</li>
-                                    <li>Trouvez l'icône de l'application sur votre bureau ou dans le menu Démarrer</li>
-                                    <li><strong>Clic droit</strong> sur l'icône</li>
-                                    <li>Cliquez sur <strong>"Exécuter en tant qu'administrateur"</strong></li>
+                                    <li><?php _e('admin_printers.step1'); ?></li>
+                                    <li><?php _e('admin_printers.step2'); ?></li>
+                                    <li><?php _e('admin_printers.step3'); ?></li>
+                                    <li><?php _e('admin_printers.step4'); ?></li>
                                 </ol>
                                 <p class="text-muted" style="font-size: 12px;">
-                                    <i class="fa fa-lightbulb-o"></i> Vous pouvez configurer l'appli pour toujours
-                                    démarrer en admin :
-                                    <br>Clic droit sur l'icône → Propriétés → Compatibilité →
-                                    Cocher "Exécuter ce programme en tant qu'administrateur"
+                                    <i class="fa fa-lightbulb-o"></i> <?php _e('admin_printers.admin_tip'); ?>
                                 </p>
                             </div>
                         </div>
 
                         <div class="alert alert-info" style="margin-top: 15px; margin-bottom: 0;">
-                            <strong><i class="fa fa-info-circle"></i> Que se passe-t-il sans les droits admin
-                                ?</strong><br>
-                            L'application fonctionnera normalement, mais le <strong>taux de remplissage</strong> sur les
-                            impressions
-                            sera affiché comme <code>N/A</code> ou <code>0%</code>.
+                            <strong><i class="fa fa-info-circle"></i> <?php _e('admin_printers.what_if_no_admin'); ?></strong><br>
+                            <?php _e('admin_printers.what_if_no_admin_desc'); ?>
                         </div>
                     </div>
                 </div>
@@ -93,11 +81,11 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 <!-- Liste des imprimantes -->
                 <div class="panel panel-default">
                     <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-list"></i> Imprimantes Disponibles</h3>
+                        <h3 class="panel-title"><i class="fa fa-list"></i> <?php _e('admin_printers.available_printers'); ?></h3>
                     </div>
                     <div class="panel-body">
                         <div id="printers-list">
-                            <p><i class="fa fa-spinner fa-spin"></i> Chargement des imprimantes...</p>
+                            <p><i class="fa fa-spinner fa-spin"></i> <?php _e('admin_printers.loading_printers'); ?></p>
                         </div>
                     </div>
                 </div>
@@ -105,24 +93,23 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 <!-- Configuration Mappings -->
                 <div class="panel panel-warning">
                     <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-link"></i> Configuration des Mappings (Auto-Tirage)</h3>
+                        <h3 class="panel-title"><i class="fa fa-link"></i> <?php _e('admin_printers.mappings_config'); ?></h3>
                     </div>
                     <div class="panel-body">
-                        <p class="text-muted">Associez les imprimantes système aux machines de la base de données pour
-                            l'enregistrement automatique.</p>
+                        <p class="text-muted"><?php _e('admin_printers.mappings_desc'); ?></p>
                         <div id="mappings-container">
                             <table class="table table-bordered" id="mappings-table">
                                 <thead>
                                     <tr>
-                                        <th>Imprimante Système</th>
-                                        <th>Machine Associée</th>
-                                        <th>Action</th>
+                                        <th><?php _e('admin_printers.system_printer'); ?></th>
+                                        <th><?php _e('admin_printers.associated_machine'); ?></th>
+                                        <th><?php _e('admin_machines.actions'); ?></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
                                         <td colspan="3" class="text-center"><i class="fa fa-spinner fa-spin"></i>
-                                            Chargement...</td>
+                                            <?php _e('common.loading'); ?></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -133,11 +120,11 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 <!-- Statistiques -->
                 <div class="panel panel-success">
                     <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-bar-chart"></i> Statistiques d'Impression</h3>
+                        <h3 class="panel-title"><i class="fa fa-bar-chart"></i> <?php _e('admin_printers.stats_title'); ?></h3>
                     </div>
                     <div class="panel-body">
                         <div id="stats-container">
-                            <p><i class="fa fa-spinner fa-spin"></i> Chargement des statistiques...</p>
+                            <p><i class="fa fa-spinner fa-spin"></i> <?php _e('admin_printers.loading_stats'); ?></p>
                         </div>
                     </div>
                 </div>
@@ -145,13 +132,13 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 <!-- Liste des impressions récentes -->
                 <div class="panel panel-primary">
                     <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-history"></i> Impressions Récentes</h3>
+                        <h3 class="panel-title"><i class="fa fa-history"></i> <?php _e('admin_printers.recent_prints'); ?></h3>
                     </div>
                     <div class="panel-body">
                         <!-- Controls de pagination en haut -->
                         <div class="row" style="margin-bottom: 15px;">
                             <div class="col-sm-6">
-                                <label for="items-per-page">Afficher par page:</label>
+                                <label for="items-per-page"><?php _e('admin_printers.items_per_page'); ?></label>
                                 <select id="items-per-page" class="form-control"
                                     style="width: auto; display: inline-block;">
                                     <option value="10">10</option>
@@ -162,8 +149,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                                 <div class="checkbox"
                                     style="display: inline-block; margin-left: 20px; vertical-align: middle; margin-top: 0;">
                                     <label>
-                                        <input type="checkbox" id="show-history" onchange="loadPrintJobs(1)"> Voir
-                                        l'historique complet (y compris traitées)
+                                        <input type="checkbox" id="show-history" onchange="loadPrintJobs(1)"> <?php _e('admin_printers.show_history'); ?>
                                     </label>
                                 </div>
                             </div>
@@ -177,16 +163,16 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                             <div class="col-sm-12 text-right">
                                 <button class="btn btn-danger" id="btn-delete-selection" onclick="deleteSelectedJobs()"
                                     disabled>
-                                    <i class="fa fa-trash"></i> Supprimer la sélection
+                                    <i class="fa fa-trash"></i> <?php _e('admin_printers.delete_selection'); ?>
                                 </button>
                                 <button class="btn btn-danger" onclick="purgeAllJobs()">
-                                    <i class="fa fa-bomb"></i> Purger tout l'historique
+                                    <i class="fa fa-bomb"></i> <?php _e('admin_printers.purge_history'); ?>
                                 </button>
                             </div>
                         </div>
 
                         <div id="print-jobs-list">
-                            <p><i class="fa fa-spinner fa-spin"></i> Chargement des impressions...</p>
+                            <p><i class="fa fa-spinner fa-spin"></i> <?php _e('admin_printers.loading_jobs'); ?></p>
                         </div>
 
                         <!-- Pagination en bas -->
@@ -196,9 +182,9 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                                     <li id="btn-first-page"><a href="#" onclick="goToPage(1); return false;"><i
                                                 class="fa fa-angle-double-left"></i></a></li>
                                     <li id="btn-prev-page"><a href="#" onclick="goToPreviousPage(); return false;"><i
-                                                class="fa fa-angle-left"></i> Précédent</a></li>
+                                                class="fa fa-angle-left"></i> <?php _e('common.previous'); ?></a></li>
                                     <li class="active"><a href="#" id="current-page-display">Page 1</a></li>
-                                    <li id="btn-next-page"><a href="#" onclick="goToNextPage(); return false;">Suivant
+                                    <li id="btn-next-page"><a href="#" onclick="goToNextPage(); return false;"><?php _e('common.next'); ?>
                                             <i class="fa fa-angle-right"></i></a></li>
                                     <li id="btn-last-page"><a href="#" onclick="goToLastPage(); return false;"><i
                                                 class="fa fa-angle-double-right"></i></a></li>
@@ -216,7 +202,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
                                 aria-hidden="true">&times;</span></button>
-                        <h4 class="modal-title" id="previewModalLabel">Aperçu du document</h4>
+                        <h4 class="modal-title" id="previewModalLabel"><?php _e('admin_printers.preview_doc'); ?></h4>
                     </div>
                     <div class="modal-body text-center"
                         style="background-color: #f5f5f5; min-height: 400px; display: flex; align-items: center; justify-content: center;">
@@ -226,7 +212,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                                 class="fa fa-exclamation-triangle"></i> Impossible de charger l'image</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Fermer</button>
+                        <button type="button" class="btn btn-default" data-dismiss="modal"><?php _e('admin_printers.close'); ?></button>
                     </div>
                 </div>
             </div>
@@ -273,7 +259,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
             // Fonction pour relancer en admin
             async function restartAsAdmin() {
                 if (!hasElectronAPI) {
-                    showAppModal({ type: 'warning', message: 'API Electron non disponible' });
+                    showAppModal({ type: 'warning', message: '<?php echo __js('admin_printers.electron_api_unavailable'); ?>' });
                     return;
                 }
 
@@ -281,8 +267,8 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 const confirmed = await new Promise(resolve => {
                     showAppModal({
                         type: 'warning',
-                        title: 'Redémarrage requis',
-                        message: 'L\'application va se fermer et redémarrer avec les droits administrateur.<br><br>Vous pourriez voir une fenêtre de contrôle de compte d\'utilisateur (UAC).<br><br>Continuer ?',
+                        title: '<?php echo __js('admin_printers.restart_required'); ?>',
+                        message: '<?php echo __js('admin_printers.restart_admin_confirm'); ?>',
                         confirm: true,
                         onConfirm: () => resolve(true),
                         onClose: () => resolve(false) // Si fermé sans confirmer
@@ -296,16 +282,16 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 try {
                     const btn = document.getElementById('btn-restart-admin');
                     btn.disabled = true;
-                    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Redémarrage...';
+                    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> <?php echo __js('admin_printers.restarting'); ?>';
 
                     const result = await window.electronAPI.restartAsAdmin();
                     if (!result.success) {
-                        showAppModal({ type: 'danger', message: 'Erreur lors du redémarrage : ' + result.error });
+                        showAppModal({ type: 'danger', message: '<?php echo __js('admin_printers.restart_error'); ?>' + result.error });
                         btn.disabled = false;
-                        btn.innerHTML = '<i class="fa fa-refresh"></i> Relancer en Administrateur';
+                        btn.innerHTML = '<i class="fa fa-refresh"></i> <?php echo __js('admin_printers.restart_admin'); ?>';
                     }
                 } catch (error) {
-                    showAppModal({ type: 'danger', message: 'Erreur : ' + error.message });
+                    showAppModal({ type: 'danger', message: '<?php echo __js('common.error'); ?> : ' + error.message });
                 }
             }
 
@@ -316,7 +302,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 const stopBtn = document.getElementById('btn-stop-monitor');
 
                 if (!hasElectronAPI) {
-                    statusDiv.innerHTML = '<div class="alert alert-warning"><i class="fa fa-exclamation-triangle"></i> API Electron non disponible. Cette fonctionnalité nécessite l\'application Electron.</div>';
+                    statusDiv.innerHTML = '<div class="alert alert-warning"><i class="fa fa-exclamation-triangle"></i> <?php echo __js('admin_printers.electron_api_unavailable'); ?></div>';
                     startBtn.style.display = 'none';
                     stopBtn.style.display = 'none';
                     return;
@@ -326,27 +312,27 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                     const status = await window.electronAPI.getPrinterMonitorStatus();
 
                     if (!status.available) {
-                        statusDiv.innerHTML = '<div class="alert alert-warning"><i class="fa fa-exclamation-triangle"></i> Le moniteur d\'imprimantes n\'est disponible que sur Windows.</div>';
+                        statusDiv.innerHTML = '<div class="alert alert-warning"><i class="fa fa-exclamation-triangle"></i> <?php echo __js('admin_printers.windows_only'); ?></div>';
                         startBtn.style.display = 'none';
                         stopBtn.style.display = 'none';
                     } else if (status.status === 'active') {
-                        statusDiv.innerHTML = '<div class="alert alert-success"><i class="fa fa-check-circle"></i> <strong>Moniteur actif</strong> - Les impressions sont surveillées en temps réel.</div>';
+                        statusDiv.innerHTML = '<div class="alert alert-success"><i class="fa fa-check-circle"></i> <?php echo __js('admin_printers.monitor_active_desc'); ?></div>';
                         startBtn.style.display = 'none';
                         stopBtn.style.display = 'inline-block';
                     } else {
-                        statusDiv.innerHTML = '<div class="alert alert-warning"><i class="fa fa-pause-circle"></i> <strong>Moniteur inactif</strong> - Aucune surveillance en cours.</div>';
+                        statusDiv.innerHTML = '<div class="alert alert-warning"><i class="fa fa-pause-circle"></i> <?php echo __js('admin_printers.monitor_inactive_desc'); ?></div>';
                         startBtn.style.display = 'inline-block';
                         stopBtn.style.display = 'none';
                     }
                 } catch (error) {
-                    statusDiv.innerHTML = '<div class="alert alert-danger"><i class="fa fa-times-circle"></i> Erreur: ' + error.message + '</div>';
+                    statusDiv.innerHTML = '<div class="alert alert-danger"><i class="fa fa-times-circle"></i> <?php echo __js('common.error'); ?> : ' + error.message + '</div>';
                 }
             }
 
             // Fonction pour démarrer/arrêter le moniteur
             async function toggleMonitor(start) {
                 if (!hasElectronAPI) {
-                    showAppModal({ type: 'warning', message: 'API Electron non disponible' });
+                    showAppModal({ type: 'warning', message: '<?php echo __js('admin_printers.electron_api_unavailable'); ?>' });
                     return;
                 }
 
@@ -362,10 +348,10 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                         }, 500);
                         loadPrintJobs();
                     } else {
-                        showAppModal({ type: 'danger', message: 'Erreur: ' + result.error });
+                        showAppModal({ type: 'danger', message: '<?php echo __js('common.error'); ?> : ' + result.error });
                     }
                 } catch (error) {
-                    showAppModal({ type: 'danger', message: 'Erreur: ' + error.message });
+                    showAppModal({ type: 'danger', message: '<?php echo __js('common.error'); ?> : ' + error.message });
                 }
             }
 
@@ -374,7 +360,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 const printersDiv = document.getElementById('printers-list');
 
                 if (!hasElectronAPI) {
-                    printersDiv.innerHTML = '<p class="text-muted">API Electron non disponible</p>';
+                    printersDiv.innerHTML = '<p class="text-muted"><?php echo __js('admin_printers.electron_api_unavailable'); ?></p>';
                     return;
                 }
 
@@ -382,7 +368,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                     // Vérifier d'abord le statut du moniteur
                     const status = await window.electronAPI.getPrinterMonitorStatus();
                     if (!status.available || status.status !== 'active') {
-                        printersDiv.innerHTML = '<p class="text-muted">Le moniteur doit être démarré pour lister les imprimantes. <button class="btn btn-sm btn-success" onclick="toggleMonitor(true)">Démarrer</button></p>';
+                        printersDiv.innerHTML = '<p class="text-muted"><?php echo __js('admin_printers.no_printers_found'); ?>. <button class="btn btn-sm btn-success" onclick="toggleMonitor(true)"><?php echo __js('admin_printers.start'); ?></button></p>';
                         return;
                     }
 
@@ -396,20 +382,20 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                             return status !== 'error' && !name.includes('photocopilleuse');
                         });
 
-                        let html = '<table class="table table-striped"><thead><tr><th>Nom</th><th>Statut</th><th>Par défaut</th><th>Actions</th></tr></thead><tbody>';
+                        let html = '<table class="table table-striped"><thead><tr><th><?php echo __js('admin_printers.name'); ?></th><th><?php echo __js('admin_printers.status'); ?></th><th><?php echo __js('admin_printers.is_default'); ?></th><th><?php echo __js('admin_printers.actions'); ?></th></tr></thead><tbody>';
                         result.printers.forEach(printer => {
                             const pName = printer.name || printer.Name;
                             const pStatus = (printer.status || printer.Status || '').toString();
                             const pDefault = printer.isDefault || printer.Default;
 
-                            const isDefault = pDefault ? '<span class="label label-success">Oui</span>' : '<span class="label label-default">Non</span>';
+                            const isDefault = pDefault ? '<span class="label label-success"><?php echo __js('admin_printers.yes'); ?></span>' : '<span class="label label-default"><?php echo __js('admin_printers.no'); ?></span>';
                             const status = pStatus.toLowerCase();
                             const name = (pName || '').toLowerCase();
                             const isError = status === 'error' || name.includes('photocopilleuse');
                             const statusClass = isError ? 'danger' : status === '0' || status === 'ok' || status === 'idle' ? 'success' : 'warning';
                             // Note: status 0 often means idle/ready in Windows CUPS-like stats, or we display what we get.
 
-                            const deleteBtn = isError ? `<button class="btn btn-xs btn-danger" onclick="deletePrinter('${pName.replace(/'/g, "\\'")}')" title="Supprimer cette imprimante"><i class="fa fa-trash"></i></button>` : '';
+                            const deleteBtn = isError ? `<button class="btn btn-xs btn-danger" onclick="deletePrinter('${pName.replace(/'/g, "\\'")}')" title="<?php echo __js('common.delete'); ?>"><i class="fa fa-trash"></i></button>` : '';
                             html += `<tr class="${isError ? 'danger' : ''}">
                     <td>${pName || 'N/A'}</td>
                     <td><span class="label label-${statusClass}">${pStatus || 'N/A'}</span></td>
@@ -420,10 +406,10 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                         html += '</tbody></table>';
                         printersDiv.innerHTML = html;
                     } else {
-                        printersDiv.innerHTML = '<p class="text-muted">Aucune imprimante trouvée ou erreur: ' + (result.error || 'Inconnu') + '</p>';
+                        printersDiv.innerHTML = '<p class="text-muted"><?php echo __js('admin_printers.no_printers_found'); ?>: ' + (result.error || 'Inconnu') + '</p>';
                     }
                 } catch (error) {
-                    printersDiv.innerHTML = '<div class="alert alert-danger">Erreur: ' + error.message + '</div>';
+                    printersDiv.innerHTML = '<div class="alert alert-danger"><?php echo __js('common.error'); ?> : ' + error.message + '</div>';
                 }
             }
 
@@ -443,28 +429,28 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                         data = JSON.parse(text);
                     } catch (e) {
                         console.error('Erreur parsing JSON:', text);
-                        statsDiv.innerHTML = '<div class="alert alert-danger">Erreur: La réponse n\'est pas du JSON valide. Vérifiez la console pour plus de détails.</div>';
+                        statsDiv.innerHTML = '<div class="alert alert-danger"><?php echo __js('common.error'); ?> : <?php echo __js('admin_printers.invalid_json'); ?></div>';
                         return;
                     }
 
                     if (data.success) {
                         let html = '<div class="row">';
-                        html += '<div class="col-md-4"><div class="well text-center"><h3>' + data.total_jobs + '</h3><p>Total d\'impressions</p></div></div>';
+                        html += '<div class="col-md-4"><div class="well text-center"><h3>' + data.total_jobs + '</h3><p><?php echo __js('admin_tirage.total_prints'); ?></p></div></div>';
 
                         if (data.stats && data.stats.by_printer && data.stats.by_printer.length > 0) {
-                            html += '<div class="col-md-8"><h4>Par imprimante:</h4><ul>';
+                            html += '<div class="col-md-8"><h4><?php echo __js('admin_printers.associated_machine'); ?>:</h4><ul>';
                             data.stats.by_printer.forEach(stat => {
-                                html += `<li><strong>${stat.printer_name}</strong>: ${stat.total_jobs} jobs, ${stat.total_pages || 0} pages</li>`;
+                                html += `<li><strong>${stat.printer_name}</strong>: ${stat.total_jobs} jobs, ${stat.total_pages || 0} <?php echo __js('common.pages'); ?></li>`;
                             });
                             html += '</ul></div>';
                         }
                         html += '</div>';
                         statsDiv.innerHTML = html;
                     } else {
-                        statsDiv.innerHTML = '<p class="text-muted">' + (data.message || data.error || 'Aucune statistique disponible') + '</p>';
+                        statsDiv.innerHTML = '<p class="text-muted">' + (data.message || data.error || '<?php echo __js('stats.no_data'); ?>') + '</p>';
                     }
                 } catch (error) {
-                    statsDiv.innerHTML = '<div class="alert alert-danger">Erreur: ' + error.message + '</div>';
+                    statsDiv.innerHTML = '<div class="alert alert-danger"><?php echo __js('common.error'); ?> : ' + error.message + '</div>';
                 }
             }
 
@@ -512,9 +498,9 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                         const jobsToDisplay = allJobs.slice(startIndex, endIndex);
 
                         // Construire le tableau
-                        let html = '<table class="table table-striped table-hover"><thead><tr><th><input type="checkbox" id="select-all-jobs" onclick="toggleSelectAll(this)"></th><th>Aperçu</th><th>Date</th><th>Document</th><th>Format</th><th>Recto-verso</th><th>Couleur</th><th>Taux remplissage</th><th>Statut</th><th>Pages</th></tr></thead><tbody>';
+                        let html = '<table class="table table-striped table-hover"><thead><tr><th><input type="checkbox" id="select-all-jobs" onclick="toggleSelectAll(this)"></th><th><?php echo __js('admin_printers.preview_doc'); ?></th><th><?php echo __js('common.date'); ?></th><th><?php echo __js('common.document'); ?></th><th><?php echo __js('common.format'); ?></th><th><?php echo __js('common.duplex'); ?></th><th><?php echo __js('common.color'); ?></th><th><?php echo __js('admin_printers.ink_coverage'); ?></th><th><?php echo __js('common.status'); ?></th><th><?php echo __js('common.pages'); ?></th></tr></thead><tbody>';
                         jobsToDisplay.forEach(job => {
-                            const date = new Date(job.timestamp).toLocaleString('fr-FR');
+                            const date = new Date(job.timestamp).toLocaleString('<?php echo $lang == 'fr' ? 'fr-FR' : 'en-US'; ?>');
                             const copies = job.copies || 1;
                             const totalDocPages = job.total_pages || 0;
                             const isDuplex = job.duplex === 1 || job.duplex === '1' || job.duplex === true;
@@ -527,23 +513,23 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                             const sheets = isDuplex ? Math.ceil(totalDocPages / 2) * copies : totalDocPages * copies;
 
                             // Affichage : "X pages, Y feuilles"
-                            const pages = totalPages + ' pages, ' + sheets + ' feuilles' + (copies > 1 ? ' (' + copies + ' copies)' : '');
+                            const pages = totalPages + ' <?php echo __js('common.pages'); ?>, ' + sheets + ' <?php echo __js('tirage_multimachines.sheets'); ?>' + (copies > 1 ? ' (' + copies + ' copies)' : '');
                             const statusClass = job.status === 'Completed' ? 'success' : job.status === 'Printing' ? 'info' : 'warning';
 
                             // Format papier
                             const paperSize = job.paper_size || 'N/A';
 
                             // Recto-verso
-                            const duplex = (job.duplex === 1 || job.duplex === '1' || job.duplex === true) ? 'Oui' : 'Non';
+                            const duplex = (job.duplex === 1 || job.duplex === '1' || job.duplex === true) ? '<?php echo __js('admin_printers.yes'); ?>' : '<?php echo __js('admin_printers.no'); ?>';
 
                             // Couleur
                             let colorMode = 'N/A';
                             if (job.color_mode) {
                                 const colorValue = job.color_mode.toLowerCase();
                                 if (colorValue === 'color' || colorValue.includes('color') || colorValue === '2') {
-                                    colorMode = 'Couleur';
+                                    colorMode = '<?php echo __js('common.color'); ?>';
                                 } else if (colorValue === 'monochrome' || colorValue.includes('mono') || colorValue === '1') {
-                                    colorMode = 'N&B';
+                                    colorMode = '<?php echo __js('common.bw'); ?>';
                                 }
                             }
 
@@ -581,12 +567,12 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                         if (selectAll) selectAll.checked = false;
                         updateDeleteButton();
                     } else {
-                        jobsDiv.innerHTML = '<p class="text-muted">' + (data.message || 'Aucune impression enregistrée pour le moment. Lancez une impression pour tester le système.') + '</p>';
+                        jobsDiv.innerHTML = '<p class="text-muted">' + (data.message || '<?php echo __js('admin_printers.no_prints_found'); ?>') + '</p>';
                         document.getElementById('pagination-controls').style.display = 'none';
                         document.getElementById('pagination-info').textContent = '';
                     }
                 } catch (error) {
-                    jobsDiv.innerHTML = '<div class="alert alert-danger">Erreur: ' + error.message + '</div>';
+                    jobsDiv.innerHTML = '<div class="alert alert-danger"><?php echo __js('common.error'); ?> : ' + error.message + '</div>';
                 }
             }
 
@@ -607,12 +593,15 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 }
 
                 // Mettre à jour l'affichage de la page courante
-                currentPageDisplay.textContent = `Page ${currentPage} / ${totalPages}`;
+                currentPageDisplay.textContent = `<?php echo __js('admin_tirage.page'); ?> ${currentPage} <?php echo __js('admin_tirage.of'); ?> ${totalPages}`;
 
                 // Mettre à jour les informations de pagination
                 const startIndex = (currentPage - 1) * itemsPerPage + 1;
                 const endIndex = Math.min(currentPage * itemsPerPage, totalJobs);
-                paginationInfo.textContent = `Affichage de ${startIndex} à ${endIndex} sur ${totalJobs} impressions`;
+                
+                let infoText = '<?php echo __js('admin_printers.pagination_info'); ?>';
+                infoText = infoText.replace(':start', startIndex).replace(':end', endIndex).replace(':total', totalJobs);
+                paginationInfo.textContent = infoText;
 
                 // Désactiver/activer les boutons selon la page courante
                 if (currentPage === 1) {
@@ -672,7 +661,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 const btn = document.getElementById('btn-delete-selection');
                 if (btn) {
                     btn.disabled = checkboxes.length === 0;
-                    btn.innerHTML = `<i class="fa fa-trash"></i> Supprimer la sélection (${checkboxes.length})`;
+                    btn.innerHTML = `<i class="fa fa-trash"></i> <?php echo __js('admin_printers.delete_selection_count'); ?>`.replace(':count', checkboxes.length);
                 }
             }
 
@@ -682,8 +671,8 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
 
                 showAppModal({
                     type: 'warning',
-                    title: 'Supprimer la sélection',
-                    message: `Êtes-vous sûr de vouloir supprimer ${checkboxes.length} impression(s) ?`,
+                    title: '<?php echo __js('admin_printers.delete_selection'); ?>',
+                    message: `<?php echo __js('admin_printers.confirm_delete_count'); ?>`.replace(':count', checkboxes.length),
                     confirm: true,
                     onConfirm: async function () {
                         const ids = Array.from(checkboxes).map(cb => cb.value);
@@ -791,25 +780,25 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
             function deletePrinter(printerName) {
                 showAppModal({
                     type: 'warning',
-                    title: 'Supprimer l\'imprimante',
-                    message: `Êtes-vous sûr de vouloir supprimer l'imprimante "${printerName}" ?<br><br>Cette action nécessite des droits administrateur.`,
+                    title: '<?php echo __js('admin_printers.delete_printer'); ?>',
+                    message: `<?php echo __js('admin_printers.delete_printer_confirm'); ?>`.replace(':name', printerName),
                     confirm: true,
                     onConfirm: async function () {
                         if (!hasElectronAPI) {
-                            showAppModal({ type: 'warning', message: 'API Electron non disponible' });
+                            showAppModal({ type: 'warning', message: '<?php echo __js('admin_printers.electron_api_unavailable'); ?>' });
                             return;
                         }
 
                         try {
                             const result = await window.electronAPI.deletePrinter(printerName);
                             if (result.success) {
-                                showAppModal({ type: 'success', message: 'Imprimante supprimée avec succès' });
+                                showAppModal({ type: 'success', message: '<?php echo __js('admin_printers.delete_printer_success'); ?>' });
                                 loadPrinters(); // Recharger la liste
                             } else {
-                                showAppModal({ type: 'danger', message: 'Erreur lors de la suppression: ' + result.error });
+                                showAppModal({ type: 'danger', message: '<?php echo __js('admin_printers.restart_error'); ?>' + result.error });
                             }
                         } catch (error) {
-                            showAppModal({ type: 'danger', message: 'Erreur: ' + error.message });
+                            showAppModal({ type: 'danger', message: '<?php echo __js('common.error'); ?> : ' + error.message });
                         }
                     }
                 });
@@ -823,7 +812,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
 
             async function loadMappings() {
                 if (!hasElectronAPI) {
-                    document.querySelector('#mappings-table tbody').innerHTML = '<tr><td colspan="3" class="text-center text-warning">API Electron requise</td></tr>';
+                    document.querySelector('#mappings-table tbody').innerHTML = '<tr><td colspan="3" class="text-center text-warning"><?php echo __js('admin_printers.electron_api_required'); ?></td></tr>';
                     return;
                 }
 
@@ -865,15 +854,15 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                     <td style="vertical-align: middle;"><strong>${pName}</strong></td>
                     <td>
                         <select class="form-control input-sm mapping-select" data-printer="${pName}">
-                            <option value="">-- Non Assigné --</option>
-                            <optgroup label="Photocopieurs">
+                            <option value=""><?php _ejs('admin_printers.not_assigned'); ?></option>
+                            <optgroup label="<?php _ejs('tirage_multimachines.photocopieur'); ?>s">
                                 ${photocopieurs.map(p => `
                                     <option value="photocop_${p.id}" ${currentMapping && currentMapping.type === 'photocop' && currentMapping.id == p.id ? 'selected' : ''}>
                                         ${p.marque} (${p.type_encre})
                                     </option>
                                 `).join('')}
                             </optgroup>
-                            <optgroup label="Duplicopieurs">
+                            <optgroup label="<?php _ejs('tirage_multimachines.duplicopieur'); ?>s">
                                 ${duplicopieurs.map(d => `
                                     <option value="dupli_${d.id}" ${currentMapping && currentMapping.type === 'dupli' && currentMapping.id == d.id ? 'selected' : ''}>
                                         ${d.marque} ${d.modele}
@@ -884,7 +873,7 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                     </td>
                     <td>
                         <button class="btn btn-primary btn-sm btn-save-mapping" onclick="saveMapping('${pName.replace(/'/g, "\\'")}')">
-                            <i class="fa fa-save"></i> Enregistrer
+                            <i class="fa fa-save"></i> <?php _ejs('admin_printers.save'); ?>
                         </button>
                     </td>
                 </tr>`;
@@ -953,3 +942,5 @@ n-lg btn-block" id="btn-restart-admin" onclick="restartAsAdmin()">
                 loadMappings();
             });
         </script>
+    </div>
+</div>

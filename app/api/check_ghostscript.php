@@ -13,8 +13,16 @@ $result = [
 ];
 
 if (PHP_OS_FAMILY !== 'Windows') {
-    // Sur Linux/Mac, on suppose que 'gs' est dans le PATH
-    $result['available'] = true;
+    $gs_path = get_ghostscript_path();
+    if ($gs_path) {
+        $result['available'] = true;
+        $result['path'] = $gs_path;
+        $result['version'] = trim(shell_exec(escapeshellarg($gs_path) . " -v 2>&1"));
+    } else {
+        $result['available'] = false;
+        $result['error'] = "Ghostscript n'est pas installé sur ce système Linux.";
+        $result['error_code'] = 'NOT_FOUND';
+    }
     echo json_encode($result);
     exit;
 }

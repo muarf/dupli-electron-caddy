@@ -185,15 +185,15 @@
         <div class="col-12 col-xl-10">
             <div class="main-container">
                 <div class="header-section">
-                    <h1><i class="fa fa-magic"></i> Auto Tirage</h1>
-                    <p>Impression automatique & Détection</p>
+                    <h1><i class="fa fa-magic"></i> <?php _e('auto_tirage.title'); ?></h1>
+                    <p><?php _e('auto_tirage.subtitle'); ?></p>
                 </div>
 
                 <div class="form-section">
                     <!-- Interface par onglets de Session -->
                     <div id="session-tabs-container" class="session-tabs-container">
                         <!-- Les onglets seront injectés ici par JS -->
-                        <button class="add-session-tab" onclick="createNewSessionClick()" title="Nouvelle session">
+                        <button class="add-session-tab" onclick="createNewSessionClick()" title="<?php echo __('auto_tirage.new_session'); ?>">
                             <i class="fa fa-plus-circle"></i>
                         </button>
                     </div>
@@ -204,16 +204,16 @@
                             <div class="icon-header">
                                 <i class="fa fa-user-plus"></i>
                             </div>
-                            <h4>Démarrer une nouvelle session</h4>
+                            <h4><?php _e('auto_tirage.start_new_session'); ?></h4>
                             <div class="form-group">
                                 <input type="text" id="pseudo-input" class="form-control fancy-input"
-                                    placeholder="Qui êtes-vous ?" onkeypress="if(event.key === 'Enter') startSession()">
+                                    placeholder="<?php echo __('auto_tirage.who_are_you'); ?>" onkeypress="if(event.key === 'Enter') startSession()">
                                 <input type="text" id="session-name-input" class="form-control fancy-input"
-                                    placeholder="Nom de la session (facultatif)"
+                                    placeholder="<?php echo __('auto_tirage.session_name_optional'); ?>"
                                     onkeypress="if(event.key === 'Enter') startSession()">
                             </div>
                             <button class="btn btn-primary-modern btn-block btn-lg" onclick="startSession()">
-                                C'est parti !
+                                <?php _e('auto_tirage.lets_go'); ?>
                             </button>
                         </div>
                     </div>
@@ -224,18 +224,17 @@
                         <div id="buffer-zone" class="card mb-4"
                             style="display:none; border: 2px dashed #3498db; background: #f8fbff; margin-bottom: 30px; padding: 15px;">
                             <div class="card-header bg-primary text-white">
-                                <h4 class="mb-0"><i class="fa fa-inbox"></i> Impressions en attente (Pool)</h4>
+                                <h4 class="mb-0"><i class="fa fa-inbox"></i> <?php _e('auto_tirage.pending_jobs'); ?></h4>
                             </div>
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <p class="text-muted mb-0">Ces impressions ont été détectées mais ne sont pas encore
-                                        dans votre session.</p>
+                                    <p class="text-muted mb-0"><?php _e('auto_tirage.buffer_description'); ?></p>
                                     <div id="buffer-bulk-actions" style="display: none;">
                                         <button class="btn btn-primary btn-sm mr-2" onclick="bulkMoveBufferToSession()">
-                                            <i class="fa fa-plus"></i> Ajouter sélectionnés
+                                            <i class="fa fa-plus"></i> <?php _e('auto_tirage.add_selected'); ?>
                                         </button>
                                         <button class="btn btn-outline-danger btn-sm" onclick="bulkDeleteBufferJob()">
-                                            <i class="fa fa-trash"></i> Supprimer sélectionnés
+                                            <i class="fa fa-trash"></i> <?php _e('auto_tirage.delete_selected'); ?>
                                         </button>
                                     </div>
                                 </div>
@@ -244,13 +243,13 @@
                                         <tr>
                                             <th style="width: 40px;"><input type="checkbox" id="select-all-buffer"
                                                     onclick="toggleAllBuffer(this)"></th>
-                                            <th>Aperçu</th>
-                                            <th>Date</th>
-                                            <th>Machine</th>
-                                            <th>Document</th>
-                                            <th>Détails</th>
-                                            <th>Encrage</th>
-                                            <th>Action</th>
+                                            <th><?php _e('auto_tirage.preview'); ?></th>
+                                            <th><?php _e('auto_tirage.date'); ?></th>
+                                            <th><?php _e('auto_tirage.machine'); ?></th>
+                                            <th><?php _e('auto_tirage.document'); ?></th>
+                                            <th><?php _e('auto_tirage.details'); ?></th>
+                                            <th><?php _e('auto_tirage.ink_coverage'); ?></th>
+                                            <th><?php _e('auto_tirage.action'); ?></th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -264,9 +263,9 @@
                         <div id="session-zone">
                             <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
                                 <small class="text-muted"><i class="fa fa-clock-o"></i> <span
-                                        id="session-status-text">En attente d'impressions...</span></small>
+                                        id="session-status-text"><?php _e('auto_tirage.waiting_jobs'); ?></span></small>
                                 <button class="btn btn-link btn-sm text-muted" type="button" onclick="toggleLogs()">
-                                    <i class="fa fa-list"></i> Voir l'activité
+                                    <i class="fa fa-list"></i> <?php _e('auto_tirage.view_activity'); ?>
                                 </button>
                             </div>
 
@@ -277,19 +276,19 @@
 
                             <!-- Liste des jobs en attente de validation -->
                             <div id="pending-list-container" style="display:none;">
-                                <h5 class="border-bottom pb-2 mb-3"><i class="fa fa-list"></i> Impressions en cours</h5>
+                                <h5 class="border-bottom pb-2 mb-3"><i class="fa fa-list"></i> <?php _e('auto_tirage.active_jobs'); ?></h5>
                                 <div class="table-responsive">
                                     <table class="table table-striped table-hover">
                                         <thead>
                                             <tr>
-                                                <th>Machine</th>
-                                                <th>Document</th>
-                                                <th>Détails</th>
-                                                <th>Papier</th>
-                                                <th>Encre</th>
-                                                <th>Prix Total</th>
-                                                <th>Papier Payé ?</th>
-                                                <th>Actions</th>
+                                                <th><?php _e('auto_tirage.machine'); ?></th>
+                                                <th><?php _e('auto_tirage.document'); ?></th>
+                                                <th><?php _e('auto_tirage.details'); ?></th>
+                                                <th><?php _e('tirage_multimachines.paper'); ?></th>
+                                                <th><?php _e('tirage_multimachines.ink_toner'); ?></th>
+                                                <th><?php _e('auto_tirage.total_price'); ?></th>
+                                                <th><?php _e('auto_tirage.paper_paid'); ?></th>
+                                                <th><?php _e('auto_tirage.action'); ?></th>
                                             </tr>
                                         </thead>
                                         <tbody id="pending-jobs-body">
@@ -297,7 +296,7 @@
                                         </tbody>
                                         <tfoot>
                                             <tr class="table-info">
-                                                <td colspan="5" class="text-right"><strong>Total Session :</strong></td>
+                                                <td colspan="5" class="text-right"><strong><?php _e('auto_tirage.session_total'); ?></strong></td>
                                                 <td colspan="3"><strong><span id="session-total">0.00</span> €</strong>
                                                 </td>
                                             </tr>
@@ -307,7 +306,7 @@
 
                                 <div class="text-right mt-4">
                                     <button class="btn btn-success-modern btn-lg" onclick="finishSession()">
-                                        <i class="fa fa-check"></i> Terminer & Valider <span id="finish-badge"
+                                        <i class="fa fa-check"></i> <?php _e('auto_tirage.finish_validate'); ?> <span id="finish-badge"
                                             class="badge badge-light">0</span>
                                     </button>
                                 </div>
@@ -324,7 +323,7 @@
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="thumbnail-modal-title">Aperçu du document</h5>
+                    <h5 class="modal-title" id="thumbnail-modal-title"><?php _e('auto_tirage.document_preview'); ?></h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -402,6 +401,8 @@
             startPolling();
         }
 
+
+
         window.suspendSession = function () {
             // Juste vider l'état local et retourner au début sans fermer
             currentSessionId = null;
@@ -422,7 +423,7 @@
 
         function startPolling() {
             pollingInterval = setInterval(checkPrintJobs, 3000);
-            addLog('info', "✅ Système prêt. Lancez une impression...");
+            addLog('info', "✅ <?php _ejs('auto_tirage.system_ready'); ?>");
         }
 
         async function checkPrintJobs() {
@@ -489,7 +490,7 @@
                     firstSeen: now,
                     lastUpdate: now
                 });
-                addLog('info', `⏳ Job détecté: ${job.document} (${job.total_pages} pages). Attente stabilisation (10s)...`);
+                addLog('info', `⏳ <?php _ejs('auto_tirage.job_detected'); ?>: ${job.document} (${job.total_pages} pages). <?php _ejs('auto_tirage.stabilizing'); ?>`);
                 
                 // NOUVEAU: Affichage immédiat dans le pool avec indicateur de stabilisation
                 job.stabilizing = true;
@@ -502,7 +503,7 @@
                     candidate.job.stabilizing = true;
                     candidate.lastUpdate = now;
                     if (oldPages !== job.total_pages) {
-                        addLog('info', `... maj pages : ${job.total_pages}`);
+                        addLog('info', `... <?php _ejs('auto_tirage.page_update'); ?> : ${job.total_pages}`);
                     }
                     // Mettre à jour la ligne dans le buffer
                     renderBufferRow(candidate.job);
@@ -550,7 +551,7 @@
                     candidate.job.stabilizing = false;
 
                     if (currentSessionId && candidate.job.session_id == currentSessionId) {
-                        addLog('success', `📥 Job assigné détecté : ${candidate.job.document}`);
+                        addLog('success', `📥 <?php _ejs('auto_tirage.job_assigned'); ?> : ${candidate.job.document}`);
 
                         // Retirer du pool (buffer) puisqu'il passe en session
                         bufferJobs.delete(jobId);
@@ -562,7 +563,7 @@
 
                         simulateJob(candidate.job);
                     } else {
-                        addLog('info', `⏸️ Job en attente (Buffer) : ${candidate.job.document}`);
+                        addLog('info', `⏸️ <?php _ejs('auto_tirage.job_waiting'); ?> : ${candidate.job.document}`);
                         // Mettre à jour la ligne pour afficher les boutons d'action
                         renderBufferRow(candidate.job);
                     }
@@ -601,7 +602,7 @@
             
             // Format technical details
             const isDuplex = (job.duplex == 1 || job.duplex == '1' || job.duplex === true || String(job.duplex).toLowerCase() === 'oui');
-            const colorMode = (String(job.color_mode).toLowerCase().includes('color') || String(job.color_mode) === '1') ? 'Couleur' : 'N&B';
+            const colorMode = (String(job.color_mode).toLowerCase().includes('color') || String(job.color_mode) === '1') ? '<?php echo __js('tirage_multimachines.color'); ?>' : 'N&B';
             const duplexLabel = isDuplex ? 'R/V' : 'Recto';
             const rawFillValue = parseFloat(job.fill_rate || 0);
             const fillPct = rawFillValue.toFixed(1) + '%';
@@ -609,13 +610,13 @@
             const actions = job.stabilizing ? `
                 <div class="text-center">
                     <i class="fa fa-spinner fa-spin text-primary"></i>
-                    <div style="font-size: 10px;" class="text-muted">Stabilisation...</div>
+                    <div style="font-size: 10px;" class="text-muted"><?php _ejs('auto_tirage.stabilization'); ?></div>
                 </div>
             ` : `
-                <button class="btn btn-primary btn-sm" onclick="moveBufferToSession('${job.job_id}')" title="Ajouter à la session">
+                <button class="btn btn-primary btn-sm" onclick="moveBufferToSession('${job.job_id}')" title="<?php echo __js('auto_tirage.add_selected'); ?>">
                     <i class="fa fa-plus"></i>
                 </button>
-                <button class="btn btn-outline-danger btn-sm" onclick="deleteBufferJob('${job.id}', '${job.job_id}')" title="Supprimer">
+                <button class="btn btn-outline-danger btn-sm" onclick="deleteBufferJob('${job.id}', '${job.job_id}')" title="<?php echo __js('auto_tirage.delete_selected'); ?>">
                     <i class="fa fa-trash"></i>
                 </button>
             `;
@@ -638,7 +639,7 @@
                 <div class="mt-1"><small>${pages} pages</small></div>
             </td>
             <td>
-                <div class="progress" style="height: 10px; width: 60px;" title="Taux d'encrage: ${fillPct}">
+                <div class="progress" style="height: 10px; width: 60px;" title="<?php echo __js('auto_tirage.fill_rate'); ?>: ${fillPct}">
                     <div class="progress-bar bg-info" role="progressbar" style="width: ${fillPct}" aria-valuenow="${rawFillValue}" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
                 <small>${fillPct}</small>
@@ -696,7 +697,7 @@
 
         window.deleteBufferJob = async function (dbId, spoolJobId) {
             showAppModal({
-                message: "Voulez-vous vraiment supprimer cette impression du pool ?",
+                message:  "<?php echo __js('auto_tirage.confirm_delete'); ?>" ,
                 confirm: true,
                 type: "warning"
             }, async (confirmed) => {
@@ -735,7 +736,7 @@
                     console.log('[DELETE] Nettoyage final par job_id:', spoolJobId);
 
                     if (result.success) {
-                        addLog('info', `🗑️ Job supprimé du pool`);
+                        addLog('info', `🗑️ <?php _ejs('auto_tirage.job_deleted'); ?>`);
                         bufferJobs.delete(spoolJobId);
                         const row = document.getElementById(`buffer-row-${spoolJobId}`);
                         if (row) row.remove();
@@ -744,11 +745,11 @@
                             document.getElementById('buffer-zone').style.display = 'none';
                         }
                     } else {
-                        showAppModal({ message: "Erreur lors de la suppression: " + result.error, type: "danger" });
+                        showAppModal({ message: "<?php _ejs('auto_tirage.delete_error'); ?>: " + result.error, type: "danger" });
                     }
                 } catch (error) {
                     console.error("Erreur suppression job:", error);
-                    showAppModal({ message: "Erreur de communication", type: "danger" });
+                    showAppModal({ message:  "<?php echo __js('auto_tirage.communication_error'); ?>" , type: "danger" });
                 }
             });
         };
@@ -769,8 +770,8 @@
                 // Update text of buttons if many
                 const btnAdd = bulkActions.querySelector('button:first-child');
                 const btnDel = bulkActions.querySelector('button:last-child');
-                if (btnAdd) btnAdd.innerHTML = `<i class="fa fa-plus"></i> Ajouter (${selected.length})`;
-                if (btnDel) btnDel.innerHTML = `<i class="fa fa-trash"></i> Supprimer (${selected.length})`;
+                if (btnAdd) btnAdd.innerHTML = `<i class="fa fa-plus"></i> <?php _ejs('auto_tirage.add_selected'); ?> (${selected.length})`;
+                if (btnDel) btnDel.innerHTML = `<i class="fa fa-trash"></i> <?php _ejs('auto_tirage.delete_selected'); ?> (${selected.length})`;
             } else {
                 bulkActions.style.display = 'none';
                 const selectAll = document.getElementById('select-all-buffer');
@@ -782,7 +783,7 @@
             const selected = document.querySelectorAll('.buffer-checkbox:checked');
             if (selected.length === 0) return;
 
-            addLog('process', `🚀 Ajout de ${selected.length} jobs en cours...`);
+            addLog('process', `🚀 <?php _ejs('auto_tirage.adding_jobs', ['count' => '${selected.length}']); ?>`);
 
             // On traite séquentiellement pour éviter de surcharger/doublons
             for (const cb of selected) {
@@ -803,7 +804,7 @@
             const spoolJobIds = Array.from(selected).map(cb => cb.getAttribute('data-job-id'));
 
             showAppModal({
-                message: `Voulez-vous vraiment supprimer ces ${selected.length} impressions du pool ?`,
+                message:  `<?php echo __js('auto_tirage.confirm_delete_many', ['count' => '${selected.length}']); ?>` ,
                 confirm: true,
                 type: "warning"
             }, async (confirmed) => {
@@ -821,7 +822,7 @@
 
                     const result = await response.json();
                     if (result.success) {
-                        addLog('info', `🗑️ ${selected.length} jobs supprimés du pool`);
+                        addLog('info', `🗑️ <?php _ejs('auto_tirage.jobs_deleted', ['count' => '${selected.length}']); ?>`);
                         spoolJobIds.forEach(spoolJobId => {
                             bufferJobs.delete(spoolJobId);
                             const row = document.getElementById(`buffer-row-${spoolJobId}`);
@@ -835,17 +836,17 @@
                         if (selectAll) selectAll.checked = false;
                         updateBulkActionsVisibility();
                     } else {
-                        showAppModal({ message: "Erreur lors de la suppression: " + result.error, type: "danger" });
+                        showAppModal({ message: "<?php _ejs('auto_tirage.delete_error'); ?>: " + result.error, type: "danger" });
                     }
                 } catch (error) {
                     console.error("Erreur suppression jobs:", error);
-                    showAppModal({ message: "Erreur de communication", type: "danger" });
+                    showAppModal({ message:  "<?php echo __js('auto_tirage.communication_error'); ?>" , type: "danger" });
                 }
             });
         };
 
         async function simulateJob(job, updateIndex = null, bufferJobId = null, isSimulation = false) {
-            addLog('process', `⚙️ Analyse du job : ${job.document}...`);
+            addLog('process', `⚙️ <?php _ejs('auto_tirage.analyzing_job'); ?> : ${job.document}...`);
 
             try {
                 // job.total_pages from DB is DOCUMENT pages (per copy)
@@ -903,8 +904,8 @@
                     }
                     if (!result.details) {
                         console.error('CRITICAL: result.details is null/undefined', result);
-                        addLog('error', '❌ Erreur interne: détails du job manquants');
-                        return;
+                        addLog('error', '❌ <?php _ejs('auto_tirage.internal_error'); ?>');
+                        return false;
                     }
                     result.details.raw_total_pages = job.total_pages;
                     result.details.raw_fill_rate = parsedFillRate; // Store the parsed fill rate we used
@@ -919,7 +920,7 @@
                     }
 
                     if (updateIndex !== undefined && updateIndex !== null) {
-                        addLog('info', `🔄 Mise à jour job : ${job.total_pages} pages`);
+                        addLog('info', `🔄 <?php _ejs('auto_tirage.updating_job'); ?> : ${job.total_pages} pages`);
                         updateJobInSession(result.details, updateIndex, job.printer_name);
                         return true;
                     } else {
@@ -929,10 +930,10 @@
                         // NEW: Try to delete from Windows Spooler to avoid "blocking" the queue
                         // Requires Electron context
                         if (window.electronAPI && window.electronAPI.deletePrintJob) {
-                            addLog('info', '🗑️ Suppression du spooler...');
+                            addLog('info', '🗑️ <?php _ejs('auto_tirage.delete_spooler'); ?>');
                             window.electronAPI.deletePrintJob(job.printer_name, job.job_id)
                                 .then(res => {
-                                    if (res.success) addLog('success', '🗑️ Spooler nettoyé');
+                                    if (res.success) addLog('success', '🗑️ <?php _ejs('auto_tirage.spooler_cleaned'); ?>');
                                     else console.warn('Erreur suppression spool:', res.error);
                                 })
                                 .catch(err => console.error(err));
@@ -950,14 +951,34 @@
                     return false; // Failed
                 }
 
-            } catch (error) {
-                addLog('error', "❌ Erreur de communication serveur");
-                console.error(error);
-                return false; // Failed
+            } catch (e) {
+                console.error("Erreur lors de la simulation/sauvegarde du job:", e);
+                addLog('error', "❌ <?php _ejs('auto_tirage.communication_error'); ?>");
+                // Si la sauvegarde échoue, retirer le job de la session locale pour éviter les "fantômes"
+                if (bufferJobId) {
+                    // Si c'était un job du buffer, il garde son état dans le buffer
+                    console.log("Échec sauvegarde job du buffer, annulation mouvement.");
+                } else {
+                    // Si c'était une détection directe, on retire l'entrée incomplète
+                    // Find and remove the job from sessionJobs if it was added locally but failed to save
+                    const indexToRemove = sessionJobs.findIndex(sj => sj.originalJobId == job.job_id && !sj.id); // Check for local job without DB ID
+                    if (indexToRemove !== -1) {
+                        sessionJobs.splice(indexToRemove, 1);
+                        renderSessionTable();
+                        console.log(`Job ${job.job_id} removed from local session due to save failure.`);
+                    }
+                }
+                return false;
             }
         }
 
         function addJobToSession(details, jobId, printerName) {
+            // ANTI-DOUBLON LOCAL : Vérifier si ce Job ID est déjà dans la session
+            if (sessionJobs.some(existingJob => existingJob.originalJobId == jobId)) {
+                console.warn(`[AUTO_TIRAGE] Job ID ${jobId} déjà présent dans la session, ignoré.`);
+                return;
+            }
+
             details.localId = Date.now() + Math.random().toString(36).substr(2, 9);
             details.originalJobId = jobId;
             details.printerName = printerName;
@@ -1081,17 +1102,17 @@
                 const tr = document.createElement('tr');
 
                 const badgeClass = job.type === 'photocop' ? 'badge-primary' : 'badge-secondary';
-                const machineName = job.type === 'photocop' ? 'Photocopieur' : 'Duplicopieur';
+                const machineName = job.type === 'photocop' ?  "<?php echo __js('tirage_multimachines.photocopieur'); ?>"  :  "<?php echo __js('tirage_multimachines.duplicopieur'); ?>" ;
 
                 // Fix: Use job.document_name which comes from the API details, backup with job.document if raw job
-                const docName = job.document_name || job.document || 'Document';
+                const docName = job.document_name || job.document ||  "<?php echo __js('library.file'); ?>" ;
 
                 // Thumbnail handling
                 let thumbHtml = '';
                 // Use local thumbnail_url if available, else standard fallback
                 const thumbUrl = job.thumbnail_url;
                 if (thumbUrl) {
-                    thumbHtml = `<img src="${thumbUrl}" alt="Aperçu" class="img-thumbnail rounded mr-2" style="width: 50px; height: 50px; object-fit: contain; cursor: pointer;" onclick="event.stopPropagation(); showThumbnailModal('${thumbUrl}', '${docName.replace(/'/g, "\\'")}')">`;
+                    thumbHtml = `<img src="${thumbUrl}" alt="<?php echo __js('auto_tirage.preview'); ?>" class="img-thumbnail rounded mr-2" style="width: 50px; height: 50px; object-fit: contain; cursor: pointer;" onclick="event.stopPropagation(); showThumbnailModal('${thumbUrl}', '${docName.replace(/'/g, "\\'")}')">`;
                 } else {
                     thumbHtml = `<div class="d-inline-flex align-items-center justify-content-center bg-light text-muted border rounded mr-2" style="width: 50px; height: 50px;"><i class="fa fa-file-o fa-lg"></i></div>`;
                 }
@@ -1144,8 +1165,8 @@
                     colDetails = `
                     <div style="font-size: 0.9em;">
                         ${job.copies} ex × ${pPerEx} pg.<br>
-                        <small>${job.duplex ? 'R/V' : 'Recto'} - ${job.taille}</small>
-                        ${job.color && job.fill_rate_percent ? '<br><small class="text-muted">Encrage: ' + job.fill_rate_percent + '%</small>' : ''}
+                        <small>${job.duplex ? '<?php echo addslashes(__('common.duplex')); ?>' : '<?php echo addslashes(__('common.simplex')); ?>'} - ${job.taille}</small>
+                        ${job.color && job.fill_rate_percent ? '<br><small class="text-muted"><?php echo addslashes(__('auto_tirage.fill_rate')); ?>: ' + job.fill_rate_percent + '%</small>' : ''}
                     </div>
 
                 `;
@@ -1179,17 +1200,17 @@
                     colDetails = `
                     <div style="min-width: 320px;">
                         <div style="display: flex; align-items: center; white-space: nowrap; margin-bottom: 5px; padding: 4px; background: #fff; border: 1px solid #dee2e6; border-radius: 4px;">
-                            <span class="mr-1" style="font-size: 11px; font-weight:bold;">Tambour:</span>
+                            <span class="mr-1" style="font-size: 11px; font-weight:bold;"><?php echo __js('tirage_multimachines.tambour_used'); ?>:</span>
                             ${tambourSelect}
                             
                             <div class="custom-control custom-checkbox mr-3" style="display: inline-flex; align-items: center;">
                                 <input type="checkbox" class="custom-control-input" id="duplex-${index}" ${job.duplex ? 'checked' : ''} onchange="toggleDuplex(${index})">
-                                <label class="custom-control-label" for="duplex-${index}" style="font-size: 11px; padding-top: 2px; margin-bottom: 0;">R/V</label>
+                                <label class="custom-control-label" for="duplex-${index}" style="font-size: 11px; padding-top: 2px; margin-bottom: 0;"><?php echo __js('common.duplex'); ?></label>
                             </div>
 
                             <div class="custom-control custom-checkbox" style="display: inline-flex; align-items: center;">
                                 <input type="checkbox" class="custom-control-input" id="paid-details-${index}" ${job.feuilles_payees ? 'checked' : ''} onchange="togglePaid(${index})">
-                                <label class="custom-control-label" for="paid-details-${index}" style="font-size: 11px; padding-top: 2px; margin-bottom: 0;">Papier Payé</label>
+                                <label class="custom-control-label" for="paid-details-${index}" style="font-size: 11px; padding-top: 2px; margin-bottom: 0;"><?php echo __js('auto_tirage.paper_paid'); ?></label>
                             </div>
                         </div>
                         
@@ -1197,10 +1218,10 @@
                             <table class="table table-borderless table-sm mb-0" style="font-size: 11px;">
                                 <thead>
                                     <tr class="text-muted text-center" style="line-height: 1;">
-                                        <th class="py-0 px-1 text-left">Compteur</th>
-                                        <th class="py-0 px-1">Avant</th>
-                                        <th class="py-0 px-1">Après</th>
-                                        <th class="py-0 px-1 text-right">Total</th>
+                                        <th class="py-0 px-1 text-left"><?php echo __js('admin_machines.counter'); ?></th>
+                                        <th class="py-0 px-1"><?php echo __js('common.before'); ?></th>
+                                        <th class="py-0 px-1"><?php echo __js('common.after'); ?></th>
+                                        <th class="py-0 px-1 text-right"><?php echo __js('common.total'); ?></th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1258,12 +1279,12 @@
                     <div class="d-flex justify-content-center align-items-center gap-2">
                         <button class="btn btn-sm btn-outline-primary shadow-sm mr-1" 
                                 style="border-radius: 50%; width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;" 
-                                onclick="openEditJobModal(${index})" title="Éditer">
+                                onclick="openEditJobModal(${index})" title="<?php echo __js('common.edit', [], false); ?>">
                             <i class="fa fa-pencil"></i>
                         </button>
                         <button class="btn btn-sm btn-outline-danger shadow-sm" 
                                 style="border-radius: 50%; width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;" 
-                                onclick="removeJob(${index})" title="Supprimer">
+                                onclick="removeJob(${index})" title="<?php echo __js('common.delete', [], false); ?>">
                             <i class="fa fa-trash"></i>
                         </button>
                     </div>
@@ -1417,7 +1438,7 @@
         window.removeJob = async function (index) {
             const job = sessionJobs[index];
             showAppModal({
-                message: 'Supprimer ce job de la liste ?',
+                message: "<?php echo __js('common.delete'); ?> ?",
                 confirm: true,
                 type: 'warning'
             }, async (confirmed) => {
@@ -1490,7 +1511,7 @@
             const logContainer = document.getElementById('activity-log');
             logContainer.innerHTML = '';
             // Réinsère "Système prêt"
-            addLog('info', "✅ Système prêt. Lancez une impression...");
+            addLog('info', "✅ <?php echo __js('auto_tirage.system_ready'); ?>");
         }
 
         window.toggleLogs = function () {
@@ -1538,7 +1559,7 @@
         };
 
         window.finishSession = async function () {
-            if (sessionJobs.length === 0) return showAppModal({ message: "Aucune impression à valider.", type: "warning" });
+            if (sessionJobs.length === 0) return showAppModal({ message: "<?php echo __js('admin_tirage.no_prints_selected'); ?>", type: "warning" });
 
             const form = document.createElement('form');
             form.method = 'POST';
@@ -1776,8 +1797,13 @@
 
                 if (data.jobs && data.jobs.length > 0) {
                     // Convertir au format attendu par sessionJobs (en évitant les doublons avec ce qu'on a en local)
+                    // On compare sur le job_id (numéro de job spooler CUPS/Windows), clé stable sur les deux plateformes.
+                    // Avant on comparait sur id+type mais l'id local (de photocop/dupli) ne correspond pas à l'id DB retourné.
                     data.jobs.forEach(job => {
-                        const exists = sessionJobs.some(sj => sj.id == job.id && sj.type == job.table_source);
+                        const exists = sessionJobs.some(sj =>
+                            sj.originalJobId != null && job.job_id != null &&
+                            String(sj.originalJobId) === String(job.job_id)
+                        );
                         if (!exists) {
                             sessionJobs.push({
                                 id: job.id,
@@ -1792,6 +1818,7 @@
                                 cout_encre: parseFloat(job.ink_cost) || 0,
                                 feuilles_payees: job.papierPaye === 'oui',
                                 staged: !!job.staged,
+                                thumbnail_url: job.thumbnail_url,
                                 timestamp: job.date
                             });
                         }
@@ -1813,7 +1840,7 @@
         window.showThumbnailModal = function (url, title) {
             const modal = $('#thumbnail-modal');
             $('#modal-thumbnail-img').attr('src', url);
-            $('#thumbnail-modal-title').text(title || 'Aperçu du document');
+            $('#thumbnail-modal-title').text(title || "<?php echo __js('auto_tirage.document_preview'); ?>");
             modal.modal('show');
         };
 

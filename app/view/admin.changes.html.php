@@ -1,5 +1,5 @@
 <!-- CSS pour les icônes de consommables -->
-<link href="css/consumable-icons.css" rel="stylesheet">
+<link href="public/css/consumable-icons.css" rel="stylesheet">
 
 <div class="section">
   <div class="container">

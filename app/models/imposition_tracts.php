@@ -131,15 +131,10 @@ function analyzePDFFormat($pdfFile)
 
             $cleanedPdfFile = $tmp_dir . 'cleaned_tracts_' . $timestamp . '.pdf';
 
-            // Nettoyer le PDF avec Ghostscript - détection automatique de la plateforme
-            if (PHP_OS_FAMILY === 'Windows') {
-                $gs_command = __DIR__ . '/../../ghostscript/gswin64c.exe';
-                if (!file_exists($gs_command)) {
-                    throw new Exception("Ghostscript Windows non trouvé : " . $gs_command);
+                $gs_command = get_ghostscript_path();
+                if (!$gs_command) {
+                    throw new Exception("Ghostscript n'a pas été trouvé sur ce système. Veuillez l'installer.");
                 }
-            } else {
-                $gs_command = 'gs';
-            }
 
             $cmd = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($originalFile) . " 2>&1";
             exec($cmd, $output, $returnCode);
@@ -344,14 +339,9 @@ function processImpositionTracts($is_from_lib = false)
 
         $cleanedPdfFile = $tmp_dir . 'cleaned_tracts_' . $timestamp . '.pdf';
 
-        // Nettoyer le PDF avec Ghostscript - détection automatique de la plateforme
-        if (PHP_OS_FAMILY === 'Windows') {
-            $gs_command = __DIR__ . '/../../ghostscript/gswin64c.exe';
-            if (!file_exists($gs_command)) {
-                throw new Exception("Ghostscript Windows non trouvé : " . $gs_command);
-            }
-        } else {
-            $gs_command = 'gs';
+        $gs_command = get_ghostscript_path();
+        if (!$gs_command) {
+            throw new Exception("Ghostscript n'a pas été trouvé sur ce système. Veuillez l'installer.");
         }
 
         $command = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($inputFile) . " 2>&1";

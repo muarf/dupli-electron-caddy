@@ -39,7 +39,7 @@
                             <div class="col-md-5">
                                 <h4 style="margin-top: 0;"><?php _e('taux_remplissage.preview'); ?> :</h4>
                                 <div class="thumbnail">
-                                    <img src="<?= htmlspecialchars($result['preview_url']) ?>" alt="Aperçu"
+                                    <img src="<?= htmlspecialchars($result['preview_url']) ?>" alt="<?php echo __('taux_remplissage.preview'); ?>"
                                         style="max-width: 100%; height: auto; border: 1px solid #ddd;">
                                     <div class="caption text-center">
                                         <small class="text-muted"><?= htmlspecialchars($result['filename']) ?></small>
@@ -58,7 +58,7 @@
                                         <?= $result['fill_rate'] ?>%
                                     </h2>
                                     <p style="margin: 5px 0 0 0; color: #666; font-size: 18px;">
-                                        Taux de remplissage
+                                        <?php _e('taux_remplissage.subtitle_desc'); ?>
                                     </p>
                                 </div>
 
@@ -66,42 +66,42 @@
                                 <div class="progress" style="height: 30px; margin-bottom: 20px;">
                                     <div class="progress-bar progress-bar-success" role="progressbar"
                                         style="width: <?= $result['fill_rate'] ?>%; line-height: 30px; font-size: 16px; font-weight: bold;">
-                                        <?= $result['fill_rate'] ?>% rempli
+                                        <?= $result['fill_rate'] ?>% <?php _e('taux_remplissage.filled'); ?>
                                     </div>
                                     <div class="progress-bar progress-bar-default" role="progressbar"
                                         style="width: <?= $result['empty_rate'] ?>%; line-height: 30px; font-size: 16px;">
-                                        <?= $result['empty_rate'] ?>% vide
+                                        <?= $result['empty_rate'] ?>% <?php _e('taux_remplissage.empty'); ?>
                                     </div>
                                 </div>
 
                                 <!-- Détails techniques -->
                                 <div class="panel panel-default">
                                     <div class="panel-heading">
-                                        <strong><i class="fa fa-cog"></i> Détails techniques</strong>
+                                        <strong><i class="fa fa-cog"></i> <?php _e('taux_remplissage.technical_details'); ?></strong>
                                     </div>
                                     <div class="panel-body">
                                         <table class="table table-condensed" style="margin-bottom: 0;">
                                             <tr>
-                                                <td><strong>Dimensions :</strong></td>
+                                                <td><strong><?php _e('taux_remplissage.dimensions'); ?></strong></td>
                                                 <td><?= number_format($result['width']) ?> ×
                                                     <?= number_format($result['height']) ?> pixels</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Pixels totaux :</strong></td>
+                                                <td><strong><?php _e('taux_remplissage.total_pixels'); ?></strong></td>
                                                 <td><?= number_format($result['total_pixels']) ?></td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Pixels remplis :</strong></td>
+                                                <td><strong><?php _e('taux_remplissage.filled_pixels'); ?></strong></td>
                                                 <td style="color: #28a745; font-weight: bold;">
                                                     <?= number_format($result['filled_pixels']) ?></td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Pixels vides :</strong></td>
+                                                <td><strong><?php _e('taux_remplissage.empty_pixels'); ?></strong></td>
                                                 <td style="color: #6c757d;"><?= number_format($result['empty_pixels']) ?>
                                                 </td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Tolérance utilisée :</strong></td>
+                                                <td><strong><?php _e('taux_remplissage.tolerance_used'); ?></strong></td>
                                                 <td><?= $result['tolerance'] ?> / 255</td>
                                             </tr>
                                         </table>
@@ -112,7 +112,7 @@
                                 <?php if (!empty($result['top_colors'])): ?>
                                     <div class="panel panel-default">
                                         <div class="panel-heading">
-                                            <strong><i class="fa fa-palette"></i> Couleurs principales</strong>
+                                            <strong><i class="fa fa-palette"></i> <?php _e('taux_remplissage.main_colors'); ?></strong>
                                         </div>
                                         <div class="panel-body">
                                             <div style="display: flex; flex-wrap: wrap; gap: 10px;">
@@ -139,17 +139,17 @@
 
                                 <!-- Interprétation -->
                                 <div class="alert alert-info">
-                                    <strong><i class="fa fa-lightbulb-o"></i> Interprétation :</strong>
+                                    <strong><i class="fa fa-lightbulb-o"></i> <?php _e('taux_remplissage.interpretation'); ?></strong>
                                     <?php if ($result['fill_rate'] < 5): ?>
-                                        <p>Document très peu chargé. Consommation d'encre minimale.</p>
+                                        <p><?php _e('taux_remplissage.interp_very_low'); ?></p>
                                     <?php elseif ($result['fill_rate'] < 20): ?>
-                                        <p>Document peu chargé. Consommation d'encre faible.</p>
+                                        <p><?php _e('taux_remplissage.interp_low'); ?></p>
                                     <?php elseif ($result['fill_rate'] < 50): ?>
-                                        <p>Document moyennement chargé. Consommation d'encre modérée.</p>
+                                        <p><?php _e('taux_remplissage.interp_medium'); ?></p>
                                     <?php elseif ($result['fill_rate'] < 75): ?>
-                                        <p>Document bien chargé. Consommation d'encre élevée.</p>
+                                        <p><?php _e('taux_remplissage.interp_high'); ?></p>
                                     <?php else: ?>
-                                        <p>Document très chargé. Consommation d'encre très élevée.</p>
+                                        <p><?php _e('taux_remplissage.interp_very_high'); ?></p>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -175,14 +175,14 @@
                                 <div class="panel panel-info">
                                     <div class="panel-heading">
                                         <h4 class="panel-title">
-                                            <i class="fa fa-sliders"></i> Paramètres d'analyse
+                                            <i class="fa fa-sliders"></i> <?php _e('taux_remplissage.analysis_params'); ?>
                                         </h4>
                                     </div>
                                     <div class="panel-body">
                                         <div class="form-group">
                                             <label for="tolerance">
-                                                <strong>Tolérance pour le blanc :</strong>
-                                                <span class="text-muted">(0 = stricte, 255 = permissive)</span>
+                                                <strong><?php _e('taux_remplissage.tolerance_white'); ?></strong>
+                                                <span class="text-muted"><?php _e('taux_remplissage.tolerance_scale'); ?></span>
                                             </label>
                                             <div class="row">
                                                 <div class="col-md-8">
@@ -197,16 +197,14 @@
                                                 </div>
                                             </div>
                                             <p class="text-muted" style="margin-top: 10px; font-size: 12px;">
-                                                <i class="fa fa-info-circle"></i> La tolérance détermine quels pixels
-                                                sont considérés comme "blancs" (vides). Une valeur de 245 est
-                                                recommandée.
+                                                <i class="fa fa-info-circle"></i> <?php _e('taux_remplissage.tolerance_help'); ?>
                                             </p>
                                         </div>
 
                                         <div class="form-group" id="pageNumberGroup" style="display: none;">
                                             <label for="page_number">
-                                                <strong>Numéro de page à analyser :</strong>
-                                                <span class="text-muted">(pour les PDF multi-pages)</span>
+                                                <strong><?php _e('taux_remplissage.page_to_analyze'); ?></strong>
+                                                <span class="text-muted"><?php _e('taux_remplissage.multi_page_help'); ?></span>
                                             </label>
                                             <input type="number" class="form-control" name="page_number"
                                                 id="page_number" min="1" value="1" style="max-width: 200px;">
@@ -241,15 +239,15 @@
                             <div id="fileInfo" style="display: none;">
                                 <h4 style="color: #333; margin-bottom: 10px;">
                                     <i class="fa fa-check-circle" style="color: #28a745; margin-right: 10px;"></i>
-                                    Fichier sélectionné
+                                    <?php _e('taux_remplissage.file_selected'); ?>
                                 </h4>
                                 <p id="fileName" style="color: #666; margin-bottom: 15px;"></p>
                                 <button type="submit" class="btn btn-success btn-lg">
-                                    <i class="fa fa-calculator"></i> Calculer le taux de remplissage
+                                    <i class="fa fa-calculator"></i> <?php _e('taux_remplissage.calculate_btn'); ?>
                                 </button>
                                 <button type="button" class="btn btn-default btn-lg" onclick="resetForm()"
                                     style="margin-left: 10px;">
-                                    <i class="fa fa-times"></i> Annuler
+                                    <i class="fa fa-times"></i> <?php _e('taux_remplissage.cancel'); ?>
                                 </button>
                             </div>
                         </div>
@@ -282,7 +280,7 @@
             <!-- Bouton retour -->
             <div class="text-center" style="margin-top: 20px;">
                 <a href="?accueil" class="btn btn-default">
-                    <i class="fa fa-home"></i> Retour à l'accueil
+                    <i class="fa fa-home"></i> <?php _e('accueil.back_to_home'); ?>
                 </a>
             </div>
         </div>
@@ -363,7 +361,7 @@
                     fileInput.files = dt.files;
                     handleFileSelect(file);
                 } else {
-                    showAppModal({ message: 'Veuillez sélectionner un fichier PDF ou image valide (JPEG, PNG, GIF).', type: 'warning' });
+                    showAppModal({ message:  'FIXME_EMPTY_KEY' , type: 'warning' });
                 }
             }
         });
@@ -371,7 +369,7 @@
         function handleFileSelect(file) {
             const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'];
             if (!validTypes.includes(file.type)) {
-                showAppModal({ message: 'Veuillez sélectionner un fichier PDF ou image valide.', type: 'warning' });
+                showAppModal({ message:  'FIXME_EMPTY_KEY' , type: 'warning' });
                 return;
             }
 
@@ -403,7 +401,7 @@
                 return false;
             }
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analyse en cours...';
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> <?php _ejs('taux_remplissage.analyzing'); ?>';
         });
     });
 </script>

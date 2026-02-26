@@ -39,7 +39,7 @@ if (file_exists($print_modal_path)) {
 ?>
 
 <!-- Print Session Manager - Toast Notifications CSS -->
-<link href="css/toast-notifications.css" rel="stylesheet" type="text/css">
+<link href="public/css/toast-notifications.css" rel="stylesheet" type="text/css">
 
 <!-- Global Utility & Print Session Manager -->
 <script>
@@ -58,7 +58,7 @@ if (file_exists($print_modal_path)) {
     window.showAppModal = function (options, callback) {
         var isString = typeof options === 'string';
         var msg = isString ? options : options.message;
-        var title = (!isString && options.title) ? options.title : "Message";
+        var title = (!isString && options.title) ? options.title : "<?php echo __js('common.info'); ?>";
         var type = (!isString && options.type) ? options.type : "info"; // info, success, warning, danger
         var isConfirm = (!isString && options.confirm === true);
         var isPrompt = (!isString && options.prompt === true);
@@ -96,10 +96,10 @@ if (file_exists($print_modal_path)) {
         // Boutons
         if (isConfirm || isPrompt) {
             $modal.find('#app-global-modal-cancel').show();
-            $modal.find('#app-global-modal-ok').text(options.okText || (isPrompt ? "Valider" : "Confirmer"));
+            $modal.find('#app-global-modal-ok').text(options.okText || (isPrompt ? "<?php echo __js('common.submit'); ?>" : "<?php echo __js('common.confirm'); ?>"));
         } else {
             $modal.find('#app-global-modal-cancel').hide();
-            $modal.find('#app-global-modal-ok').text("OK");
+            $modal.find('#app-global-modal-ok').text("<?php echo __js('common.close'); ?>");
         }
 
         // Gestion du callback - Support onConfirm dans options OU callback en 2ème argument
@@ -150,4 +150,4 @@ if (file_exists($print_modal_path)) {
         });
     }
 </script>
-<script src="js/print-session-manager.js"></script>
+<script src="public/js/print-session-manager.js"></script>

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuration initiale - Dupli</title>
-    <link href="css/bootstrap.css" rel="stylesheet" type="text/css">
+    <link href="public/css/bootstrap.css" rel="stylesheet" type="text/css">
     <style>
         .setup-container {
             max-width: 1000px;
@@ -130,16 +130,19 @@
 
 <body>
     <div class="setup-container">
+        <div class="pull-right">
+            <?php echo generateLanguageSelector(); ?>
+        </div>
         <div class="text-center mb-4">
             <h1>🚀 <?php _e('setup.title'); ?></h1>
             <p class="lead">
-                <?= $mode === 'choice' ? 'Choisissez comment configurer votre application' : ($mode === 'upload' ? 'Importer une base de données existante' : 'Ajoutez vos machines pour commencer') ?>
+                <?= $mode === 'choice' ? __('setup.choice_subtitle') : ($mode === 'upload' ? __('setup.upload_subtitle') : __('setup.create_subtitle')) ?>
             </p>
         </div>
 
         <?php if (isset($errors) && !empty($errors)): ?>
             <div class="alert alert-danger">
-                <h5>⚠️ Erreurs détectées :</h5>
+                <h5>⚠️ <?php _e('setup.errors_detected'); ?></h5>
                 <ul class="mb-0">
                     <?php foreach ($errors as $error): ?>
                         <li><?= htmlspecialchars($error) ?></li>
@@ -150,7 +153,7 @@
 
         <?php if (isset($success)): ?>
             <div class="alert alert-success">
-                <strong>✅ Succès :</strong> <?= htmlspecialchars($success) ?>
+                <strong>✅ <?php _e('setup.success'); ?></strong> <?= htmlspecialchars($success) ?>
             </div>
         <?php endif; ?>
 
@@ -163,9 +166,9 @@
                             <div class="choice-icon">
                                 <i class="fa fa-plus-circle"></i>
                             </div>
-                            <h3>Créer mes machines</h3>
+                            <h3><?php _e('setup.create_machines'); ?></h3>
                             <p class="text-muted">
-                                Configurer manuellement vos duplicopieurs et photocopieurs
+                                <?php _e('setup.create_machines_desc'); ?>
                             </p>
                         </div>
                     </a>
@@ -176,9 +179,9 @@
                             <div class="choice-icon">
                                 <i class="fa fa-upload"></i>
                             </div>
-                            <h3>Importer une base</h3>
+                            <h3><?php _e('setup.import_database'); ?></h3>
                             <p class="text-muted">
-                                Restaurer une base de données existante depuis un fichier
+                                <?php _e('setup.import_database_desc'); ?>
                             </p>
                         </div>
                     </a>
@@ -190,34 +193,34 @@
             <div class="panel panel-primary">
                 <div class="panel-heading">
                     <h3 class="panel-title">
-                        <i class="fa fa-upload"></i> Importer une base de données
+                        <i class="fa fa-upload"></i> <?php _e('setup.import_database_title'); ?>
                     </h3>
                 </div>
                 <div class="panel-body">
                     <form action="?setup_upload" method="POST" enctype="multipart/form-data">
                         <div class="upload-zone">
                             <i class="fa fa-database" style="font-size: 64px; color: #007bff; margin-bottom: 20px;"></i>
-                            <h4>Sélectionnez votre fichier SQLite</h4>
-                            <p class="text-muted">Fichier .sqlite (max 50 MB)</p>
+                            <h4><?php _e('setup.select_sqlite_file'); ?></h4>
+                            <p class="text-muted"><?php _e('setup.sqlite_max_size'); ?></p>
                             <input type="file" name="database_file" accept=".sqlite" required class="form-control"
                                 style="margin-top: 20px;">
                         </div>
 
                         <div class="alert alert-info" style="margin-top: 20px;">
-                            <strong><i class="fa fa-info-circle"></i> Information :</strong>
+                            <strong><i class="fa fa-info-circle"></i> <?php _e('setup.info'); ?></strong>
                             <ul>
-                                <li>Le fichier doit être une base de données SQLite (.sqlite)</li>
-                                <li>La base doit contenir au moins une machine configurée</li>
-                                <li>Une sauvegarde de sécurité sera créée si une base existe déjà</li>
+                                <li><?php _e('setup.info_sqlite'); ?></li>
+                                <li><?php _e('setup.info_min_machine'); ?></li>
+                                <li><?php _e('setup.info_backup'); ?></li>
                             </ul>
                         </div>
 
                         <div class="text-center" style="margin-top: 30px;">
                             <a href="?setup&mode=choice" class="btn btn-default btn-lg">
-                                <i class="fa fa-arrow-left"></i> Retour
+                                <i class="fa fa-arrow-left"></i> <?php _e('setup.back'); ?>
                             </a>
                             <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fa fa-upload"></i> Importer la base de données
+                                <i class="fa fa-upload"></i> <?php _e('setup.import_btn'); ?>
                             </button>
                         </div>
                     </form>
@@ -228,7 +231,7 @@
             <!-- ÉCRAN DE CRÉATION DES MACHINES -->
             <div class="text-right mb-3">
                 <a href="?setup&mode=choice" class="btn btn-default">
-                    <i class="fa fa-arrow-left"></i> Retour au choix
+                    <i class="fa fa-arrow-left"></i> <?php _e('setup.back_to_choice'); ?>
                 </a>
             </div>
 
@@ -236,22 +239,21 @@
                 <!-- Configuration du mot de passe administrateur -->
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h4>🔐 Configuration du mot de passe administrateur</h4>
+                        <h4>🔐 <?php _e('setup.admin_password_config'); ?></h4>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="admin_password">Mot de passe administrateur :</label>
+                                    <label for="admin_password"><?php _e('setup.admin_password'); ?></label>
                                     <input type="password" class="form-control" id="admin_password" name="admin_password"
                                         required minlength="6">
-                                    <small class="form-text text-muted">Minimum 6 caractères. Ce mot de passe vous permettra
-                                        d'accéder à l'administration.</small>
+                                    <small class="form-text text-muted"><?php _e('setup.password_help'); ?></small>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="admin_password_confirm">Confirmer le mot de passe :</label>
+                                    <label for="admin_password_confirm"><?php _e('setup.confirm_password'); ?></label>
                                     <input type="password" class="form-control" id="admin_password_confirm"
                                         name="admin_password_confirm" required minlength="6">
                                 </div>
@@ -262,12 +264,12 @@
 
                 <!-- Imprimantes système détectées -->
                 <div id="system-printers-section" class="mb-4">
-                    <h3>🔍 Imprimantes système détectées</h3>
-                    <p class="text-muted">Sélectionnez une imprimante pour la configurer comme machine (Duplicopieur ou Photocopieur).</p>
+                    <h3>🔍 <?php _e('setup.detected_printers'); ?></h3>
+                    <p class="text-muted"><?php _e('setup.detected_printers_desc'); ?></p>
                     
                     <div id="loading-printers" class="text-center p-4">
                         <i class="fa fa-spinner fa-spin fa-2x text-primary"></i>
-                        <p>Recherche des imprimantes installées...</p>
+                        <p><?php _e('setup.searching_printers'); ?></p>
                     </div>
 
                     <div id="printers-container">
@@ -276,7 +278,7 @@
 
                     <div class="text-center mt-3">
                         <button type="button" class="btn btn-link" id="add-manual-btn">
-                            <i class="fa fa-keyboard-o"></i> Ajouter une machine manuellement
+                            <i class="fa fa-keyboard-o"></i> <?php _e('setup.add_manual'); ?>
                         </button>
                     </div>
                 </div>
@@ -284,15 +286,15 @@
                 <!-- Sélection du type de machine (Caché par défaut, affiché lors du choix d'une imprimante) -->
                 <div class="machine-type-selector" id="type-selector-section" style="display: none;">
                     <hr>
-                    <h3 id="type-selector-title">📋 Configurer l'imprimante : <span id="selected-printer-name"></span></h3>
+                    <h3 id="type-selector-title">📋 <?php _e('setup.configure_printer'); ?> <span id="selected-printer-name"></span></h3>
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" name="machine_type" id="type_duplicopieur"
                                     value="duplicopieur">
                                 <label class="form-check-label" for="type_duplicopieur">
-                                    <h5>🖨️ Duplicopieur</h5>
-                                    <small class="text-muted">Machine de reproduction A3/A4</small>
+                                    <h5>🖨️ <?php _e('setup.duplicator'); ?></h5>
+                                    <small class="text-muted"><?php _e('setup.duplicator_desc'); ?></small>
                                 </label>
                             </div>
                         </div>
@@ -301,8 +303,8 @@
                                 <input class="form-check-input" type="radio" name="machine_type" id="type_photocop_encre"
                                     value="photocop_encre">
                                 <label class="form-check-label" for="type_photocop_encre">
-                                    <h5>📷 Photocopieuse (Encre)</h5>
-                                    <small class="text-muted">Machine à encre liquide</small>
+                                    <h5>📷 <?php _e('setup.photocopier_ink'); ?></h5>
+                                    <small class="text-muted"><?php _e('setup.photocopier_ink_desc'); ?></small>
                                 </label>
                             </div>
                         </div>
@@ -311,8 +313,8 @@
                                 <input class="form-check-input" type="radio" name="machine_type" id="type_photocop_toner"
                                     value="photocop_toner">
                                 <label class="form-check-label" for="type_photocop_toner">
-                                    <h5>🖨️ Photocopieuse (Toner)</h5>
-                                    <small class="text-muted">Machine à toner</small>
+                                    <h5>🖨️ <?php _e('setup.photocopier_toner'); ?></h5>
+                                    <small class="text-muted"><?php _e('setup.photocopier_toner_desc'); ?></small>
                                 </label>
                             </div>
                         </div>
@@ -322,27 +324,27 @@
                 <!-- Formulaire de machine -->
                 <div id="machine-form" style="display: none;">
                     <div class="machine-card">
-                        <h4 id="machine-title">Configuration de la machine</h4>
+                        <h4 id="machine-title"><?php _e('setup.machine_config'); ?></h4>
 
                         <!-- Informations de base -->
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label for="machine_name">Nom de la machine :</label>
+                                    <label for="machine_name"><?php _e('setup.machine_name'); ?></label>
                                     <input type="text" class="form-control" id="machine_name" name="machine_name"
-                                        placeholder="Ex: Ricoh dx4545, ComColor, etc." required>
+                                        placeholder="<?php echo __('setup.machine_name_placeholder'); ?>" required>
                                 </div>
                             </div>
                             <div class="col-md-4" id="master-counter-field" style="display: none;">
                                 <div class="form-group">
-                                    <label for="master_counter">Compteur Master :</label>
+                                    <label for="master_counter"><?php _e('setup.master_counter'); ?></label>
                                     <input type="number" class="form-control" id="master_counter" name="master_counter"
                                         placeholder="Ex: 12345" min="0">
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <label for="passage_counter">Compteur Passage :</label>
+                                    <label for="passage_counter"><?php _e('setup.passage_counter'); ?></label>
                                     <input type="number" class="form-control" id="passage_counter" name="passage_counter"
                                         placeholder="Ex: 67890" min="0" required>
                                 </div>
@@ -351,20 +353,20 @@
 
                         <!-- Configuration des prix -->
                         <div class="price-section">
-                            <h5>💰 Configuration des prix</h5>
+                            <h5>💰 <?php _e('setup.price_config'); ?></h5>
 
                             <!-- Prix duplicopieur -->
                             <div id="duplicopieur-prices" style="display: none;">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <h6>Master :</h6>
+                                        <h6><?php _e('setup.master'); ?></h6>
                                         <div class="form-group">
-                                            <label for="prix_master_unite">Prix master à l'unité (€) :</label>
+                                            <label for="prix_master_unite"><?php _e('setup.master_unit_price'); ?></label>
                                             <input type="number" step="0.001" class="form-control" id="prix_master_unite"
                                                 name="prix_master_unite" value="0.4" required>
                                         </div>
                                         <div class="form-group">
-                                            <label for="prix_master_pack">Prix master en pack (€) :</label>
+                                            <label for="prix_master_pack"><?php _e('setup.master_pack_price'); ?></label>
                                             <input type="number" step="0.001" class="form-control" id="prix_master_pack"
                                                 name="prix_master_pack" value="70" required>
                                         </div>
@@ -373,27 +375,27 @@
 
                                 <!-- Configuration des tambours -->
                                 <hr>
-                                <h6>Configuration des tambours :</h6>
+                                <h6><?php _e('setup.drum_config'); ?></h6>
                                 <div class="form-group">
                                     <div id="tambours-container">
                                         <!-- Tambour par défaut -->
                                         <div class="tambour-item" style="margin-bottom: 10px;">
                                             <div class="row">
                                                 <div class="col-md-4">
-                                                    <label>Nom du tambour :</label>
+                                                    <label><?php _e('setup.drum_name'); ?></label>
                                                     <input type="text" class="form-control" name="tambours[]"
-                                                        placeholder="ex: tambour_noir" value="tambour_noir" required>
+                                                        placeholder="<?php echo __('setup.drum_name_placeholder'); ?>" value="tambour_noir" required>
                                                 </div>
                                                 <div class="col-md-3">
-                                                    <label>Prix unité (€) :</label>
+                                                    <label><?php _e('setup.drum_unit_price'); ?></label>
                                                     <input type="number" class="form-control" name="prix_tambour_unite[]"
-                                                        placeholder="Prix unité" step="0.001" min="0" value="0.002"
+                                                        placeholder="<?php echo __('setup.unit_price'); ?>" step="0.001" min="0" value="0.002"
                                                         required>
                                                 </div>
                                                 <div class="col-md-3">
-                                                    <label>Prix pack (€) :</label>
+                                                    <label><?php _e('setup.drum_pack_price'); ?></label>
                                                     <input type="number" class="form-control" name="prix_tambour_pack[]"
-                                                        placeholder="Prix pack" step="0.01" min="0" value="11">
+                                                        placeholder="<?php echo __('setup.pack_price'); ?>" step="0.01" min="0" value="11">
                                                 </div>
                                                 <div class="col-md-2">
                                                     <label>&nbsp;</label>
@@ -406,10 +408,9 @@
                                         </div>
                                     </div>
                                     <button type="button" class="btn btn-info btn-sm" id="add-tambour">
-                                        <i class="fa fa-plus"></i> Ajouter un tambour
+                                        <i class="fa fa-plus"></i> <?php _e('setup.add_drum'); ?>
                                     </button>
-                                    <small class="help-block">Définissez les tambours disponibles pour ce duplicopieur.
-                                        Chaque tambour peut avoir un nom personnalisé.</small>
+                                    <small class="help-block"><?php _e('setup.drum_help'); ?></small>
                                 </div>
                             </div>
 
@@ -417,27 +418,27 @@
                             <div id="photocop-encre-prices" style="display: none;">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <h6>Encre Noire :</h6>
+                                        <h6><?php _e('setup.black_ink'); ?></h6>
                                         <div class="form-group">
-                                            <label for="prix_noire_unite">Prix à l'unité (€) :</label>
+                                            <label for="prix_noire_unite"><?php _e('setup.unit_price'); ?></label>
                                             <input type="number" step="0.001" class="form-control" id="prix_noire_unite"
                                                 name="prix_noire_unite" value="0.015">
                                         </div>
                                         <div class="form-group">
-                                            <label for="prix_noire_pack">Prix en pack (€) :</label>
+                                            <label for="prix_noire_pack"><?php _e('setup.pack_price'); ?></label>
                                             <input type="number" step="0.001" class="form-control" id="prix_noire_pack"
                                                 name="prix_noire_pack" value="140">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <h6>Encre Bleue :</h6>
+                                        <h6><?php _e('setup.blue_ink'); ?></h6>
                                         <div class="form-group">
-                                            <label for="prix_bleue_unite">Prix à l'unité (€) :</label>
+                                            <label for="prix_bleue_unite"><?php _e('setup.unit_price'); ?></label>
                                             <input type="number" step="0.001" class="form-control" id="prix_bleue_unite"
                                                 name="prix_bleue_unite" value="0.005">
                                         </div>
                                         <div class="form-group">
-                                            <label for="prix_bleue_pack">Prix en pack (€) :</label>
+                                            <label for="prix_bleue_pack"><?php _e('setup.pack_price'); ?></label>
                                             <input type="number" step="0.001" class="form-control" id="prix_bleue_pack"
                                                 name="prix_bleue_pack" value="140">
                                         </div>
@@ -445,27 +446,27 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <h6>Encre Rouge :</h6>
+                                        <h6><?php _e('setup.red_ink'); ?></h6>
                                         <div class="form-group">
-                                            <label for="prix_rouge_unite">Prix à l'unité (€) :</label>
+                                            <label for="prix_rouge_unite"><?php _e('setup.unit_price'); ?></label>
                                             <input type="number" step="0.001" class="form-control" id="prix_rouge_unite"
                                                 name="prix_rouge_unite" value="0.005">
                                         </div>
                                         <div class="form-group">
-                                            <label for="prix_rouge_pack">Prix en pack (€) :</label>
+                                            <label for="prix_rouge_pack"><?php _e('setup.pack_price'); ?></label>
                                             <input type="number" step="0.001" class="form-control" id="prix_rouge_pack"
                                                 name="prix_rouge_pack" value="140">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <h6>Encre Jaune :</h6>
+                                        <h6><?php _e('setup.yellow_ink'); ?></h6>
                                         <div class="form-group">
-                                            <label for="prix_jaune_unite">Prix à l'unité (€) :</label>
+                                            <label for="prix_jaune_unite"><?php _e('setup.unit_price'); ?></label>
                                             <input type="number" step="0.001" class="form-control" id="prix_jaune_unite"
                                                 name="prix_jaune_unite" value="0.005">
                                         </div>
                                         <div class="form-group">
-                                            <label for="prix_jaune_pack">Prix en pack (€) :</label>
+                                            <label for="prix_jaune_pack"><?php _e('setup.pack_price'); ?></label>
                                             <input type="number" step="0.001" class="form-control" id="prix_jaune_pack"
                                                 name="prix_jaune_pack" value="140">
                                         </div>
@@ -475,30 +476,30 @@
 
                             <!-- Prix photocopieuse toner -->
                             <div id="photocop-toner-prices" style="display: none;">
-                                <h6>Toners :</h6>
+                                <h6><?php _e('setup.toners'); ?></h6>
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <h6>Toner Noir :</h6>
+                                        <h6><?php _e('setup.black_toner'); ?></h6>
                                         <div class="form-group">
-                                            <label for="toner_noir_prix">Prix cartouche (€) :</label>
+                                            <label for="toner_noir_prix"><?php _e('setup.cartridge_price'); ?></label>
                                             <input type="number" step="0.01" class="form-control" id="toner_noir_prix"
                                                 name="toner_noir_prix" value="80">
                                         </div>
                                         <div class="form-group">
-                                            <label for="toner_noir_prix_copie">Prix par page (€) :</label>
+                                            <label for="toner_noir_prix_copie"><?php _e('setup.price_per_page'); ?></label>
                                             <input type="number" step="0.00001" class="form-control"
                                                 id="toner_noir_prix_copie" name="toner_noir_prix_copie" value="0.00348">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <h6>Toner Cyan :</h6>
+                                        <h6><?php _e('setup.cyan_toner'); ?></h6>
                                         <div class="form-group">
-                                            <label for="toner_cyan_prix">Prix cartouche (€) :</label>
+                                            <label for="toner_cyan_prix"><?php _e('setup.cartridge_price'); ?></label>
                                             <input type="number" step="0.01" class="form-control" id="toner_cyan_prix"
                                                 name="toner_cyan_prix" value="80">
                                         </div>
                                         <div class="form-group">
-                                            <label for="toner_cyan_prix_copie">Prix par page (€) :</label>
+                                            <label for="toner_cyan_prix_copie"><?php _e('setup.price_per_page'); ?></label>
                                             <input type="number" step="0.00001" class="form-control"
                                                 id="toner_cyan_prix_copie" name="toner_cyan_prix_copie" value="0.00444">
                                         </div>
@@ -506,28 +507,28 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <h6>Toner Magenta :</h6>
+                                        <h6><?php _e('setup.magenta_toner'); ?></h6>
                                         <div class="form-group">
-                                            <label for="toner_magenta_prix">Prix cartouche (€) :</label>
+                                            <label for="toner_magenta_prix"><?php _e('setup.cartridge_price'); ?></label>
                                             <input type="number" step="0.01" class="form-control" id="toner_magenta_prix"
                                                 name="toner_magenta_prix" value="80">
                                         </div>
                                         <div class="form-group">
-                                            <label for="toner_magenta_prix_copie">Prix par page (€) :</label>
+                                            <label for="toner_magenta_prix_copie"><?php _e('setup.price_per_page'); ?></label>
                                             <input type="number" step="0.00001" class="form-control"
                                                 id="toner_magenta_prix_copie" name="toner_magenta_prix_copie"
                                                 value="0.00444">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <h6>Toner Jaune :</h6>
+                                        <h6><?php _e('setup.yellow_toner'); ?></h6>
                                         <div class="form-group">
-                                            <label for="toner_jaune_prix">Prix cartouche (€) :</label>
+                                            <label for="toner_jaune_prix"><?php _e('setup.cartridge_price'); ?></label>
                                             <input type="number" step="0.01" class="form-control" id="toner_jaune_prix"
                                                 name="toner_jaune_prix" value="80">
                                         </div>
                                         <div class="form-group">
-                                            <label for="toner_jaune_prix_copie">Prix par page (€) :</label>
+                                            <label for="toner_jaune_prix_copie"><?php _e('setup.price_per_page'); ?></label>
                                             <input type="number" step="0.00001" class="form-control"
                                                 id="toner_jaune_prix_copie" name="toner_jaune_prix_copie" value="0.00444">
                                         </div>
@@ -535,30 +536,30 @@
                                 </div>
 
                                 <hr>
-                                <h6>Tambour et unité de développement :</h6>
+                                <h6><?php _e('setup.drum_dev_unit'); ?></h6>
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <h6>Tambour :</h6>
+                                        <h6><?php _e('setup.drum'); ?></h6>
                                         <div class="form-group">
-                                            <label for="tambour_prix">Prix (€) :</label>
+                                            <label for="tambour_prix"><?php _e('setup.unit_price'); ?></label>
                                             <input type="number" step="0.01" class="form-control" id="tambour_prix"
                                                 name="tambour_prix" value="200">
                                         </div>
                                         <div class="form-group">
-                                            <label for="tambour_prix_copie">Prix par copie (€) :</label>
+                                            <label for="tambour_prix_copie"><?php _e('setup.price_per_page'); ?></label>
                                             <input type="number" step="0.00001" class="form-control" id="tambour_prix_copie"
                                                 name="tambour_prix_copie" value="0.00167">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <h6>Unité de développement :</h6>
+                                        <h6><?php _e('setup.dev_unit'); ?></h6>
                                         <div class="form-group">
-                                            <label for="dev_prix">Prix (€) :</label>
+                                            <label for="dev_prix"><?php _e('setup.unit_price'); ?></label>
                                             <input type="number" step="0.01" class="form-control" id="dev_prix"
                                                 name="dev_prix" value="300">
                                         </div>
                                         <div class="form-group">
-                                            <label for="dev_prix_copie">Prix par copie (€) :</label>
+                                            <label for="dev_prix_copie"><?php _e('setup.price_per_page'); ?></label>
                                             <input type="number" step="0.00001" class="form-control" id="dev_prix_copie"
                                                 name="dev_prix_copie" value="0.00250">
                                         </div>
@@ -570,7 +571,7 @@
                         <!-- Boutons d'action -->
                         <div class="text-center mt-3">
                             <button type="button" class="btn btn-success" id="add-machine-btn">
-                                ➕ Ajouter cette machine
+                                ➕ <?php _e('setup.add_machine_btn'); ?>
                             </button>
                         </div>
                     </div>
@@ -578,7 +579,7 @@
 
                 <!-- Liste des machines ajoutées -->
                 <div id="machines-list" style="display: none;">
-                    <h3>📋 Machines configurées</h3>
+                    <h3>📋 <?php _e('setup.configured_machines'); ?></h3>
                     <div id="machines-container">
                         <!-- Les machines ajoutées apparaîtront ici -->
                     </div>
@@ -587,16 +588,16 @@
                 <!-- Configuration du papier -->
                 <div class="card mt-4">
                     <div class="card-header">
-                        <h4>📄 Configuration du prix du papier</h4>
+                        <h4>📄 <?php _e('setup.paper_config'); ?></h4>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="prix_papier_A3">Prix feuille A3 (€) :</label>
+                                    <label for="prix_papier_A3"><?php _e('setup.paper_a3_price'); ?></label>
                                     <input type="number" step="0.001" class="form-control" id="prix_papier_A3"
                                         name="prix_papier_A3" value="0.02" required>
-                                    <small class="form-text text-muted">Le prix A4 sera automatiquement la moitié</small>
+                                    <small class="form-text text-muted"><?php _e('setup.paper_a4_help'); ?></small>
                                 </div>
                             </div>
                         </div>
@@ -605,21 +606,21 @@
 
                 <div class="text-center mt-4">
                     <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" disabled>
-                        ✅ Terminer la configuration
+                        ✅ <?php _e('setup.finish_setup'); ?>
                     </button>
                 </div>
             </form>
 
             <div class="text-center mt-4">
                 <small class="text-muted">
-                    Vous pourrez modifier ces informations plus tard dans l'administration
+                    <?php _e('setup.modify_later_help'); ?>
                 </small>
             </div>
 
         <?php endif; // Fin du mode create ?>
 
-        <script src="js/jquery.min.js"></script>
-        <script src="js/bootstrap.min.js"></script>
+        <script src="public/js/jquery.min.js"></script>
+        <script src="public/js/bootstrap.min.js"></script>
 
         <?php if ($mode === 'create'): // Script uniquement pour le mode create ?>
             <script>
@@ -641,11 +642,11 @@
                                     displaySystemPrinters();
                                 } else {
                                     console.error('Format réponse imprimantes invalide:', response);
-                                    $('#loading-printers').html('<div class="alert alert-warning">Format de réponse des imprimantes invalide.</div>');
+                                    $('#loading-printers').html(`<div class="alert alert-warning">${ "<?php echo __js('common.error'); ?>" } format réponse imprimantes invalide.</div>`);
                                 }
                             } catch (err) {
                                 console.error('Erreur récupération imprimantes:', err);
-                                $('#loading-printers').html('<div class="alert alert-warning">Impossible de récupérer les imprimantes système.</div>');
+                                $('#loading-printers').html(`<div class="alert alert-warning">Impossible de récupérer les imprimantes système.</div>`);
                             }
                         } else {
                             $('#loading-printers').html('<div class="alert alert-info">API Electron non disponible (Mode Web).</div>');
@@ -667,13 +668,13 @@
                                             <div class="printer-icon"><i class="fa fa-print"></i></div>
                                             <div>
                                                 <div class="printer-name">${printer.name}</div>
-                                                <div class="printer-status">${printer.description || 'Imprimante système'}</div>
-                                                ${isMapped ? '<span class="machine-badge badge-dupli"><i class="fa fa-check"></i> Déjà configurée</span>' : ''}
+                                                <div class="printer-status">${printer.description ||  "<?php echo __js('setup.configure'); ?>" }</div>
+                                                ${isMapped ? `<span class="machine-badge badge-dupli"><i class="fa fa-check"></i> ${ "<?php echo __js('setup.already_configured'); ?>" }</span>` : ''}
                                             </div>
                                         </div>
                                         <div>
                                             <button type="button" class="btn btn-primary btn-sm" onclick="selectPrinter('${printer.name}')">
-                                                ${isMapped ? 'Re-configurer' : 'Configurer'}
+                                                ${isMapped ?  "<?php echo __js('setup.reconfigure'); ?>"  :  "<?php echo __js('setup.configure'); ?>" }
                                             </button>
                                         </div>
                                     </div>
@@ -702,7 +703,7 @@
 
                     $('#add-manual-btn').click(function() {
                         selectedPrinter = null;
-                        $('#selected-printer-name').text('Manuel');
+                        $('#selected-printer-name').text( "<?php echo __js('setup.manual'); ?>" );
                         $('#type-selector-section').fadeIn();
                         $('#machine-form').hide();
                         $('input[name="machine_type"]').prop('checked', false);
@@ -720,17 +721,17 @@
                         $('#duplicopieur-prices, #photocop-encre-prices, #photocop-toner-prices').hide();
 
                         if (type === 'duplicopieur') {
-                            $('#machine-title').text('Configuration du duplicopieur');
+                            $('#machine-title').text( "<?php echo __js('setup.duplicator_config_title'); ?>" );
                             $('#duplicopieur-prices').show();
                             $('#master-counter-field').show();
                             $('#master_counter').prop('required', true);
                         } else if (type === 'photocop_encre') {
-                            $('#machine-title').text('Configuration de la photocopieuse (Encre)');
+                            $('#machine-title').text( "<?php echo __js('setup.photocopier_ink_config_title'); ?>" );
                             $('#photocop-encre-prices').show();
                             $('#master-counter-field').hide();
                             $('#master_counter').prop('required', false);
                         } else if (type === 'photocop_toner') {
-                            $('#machine-title').text('Configuration de la photocopieuse (Toner)');
+                            $('#machine-title').text( "<?php echo __js('setup.photocopier_toner_config_title'); ?>" );
                             $('#photocop-toner-prices').show();
                             $('#master-counter-field').hide();
                             $('#master_counter').prop('required', false);
@@ -751,11 +752,11 @@
 
                         if (!name || !passageCounter) {
                             let missing = [];
-                            if (!name) missing.push("Nom de la machine");
-                            if (!passageCounter) missing.push("Compteur Passage");
+                            if (!name) missing.push( "<?php echo __js('setup.machine_name'); ?>" );
+                            if (!passageCounter) missing.push( "<?php echo __js('setup.passage_counter'); ?>" );
                             showAppModal({ 
-                                title: 'Champs manquants',
-                                message: 'Veuillez remplir les champs suivants :<br>• ' + missing.join('<br>• '), 
+                                title:  "<?php echo __js('setup.missing_fields'); ?>" ,
+                                message: "<?php _ejs('setup.missing_fields_msg'); ?><br>• " + missing.join('<br>• '), 
                                 type: 'warning' 
                             });
                             return;
@@ -763,8 +764,8 @@
 
                         if (type === 'duplicopieur' && !masterCounter) {
                             showAppModal({ 
-                                title: 'Champ manquant',
-                                message: 'Veuillez renseigner le compteur master pour le duplicopieur', 
+                                title:  "<?php echo __js('setup.missing_fields'); ?>" ,
+                                message:  "<?php echo __js('setup.missing_master_msg'); ?>" , 
                                 type: 'warning' 
                             });
                             return;
@@ -856,10 +857,10 @@
                                     <div>
                                         <strong>${typeLabel}:</strong> ${machine.name} 
                                         ${machine.systemPrinterName ? `<br><small class="text-muted"><i class="fa fa-link"></i> Mappée sur : ${machine.systemPrinterName}</small>` : ''}
-                                        <br><small class="text-muted">Compteur: ${machine.passageCounter}</small>
+                                        <br><small class="text-muted">${ "<?php echo __js('setup.passage_counter'); ?>" } ${machine.passageCounter}</small>
                                     </div>
                                     <button type="button" class="btn btn-sm btn-danger" onclick="removeMachine(${machine.id})">
-                                        ❌ Supprimer
+                                        ❌ ${ "<?php echo __js('setup.remove'); ?>" }
                                     </button>
                                 </div>
                             `;
@@ -870,9 +871,9 @@
 
                     function getTypeLabel(type) {
                         const labels = {
-                            'duplicopieur': '🖨️ Duplicopieur',
-                            'photocop_encre': '📷 Photocopieuse (Encre)',
-                            'photocop_toner': '🖨️ Photocopieuse (Toner)'
+                            'duplicopieur':  "<?php echo __js('setup.duplicator'); ?>" ,
+                            'photocop_encre':  "<?php echo __js('setup.photocopier_ink'); ?>" ,
+                            'photocop_toner':  "<?php echo __js('setup.photocopier_toner'); ?>" 
                         };
                         return labels[type] || type;
                     }
@@ -912,8 +913,8 @@
                         if (machines.length === 0) {
                             e.preventDefault();
                             showAppModal({ 
-                                title: 'Aucune machine',
-                                message: 'Veuillez ajouter au moins une machine avant de terminer.', 
+                                title:  "<?php echo __js('setup.no_machine_title'); ?>" ,
+                                message:  "<?php echo __js('setup.no_machine_msg'); ?>" , 
                                 type: 'warning' 
                             });
                             return;
@@ -949,16 +950,16 @@
                             <div class="tambour-item" style="margin-bottom: 10px;">
                                 <div class="row">
                                     <div class="col-md-4">
-                                        <label>Nom du tambour :</label>
-                                        <input type="text" class="form-control" name="tambours[]" placeholder="ex: tambour_bleu" required>
+                                        <label><?php echo __js('setup.drum_name'); ?></label>
+                                        <input type="text" class="form-control" name="tambours[]" placeholder="<?php echo __js('setup.drum_name_placeholder'); ?>" required>
                                     </div>
                                     <div class="col-md-3">
-                                        <label>Prix unité (€) :</label>
-                                        <input type="number" class="form-control" name="prix_tambour_unite[]" placeholder="Prix unité" step="0.001" min="0" required>
+                                        <label><?php echo __js('setup.unit_price'); ?></label>
+                                        <input type="number" class="form-control" name="prix_tambour_unite[]" placeholder="<?php echo __js('setup.unit_price'); ?>" step="0.001" min="0" required>
                                     </div>
                                     <div class="col-md-3">
-                                        <label>Prix pack (€) :</label>
-                                        <input type="number" class="form-control" name="prix_tambour_pack[]" placeholder="Prix pack" step="0.01" min="0" value="11">
+                                        <label><?php echo __js('setup.pack_price'); ?></label>
+                                        <input type="number" class="form-control" name="prix_tambour_pack[]" placeholder="<?php echo __js('setup.pack_price'); ?>" step="0.01" min="0" value="11">
                                     </div>
                                     <div class="col-md-2">
                                         <label>&nbsp;</label>
