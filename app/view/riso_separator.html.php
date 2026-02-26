@@ -1000,7 +1000,7 @@
 
         // Reset pipette
         togglePipette();
-        showAppModal({ message: '<?php echo __('riso_separator.layer_created'); ?>', type: 'success' });
+        showAppModal({ message: '<?php echo __js('riso_separator.layer_created'); ?>', type: 'success' });
     }
 
     function createWithoutColorLayer(imageData, targetR, targetG, targetB, tolerance) {
@@ -1049,12 +1049,12 @@
                 <div class="row">
                     <div class="col-md-1" style="background: ${colorHex}; height: 50px;"></div>
                     <div class="col-md-7">
-                        <strong><?php _e('riso_separator.selection'); ?> ${index + 1}</strong><br>
-                        <?php _e('riso_separator.tolerance'); ?>: ${layer.tolerance}
+                        <strong><?php _ejs('riso_separator.selection'); ?> ${index + 1}</strong><br>
+                        <?php _ejs('riso_separator.tolerance'); ?>: ${layer.tolerance}
                     </div>
                     <div class="col-md-4 text-right">
-                         <button class="btn btn-sm btn-success" onclick="downloadIsolatedLayer(${layer.id}, 'with')"><i class="fa fa-download"></i> <?php _e('riso_separator.with'); ?></button>
-                         <button class="btn btn-sm btn-default" onclick="downloadIsolatedLayer(${layer.id}, 'without')"><i class="fa fa-download"></i> <?php _e('riso_separator.without'); ?></button>
+                         <button class="btn btn-sm btn-success" onclick="downloadIsolatedLayer(${layer.id}, 'with')"><i class="fa fa-download"></i> <?php _ejs('riso_separator.with'); ?></button>
+                         <button class="btn btn-sm btn-default" onclick="downloadIsolatedLayer(${layer.id}, 'without')"><i class="fa fa-download"></i> <?php _ejs('riso_separator.without'); ?></button>
                     </div>
                 </div>
             </div>
@@ -1168,7 +1168,7 @@
         // Pour twoDarkCanvas le prefix 'two' + 'Dark' = 'twoDark' OK.
 
         updatePreview();
-        showAppModal({ message: '<?php echo __('riso_separator.posterize_applied'); ?>', type: 'success' });
+        showAppModal({ message: '<?php echo __js('riso_separator.posterize_applied'); ?>', type: 'success' });
     }
 
     function applyHalftoneEffect() {
@@ -1199,7 +1199,7 @@
         displayChannel('twoDarkCanvas', channels.two.dark, originalImage.width, originalImage.height);
 
         updatePreview();
-        showAppModal({ message: '<?php echo __('riso_separator.halftone_applied'); ?>', type: 'success' });
+        showAppModal({ message: '<?php echo __js('riso_separator.halftone_applied'); ?>', type: 'success' });
     }
 
     function resetSeparator() {

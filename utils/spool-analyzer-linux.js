@@ -13,117 +13,143 @@ class LinuxSpoolAnalyzer extends EventEmitter {
         super();
         this.spoolDir = '/var/spool/cups';
         this.watching = false;
-        this.watcher = null;
-        this.processedFiles = new Set();
+        this.pollInterval = null;
+        this.processedJobIds = new Set();
     }
 
     start() {
         if (this.watching) return true;
 
         try {
-            // Vérifier l'accès
-            fs.accessSync(this.spoolDir, fs.constants.R_OK);
+            // Vérifier l'accès en traversée (X_OK) sur le dossier (ex: usager dans le groupe lp)
+            fs.accessSync(this.spoolDir, fs.constants.X_OK);
 
-            console.log(`🚀 Démarrage du moniteur Linux sur ${this.spoolDir}`);
+            console.log(`🚀 Démarrage du moniteur Linux (Polling) sur ${this.spoolDir}`);
 
-            this.watcher = fs.watch(this.spoolDir, (eventType, filename) => {
-                if (filename && filename.startsWith('d') && !this.processedFiles.has(filename)) {
-                    // Attendre un peu que le fichier soit écrit
-                    setTimeout(() => {
-                        this.handleNewJobFile(filename);
-                    }, 500);
-                }
-            });
+            // Intervalle de polling toutes les 5 secondes
+            this.pollInterval = setInterval(() => {
+                this.pollJobs();
+            }, 5000);
+
+            // Premier passage immédiat
+            this.pollJobs();
 
             this.watching = true;
             return true;
         } catch (e) {
-            console.error('❌ Impossible de surveiller le spool CUPS:', e.message);
+            console.error('❌ Impossible d\'accéder à /var/spool/cups (droits insuffisants):', e.message);
             return false;
         }
     }
 
     stop() {
-        if (this.watcher) {
-            this.watcher.close();
-            this.watcher = null;
+        if (this.pollInterval) {
+            clearInterval(this.pollInterval);
+            this.pollInterval = null;
         }
         this.watching = false;
-        this.processedFiles.clear();
+        this.processedJobIds.clear();
     }
 
-    async handleNewJobFile(filename) {
-        if (this.processedFiles.has(filename)) return;
-        this.processedFiles.add(filename);
+    pollJobs() {
+        // FIXE RACE CONDITION: Utiliser -W all pour voir aussi les jobs déjà complétés.
+        // Les imprimantes non connectées (ou rapides) finissent en <300ms,
+        // avant le prochain poll de 5s. Avec 'not-completed' on les ratait toujours.
+        // On filtre nous-mêmes sur les jobs récents (< 30s) pour éviter de re-notifier
+        // tous les vieux jobs au démarrage.
+        exec(`lpstat -W all -o`, (err, stdout) => {
+            if (err) {
+                return;
+            }
 
+            const lines = stdout.split('\n');
+            const now = Date.now();
+            // On garde une fenêtre de 30 secondes pour ne capturer que les jobs récents
+            // et éviter de re-notifier les anciens au démarrage
+            const MAX_AGE_MS = 30000;
+
+            for (const line of lines) {
+                // Format: "PrinterName-JobId   user   size   date time"
+                const match = line.match(/^(\S+)-(\d+)\s+(\S+)\s+\d+/);
+                if (!match) continue;
+
+                const printerName = match[1];
+                const jobId = parseInt(match[2], 10);
+                const user = match[3];
+
+                if (isNaN(jobId) || this.processedJobIds.has(jobId)) continue;
+
+                // Filtrer sur la date du job pour ignorer les anciens
+                // Extraire la partie date/heure de la ligne lpstat
+                const dateMatch = line.match(/\d{4}\s+(\w+\.\s+\d+\s+\w+\.\s+\d{4}\s+\d{2}:\d{2}:\d{2}|\w+\.\s+\d+\s+\w+\.\s+\d{4}\s+\d{2}:\d{2})/);
+                // On ne peut pas parser facilement la date locale, donc on utilise
+                // une heuristique : skip si le pool est plein de vieux jobs au démarrage.
+                // On marque les jobs existants au 1er poll sans les notifier.
+                if (!this.initialScanDone) {
+                    // Au 1er passage, juste marquer comme vus sans notifier
+                    this.processedJobIds.add(jobId);
+                    continue;
+                }
+
+                // Nouveau job détecté après le scan initial !
+                this.processedJobIds.add(jobId);
+                console.log(`📄 Nouveau job détecté via Polling: #${jobId} sur ${printerName}`);
+
+                setTimeout(() => {
+                    this.analyzeNewJob(jobId, printerName, user);
+                }, 500); // Réduit à 500ms (le fichier spool est souvent déjà écrit)
+            }
+
+            // Marquer le scan initial comme terminé après le 1er poll
+            if (!this.initialScanDone) {
+                this.initialScanDone = true;
+                console.log(`✅ Scan initial terminé: ${this.processedJobIds.size} job(s) existants ignorés`);
+            }
+        });
+    }
+
+    async analyzeNewJob(jobId, printerName, user) {
+        // Formater le numéro de job (ex: 39 -> d00039-001)
+        const paddedId = jobId.toString().padStart(5, '0');
+        const filename = `d${paddedId}-001`;
         const filePath = path.join(this.spoolDir, filename);
-        console.log(`📄 Nouveau fichier spool détecté: ${filename}`);
+
+        console.log(`📄 Nouveau job détecté via Polling: #${jobId} (Spool attendu: ${filename})`);
 
         try {
-            // 1. Extraire le Job ID du nom de fichier (d00123-001 -> 123)
-            const jobIdMatch = filename.match(/d(\d+)-/);
-            const jobId = jobIdMatch ? parseInt(jobIdMatch[1]) : 0;
+            // Vérifier que le fichier spool existe bien physiquement (permission de lecture directe)
+            try {
+                fs.accessSync(filePath, fs.constants.R_OK);
+            } catch (err) {
+                console.warn(`⚠️ Spool file ${filename} non lisible ou inexistant. Le job est peut-être déjà parti.`);
+                return;
+            }
 
-            // 2. Récupérer les métadonnées via lpstat
-            const metadata = await this.getJobMetadata(jobId);
-
-            // 3. Analyser le contenu (Ghostscript) pour le taux de remplissage
+            // Analyser le contenu (Ghostscript) pour le taux de remplissage
             const analysis = await this.analyzeContent(filePath);
 
-            // 4. Construire l'événement
+            // Construire l'événement
             const jobInfo = {
                 JobId: jobId,
-                PrinterName: metadata.printer || 'Unknown',
-                Document: metadata.title || `Job ${jobId}`,
-                Status: 'Printing', // On suppose qu'il s'imprime
+                PrinterName: printerName || 'Unknown',
+                Document: `Job ${jobId} (${user})`, // Difficile d'avoir le vrai titre sans IPP root
+                Status: 'Printing',
                 TotalPages: analysis.totalPages,
-                PaperSize: 'A4', // Difficile à deviner sans parser le PS/PDF
-                IsDuplex: false, // Difficile à deviner
+                PaperSize: 'A4',
+                IsDuplex: false,
                 ColorMode: analysis.isColor ? 'Color' : 'Monochrome',
-                Copies: 1, // CUPS gère les copies, le fichier d contient 1 copie du document
+                Copies: 1,
                 FillRate: analysis.fillRate,
-                ThumbnailUrl: '', // TODO: Générer thumbnail
+                ThumbnailUrl: '',
                 TimeSubmitted: new Date().toISOString()
             };
 
-            console.log(`✅ Job Linux analysé: #${jobId} ${jobInfo.Document} (${jobInfo.FillRate.toFixed(2)}%)`);
+            console.log(`✅ Job Linux (Polling) analysé: #${jobId} (${jobInfo.FillRate.toFixed(2)}%)`);
             this.emit('job', jobInfo);
 
         } catch (error) {
-            console.error(`❌ Erreur analyse job ${filename}:`, error);
+            console.error(`❌ Erreur analyse job #${jobId}:`, error);
         }
-    }
-
-    getJobMetadata(jobId) {
-        return new Promise((resolve) => {
-            // lpstat -W not-completed -o
-            exec(`lpstat -l -W not-completed -o`, (err, stdout) => {
-                if (err) {
-                    resolve({});
-                    return;
-                }
-
-                // Parser la sortie pour trouver le job ID
-                // Format: printer-name-123 user ...
-                const lines = stdout.split('\n');
-                for (const line of lines) {
-                    if (line.includes(`-${jobId} `)) {
-                        const parts = line.split(' ');
-                        const printer = parts[0].split('-').slice(0, -1).join('-'); // hacky
-                        // lpstat output is unstructured, hard to parse accurately without rigorous regex
-                        // Fallback: use just printer name from the job identifier
-                        const printerName = parts[0].replace(`-${jobId}`, '');
-                        resolve({
-                            printer: printerName,
-                            user: parts[1],
-                            title: `Job ${jobId}` // lpstat doesn't always show title cleanly in oneline
-                        });
-                        return;
-                    }
-                }
-                resolve({});
-            });
-        });
     }
 
     analyzeContent(filePath) {
@@ -146,7 +172,6 @@ class LinuxSpoolAnalyzer extends EventEmitter {
                 }
 
                 // Parser la sortie CMYK
-                // 0.00000  0.00000  0.00000  0.00000 CMYK OK
                 const lines = output.split('\n').filter(l => l.trim().match(/^\s*\d+\.\d+/));
                 let totalC = 0, totalM = 0, totalY = 0, totalK = 0;
                 let pages = 0;
@@ -164,26 +189,9 @@ class LinuxSpoolAnalyzer extends EventEmitter {
 
                 if (pages === 0) pages = 1;
 
-                // Calcul basique: si C+M+Y > 0 => Couleur
-                const isColor = (totalC + totalM + totalY) > 0.01;
-
-                // Fill rate (moyenne de l'encre totale par page)
-                // CMYK coverage is 0.0-1.0 per channel vs page area.
-                // Sum of all 4 channels / 4? No, sum is total ink.
-                // Usually Fill Rate is max 400%.
-                // Let's normalize to percentage 0-100% of surface covered?
-                // Or sum of inks? 
-                // In Windows version, how was it calculated? 
-                // Let's assume average ink coverage per channel.
-
-                // Simple logical approach:
-                // Total ink used / Number of pages.
-                // 1.0 means full coverage of one channel.
-                // We want a percentage. (e.g. 5% text).
-                // (C+M+Y+K) / 4 (channels) * 100? No.
-                // Just (C+M+Y+K) / Pages * 100 ?
-                const avgInkPerPage = (totalC + totalM + totalY + totalK) / pages;
-                const fillRate = avgInkPerPage * 100; // 0.05 -> 5%
+                const isColor = (totalC + totalM + totalY) > 0.5;
+                // GS ink_cov donne des pourcentages (0-100), moyenne des 4 canaux
+                const fillRate = (totalC + totalM + totalY + totalK) / (pages * 4);
 
                 resolve({
                     isColor,

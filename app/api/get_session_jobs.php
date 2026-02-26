@@ -20,21 +20,23 @@ try {
     // Charger jobs photocop de cette session
     $stmt1 = $db->prepare("
         SELECT 
-            id,
+            photocop.id,
             'photocop' as table_source,
-            marque as printerName,
-            document_name as document,
-            thumbnail_url,
-            (nb_f * (CASE WHEN rv = 'oui' THEN 2 ELSE 1 END)) as pages,
-            COALESCE(nb_exemplaires, 1) as copies,
-            prix,
+            pj.job_id,
+            photocop.marque as printerName,
+            photocop.document_name as document,
+            photocop.thumbnail_url,
+            (photocop.nb_f * (CASE WHEN photocop.rv = 'oui' THEN 2 ELSE 1 END)) as pages,
+            COALESCE(photocop.nb_exemplaires, 1) as copies,
+            photocop.prix,
             0 as paper_cost,
             0 as ink_cost,
-            paye as papierPaye,
-            date
+            photocop.paye as papierPaye,
+            photocop.date
         FROM photocop
-        WHERE session_id = ?
-        ORDER BY date DESC
+        LEFT JOIN print_jobs pj ON pj.session_id = photocop.session_id AND pj.machine_name = photocop.marque
+        WHERE photocop.session_id = ?
+        ORDER BY photocop.date DESC
     ");
     $stmt1->execute([$session_id]);
     $photocop_jobs = $stmt1->fetchAll(PDO::FETCH_ASSOC);
@@ -42,21 +44,23 @@ try {
     // Charger jobs dupli de cette session
     $stmt2 = $db->prepare("
         SELECT 
-            id,
+            dupli.id,
             'dupli' as table_source,
-            nom_machine as printerName,
-            document_name as document,
-            thumbnail_url,
-            (CAST(passage_ap AS INTEGER) - CAST(passage_av AS INTEGER)) as pages,
-            COALESCE(nb_exemplaires, 1) as copies,
-            prix,
+            pj.job_id,
+            dupli.nom_machine as printerName,
+            dupli.document_name as document,
+            dupli.thumbnail_url,
+            (CAST(dupli.passage_ap AS INTEGER) - CAST(dupli.passage_av AS INTEGER)) as pages,
+            COALESCE(dupli.nb_exemplaires, 1) as copies,
+            dupli.prix,
             0 as paper_cost,
             0 as ink_cost,
-            paye as papierPaye,
-            date
+            dupli.paye as papierPaye,
+            dupli.date
         FROM dupli
-        WHERE session_id = ?
-        ORDER BY date DESC
+        LEFT JOIN print_jobs pj ON pj.session_id = dupli.session_id AND pj.machine_name = dupli.nom_machine
+        WHERE dupli.session_id = ?
+        ORDER BY dupli.date DESC
     ");
     $stmt2->execute([$session_id]);
     $dupli_jobs = $stmt2->fetchAll(PDO::FETCH_ASSOC);
@@ -66,6 +70,7 @@ try {
         SELECT 
             id,
             'print_jobs' as table_source,
+            job_id,
             printer_name as printerName,
             document,
             thumbnail_url,

@@ -485,7 +485,7 @@
                 // Pré-remplissage si fichier bibliothèque
                 fileUploadArea.classList.add('file-selected');
                 uploadText.innerHTML = '<i class="fa fa-file-pdf-o"></i> ' + <?= json_encode($from_lib_file['filename']) ?>;
-                uploadSubtext.textContent =  "<?php echo __('common.file_selected'); ?>" ;
+                uploadSubtext.textContent =  "<?php echo __js('common.file_selected'); ?>" ;
                 document.getElementById('pdf').removeAttribute('required');
             <?php endif; ?>
 
@@ -498,7 +498,7 @@
                     const fileName = this.files[0].name;
                     fileUploadArea.classList.add('file-selected');
                     uploadText.innerHTML = '<i class="fa fa-file-pdf-o"></i> ' + fileName;
-                    uploadSubtext.textContent =  "<?php echo __('common.file_selected'); ?>" ;
+                    uploadSubtext.textContent =  "<?php echo __js('common.file_selected'); ?>" ;
                 }
             });
 
@@ -523,9 +523,9 @@
                         fileInput.files = files;
                         fileUploadArea.classList.add('file-selected');
                         uploadText.innerHTML = '<i class="fa fa-file-pdf-o"></i> ' + file.name;
-                        uploadSubtext.textContent =  "<?php echo __('common.file_selected'); ?>" ;
+                        uploadSubtext.textContent =  "<?php echo __js('common.file_selected'); ?>" ;
                     } else {
-                        showAppModal({ message:  "<?php echo __('imposition.select_pdf_error'); ?>" , type: 'warning' });
+                        showAppModal({ message:  "<?php echo __js('imposition.select_pdf_error'); ?>" , type: 'warning' });
                     }
                 }
             });

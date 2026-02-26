@@ -98,7 +98,7 @@
               ['clean']
           ]
       },
-      placeholder:  "<?php echo __('admin_stats.placeholder'); ?>" 
+      placeholder:  "<?php echo __js('admin_stats.placeholder'); ?>" 
   });
   
   // Mettre à jour le champ caché avant soumission

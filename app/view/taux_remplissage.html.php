@@ -401,7 +401,7 @@
                 return false;
             }
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> <?php _e('taux_remplissage.analyzing'); ?>';
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> <?php _ejs('taux_remplissage.analyzing'); ?>';
         });
     });
 </script>

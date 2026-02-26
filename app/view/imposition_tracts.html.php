@@ -541,12 +541,12 @@ ob_start();
                             detectedFormat = data.format;
                             pageCount = data.page_count;
 
-                            pageCountEl.textContent = `${data.page_count} <?php _e('imposition_tracts.pages_detected'); ?>`;
+                            pageCountEl.textContent = `${data.page_count} <?php _ejs('imposition_tracts.pages_detected'); ?>`;
 
                             if (data.format === 'unknown') {
-                                tractType.innerHTML = `<strong><?php _e('imposition_tracts.non_standard_format'); ?> (${data.dimensions.width}×${data.dimensions.height}mm)</strong><br><small style="color: #ff9800;"><?php _e('imposition_tracts.select_manually'); ?></small>`;
+                                tractType.innerHTML = `<strong><?php _ejs('imposition_tracts.non_standard_format'); ?> (${data.dimensions.width}×${data.dimensions.height}mm)</strong><br><small style="color: #ff9800;"><?php _ejs('imposition_tracts.select_manually'); ?></small>`;
                             } else {
-                                tractType.innerHTML = `<strong><?php _e('imposition_tracts.tract_format'); ?> ${data.format} (${data.page_count} <?php _e('imposition_tracts.pages'); ?>${data.page_count > 1 ? 's' : ''})</strong><br><small style="color: #28a745;"><?php _e('imposition_tracts.automatic_detection'); ?></small>`;
+                                tractType.innerHTML = `<strong><?php _ejs('imposition_tracts.tract_format'); ?> ${data.format} (${data.page_count} <?php _ejs('imposition_tracts.pages'); ?>${data.page_count > 1 ? 's' : ''})</strong><br><small style="color: #28a745;"><?php _ejs('imposition_tracts.automatic_detection'); ?></small>`;
                             }
 
                             // Configurer le mode automatique
@@ -558,18 +558,18 @@ ob_start();
                             // Activer le bouton de soumission
                             submitBtn.prop('disabled', false);
                         } else {
-                            tractType.innerHTML = `<strong style="color: #dc3545;"><?php _e('imposition_tracts.analysis_error'); ?></strong><br><small style="color: #dc3545;">${data.error}</small>`;
+                            tractType.innerHTML = `<strong style="color: #dc3545;"><?php _ejs('imposition_tracts.analysis_error'); ?></strong><br><small style="color: #dc3545;">${data.error}</small>`;
                             submitBtn.prop('disabled', true);
                         }
                     } catch (parseError) {
                         console.error('JSON parse error:', parseError);
-                        tractType.innerHTML = `<strong style="color: #dc3545;"><?php _e('imposition_tracts.server_response_error'); ?></strong><br><small style="color: #dc3545;"><?php _e('imposition_tracts.invalid_server_response'); ?></small>`;
+                        tractType.innerHTML = `<strong style="color: #dc3545;"><?php _ejs('imposition_tracts.server_response_error'); ?></strong><br><small style="color: #dc3545;"><?php _ejs('imposition_tracts.invalid_server_response'); ?></small>`;
                         submitBtn.prop('disabled', true);
                     }
                 })
                 .catch(error => {
                     console.error('Fetch error:', error);
-                    tractType.innerHTML = `<strong style="color: #dc3545;"><?php _e('imposition_tracts.connection_error'); ?></strong><br><small style="color: #dc3545;"><?php _e('imposition_tracts.unable_to_analyze'); ?></small>`;
+                    tractType.innerHTML = `<strong style="color: #dc3545;"><?php _ejs('imposition_tracts.connection_error'); ?></strong><br><small style="color: #dc3545;"><?php _ejs('imposition_tracts.unable_to_analyze'); ?></small>`;
                     submitBtn.prop('disabled', true);
                 });
         }

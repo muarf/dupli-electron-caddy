@@ -138,8 +138,18 @@ try {
 
     // SÉCURITÉ ANTI-DOUBLON SESSION : Vérifier si ce job unique n'a pas déjà été enregistré par un autre onglet
     if ($original_job_id && !$simulate) {
-        $check = $con_pdo->prepare("SELECT COUNT(*) FROM recorded_print_jobs WHERE job_id = ? AND printer_name = ?");
-        $check->execute([strval($original_job_id), $printerName]);
+        $platform = $input['platform'] ?? 'windows'; // Assume windows if not provided, but Electron/AutoTirage should send it
+        
+        $checkSql = "SELECT COUNT(*) FROM recorded_print_jobs WHERE job_id = ?";
+        $checkParams = [strval($original_job_id)];
+        
+        if ($platform !== 'linux') {
+            $checkSql .= " AND printer_name = ?";
+            $checkParams[] = $printerName;
+        }
+
+        $check = $con_pdo->prepare($checkSql);
+        $check->execute($checkParams);
         if ($check->fetchColumn() > 0) {
             $con_pdo->rollBack();
             echo json_encode(['success' => true, 'message' => 'Job déjà enregistré par une autre session.']);
@@ -274,7 +284,11 @@ try {
                     machine_id = ?,
                     machine_name = ?,
                     contact = ?,
-                    staged = 1
+                    staged = 1,
+                    document = ?,
+                    total_pages = ?,
+                    copies = ?,
+                    thumbnail_url = ?
                 WHERE job_id = ? AND printer_name = ?
             ");
             $stmt_staging->execute([
@@ -283,6 +297,10 @@ try {
                 $machine_id,
                 $marque,
                 $contact,
+                $document,
+                $total_pages,
+                $copies,
+                $input['thumbnail_url'] ?? null,
                 strval($original_job_id),
                 $printerName
             ]);
@@ -380,7 +398,11 @@ try {
                     machine_id = ?,
                     machine_name = ?,
                     contact = ?,
-                    staged = 1
+                    staged = 1,
+                    document = ?,
+                    total_pages = ?,
+                    copies = ?,
+                    thumbnail_url = ?
                 WHERE job_id = ? AND printer_name = ?
             ");
             $stmt_staging->execute([
@@ -389,6 +411,10 @@ try {
                 $machine_id,
                 $nom_machine,
                 $contact,
+                $document,
+                $total_pages,
+                $copies,
+                $input['thumbnail_url'] ?? null,
                 strval($original_job_id),
                 $printerName
             ]);

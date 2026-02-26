@@ -265,6 +265,21 @@ function _he($key, $params = [], $editable = null) {
 }
 
 /**
+ * Fonction de traduction sécurisée pour contexte JavaScript
+ * Échappe les apostrophes, guillemets et backslashes pour éviter les SyntaxError JS
+ */
+function __js($key, $params = []) {
+    return addslashes(__($key, $params));
+}
+
+/**
+ * Fonction de traduction JS avec echo
+ */
+function _ejs($key, $params = []) {
+    echo __js($key, $params);
+}
+
+/**
  * Obtenir la langue courante
  */
 function getCurrentLanguage() {

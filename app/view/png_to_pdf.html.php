@@ -299,7 +299,7 @@
             uploadText.innerHTML = '<i class="fa fa-picture-o"></i> ' + <?= json_encode($from_lib_file['filename']) ?>;
             fileInfo.style.display = 'block';
             fileCount.textContent = '1';
-            fileList.innerHTML = '<ul style="text-align: left; display: inline-block; margin: 0;"><li><i class="fa fa-image"></i> ' + <?= json_encode($from_lib_file['filename']) ?> + ' <span class="text-muted">(<?php _e('imposition_brochure.library_file'); ?>)</span></li></ul>';
+            fileList.innerHTML = '<ul style="text-align: left; display: inline-block; margin: 0;"><li><i class="fa fa-image"></i> ' + <?= json_encode($from_lib_file['filename']) ?> + ' <span class="text-muted">(<?php _ejs('imposition_brochure.library_file'); ?>)</span></li></ul>';
             fileInput.removeAttribute('required');
         <?php endif; ?>
 
@@ -311,7 +311,7 @@
                 return false;
             }
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> <?php _e('png_to_pdf.converting'); ?>';
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> <?php _ejs('png_to_pdf.converting'); ?>';
         });
     });
 </script>

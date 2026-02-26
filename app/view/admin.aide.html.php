@@ -221,7 +221,7 @@
         ['clean']
       ]
     },
-    placeholder: '<?php echo __('admin_aide.default_instructions'); ?>'
+    placeholder: '<?php echo __js('admin_aide.default_instructions'); ?>'
   });
 
   // Ajouter le bouton PDF personnalisé à la toolbar
@@ -241,7 +241,7 @@
     fetch('?admin&aide&get_content=' + id)
       .then(response => response.text())
       .then(content => {
-        document.getElementById('form-title').textContent = '<?php _e('admin_aide.edit_aide'); ?> ' + machine;
+        document.getElementById('form-title').textContent = '<?php _ejs('admin_aide.edit_aide'); ?> ' + machine;
         document.getElementById('action').value = 'edit';
         document.getElementById('aide_id').value = id;
         document.getElementById('machine').value = machine;
@@ -266,8 +266,8 @@
         document.getElementById('aide-form').scrollIntoView({ behavior: 'smooth' });
       })
       .catch(error => {
-        console.error('<?php _e('admin_aide.error_loading_content'); ?>:', error);
-        showAppModal({ type: 'danger', message: '<?php echo __('admin_aide.error_loading_content'); ?>' });
+        console.error('<?php _ejs('admin_aide.error_loading_content'); ?>:', error);
+        showAppModal({ type: 'danger', message: '<?php echo __js('admin_aide.error_loading_content'); ?>' });
       });
   }
 
@@ -284,7 +284,7 @@
       .then(content => {
         if (content && content.trim() !== '') {
           // Aide trouvée, passer en mode édition
-          document.getElementById('form-title').textContent = '<?php _e('admin_aide.edit_aide'); ?> ' + machine;
+          document.getElementById('form-title').textContent = '<?php _ejs('admin_aide.edit_aide'); ?> ' + machine;
           document.getElementById('action').value = 'edit';
 
           // Récupérer l'ID de l'aide
@@ -313,7 +313,7 @@
           }, 200);
         } else {
           // Aucune aide trouvée, passer en mode création
-          document.getElementById('form-title').textContent = '<?php _e('admin_aide.add_aide_for'); ?> ' + machine;
+          document.getElementById('form-title').textContent = '<?php _ejs('admin_aide.add_aide_for'); ?> ' + machine;
           document.getElementById('action').value = 'add';
           document.getElementById('aide_id').value = '';
 
@@ -342,9 +342,9 @@
         }
       })
       .catch(error => {
-        console.error('<?php _e('admin_aide.error_loading_aide'); ?>:', error);
+        console.error('<?php _ejs('admin_aide.error_loading_aide'); ?>:', error);
         // En cas d'erreur, passer en mode création
-        document.getElementById('form-title').textContent = '<?php _e('admin_aide.add_aide_for'); ?> ' + machine;
+        document.getElementById('form-title').textContent = '<?php _ejs('admin_aide.add_aide_for'); ?> ' + machine;
         document.getElementById('action').value = 'add';
         document.getElementById('aide_id').value = '';
       });
@@ -354,7 +354,7 @@
     showAppModal({
       type: 'warning',
       title: 'Confirmation de suppression',
-      message: '<?php _e('admin_aide.confirm_delete'); ?> ' + machine + ' ?',
+      message: '<?php _ejs('admin_aide.confirm_delete'); ?> ' + machine + ' ?',
       confirm: true,
       onConfirm: function () {
         var form = document.createElement('form');
@@ -381,7 +381,7 @@
   }
 
   function resetForm() {
-    document.getElementById('form-title').textContent = '<?php echo __('admin_aide.add_aide'); ?>';
+    document.getElementById('form-title').textContent = '<?php echo __js('admin_aide.add_aide'); ?>';
     document.getElementById('action').value = 'add';
     document.getElementById('aide_id').value = '';
     document.getElementById('machine').value = '';
@@ -487,9 +487,9 @@
           var html = '<table class="table table-striped table-hover">' +
             '<thead>' +
             '<tr>' +
-            '<th><?php _e('admin_aide.pdf_name'); ?></th>' +
-            '<th><?php _e('admin_aide.upload_date'); ?></th>' +
-            '<th><?php _e('admin_aide.pdf_size'); ?></th>' +
+            '<th><?php _ejs('admin_aide.pdf_name'); ?></th>' +
+            '<th><?php _ejs('admin_aide.upload_date'); ?></th>' +
+            '<th><?php _ejs('admin_aide.pdf_size'); ?></th>' +
             '<th>Actions</th>' +
             '</tr>' +
             '</thead>' +
@@ -506,10 +506,10 @@
               '<td>' + pdf.size + '</td>' +
               '<td>' +
               '<button class="btn btn-sm btn-success" onclick="insertPdf(\'' + safeUrl + '\', \'' + safeName + '\')">' +
-              '<i class="fa fa-plus"></i> <?php _e('admin_aide.insert_pdf'); ?>' +
+              '<i class="fa fa-plus"></i> <?php _ejs('admin_aide.insert_pdf'); ?>' +
               '</button> ' +
               '<button class="btn btn-sm btn-danger" onclick="deletePdf(\'' + safeFilename + '\')">' +
-              '<i class="fa fa-trash"></i> <?php _e('admin_aide.delete_pdf'); ?>' +
+              '<i class="fa fa-trash"></i> <?php _ejs('admin_aide.delete_pdf'); ?>' +
               '</button>' +
               '</td>' +
               '</tr>';
@@ -518,7 +518,7 @@
           html += '</tbody></table>';
           pdfList.innerHTML = html;
         } else {
-          pdfList.innerHTML = '<div class="alert alert-info"><i class="fa fa-info-circle"></i> <?php _e('admin_aide.no_pdfs'); ?></div>';
+          pdfList.innerHTML = '<div class="alert alert-info"><i class="fa fa-info-circle"></i> <?php _ejs('admin_aide.no_pdfs'); ?></div>';
         }
       })
       .catch(error => {
@@ -538,14 +538,14 @@
       quill.insertText(length - 1, '[PDF: ' + name + ']', 'link', url);
     }
 
-    showMessage('<?php echo __('admin_aide.pdf_inserted'); ?>', 'success');
+    showMessage('<?php echo __js('admin_aide.pdf_inserted'); ?>', 'success');
   }
 
   function deletePdf(filename) {
     showAppModal({
       type: 'warning',
       title: 'Confirmation de suppression',
-      message: '<?php echo __('admin_aide.confirm_delete_pdf'); ?>',
+      message: '<?php echo __js('admin_aide.confirm_delete_pdf'); ?>',
       confirm: true,
       onConfirm: function () {
         var formData = new FormData();
@@ -582,7 +582,7 @@
       '<div class="modal-content">' +
       '<div class="modal-header">' +
       '<button type="button" class="close" data-dismiss="modal">&times;</button>' +
-      '<h4 class="modal-title"><?php _e('admin_aide.insert_pdf'); ?></h4>' +
+      '<h4 class="modal-title"><?php _ejs('admin_aide.insert_pdf'); ?></h4>' +
       '</div>' +
       '<div class="modal-body" id="modal-pdf-list">' +
       '<div class="alert alert-info"><i class="fa fa-spinner fa-spin"></i> Chargement...</div>' +
@@ -615,7 +615,7 @@
           html += '</div>';
           modalBody.innerHTML = html;
         } else {
-          modalBody.innerHTML = '<div class="alert alert-info"><i class="fa fa-info-circle"></i> <?php _e('admin_aide.no_pdfs'); ?></div>';
+          modalBody.innerHTML = '<div class="alert alert-info"><i class="fa fa-info-circle"></i> <?php _ejs('admin_aide.no_pdfs'); ?></div>';
         }
       })
       .catch(error => {

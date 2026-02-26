@@ -12,15 +12,15 @@ const execAsync = promisify(exec);
  * @returns {Promise<boolean>} true si admin, false sinon
  */
 async function isRunningAsAdmin() {
-    // Sur Linux, on vérifie l'accès au dossier spool CUPS
+    // Sur Linux, on vérifie l'accès au dossier spool CUPS (traversée uniquement)
     if (process.platform === 'linux') {
         try {
             const fs = require('fs');
-            // On tente de lister le répertoire pour vérifier les droits de lecture/exécution
-            await fs.promises.access('/var/spool/cups', fs.constants.R_OK | fs.constants.X_OK);
+            // On tente de vérifier le droit d'exécution (traversée) pour le groupe lp
+            await fs.promises.access('/var/spool/cups', fs.constants.X_OK);
             return true;
         } catch (error) {
-            console.log('Linux: Accès refusé à /var/spool/cups');
+            console.log('Linux: Accès refusé à /var/spool/cups (Traversée impossible)');
             return false;
         }
     }

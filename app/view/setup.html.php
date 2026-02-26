@@ -642,7 +642,7 @@
                                     displaySystemPrinters();
                                 } else {
                                     console.error('Format réponse imprimantes invalide:', response);
-                                    $('#loading-printers').html(`<div class="alert alert-warning">${ "<?php echo __('common.error'); ?>" } format réponse imprimantes invalide.</div>`);
+                                    $('#loading-printers').html(`<div class="alert alert-warning">${ "<?php echo __js('common.error'); ?>" } format réponse imprimantes invalide.</div>`);
                                 }
                             } catch (err) {
                                 console.error('Erreur récupération imprimantes:', err);
@@ -668,13 +668,13 @@
                                             <div class="printer-icon"><i class="fa fa-print"></i></div>
                                             <div>
                                                 <div class="printer-name">${printer.name}</div>
-                                                <div class="printer-status">${printer.description ||  "<?php echo __('setup.configure'); ?>" }</div>
-                                                ${isMapped ? `<span class="machine-badge badge-dupli"><i class="fa fa-check"></i> ${ "<?php echo __('setup.already_configured'); ?>" }</span>` : ''}
+                                                <div class="printer-status">${printer.description ||  "<?php echo __js('setup.configure'); ?>" }</div>
+                                                ${isMapped ? `<span class="machine-badge badge-dupli"><i class="fa fa-check"></i> ${ "<?php echo __js('setup.already_configured'); ?>" }</span>` : ''}
                                             </div>
                                         </div>
                                         <div>
                                             <button type="button" class="btn btn-primary btn-sm" onclick="selectPrinter('${printer.name}')">
-                                                ${isMapped ?  "<?php echo __('setup.reconfigure'); ?>"  :  "<?php echo __('setup.configure'); ?>" }
+                                                ${isMapped ?  "<?php echo __js('setup.reconfigure'); ?>"  :  "<?php echo __js('setup.configure'); ?>" }
                                             </button>
                                         </div>
                                     </div>
@@ -703,7 +703,7 @@
 
                     $('#add-manual-btn').click(function() {
                         selectedPrinter = null;
-                        $('#selected-printer-name').text( "<?php echo __('setup.manual'); ?>" );
+                        $('#selected-printer-name').text( "<?php echo __js('setup.manual'); ?>" );
                         $('#type-selector-section').fadeIn();
                         $('#machine-form').hide();
                         $('input[name="machine_type"]').prop('checked', false);
@@ -721,17 +721,17 @@
                         $('#duplicopieur-prices, #photocop-encre-prices, #photocop-toner-prices').hide();
 
                         if (type === 'duplicopieur') {
-                            $('#machine-title').text( "<?php echo __('setup.duplicator_config_title'); ?>" );
+                            $('#machine-title').text( "<?php echo __js('setup.duplicator_config_title'); ?>" );
                             $('#duplicopieur-prices').show();
                             $('#master-counter-field').show();
                             $('#master_counter').prop('required', true);
                         } else if (type === 'photocop_encre') {
-                            $('#machine-title').text( "<?php echo __('setup.photocopier_ink_config_title'); ?>" );
+                            $('#machine-title').text( "<?php echo __js('setup.photocopier_ink_config_title'); ?>" );
                             $('#photocop-encre-prices').show();
                             $('#master-counter-field').hide();
                             $('#master_counter').prop('required', false);
                         } else if (type === 'photocop_toner') {
-                            $('#machine-title').text( "<?php echo __('setup.photocopier_toner_config_title'); ?>" );
+                            $('#machine-title').text( "<?php echo __js('setup.photocopier_toner_config_title'); ?>" );
                             $('#photocop-toner-prices').show();
                             $('#master-counter-field').hide();
                             $('#master_counter').prop('required', false);
@@ -752,11 +752,11 @@
 
                         if (!name || !passageCounter) {
                             let missing = [];
-                            if (!name) missing.push( "<?php echo __('setup.machine_name'); ?>" );
-                            if (!passageCounter) missing.push( "<?php echo __('setup.passage_counter'); ?>" );
+                            if (!name) missing.push( "<?php echo __js('setup.machine_name'); ?>" );
+                            if (!passageCounter) missing.push( "<?php echo __js('setup.passage_counter'); ?>" );
                             showAppModal({ 
-                                title:  "<?php echo __('setup.missing_fields'); ?>" ,
-                                message: "<?php _e('setup.missing_fields_msg'); ?><br>• " + missing.join('<br>• '), 
+                                title:  "<?php echo __js('setup.missing_fields'); ?>" ,
+                                message: "<?php _ejs('setup.missing_fields_msg'); ?><br>• " + missing.join('<br>• '), 
                                 type: 'warning' 
                             });
                             return;
@@ -764,8 +764,8 @@
 
                         if (type === 'duplicopieur' && !masterCounter) {
                             showAppModal({ 
-                                title:  "<?php echo __('setup.missing_fields'); ?>" ,
-                                message:  "<?php echo __('setup.missing_master_msg'); ?>" , 
+                                title:  "<?php echo __js('setup.missing_fields'); ?>" ,
+                                message:  "<?php echo __js('setup.missing_master_msg'); ?>" , 
                                 type: 'warning' 
                             });
                             return;
@@ -857,10 +857,10 @@
                                     <div>
                                         <strong>${typeLabel}:</strong> ${machine.name} 
                                         ${machine.systemPrinterName ? `<br><small class="text-muted"><i class="fa fa-link"></i> Mappée sur : ${machine.systemPrinterName}</small>` : ''}
-                                        <br><small class="text-muted">${ "<?php echo __('setup.passage_counter'); ?>" } ${machine.passageCounter}</small>
+                                        <br><small class="text-muted">${ "<?php echo __js('setup.passage_counter'); ?>" } ${machine.passageCounter}</small>
                                     </div>
                                     <button type="button" class="btn btn-sm btn-danger" onclick="removeMachine(${machine.id})">
-                                        ❌ ${ "<?php echo __('setup.remove'); ?>" }
+                                        ❌ ${ "<?php echo __js('setup.remove'); ?>" }
                                     </button>
                                 </div>
                             `;
@@ -871,9 +871,9 @@
 
                     function getTypeLabel(type) {
                         const labels = {
-                            'duplicopieur':  "<?php echo __('setup.duplicator'); ?>" ,
-                            'photocop_encre':  "<?php echo __('setup.photocopier_ink'); ?>" ,
-                            'photocop_toner':  "<?php echo __('setup.photocopier_toner'); ?>" 
+                            'duplicopieur':  "<?php echo __js('setup.duplicator'); ?>" ,
+                            'photocop_encre':  "<?php echo __js('setup.photocopier_ink'); ?>" ,
+                            'photocop_toner':  "<?php echo __js('setup.photocopier_toner'); ?>" 
                         };
                         return labels[type] || type;
                     }
@@ -913,8 +913,8 @@
                         if (machines.length === 0) {
                             e.preventDefault();
                             showAppModal({ 
-                                title:  "<?php echo __('setup.no_machine_title'); ?>" ,
-                                message:  "<?php echo __('setup.no_machine_msg'); ?>" , 
+                                title:  "<?php echo __js('setup.no_machine_title'); ?>" ,
+                                message:  "<?php echo __js('setup.no_machine_msg'); ?>" , 
                                 type: 'warning' 
                             });
                             return;
@@ -950,16 +950,16 @@
                             <div class="tambour-item" style="margin-bottom: 10px;">
                                 <div class="row">
                                     <div class="col-md-4">
-                                        <label><?php echo __('setup.drum_name'); ?></label>
-                                        <input type="text" class="form-control" name="tambours[]" placeholder="<?php echo __('setup.drum_name_placeholder'); ?>" required>
+                                        <label><?php echo __js('setup.drum_name'); ?></label>
+                                        <input type="text" class="form-control" name="tambours[]" placeholder="<?php echo __js('setup.drum_name_placeholder'); ?>" required>
                                     </div>
                                     <div class="col-md-3">
-                                        <label><?php echo __('setup.unit_price'); ?></label>
-                                        <input type="number" class="form-control" name="prix_tambour_unite[]" placeholder="<?php echo __('setup.unit_price'); ?>" step="0.001" min="0" required>
+                                        <label><?php echo __js('setup.unit_price'); ?></label>
+                                        <input type="number" class="form-control" name="prix_tambour_unite[]" placeholder="<?php echo __js('setup.unit_price'); ?>" step="0.001" min="0" required>
                                     </div>
                                     <div class="col-md-3">
-                                        <label><?php echo __('setup.pack_price'); ?></label>
-                                        <input type="number" class="form-control" name="prix_tambour_pack[]" placeholder="<?php echo __('setup.pack_price'); ?>" step="0.01" min="0" value="11">
+                                        <label><?php echo __js('setup.pack_price'); ?></label>
+                                        <input type="number" class="form-control" name="prix_tambour_pack[]" placeholder="<?php echo __js('setup.pack_price'); ?>" step="0.01" min="0" value="11">
                                     </div>
                                     <div class="col-md-2">
                                         <label>&nbsp;</label>

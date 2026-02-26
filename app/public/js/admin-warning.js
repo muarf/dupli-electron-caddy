@@ -99,12 +99,12 @@
                     ${dismissButton}
                     <h4><i class="fa fa-exclamation-triangle"></i> Permissions d'impression manquantes</h4>
                     <p>
-                        Pour analyser les impressions (taux de remplissage et couleurs), l'application a besoin d'un accès en lecture à la file d'attente (spool).<br>
+                        Pour analyser les impressions (taux de remplissage et couleurs), l'application a besoin d'accéder aux données d'impression. Sur Linux, cela nécessite d'appartenir au groupe système de l'impression.<br>
                         <strong>Solution recommandée :</strong> Ajoutez votre utilisateur au groupe <code>lp</code> en exécutant cette commande dans un terminal :
                     </p>
                     <pre style="background: #fff3cd; border: 1px solid #ffeeba; padding: 10px; margin: 10px 0;"><code>sudo usermod -aG lp ${user}</code></pre>
                     <p>
-                        <em>Note : Vous devrez redémarrer votre session (ou l'ordinateur) pour que ce changement prenne effet.</em>
+                        <em>Note : Vous devrez obligatoirement fermer et réouvrir votre session (ou redémarrer l'ordinateur) pour que ce changement de groupe prenne effet.</em>
                     </p>
                     <div style="margin-top: 15px;">
                         <a href="?admin&imprimantes" class="btn btn-sm btn-default">
