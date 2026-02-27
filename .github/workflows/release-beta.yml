@@ -3,7 +3,7 @@ name: Build and Release Beta
 on:
   push:
     branches:
-      - feature/multi-session-management
+      - feature/cross-platform-unification
   workflow_dispatch:  # Permet de lancer manuellement aussi
 
 permissions:
@@ -24,11 +24,28 @@ jobs:
       - name: Determine version
         id: get-version
         run: |
-          # Build auto depuis la branche - génère une version beta avec timestamp
+          # 1. On récupère les tags existants
+          git fetch --tags
+          
+          # 2. On cherche le dernier tag qui ressemble à v2.0.X-beta
+          LAST_TAG=$(git tag -l "v2.0.*-beta*" | sort -V | tail -n 1)
+          
+          if [ -z "$LAST_TAG" ]; then
+            # Si aucun tag 2.0 n'existe, on commence à 2.0.1
+            NEXT_PATCH=1
+          else
+            # On extrait le numéro de patch (le 'X' dans v2.0.X)
+            # Expression régulière pour extraire le chiffre après "v2.0." et avant le tiret "-"
+            LAST_PATCH=$(echo $LAST_TAG | sed -nE 's/v2\.0\.([0-9]+)-beta.*/\1/p')
+            NEXT_PATCH=$((LAST_PATCH + 1))
+          fi
+          
+          # 3. Création des variables
           SHORT_SHA=$(git rev-parse --short HEAD)
           BUILD_NUM=$(date +%Y%m%d%H%M%S)
-          VERSION="2.0.0-beta.${BUILD_NUM}+${SHORT_SHA}"
-          TAG="v2.0.0-beta.${BUILD_NUM}"
+          
+          VERSION="2.0.${NEXT_PATCH}-beta.${BUILD_NUM}+${SHORT_SHA}"
+          TAG="v2.0.${NEXT_PATCH}-beta.${BUILD_NUM}"
           
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG" >> $GITHUB_OUTPUT
@@ -74,7 +91,7 @@ jobs:
             - **Duplicator-Beta-${version}-linux-amd64.deb** - Paquet Debian
             
             Commit: \`${shortSha}\`
-            Branch: \`feature/multi-session-management\``,
+            Branch: \`feature/cross-platform-unification\``,
                   draft: false,
                   prerelease: true
                 });
