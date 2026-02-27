@@ -7,7 +7,7 @@ productName: Duplicator Beta
 directories:
   output: dist
 
-icon: icons/icon.png
+icon: icons/icon-beta.png
 
 # Configuration de publication spécifique beta
 publish:
@@ -41,7 +41,7 @@ files:
   - "!app/vendor/**/docs/**/*"
 
 extraResources:
-  - from: icons/icon.png
+  - from: icons/icon-beta.png
     to: icons/icon.png
 
 linux:
@@ -147,6 +147,7 @@ win:
   artifactName: Duplicator-Beta-${version}-${arch}.${ext}
 
 nsis:
+  perMachine: true
   include: build/installer.nsh
   oneClick: false
   allowToChangeInstallationDirectory: true
