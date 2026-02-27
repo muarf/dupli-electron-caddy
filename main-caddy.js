@@ -9,7 +9,8 @@ const { checkWindowsCompatibility, applyCompatibilitySettings } = require('./uti
 const PrinterMonitor = require('./utils/printer-monitor');
 const printEngine = require('./src/print-engine');
 const { isRunningAsAdmin, restartAsAdmin } = require('./utils/admin-checker');
-const { autoUpdater } = require('electron-updater');
+
+let autoUpdater;
 
 // --- SECURE PURGE SCHEDULER ---
 function scheduleSecurePurge() {
@@ -2272,6 +2273,8 @@ function createWindow() {
 
 // Configuration de l'auto-updater
 function setupAutoUpdater() {
+    autoUpdater = require('electron-updater').autoUpdater;
+    
     // Configuration
     autoUpdater.autoDownload = false; // Ne pas télécharger automatiquement (demander d'abord)
     autoUpdater.autoInstallOnAppQuit = true; // Installer automatiquement au redémarrage

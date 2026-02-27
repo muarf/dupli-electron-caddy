@@ -120,6 +120,14 @@ try {
         )
     ");
 
+    // S'assurer que les nouvelles colonnes existent (si version antérieure sans migrations)
+    try {
+        $db->execute("ALTER TABLE print_jobs ADD COLUMN document_full_path TEXT");
+    } catch(Exception $e) {}
+    try {
+        $db->execute("ALTER TABLE print_jobs ADD COLUMN document_display_name TEXT");
+    } catch(Exception $e) {}
+
     // Extraire le nom de fichier pour l'affichage (avec trace du chemin complet)
     $documentFull = $data['document'];
     $documentDisplay = basename($data['document']); // Extrait toujours le nom de fichier
@@ -153,7 +161,7 @@ try {
 
     // Log pour le débogage (optionnel)
     error_log(sprintf(
-        "Impression détectée: Job %s - Document: %s - Imprimante: %s - Status: %s",
+        "Impression détectée (Succès): Job %s - Document: %s - Imprimante: %s - Status: %s",
         $data['jobId'],
         $data['document'],
         $data['printerName'],

@@ -1,12 +1,4 @@
-<!DOCTYPE html>
-<html lang="fr">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Imposition Livre (Cut & Stack) - Version PHP</title>
-    <link href="public/css/bootstrap.min.css" rel="stylesheet">
-    <link href="public/css/font-awesome.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #f8f9fa;
@@ -224,10 +216,8 @@
             color: white;
         }
     </style>
-</head>
 
-<body>
-    <div class="container">
+<div class="container">
         <div class="main-container">
             <div class="page-header text-center">
                 <h1><i class="fa fa-book"></i> <?php _e('imposition_livre.title'); ?></h1>
@@ -472,7 +462,6 @@
         </div>
     </div>
 
-    <script src="public/js/bootstrap.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const fileUploadArea = document.getElementById('fileUploadArea');
@@ -535,36 +524,19 @@
             const blockPercent = document.getElementById('block_percent');
             const blockMm = document.getElementById('block_mm');
 
-            // Gestion de l'affichage des réglages
-            $(document).ready(function() {
-                // Affichage conditionnel des réglages de traits de coupe
-                $('#crop_marks').change(function() {
-                    if ($(this).is(':checked')) {
-                        $('#crop_settings').slideDown();
-                    } else {
-                        $('#crop_settings').slideUp();
-                    }
-                });
-                
-                // État initial
-                if ($('#crop_marks').is(':checked')) {
-                    $('#crop_settings').show();
-                }
+            // Gestion de l'affichage des réglages (Vanilla JS)
+            // État initial traits de coupe
+            if (document.getElementById('crop_marks') && document.getElementById('crop_marks').checked) {
+                document.getElementById('crop_settings').style.display = 'block';
+            }
 
-                // Affichage conditionnel des réglages de numéros de gouttière
-                $('#add_page_numbers_in_gutters').change(function() {
-                    if ($(this).is(':checked')) {
-                        $('#gutter_num_settings').slideDown();
-                    } else {
-                        $('#gutter_num_settings').slideUp();
-                    }
-                });
-                
-                // État initial
-                if ($('#add_page_numbers_in_gutters').is(':checked')) {
-                    $('#gutter_num_settings').show();
-                }
+            // Numéros de gouttière
+            document.getElementById('add_page_numbers_in_gutters').addEventListener('change', function() {
+                document.getElementById('gutter_num_settings').style.display = this.checked ? 'block' : 'none';
             });
+            if (document.getElementById('add_page_numbers_in_gutters').checked) {
+                document.getElementById('gutter_num_settings').style.display = 'block';
+            }
             function updateResizeMode() {
                 if (modePercent.checked) {
                     blockPercent.style.display = 'block';
@@ -586,6 +558,3 @@
             }
         });
     </script>
-</body>
-
-</html>

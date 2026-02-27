@@ -20664,3 +20664,10 @@ INIT: Printer='Test_Duplex', Type='photocop'
 HEX: 70686f746f636f70
 Check 'photocop': TRUE
 STAGING: nb_f=1, price=0.02, session=4
+[2026-02-26 11:17:19] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":26,"contact":"manu","document":"affinit___R_bis_OK_imposed1.pdf","copies":1,"total_pages":26,"duplex":true,"color_mode":"Monochrome","paper_size":"A3","fill_rate":0.05212366104126,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/3\/page_0.png","timestamp":"2026-02-26T10:21:09.000Z","job_id":"3","session_id":63,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\dupli-electron\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=13, price=0.39, session=63
