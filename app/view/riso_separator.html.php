@@ -209,7 +209,7 @@
                                         onchange="updatePreview()">
                                         <?php foreach ($tambours as $val => $label) {
                                             $selected = ($val == $chan['default']) ? 'selected' : '';
-                                            echo "<option value="$val" $selected>$label</option>";
+                                            echo '<option value="' . $val . '" ' . $selected . '>' . $label . '</option>';
                                         } ?>
                                     </select>
                                     <label style="margin-top: 10px;"><?php _e('riso_separator.opacity_label'); ?> <span
@@ -251,7 +251,7 @@
                                         onchange="updatePreview()">
                                         <?php foreach ($tambours as $val => $label) {
                                             $selected = ($val == $chan['default']) ? 'selected' : '';
-                                            echo "<option value="$val" $selected>$label</option>";
+                                            echo '<option value="' . $val . '" ' . $selected . '>' . $label . '</option>';
                                         } ?>
                                     </select>
                                     <label style="margin-top: 10px;"><?php _e('riso_separator.opacity_label'); ?> <span
@@ -291,7 +291,7 @@
                                         onchange="updatePreview()">
                                         <?php foreach ($tambours as $val => $label) {
                                             $selected = ($val == $chan['default']) ? 'selected' : '';
-                                            echo "<option value="$val" $selected>$label</option>";
+                                            echo '<option value="' . $val . '" ' . $selected . '>' . $label . '</option>';
                                         } ?>
                                     </select>
                                     <label style="margin-top: 10px;"><?php _e('riso_separator.opacity_label'); ?> <span
