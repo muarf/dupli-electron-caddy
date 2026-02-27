@@ -1,6 +1,6 @@
 {
-  "name": "dupli-electron",
-  "version": "1.5.57",
+  "name": "dupli-electron-beta",
+  "version": "2.0.1-beta.local",
   "main": "main-caddy.js",
   "scripts": {
     "start": "electron . --no-sandbox --disable-gpu",
@@ -56,7 +56,7 @@
     ]
   },
   "build": {
-    "appId": "com.dupli.app",
+    "appId": "com.dupli.beta",
     "productName": "Duplicator",
     "directories": {
       "output": "dist"
@@ -132,5 +132,6 @@
     "pdfjs-dist": "^3.11.174",
     "pdfkit": "^0.17.2",
     "sqlite3": "^5.1.7"
-  }
+  },
+  "productName": "Duplicator Beta"
 }
