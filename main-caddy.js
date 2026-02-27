@@ -10,6 +10,14 @@ const PrinterMonitor = require('./utils/printer-monitor');
 const printEngine = require('./src/print-engine');
 const { isRunningAsAdmin, restartAsAdmin } = require('./utils/admin-checker');
 
+// Désactiver la sandbox sous Linux (requis pour les noyaux récents/AppArmor)
+// et désactiver HTTP/2 pour contourner le bug ERR_HTTP2_SERVER_REFUSED_STREAM de l'auto-updater
+if (process.platform === 'linux') {
+    app.commandLine.appendSwitch('no-sandbox');
+    app.commandLine.appendSwitch('disable-setuid-sandbox');
+    app.commandLine.appendSwitch('disable-http2');
+}
+
 let autoUpdater;
 
 // --- SECURE PURGE SCHEDULER ---
@@ -2274,13 +2282,16 @@ function createWindow() {
 // Configuration de l'auto-updater
 function setupAutoUpdater() {
     autoUpdater = require('electron-updater').autoUpdater;
-    
+
     // Configuration
     autoUpdater.autoDownload = false; // Ne pas télécharger automatiquement (demander d'abord)
     autoUpdater.autoInstallOnAppQuit = true; // Installer automatiquement au redémarrage
 
-    // Détecter si c'est la version beta (basé sur appId ou nom du dossier)
-    const isBeta = app.getName() === 'dupli-electron-beta' || app.getAppPath().includes('beta') || app.getName().includes('beta');
+    // Détecter si c'est la version beta (basé sur l'appId configuré dans package.json)
+    // On vérifie l'App ID ainsi que le nom de l'app pour être robuste
+    const isBeta = (typeof app.getAppId === 'function' && app.getAppId() === 'com.dupli.beta') ||
+        app.getName().toLowerCase().includes('beta') ||
+        app.getAppPath().toLowerCase().includes('beta');
     const channel = isBeta ? 'beta' : 'latest';
 
     console.log(`[AutoUpdater] Mode détecté: ${isBeta ? 'BETA (channel: beta)' : 'STABLE (channel: latest)'}`);
