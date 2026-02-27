@@ -22,8 +22,15 @@ if (!function_exists('getDataDir')) {
             return $homeDir . DIRECTORY_SEPARATOR . '.config' . DIRECTORY_SEPARATOR . 'Duplicator';
         }
 
-        // Priorité 3 : Développement local (racine du projet)
-        return realpath(__DIR__ . '/../../../');
+        // Priorité 3 : Développement local (recherche de la racine)
+        // On remonte jusqu'à trouver un indicateur de racine (comme le dossier public ou controler)
+        $path = __DIR__;
+        while ($path && $path !== DIRECTORY_SEPARATOR && !file_exists($path . DIRECTORY_SEPARATOR . 'controler')) {
+            $newPath = dirname($path);
+            if ($newPath === $path) break;
+            $path = $newPath;
+        }
+        return $path;
     }
 }
 

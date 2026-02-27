@@ -3,21 +3,24 @@
  * Fonctions utilitaires pour la bibliothèque de documents
  */
 
-/**
- * Résout le dossier de stockage de la bibliothèque
- * Utilise la logique centralisée de paths.php
- */
-function getBibliothequeDir() {
-    if (function_exists('getDataDir')) {
-        $path = getDataDir() . DIRECTORY_SEPARATOR . 'bibliotheque';
-        if (!is_dir($path)) {
-            @mkdir($path, 0777, true);
+if (!function_exists('getBibliothequeDir')) {
+    /**
+     * Résout le dossier de stockage de la bibliothèque
+     * Utilise la logique centralisée de paths.php
+     */
+    function getBibliothequeDir()
+    {
+        if (function_exists('getDataDir')) {
+            $path = getDataDir() . DIRECTORY_SEPARATOR . 'bibliotheque';
+            if (!is_dir($path)) {
+                @mkdir($path, 0777, true);
+            }
+            return $path;
         }
-        return $path;
+
+        // Fallback si paths.php n'est pas chargé (ne devrait pas arriver)
+        return normalizePath(__DIR__ . '/../../../bibliotheque');
     }
-    
-    // Fallback si paths.php n'est pas chargé (ne devrait pas arriver)
-    return normalizePath(__DIR__ . '/../../../bibliotheque');
 }
 
 /**
