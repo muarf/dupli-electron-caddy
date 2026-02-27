@@ -1275,8 +1275,6 @@ JobDetails MonitorWorker::GetJobInfo(HANDLE hPrinter, DWORD jobId) {
     details.totalPages = jobInfo->TotalPages;
   } else if (jobInfo->PagesPrinted > 0) {
     details.totalPages = jobInfo->PagesPrinted;
-  } else {
-    details.totalPages = 0;
   }
 
   // Extract Time Submitted

@@ -529,7 +529,9 @@
     "message_placeholder": "Un petit mot, une réclamation, un encouragement, une info?",
     "back_to_form": "Retour au formulaire",
     "save_btn": "Enregistrer !",
-    "calculate_fill_rate": "Calculez le taux de remplissage"
+    "calculate_fill_rate": "Calculez le taux de remplissage",
+    "yes": "Oui",
+    "no": "Non"
   },
   "changement": {
     "title": "Signalement de changement de consommable",

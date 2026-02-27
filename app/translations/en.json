@@ -525,7 +525,9 @@
         "message_placeholder": "A note, a complaint, an encouragement, some info?",
         "back_to_form": "Back to form",
         "save_btn": "Save!",
-        "calculate_fill_rate": "Calculate fill rate"
+        "calculate_fill_rate": "Calculate fill rate",
+        "yes": "Yes",
+        "no": "No"
     },
     "changement": {
         "title": "Consumable change report",

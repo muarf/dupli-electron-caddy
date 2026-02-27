@@ -29,7 +29,7 @@ function getTableForMachine($machine)
         
         <div class="form-group">
           <label for="search"><?php _e('admin_tirage.search_contact'); ?></label>
-          <input type="text" name="search" id="search" class="form-control" value="<?= htmlspecialchars($_GET['search'] ?? '') ?>" placeholder="<?php _e('admin_tirage.contact_name_placeholder'); ?>">
+          <input type="text" name="search" id="search" class="form-control" value="<?= htmlspecialchars($_GET['search'] ?? '') ?>" placeholder="<?= htmlspecialchars(__('admin_tirage.contact_name_placeholder')) ?>">
         </div>
         
         <div class="form-group" style="margin-left: 10px;">
