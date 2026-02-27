@@ -37,8 +37,13 @@ function get_package_install_help(string $type, string $pkg_key, string $distro)
         'debian' => ['pref' => 'sudo apt-get install ', 'ext_prefix' => 'php-'],
         'fedora' => ['pref' => 'sudo dnf install ', 'ext_prefix' => 'php-'],
         'arch' => ['pref' => 'sudo pacman -S ', 'ext_prefix' => 'php-'],
+        'windows' => ['pref' => 'Activez dans php.ini : ', 'ext_prefix' => 'php_'],
         'unknown' => ['pref' => 'Installez ', 'ext_prefix' => 'php-']
     ];
+
+    if (PHP_OS_FAMILY === 'Windows') {
+        $distro = 'windows';
+    }
 
     $d = $commands[$distro] ?? $commands['unknown'];
     
@@ -47,6 +52,9 @@ function get_package_install_help(string $type, string $pkg_key, string $distro)
             'ghostscript' => 'ghostscript',
             'imagemagick' => 'imagemagick'
         ];
+        if ($distro === 'windows') {
+            return "Téléchargez et installez " . ($bins[$pkg_key] ?? $pkg_key);
+        }
         return $d['pref'] . ($bins[$pkg_key] ?? $pkg_key);
     }
 
@@ -67,12 +75,22 @@ function get_package_install_help(string $type, string $pkg_key, string $distro)
 function get_aggregated_install_command(array $packages): string
 {
     $distro = get_linux_distro_info();
+    if (PHP_OS_FAMILY === 'Windows') {
+        $distro = 'windows';
+    }
+
     $commands = [
         'debian' => ['pref' => 'sudo apt-get install -y ', 'ext_prefix' => 'php-'],
         'fedora' => ['pref' => 'sudo dnf install -y ', 'ext_prefix' => 'php-'],
         'arch' => ['pref' => 'sudo pacman -S --noconfirm ', 'ext_prefix' => 'php-'],
+        'windows' => ['pref' => 'Modules à activer : ', 'ext_prefix' => 'extension='],
         'unknown' => ['pref' => 'sudo apt-get install ', 'ext_prefix' => 'php-']
     ];
+
+    // Sur PHP Windows "unknown" (souvent serveur mutualisé ou IIS), on ne propose pas sudo
+    if (PHP_OS_FAMILY === 'Windows' && $distro === 'unknown') {
+        $distro = 'windows';
+    }
 
     $d = $commands[$distro] ?? $commands['unknown'];
     
@@ -96,6 +114,10 @@ function get_aggregated_install_command(array $packages): string
         } else {
             $resolved_pkgs[] = $d['ext_prefix'] . ($exts[$pkg['key']] ?? $pkg['key']);
         }
+    }
+
+    if ($distro === 'windows') {
+        return $d['pref'] . implode(', ', array_unique($resolved_pkgs));
     }
 
     return $d['pref'] . implode(' ', array_unique($resolved_pkgs));
@@ -136,24 +158,30 @@ function check_system_dependencies(): array
 
     // Détecter l'OS courant
     $is_windows = PHP_OS_FAMILY === 'Windows';
+    $php_ini_path = php_ini_loaded_file();
 
-    // Si on est sous Windows dans le dossier de l'application, l'aide à l'installation d'extensions est spécifique
-    $is_electron_windows = $is_windows && strpos(__DIR__, 'dupli-electron') !== false;
+    // Si on est sous Windows, l'aide à l'installation d'extensions est spécifique
+    $is_electron_windows = $is_windows && (strpos(__DIR__, 'dupli-electron') !== false || strpos(__DIR__, 'dupli-php-dev') !== false);
 
     $results['php_extensions'] = [
         'imagick' => [
             'name' => 'PHP Imagick', 
             'status' => extension_loaded('imagick'), 
             'critical' => true, 
-            'help' => $is_electron_windows ? 'Téléchargez et copiez php_imagick.dll dans ' . realpath(__DIR__ . '/../../php/ext') . ' puis ajoutez extension=imagick dans php.ini' : get_package_install_help('ext', 'imagick', $distro)
+            'help' => $is_electron_windows ? 'Téléchargez php_imagick.dll et activez "extension=imagick" dans ' . $php_ini_path : get_package_install_help('ext', 'imagick', $distro)
         ],
         'gd' => [
             'name' => 'PHP GD', 
             'status' => extension_loaded('gd'), 
             'critical' => true, 
-            'help' => $is_electron_windows ? 'Décommentez extension=gd dans ' . realpath(__DIR__ . '/../../php/php.ini') : get_package_install_help('ext', 'gd', $distro)
+            'help' => $is_electron_windows ? 'Décommentez "extension=gd" dans ' . $php_ini_path : get_package_install_help('ext', 'gd', $distro)
         ],
-        'sqlite3' => ['name' => 'PHP SQLite3', 'status' => extension_loaded('sqlite3'), 'critical' => true, 'help' => get_package_install_help('ext', 'sqlite3', $distro)],
+        'sqlite3' => [
+            'name' => 'PHP SQLite3', 
+            'status' => extension_loaded('sqlite3'), 
+            'critical' => true, 
+            'help' => $is_electron_windows ? 'Décommentez "extension=sqlite3" dans ' . $php_ini_path : get_package_install_help('ext', 'sqlite3', $distro)
+        ],
         'mbstring' => ['name' => 'PHP Mbstring', 'status' => extension_loaded('mbstring'), 'critical' => true, 'help' => get_package_install_help('ext', 'mbstring', $distro)],
         'xml' => ['name' => 'PHP XML', 'status' => extension_loaded('xml'), 'critical' => true, 'help' => get_package_install_help('ext', 'xml', $distro)],
     ];
