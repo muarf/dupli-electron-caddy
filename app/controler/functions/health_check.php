@@ -209,40 +209,14 @@ function check_system_dependencies(): array
 
     // Vérifier les permissions
     require_once __DIR__ . '/bibliotheque.php';
-    // Définition des dossiers à vérifier (chemins relatifs depuis ce script)
+    // Définition des dossiers à vérifier (utilisant les chemins centralisés)
     $folders_to_check = [
-        'tmp' => '../../public/tmp',
-        'uploads' => '../../public/uploads',
-        'bibliotheque' => getBibliothequeDir() // Chemin absolu calculé
+        'tmp' => getTmpDir(),
+        'uploads' => getUploadsDir(),
+        'bibliotheque' => getBibliothequeDir()
     ];
 
-    // Créer les dossiers automatiquement s'ils n'existent pas
-    foreach ($folders_to_check as $key => $path) {
-        $abs_path = realpath($path);
-        
-        // Si realpath échoue (le dossier n'existe pas encore)
-        if (!$abs_path) {
-            // Construire le chemin absolu théorique
-            if (strpos($path, DIRECTORY_SEPARATOR) === 0 || preg_match('~^[a-zA-Z]:\\\\~', $path)) {
-                // $path est déjà absolu (ex: bibliothèque)
-                $target_path = $path;
-            } else {
-                // $path est relatif
-                $target_path = __DIR__ . DIRECTORY_SEPARATOR . $path;
-            }
-            
-            // Tenter de créer le dossier
-            if (!is_dir($target_path)) {
-                @mkdir($target_path, 0777, true);
-            }
-        }
-    }
-
-    foreach ($folders_to_check as $key => $path) {
-        $abs_path = realpath($path);
-        if (!$abs_path) {
-            $abs_path = realpath(__DIR__ . '/' . $path);
-        }
+    foreach ($folders_to_check as $key => $abs_path) {
         if ($abs_path) {
             $is_writable = is_writable($abs_path);
             $results['permissions'][$key] = [

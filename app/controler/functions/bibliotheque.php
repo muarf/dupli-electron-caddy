@@ -5,40 +5,18 @@
 
 /**
  * Résout le dossier de stockage de la bibliothèque
- * Doit être aligné sur l'emplacement de la base de données pour AppImage/Windows
+ * Utilise la logique centralisée de paths.php
  */
 function getBibliothequeDir() {
-    // Priorité 1 : Variable d'environnement spécifique
-    $envDir = getenv('DUPLI_BIBLIOTHEQUE_DIR');
-    if (!empty($envDir)) {
-        return normalizePath($envDir);
+    if (function_exists('getDataDir')) {
+        $path = getDataDir() . DIRECTORY_SEPARATOR . 'bibliotheque';
+        if (!is_dir($path)) {
+            @mkdir($path, 0777, true);
+        }
+        return $path;
     }
     
-    // Récupérer le chemin de la base de données configuré
-    // On inclut conf.php pour avoir $conf['db_path'] si disponible, ou on réplique la logique
-    global $conf;
-    
-    // Si $conf est défini et contient db_path
-    if (isset($conf['db_path']) && !empty($conf['db_path'])) {
-        $dbDir = dirname($conf['db_path']);
-        return normalizePath($dbDir . DIRECTORY_SEPARATOR . 'bibliotheque');
-    }
-    
-    // Fallback : Logique dupliquée de conf.php pour être sûr
-    if (getenv('DUPLICATOR_DB_PATH')) {
-        $dbPath = getenv('DUPLICATOR_DB_PATH');
-        $dbDir = dirname($dbPath);
-        return normalizePath($dbDir . DIRECTORY_SEPARATOR . 'bibliotheque');
-    }
-    
-    // Détection AppImage
-    $current_dir = getcwd();
-    if (strpos($current_dir, '.mount') !== false || strpos($current_dir, 'AppDir') !== false) {
-        $home_dir = $_SERVER['HOME'] ?? getenv('HOME') ?? '/tmp';
-        return normalizePath($home_dir . '/.config/Duplicator/bibliotheque');
-    }
-    
-    // Développement local (à côté de duplinew.sqlite qui est dans ../)
+    // Fallback si paths.php n'est pas chargé (ne devrait pas arriver)
     return normalizePath(__DIR__ . '/../../../bibliotheque');
 }
 

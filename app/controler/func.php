@@ -11,6 +11,7 @@
 // include('conf.php');
 
 // Inclure les modules de fonctions
+require_once __DIR__ . '/functions/paths.php';
 require_once __DIR__ . '/functions/init.php';
 require_once __DIR__ . '/functions/database.php';
 require_once __DIR__ . '/functions/news.php';
