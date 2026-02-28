@@ -158,7 +158,7 @@ function check_system_dependencies(): array
 
     // Détecter l'OS courant
     $is_windows = PHP_OS_FAMILY === 'Windows';
-    $php_ini_path = php_ini_loaded_file();
+    $php_ini_path = php_ini_loaded_file() ?: 'votre fichier php.ini';
 
     // Si on est sous Windows, l'aide à l'installation d'extensions est spécifique
     $is_electron_windows = $is_windows && (strpos(__DIR__, 'dupli-electron') !== false || strpos(__DIR__, 'dupli-php-dev') !== false);
