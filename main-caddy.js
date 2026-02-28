@@ -1175,7 +1175,19 @@ function startPhpFpm() {
         const asarExtPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'ext');
         const noAsarExtPath = path.join(process.resourcesPath, 'app', 'php', 'ext');
         const devExtPath = path.join(__dirname, 'php', 'ext'); // Mode développement
-        const phpIniPath = path.join(appPath, '..', 'php.ini');
+
+        // Résolution intelligente du php.ini
+        const phpIniCandidates = [
+            path.join(appPath, '..', 'php', 'php.ini'), // resources/app/php/php.ini ou __dirname/php/php.ini
+            path.join(appPath, '..', 'php.ini'),        // resources/app/php.ini (ancien)
+        ];
+        let phpIniPath = phpIniCandidates[0];
+        for (const candidate of phpIniCandidates) {
+            if (fs.existsSync(candidate)) {
+                phpIniPath = candidate;
+                break;
+            }
+        }
 
         // Déterminer le chemin des extensions : développement d'abord, puis packagé
         let phpExtPath;
@@ -2305,25 +2317,18 @@ function setupAutoUpdater() {
     // Solution: utiliser providerOptions.updateConfigPath pour pointer vers le bon fichier
     if (isAppImage) {
         console.log('AppImage détectée - configuration pour utiliser latest-linux-appimage.yml');
-        // Configurer le provider GitHub pour utiliser le fichier AppImage
-        // electron-updater cherchera latest-linux-appimage.yml au lieu de latest-linux.yml
-        // Pour AppImage, configurer pour utiliser latest-linux-appimage.yml
-        // electron-updater cherchera ce fichier au lieu de latest-linux.yml
-        // Note: updateConfigPath peut être utilisé via providerOptions dans certaines versions
-        // Pour l'instant, on va utiliser une approche de contournement :
-        // - Le workflow génère latest-linux-appimage.yml
-        // - On va intercepter checkForUpdates pour télécharger manuellement ce fichier
-        // - Ou utiliser un provider personnalisé
+        autoUpdater.channel = channel;
         autoUpdater.setFeedURL({
             provider: 'github',
             owner: 'muarf',
             repo: 'dupli-electron-caddy',
-            channel: channel,  // 'beta' ou 'latest'
+            channel: channel,
             releaseType: isBeta ? 'prerelease' : 'release'
         });
     } else {
-        console.log('Version .deb détectée - configuration du channel:', channel);
-        // Configurer le channel pour .deb aussi (beta ou stable)
+        const platformLabel = isWindows ? 'Windows' : 'Linux (.deb)';
+        console.log(`${platformLabel} détectée - configuration du channel:`, channel);
+        autoUpdater.channel = channel;
         autoUpdater.setFeedURL({
             provider: 'github',
             owner: 'muarf',
