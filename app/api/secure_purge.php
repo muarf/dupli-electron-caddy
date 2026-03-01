@@ -66,11 +66,11 @@ try {
     // On vérifie si la colonne created_at existe, sinon on skip ou on utilise une autre colonne
     // Suppression simple des enregistrements vieux
     try {
-        $oldHistoryJobs = $db->select("SELECT id FROM recorded_print_jobs WHERE created_at < ?", [$cutoffDate]);
+        $oldHistoryJobs = $db->select("SELECT job_id, printer_name FROM recorded_print_jobs WHERE recorded_at < ?", [$cutoffDate]);
 
         foreach ($oldHistoryJobs as $job) {
             // Suppression base de données uniquement (pas de fichiers liés ici)
-            $db->execute("DELETE FROM recorded_print_jobs WHERE id = ?", [$job['id']]);
+            $db->execute("DELETE FROM recorded_print_jobs WHERE job_id = ? AND printer_name = ?", [$job['job_id'], $job['printer_name']]);
             $stats['jobs_deleted']++;
         }
     } catch (Exception $ex) {
