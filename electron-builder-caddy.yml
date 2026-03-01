@@ -23,6 +23,8 @@ files:
   - caddy/**/*
   - utils/**/*
   - src/**/*
+  - "scripts/**/*"
+  - "!scripts/afterpack-linux.js"
   - "!app/vendor/phpunit/**/*"
   - "!app/vendor/pestphp/**/*"
   - "!app/vendor/sebastian/**/*"
