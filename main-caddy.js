@@ -2305,6 +2305,8 @@ function setupAutoUpdater() {
         app.getName().toLowerCase().includes('beta') ||
         app.getAppPath().toLowerCase().includes('beta');
     const channel = isBeta ? 'beta' : 'latest';
+    autoUpdater.allowPrerelease = isBeta;
+    autoUpdater.logger = console;
 
     console.log(`[AutoUpdater] Mode détecté: ${isBeta ? 'BETA (channel: beta)' : 'STABLE (channel: latest)'}`);
 
