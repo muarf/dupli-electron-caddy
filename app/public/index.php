@@ -861,7 +861,7 @@ if (in_array($page, $page_secure, true)) {
     error_log("[PASSWORD_CHECK] Page demandée: " . $page);
     error_log("[PASSWORD_CHECK] Condition entrée: " . ($page == 'accueil' || ($page != 'create_password' && $page != 'installation' && $page != 'setup' && $page != 'setup_save') ? 'OUI' : 'NON'));
 
-    if ($page == 'accueil' || ($page != 'create_password' && $page != 'installation' && $page != 'setup' && $page != 'setup_save')) {
+    if ($page == 'accueil' || ($page != 'create_password' && $page != 'installation' && $page != 'setup' && $page != 'setup_save' && $page != 'setup_upload')) {
         try {
             $db = pdo_connect();
             error_log("[PASSWORD_CHECK] Connexion DB réussie");
@@ -878,7 +878,7 @@ if (in_array($page, $page_secure, true)) {
             }
 
             // Vérifier s'il existe un mot de passe admin (sauf pour les pages d'installation/setup)
-            if ($page != 'installation' && $page != 'setup' && $page != 'setup_save') {
+            if ($page != 'installation' && $page != 'setup' && $page != 'setup_save' && $page != 'setup_upload') {
                 error_log("[PASSWORD_CHECK] Vérification mot de passe admin pour page: " . $page);
                 try {
                     $query = $db->prepare('SELECT COUNT(*) as count FROM admin_passwords WHERE is_active = 1');
@@ -938,7 +938,7 @@ if (in_array($page, $page_secure, true)) {
             // Exécuter les migrations de base de données (après vérification password)
             // Sauf pour les pages d'installation/setup
             // Cache de session pour éviter de vérifier les migrations à chaque requête
-            if ($page != 'installation' && $page != 'setup' && $page != 'setup_save' && $page != 'create_password') {
+            if ($page != 'installation' && $page != 'setup' && $page != 'setup_save' && $page != 'setup_upload' && $page != 'create_password') {
                 if (!isset($_SESSION['_migrations_checked'])) {
                     try {
                         require_once __DIR__ . '/../models/migrations/DatabaseMigrationManager.php';
@@ -955,7 +955,7 @@ if (in_array($page, $page_secure, true)) {
         } catch (PDOException $e) {
             error_log("[PASSWORD_CHECK] Exception connexion DB: " . $e->getMessage());
             // Base de données non trouvée, rediriger vers l'installation
-            if ($page != 'installation' && $page != 'setup' && $page != 'setup_save' && $page != 'create_password') {
+            if ($page != 'installation' && $page != 'setup' && $page != 'setup_save' && $page != 'setup_upload' && $page != 'create_password') {
                 error_log("[PASSWORD_CHECK] Redirection vers installation (DB non trouvée)");
                 header('Location: ?installation');
                 exit;
