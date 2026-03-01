@@ -6,6 +6,7 @@ error_reporting(E_ALL);
 
 require_once(__DIR__ . '/../vendor/autoload.php');
 require_once(__DIR__ . '/../controler/functions/i18n.php');
+require_once(__DIR__ . '/../controler/functions/binary_utilities.php');
 
 /**
  * Calcule le taux de remplissage d'une image
@@ -119,13 +120,10 @@ function calculate_fill_rate($image_path, $tolerance = 245) {
  */
 function convert_pdf_to_image_for_analysis($pdf_file, $output_dir, $page_number = 1, $dpi = 150) {
     try {
-        // Vérifier que Ghostscript est disponible
-        $gs_command = 'gs';
-        if (PHP_OS_FAMILY === 'Windows') {
-            $gs_command = __DIR__ . '/../ghostscript/gswin64c.exe';
-            if (!file_exists($gs_command)) {
-                throw new Exception("Ghostscript Windows non trouvé : " . $gs_command);
-            }
+        // Vérifier que Ghostscript est disponible (utilise la fonction centralisée)
+        $gs_path = get_ghostscript_path();
+        if (!$gs_path) {
+            throw new Exception("Ghostscript n'a pas été trouvé sur ce système.");
         }
         
         // Vérifier que le fichier PDF existe
@@ -135,7 +133,9 @@ function convert_pdf_to_image_for_analysis($pdf_file, $output_dir, $page_number 
         
         // Créer le dossier de sortie s'il n'existe pas
         if (!is_dir($output_dir)) {
-            mkdir($output_dir, 0777, true);
+            if (!mkdir($output_dir, 0777, true)) {
+                throw new Exception("Impossible de créer le dossier de sortie : " . $output_dir);
+            }
         }
         
         // Générer un nom de fichier unique pour l'image
@@ -143,17 +143,20 @@ function convert_pdf_to_image_for_analysis($pdf_file, $output_dir, $page_number 
         $output_file = $output_dir . 'page_' . $timestamp . '.png';
         
         // Convertir la première page du PDF en PNG
-        $command = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=png16m -r" . intval($dpi) . 
+        // escapeshellarg() sur $gs_path pour gérer les espaces dans le chemin (ex: "Program Files")
+        $command = escapeshellarg($gs_path) . " -dNOPAUSE -dBATCH -sDEVICE=png16m -r" . intval($dpi) . 
                    " -dFirstPage=" . intval($page_number) . " -dLastPage=" . intval($page_number) .
                    " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . 
                    escapeshellarg($output_file) . " " . escapeshellarg($pdf_file) . " 2>&1";
+        
+        error_log("GS command: " . $command);
         
         $output = [];
         $return_var = 0;
         exec($command, $output, $return_var);
         
         if ($return_var !== 0) {
-            throw new Exception("Erreur lors de la conversion avec Ghostscript. Code: " . $return_var);
+            throw new Exception("Erreur lors de la conversion avec Ghostscript. Code: " . $return_var . " Output: " . implode("\n", $output));
         }
         
         if (!file_exists($output_file)) {
