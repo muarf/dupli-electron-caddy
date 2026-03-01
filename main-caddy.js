@@ -1026,7 +1026,7 @@ function getCaddyfilePath() {
     const isWindows = process.platform === 'win32';
     const isMacOS = process.platform === 'darwin';
 
-    if (isAppImage || isMacOS || isPackaged) {
+    if (!isWindows && (isAppImage || isMacOS || isPackaged)) {
         // Dans l'AppImage ou macOS, le Caddyfile peut être avec ou sans ASAR
         const isLinux = process.platform === 'linux';
         if (isAppImage || (isLinux && isPackaged)) {
@@ -2326,7 +2326,7 @@ function setupAutoUpdater() {
             releaseType: isBeta ? 'prerelease' : 'release'
         });
     } else {
-        const platformLabel = isWindows ? 'Windows' : 'Linux (.deb)';
+        const platformLabel = process.platform === 'win32' ? 'Windows' : 'Linux (.deb)';
         console.log(`${platformLabel} détectée - configuration du channel:`, channel);
         autoUpdater.channel = channel;
         autoUpdater.setFeedURL({
