@@ -7,6 +7,7 @@ publish:
   provider: github
   releaseType: release
   publishAutoUpdate: true
+afterPack: scripts/afterpack-linux.js
 files:
   - main-caddy.js
   - main.js
