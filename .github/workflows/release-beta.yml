@@ -178,8 +178,8 @@ jobs:
           tag_name: ${{ needs.get-version.outputs.tag }}
           files: |
             dist/Duplicator-Beta-*
-            dist/latest-linux-beta.yml
-            dist/latest-linux-beta-deb.yml
+            dist/beta-linux.yml
+            dist/latest-linux-deb.yml
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -253,7 +253,7 @@ jobs:
           files: |
             dist/Duplicator-Beta-*.exe
             dist/Duplicator-Beta-*.zip
-            dist/latest-beta.yml
+            dist/beta.yml
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
