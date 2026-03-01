@@ -352,7 +352,7 @@ require_once __DIR__ . '/../controler/conf.php';
     }
     
     // Page de connexion si non authentifié
-    return template("../view/admin.login.html.php", $array);
+    return template(__DIR__ . "/../view/admin.login.html.php", $array);
 }
 
 /**
@@ -880,7 +880,7 @@ function handleDatabaseSection($array, $dbManager, $backupManager) {
     
     // Capturer le contenu de la vue
     ob_start();
-    include("../view/admin.bdd.html.php");
+    include(__DIR__ . "/../view/admin.bdd.html.php");
     $content = ob_get_contents();
     ob_end_clean();
     
@@ -902,7 +902,7 @@ function handleMainAdminSection($array, $siteManager) {
         // Obtenir les emails
         $array['emails'] = $siteManager->getEmails();
         
-        return template("../view/admin.html.php", $array);
+        return template(__DIR__ . "/../view/admin.html.php", $array);
 }
 
 /**
@@ -916,7 +916,7 @@ function handlePriceSection($array, $priceManager) {
     // Stocker les variables dans $GLOBALS pour les préserver
     $GLOBALS['model_variables'] = $array;
     
-    return template("../view/admin.prix.html.php", $array);
+    return template(__DIR__ . "/../view/admin.prix.html.php", $array);
 }
 
 /**
@@ -930,7 +930,7 @@ function handleTirageSection($array, $tirageManager) {
     // Stocker les variables dans $GLOBALS pour les préserver
     $GLOBALS['model_variables'] = $array;
     
-    return template("../view/admin.tirage.html.php", $array);
+    return template(__DIR__ . "/../view/admin.tirage.html.php", $array);
 }
 
 /**
@@ -944,7 +944,7 @@ function handleNewsSection($array, $newsManager) {
     // Stocker les variables dans $GLOBALS pour les préserver
     $GLOBALS['model_variables'] = $array;
     
-    return template("../view/admin.news.html.php", $array);
+    return template(__DIR__ . "/../view/admin.news.html.php", $array);
 }
 
 /**
@@ -958,7 +958,7 @@ function handleStatsSection($array, $statsManager) {
     // Stocker les variables dans $GLOBALS pour les préserver
     $GLOBALS['model_variables'] = $array;
     
-    return template("../view/admin.stats.html.php", $array);
+    return template(__DIR__ . "/../view/admin.stats.html.php", $array);
 }
 
 /**
@@ -968,7 +968,7 @@ function handleImprimantesSection($array) {
     // Stocker les variables dans $GLOBALS pour les préserver
     $GLOBALS['model_variables'] = $array;
 
-    return template("../view/admin.imprimantes.html.php", $array);
+    return template(__DIR__ . "/../view/admin.imprimantes.html.php", $array);
 }
 
 /**
@@ -991,7 +991,7 @@ function handleEditSection($array, $editManager) {
     // Stocker les variables dans $GLOBALS pour les préserver
     $GLOBALS['model_variables'] = $array;
     
-    return template("../view/admin.edit.html.php", $array);
+    return template(__DIR__ . "/../view/admin.edit.html.php", $array);
 }
 
 
@@ -1254,11 +1254,11 @@ function handleAideSection($array) {
             $array['message'] = ['type' => 'danger', 'text' => $array['aide_error']];
         }
         
-        return template("../view/admin.aide.html.php", $array);
+        return template(__DIR__ . "/../view/admin.aide.html.php", $array);
         
     } catch (Exception $e) {
         $array['message'] = ['type' => 'danger', 'text' => 'Erreur : ' . $e->getMessage()];
-        return template("../view/admin.aide.html.php", $array);
+        return template(__DIR__ . "/../view/admin.aide.html.php", $array);
     }
 }
 
@@ -1452,11 +1452,11 @@ function handleEmailsSection($array, $siteManager) {
             $array['message'] = ['type' => 'danger', 'text' => $array['email_error']];
         }
         
-        return template("../view/admin.emails.html.php", $array);
+        return template(__DIR__ . "/../view/admin.emails.html.php", $array);
         
     } catch (Exception $e) {
         $array['message'] = ['type' => 'danger', 'text' => 'Erreur : ' . $e->getMessage()];
-        return template("../view/admin.emails.html.php", $array);
+        return template(__DIR__ . "/../view/admin.emails.html.php", $array);
     }
 }
 
@@ -1472,11 +1472,11 @@ function handlePasswordSection($array, $siteManager) {
             $array['message'] = ['type' => 'danger', 'text' => $array['password_error']];
         }
         
-        return template("../view/admin.mots.html.php", $array);
+        return template(__DIR__ . "/../view/admin.mots.html.php", $array);
         
     } catch (Exception $e) {
         $array['message'] = ['type' => 'danger', 'text' => 'Erreur : ' . $e->getMessage()];
-        return template("../view/admin.mots.html.php", $array);
+        return template(__DIR__ . "/../view/admin.mots.html.php", $array);
     }
 }
 
@@ -1550,11 +1550,11 @@ function handleAideMachinesSection($array) {
             $array['message'] = ['type' => 'danger', 'text' => $array['aide_error']];
         }
         
-        return template("../view/admin_aide_machines.html.php", $array);
+        return template(__DIR__ . "/../view/admin_aide_machines.html.php", $array);
         
     } catch (Exception $e) {
         $array['message'] = ['type' => 'danger', 'text' => 'Erreur : ' . $e->getMessage()];
-        return template("../view/admin_aide_machines.html.php", $array);
+        return template(__DIR__ . "/../view/admin_aide_machines.html.php", $array);
     }
 }
 

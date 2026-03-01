@@ -62,6 +62,7 @@ class DatabaseMigrationManager
                 'add_document_display_fields' => function () {
                     migrate_add_document_display_fields($this->db);
                 },
+                'printer_mappings_table' => [$this, 'createPrinterMappingsTable'],
                 // Ajouter d'autres migrations ici à l'avenir
             ];
 
@@ -418,6 +419,24 @@ class DatabaseMigrationManager
         }
 
         return $result;
+    }
+
+    /**
+     * Migration: Créer la table printer_mappings
+     */
+    private function createPrinterMappingsTable()
+    {
+        error_log("[MIGRATION] Création table printer_mappings");
+
+        $sql = "CREATE TABLE IF NOT EXISTS printer_mappings (
+            system_printer_name TEXT PRIMARY KEY,
+            machine_type TEXT NOT NULL,
+            machine_id INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )";
+
+        $this->db->exec($sql);
     }
 
     /**

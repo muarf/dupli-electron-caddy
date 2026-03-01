@@ -58,6 +58,15 @@ function Action($conf = null){
                     
                     // Copier le fichier uploadé vers la destination
                     if (copy($uploaded_file['tmp_name'], $target_db_path)) {
+                        // Forcer un checkpoint WAL sur la base importée pour s'assurer que les données sont sur disque
+                        try {
+                            $check_db = new PDO('sqlite:' . $target_db_path);
+                            $check_db->exec('PRAGMA wal_checkpoint(FULL)');
+                            $check_db = null; // Fermer la connexion
+                        } catch (Exception $e) {
+                            error_log("[SETUP] Erreur checkpoint WAL: " . $e->getMessage());
+                        }
+
                         // Vérifier que la BDD a des machines
                         try {
                             $db = pdo_connect();
@@ -71,6 +80,7 @@ function Action($conf = null){
                                 }
                             } else {
                                 // Succès ! Rediriger vers l'accueil
+                                // Le script d'accueil vérifiera alors si un mot de passe admin existe
                                 $_SESSION['upload_success'] = true;
                                 header('Location: ?accueil&setup=restored');
                                 exit;
