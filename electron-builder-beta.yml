@@ -3,6 +3,7 @@
 
 appId: com.dupli.beta
 productName: Duplicator Beta
+afterPack: scripts/afterpack-linux.js
 
 directories:
   output: dist
