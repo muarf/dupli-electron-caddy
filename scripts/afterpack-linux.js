@@ -1,11 +1,12 @@
 /**
- * afterPack hook pour electron-builder
- * Injecte --no-sandbox dans le script AppRun des AppImage Linux.
+ * afterPack hook pour electron-builder — Wrapper Binary Linux
  *
- * Contexte : electron-builder produit un AppRun qui exécute le binaire via atexit().
- * Quand l'utilisateur lance l'AppImage sans arguments (ex: double-clic), la branche
- * `exec "$BIN"` est appelée sans aucun flag, ignorant les executableArgs du YAML.
- * Ce hook patche les deux branches exec pour garantir --no-sandbox sur tous les Linux.
+ * Contexte : afterPack s'exécute sur linux-unpacked/ AVANT que appimagetool
+ * ne génère l'AppRun. Patcher AppRun ici est impossible car il n'existe pas encore.
+ *
+ * Solution : on renomme le binaire Electron (ex: duplicator-beta → duplicator-beta.bin)
+ * et on crée un script shell wrapper à sa place qui injecte --no-sandbox.
+ * L'AppRun appellera le wrapper, lequel appelle le vrai binaire avec les bons flags.
  */
 
 const fs = require('fs');
@@ -16,33 +17,71 @@ module.exports = async function afterPack(context) {
         return;
     }
 
-    const appRunPath = path.join(context.appOutDir, 'AppRun');
+    const { appOutDir } = context;
+    console.log('[afterPack] appOutDir:', appOutDir);
 
-    if (!fs.existsSync(appRunPath)) {
-        console.warn('[afterPack] AppRun introuvable à:', appRunPath);
+    // Lister les fichiers pour debug
+    const files = fs.readdirSync(appOutDir);
+    console.log('[afterPack] Contenu appOutDir:', files.join(', '));
+
+    // Trouver le binaire principal Electron :
+    // - fichier exécutable à la racine de appOutDir
+    // - sans extension
+    // - pas un fichier .so ou autre lib
+    // - taille > 10MB (binaire Electron est volumineux)
+    let binaryPath = null;
+
+    for (const file of files) {
+        // Ignorer les fichiers avec extensions et les libs
+        if (file.includes('.') && !file.endsWith('.bin')) continue;
+        if (file.endsWith('.bin')) continue; // déjà wrappé
+
+        const fp = path.join(appOutDir, file);
+        try {
+            const stat = fs.statSync(fp);
+            if (stat.isFile() && (stat.mode & 0o111) && stat.size > 10 * 1024 * 1024) {
+                console.log(`[afterPack] Candidat binaire: ${file} (${Math.round(stat.size / 1024 / 1024)}MB)`);
+                binaryPath = fp;
+                break;
+            }
+        } catch (e) {
+            // ignorer
+        }
+    }
+
+    if (!binaryPath) {
+        console.warn('[afterPack] Binaire Electron introuvable dans appOutDir. Contenu:');
+        files.forEach(f => {
+            try {
+                const s = fs.statSync(path.join(appOutDir, f));
+                console.warn(`  ${f}: ${s.isFile() ? s.size + 'B' : 'dir'} mode=${s.mode.toString(8)}`);
+            } catch (e) { }
+        });
         return;
     }
 
-    let content = fs.readFileSync(appRunPath, 'utf8');
-    const original = content;
+    const binDir = path.dirname(binaryPath);
+    const binName = path.basename(binaryPath);
+    const realBinaryPath = path.join(binDir, binName + '.bin');
 
-    // Patcher la branche sans arguments (double-clic)
-    // Note: les lignes exec sont indentées dans l'AppRun, d'où le flag multiline + capture des espaces
-    content = content.replace(
-        /^( *)exec "\$BIN"$/m,
-        '$1exec "$BIN" --no-sandbox --disable-setuid-sandbox'
-    );
-
-    // Patcher la branche avec arguments (ligne de commande)
-    content = content.replace(
-        /^( *)exec "\$BIN" "\$\{args\[@\]\}"$/m,
-        '$1exec "$BIN" --no-sandbox --disable-setuid-sandbox "${args[@]}"'
-    );
-
-    if (content === original) {
-        console.warn('[afterPack] Aucun remplacement effectué — le format de AppRun a peut-être changé.');
-    } else {
-        fs.writeFileSync(appRunPath, content, 'utf8');
-        console.log('[afterPack] --no-sandbox injecté avec succès dans AppRun');
+    // Eviter de wrapper deux fois
+    if (fs.existsSync(realBinaryPath)) {
+        console.log('[afterPack] Wrapper déjà en place, rien à faire.');
+        return;
     }
+
+    // 1. Renommer le binaire original
+    fs.renameSync(binaryPath, realBinaryPath);
+    console.log(`[afterPack] Binaire renommé: ${binName} → ${binName}.bin`);
+
+    // 2. Créer le wrapper shell
+    const wrapper = [
+        '#!/bin/sh',
+        '# Wrapper injecté par afterpack-linux.js pour --no-sandbox (Linux AppImage)',
+        'exec "$(dirname "$0")/' + binName + '.bin" --no-sandbox --disable-setuid-sandbox "$@"',
+        ''
+    ].join('\n');
+
+    fs.writeFileSync(binaryPath, wrapper, { encoding: 'utf8', mode: 0o755 });
+    console.log(`[afterPack] Wrapper shell créé: ${binName} → injecte --no-sandbox`);
 };
