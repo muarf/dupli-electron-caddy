@@ -398,7 +398,7 @@
         });
 
         dropZone.addEventListener('click', (e) => {
-            if (e.target !== fileInput && e.target !== dropZone.querySelector('i') && e.target !== dropZone.querySelector('.drop-zone-text') && e.target !== dropZone.querySelector('.drop-zone-subtext')) {
+            if (e.target !== fileInput) {
                 fileInput.click();
             }
         });
