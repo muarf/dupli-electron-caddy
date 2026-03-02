@@ -2368,6 +2368,19 @@ function setupAutoUpdater() {
     autoUpdater.on('update-available', (info) => {
         console.log('Mise à jour disponible:', info.version);
 
+        // Filtrer les versions stables quand on est en mode beta.
+        // electron-updater peut sélectionner v1.5.57 (stable) depuis le flux Atom
+        // car la logique interne autorise beta → stable. On l'interdit ici.
+        if (isBeta) {
+            const semver = require('semver');
+            const preComponents = semver.prerelease(info.version);
+            const isBetaVersion = preComponents && preComponents.some(c => String(c).toLowerCase() === 'beta');
+            if (!isBetaVersion) {
+                console.log('[AutoUpdater] Version stable ignorée sur channel beta:', info.version);
+                return; // Ne pas notifier l'UI
+            }
+        }
+
         // Vérifier si on est en AppImage et si la mise à jour pointe vers un .deb
         const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
         if (isAppImage) {
