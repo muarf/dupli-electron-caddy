@@ -27,15 +27,16 @@ module.exports = async function afterPack(context) {
     const original = content;
 
     // Patcher la branche sans arguments (double-clic)
+    // Note: les lignes exec sont indentées dans l'AppRun, d'où le flag multiline + capture des espaces
     content = content.replace(
-        /exec "\$BIN"\n/,
-        'exec "$BIN" --no-sandbox --disable-setuid-sandbox\n'
+        /^( *)exec "\$BIN"$/m,
+        '$1exec "$BIN" --no-sandbox --disable-setuid-sandbox'
     );
 
     // Patcher la branche avec arguments (ligne de commande)
     content = content.replace(
-        /exec "\$BIN" "\$\{args\[@\]\}"\n/,
-        'exec "$BIN" --no-sandbox --disable-setuid-sandbox "${args[@]}"\n'
+        /^( *)exec "\$BIN" "\$\{args\[@\]\}"$/m,
+        '$1exec "$BIN" --no-sandbox --disable-setuid-sandbox "${args[@]}"'
     );
 
     if (content === original) {
