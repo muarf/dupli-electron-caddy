@@ -66,20 +66,43 @@ class DatabaseMigrationManager
                 // Ajouter d'autres migrations ici à l'avenir
             ];
 
+            // Vérifier s'il y a des migrations à appliquer
+            $pendingMigrations = [];
             foreach ($migrations as $migrationName => $migrationFunction) {
+                if (!$this->isMigrationApplied($migrationName)) {
+                    $pendingMigrations[$migrationName] = $migrationFunction;
+                }
+            }
+
+            // Créer UN SEUL backup avant toutes les migrations (si au moins une est en attente)
+            if (!empty($pendingMigrations)) {
+                $backup_name = 'pre_migration_' . date('Y-m-d_H-i-s');
+                $backupResult = $this->backupManager->createBackup($backup_name);
+                if (isset($backupResult['error'])) {
+                    error_log('[MIGRATION] Erreur backup pré-migration: ' . $backupResult['error']);
+                } else {
+                    error_log('[MIGRATION] Backup pré-migration créé: ' . ($backupResult['filename'] ?? 'inconnu'));
+                }
+                // Appliquer la rotation hebdomadaire (1 backup auto par semaine)
+                $this->backupManager->pruneOldAutoBackups();
+            }
+
+            // Appliquer les migrations en attente
+            foreach ($pendingMigrations as $migrationName => $migrationFunction) {
                 try {
-                    if (!$this->isMigrationApplied($migrationName)) {
-                        error_log("[MIGRATION] Début migration: $migrationName");
-                        $this->applyMigration($migrationName, $migrationFunction);
-                        error_log("[MIGRATION] Migration $migrationName terminée");
-                    } else {
-                        error_log("[MIGRATION] Migration $migrationName déjà appliquée, ignorée");
-                    }
+                    error_log("[MIGRATION] Début migration: $migrationName");
+                    $this->applyMigration($migrationName, $migrationFunction);
+                    error_log("[MIGRATION] Migration $migrationName terminée");
                 } catch (Exception $e) {
                     error_log("[MIGRATION] ERREUR migration $migrationName: " . $e->getMessage());
                     error_log("[MIGRATION] Continuer avec les migrations suivantes...");
                     // Ne pas bloquer les autres migrations
                 }
+            }
+
+            // Log si aucune migration nécessaire
+            if (empty($pendingMigrations)) {
+                error_log('[MIGRATION] Toutes les migrations sont déjà appliquées.');
             }
 
         } catch (Exception $e) {
@@ -124,21 +147,10 @@ class DatabaseMigrationManager
     }
 
     /**
-     * Appliquer une migration avec backup automatique
+     * Appliquer une migration (le backup unique est créé dans runMigrations avant toutes les migrations)
      */
     private function applyMigration($migrationName, $migrationFunction)
     {
-        // Créer un backup complet de la base avant la migration
-        $backupResult = $this->createMigrationBackup($migrationName);
-
-        if (isset($backupResult['error'])) {
-            error_log("[MIGRATION] Erreur backup pour $migrationName: " . $backupResult['error']);
-            // On continue quand même, mais c'est risqué
-        } else {
-            error_log("[MIGRATION] Backup créé: " . ($backupResult['filename'] ?? 'inconnu'));
-        }
-
-        // Appliquer la migration
         try {
             $this->db->beginTransaction();
             $migrationFunction();
@@ -149,27 +161,6 @@ class DatabaseMigrationManager
             $this->db->rollBack();
             error_log("[MIGRATION] Erreur lors de la migration $migrationName: " . $e->getMessage());
             throw $e;
-        }
-    }
-
-    /**
-     * Créer un backup complet de la base SQLite avant migration
-     */
-    private function createMigrationBackup($migrationName)
-    {
-        try {
-            $current_db_path = $this->conf['db_path'];
-
-            if (!file_exists($current_db_path)) {
-                return ['error' => "Fichier de base de données non trouvé : $current_db_path"];
-            }
-
-            // Utiliser BackupManager pour créer le backup
-            $backup_name = 'before_' . $migrationName . '_' . date('Y-m-d_H-i-s');
-            return $this->backupManager->createBackup($backup_name);
-
-        } catch (Exception $e) {
-            return ['error' => "Erreur lors de la création du backup: " . $e->getMessage()];
         }
     }
 
