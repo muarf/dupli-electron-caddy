@@ -2505,8 +2505,12 @@ function setupAutoUpdater() {
 app.disableHardwareAcceleration();
 
 // Définir le nom de l'application pour Linux (WMClass) - doit correspondre au StartupWMClass dans .desktop
+// IMPORTANT: ne pas écraser le nom si c'est une version beta (sinon isBeta=false dans setupAutoUpdater)
 if (process.platform === 'linux') {
-    app.setName('Duplicator');
+    const currentAppName = app.getName();
+    if (!currentAppName.toLowerCase().includes('beta')) {
+        app.setName('Duplicator');
+    }
 }
 
 // Cette méthode sera appelée quand Electron aura fini de s'initialiser
