@@ -238,6 +238,21 @@ ob_start();
                                 </div>
                             </div>
 
+                            <!-- Mode recto/verso tête-bêche (visible seulement si PDF >= 2 pages) -->
+                            <div class="form-group" id="duplexModeGroup" style="display: none;">
+                                <label class="col-md-4 control-label" for="duplex_mode">Mode impression</label>
+                                <div class="col-md-8">
+                                    <select name="duplex_mode" id="duplex_mode" class="form-control">
+                                        <option value="none">Simple / R/V automatique (Photocopieur)</option>
+                                        <option value="manuel">R/V manuel (work-and-turn) ( duplicopieur)</option>
+                                    </select>
+                                    <small class="help-block text-muted">
+                                        <strong>Duplex manuel :</strong> génère une feuille unique avec le recto à gauche et le verso à droite.
+                                        Imprimez la feuille, retournez le papier et réimprimez-la. Après découpe au milieu, chaque copie est recto/verso.
+                                    </small>
+                                </div>
+                            </div>
+
                             <!-- Informations sur l'imposition -->
                             <div class="form-group">
                                 <label
@@ -542,6 +557,14 @@ ob_start();
                             pageCount = data.page_count;
 
                             pageCountEl.textContent = `${data.page_count} <?php _ejs('imposition_tracts.pages_detected'); ?>`;
+
+                            // Afficher le select duplex seulement si le PDF a >= 2 pages
+                            if (data.page_count >= 2) {
+                                $('#duplexModeGroup').show();
+                            } else {
+                                $('#duplexModeGroup').hide();
+                                $('#duplex_mode').val('none');
+                            }
 
                             if (data.format === 'unknown') {
                                 tractType.innerHTML = `<strong><?php _ejs('imposition_tracts.non_standard_format'); ?> (${data.dimensions.width}×${data.dimensions.height}mm)</strong><br><small style="color: #ff9800;"><?php _ejs('imposition_tracts.select_manually'); ?></small>`;
