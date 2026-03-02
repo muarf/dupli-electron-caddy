@@ -400,6 +400,7 @@ function processImpositionTracts($is_from_lib = false)
         $cutMargin = intval($_POST['cut_margin'] ?? 2);
         $orientation = $_POST['orientation'] ?? 'auto';
         $outputFormat = $_POST['output_format'] ?? 'A3'; // Format de sortie (A3 ou A4)
+        $duplexMode = $_POST['duplex_mode'] ?? 'none'; // Mode duplex : none / duplex / tetebeche
 
         // Appliquer le format manuel si spécifié
         if ($manualFormat !== 'auto') {
@@ -419,6 +420,7 @@ function processImpositionTracts($is_from_lib = false)
         $impositionParams['manual_format'] = $manualFormat;
         $impositionParams['orientation'] = $orientation;
         $impositionParams['output_format'] = $outputFormat;
+        $impositionParams['duplex_mode'] = $duplexMode;
 
         // Traiter l'imposition
         $resultFile = performImposition($inputFile, $impositionParams, $cutMargin);
@@ -456,6 +458,12 @@ function processImpositionTracts($is_from_lib = false)
         $array['preview_url'] = '?view_pdf&file=' . $finalFileName;
         $array['success'] = true;
         $array['result'] = "PDF imposé généré avec succès ! Le PDF contient {$pdfInfo['page_count']} page(s).";
+
+        if ($duplexMode !== 'none' && $pdfInfo['page_count'] >= 2) {
+            $duplexLabel = $duplexMode === 'tetebeche' ? 'tête-bêche' : 'duplex';
+            $versoPages = intval($pdfInfo['page_count'] / 2);
+            $array['result'] .= " Mode $duplexLabel : $versoPages feuille(s) recto + $versoPages feuille(s) verso générée(s).";
+        }
 
         if ($pdfInfo['ghostscript_used']) {
             $array['result'] .= " (Nettoyé avec Ghostscript)";
@@ -650,61 +658,110 @@ function performImposition($inputFile, $params, $cutMargin = 2)
             require_once __DIR__ . '/../controler/functions/CropMarks.php';
         }
 
-        // Logique simplifiée : traiter chaque page séparément
-        for ($pageNum = 1; $pageNum <= $pageCount; $pageNum++) {
-            // Nouvelle feuille avec la bonne orientation et dimensions
-            $pdf->AddPage($sheet_orientation, array($sheet_width, $sheet_height));
+        $duplexMode = $params['duplex_mode'] ?? 'none';
 
-            // Importer la page une seule fois
-            $templateId = $pdf->importPage($pageNum);
+        if ($duplexMode === 'manuel' && $pageCount >= 2) {
+            // ── MODE DUPLEX MANUEL (work-and-turn) ────────────────────────────────
+            // Une seule feuille par paire de pages : recto à gauche, verso à droite.
+            // L'opérateur imprime la feuille, retourne le papier et réimprime la même feuille.
+            // Axe de découpe au milieu de la feuille → chaque copie obtient son recto+verso.
 
-            // Obtenir les dimensions réelles de la page importée
-            $tplSize = $pdf->getTemplateSize($templateId);
-            $tplWidth = $tplSize['width'];
-            $tplHeight = $tplSize['height'];
+            // Axe de split : par colonnes si plusieurs colonnes, par lignes sinon (1 col)
+            $halfCols = ($cols > 1) ? intdiv($cols, 2) : 0;
+            $halfRows = ($cols === 1) ? intdiv($rows, 2) : 0;
 
-            // Dupliquer cette page le nombre de fois nécessaire
-            $copiesPlaced = 0;
-            for ($row = 0; $row < $rows && $copiesPlaced < $copiesPerSheet; $row++) {
-                for ($col = 0; $col < $cols && $copiesPlaced < $copiesPerSheet; $col++) {
-                    // Calculer la position du coin supérieur gauche du SLOT (case)
-                    $slotX = $spacingX + $col * ($slot_width + $spacingX);
-                    $slotY = $spacingY + $row * ($slot_height + $spacingY);
+            for ($pairBase = 1; $pairBase + 1 <= $pageCount; $pairBase += 2) {
+                $pdf->AddPage($sheet_orientation, array($sheet_width, $sheet_height));
+                $rectoId = $pdf->importPage($pairBase);       // page impaire = recto
+                $versoId = $pdf->importPage($pairBase + 1);   // page paire   = verso
 
-                    // Déterminer taille et position du CONTENU
-                    $contentX = $slotX;
-                    $contentY = $slotY;
-                    $contentW = $slot_width;
-                    $contentH = $slot_height;
+                $tplRecto = $pdf->getTemplateSize($rectoId);
+                $tplVerso = $pdf->getTemplateSize($versoId);
 
-                    if ($keepOriginalSize) {
-                        // Garder taille originale mais centrer dans le slot
-                        $contentW = $tplWidth;
-                        $contentH = $tplHeight;
+                for ($row = 0; $row < $rows; $row++) {
+                    for ($col = 0; $col < $cols; $col++) {
+                        // Sélectionner recto ou verso selon la position
+                        if ($cols > 1) {
+                            $isRecto = ($col < $halfCols);
+                        } else {
+                            $isRecto = ($row < $halfRows);
+                        }
+                        $templateId = $isRecto ? $rectoId : $versoId;
+                        $tplSize    = $isRecto ? $tplRecto : $tplVerso;
 
-                        // Centrage
-                        $contentX = $slotX + ($slot_width - $contentW) / 2;
-                        $contentY = $slotY + ($slot_height - $contentH) / 2;
-                    }
+                        $slotX = $spacingX + $col * ($slot_width + $spacingX);
+                        $slotY = $spacingY + $row * ($slot_height + $spacingY);
 
-                    // Placer la page
-                    if ($keepOriginalSize) {
-                        // Utiliser dimensions originales (ou null pour défaut, mais ici explicite pour la clarté)
+                        $contentX = $slotX;
+                        $contentY = $slotY;
+                        $contentW = $slot_width;
+                        $contentH = $slot_height;
+
+                        if ($keepOriginalSize) {
+                            $contentW = $tplSize['width'];
+                            $contentH = $tplSize['height'];
+                            $contentX = $slotX + ($slot_width  - $contentW) / 2;
+                            $contentY = $slotY + ($slot_height - $contentH) / 2;
+                        }
+
                         $pdf->useTemplate($templateId, $contentX, $contentY, $contentW, $contentH);
-                    } else {
-                        // Forcer le redimensionnement au slot
+
+                        if ($drawCropMarks) {
+                            CropMarks::drawCropMarks($pdf, $slotX, $slotY, $slot_width, $slot_height, 3, $cropMarksLength, $cropMarksWidth);
+                        }
+                    }
+                }
+            }
+
+        } else {
+            // ── MODE SIMPLE (comportement original) ───────────────────────────────
+            // Chaque page du PDF source génère une feuille imposée avec N copies.
+            for ($pageNum = 1; $pageNum <= $pageCount; $pageNum++) {
+                // Nouvelle feuille avec la bonne orientation et dimensions
+                $pdf->AddPage($sheet_orientation, array($sheet_width, $sheet_height));
+
+                // Importer la page une seule fois
+                $templateId = $pdf->importPage($pageNum);
+
+                // Obtenir les dimensions réelles de la page importée
+                $tplSize = $pdf->getTemplateSize($templateId);
+                $tplWidth = $tplSize['width'];
+                $tplHeight = $tplSize['height'];
+
+                // Dupliquer cette page le nombre de fois nécessaire
+                $copiesPlaced = 0;
+                for ($row = 0; $row < $rows && $copiesPlaced < $copiesPerSheet; $row++) {
+                    for ($col = 0; $col < $cols && $copiesPlaced < $copiesPerSheet; $col++) {
+                        // Calculer la position du coin supérieur gauche du SLOT (case)
+                        $slotX = $spacingX + $col * ($slot_width + $spacingX);
+                        $slotY = $spacingY + $row * ($slot_height + $spacingY);
+
+                        // Déterminer taille et position du CONTENU
+                        $contentX = $slotX;
+                        $contentY = $slotY;
+                        $contentW = $slot_width;
+                        $contentH = $slot_height;
+
+                        if ($keepOriginalSize) {
+                            // Garder taille originale mais centrer dans le slot
+                            $contentW = $tplWidth;
+                            $contentH = $tplHeight;
+
+                            // Centrage
+                            $contentX = $slotX + ($slot_width - $contentW) / 2;
+                            $contentY = $slotY + ($slot_height - $contentH) / 2;
+                        }
+
+                        // Placer la page
                         $pdf->useTemplate($templateId, $contentX, $contentY, $contentW, $contentH);
-                    }
 
-                    // Dessiner les traits de coupe si demandé
-                    if ($drawCropMarks) {
-                        // Les traits de coupe se dessinent autour du SLOT théorique (format fini), 
-                        // pas nécessairement autour du contenu si celui-ci est plus petit/grand
-                        // Mais généralement on veut couper au format fini (A5, A6 etc.)
-                        CropMarks::drawCropMarks($pdf, $slotX, $slotY, $slot_width, $slot_height, 3, $cropMarksLength, $cropMarksWidth);
-                    }
+                        // Dessiner les traits de coupe si demandé
+                        if ($drawCropMarks) {
+                            CropMarks::drawCropMarks($pdf, $slotX, $slotY, $slot_width, $slot_height, 3, $cropMarksLength, $cropMarksWidth);
+                        }
 
-                    $copiesPlaced++;
+                        $copiesPlaced++;
+                    }
                 }
             }
         }
