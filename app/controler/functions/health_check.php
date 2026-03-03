@@ -249,7 +249,7 @@ function check_system_dependencies(): array
             $is_writable = is_writable($abs_path);
             $results['permissions'][$key] = [
                 'name' => ucfirst($key),
-                'path' => $path,
+                'path' => $abs_path,
                 'status' => $is_writable,
                 'critical' => true
             ];
@@ -257,7 +257,7 @@ function check_system_dependencies(): array
         } else {
             $results['permissions'][$key] = [
                 'name' => ucfirst($key),
-                'path' => $path,
+                'path' => $abs_path,
                 'status' => false,
                 'critical' => true,
                 'error' => 'Dossier inexistant'

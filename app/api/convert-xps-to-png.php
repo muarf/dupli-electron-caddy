@@ -141,6 +141,8 @@ debugLog("Using SPL file: $splFile (size: " . filesize($splFile) . " bytes)");
 // Instead of waiting on the original file, we'll try to copy what we can to a temp file
 // and keep appending until we have a valid ZIP structure.
 
+// Créer le répertoire temporaire plus tôt
+$tempDir = sys_get_temp_dir();
 $shadowFile = $tempDir . DIRECTORY_SEPARATOR . 'shadow_' . $jobId . '.spl';
 debugLog("Shadow Copy Strategy: Copying $splFile to $shadowFile");
 
@@ -237,7 +239,7 @@ if (!$isXps) {
 }
 
 // Créer un fichier temporaire avec les données XPS propres
-$tempDir = sys_get_temp_dir();
+// Créer un fichier temporaire avec les données XPS propres
 $tempFile = $tempDir . DIRECTORY_SEPARATOR . 'xps_job_' . $jobId . '.xps';
 
 debugLog("Extracting XPS data to temporary file: $tempFile");
@@ -268,7 +270,11 @@ fclose($fhOut);
 debugLog("Temporary XPS file created (" . filesize($tempFile) . " bytes)");
 
 // Dossier de sortie pour les PNGs
-$outputDir = realpath(__DIR__ . '/../public/thumbnails') . DIRECTORY_SEPARATOR . $jobId . DIRECTORY_SEPARATOR;
+$thumbnailsDir = __DIR__ . '/../public/thumbnails';
+if (!is_dir($thumbnailsDir)) {
+    mkdir($thumbnailsDir, 0777, true);
+}
+$outputDir = realpath($thumbnailsDir) . DIRECTORY_SEPARATOR . $jobId . DIRECTORY_SEPARATOR;
 if (!is_dir($outputDir)) {
     mkdir($outputDir, 0777, true);
 }

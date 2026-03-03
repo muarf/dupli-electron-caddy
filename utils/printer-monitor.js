@@ -34,6 +34,8 @@ class PrinterMonitor {
         };
         // Cache pour éviter de spammer les mêmes jobs si le natif envoie des doublons
         this.processedJobs = new Set();
+        // Jobs en cours de suppression pour éviter qu'ils ne réapparaissent
+        this.deletingJobs = new Set();
     }
 
     /**
@@ -146,6 +148,12 @@ class PrinterMonitor {
             return; // Ignorer doublon strict
         }
 
+        // Ignorer si le job est marqué comme "en cours de suppression"
+        if (this.deletingJobs.has(parseInt(jobData.jobId))) {
+            console.log(`🚫 [NATIVE MONITOR] Job #${jobData.jobId} ignoré car en cours de suppression`);
+            return;
+        }
+
         // Nettoyer le cache périodiquement (simple stratégie)
         if (this.processedJobs.size > 1000) {
             this.processedJobs.clear();
@@ -213,6 +221,32 @@ class PrinterMonitor {
     setPrintOptions() { }
     getPrintOptions() { return null; }
     registerPrintJob() { } // Added for compatibility with impression-complete
+
+    /**
+     * Marquer un job comme étant en cours de suppression
+     */
+    addDeletingJob(jobId) {
+        const id = parseInt(jobId);
+        if (!isNaN(id)) {
+            this.deletingJobs.add(id);
+            console.log(`📍 [MONITOR] Job #${id} ajouté à la liste d'exclusion (suppression en cours)`);
+
+            // Sécurité: retirer du cache après 30 secondes au cas où
+            setTimeout(() => {
+                this.deletingJobs.delete(id);
+            }, 30000);
+        }
+    }
+
+    /**
+     * Retirer un job de la liste d'exclusion
+     */
+    removeDeletingJob(jobId) {
+        const id = parseInt(jobId);
+        if (!isNaN(id)) {
+            this.deletingJobs.delete(id);
+        }
+    }
 
     /**
      * Force re-analysis of a specific job (bypasses cache)
