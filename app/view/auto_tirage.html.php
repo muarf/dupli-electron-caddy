@@ -703,6 +703,10 @@
             }, async (confirmed) => {
                 if (!confirmed) return;
 
+                // Optimistic UI: Masquer la ligne immédiatement
+                const rowToHide = document.getElementById(`buffer-row-${spoolJobId}`);
+                if (rowToHide) rowToHide.style.opacity = '0.5';
+
                 try {
                     // 1. Supprimer de Windows via Electron IPC (si disponible)
                     if (window.electronAPI && window.electronAPI.deletePrintJob) {
@@ -749,6 +753,8 @@
                     }
                 } catch (error) {
                     console.error("Erreur suppression job:", error);
+                    // Rétablir l'affichage en cas d'erreur
+                    if (rowToHide) rowToHide.style.opacity = '1';
                     showAppModal({ message:  "<?php echo __js('auto_tirage.communication_error'); ?>" , type: "danger" });
                 }
             });
@@ -810,6 +816,12 @@
             }, async (confirmed) => {
                 if (!confirmed) return;
 
+                // Optimistic UI: Masquer les lignes
+                spoolJobIds.forEach(id => {
+                    const r = document.getElementById(`buffer-row-${id}`);
+                    if (r) r.style.opacity = '0.5';
+                });
+
                 try {
                     const response = await fetch('?check_print_jobs', {
                         method: 'POST',
@@ -840,6 +852,11 @@
                     }
                 } catch (error) {
                     console.error("Erreur suppression jobs:", error);
+                    // Rétablir l'affichage en cas d'erreur
+                    spoolJobIds.forEach(id => {
+                        const r = document.getElementById(`buffer-row-${id}`);
+                        if (r) r.style.opacity = '1';
+                    });
                     showAppModal({ message:  "<?php echo __js('auto_tirage.communication_error'); ?>" , type: "danger" });
                 }
             });

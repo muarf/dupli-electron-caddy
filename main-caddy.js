@@ -3017,6 +3017,11 @@ ipcMain.handle('delete-print-job', async (event, printerName, jobId) => {
 
     console.log(`[IPC] delete-print-job: Suppression du job ${id}...`);
 
+    // Notifier le moniteur pour qu'il ignore ce job s'il le re-détecte pendant la suppression
+    if (printerMonitor && printerMonitor.addDeletingJob) {
+        printerMonitor.addDeletingJob(id);
+    }
+
     // Fonction helper pour exécuter PowerShell
     const runPowerShell = (psScript) => {
         return new Promise((resolve) => {

@@ -69,22 +69,23 @@ function startPhpServer() {
     console.log('Démarrage du serveur PHP...');
     console.log('PHP Path:', phpPath);
     console.log('App Path:', appPath);
-    console.log('PHP Ini Path:', phpIniPath);
+    // Variables anti-log pour PHP Dev Server
+    const phpEnv = {
+        ...process.env,
+        PHP_CLI_SERVER_WORKERS: 1,
+        PHP_CLI_SERVER_LOG_LEVEL: 0
+    };
 
-    phpServer = spawn(phpPath, [
-        '-c', phpIniPath,
-        '-S', '127.0.0.1:8000',
-        '-t', appPath
+    // Solution finale Windows: Lancer PHP au travers de cmd.exe pour forcer la redirection
+    // de toutes les sorties (HTTP logs incluses) vers les abysses du système (NUL),
+    // car Node.js est incapable de bufferiser correctement php.exe sous cmd.
+    phpServer = spawn('cmd.exe', [
+        '/c',
+        `"${phpPath}" -c "${phpIniPath}" -S 127.0.0.1:8000 -t "${appPath}" > NUL 2>&1`
     ], {
-        stdio: ['pipe', 'pipe', 'pipe']
-    });
-
-    phpServer.stdout.on('data', (data) => {
-        console.log('PHP Server:', data.toString());
-    });
-
-    phpServer.stderr.on('data', (data) => {
-        console.error('PHP Error:', data.toString());
+        env: phpEnv,
+        windowsHide: true,
+        stdio: 'ignore'
     });
 
     phpServer.on('close', (code) => {
