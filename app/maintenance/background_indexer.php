@@ -11,8 +11,8 @@ if (php_sapi_name() !== 'cli') {
     die("Ce script ne peut être exécuté qu'en ligne de commande.");
 }
 
-require_once __DIR__ . '/../controler/conf.php';
 require_once __DIR__ . '/../controler/func.php';
+require_once __DIR__ . '/../controler/conf.php';
 require_once __DIR__ . '/../controler/functions/bibliotheque.php';
 
 // Arguments
