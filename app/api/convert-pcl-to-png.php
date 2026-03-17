@@ -362,24 +362,29 @@ if (is_resource($process)) {
 debugLog("Command result: $returnVar");
 debugLog("Command output: " . implode("\n", $output));
 
-// Vérifier si des fichiers ont été créés
+// Renommer les pages pour commencer à 0 (cohérent avec EMF/XPS)
+// Ghostscript sort page_1.png, page_2.png... on veut page_0.png, page_1.png...
 $pngFiles = glob($outputDir . 'page_*.png');
-debugLog("Generated " . count($pngFiles) . " PNG files");
+natsort($pngFiles);
+
+foreach ($pngFiles as $file) {
+    if (preg_match('/page_(\d+)\.png$/', $file, $matches)) {
+        $oldIndex = intval($matches[1]);
+        $newIndex = $oldIndex - 1;
+        if ($newIndex >= 0) {
+            $newFile = str_replace("page_$oldIndex.png", "page_$newIndex.png", $file);
+            rename($file, $newFile);
+        }
+    }
+}
+
+// Rafraîchir la liste après renommage
+$pngFiles = glob($outputDir . 'page_*.png');
+debugLog("Generated " . count($pngFiles) . " PNG files (renumbered 0-based)");
 
 if (empty($pngFiles)) {
-    // Si échec, peut-être que Ghostscript n'aime pas l'en-tête SPL.
-    // Tentative 2: Copier sans les premiers octets (header SPL simple)?
-    // Non, c'est risqué sans savoir.
-    // Mais on peut essayer de voir si c'est du PDF encapsulé ou autre.
-    // Pour l'instant, on rapporte l'erreur.
-
-    debugLog("Conversion failed (No PNGs)");
-    echo json_encode([
-        'error' => 'Ghostscript conversion failed (No PNGs generated)',
-        'return_code' => $returnVar,
-        'output' => implode("\n", $output),
-        'command' => $command
-    ]);
+    debugLog("No PNG files generated after renumbering");
+    echo json_encode(['error' => 'No PNG files generated']);
     exit;
 }
 
@@ -393,7 +398,8 @@ foreach ($pngFiles as $file) {
     $pages[] = [
         'page' => $pageNum,
         'path' => $file,
-        'size' => filesize($file)
+        'size' => filesize($file),
+        'url' => $baseUrl . "page_$pageNum.png"
     ];
 }
 
@@ -401,35 +407,6 @@ foreach ($pngFiles as $file) {
 usort($pages, function ($a, $b) {
     return $a['page'] - $b['page'];
 });
-
-// Ajouter l'URL pour chaque page
-foreach ($pages as &$page) {
-    // Ghostscript page numbers start at 1 usually, ensure 0-based index if needed or keep as is.
-    // filename is page_1.png, page_2.png etc.
-    // baseUrl expects page_X.png
-    $page['url'] = $baseUrl . 'page_' . $page['page'] . '.png';
-}
-
-// Fallback thumbnail (page 1)
-// If page_1.png exists, make a copy as page_0.png if needed by frontend, 
-// OR just rely on frontend using the list. 
-// Old EMF logic generated page_%d.png starting at 0 usually (ImageMagick). 
-// Ghostscript usually starts at 1. 
-// Let's normalize to 0-based for consistency with EMF script if that one produced 0-based.
-// Checking convert-emf-to-png.php... it used ImageMagick %d. IM starts at 0 for multi-page images usually.
-// GS starts at 1. 
-// Let's rename them to be 0-based to avoid confusion? 
-// Or just let the array dictate. 
-// Frontend likely expects page_0.png for the main thumb.
-
-$firstPage = $outputDir . 'page_1.png';
-$zeroPage = $outputDir . 'page_0.png';
-
-if (file_exists($firstPage) && !file_exists($zeroPage)) {
-    copy($firstPage, $zeroPage);
-    // Add page 0 to list if not present?
-    // Actually, let's just make sure page_0 exists for the thumbnail URL default.
-}
 
 echo json_encode([
     'success' => true,

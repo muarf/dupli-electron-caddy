@@ -613,6 +613,9 @@
                     <div style="font-size: 10px;" class="text-muted"><?php _ejs('auto_tirage.stabilization'); ?></div>
                 </div>
             ` : `
+                <button class="btn btn-info btn-sm" onclick="refreshJobAnalysis('${job.job_id}', this)" title="<?php echo __js('common.refresh'); ?>">
+                    <i class="fa fa-refresh"></i>
+                </button>
                 <button class="btn btn-primary btn-sm" onclick="moveBufferToSession('${job.job_id}')" title="<?php echo __js('auto_tirage.add_selected'); ?>">
                     <i class="fa fa-plus"></i>
                 </button>
@@ -1299,6 +1302,11 @@
                 const colAction = `
                 <td class="align-middle text-center" style="white-space: nowrap; width: 80px;">
                     <div class="d-flex justify-content-center align-items-center gap-2">
+                        <button class="btn btn-sm btn-outline-info shadow-sm mr-1" 
+                                style="border-radius: 50%; width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;" 
+                                onclick="refreshJobAnalysis('${job.originalJobId}', this)" title="<?php echo __js('common.refresh', [], false); ?>">
+                            <i class="fa fa-refresh"></i>
+                        </button>
                         <button class="btn btn-sm btn-outline-primary shadow-sm mr-1" 
                                 style="border-radius: 50%; width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;" 
                                 onclick="openEditJobModal(${index})" title="<?php echo __js('common.edit', [], false); ?>">
@@ -1455,6 +1463,35 @@
             recalcTotal(index);
 
             saveSession();
+        };
+
+        window.refreshJobAnalysis = async function (jobId, btn) {
+            if (!window.electronAPI || !window.electronAPI.reanalyzePrintJob) {
+                return showAppModal({ message: "API Electron non disponible", type: "warning" });
+            }
+
+            const icon = btn.querySelector('i');
+            icon.classList.add('fa-spin');
+            btn.disabled = true;
+
+            try {
+                addLog('process', `🔄 Ré-analyse forcée pour le job ${jobId}...`);
+                const result = await window.electronAPI.reanalyzePrintJob(jobId);
+                
+                if (result.success) {
+                    addLog('success', `✅ Ré-analyse terminée pour le job ${jobId}`);
+                    // Le polling naturel mettra à jour l'UI, mais on peut forcer un check_print_jobs immédiat
+                    await checkPrintJobs();
+                } else {
+                    addLog('error', `❌ Échec de la ré-analyse: ${result.error}`);
+                }
+            } catch (e) {
+                console.error("Erreur ré-analyse:", e);
+                addLog('error', `❌ Erreur lors de l'appel à la ré-analyse`);
+            } finally {
+                icon.classList.remove('fa-spin');
+                btn.disabled = false;
+            }
         };
 
         window.removeJob = async function (index) {

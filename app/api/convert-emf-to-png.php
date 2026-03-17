@@ -151,44 +151,50 @@ if (!$handle) {
     exit;
 }
 
-// Trouver l'offset EMF (Signature 0x01000000)
-// On lit par blocs pour ne pas tout charger en mémoire
-$bufferSize = 8192;
+// Se positionner au début (on va scanner tout le fichier)
+fseek($handle, 0);
+
+// Extraire TOUS les EMF (Signature 0x01000000)
+$bufferSize = 65536;
 $emfSignature = "\x01\x00\x00\x00";
-$emfOffset = -1;
+$emfPositions = [];
 $pos = 0;
 
 while (!feof($handle)) {
     $chunk = fread($handle, $bufferSize);
-    $found = strpos($chunk, $emfSignature);
-    if ($found !== false) {
-        $emfOffset = $pos + $found;
-        debugLog("EMF Signature found at offset: $emfOffset");
-        break;
+    $lastFound = 0;
+    while (($found = strpos($chunk, $emfSignature, $lastFound)) !== false) {
+        $actualPos = $pos + $found;
+        
+        // Vérifier si c'est un vrai début d'EMF (Signature " EMF" à l'offset 40)
+        fseek($handle, $actualPos + 40);
+        $signature = fread($handle, 4);
+        if ($signature === " EMF") {
+            $emfPositions[] = $actualPos;
+            debugLog("Valid EMF found at offset: $actualPos");
+        } else {
+            // debugLog("Ignored false positive EMF signature at offset: $actualPos");
+        }
+        
+        $lastFound = $found + 4;
+        
+        // Sécurité pour ne pas saturer si le fichier est corrompu
+        if (count($emfPositions) > 500) break 2;
     }
-    // Reculer un peu pour ne pas rater une signature à cheval sur deux blocs
-    if (strlen($chunk) > 3) {
-        fseek($handle, -3, SEEK_CUR);
-        $pos = ftell($handle);
-    } else {
-        $pos += strlen($chunk);
-    }
-
-    // Sécurité: ne pas scanner trop loin si c'est pas au début
-    if ($pos > 100000) { // Si pas trouvé dans les 100 premiers KB, probablement pas là
-        break;
-    }
+    
+    if (feof($handle)) break;
+    
+    // Remettre le pointeur pour la lecture du prochain chunk
+    fseek($handle, $pos + $bufferSize - 3);
+    $pos = ftell($handle);
 }
 
-if ($emfOffset === -1) {
-    debugLog("EMF signature not found in SPL");
+if (empty($emfPositions)) {
+    debugLog("No EMF signatures found in SPL");
     fclose($handle);
-    echo json_encode(['error' => 'EMF signature not found in SPL']);
+    echo json_encode(['error' => 'No EMF signatures found in SPL']);
     exit;
 }
-
-// Se positionner au début de l'EMF
-fseek($handle, $emfOffset);
 
 // Créer le dossier de sortie (Accessible publiquement)
 $outputDir = __DIR__ . '/../public/thumbnails/' . $jobId . '/';
@@ -203,107 +209,76 @@ if (!is_dir($outputDir)) {
 }
 
 // URL de base pour les thumbnails
-$baseUrl = 'http://127.0.0.1:8001/thumbnails/' . $jobId . '/';
+$baseUrl = 'http://127.0.0.1:8001/public/thumbnails/' . $jobId . '/';
 
-// Sauvegarder l'EMF temporaire via stream
-$tempEmf = $outputDir . 'temp.emf';
-$outHandle = fopen($tempEmf, 'wb');
-if (!$outHandle) {
-    debugLog("Failed to create temp EMF file");
-    fclose($handle);
-    echo json_encode(['error' => 'Failed to create temp EMF file']);
-    exit;
+// Extraire chaque EMF vers un fichier temporaire et convertir
+$generatedPages = [];
+$pageSizeLimit = 50; // Limite raisonnable pour éviter de bloquer le serveur
+
+foreach ($emfPositions as $index => $startOffset) {
+    if ($index >= $pageSizeLimit) {
+        debugLog("Reached page limit ($pageSizeLimit). Skipping remaining pages.");
+        break;
+    }
+
+    // Déterminer la fin (soit la signature suivante, soit la fin du fichier)
+    $endOffset = isset($emfPositions[$index + 1]) ? $emfPositions[$index + 1] : filesize($splFile);
+    $length = $endOffset - $startOffset;
+
+    if ($length > 0) {
+        fseek($handle, $startOffset);
+        $emfData = fread($handle, $length);
+        
+        $tempEmf = $outputDir . "page_$index.emf";
+        file_put_contents($tempEmf, $emfData);
+    } else {
+        debugLog("Skipping EMF at index $index: Length is 0 or invalid ($length)");
+        continue;
+    }
+    
+    $outputPng = $outputDir . "page_$index.png";
+    
+    // Conversion avec ImageMagick (Resolution basse 72 DPI)
+    $command = sprintf(
+        '"%s" -density 72 "%s" -background white -flatten "%s" 2>&1',
+        $imPath,
+        $tempEmf,
+        $outputPng
+    );
+    
+    $output = [];
+    $returnVar = 0;
+    exec($command, $output, $returnVar);
+    
+    if ($returnVar === 0 && file_exists($outputPng)) {
+        $generatedPages[] = [
+            'page' => $index,
+            'path' => $outputPng,
+            'size' => filesize($outputPng),
+            'url' => $baseUrl . "page_$index.png"
+        ];
+    } else {
+        debugLog("Conversion failed for page $index. Command: $command");
+    }
+    
+    // Supprimer l'EMF temporaire
+    @unlink($tempEmf);
 }
 
-// Copier le reste du fichier SPL vers temp.emf
-$copyResult = stream_copy_to_stream($handle, $outHandle);
 fclose($handle);
-fclose($outHandle);
 
-// Log the size of the temporary EMF file for debugging
-if (file_exists($tempEmf)) {
-    $emfSize = filesize($tempEmf);
-    debugLog("Temp EMF file size: $emfSize bytes");
-}
-
-debugLog("Copied $copyResult bytes to $tempEmf");
-
-if ($copyResult === false || $copyResult === 0) {
-    debugLog("Failed to copy EMF data (0 bytes)");
-    echo json_encode(['error' => 'Empty EMF data extracted']);
-    exit;
-}
-
-// Convertir avec ImageMagick (Force fond blanc et applatissement pour éviter la transparence comptée comme noir)
-$outputPattern = $outputDir . 'page_%d.png';
-
-$command = sprintf(
-    '"%s" -density 300 "%s" -background white -flatten "%s" 2>&1',
-    $imPath,
-    $tempEmf,
-    $outputDir . 'page_%d.png'
-);
-
-debugLog("Running command: $command");
-
-$output = [];
-$returnVar = 0;
-exec($command, $output, $returnVar);
-
-debugLog("Command result: $returnVar");
-debugLog("Command output: " . implode("\n", $output));
-
-// Supprimer l'EMF temporaire
-unlink($tempEmf);
-
-if ($returnVar !== 0 && empty(glob($outputDir . 'page_*.png'))) {
-    debugLog("Conversion failed");
-    echo json_encode([
-        'error' => 'ImageMagick conversion failed',
-        'return_code' => $returnVar,
-        'output' => implode("\n", $output),
-        'command' => $command
-    ]);
-    exit;
-}
-
-// Lister les PNG générés
-$pngFiles = glob($outputDir . 'page_*.png');
-debugLog("Generated " . count($pngFiles) . " PNG files");
-
-if (empty($pngFiles)) {
+if (empty($generatedPages)) {
+    debugLog("No PNG files generated");
     echo json_encode(['error' => 'No PNG files generated']);
     exit;
 }
 
-// Retourner les chemins des PNG
-$pages = [];
-foreach ($pngFiles as $file) {
-    $filename = basename($file);
-    preg_match('/page_(\d+)\.png/', $filename, $matches);
-    $pageNum = isset($matches[1]) ? intval($matches[1]) : 0;
-
-    $pages[] = [
-        'page' => $pageNum,
-        'path' => $file,
-        'size' => filesize($file)
-    ];
-}
-
-// Trier par numéro de page
-usort($pages, function ($a, $b) {
-    return $a['page'] - $b['page'];
-});
-
-// Ajouter l'URL pour chaque page
-foreach ($pages as &$page) {
-    $page['url'] = $baseUrl . 'page_' . $page['page'] . '.png';
-}
+debugLog("Generated " . count($generatedPages) . " PNG files");
 
 echo json_encode([
     'success' => true,
     'job_id' => $jobId,
-    'page_count' => count($pages),
-    'pages' => $pages,
+    'page_count' => count($generatedPages),
+    'pages' => $generatedPages,
     'base_url' => $baseUrl
 ], JSON_UNESCAPED_SLASHES);

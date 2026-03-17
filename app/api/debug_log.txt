@@ -20671,3 +20671,43 @@ INIT: Printer='RISO ComColor FW5230', Type='photocop'
 HEX: 70686f746f636f70
 Check 'photocop': TRUE
 STAGING: nb_f=13, price=0.39, session=63
+[2026-03-17 09:28:11] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":22,"contact":"manu","document":"digest_2026_week_08.pdf","copies":1,"total_pages":22,"duplex":true,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/4\/page_0.png","timestamp":"2026-03-17T09:21:44.000Z","job_id":"4","session_id":67,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\Duplicator Beta\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=11, price=0.17, session=67
+[2026-03-17 10:12:32] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":42,"contact":"manu","document":"digest_2026_week_07.pdf","copies":1,"total_pages":42,"duplex":true,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0.11444175720215,"thumbnail_url":"http:\/\/127.0.0.1:8001\/public\/thumbnails\/5\/page_0.png","timestamp":"2026-03-17T09:31:52.000Z","job_id":"5","session_id":67,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\Duplicator Beta\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=21, price=0.32, session=67
+[2026-03-17 10:21:54] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":22,"contact":"manu","document":"digest_2026_week_09.pdf","copies":1,"total_pages":22,"duplex":true,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0.10294996261596999,"thumbnail_url":"http:\/\/127.0.0.1:8001\/public\/thumbnails\/6\/page_0.png","timestamp":"2026-03-17T10:12:56.000Z","job_id":"6","session_id":67,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\Duplicator Beta\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=11, price=0.17, session=67
+[2026-03-17 10:25:16] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":1,"contact":"manu","document":"col\ufffdrescontagieuses.pdf","copies":10,"total_pages":10,"duplex":true,"color_mode":"Monochrome","paper_size":"A3","fill_rate":0.18805763244628998,"thumbnail_url":"http:\/\/127.0.0.1:8001\/public\/thumbnails\/8\/page_0.png","timestamp":"2026-03-17T10:23:34.000Z","job_id":"8","session_id":67,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\Duplicator Beta\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=10, price=0.2, session=67
+[2026-03-17 10:25:29] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":6,"contact":"manu","document":"col\ufffdrescontagieuses.pdf","copies":10,"total_pages":60,"duplex":true,"color_mode":"Monochrome","paper_size":"A3","fill_rate":0.18,"thumbnail_url":"http:\/\/127.0.0.1:8001\/public\/thumbnails\/8\/page_0.png","timestamp":1773743129689,"job_id":"8","session_id":67,"simulate":true}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\Duplicator Beta\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+[2026-03-17 10:26:00] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":42,"contact":"manu","document":"digest_2026_week_07.pdf","copies":1,"total_pages":42,"duplex":true,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0,"thumbnail_url":"http:\/\/127.0.0.1:8001\/public\/thumbnails\/5\/page_0.png","timestamp":1773743160393,"session_id":67,"simulate":true}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DB_PATH_USED: sqlite:C:\Users\Dupli\AppData\Roaming\Duplicator Beta\duplinew.sqlite
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE

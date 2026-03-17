@@ -39,6 +39,7 @@ struct SplAnalysisCache {
   std::string timestamp;
   std::string thumbnailUrl;
   std::string documentName; // New: to verify jobId recycling
+  DWORD lastFileSize;       // New: to detect if document is still growing
 };
 
 struct EmfConversionResult {
@@ -473,7 +474,8 @@ bool IsPclFile(const unsigned char *buffer, size_t size) {
   size_t scanLimit = (std::min)(size, (size_t)1024);
   for (size_t i = 0; i < scanLimit - 1; i++) {
     if (buffer[i] == 0x1B) { // ESC
-      // Check for some common PCL sequences: ESC E (Reset), ESC & (Config), ESC
+      // Check for some common PCL sequences: ESC E (Reset), ESC & (Config),
+      // ESC
       // * (Raster)
       if (buffer[i + 1] == 'E' || buffer[i + 1] == '&' ||
           buffer[i + 1] == '*') {
@@ -696,10 +698,11 @@ EmfConversionResult ConvertPclToPngViaPhpApi(DWORD jobId) {
       urlPos += 12;
       size_t endUrl = response.find("\"", urlPos);
       if (endUrl != std::string::npos) {
-        // PCL script generates page_1.png usually, but we ensure page_0 exists
-        // or use 1 We'll trust the script generates page_0.png if we added that
-        // logic, or we just point to page_1 if that's what we have. For
-        // consistency with frontend, let's assume page_0 if accessible.
+        // PCL script generates page_1.png usually, but we ensure page_0
+        // exists or use 1 We'll trust the script generates page_0.png if we
+        // added that logic, or we just point to page_1 if that's what we
+        // have. For consistency with frontend, let's assume page_0 if
+        // accessible.
         result.thumbnailUrl =
             response.substr(urlPos, endUrl - urlPos) + "page_0.png";
       }
@@ -1092,13 +1095,38 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
 
     // Verify if it's the SAME document. If not, ignore cache (jobId recycled)
     if (cached.documentName == documentName) {
-      isGrayscale = cached.isGrayscale;
-      fillRate = cached.fillRate;
-      thumbnailUrl = cached.thumbnailUrl;
-      LogDebug("AnalyzeSpoolFile: Using cached result - Grayscale=" +
-               std::to_string(isGrayscale) +
-               ", FillRate=" + std::to_string(fillRate));
-      return;
+      // Get current file size to see if it grew
+      wchar_t spoolPathTmp[MAX_PATH];
+      GetSystemDirectoryW(spoolPathTmp, MAX_PATH);
+      wcscat_s(spoolPathTmp, L"\\spool\\PRINTERS\\");
+      std::wstring foundPath =
+          FindSplFileByJobId(jobId, std::wstring(spoolPathTmp));
+
+      DWORD currentSize = 0;
+      if (!foundPath.empty()) {
+        HANDLE hFile = CreateFileW(foundPath.c_str(), GENERIC_READ,
+                                   FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                                   OPEN_EXISTING, 0, NULL);
+        if (hFile != INVALID_HANDLE_VALUE) {
+          currentSize = GetFileSize(hFile, NULL);
+          CloseHandle(hFile);
+        }
+      }
+
+      if (currentSize <= cached.lastFileSize && cached.lastFileSize > 0) {
+        isGrayscale = cached.isGrayscale;
+        fillRate = cached.fillRate;
+        thumbnailUrl = cached.thumbnailUrl;
+        LogDebug("AnalyzeSpoolFile: Using cached result (Size unchanged: " +
+                 std::to_string(currentSize) +
+                 ") - Grayscale=" + std::to_string(isGrayscale) +
+                 ", FillRate=" + std::to_string(fillRate));
+        return;
+      } else {
+        LogDebug("AnalyzeSpoolFile: File Grew (" +
+                 std::to_string(cached.lastFileSize) + " -> " +
+                 std::to_string(currentSize) + "). Re-analyzing...");
+      }
     } else {
       LogDebug("AnalyzeSpoolFile: Cache Document Mismatch (" +
                cached.documentName + " vs " + documentName + "). Invaliding.");
@@ -1232,6 +1260,7 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
   cacheEntry.timestamp = std::to_string(time(NULL));
   cacheEntry.thumbnailUrl = conversion.thumbnailUrl;
   cacheEntry.documentName = documentName;
+  cacheEntry.lastFileSize = fileSize; // Store current size
   splAnalysisCache[jobId] = cacheEntry;
 
   LogDebug(
@@ -1332,15 +1361,12 @@ JobDetails MonitorWorker::GetJobInfo(HANDLE hPrinter, DWORD jobId) {
   }
 
   // Analyze spool file for ACTUAL color content and fill rate
+  // Analyze spool file for ACTUAL color content and fill rate
   // This will overwrite isGrayscale ONLY if analysis succeeds.
-  // CRITICAL: Do NOT analyze if the job is still spooling (file incomplete).
-  if (!(jobInfo->Status & JOB_STATUS_SPOOLING)) {
-    AnalyzeSpoolFile(jobId, details.documentName, details.isGrayscale,
-                     details.fillRate, details.thumbnailUrl);
-  } else {
-    LogDebug("Skipping analysis for Job " + std::to_string(jobId) +
-             " (Still Spooling)");
-  }
+  // CRITICAL: We now allow analysis during spooling because size-tracking
+  // will re-trigger analysis when the file grows.
+  AnalyzeSpoolFile(jobId, details.documentName, details.isGrayscale,
+                   details.fillRate, details.thumbnailUrl);
 
   return details;
 }
