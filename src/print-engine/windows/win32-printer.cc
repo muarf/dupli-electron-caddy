@@ -1,6 +1,13 @@
 #include "win32-printer.h"
 #include <algorithm>
 #include <fstream>
+// Force Unicode API calls to avoid GetJobA/GetJobW mismatch
+#ifndef UNICODE
+#define UNICODE
+#endif
+#ifndef _UNICODE
+#define _UNICODE
+#endif
 #include <gdiplus.h>
 #include <iomanip>
 #include <iostream>
@@ -1282,13 +1289,13 @@ JobDetails MonitorWorker::GetJobInfo(HANDLE hPrinter, DWORD jobId) {
   details.fillRate = 0.0f; // Default to 0% fill
 
   DWORD needed = 0;
-  GetJob(hPrinter, jobId, 2, NULL, 0, &needed);
+  GetJobW(hPrinter, jobId, 2, NULL, 0, &needed);
 
   if (needed == 0)
     return details;
 
   std::vector<BYTE> buffer(needed);
-  if (!GetJob(hPrinter, jobId, 2, buffer.data(), needed, &needed)) {
+  if (!GetJobW(hPrinter, jobId, 2, buffer.data(), needed, &needed)) {
     return details;
   }
 
