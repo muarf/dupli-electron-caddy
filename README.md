@@ -2,18 +2,27 @@
 
 Application de gestion de comptabilité pour collectifs de reproduction (duplicopieurs/photocopieurs) avec calcul des prix de revient, packagée en application Electron cross-platform avec serveur Caddy intégré.
 
-## 📥 Télécharger la dernière version
+## 📥 Téléchargement
 
-[![Latest Release](https://img.shields.io/github/v/release/muarf/dupli-electron-caddy?label=Dernière%20version&style=for-the-badge)](https://github.com/muarf/dupli-electron-caddy/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/muarf/dupli-electron-caddy/total?label=Téléchargements&style=for-the-badge)](https://github.com/muarf/dupli-electron-caddy/releases)
+Choisissez la version qui vous convient :
 
-Téléchargez la dernière release directement depuis GitHub :
+### 🟢 Version Stable (Recommandée)
+Dernière version stable testée et approuvée.
+[![Stable Release](https://img.shields.io/github/v/release/muarf/dupli-electron-caddy?label=Stable&style=for-the-badge&color=green)](https://github.com/muarf/dupli-electron-caddy/releases/latest)
+- **Windows** : [Duplicator-Setup-1.5.57.exe](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.57/Duplicator-Setup-1.5.57.exe)
+- **Linux** : [Duplicator-1.5.57-x86_64.AppImage](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.57/Duplicator-1.5.57-x86_64.AppImage)
+- **macOS** : [Duplicator-1.5.57.dmg](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.57/Duplicator-1.5.57.dmg)
 
-- **Windows** : [![Windows Download](https://img.shields.io/badge/Windows-Download-blue?style=flat-square&logo=windows)](https://github.com/muarf/dupli-electron-caddy/releases/latest) - Fichier `Duplicator-Caddy-Setup-*.exe`
-- **Linux** : [![Linux Download](https://img.shields.io/badge/Linux-Download-orange?style=flat-square&logo=linux)](https://github.com/muarf/dupli-electron-caddy/releases/latest) - Fichier `Duplicator-*-x86_64.AppImage`
-- **macOS** : [![macOS Download](https://img.shields.io/badge/macOS-Download-gray?style=flat-square&logo=apple)](https://github.com/muarf/dupli-electron-caddy/releases/latest) - Fichier `Duplicator-*.dmg`
+---
 
-👉 **[Voir toutes les releases et télécharger](https://github.com/muarf/dupli-electron-caddy/releases)**
+### 🧪 Version Beta (Dernières nouveautés)
+Contient les dernières fonctionnalités en cours de test (peut être instable).
+[![Beta Release](https://img.shields.io/github/v/release/muarf/dupli-electron-caddy?include_prereleases&label=Beta&style=for-the-badge&color=orange)](https://github.com/muarf/dupli-electron-caddy/releases)
+- **Windows/Linux** : [Voir les dernières releases Beta](https://github.com/muarf/dupli-electron-caddy/releases)
+
+---
+
+👉 **[Voir toutes les releases](https://github.com/muarf/dupli-electron-caddy/releases)**
 
 ## 🚀 Fonctionnalités
 
