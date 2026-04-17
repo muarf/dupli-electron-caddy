@@ -46,7 +46,6 @@ npm run build:caddy     # Config avec Caddy embarqué
 ├── main.js
 ├── preload.js
 ├── Caddyfile
-├── php-fpm.conf
 ├── app/**/*           (toute l'application PHP)
 ├── php/**/*           (PHP portable Windows)
 ├── ghostscript/**/*   (binaires GS)
@@ -167,7 +166,6 @@ files:
   - main.js
   - preload.js
   - Caddyfile
-  - php-fpm.conf
   - app/**
   - php/**
   - ghostscript/**
