@@ -89,7 +89,11 @@ function seed_action_schema(PDO $pdo): void
         date INTEGER,
         nom_machine TEXT,
         duplicopieur_id INTEGER,
-        tambour TEXT
+        tambour TEXT,
+        tirage_global_id TEXT,
+        session_id TEXT,
+        document_name TEXT,
+        thumbnail_url TEXT
     )');
 
     $pdo->exec('CREATE TABLE photocop (
@@ -103,7 +107,11 @@ function seed_action_schema(PDO $pdo): void
         paye TEXT,
         cb REAL,
         mot TEXT,
-        date INTEGER
+        date INTEGER,
+        tirage_global_id TEXT,
+        session_id TEXT,
+        document_name TEXT,
+        thumbnail_url TEXT
     )');
 
     $pdo->exec('CREATE TABLE photocopieurs (

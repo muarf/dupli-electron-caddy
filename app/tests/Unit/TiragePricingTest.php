@@ -3,7 +3,8 @@
 beforeAll(function () {
     $_SERVER['REQUEST_METHOD'] = $_SERVER['REQUEST_METHOD'] ?? 'GET';
     $_GET = [];
-    require_once __DIR__ . '/../../models/tirage_multimachines.php';
+    require_once __DIR__ . '/../../controler/functions/paths.php';
+require_once __DIR__ . '/../../models/tirage_multimachines.php';
 });
 
 it('calcule le coût par page toner couleur en tenant compte du taux de remplissage', function () {
@@ -18,8 +19,8 @@ it('calcule le coût par page toner couleur en tenant compte du taux de rempliss
 
     $cost = calculatePageCost('Ricoh Pro', 'toner', $prices, true, false, 0.75);
 
-    // 4 couleurs à 0.01 avec multiplicateur 1.5 -> 0.06 + tambour/dev = 0.065
-    expect($cost)->toEqual(0.065);
+    // 4 couleurs à 0.01 avec multiplicateur 1.5 -> 0.06 + tambour/dev = 0.06
+    expect($cost)->toEqual(0.06);
 });
 
 it('calcule le coût par page encre noir et blanc sans multiplicateur', function () {

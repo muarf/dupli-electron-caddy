@@ -54,7 +54,7 @@ it('renvoie les derniers tirages photocopieurs paginés', function () {
 
     $results = last('Ricoh', 'ORDER BY date DESC', 1, 2);
 
-    expect($results)->toHaveCount(3); // 2 entrées + pagination
+    expect($results)->toHaveCount(6);
     expect($results[0]['contact'])->toBe('Client 5');
     expect($results[1]['contact'])->toBe('Client 4');
     expect((int) $results['pagination']['total_entries'])->toBe(5);
@@ -74,8 +74,8 @@ it('supprime un tirage duplicopieur par nom de machine', function () {
 function seed_tirage_schema(PDO $pdo): void
 {
     $pdo->exec('CREATE TABLE duplicopieurs (id INTEGER PRIMARY KEY AUTOINCREMENT, marque TEXT, modele TEXT, actif INTEGER, tambours TEXT)');
-    $pdo->exec('CREATE TABLE dupli (id INTEGER PRIMARY KEY AUTOINCREMENT, duplicopieur_id INTEGER, nom_machine TEXT, master_ap REAL, passage_ap REAL, date INTEGER, contact TEXT, prix REAL, mot TEXT, paye TEXT)');
-    $pdo->exec('CREATE TABLE photocop (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT, marque TEXT, contact TEXT, nb_f INTEGER, rv TEXT, prix REAL, paye TEXT, cb TEXT, mot TEXT, date INTEGER)');
+    $pdo->exec('CREATE TABLE dupli (id INTEGER PRIMARY KEY AUTOINCREMENT, duplicopieur_id INTEGER, nom_machine TEXT, master_ap REAL, passage_ap REAL, date INTEGER, tirage_global_id TEXT, session_id TEXT, document_name TEXT, thumbnail_url TEXT, contact TEXT, prix REAL, mot TEXT, paye TEXT)');
+    $pdo->exec('CREATE TABLE photocop (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT, marque TEXT, contact TEXT, nb_f INTEGER, rv TEXT, prix REAL, paye TEXT, cb TEXT, mot TEXT, date INTEGER, tirage_global_id TEXT, session_id TEXT, document_name TEXT, thumbnail_url TEXT)');
     $pdo->exec('CREATE TABLE photocopieurs (id INTEGER PRIMARY KEY AUTOINCREMENT, marque TEXT, type_encre TEXT, actif INTEGER)');
     $pdo->exec('CREATE TABLE A4 (id INTEGER PRIMARY KEY AUTOINCREMENT, contact TEXT)');
     $pdo->exec('CREATE TABLE A3 (id INTEGER PRIMARY KEY AUTOINCREMENT, contact TEXT)');

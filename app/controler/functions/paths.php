@@ -10,7 +10,7 @@ if (!function_exists('getDataDir')) {
      */
     function getDataDir() {
         // Priorité 1 : Variable d'environnement fournie par Electron
-        $envPath = getenv('DUPLICATOR_DB_PATH');
+        $envPath = getenv('DUPLICATOR_DB_PATH') ?: $_ENV['DUPLICATOR_DB_PATH'] ?? $_SERVER['DUPLICATOR_DB_PATH'] ?? '';
         if (!empty($envPath)) {
             return dirname($envPath);
         }
