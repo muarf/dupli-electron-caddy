@@ -2,7 +2,7 @@ name: Test Linux Build
 
 on:
   push:
-    branches: [ main, master, fix-linux-appimage ]
+    branches: [ main, master, fix-linux-appimage, feature/cross-platform-unification ]
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
