@@ -1,0 +1,35 @@
+--- a/src/print-engine/windows/win32-printer.cc
++++ b/src/print-engine/windows/win32-printer.cc
+@@ -1,6 +1,12 @@
+ #include "win32-printer.h"
+ #include <algorithm>
+ #include <fstream>
++// Force Unicode API calls to avoid confusion between GetJobA/GetJobW
++#ifndef UNICODE
++#define UNICODE
++#endif
++#ifndef _UNICODE
++#define _UNICODE
++#endif
+ #include <gdiplus.h>
+ #include <iomanip>
+ #include <iostream>
+@@ -1282,7 +1288,7 @@
+       true;                // Will be refined by AnalyzeSpoolFile or Driver Mode
+       details.fillRate = 0.0f; // Default to 0% fill
+ 
+       DWORD needed = 0;
+-      GetJob(hPrinter, jobId, 2, NULL, 0, &needed);
++      GetJobW(hPrinter, jobId, 2, NULL, 0, &needed);
+ 
+       if (needed == 0)
+         return details;
+@@ -1291,7 +1297,7 @@
+ 
+       std::vector<BYTE> buffer(needed);
+       if (!GetJob(hPrinter, jobId, 2, buffer.data(), needed, &needed)) {
+-        return details;
++        return details;
+       }
+ 
+       JOB_INFO_2 *jobInfo = (JOB_INFO_2 *)buffer.data();
