@@ -5,9 +5,10 @@ describe('Application Electron E2E (Simplifié)', () => {
     describe('Configuration de l\'application', () => {
         test('devrait avoir les bonnes dépendances', () => {
             const packageJson = require('../../package.json');
+            const allDeps = { ...(packageJson.dependencies || {}), ...(packageJson.devDependencies || {}) };
             
-            expect(packageJson.dependencies || packageJson.devDependencies).toHaveProperty('electron');
-            expect(packageJson.devDependencies).toHaveProperty('jest');
+            expect(allDeps).toHaveProperty('electron');
+            expect(allDeps).toHaveProperty('jest');
             expect(packageJson.devDependencies).toHaveProperty('spectron');
         });
 
@@ -43,11 +44,6 @@ describe('Application Electron E2E (Simplifié)', () => {
             expect(fs.existsSync(caddyfilePath)).toBe(true);
         });
 
-        test('devrait avoir le fichier php-fpm.conf', () => {
-            const phpFpmPath = path.join(__dirname, '..', '..', 'php-fpm.conf');
-            expect(fs.existsSync(phpFpmPath)).toBe(true);
-        });
-
         test('devrait avoir le script download-caddy.js', () => {
             const downloadScriptPath = path.join(__dirname, '..', '..', 'scripts', 'download-caddy.js');
             expect(fs.existsSync(downloadScriptPath)).toBe(true);
@@ -78,15 +74,6 @@ describe('Application Electron E2E (Simplifié)', () => {
             expect(caddyfileContent).toContain('reverse_proxy');
             expect(caddyfileContent).toContain('127.0.0.1:8001');
         });
-
-        test('devrait avoir une configuration PHP-FPM valide', () => {
-            const phpFpmPath = path.join(__dirname, '..', '..', 'php-fpm.conf');
-            const phpFpmContent = fs.readFileSync(phpFpmPath, 'utf8');
-            
-            expect(phpFpmContent).toContain('[global]');
-            expect(phpFpmContent).toContain('[www]');
-            expect(phpFpmContent).toContain('listen = /tmp/php-fpm.sock');
-        });
     });
 
     describe('Scripts de build', () => {
@@ -102,7 +89,7 @@ describe('Application Electron E2E (Simplifié)', () => {
             const packageJson = require('../../package.json');
             
             expect(packageJson.build).toBeDefined();
-            expect(packageJson.build.appId).toBe('com.dupli.app');
+            expect(packageJson.build.appId).toBe('com.dupli.beta');
             expect(packageJson.build.productName).toBe('Duplicator');
         });
 

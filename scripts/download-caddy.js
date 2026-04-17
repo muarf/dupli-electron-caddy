@@ -5,45 +5,45 @@ const { execSync } = require('child_process');
 
 // Configuration des téléchargements Caddy
 const CADDY_VERSIONS = {
-    'linux': {
+    'linux-x64': {
         url: 'https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_linux_amd64.tar.gz',
-        filename: 'caddy_linux.tar.gz',
+        filename: 'caddy_linux_amd64.tar.gz',
         binary: 'caddy'
     },
-    'windows': {
+    'linux-arm64': {
+        url: 'https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_linux_arm64.tar.gz',
+        filename: 'caddy_linux_arm64.tar.gz',
+        binary: 'caddy'
+    },
+    'windows-x64': {
         url: 'https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_windows_amd64.zip',
         filename: 'caddy_windows.zip',
         binary: 'caddy.exe'
     },
-    'darwin': {
+    'darwin-x64': {
         url: 'https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_macOS_amd64.tar.gz',
         filename: 'caddy_macos.tar.gz',
+        binary: 'caddy'
+    },
+    'darwin-arm64': {
+        url: 'https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_macOS_arm64.tar.gz',
+        filename: 'caddy_macos_arm64.tar.gz',
         binary: 'caddy'
     }
 };
 
 // Configuration des téléchargements PHP
+// Configuration des téléchargements PHP (uniquement pour Windows en standard, système sinon)
 const PHP_VERSIONS = {
-    'linux': {
-        url: 'https://github.com/php/php-src/releases/download/php-8.4.13/php-8.4.13.tar.gz',
-        filename: 'php_linux.tar.gz',
-        binary: 'php',
-        fpm: 'php-fpm',
-        useSystem: true // Utiliser le PHP système sur Linux
-    },
-    'windows': {
+    'linux-x64': { useSystem: true, binary: 'php' },
+    'linux-arm64': { useSystem: true, binary: 'php' },
+    'windows-x64': {
         url: 'https://windows.php.net/downloads/releases/php-8.4.13-nts-Win32-vs17-x64.zip',
         filename: 'php_windows.zip',
-        binary: 'php.exe',
-        fpm: 'php-fpm.exe'
+        binary: 'php.exe'
     },
-    'darwin': {
-        url: 'https://github.com/php/php-src/releases/download/php-8.4.13/php-8.4.13.tar.gz',
-        filename: 'php_macos.tar.gz',
-        binary: 'php',
-        fpm: 'php-fpm',
-        useSystem: true // Utiliser le PHP système sur macOS
-    }
+    'darwin-x64': { useSystem: true, binary: 'php' },
+    'darwin-arm64': { useSystem: true, binary: 'php' }
 };
 
 // Fonction pour télécharger un fichier
@@ -104,12 +104,14 @@ function extractFile(filepath, extractPath) {
 // Fonction pour télécharger PHP
 async function downloadPhp() {
     const platform = process.platform;
+    const arch = process.arch;
     // Mapper win32 vers windows pour la compatibilité
     const platformKey = platform === 'win32' ? 'windows' : platform;
-    const config = PHP_VERSIONS[platformKey];
+    const key = `${platformKey}-${arch}`;
+    const config = PHP_VERSIONS[key] || PHP_VERSIONS[`${platformKey}-x64`];
     
     if (!config) {
-        console.error(`Plateforme non supportée: ${platform} (mappé vers ${platformKey})`);
+        console.error(`Plateforme non supportée: ${platform} ${arch}`);
         process.exit(1);
     }
     
@@ -117,8 +119,8 @@ async function downloadPhp() {
     
     const phpDir = path.join(__dirname, '..', 'php');
     const downloadPath = path.join(phpDir, config.filename);
-    const binaryPath = path.join(phpDir, config.binary);
-    const fpmPath = path.join(phpDir, config.fpm);
+    const binaryPath = path.join(phpDir, config.binary || 'php');
+    const fpmPath = config.fpm ? path.join(phpDir, config.fpm) : null;
     
     // Créer le dossier php s'il n'existe pas
     if (!fs.existsSync(phpDir)) {
@@ -197,7 +199,7 @@ async function downloadPhp() {
                     if (fs.existsSync(binaryPath)) {
                         fs.chmodSync(binaryPath, '755');
                     }
-                    if (fs.existsSync(fpmPath)) {
+                    if (fpmPath && fs.existsSync(fpmPath)) {
                         fs.chmodSync(fpmPath, '755');
                     }
                 }
@@ -220,12 +222,14 @@ async function downloadPhp() {
 // Fonction principale
 async function downloadCaddy() {
     const platform = process.platform;
+    const arch = process.arch;
     // Mapper win32 vers windows pour la compatibilité
     const platformKey = platform === 'win32' ? 'windows' : platform;
-    const config = CADDY_VERSIONS[platformKey];
+    const key = `${platformKey}-${arch}`;
+    const config = CADDY_VERSIONS[key] || CADDY_VERSIONS[`${platformKey}-x64`];
     
     if (!config) {
-        console.error(`Plateforme non supportée: ${platform} (mappé vers ${platformKey})`);
+        console.error(`Plateforme non supportée: ${platform} ${arch}`);
         process.exit(1);
     }
     

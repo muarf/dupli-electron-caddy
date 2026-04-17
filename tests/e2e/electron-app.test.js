@@ -2,11 +2,20 @@ const { Application } = require('spectron');
 const path = require('path');
 const fs = require('fs');
 
-describe('Application Electron E2E', () => {
+const isHeadless = !process.env.DISPLAY && process.env.NODE_ENV === 'test';
+const describeOrSkip = isHeadless ? describe.skip : describe;
+
+describeOrSkip('Application Electron E2E', () => {
     let app;
     const timeout = 30000;
 
     beforeAll(async () => {
+        // Skip Spectron tests in headless environments without XVFB
+        if (!process.env.DISPLAY && process.env.NODE_ENV === 'test') {
+            console.warn('Skipping Spectron E2E tests: No DISPLAY detected.');
+            return;
+        }
+
         // Chemin vers l'application Electron
         const electronPath = require('electron');
         const appPath = path.join(__dirname, '..', '..');

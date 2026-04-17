@@ -72,7 +72,7 @@ jobs:
           
           echo "Installation des dépendances PHP..."
           cd app
-          php ../composer.phar install --no-dev --optimize-autoloader --ignore-platform-reqs
+          php ../composer.phar install --optimize-autoloader --ignore-platform-reqs
           cd ..
           
           echo "Vérification de vendor/..."
@@ -91,10 +91,15 @@ jobs:
           echo "Extensions PHP disponibles:"
           php -m | grep -E "(gd|sqlite3|mbstring|xml)"
         
-      # Tests temporairement désactivés (problème Jest sur GitHub Actions)
-      # - name: Run tests
-      #   run: npm run test:e2e:simple
+      - name: Run PHP Tests (Pest)
+        run: |
+          cd app
+          ./vendor/bin/pest
+          cd ..
         
+      - name: Run JS Tests (Jest)
+        run: |
+          npm test
       - name: Cleanup unnecessary files to save disk space
         run: |
           echo "=== Nettoyage agressif pour libérer de l'espace ==="
