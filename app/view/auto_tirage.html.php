@@ -902,6 +902,7 @@
                     timestamp: job.timestamp,
 
                     job_id: job.job_id, // Send original Job ID for deletion
+                    internal_id: job.id, // ID unique de la table print_jobs
                     session_id: currentSessionId, // Send active session ID
                     simulate: isSimulation
                 };
