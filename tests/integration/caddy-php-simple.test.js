@@ -2,7 +2,7 @@ const request = require('supertest');
 const http = require('http');
 
 describe('Intégration Caddy + PHP (Simplifié)', () => {
-    const testPort = 8001;
+    const testPort = 8101;
     let testServer;
 
     beforeAll(async () => {

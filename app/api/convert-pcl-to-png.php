@@ -38,24 +38,15 @@ function rrmdir($dir)
 }
 
 // Chemin vers l'exécutable GhostPCL (installé manuellement)
-$gsPath = __DIR__ . '/../../ghostscript/gpcl6win64.exe';
+$gsPath = getenv('DUPLICATOR_GPCL_PATH') ?: __DIR__ . '/../../ghostscript/gpcl6win64.exe';
 
-if (!file_exists($gsPath)) {
+if (!file_exists($gsPath) && $gsPath === __DIR__ . '/../../ghostscript/gpcl6win64.exe') {
     // Fallback si GhostPCL n'est pas trouvé (pour dev ou si non installé)
     debugLog("GhostPCL non trouvé à $gsPath, essai avec gswin64c.exe (risque d'échec sur PCL)");
     $gsPath = __DIR__ . '/../../ghostscript/gswin64c.exe';
 }
 
-if (!file_exists($gsPath)) {
-    debugLog("FATAL: Ghostscript executable not found at $gsPath");
-    // If we can't find any Ghostscript executable, we should exit or return an error.
-    // For now, let's try a system default as a last resort, but log the fatal error.
-    $gsPath = 'gswin64c'; // Fallback to system default if nothing else found
-}
-
-debugLog("GS Path: $gsPath");
-
-if (!file_exists($gsPath) && $gsPath !== 'gswin64c') { // Only check if it's not the system default
+if (!file_exists($gsPath) && ($gsPath === __DIR__ . '/../../ghostscript/gswin64c.exe' || $gsPath === 'gswin64c')) {
     debugLog("Ghostscript not found at $gsPath, using system default");
     $gsPath = 'gswin64c';
 }
@@ -71,7 +62,7 @@ if ($jobId == 0) {
 }
 
 // Chemin vers le dossier spool
-$spoolDir = 'C:\\Windows\\System32\\spool\\PRINTERS\\';
+$spoolDir = getenv('DUPLICATOR_SPOOL_PATH') ?: 'C:\\Windows\\System32\\spool\\PRINTERS\\';
 
 // Fonction pour lire le Job ID depuis un fichier SHD
 function readJobIdFromShd($shdPath)

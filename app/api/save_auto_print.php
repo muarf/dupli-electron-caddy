@@ -29,7 +29,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
-    $input = json_decode(file_get_contents('php://input'), true);
+    $jsonInput = file_get_contents('php://input');
+    if (empty($jsonInput) && PHP_SAPI === 'cli') {
+        $jsonInput = file_get_contents('php://stdin');
+    }
+    $input = json_decode($jsonInput, true);
 
     // Validation des champs obligatoires
     $required = ['printerName', 'pages', 'contact', 'document'];

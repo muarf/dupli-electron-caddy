@@ -3,6 +3,9 @@
 //     session_start();
 // }
 
+// Inclure les fonctions de chemins si elles ne sont pas chargées
+require_once __DIR__ . '/functions/paths.php';
+
 // Configuration SQLite
 // Priorité 1 : Variable d'environnement d'Electron (garantit persistence userData)
 // Priorité 2 : Détection AppImage

@@ -14,6 +14,7 @@ header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 
 try {
+    require_once(__DIR__ . '/../controler/func.php');
     require_once(__DIR__ . '/../controler/conf.php');
     require_once(__DIR__ . '/../controler/functions/database.php');
     require_once(__DIR__ . '/../controler/functions/secure_delete.php');

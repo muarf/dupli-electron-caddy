@@ -2507,35 +2507,38 @@ app.disableHardwareAcceleration();
 
 // Définir le nom de l'application pour Linux (WMClass) - doit correspondre au StartupWMClass dans .desktop
 // IMPORTANT: ne pas écraser le nom si c'est une version beta (sinon isBeta=false dans setupAutoUpdater)
-if (process.platform === 'linux') {
-    const currentAppName = app.getName();
-    if (!currentAppName.toLowerCase().includes('beta')) {
-        app.setName('Duplicator');
+// Démarrage de l'application (sauf en mode test pour permettre les tests unitaires)
+if (process.env.NODE_ENV !== 'test') {
+    if (process.platform === 'linux') {
+        const currentAppName = app.getName();
+        if (!currentAppName.toLowerCase().includes('beta')) {
+            app.setName('Duplicator');
+        }
     }
+
+    // Cette méthode sera appelée quand Electron aura fini de s'initialiser
+    app.whenReady().then(() => {
+        console.log('DEBUG: app.whenReady started');
+        // Appliquer les paramètres de compatibilité Windows
+        applyCompatibilitySettings();
+
+        createWindow();
+
+        // Initialiser la base de données dans userData
+        getDatabasePath();
+
+        // Configurer l'auto-updater uniquement en production
+        if (process.env.NODE_ENV !== 'development') {
+            setupAutoUpdater();
+        }
+
+        // Configurer les imprimantes (KeepPrintedJobs)
+        configurePrinters();
+
+        // Planifier la purge sécurisée (7 jours)
+        scheduleSecurePurge();
+    });
 }
-
-// Cette méthode sera appelée quand Electron aura fini de s'initialiser
-app.whenReady().then(() => {
-    console.log('DEBUG: app.whenReady started');
-    // Appliquer les paramètres de compatibilité Windows
-    applyCompatibilitySettings();
-
-    createWindow();
-
-    // Initialiser la base de données dans userData
-    getDatabasePath();
-
-    // Configurer l'auto-updater uniquement en production
-    if (process.env.NODE_ENV !== 'development') {
-        setupAutoUpdater();
-    }
-
-    // Configurer les imprimantes (KeepPrintedJobs)
-    configurePrinters();
-
-    // Planifier la purge sécurisée (7 jours)
-    scheduleSecurePurge();
-});
 
 
 // Configurer les imprimantes au démarrage (KeepPrintedJobs = 1)
@@ -3519,3 +3522,16 @@ process.on('SIGINT', () => {
 process.on('SIGTERM', () => {
     stopProcessesGracefully();
 });
+if (process.env.NODE_ENV === 'test') {
+    module.exports = {
+        getCaddyPath,
+        getPhpPath,
+        getPhpFpmPath,
+        getConfigPath,
+        getCaddyfilePath,
+        cleanupTmpFiles,
+        scheduleSecurePurge,
+        stopProcesses,
+        setupAutoUpdater
+    };
+}

@@ -109,7 +109,11 @@ function listActiveSessions($db) {
  * Créer une nouvelle session pour un contact
  */
 function createSession($db) {
-    $input = json_decode(file_get_contents('php://input'), true);
+    $jsonInput = file_get_contents('php://input');
+    if (empty($jsonInput) && PHP_SAPI === 'cli') {
+        $jsonInput = file_get_contents('php://stdin');
+    }
+    $input = json_decode($jsonInput, true);
     
     $contact = trim($input['contact'] ?? '');
     $session_name = trim($input['session_name'] ?? '');
@@ -189,7 +193,11 @@ function createSession($db) {
  * Fermer une session
  */
 function closeSession($db) {
-    $input = json_decode(file_get_contents('php://input'), true);
+    $jsonInput = file_get_contents('php://input');
+    if (empty($jsonInput) && PHP_SAPI === 'cli') {
+        $jsonInput = file_get_contents('php://stdin');
+    }
+    $input = json_decode($jsonInput, true);
     
     // Support JSON body OR GET parameter
     $session_id = (int)($input['session_id'] ?? $_GET['id'] ?? 0);
@@ -237,7 +245,11 @@ function closeSession($db) {
  * Réassigner un job d'une session à une autre
  */
 function reassignJob($db) {
-    $input = json_decode(file_get_contents('php://input'), true);
+    $jsonInput = file_get_contents('php://input');
+    if (empty($jsonInput) && PHP_SAPI === 'cli') {
+        $jsonInput = file_get_contents('php://stdin');
+    }
+    $input = json_decode($jsonInput, true);
     
     $job_id = (int)($input['job_id'] ?? 0);
     $job_table = $input['job_table'] ?? ''; // 'photocop' ou 'dupli'

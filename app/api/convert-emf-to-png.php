@@ -38,10 +38,10 @@ function rrmdir($dir)
 }
 
 // Chemin vers ImageMagick (Portable)
-$imPath = __DIR__ . '/../imagemagick/magick.exe';
+$imPath = getenv('DUPLICATOR_MAGICK_PATH') ?: __DIR__ . '/../imagemagick/magick.exe';
 debugLog("IM Path: $imPath");
 
-if (!file_exists($imPath)) {
+if (!file_exists($imPath) && $imPath === __DIR__ . '/../imagemagick/magick.exe') {
     debugLog("IM not found at $imPath, using system default");
     $imPath = 'magick';
 }
@@ -57,7 +57,7 @@ if ($jobId == 0) {
 }
 
 // Chemin vers le dossier spool
-$spoolDir = 'C:\\Windows\\System32\\spool\\PRINTERS\\';
+$spoolDir = getenv('DUPLICATOR_SPOOL_PATH') ?: 'C:\\Windows\\System32\\spool\\PRINTERS\\';
 
 // Fonction pour lire le Job ID depuis un fichier SHD
 function readJobIdFromShd($shdPath)

@@ -20,7 +20,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$data = json_decode(file_get_contents('php://input'), true);
+$jsonInput = file_get_contents('php://input');
+if (empty($jsonInput) && PHP_SAPI === 'cli') {
+    $jsonInput = file_get_contents('php://stdin');
+}
+$data = json_decode($jsonInput, true);
 $path = $data['path'] ?? '';
 
 if (empty($path)) {

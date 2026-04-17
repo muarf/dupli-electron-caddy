@@ -38,9 +38,9 @@ function rrmdir($dir)
 }
 
 // Chemin vers l'exécutable GhostXPS
-$gsPath = realpath(__DIR__ . '/../../ghostscript/gxpswin64.exe');
+$gsPath = getenv('DUPLICATOR_GXPS_PATH') ?: realpath(__DIR__ . '/../../ghostscript/gxpswin64.exe');
 
-if (!$gsPath || !file_exists($gsPath)) {
+if (!$gsPath || (!file_exists($gsPath) && $gsPath === realpath(__DIR__ . '/../../ghostscript/gxpswin64.exe'))) {
     debugLog("FATAL: GhostXPS executable not found");
     echo json_encode(['error' => 'GhostXPS not found']);
     exit;
@@ -59,7 +59,7 @@ if ($jobId == 0) {
 }
 
 // Chemin vers le dossier spool
-$spoolDir = 'C:\\Windows\\System32\\spool\\PRINTERS\\';
+$spoolDir = getenv('DUPLICATOR_SPOOL_PATH') ?: 'C:\\Windows\\System32\\spool\\PRINTERS\\';
 
 // Fonction pour lire le Job ID depuis un fichier SHD
 function readJobIdFromShd($shdPath)
