@@ -96,10 +96,16 @@ jobs:
           php -v
           php -m
         
+      - name: Debug Environment
+        run: |
+          cd app
+          php tests/debug_env.php
+          ls -R vendor | head -n 100
+      
       - name: Run PHP Tests (Pest)
         run: |
           cd app
-          ./vendor/bin/pest
+          php -d display_errors=On -d display_startup_errors=On ./vendor/bin/pest --verbose --display-deprecations --display-errors
           cd ..
         
       - name: Run JS Tests (Jest)
