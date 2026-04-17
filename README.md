@@ -26,7 +26,6 @@ Contient les dernières fonctionnalités en cours de test (peut être instable).
 La version 2.0 introduit le nouveau moteur d'automatisation et l'unification système :
 - **🚀 Nouveau Module d'Auto-Tirage** : Automatisation complète du flux d'impression, ré-analyse intelligente des formats et persistance des sessions (ne perd plus les données en cas de coupure).
 - **🖥️ Unification Cross-Platform** : Support complet de Linux (AppImage/Deb) et intégration d'ImageMagick pour un traitement d'image identique sur Windows et Linux.
-- **📈 Gestion des Tirages Améliorée** : Nouvel outil de purge sécurisé des logs SQL, fonction "Tout sélectionner" et correction des timeouts sur les gros volumes.
 - **🛡️ Fiabilité & Santé** : Isolation du canal Beta (`com.dupli.beta`) et nouveau système de diagnostic (Health Check) pour le serveur intégré.
 
 ---
