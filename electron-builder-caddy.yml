@@ -14,7 +14,6 @@ files:
   - preload.js
   - icons/**/*
   - Caddyfile
-  - php-fpm.conf
   - php-install-guide.html
   - "app/**/*"
   - "!app/.git/**/*"              # Exclure le dossier .git (non nécessaire pour l'app)
@@ -105,7 +104,6 @@ mac:
     - "ghostscript/**/*"
     - "caddy/**/*"
     - "Caddyfile"
-    - "php-fpm.conf"
     - "src/**/*"
 win:
   target:

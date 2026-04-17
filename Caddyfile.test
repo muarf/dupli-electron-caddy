@@ -1,0 +1,9 @@
+:8001
+
+# Configuration de test simplifiée
+handle {
+    file_server {
+        root /app/public
+        index index.html
+    }
+}

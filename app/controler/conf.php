@@ -8,7 +8,7 @@
 // Priorité 2 : Détection AppImage
 // Priorité 3 : Développement local
 
-$sqlite_db_path = getDataDir() . DIRECTORY_SEPARATOR . 'duplinew.sqlite';
+$sqlite_db_path = getenv('DUPLICATOR_DB_PATH') ?: (getDataDir() . DIRECTORY_SEPARATOR . 'duplinew.sqlite');
 $db_dir = dirname($sqlite_db_path);
 if (!is_dir($db_dir)) {
     @mkdir($db_dir, 0755, true);

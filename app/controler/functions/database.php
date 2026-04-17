@@ -283,9 +283,9 @@ function pdo_connect()
     }
     
     // Vérifier si la base de données existe pour SQLite
-    if ($conf['db_type'] === 'sqlite' && !file_exists($conf['db_path'])) {
-        throw new PDOException("Base de données non trouvée: " . $conf['db_path']);
-    }
+    // if ($conf['db_type'] === 'sqlite' && !file_exists($conf['db_path'])) {
+    //     throw new PDOException("Base de données non trouvée: " . $conf['db_path']);
+    // }
     
     try {
         $db = new PDO($conf['dsn'], $conf['login'], $conf['pass']);

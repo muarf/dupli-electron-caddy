@@ -184,7 +184,7 @@ function last($machine, $sql, $page = 1, $per_page = 20, $params = [])
         // SQLite compatible
         if (isset($GLOBALS['conf']['db_type']) && $GLOBALS['conf']['db_type'] === 'sqlite') {
             // Compter les groupes distincts : tirage_global_id distincts + tirages sans tirage_global_id
-            $count_query = $db->prepare('SELECT COUNT(DISTINCT CASE WHEN tirage_global_id IS NOT NULL AND tirage_global_id != "" THEN tirage_global_id ELSE "single_" || id END) as total FROM photocop WHERE marque = ? ' . $sql_modified);
+            $count_query = $db->prepare('SELECT COUNT(DISTINCT CASE WHEN tirage_global_id IS NOT NULL AND tirage_global_id != "" THEN tirage_global_id ELSE "single_" || photocop.id END) as total FROM photocop WHERE marque = ? ' . $sql_modified);
         } else {
             $count_query = $db->prepare('SELECT COUNT(DISTINCT CASE WHEN tirage_global_id IS NOT NULL AND tirage_global_id != "" THEN tirage_global_id ELSE CONCAT("single_", id) END) as total FROM photocop WHERE marque = ? ' . $sql_modified);
         }

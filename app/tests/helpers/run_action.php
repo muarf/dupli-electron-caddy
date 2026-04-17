@@ -13,6 +13,7 @@ $_SERVER['REQUEST_METHOD'] = $config['method'] ?? 'POST';
 if (!empty($config['env']) && is_array($config['env'])) {
     foreach ($config['env'] as $key => $value) {
         putenv($key . '=' . $value);
+        $_ENV[$key] = $value;
         $_SERVER[$key] = $value;
     }
 }
@@ -29,6 +30,7 @@ if (!function_exists('template')) {
     }
 }
 
+require_once __DIR__ . '/../../controler/functions/paths.php';
 require_once __DIR__ . '/../../controler/functions/machines.php';
 require_once __DIR__ . '/../../models/tirage_multimachines.php';
 
