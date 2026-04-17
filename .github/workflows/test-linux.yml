@@ -46,6 +46,14 @@ jobs:
           node-version: '18'
           cache: 'npm'
       
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, gd, sqlite3, pdo_sqlite
+          coverage: none
+          ini-values: display_errors=On, display_startup_errors=On, error_reporting=E_ALL
+      
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -85,11 +93,8 @@ jobs:
         
       - name: Verify system PHP
         run: |
-          echo "Vérification de PHP système..."
-          which php
-          php --version
-          echo "Extensions PHP disponibles:"
-          php -m | grep -E "(gd|sqlite3|mbstring|xml)"
+          php -v
+          php -m
         
       - name: Run PHP Tests (Pest)
         run: |
