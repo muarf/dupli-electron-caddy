@@ -22,16 +22,31 @@ Contient les dernières fonctionnalités en cours de test (peut être instable).
 
 ---
 
+### ✨ Nouveautés de la v2.0 (Beta)
+La version 2.0 apporte des outils de production avancés :
+- **Séparateur Riso** : Extraction automatique des couches de couleurs pour l'impression en duplicopie.
+- **Imposition Professionnelle** : Nouveaux modes Brochure, Livre, et Imposition de tracts.
+- **Calcul du Taux de Remplissage** : Estimation précise de la couverture d'encre pour chaque canal.
+- **Désimposition (Unimpose)** : Outil pour reconstruire un document original à partir d'un fichier déjà imposé.
+- **Canaux de mise à jour séparés** : La Beta peut être installée à côté de la version Stable sans conflit.
+- **Compatibilité Linux native** : Support complet via AppImage et paquets `.deb`.
+
+---
+
 👉 **[Voir toutes les releases](https://github.com/muarf/dupli-electron-caddy/releases)**
 
 ## 🚀 Fonctionnalités
 
+### 🖨️ Production & Impression (Beta)
+- **Imposition automatique** : Transformation de PDF A4 en planches A3 prêtes à l'impression.
+- **Traitement d'images** : Optimisation des densités pour la reproduction.
+- **Multimachines** : Gestion centralisée pour les collectifs équipés de plusieurs parcs.
+
 ### 📊 Gestion Comptable
-- Calcul des prix de revient pour les différentes machines
-- Gestion des coûts d'impression (papier, encre, masters, tambours, devellopeurs)
-- Suivi des volumes d'impression 
-- Statistiques d'utilisation, prévision des temps de changement de consommables
-- Rapports de rentabilité
+- Calcul des prix de revient temps réel.
+- Suivi précis des consommables (encre, masters, tambours, développeurs).
+- Statistiques d'utilisation et rapports de rentabilité par machine.
+- Historique des volumes d'impression.
 
 ### 📄 Traitement de Documents
 - **Bibliothèque PDF/PNG**
