@@ -23,13 +23,11 @@ Contient les dernières fonctionnalités en cours de test (peut être instable).
 ---
 
 ### ✨ Nouveautés de la v2.0 (Beta)
-La version 2.0 se concentre sur l'unification cross-platform et la fiabilité :
-- **Support Linux natif** : Première version avec support complet via AppImage et paquets `.deb` (corrections sandbox et permissions).
-- **Intégration ImageMagick** : Centralisation et unification du traitement d'images pour Windows et Linux.
-- **Système de Purge Sécurisé** : Amélioration de la gestion des logs d'impression et correction du suivi SQL (`recorded_print_jobs`).
-- **Canaux d'Auto-Update Isolés** : Gestion intelligente des mises à jour pour séparer les versions stables et de test.
-- **Diagnostics Serveur Améliorés** : Meilleure détection de la santé du serveur PHP/Caddy et gestion automatisée des chemins.
-- **Isolation des Données** : La Beta utilise désormais son propre dossier de configuration (`com.dupli.beta`).
+La version 2.0 introduit le nouveau moteur d'automatisation et l'unification système :
+- **🚀 Nouveau Module d'Auto-Tirage** : Automatisation complète du flux d'impression, ré-analyse intelligente des formats et persistance des sessions (ne perd plus les données en cas de coupure).
+- **🖥️ Unification Cross-Platform** : Support complet de Linux (AppImage/Deb) et intégration d'ImageMagick pour un traitement d'image identique sur Windows et Linux.
+- **📈 Gestion des Tirages Améliorée** : Nouvel outil de purge sécurisé des logs SQL, fonction "Tout sélectionner" et correction des timeouts sur les gros volumes.
+- **🛡️ Fiabilité & Santé** : Isolation du canal Beta (`com.dupli.beta`) et nouveau système de diagnostic (Health Check) pour le serveur intégré.
 
 ---
 
