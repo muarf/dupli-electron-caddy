@@ -23,13 +23,13 @@ Contient les dernières fonctionnalités en cours de test (peut être instable).
 ---
 
 ### ✨ Nouveautés de la v2.0 (Beta)
-La version 2.0 apporte des outils de production avancés :
-- **Séparateur Riso** : Extraction automatique des couches de couleurs pour l'impression en duplicopie.
-- **Imposition Professionnelle** : Nouveaux modes Brochure, Livre, et Imposition de tracts.
-- **Calcul du Taux de Remplissage** : Estimation précise de la couverture d'encre pour chaque canal.
-- **Désimposition (Unimpose)** : Outil pour reconstruire un document original à partir d'un fichier déjà imposé.
-- **Canaux de mise à jour séparés** : La Beta peut être installée à côté de la version Stable sans conflit.
-- **Compatibilité Linux native** : Support complet via AppImage et paquets `.deb`.
+La version 2.0 se concentre sur l'unification cross-platform et la fiabilité :
+- **Support Linux natif** : Première version avec support complet via AppImage et paquets `.deb` (corrections sandbox et permissions).
+- **Intégration ImageMagick** : Centralisation et unification du traitement d'images pour Windows et Linux.
+- **Système de Purge Sécurisé** : Amélioration de la gestion des logs d'impression et correction du suivi SQL (`recorded_print_jobs`).
+- **Canaux d'Auto-Update Isolés** : Gestion intelligente des mises à jour pour séparer les versions stables et de test.
+- **Diagnostics Serveur Améliorés** : Meilleure détection de la santé du serveur PHP/Caddy et gestion automatisée des chemins.
+- **Isolation des Données** : La Beta utilise désormais son propre dossier de configuration (`com.dupli.beta`).
 
 ---
 
