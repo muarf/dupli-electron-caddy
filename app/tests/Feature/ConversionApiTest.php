@@ -1,6 +1,6 @@
 <?php
 
-use function Pest\Laravel\get;
+
 
 beforeEach(function () {
     $this->spoolDir = realpath(__DIR__ . '/fixtures/spool') . DIRECTORY_SEPARATOR;
