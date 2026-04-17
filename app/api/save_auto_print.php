@@ -59,6 +59,7 @@ try {
 
     // ID du job original (pour suppression après traitement)
     $original_job_id = isset($input['job_id']) ? $input['job_id'] : null;
+    $internal_id = isset($input['internal_id']) ? intval($input['internal_id']) : null;
     $session_id = isset($input['session_id']) ? intval($input['session_id']) : null;
 
     // Log the full payload for debugging
@@ -140,12 +141,12 @@ try {
     if ($original_job_id && !$simulate) {
         $platform = $input['platform'] ?? 'windows'; // Assume windows if not provided, but Electron/AutoTirage should send it
         
-        $checkSql = "SELECT COUNT(*) FROM recorded_print_jobs WHERE job_id = ?";
-        $checkParams = [strval($original_job_id)];
+        $checkSql = "SELECT COUNT(*) FROM recorded_print_jobs WHERE (job_id = ? AND printer_name = ?)";
+        $checkParams = [strval($original_job_id), $printerName];
         
-        if ($platform !== 'linux') {
-            $checkSql .= " AND printer_name = ?";
-            $checkParams[] = $printerName;
+        if ($internal_id) {
+            $checkSql .= " OR print_job_id = ?";
+            $checkParams[] = $internal_id;
         }
 
         $check = $con_pdo->prepare($checkSql);
@@ -157,8 +158,8 @@ try {
         }
 
         // Marquer immédiatement pour éviter les clics impulsés
-        $mark = $con_pdo->prepare("INSERT INTO recorded_print_jobs (job_id, printer_name) VALUES (?, ?)");
-        $mark->execute([strval($original_job_id), $printerName]);
+        $mark = $con_pdo->prepare("INSERT INTO recorded_print_jobs (job_id, printer_name, print_job_id) VALUES (?, ?, ?)");
+        $mark->execute([strval($original_job_id), $printerName, $internal_id]);
     }
     // Log valid information about the DB
     global $conf;
@@ -486,8 +487,8 @@ try {
         // $del->execute([$original_job_id]);
 
         // Marquer comme définitivement enregistré pour éviter les doublons au redémarrage/nouvelle session
-        $mark = $con_pdo->prepare("INSERT OR IGNORE INTO recorded_print_jobs (job_id, printer_name) VALUES (?, ?)");
-        $mark->execute([$original_job_id, $printerName]);
+        $mark = $con_pdo->prepare("INSERT OR IGNORE INTO recorded_print_jobs (job_id, printer_name, print_job_id) VALUES (?, ?, ?)");
+        $mark->execute([strval($original_job_id), $printerName, $internal_id]);
     }
 
     if ($con_pdo) {

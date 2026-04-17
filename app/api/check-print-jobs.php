@@ -341,9 +341,18 @@ try {
         exit;
     }
 
+    // Purge automatique des vieux enregistrements de traitement (7 jours)
+    // Cela évite les collisions dues au recyclage des job_id par Windows
+    try {
+        $db->execute("DELETE FROM recorded_print_jobs WHERE recorded_at < datetime('now', '-7 days')");
+    } catch (Exception $e) {
+        // Ignorer silencieusement si la purge échoue pour ne pas bloquer l'affichage
+        error_log("Purge recorded_print_jobs failed: " . $e->getMessage());
+    }
+
     // Gestion du filtre d'historique
     $show_history = isset($_GET['history']) && $_GET['history'] === 'true';
-    $where_clause = $show_history ? "" : "WHERE rpj.job_id IS NULL AND pj.session_id IS NULL";
+    $where_clause = $show_history ? "" : "WHERE rpj.print_job_id IS NULL AND pj.session_id IS NULL";
 
     $sql = "
         SELECT
@@ -368,10 +377,9 @@ try {
             pj.event_type,
             pj.timestamp,
             pj.created_at,
-            (CASE WHEN rpj.job_id IS NOT NULL THEN 1 ELSE 0 END) as is_recorded
+            (CASE WHEN rpj.print_job_id IS NOT NULL THEN 1 ELSE 0 END) as is_recorded
         FROM print_jobs pj
-        LEFT JOIN recorded_print_jobs rpj ON pj.job_id = rpj.job_id 
-             AND (pj.printer_name = rpj.printer_name OR " . (PHP_OS_FAMILY === 'Linux' ? '1=1' : '1=0') . ")
+        LEFT JOIN recorded_print_jobs rpj ON pj.id = rpj.print_job_id
         $where_clause
         ORDER BY pj.timestamp DESC
         LIMIT 50

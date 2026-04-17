@@ -371,11 +371,12 @@ function analysePhpLogLine(line) {
 }
 
 function readPhpErrorLogUpdates(initialRead = false) {
-    if (!phpErrorLogPath) {
+    const currentPath = phpErrorLogPath;
+    if (!currentPath) {
         return;
     }
 
-    fs.stat(phpErrorLogPath, (err, stats) => {
+    fs.stat(currentPath, (err, stats) => {
         if (err) {
             if (err.code === 'ENOENT' && !initialRead) {
                 schedulePhpErrorLogMonitorRestart();
@@ -394,7 +395,7 @@ function readPhpErrorLogUpdates(initialRead = false) {
             return;
         }
 
-        const stream = fs.createReadStream(phpErrorLogPath, {
+        const stream = fs.createReadStream(currentPath, {
             start: initialRead ? Math.max(0, currentSize - 32768) : readFrom,
             end: currentSize,
             encoding: 'utf8'
