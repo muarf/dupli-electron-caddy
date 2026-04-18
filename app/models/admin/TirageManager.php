@@ -318,21 +318,21 @@ class TirageManager {
      */
     private function groupTiragesByGlobalId($tirages) {
         // Debug: log l'entrée de la fonction
-        file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - DEBUG groupTiragesByGlobalId: ENTRY, count(tirages)=' . count($tirages) . "\n", FILE_APPEND);
+        error_log(date('Y-m-d H:i:s') . ' - DEBUG groupTiragesByGlobalId: ENTRY, count(tirages)=' . count($tirages) . "\n");
         
         // Extraire la pagination si elle existe
         $pagination = null;
         if (isset($tirages['pagination'])) {
             $pagination = $tirages['pagination'];
-            file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - DEBUG: pagination found: ' . json_encode($pagination) . "\n", FILE_APPEND);
+            error_log(date('Y-m-d H:i:s') . ' - DEBUG: pagination found: ' . json_encode($pagination) . "\n");
             unset($tirages['pagination']);
         } else {
-            file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - DEBUG: no pagination in tirages' . "\n", FILE_APPEND);
+            error_log(date('Y-m-d H:i:s') . ' - DEBUG: no pagination in tirages' . "\n");
         }
         
         // Réindexer le tableau pour s'assurer que les indices sont numériques et séquentiels
         $tirages = array_values($tirages);
-        file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - DEBUG: after array_values, count(tirages)=' . count($tirages) . "\n", FILE_APPEND);
+        error_log(date('Y-m-d H:i:s') . ' - DEBUG: after array_values, count(tirages)=' . count($tirages) . "\n");
         
         $grouped = array();
         $groups = array();
@@ -441,7 +441,7 @@ class TirageManager {
         // Debug: log pour comprendre le problème
         $pagination_total = isset($pagination['total_entries']) ? $pagination['total_entries'] : 'N/A';
         $debug_msg = "DEBUG groupTiragesByGlobalId: total_groups=$total_groups (real), pagination_total_entries=$pagination_total (from BDD), requested_page=$requested_page, current_page=$current_page, per_page=$per_page, offset=$offset, total_pages=$total_pages\n";
-        file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - ' . $debug_msg, FILE_APPEND);
+        error_log(date('Y-m-d H:i:s') . ' - ' . $debug_msg);
         
         // Si pas de groupes, retourner un tableau vide
         if ($total_groups == 0) {
@@ -461,14 +461,14 @@ class TirageManager {
         
         // Debug: vérifier la structure avant array_slice
         $debug_msg = "DEBUG before array_slice: grouped count=" . count($grouped) . ", offset=$offset, per_page=$per_page, current_page=$current_page\n";
-        file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - ' . $debug_msg, FILE_APPEND);
+        error_log(date('Y-m-d H:i:s') . ' - ' . $debug_msg);
         
         // Limiter les groupes selon la pagination
         $grouped_limited = array_slice($grouped, $offset, $per_page);
         
         // Debug: vérifier le résultat
         $debug_msg = "DEBUG after array_slice: grouped_limited count=" . count($grouped_limited) . " for page $current_page\n";
-        file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - ' . $debug_msg, FILE_APPEND);
+        error_log(date('Y-m-d H:i:s') . ' - ' . $debug_msg);
         
         // Réindexer pour s'assurer que les indices commencent à 0
         $grouped_limited = array_values($grouped_limited);
@@ -483,7 +483,7 @@ class TirageManager {
         }
         
         // Debug final
-        file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . " - DEBUG FINAL: returning " . count($grouped_limited) . " groups for page $current_page\n", FILE_APPEND);
+        error_log(date('Y-m-d H:i:s') . " - DEBUG FINAL: returning " . count($grouped_limited) . " groups for page $current_page\n");
         
         return $grouped_limited;
     }
