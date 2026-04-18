@@ -1,4 +1,5 @@
 <?php
+if (!function_exists('Action')) {
 function Action(){
     try {
         $db = pdo_connect();
@@ -20,5 +21,6 @@ function Action(){
         header('Location: ?setup&mode=choice');
         exit;
     }
+}
 }
 ?>

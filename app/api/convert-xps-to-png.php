@@ -11,12 +11,7 @@ set_time_limit(300);
 header('Content-Type: application/json');
 
 // Log debug function
-function debugLog($msg)
-{
-    $logFile = __DIR__ . '/../../logs/debug_api.log';
-    $timestamp = date('H:i:s');
-    @file_put_contents($logFile, "[$timestamp] [XPS] $msg\n", FILE_APPEND);
-}
+require_once __DIR__ . '/../controler/functions/binary_utilities.php';
 
 debugLog("API Called. REQUEST: " . print_r($_REQUEST, true));
 
@@ -38,9 +33,9 @@ function rrmdir($dir)
 }
 
 // Chemin vers l'exécutable GhostXPS
-$gsPath = getenv('DUPLICATOR_GXPS_PATH') ?: realpath(__DIR__ . '/../../ghostscript/gxpswin64.exe');
+$gsPath = get_binary_path('gxps', 'DUPLICATOR_GXPS_PATH');
 
-if (!$gsPath || (!file_exists($gsPath) && $gsPath === realpath(__DIR__ . '/../../ghostscript/gxpswin64.exe'))) {
+if (!$gsPath) {
     debugLog("FATAL: GhostXPS executable not found");
     echo json_encode(['error' => 'GhostXPS not found']);
     exit;

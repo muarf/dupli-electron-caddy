@@ -57,6 +57,7 @@ function convert_pdf_to_png($pdf_file, $output_dir, $dpi = 150, $base_filename =
     }
 }
 
+if (!function_exists('Action')) {
 function Action($conf) {
     $errors = array();
     $success = false;
@@ -244,6 +245,7 @@ function Action($conf) {
         'zip_url' => isset($zip_url) ? $zip_url : '',
         'from_lib_file' => $from_lib_file
     ));
+}
 }
 
 ?>

@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/admin/AideManager.php';
 
+if (!function_exists('Action')) {
 function Action($conf) {
     // Créer l'instance du gestionnaire d'aides
     $aideManager = new AideManager($conf);
@@ -120,5 +121,6 @@ function Action($conf) {
     $data['aide_success'] = $aide_success;
     
     return $data;
+}
 }
 ?>

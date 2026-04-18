@@ -43,11 +43,14 @@ require_once $projectRoot . '/vendor/autoload.php';
 require_once $projectRoot . '/controler/functions/i18n.php';
 require_once $projectRoot . '/controler/functions/utilities.php';
 require_once $projectRoot . '/controler/functions/database.php';
+require_once $projectRoot . '/controler/functions/binary_utilities.php';
 
 try {
     switch ($module) {
         case 'imposition':
             require_once $projectRoot . '/models/imposition.php';
+            require_once $projectRoot . '/models/imposition_livre.php';
+            require_once $projectRoot . '/models/imposition_brochure.php';
             break;
         case 'imposition_tracts':
             require_once $projectRoot . '/models/imposition_tracts.php';

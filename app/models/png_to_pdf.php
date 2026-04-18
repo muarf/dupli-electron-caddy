@@ -68,6 +68,7 @@ function convert_png_to_pdf($image_files, $output_file, $format = 'A4', $orienta
     }
 }
 
+if (!function_exists('Action')) {
 function Action($conf) {
     $errors = array();
     $success = false;
@@ -229,6 +230,7 @@ function Action($conf) {
         'download_url' => $download_url,
         'from_lib_file' => $from_lib_file
     ));
+}
 }
 
 ?>

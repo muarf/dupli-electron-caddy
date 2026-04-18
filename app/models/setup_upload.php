@@ -6,6 +6,7 @@
 
 require_once __DIR__ . '/../controler/functions/database.php';
 
+if (!function_exists('Action')) {
 function Action($conf = null){
     if ($conf === null) {
         include(__DIR__ . '/../controler/conf.php');
@@ -110,6 +111,7 @@ function Action($conf = null){
     
     header('Location: ?setup&mode=upload');
     exit;
+}
 }
 ?>
 

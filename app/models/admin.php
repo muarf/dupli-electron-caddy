@@ -8,6 +8,7 @@ require_once __DIR__ . '/../controler/functions/i18n.php';
  */
 require_once __DIR__ . '/../controler/func.php';
 
+if (!function_exists('Action')) {
 function Action($conf = null)
 {
     $array = [];
@@ -353,6 +354,7 @@ require_once __DIR__ . '/../controler/conf.php';
     
     // Page de connexion si non authentifié
     return template(__DIR__ . "/../view/admin.login.html.php", $array);
+}
 }
 
 /**

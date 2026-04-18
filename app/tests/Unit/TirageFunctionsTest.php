@@ -73,12 +73,12 @@ it('supprime un tirage duplicopieur par nom de machine', function () {
 
 function seed_tirage_schema(PDO $pdo): void
 {
-    $pdo->exec('CREATE TABLE duplicopieurs (id INTEGER PRIMARY KEY AUTOINCREMENT, marque TEXT, modele TEXT, actif INTEGER, tambours TEXT)');
-    $pdo->exec('CREATE TABLE dupli (id INTEGER PRIMARY KEY AUTOINCREMENT, duplicopieur_id INTEGER, nom_machine TEXT, master_ap REAL, passage_ap REAL, date INTEGER, tirage_global_id TEXT, session_id TEXT, document_name TEXT, thumbnail_url TEXT, contact TEXT, prix REAL, mot TEXT, paye TEXT)');
-    $pdo->exec('CREATE TABLE photocop (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT, marque TEXT, contact TEXT, nb_f INTEGER, rv TEXT, prix REAL, paye TEXT, cb TEXT, mot TEXT, date INTEGER, tirage_global_id TEXT, session_id TEXT, document_name TEXT, thumbnail_url TEXT)');
-    $pdo->exec('CREATE TABLE photocopieurs (id INTEGER PRIMARY KEY AUTOINCREMENT, marque TEXT, type_encre TEXT, actif INTEGER)');
-    $pdo->exec('CREATE TABLE A4 (id INTEGER PRIMARY KEY AUTOINCREMENT, contact TEXT)');
-    $pdo->exec('CREATE TABLE A3 (id INTEGER PRIMARY KEY AUTOINCREMENT, contact TEXT)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS duplicopieurs (id INTEGER PRIMARY KEY AUTOINCREMENT, marque TEXT, modele TEXT, actif INTEGER, tambours TEXT)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS dupli (id INTEGER PRIMARY KEY AUTOINCREMENT, duplicopieur_id INTEGER, nom_machine TEXT, master_ap REAL, passage_ap REAL, date INTEGER, tirage_global_id TEXT, session_id TEXT, document_name TEXT, thumbnail_url TEXT, contact TEXT, prix REAL, mot TEXT, paye TEXT)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS photocop (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT, marque TEXT, contact TEXT, nb_f INTEGER, rv TEXT, prix REAL, paye TEXT, cb TEXT, mot TEXT, date INTEGER, tirage_global_id TEXT, session_id TEXT, document_name TEXT, thumbnail_url TEXT, nb_exemplaires INTEGER DEFAULT 1)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS photocopieurs (id INTEGER PRIMARY KEY AUTOINCREMENT, marque TEXT, type_encre TEXT, actif INTEGER)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS A4 (id INTEGER PRIMARY KEY AUTOINCREMENT, contact TEXT)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS A3 (id INTEGER PRIMARY KEY AUTOINCREMENT, contact TEXT)');
 }
 
 function seed_duplicopieur(PDO $pdo, int $id, string $marque, string $modele, int $actif): void

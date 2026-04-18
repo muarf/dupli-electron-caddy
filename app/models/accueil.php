@@ -4,6 +4,7 @@ require_once __DIR__ . '/../controler/functions/email.php';
 require_once __DIR__ . '/../controler/functions/database.php';
 require_once __DIR__ . '/../controler/functions/i18n.php';
 
+if (!function_exists('Action')) {
 function Action(){
   $db = pdo_connect();
   $result['news']= get_last_news();
@@ -26,5 +27,6 @@ function Action(){
   $result['global_install_command'] = get_global_install_command($health_check);
   
   return template("../view/accueil.html.php",$result);
+}
 }
 ?>

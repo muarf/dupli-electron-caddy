@@ -61,11 +61,11 @@ it('calcule le montant dû pour une marque de photocopieur', function () {
 
 function seed_pricing_schema(PDO $pdo): void
 {
-    $pdo->exec('CREATE TABLE prix (id INTEGER PRIMARY KEY AUTOINCREMENT, machine_type TEXT, machine_id INTEGER, type TEXT, pack REAL, unite REAL)');
-    $pdo->exec('CREATE TABLE papier (id INTEGER PRIMARY KEY, prix REAL)');
-    $pdo->exec('CREATE TABLE dupli (id INTEGER PRIMARY KEY AUTOINCREMENT, duplicopieur_id INTEGER, nom_machine TEXT, prix REAL, paye TEXT)');
-    $pdo->exec('CREATE TABLE duplicopieurs (id INTEGER PRIMARY KEY AUTOINCREMENT, marque TEXT, modele TEXT, actif INTEGER)');
-    $pdo->exec('CREATE TABLE photocop (id INTEGER PRIMARY KEY AUTOINCREMENT, marque TEXT, prix REAL, paye TEXT)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS prix (id INTEGER PRIMARY KEY AUTOINCREMENT, machine_type TEXT, machine_id INTEGER, type TEXT, pack REAL, unite REAL)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS papier (id INTEGER PRIMARY KEY, prix REAL)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS dupli (id INTEGER PRIMARY KEY AUTOINCREMENT, duplicopieur_id INTEGER, nom_machine TEXT, prix REAL, paye TEXT)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS duplicopieurs (id INTEGER PRIMARY KEY AUTOINCREMENT, marque TEXT, modele TEXT, actif INTEGER)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS photocop (id INTEGER PRIMARY KEY AUTOINCREMENT, marque TEXT, prix REAL, paye TEXT)');
 }
 
 function seed_pricing_fixtures(PDO $pdo): void

@@ -14,6 +14,7 @@ use setasign\Fpdi\TcpdfFpdi as TCPDI;
  * @return array{file:string,page_count:int,temp_file:?string}
  * @throws Exception
  */
+if (!function_exists('padPdfToMultiple')) {
 function padPdfToMultiple($pdfFilePath, $multiple) {
     $pdf = new TCPDI();
     $pageCount = $pdf->setSourceFile($pdfFilePath);
@@ -76,7 +77,8 @@ function padPdfToMultiple($pdfFilePath, $multiple) {
         'temp_file' => $outputPath
     ];
 }
-
+}
+if (!function_exists('addPageNumber')) {
 function addPageNumber($pdf, $page_num, $x, $y, $new_width, $new_height, $rotation) {
     // Désactiver l'ajout automatique de pages
     $pdf->setAutoPageBreak(false);
@@ -102,7 +104,9 @@ function addPageNumber($pdf, $page_num, $x, $y, $new_width, $new_height, $rotati
         $pdf->StopTransform();
     }
 }
+}
 
+if (!function_exists('Action')) {
 function Action($conf)
 {
     $array = array();
@@ -475,6 +479,7 @@ function Action($conf)
     }
     
     return template(__DIR__ . "/../view/imposition_livre.html.php", $array);
+}
 }
 
 ?>

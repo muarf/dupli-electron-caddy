@@ -11,12 +11,7 @@ set_time_limit(300);
 header('Content-Type: application/json');
 
 // Log debug function
-function debugLog($msg)
-{
-    $logFile = __DIR__ . '/../../logs/debug_api.log';
-    $timestamp = date('H:i:s');
-    @file_put_contents($logFile, "[$timestamp] $msg\n", FILE_APPEND);
-}
+require_once __DIR__ . '/../controler/functions/binary_utilities.php';
 
 debugLog("API Called. REQUEST: " . print_r($_REQUEST, true));
 
@@ -37,14 +32,9 @@ function rrmdir($dir)
     }
 }
 
-// Chemin vers ImageMagick (Portable)
-$imPath = getenv('DUPLICATOR_MAGICK_PATH') ?: __DIR__ . '/../imagemagick/magick.exe';
+// Chemin vers ImageMagick
+$imPath = get_binary_path('magick', 'DUPLICATOR_MAGICK_PATH');
 debugLog("IM Path: $imPath");
-
-if (!file_exists($imPath) && $imPath === __DIR__ . '/../imagemagick/magick.exe') {
-    debugLog("IM not found at $imPath, using system default");
-    $imPath = 'magick';
-}
 
 // Récupérer le job ID
 $jobId = isset($_REQUEST['job_id']) ? intval($_REQUEST['job_id']) : 0;

@@ -8,13 +8,22 @@
         }
     ],
     "require": {
+        "php": ">=8.2",
         "setasign/fpdi-tcpdf": "^2.3",
         "smalot/pdfparser": "^2.12",
         "setasign/fpdf": "^1.8"
     },
     "require-dev": {
-        "pestphp/pest": "^1.23",
-        "pestphp/pest-plugin": "^1.1"
+        "pestphp/pest": "^3.0"
+    },
+    "autoload": {
+        "classmap": [
+            "models/admin/",
+            "models/BibliothequeManager.php",
+            "models/ImpositionLeaflet.php",
+            "controler/functions/SpoolManager.php",
+            "controler/functions/"
+        ]
     },
     "config": {
         "allow-plugins": {

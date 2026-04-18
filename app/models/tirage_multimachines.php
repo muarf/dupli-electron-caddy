@@ -103,26 +103,21 @@ function getMachinePrices($db, $machine_name)
     $photocop = $query1->fetch(PDO::FETCH_ASSOC);
     $query1->closeCursor(); // CORRECTION CRITIQUE : Fermer le curseur avant la prochaine requête
 
-    error_log("DEBUG getMachinePrices - machine_name: $machine_name");
-    error_log("DEBUG getMachinePrices - photocop trouvé: id=" . ($photocop['id'] ?? 'N/A') . ", type_encre=" . ($photocop['type_encre'] ?? 'N/A'));
 
     if ($photocop) {
         // C'est un photocopieur
         $machine_type = 'photocop';
         $machine_id = $photocop['id'];
-        error_log("DEBUG getMachinePrices - machine_type: $machine_type, machine_id: $machine_id");
     } else {
         // Pour les duplicopieurs, utiliser dupli_1
         $machine_type = 'dupli';
         $machine_id = 1;
-        error_log("DEBUG getMachinePrices - Pas de photocopieur trouvé, utilisation dupli_1");
     }
 
     $query2 = $db->prepare('SELECT type, unite, pack FROM prix WHERE machine_type = ? AND machine_id = ?');
     $query2->execute([$machine_type, $machine_id]);
     $prices = [];
 
-    error_log("DEBUG getMachinePrices - Requête prix: machine_type=$machine_type, machine_id=$machine_id");
 
     // CORRECTION DEADLOCK : Utiliser fetchAll() pour libérer immédiatement le curseur SQLite
     $rows = $query2->fetchAll(PDO::FETCH_ASSOC);
@@ -132,10 +127,8 @@ function getMachinePrices($db, $machine_name)
             'unite' => floatval($row['unite']),
             'pack' => floatval($row['pack'])
         ];
-        error_log("DEBUG getMachinePrices - Prix ajouté: " . $row['type'] . " = " . $row['unite']);
     }
 
-    error_log("DEBUG getMachinePrices - Prix finaux: " . count($prices) . " éléments");
 
     return $prices;
 }
@@ -207,7 +200,6 @@ function determineMachineType($db, $machine_name)
 
 function calculatePageCost($machine_name, $machine_type, $prices, $is_color, $is_duplex, $fill_rate = 0.5, $return_breakdown = false)
 {
-    error_log("DEBUG calculatePageCost - ENTREE avec prix fixes, fill_rate=$fill_rate, is_color=" . ($is_color ? 'OUI' : 'NON'));
 
     $fixed_cost = 0;
     $variable_cost = 0;
@@ -218,7 +210,6 @@ function calculatePageCost($machine_name, $machine_type, $prices, $is_color, $is
 
     try {
         if ($machine_type === 'toner') {
-            error_log("DEBUG calculatePageCost - BRANCHE TONER");
             if ($is_color) {
                 // Couleur : cyan + magenta + yellow (AVEC taux de remplissage)
                 $variable_cost += ($prices['cyan']['unite'] ?? 0);
@@ -237,7 +228,6 @@ function calculatePageCost($machine_name, $machine_type, $prices, $is_color, $is
                 $fixed_cost += ($prices['dev']['unite'] ?? 0);
             }
         } else {
-            error_log("DEBUG calculatePageCost - BRANCHE ENCRE");
             if ($is_color) {
                 // Couleur : bleue + couleur + jaune + rouge (AVEC taux de remplissage)
                 $variable_cost += ($prices['bleue']['unite'] ?? 0);
@@ -264,15 +254,14 @@ function calculatePageCost($machine_name, $machine_type, $prices, $is_color, $is
         }
 
         $total = $fixed_cost + ($variable_cost * $fill_rate_multiplier);
-        error_log("DEBUG calculatePageCost - COÛT FINAL: $total (fixed: $fixed_cost, variable_base: $variable_cost, multiplier: $fill_rate_multiplier)");
         return $total;
 
     } catch (Exception $e) {
-        error_log("DEBUG calculatePageCost - ERREUR: " . $e->getMessage());
         return $return_breakdown ? ['fixed_cost' => 0.01, 'variable_cost_base' => 0, 'variable_cost_adjusted' => 0, 'multiplier' => 1, 'total' => 0.01] : 0.01;
     }
 }
 
+if (!function_exists('Action')) {
 function Action($conf = null)
 {
     error_log("=== NOUVEAU TEST MULTIMACHINES " . date('Y-m-d H:i:s') . " ===");
@@ -427,7 +416,6 @@ function Action($conf = null)
         
         if ($session_id_to_load > 0) {
             try {
-                error_log("DEBUG - Chargement des jobs stagés pour session_id=$session_id_to_load");
                 
                 // Charger les jobs stagés
                 $stmt_staged = $db->prepare("
@@ -444,7 +432,6 @@ function Action($conf = null)
                 $stmt_staged->closeCursor();
                 
                 if (!empty($staged_jobs)) {
-                    error_log("DEBUG - Trouvé " . count($staged_jobs) . " jobs stagés");
                     
                     // Utiliser le contact du premier job
                     $array['contact'] = $staged_jobs[0]['contact'] ?? '';
@@ -528,7 +515,6 @@ function Action($conf = null)
                         $array['prix_total'] += floatval($job['calculated_price']);
                     }
                     
-                    error_log("DEBUG - Jobs stagés chargés et transformés en " . count($array['machines']) . " machines");
                 }
             } catch (Exception $e) {
                 error_log("ERREUR chargement jobs stagés: " . $e->getMessage());
@@ -545,7 +531,6 @@ function Action($conf = null)
 
     // Traitement des données POST - Affichage de la page de confirmation
     if (isset($_POST['contact']) && isset($_POST['ok'])) {
-        error_log("DEBUG - ENTREE DANS CONFIRMATION (bouton ok)");
         if (isset($_GET['debug'])) {
             $array['debug']['confirmation'] = "ENTRÉE DANS LA CONFIRMATION - " . date('H:i:s');
         }
@@ -613,18 +598,13 @@ function Action($conf = null)
                 $prix_passage = 0;
 
                 // Debug
-                error_log("DEBUG tirage_multimachines: machine_key=$machine_key, tambour_selected=$tambour_selected");
-                error_log("DEBUG tirage_multimachines: prix_data structure: " . print_r($prix_data[$machine_key] ?? 'NOT_FOUND', true));
 
                 if (!empty($tambour_selected) && isset($prix_data[$machine_key][$tambour_selected]['unite'])) {
                     $prix_passage = $prix_data[$machine_key][$tambour_selected]['unite'];
-                    error_log("DEBUG tirage_multimachines: Using tambour_selected price: $prix_passage");
                 } elseif (isset($prix_data[$machine_key]['tambour_noir']['unite'])) {
                     // Fallback sur le tambour noir si pas de tambour spécifique
                     $prix_passage = $prix_data[$machine_key]['tambour_noir']['unite'];
-                    error_log("DEBUG tirage_multimachines: Using tambour_noir fallback price: $prix_passage");
                 } else {
-                    error_log("DEBUG tirage_multimachines: No price found for machine_key=$machine_key");
                 }
 
                 // Prix du papier selon la taille
@@ -688,18 +668,14 @@ function Action($conf = null)
                 $array['prix_total'] += $prix_total;
             } else if ($machine['type'] === 'photocopieur') {
                 // Calcul photocopieur
-                error_log("DEBUG CONFIRMATION - DEBUT photocopieur index=$index, machine=" . ($machine['machine'] ?? 'N/A'));
                 $prix_total = 0;
                 if (isset($_GET['debug'])) {
                     $array['debug']['photocopieur_' . $index] = "Machine " . $index . " (photocopieur) détectée";
                 }
 
                 // OPTIMISATION : Récupérer les prix UNE SEULE FOIS avant la boucle (comme dans l'enregistrement)
-                error_log("DEBUG CONFIRMATION - AVANT getMachinePrices");
                 $machine_prices = getMachinePrices($db, $machine['machine']);
-                error_log("DEBUG CONFIRMATION - APRES getMachinePrices, AVANT determineMachineType");
                 $machine_type_detected = determineMachineType($db, $machine['machine']);
-                error_log("DEBUG CONFIRMATION - APRES determineMachineType");
 
                 if (isset($machine['brochures']) && is_array($machine['brochures'])) {
                     if (isset($_GET['debug'])) {
@@ -806,10 +782,7 @@ function Action($conf = null)
     }
 
     // Traitement des données POST - Enregistrement en BDD
-    error_log("DEBUG POST CHECK - contact isset: " . (isset($_POST['contact']) ? 'OUI' : 'NON') . ", enregistrer isset: " . (isset($_POST['enregistrer']) ? 'OUI' : 'NON'));
-    error_log("DEBUG POST CHECK - POST keys: " . implode(', ', array_keys($_POST)));
     if (isset($_POST['contact']) && isset($_POST['enregistrer'])) {
-        error_log("DEBUG - ENTREE DANS ENREGISTREMENT (bouton enregistrer)");
         // Augmenter le timeout pour éviter les timeouts - CORRECTION TIMEOUT
         set_time_limit(120); // Augmenté de 60 à 120 secondes
         ini_set('max_execution_time', 120); // Force PHP timeout
@@ -826,20 +799,15 @@ function Action($conf = null)
 
         // Vérifier qu'on a des machines
         if (empty($array['machines'])) {
-            error_log("DEBUG ENREGISTREMENT - ERREUR: Aucune machine fournie");
             $array['errors'][] = "Aucune machine fournie pour l'enregistrement";
             return $array;
         }
 
         // OPTIMISATION : Récupérer les prix UNE SEULE FOIS pour toutes les machines
-        error_log("DEBUG ENREGISTREMENT - Récupération globale des prix AVANT la boucle");
         $prix_data_global = get_price();
-        error_log("DEBUG ENREGISTREMENT - Prix globaux récupérés avec succès");
 
         // Calculer le prix pour chaque machine AVANT l'enregistrement
-        error_log("DEBUG ENREGISTREMENT - Début calcul prix pour " . count($array['machines']) . " machines");
         foreach ($array['machines'] as $index => $machine) {
-            error_log("DEBUG ENREGISTREMENT - Traitement machine $index de type: " . $machine['type']);
             if (isset($_GET['debug'])) {
                 $array['debug']['machine_' . $index] = "Machine " . $index . " - Type: " . $machine['type'];
                 $array['debug']['machine_type_check_' . $index] = "Type check: " . ($machine['type'] === 'duplicopieur' ? 'TRUE' : 'FALSE');
@@ -919,31 +887,23 @@ function Action($conf = null)
 
             } else if ($machine['type'] === 'photocopieur') {
                 // Calcul photocopieur - OPTIMISÉ POUR ÉVITER TIMEOUT
-                error_log("DEBUG ENREGISTREMENT - ENTREE DANS CALCUL PHOTOCOPIEUR machine $index");
                 $prix_machine = 0;
 
                 // OPTIMISATION : Utiliser les prix globaux récupérés avant la boucle
-                error_log("DEBUG ENREGISTREMENT - Utilisation des prix globaux");
                 try {
                     $prix_data = $prix_data_global;
-                    error_log("DEBUG ENREGISTREMENT - Prix globaux utilisés avec succès");
                     $prix_papier_a3 = $prix_data['papier']['A3'] ?? 0.02;
                     $prix_papier_a4 = $prix_data['papier']['A4'] ?? 0.01;
-                    error_log("DEBUG ENREGISTREMENT - Prix papier récupérés: A3=$prix_papier_a3, A4=$prix_papier_a4");
                 } catch (Exception $e) {
-                    error_log("DEBUG ENREGISTREMENT - ERREUR dans get_price(): " . $e->getMessage());
                     $prix_papier_a3 = 0.02;
                     $prix_papier_a4 = 0.01;
                 }
 
                 // OPTIMISATION : Récupérer les prix machine UNE SEULE FOIS
-                error_log("DEBUG ENREGISTREMENT - Récupération prix machine (une seule fois)");
                 try {
                     $machine_prices = getMachinePrices($db, $machine['machine']);
                     $machine_type_detected = determineMachineType($db, $machine['machine']);
-                    error_log("DEBUG ENREGISTREMENT - Prix machine récupérés pour: " . $machine['machine']);
                 } catch (Exception $e) {
-                    error_log("DEBUG ENREGISTREMENT - ERREUR prix machine: " . $e->getMessage());
                     $machine_prices = [
                         'noire' => ['unite' => 0.03],
                         'bleue' => ['unite' => 0.05],
@@ -954,7 +914,6 @@ function Action($conf = null)
                 }
 
                 if (isset($machine['brochures']) && is_array($machine['brochures'])) {
-                    error_log("DEBUG ENREGISTREMENT - Début boucle brochures optimisée, count: " . count($machine['brochures']));
                     foreach ($machine['brochures'] as $brochure_index => $brochure) {
                         if (!empty($brochure['nb_exemplaires']) && !empty($brochure['nb_feuilles']) && !empty($brochure['taille'])) {
                             // Utilisation de la fonction optimisée
@@ -978,8 +937,6 @@ function Action($conf = null)
                             $prix_machine += $prix_brochure;
 
                             // Debug: Log du prix final de la brochure
-                            error_log("DEBUG ENREGISTREMENT - Prix brochure: " . $prix_brochure);
-                            error_log("DEBUG ENREGISTREMENT - Prix machine total: " . $prix_machine);
                         }
                     }
                 }
@@ -988,7 +945,7 @@ function Action($conf = null)
                 $array['prix_total'] += $prix_machine;
             }
         }
-
+        
         // Validation des données
         if (empty($_POST['contact'])) {
             $array['errors'][] = "Veuillez entrer votre nom/contact.";
@@ -1063,7 +1020,6 @@ function Action($conf = null)
             // Charger la classe de migration pour générer les IDs
             require_once __DIR__ . '/migrations/DatabaseMigrationManager.php';
 
-            // Démarrer une transaction
             $db->beginTransaction();
 
             try {
@@ -1183,10 +1139,8 @@ function Action($conf = null)
                         $prix_machine_calcule = round(floatval($array['machines'][$index]['prix'] ?? 0), 2);
 
                         // Debug: Log du prix final transmis à insert_photocop
-                        error_log("DEBUG ENREGISTREMENT - Prix final transmis à insert_photocop: " . $prix_machine_calcule);
 
                         // Debug: Log des brochures reçues
-                        error_log("DEBUG ENREGISTREMENT - Brochures reçues: " . count($machine['brochures']) . " brochures");
 
                         // Traiter les brochures pour récupérer les infos nécessaires à l'enregistrement
                         if (isset($machine['brochures']) && is_array($machine['brochures'])) {
@@ -1209,7 +1163,6 @@ function Action($conf = null)
                                         $query->execute($params);
                                     } else {
                                         // Insérer dans la table photocop avec le prix transmis
-                                        error_log("DEBUG ENREGISTREMENT - Tentative insertion photocop: type=photocopieur, marque=$marque, nb_f_total=$nb_f_total, prix=$prix_machine_calcule, session=$session_id");
                                         insert_photocop(
                                             'photocopieur',
                                             $marque,
@@ -1228,7 +1181,6 @@ function Action($conf = null)
                                             $machine['thumbnail_url'] ?? null
                                         );
                                     }
-                                    error_log("DEBUG ENREGISTREMENT - Fin traitement brochure");
                                 }
                             }
                         }
@@ -1306,6 +1258,7 @@ function Action($conf = null)
     $debug = $array['debug'] ?? null;
 
     return template("../view/tirage_multimachines.html.php", $array);
+}
 }
 
 /**

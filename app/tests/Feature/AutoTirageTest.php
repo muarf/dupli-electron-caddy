@@ -3,6 +3,7 @@
 
 beforeEach(function () {
     require_pricing_dependencies();
+    require_once dirname(dirname(__DIR__)) . '/models/admin/TirageManager.php';
     
     [$this->dbPath, $this->pdo] = create_test_sqlite_database();
     configure_sqlite_conf($this->dbPath);
