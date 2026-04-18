@@ -171,6 +171,7 @@ function convert_pdf_to_image_for_analysis($pdf_file, $output_dir, $page_number 
     }
 }
 
+if (!function_exists('Action')) {
 function Action($conf) {
     $errors = array();
     $success = false;
@@ -348,6 +349,7 @@ function Action($conf) {
                htmlspecialchars($e->getMessage()) . '</p><pre>' . 
                htmlspecialchars($e->getTraceAsString()) . '</pre></div></div>';
     }
+}
 }
 
 ?>

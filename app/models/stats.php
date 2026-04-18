@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../controler/functions/database.php';
 require_once __DIR__ . '/../controler/functions/stats.php';
 
+if (!function_exists('Action')) {
 function Action(){
   $db = pdo_connect();
   $result['stats'] = blablastats();
@@ -51,6 +52,7 @@ function Action(){
   }
   
   return template("../view/stats.html.php",$result);
+}
 }
 ?>
 

@@ -69,6 +69,7 @@ function sanitizeFileName($filename) {
 }
 
 // Fonction pour résoudre le répertoire de stockage des PDFs d'aide
+if (!function_exists('resolveAidePdfDir')) {
 function resolveAidePdfDir() {
     if (function_exists('getAidePdfDir')) {
         return getAidePdfDir();
@@ -77,12 +78,14 @@ function resolveAidePdfDir() {
     // Fallback si paths.php n'est pas chargé (ne devrait pas arriver)
     return normalizePath(__DIR__ . '/../public/uploads/aide_pdfs');
 }
+}
 
-// Fonction pour normaliser un chemin
+if (!function_exists('normalizePath')) {
 function normalizePath($path) {
     $path = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $path);
     $path = trim($path);
     return rtrim($path, DIRECTORY_SEPARATOR);
+}
 }
 
 // Fonction pour récupérer la liste des PDFs
@@ -162,7 +165,7 @@ try {
             
             echo json_encode([
                 'success' => true,
-                'message' => _e('admin_aide.upload_success'),
+                'message' => __('admin_aide.upload_success'),
                 'filename' => $uniqueFilename,
                 'url' => '?view_aide_pdf&file=' . urlencode($uniqueFilename)
             ]);

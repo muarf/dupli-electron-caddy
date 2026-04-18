@@ -6,7 +6,7 @@ beforeEach(function () {
     [$this->dbPath, $this->pdo] = create_test_sqlite_database();
     configure_sqlite_conf($this->dbPath);
     $this->manager = new StatsManager($GLOBALS['conf']);
-    $this->pdo->exec('CREATE TABLE site_settings (setting_name TEXT PRIMARY KEY, setting_value TEXT, updated_at TEXT)');
+    $this->pdo->exec('CREATE TABLE IF NOT EXISTS site_settings (setting_name TEXT PRIMARY KEY, setting_value TEXT, updated_at TEXT)');
 });
 
 afterEach(function () {

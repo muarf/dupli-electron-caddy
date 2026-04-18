@@ -1,4 +1,7 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
 
 /*
 |--------------------------------------------------------------------------
@@ -27,6 +30,8 @@
 expect()->extend('toBeOne', function () {
     return $this->toBe(1);
 });
+
+require_once __DIR__ . '/helpers/test_helpers.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -93,8 +98,8 @@ if (!function_exists('create_essential_tables')) {
             'photocopieurs' => "CREATE TABLE IF NOT EXISTS photocopieurs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 marque TEXT NOT NULL,
-                modele TEXT NOT NULL,
-                type_encre TEXT NOT NULL CHECK(type_encre IN ('encre','toner')),
+                modele TEXT NOT NULL DEFAULT '',
+                type_encre TEXT NOT NULL DEFAULT 'toner' CHECK(type_encre IN ('encre','toner')),
                 actif INTEGER DEFAULT 1,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -136,6 +141,9 @@ if (!function_exists('create_essential_tables')) {
                 cb TEXT NOT NULL DEFAULT 'non',
                 mot TEXT NOT NULL DEFAULT '',
                 date TEXT NOT NULL DEFAULT '',
+                document_name TEXT DEFAULT '',
+                thumbnail_url TEXT DEFAULT NULL,
+                nb_exemplaires INTEGER DEFAULT 1,
                 tirage_global_id TEXT DEFAULT NULL,
                 session_id INTEGER DEFAULT NULL
             )",

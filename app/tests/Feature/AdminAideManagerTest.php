@@ -6,14 +6,14 @@ beforeEach(function () {
     [$this->dbPath, $this->pdo] = create_test_sqlite_database();
     configure_sqlite_conf($this->dbPath);
 
-    $this->pdo->exec('CREATE TABLE aide_machines (
+    $this->pdo->exec('CREATE TABLE IF NOT EXISTS aide_machines (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         machine TEXT UNIQUE,
         contenu_aide TEXT,
         date_modification TEXT
     )');
 
-    $this->pdo->exec('CREATE TABLE aide_machines_qa (
+    $this->pdo->exec('CREATE TABLE IF NOT EXISTS aide_machines_qa (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         machine TEXT,
         question TEXT,
@@ -23,14 +23,14 @@ beforeEach(function () {
         date_modification TEXT
     )');
 
-    $this->pdo->exec('CREATE TABLE duplicopieurs (
+    $this->pdo->exec('CREATE TABLE IF NOT EXISTS duplicopieurs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         marque TEXT,
         modele TEXT,
         actif INTEGER
     )');
 
-    $this->pdo->exec('CREATE TABLE photocopieurs (
+    $this->pdo->exec('CREATE TABLE IF NOT EXISTS photocopieurs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         marque TEXT,
         modele TEXT,

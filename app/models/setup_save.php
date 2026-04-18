@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../controler/functions/database.php';
 
+if (!function_exists('Action')) {
 function Action($conf = null){
     // Initialiser la configuration si elle n'est pas fournie
     if ($conf === null) {
@@ -303,6 +304,7 @@ function Action($conf = null){
         header('Location: ?setup');
         exit;
     }
+}
 }
 
 /**

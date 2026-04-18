@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../controler/functions/i18n.php';
 
+if (!function_exists('Action')) {
 function Action($conf = null){
     try {
         $db = pdo_connect();
@@ -35,5 +36,6 @@ function Action($conf = null){
     );
     
     return template("../view/setup.html.php", $result);
+}
 }
 ?>

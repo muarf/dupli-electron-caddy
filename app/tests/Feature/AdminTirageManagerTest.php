@@ -8,14 +8,14 @@ beforeEach(function () {
     [$this->dbPath, $this->pdo] = create_test_sqlite_database();
     configure_sqlite_conf($this->dbPath);
 
-    $this->pdo->exec('CREATE TABLE duplicopieurs (
+    $this->pdo->exec('CREATE TABLE IF NOT EXISTS duplicopieurs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         marque TEXT,
         modele TEXT,
         actif INTEGER
     )');
 
-    $this->pdo->exec('CREATE TABLE dupli (
+    $this->pdo->exec('CREATE TABLE IF NOT EXISTS dupli (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         duplicopieur_id INTEGER,
         nom_machine TEXT,
@@ -30,7 +30,7 @@ beforeEach(function () {
         paye TEXT
     )');
 
-    $this->pdo->exec('CREATE TABLE photocop (
+    $this->pdo->exec('CREATE TABLE IF NOT EXISTS photocop (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         marque TEXT,
         contact TEXT,
@@ -44,7 +44,7 @@ beforeEach(function () {
         mot TEXT
     )');
 
-    $this->pdo->exec('CREATE TABLE photocopieurs (
+    $this->pdo->exec('CREATE TABLE IF NOT EXISTS photocopieurs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         marque TEXT,
         modele TEXT,

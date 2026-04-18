@@ -132,6 +132,7 @@ function unimpose_booklet($input_file, $output_file) {
         }
 }
 
+if (!function_exists('Action')) {
 function Action($conf) {
     // Initialiser le système de traduction
     I18nManager::getInstance();
@@ -215,5 +216,6 @@ function Action($conf) {
         'result' => $result,
         'download_url' => $download_url
     ]);
+}
 }
 ?>

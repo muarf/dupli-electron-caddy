@@ -575,6 +575,7 @@ function process_image($image_path, $output_path, $params) {
 /**
  * Fonction principale Action
  */
+if (!function_exists('Action')) {
 function Action($conf) {
     $errors = array();
     $success = false;
@@ -1068,6 +1069,7 @@ function Action($conf) {
         'result' => $result,
         'from_lib_file' => $from_lib_file
     ));
+}
 }
 
 ?>

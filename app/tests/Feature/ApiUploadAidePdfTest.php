@@ -94,19 +94,5 @@ function run_upload_aide_pdf(array $get, array $conf, array $session): string
     ]);
 }
 
-function execute_routed_endpoint(string $endpoint, array $config): string
-{
-    $runner = realpath(__DIR__ . '/../helpers/run_routed_endpoint.php');
 
-    $command = escapeshellarg(PHP_BINARY) . ' ' .
-        escapeshellarg($runner) . ' ' .
-        escapeshellarg($endpoint) . ' ' .
-        escapeshellarg(json_encode($config));
-
-    $output = [];
-    $exitCode = 0;
-    exec($command, $output, $exitCode);
-
-    return implode("\n", $output);
-}
 

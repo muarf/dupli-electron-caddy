@@ -11,12 +11,7 @@ set_time_limit(300);
 header('Content-Type: application/json');
 
 // Log debug function
-function debugLog($msg)
-{
-    $logFile = __DIR__ . '/../../logs/debug_api.log';
-    $timestamp = date('H:i:s');
-    @file_put_contents($logFile, "[$timestamp] [PCL] $msg\n", FILE_APPEND);
-}
+require_once __DIR__ . '/../controler/functions/binary_utilities.php';
 
 debugLog("API Called. REQUEST: " . print_r($_REQUEST, true));
 
@@ -37,19 +32,16 @@ function rrmdir($dir)
     }
 }
 
-// Chemin vers l'exécutable GhostPCL (installé manuellement)
-$gsPath = getenv('DUPLICATOR_GPCL_PATH') ?: __DIR__ . '/../../ghostscript/gpcl6win64.exe';
+// Chemin vers l'exécutable GhostPCL
+$gsPath = get_binary_path('gpcl6', 'DUPLICATOR_GPCL_PATH');
 
-if (!file_exists($gsPath) && $gsPath === __DIR__ . '/../../ghostscript/gpcl6win64.exe') {
-    // Fallback si GhostPCL n'est pas trouvé (pour dev ou si non installé)
-    debugLog("GhostPCL non trouvé à $gsPath, essai avec gswin64c.exe (risque d'échec sur PCL)");
-    $gsPath = __DIR__ . '/../../ghostscript/gswin64c.exe';
+if (!$gsPath) {
+    debugLog("FATAL: GhostPCL executable not found");
+    echo json_encode(['error' => 'GhostPCL not found']);
+    exit;
 }
 
-if (!file_exists($gsPath) && ($gsPath === __DIR__ . '/../../ghostscript/gswin64c.exe' || $gsPath === 'gswin64c')) {
-    debugLog("Ghostscript not found at $gsPath, using system default");
-    $gsPath = 'gswin64c';
-}
+debugLog("GhostPCL Path: $gsPath");
 
 // Récupérer le job ID
 $jobId = isset($_REQUEST['job_id']) ? intval($_REQUEST['job_id']) : 0;

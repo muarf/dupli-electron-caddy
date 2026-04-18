@@ -1,16 +1,22 @@
 <?php
+define('DEVELOPMENT_MODE', true);
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
-$endpoint = $argv[1] ?? null;
-$payload = $argv[2] ?? '{}';
+$payload = $argv[1] ?? '{}';
 
-if ($endpoint === null) {
-    fwrite(STDERR, "Endpoint manquant\n");
+$data = json_decode($payload, true);
+if (!is_array($data)) {
+    fwrite(STDERR, "Payload invalide\n");
     exit(1);
 }
 
-$config = json_decode($payload, true);
-if (!is_array($config)) {
-    $config = [];
+$endpoint = $data['endpoint'] ?? null;
+$config = $data['config'] ?? [];
+
+if ($endpoint === null) {
+    fwrite(STDERR, "Endpoint manquant dans le payload\n");
+    exit(1);
 }
 
 // Configurer $_GET avec l'endpoint comme première clé (pour key($_GET))

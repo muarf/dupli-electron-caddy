@@ -7,6 +7,7 @@ require_once(__DIR__ . '/../controler/functions/i18n.php');
 use setasign\Fpdi\TcpdfFpdi as TCPDI;
 error_log("[IMPOSITION_TRACTS] Imports terminés, fonction Action() va être définie");
 
+if (!function_exists('Action')) {
 function Action($conf = null)
 {
     error_log("[IMPOSITION_TRACTS] Action() appelée - GET: " . print_r($_GET, true));
@@ -95,6 +96,7 @@ function Action($conf = null)
     }
 
     return template(__DIR__ . "/../view/imposition_tracts.html.php", $array);
+}
 }
 
 function analyzePDFFormat($pdfFile)

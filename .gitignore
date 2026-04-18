@@ -10,12 +10,14 @@ build/config.gypi
 # Note: php.exe and caddy.exe are needed for Windows builds, so not ignored
 
 # Binaries
-caddy/*.tar.gz
-caddy/*.zip
-php/php
-php/*.tar.gz
-php/*.zip
-php_linux.zip
+bin/
+caddy/caddy*
+php/php*
+ghostscript/gs*
+ghostscript/*.dll
+ghostscript/*.exe
+imagemagick/*.exe
+imagemagick/*.dll
 
 # Logs
 *.log
@@ -61,4 +63,6 @@ coverage/
 .cache/
 .npm/
 .electron/
+app/.phpunit.cache/
+app/brain/
 

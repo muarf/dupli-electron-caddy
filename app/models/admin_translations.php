@@ -2,6 +2,7 @@
 require_once __DIR__ . '/admin/TranslationManager.php';
 require_once __DIR__ . '/../controler/functions/i18n.php';
 
+if (!function_exists('Action')) {
 function Action($conf) {
     // Vérification de l'authentification admin
     if(!isset($_SESSION['user'])) {
@@ -93,5 +94,6 @@ function Action($conf) {
     $array['translations'] = $translationManager->getTranslations($selected_language);
     
     return template("../view/admin_translations.html.php", $array);
+}
 }
 ?>

@@ -30,8 +30,11 @@ if (!function_exists('template')) {
     }
 }
 
+require_once __DIR__ . '/../../controler/functions/database.php';
 require_once __DIR__ . '/../../controler/functions/paths.php';
 require_once __DIR__ . '/../../controler/functions/machines.php';
+require_once __DIR__ . '/../../controler/functions/tirage.php';
+require_once __DIR__ . '/../../models/migrations/DatabaseMigrationManager.php';
 require_once __DIR__ . '/../../models/tirage_multimachines.php';
 
 $result = Action();

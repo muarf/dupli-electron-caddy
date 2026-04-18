@@ -32,7 +32,12 @@ it('calcule le prix total pour le flux de confirmation', function () {
         'post' => $post,
         'env' => ['DUPLICATOR_DB_PATH' => $this->conf['db_path']],
     ]);
-    $vars = $result['variables'];
+    
+    $vars = $result['vars']['variables'] ?? [];
+    if (!empty($vars['errors'])) {
+        error_log("ERREURS CONFIRMATION: " . print_r($vars['errors'], true));
+        error_log("STDERR: " . $result['stderr']);
+    }
 
     expect($vars['contact'])->toBe('Alice');
     expect($vars['prix_total'])->toEqualWithDelta(62.0, 0.001);
@@ -51,9 +56,17 @@ it('enregistre les tirages lors de la soumission finale', function () {
         'post' => $post,
         'env' => ['DUPLICATOR_DB_PATH' => $this->conf['db_path']],
     ]);
-    $vars = $result['variables'];
+    
+    $vars = $result['vars']['variables'] ?? [];
+    if (!empty($vars['errors'] ?? [])) {
+        error_log("ERREURS ENREGISTREMENT: " . print_r($vars['errors'], true));
+        error_log("STDERR: " . $result['stderr']);
+    }
 
-    expect($vars['success_message'])->toContain('succès');
+    expect($vars['errors'] ?? [])->toBeEmpty();
+    if (!isset($vars['success_message'])) {
+    }
+    expect($vars['success_message'] ?? '')->toContain('succès');
 
     $dupliRow = $this->pdo->query('SELECT contact, prix FROM dupli')->fetch(PDO::FETCH_ASSOC);
     expect($dupliRow['contact'])->toBe('Alice');
@@ -65,7 +78,8 @@ it('enregistre les tirages lors de la soumission finale', function () {
 
 function seed_action_schema(PDO $pdo): void
 {
-    $pdo->exec('CREATE TABLE duplicopieurs (
+    $pdo->exec('DROP TABLE IF EXISTS duplicopieurs');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS duplicopieurs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         marque TEXT,
         modele TEXT,
@@ -73,7 +87,8 @@ function seed_action_schema(PDO $pdo): void
         tambours TEXT
     )');
 
-    $pdo->exec('CREATE TABLE dupli (
+    $pdo->exec('DROP TABLE IF EXISTS dupli');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS dupli (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         type TEXT,
         contact TEXT,
@@ -92,11 +107,12 @@ function seed_action_schema(PDO $pdo): void
         tambour TEXT,
         tirage_global_id TEXT,
         session_id TEXT,
-        document_name TEXT,
+        document_name TEXT DEFAULT "",
         thumbnail_url TEXT
     )');
 
-    $pdo->exec('CREATE TABLE photocop (
+    $pdo->exec('DROP TABLE IF EXISTS photocop');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS photocop (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         type TEXT,
         marque TEXT,
@@ -110,18 +126,56 @@ function seed_action_schema(PDO $pdo): void
         date INTEGER,
         tirage_global_id TEXT,
         session_id TEXT,
-        document_name TEXT,
+        document_name TEXT DEFAULT "",
         thumbnail_url TEXT
     )');
 
-    $pdo->exec('CREATE TABLE photocopieurs (
+    $pdo->exec('DROP TABLE IF EXISTS photocopieurs');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS photocopieurs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         marque TEXT,
+        modele TEXT DEFAULT "",
         type_encre TEXT,
         actif INTEGER
     )');
 
-    $pdo->exec('CREATE TABLE prix (
+    $pdo->exec('CREATE TABLE IF NOT EXISTS print_sessions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        status TEXT,
+        closed_at DATETIME,
+        total_price REAL
+    )');
+
+    $pdo->exec('CREATE TABLE IF NOT EXISTS print_jobs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        job_id TEXT,
+        document TEXT,
+        printer_name TEXT,
+        total_pages INTEGER,
+        copies INTEGER,
+        fill_rate REAL,
+        color_mode TEXT,
+        duplex INTEGER,
+        paper_size TEXT,
+        thumbnail_url TEXT,
+        calculated_price REAL,
+        machine_type TEXT,
+        machine_id INTEGER,
+        machine_name TEXT,
+        session_id INTEGER,
+        staged INTEGER DEFAULT 0,
+        contact TEXT
+    )');
+
+    $pdo->exec('CREATE TABLE IF NOT EXISTS recorded_print_jobs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        job_id TEXT,
+        printer_name TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(job_id, printer_name)
+    )');
+
+    $pdo->exec('CREATE TABLE IF NOT EXISTS prix (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         machine_type TEXT,
         machine_id INTEGER,
@@ -130,7 +184,7 @@ function seed_action_schema(PDO $pdo): void
         unite REAL
     )');
 
-    $pdo->exec('CREATE TABLE papier (
+    $pdo->exec('CREATE TABLE IF NOT EXISTS papier (
         id INTEGER PRIMARY KEY,
         prix REAL
     )');
@@ -161,11 +215,27 @@ function run_action_request(array $config): array
         escapeshellarg($runner) . ' ' .
         escapeshellarg(json_encode($config));
 
-    $output = [];
-    $exitCode = 0;
-    exec($command, $output, $exitCode);
-
-    return json_decode(implode("\n", $output), true);
+    $descriptorspec = [
+        0 => ["pipe", "r"],  // stdin
+        1 => ["pipe", "w"],  // stdout
+        2 => ["pipe", "w"]   // stderr
+    ];
+    $process = proc_open($command, $descriptorspec, $pipes);
+    if (!is_resource($process)) return [];
+    
+    $output = stream_get_contents($pipes[1]);
+    $stderr = stream_get_contents($pipes[2]);
+    fclose($pipes[0]); fclose($pipes[1]); fclose($pipes[2]);
+    $exitCode = proc_close($process);
+    
+    if ($exitCode !== 0) {
+        throw new RuntimeException("run_action failed with code $exitCode - Output: $output - Stderr: $stderr");
+    }
+    
+    return [
+        'vars' => json_decode($output, true) ?: [],
+        'stderr' => $stderr
+    ];
 }
 
 function build_action_payload(): array
