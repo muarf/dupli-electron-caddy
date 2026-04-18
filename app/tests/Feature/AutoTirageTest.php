@@ -1,9 +1,10 @@
 <?php
 
-require_once __DIR__ . '/../../controler/func.php';
-require_once __DIR__ . '/../../models/admin/TirageManager.php';
 
 beforeEach(function () {
+    require_once dirname(__DIR__, 2) . '/controler/func.php';
+    require_once dirname(__DIR__, 2) . '/models/admin/TirageManager.php';
+    
     [$this->dbPath, $this->pdo] = create_test_sqlite_database();
     configure_sqlite_conf($this->dbPath);
     

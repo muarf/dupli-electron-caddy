@@ -99,6 +99,19 @@ jobs:
       - name: Run PHP Tests (Pest)
         run: |
           cd app
+          echo "--- ExampleTest ---"
+          ./vendor/bin/pest tests/ExampleTest.php || true
+          echo "--- ConversionApiTest ---"
+          ./vendor/bin/pest tests/Feature/ConversionApiTest.php || true
+          echo "--- BibliothequeApiTest ---"
+          ./vendor/bin/pest tests/Feature/BibliothequeApiTest.php || true
+          echo "--- SessionManagerTest ---"
+          ./vendor/bin/pest tests/Feature/SessionManagerTest.php || true
+          echo "--- SecurePurgeApiTest ---"
+          ./vendor/bin/pest tests/Feature/SecurePurgeApiTest.php || true
+          echo "--- AutoTirageTest ---"
+          ./vendor/bin/pest tests/Feature/AutoTirageTest.php || true
+          echo "--- FULL SUITE ---"
           ./vendor/bin/pest
           cd ..
         
