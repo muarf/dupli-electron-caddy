@@ -2,15 +2,11 @@
 
 
 beforeEach(function () {
-    require_once dirname(__DIR__, 2) . '/controler/func.php';
-    require_once dirname(__DIR__, 2) . '/models/admin/TirageManager.php';
+    require_pricing_dependencies();
     
     [$this->dbPath, $this->pdo] = create_test_sqlite_database();
     configure_sqlite_conf($this->dbPath);
-    
-    // Create schema
-    $this->pdo->exec('CREATE TABLE IF NOT EXISTS photocop (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT NOT NULL DEFAULT "photocop", marque TEXT, contact TEXT NOT NULL DEFAULT "", nb_f TEXT NOT NULL DEFAULT "0", rv TEXT NOT NULL DEFAULT "non", paye TEXT NOT NULL DEFAULT "non", prix TEXT NOT NULL DEFAULT "0", cb TEXT NOT NULL DEFAULT "non", mot TEXT NOT NULL DEFAULT "", date TEXT NOT NULL DEFAULT "", tirage_global_id TEXT, session_id TEXT, document_name TEXT, thumbnail_url TEXT)');
-    $this->pdo->exec('CREATE TABLE IF NOT EXISTS duplicopieurs (id INTEGER PRIMARY KEY AUTOINCREMENT, marque TEXT NOT NULL DEFAULT "", modele TEXT NOT NULL DEFAULT "", actif INTEGER DEFAULT 1)');
+    run_migrations();
 
     $this->manager = new TirageManager($GLOBALS['conf']);
 });

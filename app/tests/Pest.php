@@ -99,38 +99,42 @@ function create_essential_tables(PDO $db): void
         )",
         'dupli' => "CREATE TABLE IF NOT EXISTS dupli (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            type TEXT NOT NULL,
-            contact TEXT NOT NULL,
-            master_av TEXT NOT NULL,
-            master_ap TEXT NOT NULL,
-            passage_av TEXT NOT NULL,
-            passage_ap TEXT NOT NULL,
-            rv TEXT NOT NULL,
-            prix TEXT NOT NULL,
-            paye TEXT NOT NULL,
-            cb TEXT NOT NULL,
-            mot TEXT NOT NULL,
-            date TEXT NOT NULL,
+            name TEXT NOT NULL DEFAULT '',
+            document_name TEXT NOT NULL DEFAULT '',
+            nb_exemplaires INTEGER NOT NULL DEFAULT 1,
+            thumbnail_url TEXT DEFAULT NULL,
+            type TEXT NOT NULL DEFAULT 'dupli',
+            contact TEXT NOT NULL DEFAULT '',
+            master_av TEXT NOT NULL DEFAULT '0',
+            master_ap TEXT NOT NULL DEFAULT '0',
+            passage_av TEXT NOT NULL DEFAULT '0',
+            passage_ap TEXT NOT NULL DEFAULT '0',
+            rv TEXT NOT NULL DEFAULT 'non',
+            prix TEXT NOT NULL DEFAULT '0',
+            paye TEXT NOT NULL DEFAULT 'non',
+            cb TEXT NOT NULL DEFAULT 'non',
+            mot TEXT NOT NULL DEFAULT '',
+            date TEXT NOT NULL DEFAULT '',
             nom_machine TEXT DEFAULT 'Duplicopieur',
             duplicopieur_id INTEGER DEFAULT 1,
             tambour TEXT DEFAULT NULL,
             tirage_global_id TEXT DEFAULT NULL,
-            session_id INTEGER
+            session_id INTEGER DEFAULT NULL
         )",
         'photocop' => "CREATE TABLE IF NOT EXISTS photocop (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            type TEXT NOT NULL,
+            type TEXT NOT NULL DEFAULT 'photocop',
             marque TEXT DEFAULT NULL,
-            contact TEXT NOT NULL,
-            nb_f TEXT NOT NULL,
-            rv TEXT NOT NULL,
-            paye TEXT NOT NULL,
-            prix TEXT NOT NULL,
-            cb TEXT NOT NULL,
-            mot TEXT NOT NULL,
-            date TEXT NOT NULL,
+            contact TEXT NOT NULL DEFAULT '',
+            nb_f TEXT NOT NULL DEFAULT '0',
+            rv TEXT NOT NULL DEFAULT 'non',
+            paye TEXT NOT NULL DEFAULT 'non',
+            prix TEXT NOT NULL DEFAULT '0',
+            cb TEXT NOT NULL DEFAULT 'non',
+            mot TEXT NOT NULL DEFAULT '',
+            date TEXT NOT NULL DEFAULT '',
             tirage_global_id TEXT DEFAULT NULL,
-            session_id INTEGER
+            session_id INTEGER DEFAULT NULL
         )",
         'print_jobs' => "CREATE TABLE IF NOT EXISTS print_jobs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -168,10 +172,13 @@ function configure_sqlite_conf(string $path): void
 
 function require_pricing_dependencies(): void
 {
+    error_log("DEBUG PEST: Step require_pricing_dependencies START");
     require_once dirname(__DIR__) . '/controler/func.php';
+    error_log("DEBUG PEST: Step require_pricing_dependencies - func.php loaded");
     require_once dirname(__DIR__) . '/controler/conf.php';
     require_once dirname(__DIR__) . '/controler/functions/database.php';
     require_once dirname(__DIR__) . '/controler/functions/pricing.php';
+    error_log("DEBUG PEST: Step require_pricing_dependencies END");
 }
 
 /**
