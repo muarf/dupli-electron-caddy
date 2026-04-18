@@ -24,7 +24,9 @@ require_once __DIR__ . '/functions/consommation.php';
 require_once __DIR__ . '/functions/utilities.php';
 
 // Définir le mode développement
-define('DEVELOPMENT_MODE', true);
+if (!defined('DEVELOPMENT_MODE')) {
+    define('DEVELOPMENT_MODE', true);
+}
 
 // Log de chargement
 log_info('Fichier func.php chargé', 'func.php');
