@@ -30,7 +30,10 @@ jobs:
         run: |
           php -r "Copy('https://getcomposer.org/installer', 'composer-setup.php');"
           php composer-setup.php
-          php composer.phar install --dev --optimize-autoloader --ignore-platform-reqs
+          php composer.phar --version
+          cd app
+          php ../composer.phar install --dev --optimize-autoloader --ignore-platform-reqs
+          cd ..
           del composer-setup.php
 
       - name: Install system dependencies
@@ -40,9 +43,10 @@ jobs:
 
       - name: Download Caddy
         run: |
-          bitsadmin /transfer caddy https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_windows_amd64.zip caddy.zip
-          powershell Expand-Archive caddy.zip -DestinationPath caddy
+          Invoke-WebRequest -Uri https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_windows_amd64.zip -OutFile caddy.zip
+          Expand-Archive caddy.zip -DestinationPath caddy -Force
           del caddy.zip
+          ls caddy
 
       - name: Run PHP Tests (Pest)
         run: |
