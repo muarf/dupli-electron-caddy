@@ -108,20 +108,7 @@ jobs:
       - name: Run PHP Tests (Pest)
         run: |
           cd app
-          echo "--- ExampleTest ---"
-          ./vendor/bin/pest --display-deprecations --display-errors --display-notices --verbose tests/ExampleTest.php || true
-          echo "--- ConversionApiTest ---"
-          ./vendor/bin/pest --display-deprecations --display-errors --display-notices --verbose tests/Feature/ConversionApiTest.php || true
-          echo "--- BibliothequeApiTest ---"
-          ./vendor/bin/pest --display-deprecations --display-errors --display-notices --verbose tests/Feature/BibliothequeApiTest.php || true
-          echo "--- SessionManagerTest ---"
-          ./vendor/bin/pest --display-deprecations --display-errors --display-notices --verbose tests/Feature/SessionManagerTest.php || true
-          echo "--- SecurePurgeApiTest ---"
-          ./vendor/bin/pest --display-deprecations --display-errors --display-notices --verbose tests/Feature/SecurePurgeApiTest.php || true
-          echo "--- AutoTirageTest ---"
-          ./vendor/bin/pest --display-deprecations --display-errors --display-notices --verbose tests/Feature/AutoTirageTest.php || true
-          echo "--- FULL SUITE ---"
-          ./vendor/bin/pest --display-deprecations --display-errors --display-notices --verbose
+          ./vendor/bin/pest --display-deprecations --display-errors --display-notices
           cd ..
         
       - name: Run JS Tests (Jest)
