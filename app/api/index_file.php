@@ -16,7 +16,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['error' => 'Method Not Allowed']);
+    echo json_encode(['success' => false, 'error' => 'Method Not Allowed']);
     exit;
 }
 
@@ -29,7 +29,7 @@ $path = $data['path'] ?? '';
 
 if (empty($path)) {
     http_response_code(400);
-    echo json_encode(['error' => 'Path is required']);
+    echo json_encode(['success' => false, 'error' => 'Path is required']);
     exit;
 }
 

@@ -286,7 +286,7 @@ include '" . addslashes($abs_path) . "';
         }
     }
     
-    if ($data === null || (isset($data['success']) && $data['success'] === false)) {
+    if ($data === null || !isset($data['success']) || $data['success'] === false) {
         $logFile = sys_get_temp_dir() . '/run_endpoint_last_raw.log';
         file_put_contents($logFile, $output);
         // On utilise var_dump pour que Pest capture et affiche la sortie brute en cas d'échec
