@@ -7,7 +7,7 @@ header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['error' => 'Method Not Allowed']);
+    echo json_encode(['success' => false, 'error' => 'Method Not Allowed']);
     exit;
 }
 
@@ -20,7 +20,7 @@ $id = $data['id'] ?? 0;
 
 if (!$id) {
     http_response_code(400);
-    echo json_encode(['error' => 'ID is required']);
+    echo json_encode(['success' => false, 'error' => 'ID is required']);
     exit;
 }
 
