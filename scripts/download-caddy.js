@@ -284,7 +284,7 @@ async function downloadAll() {
 
 // Exécuter si appelé directement
 if (require.main === module) {
-    downloadAll();
+    downloadCaddy();
 }
 
 module.exports = { downloadCaddy, downloadPhp, downloadAll, CADDY_VERSIONS, PHP_VERSIONS };
