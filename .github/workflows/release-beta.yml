@@ -1,10 +1,7 @@
 name: Build and Release Beta
 
 on:
-  push:
-    branches:
-      - feature/cross-platform-unification
-  workflow_dispatch:  # Permet de lancer manuellement aussi
+  workflow_dispatch:  # Permet de lancer manuellement
 
 permissions:
   contents: write

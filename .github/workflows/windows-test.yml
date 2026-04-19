@@ -1,0 +1,55 @@
+name: Test Windows
+
+on:
+  push:
+    branches:
+      - feature/cross-platform-unification
+  workflow_dispatch:
+
+jobs:
+  test-windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Composer and PHP dependencies
+        run: |
+          php -r "Copy('https://getcomposer.org/installer', 'composer-setup.php');"
+          php composer-setup.php
+          php composer.phar install --dev --optimize-autoloader --ignore-platform-reqs
+          del composer-setup.php
+
+      - name: Install system dependencies
+        run: |
+          choco install ghostscript -y
+          choco install imagemagick -y
+
+      - name: Download Caddy
+        run: |
+          bitsadmin /transfer caddy https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_windows_amd64.zip caddy.zip
+          powershell Expand-Archive caddy.zip -DestinationPath caddy
+          del caddy.zip
+
+      - name: Run PHP Tests (Pest)
+        run: |
+          cd app
+          php ../vendor/bin/pest --display-deprecations --display-errors --display-notices
+          cd ..
+
+      - name: Run JS Tests (Jest)
+        run: |
+          npm test -- --runInBand --forceExit
