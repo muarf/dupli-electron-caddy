@@ -8,6 +8,18 @@ while (ob_get_level()) {
     ob_end_clean();
 }
 
+$autoload = __DIR__ . '/../vendor/autoload.php';
+if (!file_exists($autoload)) {
+    // Attempt to find it in the alternate location
+    $autoload = __DIR__ . '/../../vendor/autoload.php';
+}
+
+if (file_exists($autoload)) {
+    require_once $autoload;
+} else {
+    error_log("CRITICAL: Composer autoload.php not found for index_file.php");
+}
+
 require_once __DIR__ . '/../controler/conf.php';
 require_once __DIR__ . '/../controler/func.php';
 require_once __DIR__ . '/../models/BibliothequeManager.php';
