@@ -1,6 +1,6 @@
 <?php
 // Désactiver l'affichage des erreurs pour éviter la pollution JSON
-ini_set('display_errors', 0);
+// ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
 // Nettoyer tout buffer de sortie
@@ -35,7 +35,7 @@ if (empty($path)) {
 
 // Augmenter la limite de mémoire pour l'indexation (1 GB pour gérer les gros PDFs)
 $originalMemoryLimit = ini_get('memory_limit');
-ini_set('memory_limit', '1024M');
+ini_set('memory_limit', '512M');
 
 try {
     $manager = new BibliothequeManager();
