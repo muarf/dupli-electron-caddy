@@ -176,7 +176,7 @@ describe('main-caddy.js Unit Tests', () => {
             // We need to run timers
             jest.useFakeTimers();
             mainCaddy.scheduleSecurePurge();
-            jest.runAllTimers();
+            jest.advanceTimersByTime(11000);
             
             expect(http.request).toHaveBeenCalledWith(
                 expect.objectContaining({ path: '/?secure_purge' }),
