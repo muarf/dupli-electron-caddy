@@ -188,7 +188,7 @@ function check_system_dependencies(): array
 
     // === Vérifier Ghostscript ===
     // 1. Priorité au binaire local
-    $gs_local_path = realpath(__DIR__ . '/../../ghostscript/' . ($is_windows ? 'gswin64c.exe' : 'gs'));
+    $gs_local_path = realpath(__DIR__ . '/../../bin/win-x64/gs/' . ($is_windows ? 'gswin64c.exe' : 'gs'));
     if ($gs_local_path && file_exists($gs_local_path)) {
         $results['dependencies']['ghostscript']['status'] = true;
         $results['dependencies']['ghostscript']['path'] = $gs_local_path;
@@ -209,7 +209,7 @@ function check_system_dependencies(): array
 
     // === Vérifier ImageMagick ===
     // 1. Priorité au binaire local
-    $magick_local_path = realpath(__DIR__ . '/../../imagemagick/' . ($is_windows ? 'magick.exe' : 'magick'));
+    $magick_local_path = realpath(__DIR__ . '/../../bin/win-x64/magick/' . ($is_windows ? 'magick.exe' : 'magick'));
     if ($magick_local_path && file_exists($magick_local_path)) {
         $results['dependencies']['imagemagick']['status'] = true;
         $results['dependencies']['imagemagick']['path'] = $magick_local_path;
