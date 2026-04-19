@@ -9,6 +9,12 @@ if (!function_exists('getDataDir')) {
      * Retourne le répertoire racine pour le stockage des données utilisateur
      */
     function getDataDir() {
+        // Priorité 0 : Variable d'environnement explicite (idéal pour les tests)
+        $dataDir = getenv('DUPLICATOR_DATA_DIR');
+        if (!empty($dataDir)) {
+            return $dataDir;
+        }
+
         // Priorité 1 : Variable d'environnement fournie par Electron
         $envPath = getenv('DUPLICATOR_DB_PATH') ?: $_ENV['DUPLICATOR_DB_PATH'] ?? $_SERVER['DUPLICATOR_DB_PATH'] ?? '';
         if (!empty($envPath)) {
