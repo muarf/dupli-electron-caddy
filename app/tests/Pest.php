@@ -289,10 +289,12 @@ include '" . addslashes($abs_path) . "';
     if ($data === null || !isset($data['success']) || $data['success'] === false) {
         $logFile = sys_get_temp_dir() . '/run_endpoint_last_raw.log';
         file_put_contents($logFile, $output);
-        // On utilise var_dump pour que Pest capture et affiche la sortie brute en cas d'échec
-        echo "\nDEBUG Pest: run_endpoint failed for $file_path. Raw output saved to $logFile\n";
-        echo "DEBUG Pest: Raw snippet (first 2000 chars):\n";
-        var_dump(substr($output, 0, 2000));
+        // On utilise die pour forcer l'affichage de la sortie brute même si Pest intercepte le buffer
+        $errorMsg = "\nCRITICAL DEBUG Pest: run_endpoint failed for $file_path.\n";
+        $errorMsg .= "Raw snippet (first 3000 chars):\n";
+        $errorMsg .= substr($output, 0, 3000) . "\n";
+        $errorMsg .= "END RAW SNIPPET\n";
+        die($errorMsg);
     }
     
     return $data ?? ['success' => false, 'error' => 'Invalid JSON', 'raw_output' => $output];
