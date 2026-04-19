@@ -169,6 +169,9 @@ jobs:
       - name: Build Linux Beta
         run: |
           npx electron-builder --config electron-builder-beta.yml -l deb AppImage
+          # Dupliquer le fichier yml pour que les anciens clients (sur le canal 'latest') trouvent la mise à jour
+          cp dist/beta-linux.yml dist/latest-linux.yml
+          cp dist/beta-linux.yml dist/latest-linux-appimage.yml
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

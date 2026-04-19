@@ -68,7 +68,14 @@ jobs:
             libdrm2 \
             libgbm1 \
             libxcb-dri3-0 \
-            ghostscript
+            ghostscript \
+            imagemagick \
+            php8.2-sqlite3
+      
+      - name: Verify SQLite FTS5 Support
+        run: |
+          php -r "if (!in_array('fts5', \PDO::getAvailableDrivers())) { echo 'PDO FTS5 not directly visible, checking sqlite3...'; }"
+          php -r "\$db = new PDO('sqlite::memory:'); try { \$db->exec('CREATE VIRTUAL TABLE t USING fts5(a);'); echo 'FTS5 SUPPORTED'; } catch (Exception \$e) { echo 'FTS5 NOT SUPPORTED: ' . \$e->getMessage(); exit(1); }"
       
       - name: Install dependencies
         run: npm install

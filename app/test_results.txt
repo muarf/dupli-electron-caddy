@@ -1,0 +1,1526 @@
+2026-04-18 16:16:08 [INFO] Application Duplicator initialisée avec succès [Context: init.php]
+2026-04-18 16:16:08 [INFO] Fichier func.php chargé [Context: func.php]
+
+  [44;1m INFO [49;22m .
+
+
+   PASS  Tests\ExampleTest
+  ✓ example
+
+   PASS  Tests\Feature\AdminAideManagerTest
+  ✓ it ajoute et met à jour une Q&A                                      0.06s  
+  ✓ it ajoute une aide unique et la récupère                             0.05s  
+  ✓ it retourne les machines disponibles avec aides                      0.04s  
+  ✓ it filtre les Q&A par machine et categorie                           0.05s  
+
+   PASS  Tests\Feature\AdminBackupManagerTest
+  ✓ it cree une sauvegarde sqlite dans le dossier dédié                  0.03s  
+  ✓ it restore une sauvegarde et crée un safety backup                   0.03s  
+  ✓ it supprime une sauvegarde existante                                 0.03s  
+  ✓ it retourne la liste des sauvegardes triee par date                  1.02s  
+
+   PASS  Tests\Feature\AdminChangesManagerTest
+  ✓ it ajoute un changement et le retrouve                               0.05s  
+  ✓ it met a jour et supprime un changement                              0.05s  
+  ✓ it retourne les changements paginés                                  0.05s  
+DEBUG get_tirage: id=1, machine='dupli'
+DEBUG get_tirage: Résultat=trouvé
+DEBUG get_tirage: id=99, machine='dupli'
+DEBUG get_tirage: Résultat=non trouvé
+
+   PASS  Tests\Feature\AdminEditManagerTest
+  ✓ it met à jour un tirage duplicop et ignore les champs exclus         0.05s  
+  ✓ it supprime un tirage duplicopieur en se basant sur duplicopieurs    0.05s  
+  ✓ it supprime un tirage photocopieur                                   0.03s  
+  ✓ it retourne une erreur lorsque le tirage est introuvable             0.03s  
+DEBUG addMachine - Données reçues: Array
+(
+    [machine_type] => duplicopieur
+    [machine_name] => Riso SF
+    [master_counter] => 120
+    [passage_counter] => 240
+    [tambours] => Array
+        (
+            [0] => tambour_noir
+            [1] => tambour_bleu
+        )
+
+    [prix_tambour_unite] => Array
+        (
+            [0] => 0.1
+            [1] => 0.2
+        )
+
+    [prix_tambour_pack] => Array
+        (
+            [0] => 12
+            [1] => 18
+        )
+
+)
+
+DEBUG addMachine - machine_type: duplicopieur, machine_name: Riso SF, master_counter: 120, passage_counter: 240
+DEBUG addMachine - prix_master_unite: 0.4, prix_master_pack: 70
+
+   PASS  Tests\Feature\AdminMachineManagerTest
+  ✓ it ajoute un duplicopieur avec ses prix et son aide                  0.05s  
+  ✓ it retourne les machines avec leurs compteurs                        0.05s  
+  ✓ it supprime un duplicopieur et nettoie les tables associées          0.06s  
+  ✓ it supprime un photocopieur et supprime les consommations associées  0.05s  
+DEBUG PEST: Step require_pricing_dependencies START
+DEBUG PEST: Step require_pricing_dependencies - func.php loaded
+DEBUG PEST: Step require_pricing_dependencies END
+DEBUG PEST: Step require_pricing_dependencies START
+DEBUG PEST: Step require_pricing_dependencies - func.php loaded
+DEBUG PEST: Step require_pricing_dependencies END
+
+   PASS  Tests\Feature\AdminNewsManagerTest
+  ✓ it cree puis recupere une news                                       0.04s  
+  ✓ it met a jour puis supprime une news                                 0.05s  
+
+   PASS  Tests\Feature\AdminPriceManagerTest
+  ✓ it met à jour le prix d un duplicopieur existant                     0.06s  
+  ✓ it met à jour le prix du papier A4                                   0.06s  
+  ✓ it retourne les consommables calculés pour un duplicopieur           0.06s  
+
+   PASS  Tests\Feature\AdminSiteManagerTest
+  ✓ it met à jour un paramètre et le récupère                            0.06s  
+  ✓ it met à jour plusieurs paramètres et retourne les réglages courant… 0.08s  
+  ✓ it calcule les statistiques globales                                 0.07s  
+  ✓ it gère la suppression d emails                                      0.06s  
+
+   PASS  Tests\Feature\AdminStatsManagerTest
+  ✓ it met à jour et lit le texte dintroduction des stats                0.05s  
+  ✓ it renvoie lensemble des données de stats                            0.04s  
+DEBUG last(Riso SF): tirage 0 - date=18.04.26, id=1
+DEBUG last(Riso SF): tirage 0 - date=18.04.26, id=1
+2026-04-18 16:16:11 - DEBUG groupTiragesByGlobalId: ENTRY, count(tirages)=2
+
+2026-04-18 16:16:11 - DEBUG: pagination found: {"current_page":1,"total_pages":0,"total_entries":0,"per_page":20}
+
+2026-04-18 16:16:11 - DEBUG: after array_values, count(tirages)=1
+
+2026-04-18 16:16:11 - DEBUG groupTiragesByGlobalId: total_groups=1 (real), pagination_total_entries=0 (from BDD), requested_page=1, current_page=1, per_page=20, offset=0, total_pages=1
+
+2026-04-18 16:16:11 - DEBUG before array_slice: grouped count=1, offset=0, per_page=20, current_page=1
+
+2026-04-18 16:16:11 - DEBUG after array_slice: grouped_limited count=1 for page 1
+
+2026-04-18 16:16:11 - DEBUG FINAL: returning 2 groups for page 1
+
+DEBUG last(Ricoh): tirage 0 - date=18.04.26, id=1
+2026-04-18 16:16:11 - DEBUG groupTiragesByGlobalId: ENTRY, count(tirages)=2
+
+2026-04-18 16:16:11 - DEBUG: pagination found: {"current_page":1,"total_pages":1,"total_entries":1,"per_page":20}
+
+2026-04-18 16:16:11 - DEBUG: after array_values, count(tirages)=1
+
+2026-04-18 16:16:11 - DEBUG groupTiragesByGlobalId: total_groups=1 (real), pagination_total_entries=1 (from BDD), requested_page=1, current_page=1, per_page=20, offset=0, total_pages=1
+
+2026-04-18 16:16:11 - DEBUG before array_slice: grouped count=1, offset=0, per_page=20, current_page=1
+
+2026-04-18 16:16:11 - DEBUG after array_slice: grouped_limited count=1 for page 1
+
+2026-04-18 16:16:11 - DEBUG FINAL: returning 2 groups for page 1
+
+
+   PASS  Tests\Feature\AdminTirageManagerTest
+  ✓ it retourne les machines disponibles                                 0.05s  
+  ✓ it renvoie les derniers tirages et la pagination pour un duplicopie… 0.05s  
+  ✓ it calcule le prix en attente pour une machine                       0.04s  
+  ✓ it supprime des tirages sélectionnés                                 0.04s  
+  ✓ it marque les tirages sélectionnés comme payés                       0.05s  
+  ✓ it construit la clause SQL selon les filtres                         0.04s  
+  ✓ it retourne toutes les données de tirage pour affichage              0.05s  
+
+   DEPR  Tests\Feature\AdminTranslationManagerTest
+  ✓ it retourne les traductions aplaties pour une langue                 0.03s  
+  ✓ it met à jour une clé et persiste dans le fichier                    0.03s  
+  ✓ it calcule les statistiques de traduction                            0.02s  
+  ! it exporte et importe des traductions en CSV → str_getcsv(): the $e… 0.04s  
+
+   FAIL  Tests\Feature\ApiGetMachineTemplateTest
+  ⨯ it retourne le template avec un duplicopieur pré-sélectionné         0.03s  
+  ⨯ it exclut les marques déjà présentes côté duplicopieur               0.03s  
+
+   PASS  Tests\Feature\ApiPdfTest
+  ✓ it permet de télécharger un PDF existant                             0.04s  
+  ✓ it refuse les fichiers non PDF                                       0.04s  
+  ✓ it renvoie une erreur 404 pour un fichier manquant sur view          0.04s  
+
+   FAIL  Tests\Feature\ApiTamboursTest
+  ⨯ it retourne les prix des tambours pour un duplicopieur               0.09s  
+  ⨯ it renvoie une erreur si machine_id est manquant                     0.08s  
+  ⨯ it met à jour la liste des tambours et leurs prix                    0.09s  
+
+   FAIL  Tests\Feature\ApiUploadAidePdfTest
+  ⨯ it retourne une erreur 401 si non authentifié                        0.08s  
+  ⨯ it retourne la liste des PDFs pour un admin authentifié              0.07s  
+  ⨯ it retourne une erreur si action est manquante                       0.07s  
+DEBUG PEST: Step require_pricing_dependencies START
+DEBUG PEST: Step require_pricing_dependencies - func.php loaded
+DEBUG PEST: Step require_pricing_dependencies END
+[MIGRATION] Backup pré-migration créé: pre_migration_2026-04-18_16-16-12_2026-04-18_16-16-12.sqlite
+[BACKUP] Ancien backup automatique supprimé (rotation hebdo): pre_migration_2026-04-18_15-16-19_2026-04-18_15-16-19.sqlite
+[MIGRATION] Début migration: tirage_global_id
+[MIGRATION] Début migration tirage_global_id
+[MIGRATION] Mise à jour de 0 tirages dans dupli
+[MIGRATION] Mise à jour terminée pour dupli
+[MIGRATION] Mise à jour de 0 tirages dans photocop
+[MIGRATION] Mise à jour terminée pour photocop
+[MIGRATION] Migration tirage_global_id appliquée avec succès
+[MIGRATION] Migration tirage_global_id terminée
+[MIGRATION] Début migration: print_jobs_table
+[MIGRATION] Création table print_jobs
+[MIGRATION] Migration print_jobs_table appliquée avec succès
+[MIGRATION] Migration print_jobs_table terminée
+[MIGRATION] Début migration: bibliotheque_table
+[MIGRATION] Création table bibliotheque_files
+[MIGRATION] Migration bibliotheque_table appliquée avec succès
+[MIGRATION] Migration bibliotheque_table terminée
+[MIGRATION] Début migration: bibliotheque_fts
+[MIGRATION] Création table FTS5 bibliotheque_files_fts
+[MIGRATION] Table FTS5 remplie avec 0 enregistrements
+[MIGRATION] Migration bibliotheque_fts appliquée avec succès
+[MIGRATION] Migration bibliotheque_fts terminée
+[MIGRATION] Début migration: multi_session_support
+[MIGRATION] Migration multi_session_support appliquée avec succès
+[MIGRATION] Migration multi_session_support terminée
+[MIGRATION] Début migration: allow_multiple_active_sessions
+[MIGRATION] Migration allow_multiple_active_sessions appliquée avec succès
+[MIGRATION] Migration allow_multiple_active_sessions terminée
+[MIGRATION] Début migration: recorded_print_jobs_table
+[MIGRATION] Création de la table recorded_print_jobs
+[MIGRATION] Migration recorded_print_jobs_table appliquée avec succès
+[MIGRATION] Migration recorded_print_jobs_table terminée
+[MIGRATION] Début migration: persist_job_extra_data
+[MIGRATION] Migration persist_job_extra_data appliquée avec succès
+[MIGRATION] Migration persist_job_extra_data terminée
+[MIGRATION] Début migration: add_nb_exemplaires
+[MIGRATION] Migration add_nb_exemplaires appliquée avec succès
+[MIGRATION] Migration add_nb_exemplaires terminée
+[MIGRATION] Début migration: add_staging_columns
+[MIGRATION] Migration add_staging_columns appliquée avec succès
+[MIGRATION] Migration add_staging_columns terminée
+[MIGRATION] Début migration: add_document_display_fields
+[MIGRATION] Migration add_document_display_fields appliquée avec succès
+[MIGRATION] Migration add_document_display_fields terminée
+[MIGRATION] Début migration: printer_mappings_table
+[MIGRATION] Création table printer_mappings
+[MIGRATION] Migration printer_mappings_table appliquée avec succès
+[MIGRATION] Migration printer_mappings_table terminée
+2026-04-18 16:16:12 - DEBUG groupTiragesByGlobalId: ENTRY, count(tirages)=3
+
+2026-04-18 16:16:12 - DEBUG: no pagination in tirages
+
+2026-04-18 16:16:12 - DEBUG: after array_values, count(tirages)=3
+
+2026-04-18 16:16:12 - DEBUG groupTiragesByGlobalId: total_groups=2 (real), pagination_total_entries=N/A (from BDD), requested_page=1, current_page=1, per_page=20, offset=0, total_pages=1
+
+2026-04-18 16:16:12 - DEBUG before array_slice: grouped count=2, offset=0, per_page=20, current_page=1
+
+2026-04-18 16:16:12 - DEBUG after array_slice: grouped_limited count=2 for page 1
+
+2026-04-18 16:16:12 - DEBUG FINAL: returning 2 groups for page 1
+
+➡️  Ajout support multi-session...
+   ✓ Table print_sessions créée
+   ✓ Index unique contact actif créé
+   ✓ Colonne session_id déjà existe dans Table photocopieurs
+   ✓ Colonne session_id déjà existe dans Table duplicopieurs
+   ⚠️  Table print_jobs_raw n'existe pas encore, skip
+   ✓ Index créés pour toutes les tables
+✅ Migration multi-session terminée
+
+➡️  Autorisation sessions multiples...
+   ✓ Index unique restrictif supprimé
+   ✓ Index de recherche optimisé créé
+✅ Migration sessions multiples terminée
+
+➡️  Ajout colonnes extra (document_name, thumbnail_url)...
+   ✓ Colonne document_name déjà présente dans photocop
+   ✓ Colonne thumbnail_url déjà présente dans photocop
+   ✓ Colonne nb_exemplaires déjà présente dans photocop
+   ✓ Colonne document_name déjà présente dans dupli
+   ✓ Colonne thumbnail_url déjà présente dans dupli
+   ✓ Colonne nb_exemplaires déjà présente dans dupli
+✅ Migration persist_job_extra_data terminée
+
+➡️  Ajout colonne nb_exemplaires...
+   ✓ Colonne nb_exemplaires déjà présente dans photocop
+   ✓ Colonne nb_exemplaires déjà présente dans dupli
+➡️  Ajout des colonnes staging à print_jobs...
+   ✓ Colonne session_id déjà existe
+   ✓ Colonne calculated_price déjà existe
+   ✓ Colonne machine_type ajoutée
+   ✓ Colonne machine_id ajoutée
+   ✓ Colonne machine_name ajoutée
+   ✓ Colonne contact ajoutée
+   ✓ Colonne staged déjà existe
+   ✓ Index créés
+✅ Migration staging terminée
+
+➡️  Ajout colonnes document_full_path et document_display_name à print_jobs...
+   ✓ Colonne document_full_path ajoutée à print_jobs
+   ✓ Colonne document_display_name ajoutée à print_jobs
+   ➡️  Migration des données existantes...
+   ✓ Aucun enregistrement à migrer
+✅ Migration add_document_display_fields terminée
+
+DEBUG PEST: Step require_pricing_dependencies START
+DEBUG PEST: Step require_pricing_dependencies - func.php loaded
+DEBUG PEST: Step require_pricing_dependencies END
+[MIGRATION] Backup pré-migration créé: pre_migration_2026-04-18_16-16-12_2026-04-18_16-16-12.sqlite
+[MIGRATION] Début migration: tirage_global_id
+[MIGRATION] Début migration tirage_global_id
+[MIGRATION] Mise à jour de 0 tirages dans dupli
+[MIGRATION] Mise à jour terminée pour dupli
+[MIGRATION] Mise à jour de 0 tirages dans photocop
+[MIGRATION] Mise à jour terminée pour photocop
+[MIGRATION] Migration tirage_global_id appliquée avec succès
+[MIGRATION] Migration tirage_global_id terminée
+[MIGRATION] Début migration: print_jobs_table
+[MIGRATION] Création table print_jobs
+[MIGRATION] Migration print_jobs_table appliquée avec succès
+[MIGRATION] Migration print_jobs_table terminée
+[MIGRATION] Début migration: bibliotheque_table
+[MIGRATION] Création table bibliotheque_files
+[MIGRATION] Migration bibliotheque_table appliquée avec succès
+[MIGRATION] Migration bibliotheque_table terminée
+[MIGRATION] Début migration: bibliotheque_fts
+[MIGRATION] Création table FTS5 bibliotheque_files_fts
+[MIGRATION] Table FTS5 remplie avec 0 enregistrements
+[MIGRATION] Migration bibliotheque_fts appliquée avec succès
+[MIGRATION] Migration bibliotheque_fts terminée
+[MIGRATION] Début migration: multi_session_support
+[MIGRATION] Migration multi_session_support appliquée avec succès
+[MIGRATION] Migration multi_session_support terminée
+[MIGRATION] Début migration: allow_multiple_active_sessions
+[MIGRATION] Migration allow_multiple_active_sessions appliquée avec succès
+[MIGRATION] Migration allow_multiple_active_sessions terminée
+[MIGRATION] Début migration: recorded_print_jobs_table
+[MIGRATION] Création de la table recorded_print_jobs
+[MIGRATION] Migration recorded_print_jobs_table appliquée avec succès
+[MIGRATION] Migration recorded_print_jobs_table terminée
+[MIGRATION] Début migration: persist_job_extra_data
+[MIGRATION] Migration persist_job_extra_data appliquée avec succès
+[MIGRATION] Migration persist_job_extra_data terminée
+[MIGRATION] Début migration: add_nb_exemplaires
+[MIGRATION] Migration add_nb_exemplaires appliquée avec succès
+[MIGRATION] Migration add_nb_exemplaires terminée
+[MIGRATION] Début migration: add_staging_columns
+[MIGRATION] Migration add_staging_columns appliquée avec succès
+[MIGRATION] Migration add_staging_columns terminée
+[MIGRATION] Début migration: add_document_display_fields
+[MIGRATION] Migration add_document_display_fields appliquée avec succès
+[MIGRATION] Migration add_document_display_fields terminée
+[MIGRATION] Début migration: printer_mappings_table
+[MIGRATION] Création table printer_mappings
+[MIGRATION] Migration printer_mappings_table appliquée avec succès
+[MIGRATION] Migration printer_mappings_table terminée
+2026-04-18 16:16:12 - DEBUG groupTiragesByGlobalId: ENTRY, count(tirages)=2
+
+2026-04-18 16:16:12 - DEBUG: no pagination in tirages
+
+2026-04-18 16:16:12 - DEBUG: after array_values, count(tirages)=2
+
+2026-04-18 16:16:12 - DEBUG groupTiragesByGlobalId: total_groups=1 (real), pagination_total_entries=N/A (from BDD), requested_page=1, current_page=1, per_page=20, offset=0, total_pages=1
+
+2026-04-18 16:16:12 - DEBUG before array_slice: grouped count=1, offset=0, per_page=20, current_page=1
+
+2026-04-18 16:16:12 - DEBUG after array_slice: grouped_limited count=1 for page 1
+
+2026-04-18 16:16:12 - DEBUG FINAL: returning 1 groups for page 1
+
+➡️  Ajout support multi-session...
+   ✓ Table print_sessions créée
+   ✓ Index unique contact actif créé
+   ✓ Colonne session_id déjà existe dans Table photocopieurs
+   ✓ Colonne session_id déjà existe dans Table duplicopieurs
+   ⚠️  Table print_jobs_raw n'existe pas encore, skip
+   ✓ Index créés pour toutes les tables
+✅ Migration multi-session terminée
+
+➡️  Autorisation sessions multiples...
+   ✓ Index unique restrictif supprimé
+   ✓ Index de recherche optimisé créé
+✅ Migration sessions multiples terminée
+
+➡️  Ajout colonnes extra (document_name, thumbnail_url)...
+   ✓ Colonne document_name déjà présente dans photocop
+   ✓ Colonne thumbnail_url déjà présente dans photocop
+   ✓ Colonne nb_exemplaires déjà présente dans photocop
+   ✓ Colonne document_name déjà présente dans dupli
+   ✓ Colonne thumbnail_url déjà présente dans dupli
+   ✓ Colonne nb_exemplaires déjà présente dans dupli
+✅ Migration persist_job_extra_data terminée
+
+➡️  Ajout colonne nb_exemplaires...
+   ✓ Colonne nb_exemplaires déjà présente dans photocop
+   ✓ Colonne nb_exemplaires déjà présente dans dupli
+➡️  Ajout des colonnes staging à print_jobs...
+   ✓ Colonne session_id déjà existe
+   ✓ Colonne calculated_price déjà existe
+   ✓ Colonne machine_type ajoutée
+   ✓ Colonne machine_id ajoutée
+   ✓ Colonne machine_name ajoutée
+   ✓ Colonne contact ajoutée
+   ✓ Colonne staged déjà existe
+   ✓ Index créés
+✅ Migration staging terminée
+
+➡️  Ajout colonnes document_full_path et document_display_name à print_jobs...
+   ✓ Colonne document_full_path ajoutée à print_jobs
+   ✓ Colonne document_display_name ajoutée à print_jobs
+   ➡️  Migration des données existantes...
+   ✓ Aucun enregistrement à migrer
+✅ Migration add_document_display_fields terminée
+
+
+   PASS  Tests\Feature\AutoTirageTest
+  ✓ it groups multiple jobs by tirage_global_id                          0.06s  
+  ✓ it detects unpaid status in a group                                  0.06s  
+[MIGRATION] Backup pré-migration créé: pre_migration_2026-04-18_16-16-12_2026-04-18_16-16-12.sqlite
+[MIGRATION] Début migration: tirage_global_id
+[MIGRATION] Début migration tirage_global_id
+[MIGRATION] Mise à jour de 0 tirages dans dupli
+[MIGRATION] Mise à jour terminée pour dupli
+[MIGRATION] Mise à jour de 0 tirages dans photocop
+[MIGRATION] Mise à jour terminée pour photocop
+[MIGRATION] Migration tirage_global_id appliquée avec succès
+[MIGRATION] Migration tirage_global_id terminée
+[MIGRATION] Début migration: print_jobs_table
+[MIGRATION] Création table print_jobs
+[MIGRATION] Migration print_jobs_table appliquée avec succès
+[MIGRATION] Migration print_jobs_table terminée
+[MIGRATION] Début migration: bibliotheque_table
+[MIGRATION] Création table bibliotheque_files
+[MIGRATION] Migration bibliotheque_table appliquée avec succès
+[MIGRATION] Migration bibliotheque_table terminée
+[MIGRATION] Début migration: bibliotheque_fts
+[MIGRATION] Création table FTS5 bibliotheque_files_fts
+[MIGRATION] Table FTS5 remplie avec 0 enregistrements
+[MIGRATION] Migration bibliotheque_fts appliquée avec succès
+[MIGRATION] Migration bibliotheque_fts terminée
+[MIGRATION] Début migration: multi_session_support
+[MIGRATION] Migration multi_session_support appliquée avec succès
+[MIGRATION] Migration multi_session_support terminée
+[MIGRATION] Début migration: allow_multiple_active_sessions
+[MIGRATION] Migration allow_multiple_active_sessions appliquée avec succès
+[MIGRATION] Migration allow_multiple_active_sessions terminée
+[MIGRATION] Début migration: recorded_print_jobs_table
+[MIGRATION] Création de la table recorded_print_jobs
+[MIGRATION] Migration recorded_print_jobs_table appliquée avec succès
+[MIGRATION] Migration recorded_print_jobs_table terminée
+[MIGRATION] Début migration: persist_job_extra_data
+[MIGRATION] Migration persist_job_extra_data appliquée avec succès
+[MIGRATION] Migration persist_job_extra_data terminée
+[MIGRATION] Début migration: add_nb_exemplaires
+[MIGRATION] Migration add_nb_exemplaires appliquée avec succès
+[MIGRATION] Migration add_nb_exemplaires terminée
+[MIGRATION] Début migration: add_staging_columns
+[MIGRATION] Migration add_staging_columns appliquée avec succès
+[MIGRATION] Migration add_staging_columns terminée
+[MIGRATION] Début migration: add_document_display_fields
+[MIGRATION] Migration add_document_display_fields appliquée avec succès
+[MIGRATION] Migration add_document_display_fields terminée
+[MIGRATION] Début migration: printer_mappings_table
+[MIGRATION] Création table printer_mappings
+[MIGRATION] Migration printer_mappings_table appliquée avec succès
+[MIGRATION] Migration printer_mappings_table terminée
+➡️  Ajout support multi-session...
+   ✓ Table print_sessions créée
+   ✓ Index unique contact actif créé
+   ✓ Colonne session_id déjà existe dans Table photocopieurs
+   ✓ Colonne session_id déjà existe dans Table duplicopieurs
+   ⚠️  Table print_jobs_raw n'existe pas encore, skip
+   ✓ Index créés pour toutes les tables
+✅ Migration multi-session terminée
+
+➡️  Autorisation sessions multiples...
+   ✓ Index unique restrictif supprimé
+   ✓ Index de recherche optimisé créé
+✅ Migration sessions multiples terminée
+
+➡️  Ajout colonnes extra (document_name, thumbnail_url)...
+   ✓ Colonne document_name déjà présente dans photocop
+   ✓ Colonne thumbnail_url déjà présente dans photocop
+   ✓ Colonne nb_exemplaires déjà présente dans photocop
+   ✓ Colonne document_name déjà présente dans dupli
+   ✓ Colonne thumbnail_url déjà présente dans dupli
+   ✓ Colonne nb_exemplaires déjà présente dans dupli
+✅ Migration persist_job_extra_data terminée
+
+➡️  Ajout colonne nb_exemplaires...
+   ✓ Colonne nb_exemplaires déjà présente dans photocop
+   ✓ Colonne nb_exemplaires déjà présente dans dupli
+➡️  Ajout des colonnes staging à print_jobs...
+   ✓ Colonne session_id déjà existe
+   ✓ Colonne calculated_price déjà existe
+   ✓ Colonne machine_type ajoutée
+   ✓ Colonne machine_id ajoutée
+   ✓ Colonne machine_name ajoutée
+   ✓ Colonne contact ajoutée
+   ✓ Colonne staged déjà existe
+   ✓ Index créés
+✅ Migration staging terminée
+
+➡️  Ajout colonnes document_full_path et document_display_name à print_jobs...
+   ✓ Colonne document_full_path ajoutée à print_jobs
+   ✓ Colonne document_display_name ajoutée à print_jobs
+   ➡️  Migration des données existantes...
+   ✓ Aucun enregistrement à migrer
+✅ Migration add_document_display_fields terminée
+
+[MIGRATION] Backup pré-migration créé: pre_migration_2026-04-18_16-16-12_2026-04-18_16-16-12.sqlite
+[MIGRATION] Début migration: tirage_global_id
+[MIGRATION] Début migration tirage_global_id
+[MIGRATION] Mise à jour de 0 tirages dans dupli
+[MIGRATION] Mise à jour terminée pour dupli
+[MIGRATION] Mise à jour de 0 tirages dans photocop
+[MIGRATION] Mise à jour terminée pour photocop
+[MIGRATION] Migration tirage_global_id appliquée avec succès
+[MIGRATION] Migration tirage_global_id terminée
+[MIGRATION] Début migration: print_jobs_table
+[MIGRATION] Création table print_jobs
+[MIGRATION] Migration print_jobs_table appliquée avec succès
+[MIGRATION] Migration print_jobs_table terminée
+[MIGRATION] Début migration: bibliotheque_table
+[MIGRATION] Création table bibliotheque_files
+[MIGRATION] Migration bibliotheque_table appliquée avec succès
+[MIGRATION] Migration bibliotheque_table terminée
+[MIGRATION] Début migration: bibliotheque_fts
+[MIGRATION] Création table FTS5 bibliotheque_files_fts
+[MIGRATION] Table FTS5 remplie avec 0 enregistrements
+[MIGRATION] Migration bibliotheque_fts appliquée avec succès
+[MIGRATION] Migration bibliotheque_fts terminée
+[MIGRATION] Début migration: multi_session_support
+[MIGRATION] Migration multi_session_support appliquée avec succès
+[MIGRATION] Migration multi_session_support terminée
+[MIGRATION] Début migration: allow_multiple_active_sessions
+[MIGRATION] Migration allow_multiple_active_sessions appliquée avec succès
+[MIGRATION] Migration allow_multiple_active_sessions terminée
+[MIGRATION] Début migration: recorded_print_jobs_table
+[MIGRATION] Création de la table recorded_print_jobs
+[MIGRATION] Migration recorded_print_jobs_table appliquée avec succès
+[MIGRATION] Migration recorded_print_jobs_table terminée
+[MIGRATION] Début migration: persist_job_extra_data
+[MIGRATION] Migration persist_job_extra_data appliquée avec succès
+[MIGRATION] Migration persist_job_extra_data terminée
+[MIGRATION] Début migration: add_nb_exemplaires
+[MIGRATION] Migration add_nb_exemplaires appliquée avec succès
+[MIGRATION] Migration add_nb_exemplaires terminée
+[MIGRATION] Début migration: add_staging_columns
+[MIGRATION] Migration add_staging_columns appliquée avec succès
+[MIGRATION] Migration add_staging_columns terminée
+[MIGRATION] Début migration: add_document_display_fields
+[MIGRATION] Migration add_document_display_fields appliquée avec succès
+[MIGRATION] Migration add_document_display_fields terminée
+[MIGRATION] Début migration: printer_mappings_table
+[MIGRATION] Création table printer_mappings
+[MIGRATION] Migration printer_mappings_table appliquée avec succès
+[MIGRATION] Migration printer_mappings_table terminée
+➡️  Ajout support multi-session...
+   ✓ Table print_sessions créée
+   ✓ Index unique contact actif créé
+   ✓ Colonne session_id déjà existe dans Table photocopieurs
+   ✓ Colonne session_id déjà existe dans Table duplicopieurs
+   ⚠️  Table print_jobs_raw n'existe pas encore, skip
+   ✓ Index créés pour toutes les tables
+✅ Migration multi-session terminée
+
+➡️  Autorisation sessions multiples...
+   ✓ Index unique restrictif supprimé
+   ✓ Index de recherche optimisé créé
+✅ Migration sessions multiples terminée
+
+➡️  Ajout colonnes extra (document_name, thumbnail_url)...
+   ✓ Colonne document_name déjà présente dans photocop
+   ✓ Colonne thumbnail_url déjà présente dans photocop
+   ✓ Colonne nb_exemplaires déjà présente dans photocop
+   ✓ Colonne document_name déjà présente dans dupli
+   ✓ Colonne thumbnail_url déjà présente dans dupli
+   ✓ Colonne nb_exemplaires déjà présente dans dupli
+✅ Migration persist_job_extra_data terminée
+
+➡️  Ajout colonne nb_exemplaires...
+   ✓ Colonne nb_exemplaires déjà présente dans photocop
+   ✓ Colonne nb_exemplaires déjà présente dans dupli
+➡️  Ajout des colonnes staging à print_jobs...
+   ✓ Colonne session_id déjà existe
+   ✓ Colonne calculated_price déjà existe
+   ✓ Colonne machine_type ajoutée
+   ✓ Colonne machine_id ajoutée
+   ✓ Colonne machine_name ajoutée
+   ✓ Colonne contact ajoutée
+   ✓ Colonne staged déjà existe
+   ✓ Index créés
+✅ Migration staging terminée
+
+➡️  Ajout colonnes document_full_path et document_display_name à print_jobs...
+   ✓ Colonne document_full_path ajoutée à print_jobs
+   ✓ Colonne document_display_name ajoutée à print_jobs
+   ➡️  Migration des données existantes...
+   ✓ Aucun enregistrement à migrer
+✅ Migration add_document_display_fields terminée
+
+[MIGRATION] Backup pré-migration créé: pre_migration_2026-04-18_16-16-12_2026-04-18_16-16-12.sqlite
+[MIGRATION] Début migration: tirage_global_id
+[MIGRATION] Début migration tirage_global_id
+[MIGRATION] Mise à jour de 0 tirages dans dupli
+[MIGRATION] Mise à jour terminée pour dupli
+[MIGRATION] Mise à jour de 0 tirages dans photocop
+[MIGRATION] Mise à jour terminée pour photocop
+[MIGRATION] Migration tirage_global_id appliquée avec succès
+[MIGRATION] Migration tirage_global_id terminée
+[MIGRATION] Début migration: print_jobs_table
+[MIGRATION] Création table print_jobs
+[MIGRATION] Migration print_jobs_table appliquée avec succès
+[MIGRATION] Migration print_jobs_table terminée
+[MIGRATION] Début migration: bibliotheque_table
+[MIGRATION] Création table bibliotheque_files
+[MIGRATION] Migration bibliotheque_table appliquée avec succès
+[MIGRATION] Migration bibliotheque_table terminée
+[MIGRATION] Début migration: bibliotheque_fts
+[MIGRATION] Création table FTS5 bibliotheque_files_fts
+[MIGRATION] Table FTS5 remplie avec 0 enregistrements
+[MIGRATION] Migration bibliotheque_fts appliquée avec succès
+[MIGRATION] Migration bibliotheque_fts terminée
+[MIGRATION] Début migration: multi_session_support
+[MIGRATION] Migration multi_session_support appliquée avec succès
+[MIGRATION] Migration multi_session_support terminée
+[MIGRATION] Début migration: allow_multiple_active_sessions
+[MIGRATION] Migration allow_multiple_active_sessions appliquée avec succès
+[MIGRATION] Migration allow_multiple_active_sessions terminée
+[MIGRATION] Début migration: recorded_print_jobs_table
+[MIGRATION] Création de la table recorded_print_jobs
+[MIGRATION] Migration recorded_print_jobs_table appliquée avec succès
+[MIGRATION] Migration recorded_print_jobs_table terminée
+[MIGRATION] Début migration: persist_job_extra_data
+[MIGRATION] Migration persist_job_extra_data appliquée avec succès
+[MIGRATION] Migration persist_job_extra_data terminée
+[MIGRATION] Début migration: add_nb_exemplaires
+[MIGRATION] Migration add_nb_exemplaires appliquée avec succès
+[MIGRATION] Migration add_nb_exemplaires terminée
+[MIGRATION] Début migration: add_staging_columns
+[MIGRATION] Migration add_staging_columns appliquée avec succès
+[MIGRATION] Migration add_staging_columns terminée
+[MIGRATION] Début migration: add_document_display_fields
+[MIGRATION] Migration add_document_display_fields appliquée avec succès
+[MIGRATION] Migration add_document_display_fields terminée
+[MIGRATION] Début migration: printer_mappings_table
+[MIGRATION] Création table printer_mappings
+[MIGRATION] Migration printer_mappings_table appliquée avec succès
+[MIGRATION] Migration printer_mappings_table terminée
+➡️  Ajout support multi-session...
+   ✓ Table print_sessions créée
+   ✓ Index unique contact actif créé
+   ✓ Colonne session_id déjà existe dans Table photocopieurs
+   ✓ Colonne session_id déjà existe dans Table duplicopieurs
+   ⚠️  Table print_jobs_raw n'existe pas encore, skip
+   ✓ Index créés pour toutes les tables
+✅ Migration multi-session terminée
+
+➡️  Autorisation sessions multiples...
+   ✓ Index unique restrictif supprimé
+   ✓ Index de recherche optimisé créé
+✅ Migration sessions multiples terminée
+
+➡️  Ajout colonnes extra (document_name, thumbnail_url)...
+   ✓ Colonne document_name déjà présente dans photocop
+   ✓ Colonne thumbnail_url déjà présente dans photocop
+   ✓ Colonne nb_exemplaires déjà présente dans photocop
+   ✓ Colonne document_name déjà présente dans dupli
+   ✓ Colonne thumbnail_url déjà présente dans dupli
+   ✓ Colonne nb_exemplaires déjà présente dans dupli
+✅ Migration persist_job_extra_data terminée
+
+➡️  Ajout colonne nb_exemplaires...
+   ✓ Colonne nb_exemplaires déjà présente dans photocop
+   ✓ Colonne nb_exemplaires déjà présente dans dupli
+➡️  Ajout des colonnes staging à print_jobs...
+   ✓ Colonne session_id déjà existe
+   ✓ Colonne calculated_price déjà existe
+   ✓ Colonne machine_type ajoutée
+   ✓ Colonne machine_id ajoutée
+   ✓ Colonne machine_name ajoutée
+   ✓ Colonne contact ajoutée
+   ✓ Colonne staged déjà existe
+   ✓ Index créés
+✅ Migration staging terminée
+
+➡️  Ajout colonnes document_full_path et document_display_name à print_jobs...
+   ✓ Colonne document_full_path ajoutée à print_jobs
+   ✓ Colonne document_display_name ajoutée à print_jobs
+   ➡️  Migration des données existantes...
+   ✓ Aucun enregistrement à migrer
+✅ Migration add_document_display_fields terminée
+
+
+   PASS  Tests\Feature\BibliothequeApiTest
+  ✓ it indexe un fichier externe dans la bibliothèque                    0.21s  
+  ✓ it recherche un fichier dans la bibliothèque                         0.15s  
+  ✓ it supprime un fichier de la bibliothèque                            0.16s  
+
+   PASS  Tests\Feature\ConsommationTest
+  ✓ it insère un changement d encre et le retrouve via get_cons          0.08s  
+  ✓ it calcule les consommations pour un photocopieur                    0.08s  
+
+   PASS  Tests\Feature\ConversionApiTest
+  ✓ it convertit un EMF depuis le spool (Mock)                           0.05s  
+  ✓ it convertit un PCL depuis le spool (Mock)                           0.14s  
+  ✓ it convertit un XPS depuis le spool (Mock)                           0.05s  
+
+   PASS  Tests\Feature\ImpositionAdvancedTest
+  ✓ it places 8 pages correctly for A5 imposition
+PHP Fatal error:  Cannot redeclare function padPdfToMultiple() (previously declared in /home/ubuntu/dupli-electron-caddy/app/models/imposition_livre.php:17) in /home/ubuntu/dupli-electron-caddy/app/models/imposition_brochure.php on line 17
+PHP Fatal error:  Cannot redeclare function padPdfToMultiple() (previously declared in /home/ubuntu/dupli-electron-caddy/app/models/imposition_livre.php:17) in /home/ubuntu/dupli-electron-caddy/app/models/imposition_brochure.php on line 17
+PHP Fatal error:  Cannot redeclare function padPdfToMultiple() (previously declared in /home/ubuntu/dupli-electron-caddy/app/models/imposition_livre.php:17) in /home/ubuntu/dupli-electron-caddy/app/models/imposition_brochure.php on line 17
+[IMPOSITION_TRACTS] Fichier imposition_tracts.php chargé
+[IMPOSITION_TRACTS] Imports terminés, fonction Action() va être définie
+GS command: 'gs' -dNOPAUSE -dBATCH -sDEVICE=png16m -r72 -dFirstPage=1 -dLastPage=1 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile='/tmp/dupli_analysis_69e3ae4da0e8e/page_20260418161613.png' '/tmp/dupli_pdf_ln412r78lg3afwSSNNR.pdf' 2>&1
+
+   FAIL  Tests\Feature\PdfToolsTest
+  ⨯ it réordonne les pages A5 en complétant jusqu’au multiple de 8       0.05s  
+  ⨯ it retourne la séquence exacte pour 32 pages A6                      0.05s  
+  ⨯ it ajoute des pages blanches pour atteindre un multiple choisi       0.09s  
+  ✓ it convertit une série de PNG en PDF multi-pages                     0.09s  
+  ✓ it convertit un PDF en PNG grâce à Ghostscript                       0.14s  
+  ✓ it analyse le format d’un PDF pour l’imposition de tracts            0.09s  
+  ✓ it calcule un taux de remplissage cohérent                           0.05s  
+  ✓ it convertit un PDF en image pour analyse du taux de remplissage     0.12s  
+  ✓ it retourne les tambours dynamiques pour le séparateur Riso          0.08s  
+[SECURE PURGE] Purge automatique effectuée : {"jobs_deleted":1,"files_shredded":2,"errors":[]}
+
+   PASS  Tests\Feature\SecurePurgeApiTest
+  ✓ secure_purge api deletes old jobs and files                          0.05s  
+[MIGRATION] Backup pré-migration créé: pre_migration_2026-04-18_16-16-13_2026-04-18_16-16-13.sqlite
+[BACKUP] Ancien backup automatique supprimé (rotation hebdo): pre_migration_2026-04-18_16-16-12_2026-04-18_16-16-12.sqlite
+[MIGRATION] Début migration: tirage_global_id
+[MIGRATION] Début migration tirage_global_id
+[MIGRATION] Mise à jour de 0 tirages dans dupli
+[MIGRATION] Mise à jour terminée pour dupli
+[MIGRATION] Mise à jour de 0 tirages dans photocop
+[MIGRATION] Mise à jour terminée pour photocop
+[MIGRATION] Migration tirage_global_id appliquée avec succès
+[MIGRATION] Migration tirage_global_id terminée
+[MIGRATION] Début migration: print_jobs_table
+[MIGRATION] Création table print_jobs
+[MIGRATION] Migration print_jobs_table appliquée avec succès
+[MIGRATION] Migration print_jobs_table terminée
+[MIGRATION] Début migration: bibliotheque_table
+[MIGRATION] Création table bibliotheque_files
+[MIGRATION] Migration bibliotheque_table appliquée avec succès
+[MIGRATION] Migration bibliotheque_table terminée
+[MIGRATION] Début migration: bibliotheque_fts
+[MIGRATION] Création table FTS5 bibliotheque_files_fts
+[MIGRATION] Table FTS5 remplie avec 0 enregistrements
+[MIGRATION] Migration bibliotheque_fts appliquée avec succès
+[MIGRATION] Migration bibliotheque_fts terminée
+[MIGRATION] Début migration: multi_session_support
+[MIGRATION] Migration multi_session_support appliquée avec succès
+[MIGRATION] Migration multi_session_support terminée
+[MIGRATION] Début migration: allow_multiple_active_sessions
+[MIGRATION] Migration allow_multiple_active_sessions appliquée avec succès
+[MIGRATION] Migration allow_multiple_active_sessions terminée
+[MIGRATION] Début migration: recorded_print_jobs_table
+[MIGRATION] Création de la table recorded_print_jobs
+[MIGRATION] Migration recorded_print_jobs_table appliquée avec succès
+[MIGRATION] Migration recorded_print_jobs_table terminée
+[MIGRATION] Début migration: persist_job_extra_data
+[MIGRATION] Migration persist_job_extra_data appliquée avec succès
+[MIGRATION] Migration persist_job_extra_data terminée
+[MIGRATION] Début migration: add_nb_exemplaires
+[MIGRATION] Migration add_nb_exemplaires appliquée avec succès
+[MIGRATION] Migration add_nb_exemplaires terminée
+[MIGRATION] Début migration: add_staging_columns
+[MIGRATION] Migration add_staging_columns appliquée avec succès
+[MIGRATION] Migration add_staging_columns terminée
+[MIGRATION] Début migration: add_document_display_fields
+[MIGRATION] Migration add_document_display_fields appliquée avec succès
+[MIGRATION] Migration add_document_display_fields terminée
+[MIGRATION] Début migration: printer_mappings_table
+[MIGRATION] Création table printer_mappings
+[MIGRATION] Migration printer_mappings_table appliquée avec succès
+[MIGRATION] Migration printer_mappings_table terminée
+➡️  Ajout support multi-session...
+   ✓ Table print_sessions créée
+   ✓ Index unique contact actif créé
+   ✓ Colonne session_id déjà existe dans Table photocopieurs
+   ✓ Colonne session_id déjà existe dans Table duplicopieurs
+   ⚠️  Table print_jobs_raw n'existe pas encore, skip
+   ✓ Index créés pour toutes les tables
+✅ Migration multi-session terminée
+
+➡️  Autorisation sessions multiples...
+   ✓ Index unique restrictif supprimé
+   ✓ Index de recherche optimisé créé
+✅ Migration sessions multiples terminée
+
+➡️  Ajout colonnes extra (document_name, thumbnail_url)...
+   ✓ Colonne document_name déjà présente dans photocop
+   ✓ Colonne thumbnail_url déjà présente dans photocop
+   ✓ Colonne nb_exemplaires déjà présente dans photocop
+   ✓ Colonne document_name déjà présente dans dupli
+   ✓ Colonne thumbnail_url déjà présente dans dupli
+   ✓ Colonne nb_exemplaires déjà présente dans dupli
+✅ Migration persist_job_extra_data terminée
+
+➡️  Ajout colonne nb_exemplaires...
+   ✓ Colonne nb_exemplaires déjà présente dans photocop
+   ✓ Colonne nb_exemplaires déjà présente dans dupli
+➡️  Ajout des colonnes staging à print_jobs...
+   ✓ Colonne session_id déjà existe
+   ✓ Colonne calculated_price déjà existe
+   ✓ Colonne machine_type ajoutée
+   ✓ Colonne machine_id ajoutée
+   ✓ Colonne machine_name ajoutée
+   ✓ Colonne contact ajoutée
+   ✓ Colonne staged déjà existe
+   ✓ Index créés
+✅ Migration staging terminée
+
+➡️  Ajout colonnes document_full_path et document_display_name à print_jobs...
+   ✓ Colonne document_full_path ajoutée à print_jobs
+   ✓ Colonne document_display_name ajoutée à print_jobs
+   ➡️  Migration des données existantes...
+   ✓ Aucun enregistrement à migrer
+✅ Migration add_document_display_fields terminée
+
+[MIGRATION] Backup pré-migration créé: pre_migration_2026-04-18_16-16-14_2026-04-18_16-16-14.sqlite
+[BACKUP] Ancien backup automatique supprimé (rotation hebdo): pre_migration_2026-04-18_16-16-13_2026-04-18_16-16-13.sqlite
+[MIGRATION] Début migration: tirage_global_id
+[MIGRATION] Début migration tirage_global_id
+[MIGRATION] Mise à jour de 0 tirages dans dupli
+[MIGRATION] Mise à jour terminée pour dupli
+[MIGRATION] Mise à jour de 0 tirages dans photocop
+[MIGRATION] Mise à jour terminée pour photocop
+[MIGRATION] Migration tirage_global_id appliquée avec succès
+[MIGRATION] Migration tirage_global_id terminée
+[MIGRATION] Début migration: print_jobs_table
+[MIGRATION] Création table print_jobs
+[MIGRATION] Migration print_jobs_table appliquée avec succès
+[MIGRATION] Migration print_jobs_table terminée
+[MIGRATION] Début migration: bibliotheque_table
+[MIGRATION] Création table bibliotheque_files
+[MIGRATION] Migration bibliotheque_table appliquée avec succès
+[MIGRATION] Migration bibliotheque_table terminée
+[MIGRATION] Début migration: bibliotheque_fts
+[MIGRATION] Création table FTS5 bibliotheque_files_fts
+[MIGRATION] Table FTS5 remplie avec 0 enregistrements
+[MIGRATION] Migration bibliotheque_fts appliquée avec succès
+[MIGRATION] Migration bibliotheque_fts terminée
+[MIGRATION] Début migration: multi_session_support
+[MIGRATION] Migration multi_session_support appliquée avec succès
+[MIGRATION] Migration multi_session_support terminée
+[MIGRATION] Début migration: allow_multiple_active_sessions
+[MIGRATION] Migration allow_multiple_active_sessions appliquée avec succès
+[MIGRATION] Migration allow_multiple_active_sessions terminée
+[MIGRATION] Début migration: recorded_print_jobs_table
+[MIGRATION] Création de la table recorded_print_jobs
+[MIGRATION] Migration recorded_print_jobs_table appliquée avec succès
+[MIGRATION] Migration recorded_print_jobs_table terminée
+[MIGRATION] Début migration: persist_job_extra_data
+[MIGRATION] Migration persist_job_extra_data appliquée avec succès
+[MIGRATION] Migration persist_job_extra_data terminée
+[MIGRATION] Début migration: add_nb_exemplaires
+[MIGRATION] Migration add_nb_exemplaires appliquée avec succès
+[MIGRATION] Migration add_nb_exemplaires terminée
+[MIGRATION] Début migration: add_staging_columns
+[MIGRATION] Migration add_staging_columns appliquée avec succès
+[MIGRATION] Migration add_staging_columns terminée
+[MIGRATION] Début migration: add_document_display_fields
+[MIGRATION] Migration add_document_display_fields appliquée avec succès
+[MIGRATION] Migration add_document_display_fields terminée
+[MIGRATION] Début migration: printer_mappings_table
+[MIGRATION] Création table printer_mappings
+[MIGRATION] Migration printer_mappings_table appliquée avec succès
+[MIGRATION] Migration printer_mappings_table terminée
+➡️  Ajout support multi-session...
+   ✓ Table print_sessions créée
+   ✓ Index unique contact actif créé
+   ✓ Colonne session_id déjà existe dans Table photocopieurs
+   ✓ Colonne session_id déjà existe dans Table duplicopieurs
+   ⚠️  Table print_jobs_raw n'existe pas encore, skip
+   ✓ Index créés pour toutes les tables
+✅ Migration multi-session terminée
+
+➡️  Autorisation sessions multiples...
+   ✓ Index unique restrictif supprimé
+   ✓ Index de recherche optimisé créé
+✅ Migration sessions multiples terminée
+
+➡️  Ajout colonnes extra (document_name, thumbnail_url)...
+   ✓ Colonne document_name déjà présente dans photocop
+   ✓ Colonne thumbnail_url déjà présente dans photocop
+   ✓ Colonne nb_exemplaires déjà présente dans photocop
+   ✓ Colonne document_name déjà présente dans dupli
+   ✓ Colonne thumbnail_url déjà présente dans dupli
+   ✓ Colonne nb_exemplaires déjà présente dans dupli
+✅ Migration persist_job_extra_data terminée
+
+➡️  Ajout colonne nb_exemplaires...
+   ✓ Colonne nb_exemplaires déjà présente dans photocop
+   ✓ Colonne nb_exemplaires déjà présente dans dupli
+➡️  Ajout des colonnes staging à print_jobs...
+   ✓ Colonne session_id déjà existe
+   ✓ Colonne calculated_price déjà existe
+   ✓ Colonne machine_type ajoutée
+   ✓ Colonne machine_id ajoutée
+   ✓ Colonne machine_name ajoutée
+   ✓ Colonne contact ajoutée
+   ✓ Colonne staged déjà existe
+   ✓ Index créés
+✅ Migration staging terminée
+
+➡️  Ajout colonnes document_full_path et document_display_name à print_jobs...
+   ✓ Colonne document_full_path ajoutée à print_jobs
+   ✓ Colonne document_display_name ajoutée à print_jobs
+   ➡️  Migration des données existantes...
+   ✓ Aucun enregistrement à migrer
+✅ Migration add_document_display_fields terminée
+
+[MIGRATION] Backup pré-migration créé: pre_migration_2026-04-18_16-16-14_2026-04-18_16-16-14.sqlite
+[MIGRATION] Début migration: tirage_global_id
+[MIGRATION] Début migration tirage_global_id
+[MIGRATION] Mise à jour de 0 tirages dans dupli
+[MIGRATION] Mise à jour terminée pour dupli
+[MIGRATION] Mise à jour de 0 tirages dans photocop
+[MIGRATION] Mise à jour terminée pour photocop
+[MIGRATION] Migration tirage_global_id appliquée avec succès
+[MIGRATION] Migration tirage_global_id terminée
+[MIGRATION] Début migration: print_jobs_table
+[MIGRATION] Création table print_jobs
+[MIGRATION] Migration print_jobs_table appliquée avec succès
+[MIGRATION] Migration print_jobs_table terminée
+[MIGRATION] Début migration: bibliotheque_table
+[MIGRATION] Création table bibliotheque_files
+[MIGRATION] Migration bibliotheque_table appliquée avec succès
+[MIGRATION] Migration bibliotheque_table terminée
+[MIGRATION] Début migration: bibliotheque_fts
+[MIGRATION] Création table FTS5 bibliotheque_files_fts
+[MIGRATION] Table FTS5 remplie avec 0 enregistrements
+[MIGRATION] Migration bibliotheque_fts appliquée avec succès
+[MIGRATION] Migration bibliotheque_fts terminée
+[MIGRATION] Début migration: multi_session_support
+[MIGRATION] Migration multi_session_support appliquée avec succès
+[MIGRATION] Migration multi_session_support terminée
+[MIGRATION] Début migration: allow_multiple_active_sessions
+[MIGRATION] Migration allow_multiple_active_sessions appliquée avec succès
+[MIGRATION] Migration allow_multiple_active_sessions terminée
+[MIGRATION] Début migration: recorded_print_jobs_table
+[MIGRATION] Création de la table recorded_print_jobs
+[MIGRATION] Migration recorded_print_jobs_table appliquée avec succès
+[MIGRATION] Migration recorded_print_jobs_table terminée
+[MIGRATION] Début migration: persist_job_extra_data
+[MIGRATION] Migration persist_job_extra_data appliquée avec succès
+[MIGRATION] Migration persist_job_extra_data terminée
+[MIGRATION] Début migration: add_nb_exemplaires
+[MIGRATION] Migration add_nb_exemplaires appliquée avec succès
+[MIGRATION] Migration add_nb_exemplaires terminée
+[MIGRATION] Début migration: add_staging_columns
+[MIGRATION] Migration add_staging_columns appliquée avec succès
+[MIGRATION] Migration add_staging_columns terminée
+[MIGRATION] Début migration: add_document_display_fields
+[MIGRATION] Migration add_document_display_fields appliquée avec succès
+[MIGRATION] Migration add_document_display_fields terminée
+[MIGRATION] Début migration: printer_mappings_table
+[MIGRATION] Création table printer_mappings
+[MIGRATION] Migration printer_mappings_table appliquée avec succès
+[MIGRATION] Migration printer_mappings_table terminée
+➡️  Ajout support multi-session...
+   ✓ Table print_sessions créée
+   ✓ Index unique contact actif créé
+   ✓ Colonne session_id déjà existe dans Table photocopieurs
+   ✓ Colonne session_id déjà existe dans Table duplicopieurs
+   ⚠️  Table print_jobs_raw n'existe pas encore, skip
+   ✓ Index créés pour toutes les tables
+✅ Migration multi-session terminée
+
+➡️  Autorisation sessions multiples...
+   ✓ Index unique restrictif supprimé
+   ✓ Index de recherche optimisé créé
+✅ Migration sessions multiples terminée
+
+➡️  Ajout colonnes extra (document_name, thumbnail_url)...
+   ✓ Colonne document_name déjà présente dans photocop
+   ✓ Colonne thumbnail_url déjà présente dans photocop
+   ✓ Colonne nb_exemplaires déjà présente dans photocop
+   ✓ Colonne document_name déjà présente dans dupli
+   ✓ Colonne thumbnail_url déjà présente dans dupli
+   ✓ Colonne nb_exemplaires déjà présente dans dupli
+✅ Migration persist_job_extra_data terminée
+
+➡️  Ajout colonne nb_exemplaires...
+   ✓ Colonne nb_exemplaires déjà présente dans photocop
+   ✓ Colonne nb_exemplaires déjà présente dans dupli
+➡️  Ajout des colonnes staging à print_jobs...
+   ✓ Colonne session_id déjà existe
+   ✓ Colonne calculated_price déjà existe
+   ✓ Colonne machine_type ajoutée
+   ✓ Colonne machine_id ajoutée
+   ✓ Colonne machine_name ajoutée
+   ✓ Colonne contact ajoutée
+   ✓ Colonne staged déjà existe
+   ✓ Index créés
+✅ Migration staging terminée
+
+➡️  Ajout colonnes document_full_path et document_display_name à print_jobs...
+   ✓ Colonne document_full_path ajoutée à print_jobs
+   ✓ Colonne document_display_name ajoutée à print_jobs
+   ➡️  Migration des données existantes...
+   ✓ Aucun enregistrement à migrer
+✅ Migration add_document_display_fields terminée
+
+[MIGRATION] Backup pré-migration créé: pre_migration_2026-04-18_16-16-14_2026-04-18_16-16-14.sqlite
+[MIGRATION] Début migration: tirage_global_id
+[MIGRATION] Début migration tirage_global_id
+[MIGRATION] Mise à jour de 0 tirages dans dupli
+[MIGRATION] Mise à jour terminée pour dupli
+[MIGRATION] Mise à jour de 0 tirages dans photocop
+[MIGRATION] Mise à jour terminée pour photocop
+[MIGRATION] Migration tirage_global_id appliquée avec succès
+[MIGRATION] Migration tirage_global_id terminée
+[MIGRATION] Début migration: print_jobs_table
+[MIGRATION] Création table print_jobs
+[MIGRATION] Migration print_jobs_table appliquée avec succès
+[MIGRATION] Migration print_jobs_table terminée
+[MIGRATION] Début migration: bibliotheque_table
+[MIGRATION] Création table bibliotheque_files
+[MIGRATION] Migration bibliotheque_table appliquée avec succès
+[MIGRATION] Migration bibliotheque_table terminée
+[MIGRATION] Début migration: bibliotheque_fts
+[MIGRATION] Création table FTS5 bibliotheque_files_fts
+[MIGRATION] Table FTS5 remplie avec 0 enregistrements
+[MIGRATION] Migration bibliotheque_fts appliquée avec succès
+[MIGRATION] Migration bibliotheque_fts terminée
+[MIGRATION] Début migration: multi_session_support
+[MIGRATION] Migration multi_session_support appliquée avec succès
+[MIGRATION] Migration multi_session_support terminée
+[MIGRATION] Début migration: allow_multiple_active_sessions
+[MIGRATION] Migration allow_multiple_active_sessions appliquée avec succès
+[MIGRATION] Migration allow_multiple_active_sessions terminée
+[MIGRATION] Début migration: recorded_print_jobs_table
+[MIGRATION] Création de la table recorded_print_jobs
+[MIGRATION] Migration recorded_print_jobs_table appliquée avec succès
+[MIGRATION] Migration recorded_print_jobs_table terminée
+[MIGRATION] Début migration: persist_job_extra_data
+[MIGRATION] Migration persist_job_extra_data appliquée avec succès
+[MIGRATION] Migration persist_job_extra_data terminée
+[MIGRATION] Début migration: add_nb_exemplaires
+[MIGRATION] Migration add_nb_exemplaires appliquée avec succès
+[MIGRATION] Migration add_nb_exemplaires terminée
+[MIGRATION] Début migration: add_staging_columns
+[MIGRATION] Migration add_staging_columns appliquée avec succès
+[MIGRATION] Migration add_staging_columns terminée
+[MIGRATION] Début migration: add_document_display_fields
+[MIGRATION] Migration add_document_display_fields appliquée avec succès
+[MIGRATION] Migration add_document_display_fields terminée
+[MIGRATION] Début migration: printer_mappings_table
+[MIGRATION] Création table printer_mappings
+[MIGRATION] Migration printer_mappings_table appliquée avec succès
+[MIGRATION] Migration printer_mappings_table terminée
+➡️  Ajout support multi-session...
+   ✓ Table print_sessions créée
+   ✓ Index unique contact actif créé
+   ✓ Colonne session_id déjà existe dans Table photocopieurs
+   ✓ Colonne session_id déjà existe dans Table duplicopieurs
+   ⚠️  Table print_jobs_raw n'existe pas encore, skip
+   ✓ Index créés pour toutes les tables
+✅ Migration multi-session terminée
+
+➡️  Autorisation sessions multiples...
+   ✓ Index unique restrictif supprimé
+   ✓ Index de recherche optimisé créé
+✅ Migration sessions multiples terminée
+
+➡️  Ajout colonnes extra (document_name, thumbnail_url)...
+   ✓ Colonne document_name déjà présente dans photocop
+   ✓ Colonne thumbnail_url déjà présente dans photocop
+   ✓ Colonne nb_exemplaires déjà présente dans photocop
+   ✓ Colonne document_name déjà présente dans dupli
+   ✓ Colonne thumbnail_url déjà présente dans dupli
+   ✓ Colonne nb_exemplaires déjà présente dans dupli
+✅ Migration persist_job_extra_data terminée
+
+➡️  Ajout colonne nb_exemplaires...
+   ✓ Colonne nb_exemplaires déjà présente dans photocop
+   ✓ Colonne nb_exemplaires déjà présente dans dupli
+➡️  Ajout des colonnes staging à print_jobs...
+   ✓ Colonne session_id déjà existe
+   ✓ Colonne calculated_price déjà existe
+   ✓ Colonne machine_type ajoutée
+   ✓ Colonne machine_id ajoutée
+   ✓ Colonne machine_name ajoutée
+   ✓ Colonne contact ajoutée
+   ✓ Colonne staged déjà existe
+   ✓ Index créés
+✅ Migration staging terminée
+
+➡️  Ajout colonnes document_full_path et document_display_name à print_jobs...
+   ✓ Colonne document_full_path ajoutée à print_jobs
+   ✓ Colonne document_display_name ajoutée à print_jobs
+   ➡️  Migration des données existantes...
+   ✓ Aucun enregistrement à migrer
+✅ Migration add_document_display_fields terminée
+
+
+   PASS  Tests\Feature\SessionManagerTest
+  ✓ it crée une nouvelle session d'impression                            0.09s  
+  ✓ it liste les sessions actives                                        0.08s  
+  ✓ it réassigne un job à une autre session                              0.09s  
+  ✓ it ferme une session et calcule le prix total                        0.09s  
+[SETUP] POST reçu: {"has_admin_password":true,"has_admin_password_confirm":true,"has_machines":true,"has_prix_papier_A3":true}
+[SETUP] Validations OK
+[SETUP] Début ajout machines, nombre=1
+2026-04-18 16:16:14 [INFO] Application Duplicator initialisée avec succès [Context: init.php]
+2026-04-18 16:16:14 [INFO] Fichier func.php chargé [Context: func.php]
+DEBUG addMachine - Données reçues: Array
+(
+    [machine_type] => duplicopieur
+    [machine_name] => Riso SF
+    [master_counter] => 100
+    [passage_counter] => 200
+    [tambours] => Array
+        (
+            [0] => tambour_noir
+        )
+
+    [prix_master_unite] => 0.4
+    [prix_master_pack] => 0.4
+    [prix_tambour_unite] => Array
+        (
+            [0] => 0.002
+        )
+
+    [prix_tambour_pack] => Array
+        (
+            [0] => 11
+        )
+
+)
+
+DEBUG addMachine - machine_type: duplicopieur, machine_name: Riso SF, master_counter: 100, passage_counter: 200
+DEBUG addMachine - prix_master_unite: 0.4, prix_master_pack: 0.4
+[SETUP] addMachine OK: Riso SF
+[SETUP] Insertion prix papier: A3=1, A4=0.5
+[SETUP] Insertion prix papier OK
+[SETUP] Insertion mot de passe admin (hashé)...
+[SETUP] Insertion mot de passe admin OK
+[SETUP] POST reçu: {"has_admin_password":true,"has_admin_password_confirm":true,"has_machines":true,"has_prix_papier_A3":true}
+[SETUP] Validations OK
+[SETUP] Début ajout machines, nombre=1
+2026-04-18 16:16:14 [INFO] Application Duplicator initialisée avec succès [Context: init.php]
+2026-04-18 16:16:14 [INFO] Fichier func.php chargé [Context: func.php]
+DEBUG addMachine - Données reçues: Array
+(
+    [machine_type] => duplicopieur
+    [machine_name] => Riso SF
+    [master_counter] => 100
+    [passage_counter] => 200
+    [tambours] => Array
+        (
+            [0] => tambour_noir
+        )
+
+    [prix_master_unite] => 0.4
+    [prix_master_pack] => 0.4
+    [prix_tambour_unite] => Array
+        (
+            [0] => 0.002
+        )
+
+    [prix_tambour_pack] => Array
+        (
+            [0] => 11
+        )
+
+)
+
+DEBUG addMachine - machine_type: duplicopieur, machine_name: Riso SF, master_counter: 100, passage_counter: 200
+DEBUG addMachine - prix_master_unite: 0.4, prix_master_pack: 0.4
+[SETUP] addMachine OK: Riso SF
+[SETUP] Insertion prix papier: A3=1, A4=0.5
+[SETUP] Insertion prix papier OK
+[SETUP] Insertion mot de passe admin (hashé)...
+[SETUP] Insertion mot de passe admin OK
+
+   PASS  Tests\Feature\SetupSaveTest
+  ✓ it crée la base et insère les machines lors du setup                 0.34s  
+  ✓ it insère le mot de passe admin lors du setup (test de comportement… 0.34s  
+=== NOUVEAU TEST MULTIMACHINES 2026-04-18 16:16:15 ===
+=== TEST LOG SIMPLE 16:16:15 ===
+=== POST DATA DEBUG - REQUEST_METHOD: POST
+=== POST DATA DEBUG - POST count: 3
+=== POST DATA DEBUG - POST keys: contact, machines, ok
+=== POST DATA DEBUG - POST content: a:3:{s:7:"contact";s:5:"Alice";s:8:"machines";a:2:{i:0;a:10:{s:4:"type";s:12:"duplicopieur";s:11:"mode_saisie";s:9:"compteurs";s:15:"duplicopieur_id";i:1;s:9:"master_av";i:100;s:9:"master_ap";i:105;s:10:"passage_av";i:1000;s:10:"passage_ap";i:1200;s:2:"rv";s:3:"non";s:15:"feuilles_payees";s:3:"non";s:7:"tambour";s:12:"tambour_noir";}i:1;a:4:{s:4:"type";s:12:"photocopieur";s:7:"machine";s:5:"Ricoh";s:9:"fill_rate";d:0.5;s:9:"brochures";a:1:{i:0;a:6:{s:14:"nb_exemplaires";i:50;s:11:"nb_feuilles";i
+DEBUG - ENTREE DANS CONFIRMATION (bouton ok)
+DEBUG tirage_multimachines: machine_key=dupli_1, tambour_selected=tambour_noir
+DEBUG tirage_multimachines: prix_data structure: Array
+(
+    [master] => Array
+        (
+            [unite] => 4.5
+            [pack] => 45
+        )
+
+    [tambour_noir] => Array
+        (
+            [unite] => 0.1
+            [pack] => 10
+        )
+
+)
+
+DEBUG tirage_multimachines: Using tambour_selected price: 0.1
+DEBUG CONFIRMATION - DEBUT photocopieur index=1, machine=Ricoh
+DEBUG CONFIRMATION - AVANT getMachinePrices
+DEBUG getMachinePrices - machine_name: Ricoh
+DEBUG getMachinePrices - photocop trouvé: id=1, type_encre=toner
+DEBUG getMachinePrices - machine_type: photocop, machine_id: 1
+DEBUG getMachinePrices - Requête prix: machine_type=photocop, machine_id=1
+DEBUG getMachinePrices - Prix ajouté: cyan = 0.02
+DEBUG getMachinePrices - Prix ajouté: magenta = 0.02
+DEBUG getMachinePrices - Prix ajouté: yellow = 0.02
+DEBUG getMachinePrices - Prix ajouté: noir = 0.01
+DEBUG getMachinePrices - Prix ajouté: tambour = 0.003
+DEBUG getMachinePrices - Prix ajouté: dev = 0.002
+DEBUG getMachinePrices - Prix finaux: 6 éléments
+DEBUG CONFIRMATION - APRES getMachinePrices, AVANT determineMachineType
+DEBUG CONFIRMATION - APRES determineMachineType
+DEBUG calculatePageCost - ENTREE avec prix fixes, fill_rate=0.5, is_color=OUI
+DEBUG calculatePageCost - BRANCHE TONER
+DEBUG POST CHECK - contact isset: OUI, enregistrer isset: NON
+DEBUG POST CHECK - POST keys: contact, machines, ok
+=== NOUVEAU TEST MULTIMACHINES 2026-04-18 16:16:15 ===
+=== TEST LOG SIMPLE 16:16:15 ===
+=== POST DATA DEBUG - REQUEST_METHOD: POST
+=== POST DATA DEBUG - POST count: 6
+=== POST DATA DEBUG - POST keys: contact, machines, enregistrer, paye, cb, mot
+=== POST DATA DEBUG - POST content: a:6:{s:7:"contact";s:5:"Alice";s:8:"machines";a:2:{i:0;a:10:{s:4:"type";s:12:"duplicopieur";s:11:"mode_saisie";s:9:"compteurs";s:15:"duplicopieur_id";i:1;s:9:"master_av";i:100;s:9:"master_ap";i:105;s:10:"passage_av";i:1000;s:10:"passage_ap";i:1200;s:2:"rv";s:3:"non";s:15:"feuilles_payees";s:3:"non";s:7:"tambour";s:12:"tambour_noir";}i:1;a:4:{s:4:"type";s:12:"photocopieur";s:7:"machine";s:5:"Ricoh";s:9:"fill_rate";d:0.5;s:9:"brochures";a:1:{i:0;a:6:{s:14:"nb_exemplaires";i:50;s:11:"nb_feuilles";i
+DEBUG POST CHECK - contact isset: OUI, enregistrer isset: OUI
+DEBUG POST CHECK - POST keys: contact, machines, enregistrer, paye, cb, mot
+DEBUG - ENTREE DANS ENREGISTREMENT (bouton enregistrer)
+DEBUG ENREGISTREMENT - Récupération globale des prix AVANT la boucle
+DEBUG ENREGISTREMENT - Prix globaux récupérés avec succès
+DEBUG ENREGISTREMENT - Début calcul prix pour 2 machines
+DEBUG ENREGISTREMENT - Traitement machine 0 de type: duplicopieur
+DEBUG ENREGISTREMENT - Traitement machine 1 de type: photocopieur
+DEBUG ENREGISTREMENT - ENTREE DANS CALCUL PHOTOCOPIEUR machine 1
+DEBUG ENREGISTREMENT - Utilisation des prix globaux
+DEBUG ENREGISTREMENT - Prix globaux utilisés avec succès
+DEBUG ENREGISTREMENT - Prix papier récupérés: A3=0.04, A4=0.02
+DEBUG ENREGISTREMENT - Récupération prix machine (une seule fois)
+DEBUG getMachinePrices - machine_name: Ricoh
+DEBUG getMachinePrices - photocop trouvé: id=1, type_encre=toner
+DEBUG getMachinePrices - machine_type: photocop, machine_id: 1
+DEBUG getMachinePrices - Requête prix: machine_type=photocop, machine_id=1
+DEBUG getMachinePrices - Prix ajouté: cyan = 0.02
+DEBUG getMachinePrices - Prix ajouté: magenta = 0.02
+DEBUG getMachinePrices - Prix ajouté: yellow = 0.02
+DEBUG getMachinePrices - Prix ajouté: noir = 0.01
+DEBUG getMachinePrices - Prix ajouté: tambour = 0.003
+DEBUG getMachinePrices - Prix ajouté: dev = 0.002
+DEBUG getMachinePrices - Prix finaux: 6 éléments
+DEBUG ENREGISTREMENT - Prix machine récupérés pour: Ricoh
+DEBUG ENREGISTREMENT - Début boucle brochures optimisée, count: 1
+DEBUG calculatePageCost - ENTREE avec prix fixes, fill_rate=0.5, is_color=OUI
+DEBUG calculatePageCost - BRANCHE TONER
+DEBUG calculatePageCost - COÛT FINAL: 0.075 (fixed: 0.015, variable_base: 0.06, multiplier: 1)
+DEBUG ENREGISTREMENT - Prix brochure: 11.5
+DEBUG ENREGISTREMENT - Prix machine total: 11.5
+
+   FAIL  Tests\Feature\TirageActionTest
+  ✓ it calcule le prix total pour le flux de confirmation                0.12s  
+  ⨯ it enregistre les tirages lors de la soumission finale               0.13s  
+
+   PASS  Tests\Feature\UnimposeTest
+  ✓ it désimpose un livret simple en doublant le nombre de pages         0.09s  
+  ✓ it lève une exception lorsque le fichier source est introuvable
+  ✓ it Action signale une erreur quand le fichier uploadé n’est pas un PDF
+
+   PASS  Tests\Unit\HealthCheckTest
+  ✓ get_package_install_help returns correct command for debian
+  ✓ get_package_install_help returns correct command for fedora
+  ✓ get_aggregated_install_command groups packages correctly
+  ✓ get_global_install_command handles empty results
+  ✓ get_global_install_command return command when dependency missing
+
+   PASS  Tests\Unit\I18nManagerTest
+  ✓ it retourne les traductions françaises par défaut
+  ✓ it permet de changer de langue pour charger les traductions anglaises
+  ✓ it retourne la clé brute lorsque la traduction est inexistante
+  ✓ it détecte la langue préférée issue des entêtes navigateur
+DEBUG PEST: Step require_pricing_dependencies START
+DEBUG PEST: Step require_pricing_dependencies - func.php loaded
+DEBUG PEST: Step require_pricing_dependencies END
+DEBUG PEST: Step require_pricing_dependencies START
+DEBUG PEST: Step require_pricing_dependencies - func.php loaded
+DEBUG PEST: Step require_pricing_dependencies END
+DEBUG PEST: Step require_pricing_dependencies START
+DEBUG PEST: Step require_pricing_dependencies - func.php loaded
+DEBUG PEST: Step require_pricing_dependencies END
+DEBUG PEST: Step require_pricing_dependencies START
+DEBUG PEST: Step require_pricing_dependencies - func.php loaded
+DEBUG PEST: Step require_pricing_dependencies END
+DEBUG PEST: Step require_pricing_dependencies START
+DEBUG PEST: Step require_pricing_dependencies - func.php loaded
+DEBUG PEST: Step require_pricing_dependencies END
+
+   PASS  Tests\Unit\PricingFunctionsTest
+  ✓ it récupère les prix structurés pour dupli et photocop               0.06s  
+  ✓ it insère ou met à jour un prix machine                              0.07s  
+  ✓ it met à jour le prix du papier                                      0.06s  
+  ✓ it calcule le montant dû pour un duplicopieur actif                  0.06s  
+  ✓ it calcule le montant dû pour une marque de photocopieur             0.06s  
+
+   PASS  Tests\Unit\SecureDeleteTest
+  ✓ secure_delete should return true for non-existent file
+  ✓ secure_delete should delete an existing file
+  ✓ secure_delete should handle empty files
+  ✓ secure_delete should handle large files                              0.01s  
+[SPOOL MANAGER] Suppression fichiers Job 999 : FP00999.SPL, FP00999.SHD
+
+   PASS  Tests\Unit\SpoolManagerTest
+  ✓ findSpoolFile detects standard naming
+  ✓ findSpoolFile detects file pooling naming via SHD
+  ✓ findSpoolFile returns null if ID mismatch in SHD
+  ✓ deleteSpoolFiles deletes both SPL and SHD
+DEBUG last(Ricoh): tirage 0 - date=14.11.23, id=5
+
+   PASS  Tests\Unit\TirageFunctionsTest
+  ✓ it insère un tirage photocopieur avec insert_photocop                0.05s  
+  ✓ it marque un tirage photocopieur comme payé                          0.05s  
+  ✓ it renvoie les derniers tirages photocopieurs paginés                0.07s  
+  ✓ it supprime un tirage duplicopieur par nom de machine                0.05s  
+DEBUG calculatePageCost - ENTREE avec prix fixes, fill_rate=0.75, is_color=OUI
+DEBUG calculatePageCost - BRANCHE TONER
+DEBUG calculatePageCost - COÛT FINAL: 0.06 (fixed: 0.015, variable_base: 0.03, multiplier: 1.5)
+DEBUG calculatePageCost - ENTREE avec prix fixes, fill_rate=0.2, is_color=NON
+DEBUG calculatePageCost - BRANCHE ENCRE
+DEBUG calculatePageCost - COÛT FINAL: 0.012 (fixed: 0.012, variable_base: 0, multiplier: 1)
+DEBUG calculatePageCost - ENTREE avec prix fixes, fill_rate=0.5, is_color=NON
+DEBUG calculatePageCost - BRANCHE TONER
+DEBUG calculatePageCost - COÛT FINAL: 0.019 (fixed: 0.019, variable_base: 0, multiplier: 1)
+DEBUG calculatePageCost - ENTREE avec prix fixes, fill_rate=0.5, is_color=OUI
+DEBUG calculatePageCost - BRANCHE TONER
+DEBUG calculatePageCost - COÛT FINAL: 0.087 (fixed: 0.027, variable_base: 0.06, multiplier: 1)
+
+   PASS  Tests\Unit\TiragePricingTest
+  ✓ it calcule le coût par page toner couleur en tenant compte du taux de remplissage
+  ✓ it calcule le coût par page encre noir et blanc sans multiplicateur
+  ✓ it calcule un devis A3 en ajoutant papier et encre
+  ✓ it réduit le coût en A4 en divisant le prix page par deux
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\ApiGetMachineTemplateTest > it retour…  PDOException   
+  SQLSTATE[23000]: Integrity constraint violation: 19 NOT NULL constraint failed: photocopieurs.type_encre
+
+  at tests/Feature/ApiGetMachineTemplateTest.php:67
+     63▕ }
+     64▕ 
+     65▕ it('retourne le template avec un duplicopieur pré-sélectionné', function () {
+     66▕     $this->pdo->exec("INSERT INTO duplicopieurs (marque, modele, actif, tambours) VALUES ('Riso','SF','1','[\"noir\",\"rouge\"]')");
+  ➜  67▕     $this->pdo->exec("INSERT INTO photocopieurs (marque, modele, actif) VALUES ('Ricoh','Pro',1)");
+     68▕ 
+     69▕     $response = run_get_machine_template($this->dbPath, ['index' => 1]);
+     70▕ 
+     71▕     expect($response['success'])->toBeTrue();
+
+  1   tests/Feature/ApiGetMachineTemplateTest.php:67
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\ApiGetMachineTemplateTest > it exclut…  PDOException   
+  SQLSTATE[23000]: Integrity constraint violation: 19 NOT NULL constraint failed: photocopieurs.type_encre
+
+  at tests/Feature/ApiGetMachineTemplateTest.php:79
+     75▕ });
+     76▕ 
+     77▕ it('exclut les marques déjà présentes côté duplicopieur', function () {
+     78▕     $this->pdo->exec("INSERT INTO duplicopieurs (marque, modele, actif, tambours) VALUES ('Canon','Canon',1,'[\"noir\"]')");
+  ➜  79▕     $this->pdo->exec("INSERT INTO photocopieurs (marque, modele, actif) VALUES ('Canon','C123',1)");
+     80▕     $this->pdo->exec("INSERT INTO photocopieurs (marque, modele, actif) VALUES ('Xerox','Alta',1)");
+     81▕ 
+     82▕     $response = run_get_machine_template($this->dbPath, ['index' => 2]);
+     83▕
+
+  1   tests/Feature/ApiGetMachineTemplateTest.php:79
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\ApiTamboursTest > it retourne les prix des tambours…   
+  Failed asserting that null is true.
+
+  at tests/Feature/ApiTamboursTest.php:31
+     27▕     $output = run_ajax_get_tambour_prices(['machine_id' => 1], $this->conf);
+     28▕ 
+     29▕     $json = json_decode($output, true);
+     30▕ 
+  ➜  31▕     expect($json['success'])->toBeTrue();
+     32▕     expect($json['prices']['tambour_noir']['unite'])->toBe(0.12);
+     33▕ });
+     34▕ 
+     35▕ it('renvoie une erreur si machine_id est manquant', function () {
+
+  1   tests/Feature/ApiTamboursTest.php:31
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\ApiTamboursTest > it renvo…  InvalidExpectationValue   
+  Invalid expectation value type. Expected [iterable].
+
+  at tests/Feature/ApiTamboursTest.php:39
+     35▕ it('renvoie une erreur si machine_id est manquant', function () {
+     36▕     $output = run_ajax_get_tambour_prices([], $this->conf);
+     37▕     $json = json_decode($output, true);
+     38▕ 
+  ➜  39▕     expect($json['error'])->toContain('machine');
+     40▕ });
+     41▕ 
+     42▕ it('met à jour la liste des tambours et leurs prix', function () {
+     43▕     $payload = [
+
+  1   tests/Feature/ApiTamboursTest.php:39
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\ApiTamboursTest > it met à…  InvalidExpectationValue   
+  Invalid expectation value type. Expected [iterable].
+
+  at tests/Feature/ApiTamboursTest.php:53
+     49▕ 
+     50▕     $output = run_ajax_edit_tambours($payload, $this->conf);
+     51▕ 
+     52▕     $json = json_decode($output, true);
+  ➜  53▕     expect($json['success'])->toContain('Tambours mis à jour');
+     54▕ 
+     55▕     $prices = $this->pdo->query('SELECT type, unite, pack FROM prix WHERE machine_type="dupli" AND machine_id=1 ORDER BY type')->fetchAll(PDO::FETCH_ASSOC);
+     56▕     expect($prices)->toHaveCount(3); // master + 2 tambours
+     57▕     expect($prices[1]['type'])->toBe('tambour_bleu');
+
+  1   tests/Feature/ApiTamboursTest.php:53
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\ApiUploadAidePdfTest > it retourne une erreur 401 s…   
+  Failed asserting that null is false.
+
+  at tests/Feature/ApiUploadAidePdfTest.php:62
+     58▕     $output = run_upload_aide_pdf(['action' => 'list'], $this->conf, []);
+     59▕     
+     60▕     $json = json_decode($output, true);
+     61▕     
+  ➜  62▕     expect($json['success'])->toBeFalse();
+     63▕     expect($json['error'])->toContain('Non autorisé');
+     64▕ });
+     65▕ 
+     66▕ it('retourne la liste des PDFs pour un admin authentifié', function () {
+
+  1   tests/Feature/ApiUploadAidePdfTest.php:62
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\ApiUploadAidePdfTest > it retourne la liste des PDF…   
+  Failed asserting that null is true.
+
+  at tests/Feature/ApiUploadAidePdfTest.php:71
+     67▕     $output = run_upload_aide_pdf(['action' => 'list'], $this->conf, ['user' => '1']);
+     68▕     
+     69▕     $json = json_decode($output, true);
+     70▕     
+  ➜  71▕     expect($json['success'])->toBeTrue();
+     72▕     expect($json)->toHaveKey('pdfs');
+     73▕     expect($json['pdfs'])->toBeArray();
+     74▕ });
+     75▕
+
+  1   tests/Feature/ApiUploadAidePdfTest.php:71
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\ApiUploadAidePdfTest > it retourne une erreur si ac…   
+  Failed asserting that null is false.
+
+  at tests/Feature/ApiUploadAidePdfTest.php:81
+     77▕     $output = run_upload_aide_pdf([], $this->conf, ['user' => '1']);
+     78▕     
+     79▕     $json = json_decode($output, true);
+     80▕     
+  ➜  81▕     expect($json['success'])->toBeFalse();
+     82▕     expect($json)->toHaveKey('message');
+     83▕     expect($json['message'])->toContain('Action non reconnue');
+     84▕ });
+     85▕
+
+  1   tests/Feature/ApiUploadAidePdfTest.php:81
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PdfToolsTest > it réordonne les p…  RuntimeException   
+  run_pdf_tool a échoué:
+
+  at tests/Feature/PdfToolsTest.php:181
+    177▕     $exitCode = 0;
+    178▕     exec($command, $output, $exitCode);
+    179▕ 
+    180▕     if ($exitCode !== 0) {
+  ➜ 181▕         throw new RuntimeException('run_pdf_tool a échoué: ' . implode("\n", $output));
+    182▕     }
+    183▕ 
+    184▕     $response = json_decode(implode("\n", $output), true);
+    185▕     if (!is_array($response) || ($response['status'] ?? '') !== 'ok') {
+
+  1   tests/Feature/PdfToolsTest.php:181
+  2   tests/Feature/PdfToolsTest.php:9
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PdfToolsTest > it retourne la séq…  RuntimeException   
+  run_pdf_tool a échoué:
+
+  at tests/Feature/PdfToolsTest.php:181
+    177▕     $exitCode = 0;
+    178▕     exec($command, $output, $exitCode);
+    179▕ 
+    180▕     if ($exitCode !== 0) {
+  ➜ 181▕         throw new RuntimeException('run_pdf_tool a échoué: ' . implode("\n", $output));
+    182▕     }
+    183▕ 
+    184▕     $response = json_decode(implode("\n", $output), true);
+    185▕     if (!is_array($response) || ($response['status'] ?? '') !== 'ok') {
+
+  1   tests/Feature/PdfToolsTest.php:181
+  2   tests/Feature/PdfToolsTest.php:22
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\PdfToolsTest > it ajoute des page…  RuntimeException   
+  run_pdf_tool a échoué:
+
+  at tests/Feature/PdfToolsTest.php:181
+    177▕     $exitCode = 0;
+    178▕     exec($command, $output, $exitCode);
+    179▕ 
+    180▕     if ($exitCode !== 0) {
+  ➜ 181▕         throw new RuntimeException('run_pdf_tool a échoué: ' . implode("\n", $output));
+    182▕     }
+    183▕ 
+    184▕     $response = json_decode(implode("\n", $output), true);
+    185▕     if (!is_array($response) || ($response['status'] ?? '') !== 'ok') {
+
+  1   tests/Feature/PdfToolsTest.php:181
+  2   tests/Feature/PdfToolsTest.php:31
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\TirageActionTest > it enregistre les tirages lors d…   
+  Expected: 
+
+  To contain: succès
+
+  at tests/Feature/TirageActionTest.php:61
+     57▕         error_log("ERREURS DETECTEES: " . print_r($result['errors'], true));
+     58▕     }
+     59▕ 
+     60▕     expect($result['errors'] ?? [])->toBeEmpty();
+  ➜  61▕     expect($vars['success_message'] ?? '')->toContain('succès');
+     62▕ 
+     63▕     $dupliRow = $this->pdo->query('SELECT contact, prix FROM dupli')->fetch(PDO::FETCH_ASSOC);
+     64▕     expect($dupliRow['contact'])->toBe('Alice');
+     65▕     expect(floatval($dupliRow['prix']))->toEqualWithDelta(50.5, 0.001);
+
+  1   tests/Feature/TirageActionTest.php:61
+
+
+  Tests:    1 deprecated, 12 failed, 102 passed (299 assertions)
+  Duration: 7.49s
+
