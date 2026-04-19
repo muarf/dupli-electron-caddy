@@ -67,7 +67,8 @@ jobs:
             libatspi2.0-0 \
             libdrm2 \
             libgbm1 \
-            libxcb-dri3-0
+            libxcb-dri3-0 \
+            ghostscript
       
       - name: Install dependencies
         run: npm install
