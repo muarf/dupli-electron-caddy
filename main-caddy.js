@@ -2302,8 +2302,11 @@ function setupAutoUpdater() {
 
     // Détecter si c'est la version beta (basé sur l'appId configuré dans package.json)
     // On vérifie l'App ID ainsi que le nom de l'app pour être robuste
+    const version = app.getVersion().toLowerCase();
+    const name = app.getName().toLowerCase();
     const isBeta = (typeof app.getAppId === 'function' && app.getAppId() === 'com.dupli.beta') ||
-        app.getName().toLowerCase().includes('beta') ||
+        name.includes('beta') ||
+        version.includes('beta') ||
         app.getAppPath().toLowerCase().includes('beta');
     const channel = isBeta ? 'beta' : 'latest';
     autoUpdater.allowPrerelease = isBeta;
@@ -2511,7 +2514,10 @@ app.disableHardwareAcceleration();
 if (process.env.NODE_ENV !== 'test') {
     if (process.platform === 'linux') {
         const currentAppName = app.getName();
-        if (!currentAppName.toLowerCase().includes('beta')) {
+        const currentVersion = app.getVersion().toLowerCase();
+        const isBetaVersion = currentAppName.toLowerCase().includes('beta') || currentVersion.includes('beta');
+        
+        if (!isBetaVersion) {
             app.setName('Duplicator');
         }
     }

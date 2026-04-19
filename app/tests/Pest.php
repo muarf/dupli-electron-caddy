@@ -280,8 +280,12 @@ include '" . addslashes($abs_path) . "';
         }
     }
     
-    if ($data === null || !isset($data['success']) || $data['success'] === false) {
-        file_put_contents(sys_get_temp_dir() . '/run_endpoint_last_raw.log', $output);
+    if ($data === null || (isset($data['success']) && $data['success'] === false)) {
+        $logFile = sys_get_temp_dir() . '/run_endpoint_last_raw.log';
+        file_put_contents($logFile, $output);
+        // Print the first 1000 chars to stderr for CI visibility
+        fwrite(STDERR, "DEBUG Pest: run_endpoint failed for $file_path. Raw output saved to $logFile\n");
+        fwrite(STDERR, "DEBUG Pest: Raw snippet: " . substr($output, 0, 1000) . "\n");
     }
     
     return $data ?? ['success' => false, 'error' => 'Invalid JSON', 'raw_output' => $output];
