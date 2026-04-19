@@ -113,7 +113,7 @@ jobs:
         
       - name: Run JS Tests (Jest)
         run: |
-          npm test
+          npm test -- --runInBand
       - name: Cleanup unnecessary files to save disk space
         run: |
           echo "=== Nettoyage agressif pour libérer de l'espace ==="
