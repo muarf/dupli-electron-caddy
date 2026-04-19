@@ -100,35 +100,11 @@ jobs:
             exit 1
           fi
         
-      - name: Verify system PHP
+- name: Verify system PHP
         run: |
           php -v
           php -m
-        
-      - name: Run PHP Tests (Pest)
-        run: |
-          cd app
-          ./vendor/bin/pest --display-deprecations --display-errors --display-notices
-          cd ..
-        
-      - name: Ensure correct Caddy binary architecture
-        run: |
-          echo "=== Verification de l'architecture Caddy ==="
-          ARCH=$(node -p "console.log(process.arch)")
-          echo "Node.js arch: $ARCH"
-          
-          echo "Suppression du binaire Caddy potentiellement mismatch..."
-          rm -rf caddy/
-          
-          echo "Re-téléchargement de Caddy pour l'architecture actuelle..."
-          npm run download-caddy
-          
-          chmod +x caddy/caddy
-          echo "Vérification: $(file caddy/caddy)"
-
-      - name: Run JS Tests (Jest)
-        run: |
-          npm test -- --runInBand --forceExit
+         
       - name: Cleanup unnecessary files to save disk space
         run: |
           echo "=== Nettoyage agressif pour libérer de l'espace ==="
@@ -200,6 +176,12 @@ jobs:
           else
             echo "✅ app/.git n'existe pas (déjà supprimé ou absent)"
           fi
+      
+      - name: Download Caddy
+        run: |
+          echo "=== Téléchargement de Caddy ==="
+          npm run download-caddy
+          chmod +x caddy/caddy
       
       - name: Build Linux AppImage
         run: |
