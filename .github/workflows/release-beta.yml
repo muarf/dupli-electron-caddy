@@ -119,31 +119,6 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
-      - name: Update package.json for Beta
-        run: |
-          VERSION="${{ needs.get-version.outputs.version }}"
-          node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.version = '$VERSION';
-            pkg.name = 'dupli-electron-beta';
-            pkg.productName = 'Duplicator Beta';
-            pkg.description = 'Duplicator Beta - Test new features';
-            if (!pkg.build) pkg.build = {};
-            pkg.build.appId = 'com.dupli.beta';
-            pkg.build.productName = 'Duplicator Beta';
-            pkg.build.publish = {
-              provider: 'github',
-              owner: 'muarf',
-              repo: 'dupli-electron-caddy',
-              channel: 'beta',
-              releaseType: 'prerelease'
-            };
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-            console.log('✅ package.json configuré pour la beta');
-          "
-          grep -E '"version"|"name"|"productName"|"appId"' package.json
-
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -184,6 +159,31 @@ jobs:
       - name: Run JS Tests (Jest)
         run: |
           npm test -- --runInBand --forceExit
+
+      - name: Update package.json for Beta
+        run: |
+          VERSION="${{ needs.get-version.outputs.version }}"
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '$VERSION';
+            pkg.name = 'dupli-electron-beta';
+            pkg.productName = 'Duplicator Beta';
+            pkg.description = 'Duplicator Beta - Test new features';
+            if (!pkg.build) pkg.build = {};
+            pkg.build.appId = 'com.dupli.beta';
+            pkg.build.productName = 'Duplicator Beta';
+            pkg.build.publish = {
+              provider: 'github',
+              owner: 'muarf',
+              repo: 'dupli-electron-caddy',
+              channel: 'beta',
+              releaseType: 'prerelease'
+            };
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            console.log('✅ package.json configuré pour la beta');
+          "
+          grep -E '"version"|"name"|"productName"|"appId"' package.json
 
       - name: Build Linux Beta
         run: |
