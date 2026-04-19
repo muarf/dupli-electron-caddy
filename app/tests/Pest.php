@@ -59,14 +59,20 @@ function reset_i18n_environment(): void
 if (!function_exists('create_test_sqlite_database')) {
     function create_test_sqlite_database(): array
     {
-        $path = tempnam(sys_get_temp_dir(), 'dupli_test_db_');
+        // Créer un dossier temporaire unique pour ce test
+        $dataDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dupli_test_data_' . uniqid();
+        if (!is_dir($dataDir)) {
+            mkdir($dataDir, 0777, true);
+        }
+        
+        $path = $dataDir . DIRECTORY_SEPARATOR . 'duplinew.sqlite';
         $pdo = new PDO('sqlite:' . $path);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $pdo->exec('PRAGMA foreign_keys = ON;');
         
         create_essential_tables($pdo);
         
-        return [$path, $pdo];
+        return [$path, $pdo, $dataDir];
     }
 }
 
@@ -283,9 +289,10 @@ include '" . addslashes($abs_path) . "';
     if ($data === null || (isset($data['success']) && $data['success'] === false)) {
         $logFile = sys_get_temp_dir() . '/run_endpoint_last_raw.log';
         file_put_contents($logFile, $output);
-        // Print the first 1000 chars to stderr for CI visibility
-        fwrite(STDERR, "DEBUG Pest: run_endpoint failed for $file_path. Raw output saved to $logFile\n");
-        fwrite(STDERR, "DEBUG Pest: Raw snippet: " . substr($output, 0, 1000) . "\n");
+        // On utilise var_dump pour que Pest capture et affiche la sortie brute en cas d'échec
+        echo "\nDEBUG Pest: run_endpoint failed for $file_path. Raw output saved to $logFile\n";
+        echo "DEBUG Pest: Raw snippet (first 2000 chars):\n";
+        var_dump(substr($output, 0, 2000));
     }
     
     return $data ?? ['success' => false, 'error' => 'Invalid JSON', 'raw_output' => $output];

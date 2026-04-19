@@ -3,26 +3,20 @@
 require_once __DIR__ . '/../../controler/functions/paths.php';
 
 beforeEach(function () {
-    [$this->dbPath, $this->pdo] = create_test_sqlite_database();
+    [$this->dbPath, $this->pdo, $this->dataDir] = create_test_sqlite_database();
     configure_sqlite_conf($this->dbPath);
     run_migrations();
     
-    $this->bibliothequeDir = __DIR__ . '/fixtures/bibliotheque_test';
-    if (!is_dir($this->bibliothequeDir)) {
-        mkdir($this->bibliothequeDir, 0777, true);
-    }
-    
-    // Create migrations if needed (The API handles it usually, but let's be safe)
-    // RunMigrations was used in search_bibliotheque.php
+    // Le dossier bibliotheque sera créé automatiquement dans $this->dataDir
 });
 
 afterEach(function () {
     if (file_exists($this->dbPath)) {
         unlink($this->dbPath);
     }
-    // Clean up bibliotheque test dir
-    if (is_dir($this->bibliothequeDir)) {
-        // exec("rm -rf " . escapeshellarg($this->bibliothequeDir));
+    // Clean up temporary data dir
+    if (isset($this->dataDir) && is_dir($this->dataDir)) {
+        exec("rm -rf " . escapeshellarg($this->dataDir));
     }
 });
 
@@ -30,7 +24,7 @@ it('indexe un fichier externe dans la bibliothèque', function () {
     $pdfPath = realpath(__DIR__ . '/fixtures/test.pdf');
     
     $result = run_endpoint('api/index_file.php', [], [
-        'DUPLICATOR_DB_PATH' => $this->dbPath,
+        'DUPLICATOR_DATA_DIR' => $this->dataDir,
     ], [
         'path' => $pdfPath
     ]);
@@ -51,13 +45,13 @@ it('indexe un fichier externe dans la bibliothèque', function () {
 it('recherche un fichier dans la bibliothèque', function () {
     // 1. Index first
     $pdfPath = realpath(__DIR__ . '/fixtures/test.pdf');
-    run_endpoint('api/index_file.php', [], ['DUPLICATOR_DB_PATH' => $this->dbPath], ['path' => $pdfPath]);
+    run_endpoint('api/index_file.php', [], ['DUPLICATOR_DATA_DIR' => $this->dataDir], ['path' => $pdfPath]);
     
     // 2. Search
     $result = run_endpoint('api/search_bibliotheque.php', [
         'q' => 'test'
     ], [
-        'DUPLICATOR_DB_PATH' => $this->dbPath
+        'DUPLICATOR_DATA_DIR' => $this->dataDir
     ]);
     
     expect($result['success'])->toBe(true);
@@ -68,12 +62,12 @@ it('recherche un fichier dans la bibliothèque', function () {
 it('supprime un fichier de la bibliothèque', function () {
     // 1. Index
     $pdfPath = realpath(__DIR__ . '/fixtures/test.pdf');
-    $index = run_endpoint('api/index_file.php', [], ['DUPLICATOR_DB_PATH' => $this->dbPath], ['path' => $pdfPath]);
+    $index = run_endpoint('api/index_file.php', [], ['DUPLICATOR_DATA_DIR' => $this->dataDir], ['path' => $pdfPath]);
     $id = $index['result']['id'];
     
     // 2. Delete
     $result = run_endpoint('api/delete_bibliotheque_file.php', [], [
-        'DUPLICATOR_DB_PATH' => $this->dbPath
+        'DUPLICATOR_DATA_DIR' => $this->dataDir
     ], [
         'id' => $id
     ]);
