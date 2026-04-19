@@ -109,19 +109,19 @@ jobs:
         run: |
           cd app
           echo "--- ExampleTest ---"
-          ./vendor/bin/pest tests/ExampleTest.php || true
+          ./vendor/bin/pest --display-deprecations --display-errors --display-notices --verbose tests/ExampleTest.php || true
           echo "--- ConversionApiTest ---"
-          ./vendor/bin/pest tests/Feature/ConversionApiTest.php || true
+          ./vendor/bin/pest --display-deprecations --display-errors --display-notices --verbose tests/Feature/ConversionApiTest.php || true
           echo "--- BibliothequeApiTest ---"
-          ./vendor/bin/pest tests/Feature/BibliothequeApiTest.php || true
+          ./vendor/bin/pest --display-deprecations --display-errors --display-notices --verbose tests/Feature/BibliothequeApiTest.php || true
           echo "--- SessionManagerTest ---"
-          ./vendor/bin/pest tests/Feature/SessionManagerTest.php || true
+          ./vendor/bin/pest --display-deprecations --display-errors --display-notices --verbose tests/Feature/SessionManagerTest.php || true
           echo "--- SecurePurgeApiTest ---"
-          ./vendor/bin/pest tests/Feature/SecurePurgeApiTest.php || true
+          ./vendor/bin/pest --display-deprecations --display-errors --display-notices --verbose tests/Feature/SecurePurgeApiTest.php || true
           echo "--- AutoTirageTest ---"
-          ./vendor/bin/pest tests/Feature/AutoTirageTest.php || true
+          ./vendor/bin/pest --display-deprecations --display-errors --display-notices --verbose tests/Feature/AutoTirageTest.php || true
           echo "--- FULL SUITE ---"
-          ./vendor/bin/pest
+          ./vendor/bin/pest --display-deprecations --display-errors --display-notices --verbose
           cd ..
         
       - name: Run JS Tests (Jest)
