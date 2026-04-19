@@ -102,7 +102,7 @@ function listActiveSessions($db) {
         $session['total_price'] = (float)$priceResult['total'];
     }
     
-    echo json_encode(['sessions' => $sessions]);
+    echo json_encode(['success' => true, 'sessions' => $sessions]);
 }
 
 /**

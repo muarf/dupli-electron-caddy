@@ -182,6 +182,7 @@ jobs:
           files: |
             dist/Duplicator-Beta-*
             dist/beta-linux.yml
+            dist/latest-linux.yml
             dist/latest-linux-deb.yml
           fail_on_unmatched_files: false
         env:
