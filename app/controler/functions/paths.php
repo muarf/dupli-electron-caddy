@@ -16,8 +16,7 @@ if (!function_exists('getDataDir')) {
         }
 
         // Priorité 2 : Détection AppImage
-        $currentDir = getcwd();
-        if (strpos($currentDir, '.mount') !== false || strpos($currentDir, 'AppDir') !== false) {
+        if (isAppImage()) {
             $homeDir = $_SERVER['HOME'] ?? getenv('HOME') ?? '/tmp';
             return $homeDir . DIRECTORY_SEPARATOR . '.config' . DIRECTORY_SEPARATOR . 'Duplicator';
         }
@@ -90,5 +89,25 @@ if (!function_exists('getBibliothequeDir')) {
             @mkdir($path, 0777, true);
         }
         return $path;
+    }
+}
+
+if (!function_exists('isAppImage')) {
+    /**
+     * Détecte si l'application s'exécute depuis un AppImage (Linux)
+     */
+    function isAppImage() {
+        // Détection par variable d'environnement (Electron AppImage)
+        if (getenv('APPIMAGE') !== false || !empty($_SERVER['APPIMAGE'])) {
+            return true;
+        }
+
+        // Détection par point de montage temporaire (.mount_XXXXXX ou AppDir)
+        $currentDir = getcwd();
+        if (strpos($currentDir, '.mount') !== false || strpos($currentDir, 'AppDir') !== false) {
+            return true;
+        }
+
+        return false;
     }
 }

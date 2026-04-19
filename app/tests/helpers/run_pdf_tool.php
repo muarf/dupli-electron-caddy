@@ -40,6 +40,7 @@ if ($projectRoot === false) {
 chdir($projectRoot . '/controler');
 
 require_once $projectRoot . '/vendor/autoload.php';
+require_once $projectRoot . '/controler/functions/paths.php';
 require_once $projectRoot . '/controler/functions/i18n.php';
 require_once $projectRoot . '/controler/functions/utilities.php';
 require_once $projectRoot . '/controler/functions/database.php';
