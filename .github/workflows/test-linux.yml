@@ -111,6 +111,21 @@ jobs:
           ./vendor/bin/pest --display-deprecations --display-errors --display-notices
           cd ..
         
+      - name: Ensure correct Caddy binary architecture
+        run: |
+          echo "=== Verification de l'architecture Caddy ==="
+          ARCH=$(node -p "console.log(process.arch)")
+          echo "Node.js arch: $ARCH"
+          
+          echo "Suppression du binaire Caddy potentiellement mismatch..."
+          rm -rf caddy/
+          
+          echo "Re-téléchargement de Caddy pour l'architecture actuelle..."
+          npm run download-caddy
+          
+          chmod +x caddy/caddy
+          echo "Vérification: $(file caddy/caddy)"
+
       - name: Run JS Tests (Jest)
         run: |
           npm test -- --runInBand --forceExit

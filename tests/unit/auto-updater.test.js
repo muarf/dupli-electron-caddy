@@ -1,44 +1,83 @@
-// Mock electron before anything else
+Object.defineProperty(process, 'resourcesPath', {
+    value: '/mock/resources',
+    writable: true
+});
+
+const mockApp = {
+    disableHardwareAcceleration: jest.fn(),
+    whenReady: jest.fn(() => Promise.resolve()),
+    on: jest.fn(),
+    quit: jest.fn(),
+    isPackaged: false,
+    getPath: jest.fn(),
+    getName: jest.fn().mockReturnValue('Duplicator Beta'),
+    getAppPath: jest.fn().mockReturnValue('/mock/app/path'),
+    getAppId: jest.fn().mockReturnValue('com.dupli.beta'),
+    getVersion: jest.fn().mockReturnValue('2.0.1-beta.local'),
+    setName: jest.fn(),
+    isReady: jest.fn(() => true),
+    commandLine: {
+        appendSwitch: jest.fn()
+    }
+};
+
+const mockAutoUpdater = {
+    setFeedURL: jest.fn(),
+    on: jest.fn(),
+    checkForUpdates: jest.fn(),
+    channel: 'latest',
+    allowPrerelease: false,
+    logger: console
+};
+
 jest.mock('electron', () => ({
-    app: {
-        disableHardwareAcceleration: jest.fn(),
-        whenReady: jest.fn(() => Promise.resolve()),
+    app: mockApp,
+    ipcMain: {
+        handle: jest.fn(),
         on: jest.fn(),
-        quit: jest.fn(),
-        isPackaged: false,
-        getPath: jest.fn(),
-        getName: jest.fn(() => 'dupli-electron-beta'),
-        getAppPath: jest.fn(() => '/mock/app/path'),
-        getAppId: jest.fn(() => 'com.dupli.beta'),
-        setName: jest.fn(),
-        isReady: jest.fn(() => true),
-        commandLine: {
-            appendSwitch: jest.fn()
+        once: jest.fn(),
+        send: jest.fn()
+    },
+    BrowserWindow: jest.fn(() => ({
+        loadURL: jest.fn(),
+        loadFile: jest.fn(),
+        webContents: { send: jest.fn() },
+        on: jest.fn(),
+        close: jest.fn(),
+        show: jest.fn()
+    })),
+    session: {
+        defaultSession: {
+            setPermissionRequestHandler: jest.fn()
         }
     }
 }), { virtual: true });
 
-const mainCaddy = require('../../main-caddy');
-const { app } = require('electron');
-
-// Mock electron-updater
 jest.mock('electron-updater', () => ({
-    autoUpdater: {
-        setFeedURL: jest.fn(),
-        on: jest.fn(),
-        checkForUpdates: jest.fn(),
-        channel: 'latest',
-        allowPrerelease: false,
-        logger: console
-    }
+    autoUpdater: mockAutoUpdater
 }));
 
-const { autoUpdater } = require('electron-updater');
+const mainCaddy = require('../../main-caddy');
+
+global.mockApp = mockApp;
+global.mockAutoUpdater = mockAutoUpdater;
 
 describe('Auto-Updater Logic Tests', () => {
+    let app, autoUpdater;
+    
     beforeEach(() => {
         jest.clearAllMocks();
         jest.useFakeTimers();
+        
+        app = global.mockApp;
+        autoUpdater = global.mockAutoUpdater;
+        
+        app.getName.mockReturnValue('Duplicator Beta');
+        app.getAppPath.mockReturnValue('/mock/app/path');
+        app.getAppId.mockReturnValue('com.dupli.beta');
+        app.getVersion.mockReturnValue('2.0.1-beta.local');
+        autoUpdater.channel = 'latest';
+        autoUpdater.allowPrerelease = false;
     });
 
     afterEach(() => {
@@ -48,6 +87,8 @@ describe('Auto-Updater Logic Tests', () => {
     test('setupAutoUpdater should use "latest" channel for standard app', () => {
         app.getName.mockReturnValue('Duplicator');
         app.getAppPath.mockReturnValue('/opt/Duplicator');
+        app.getVersion.mockReturnValue('2.0.1');
+        app.getAppId.mockReturnValue('com.dupli.prod');
         
         mainCaddy.setupAutoUpdater();
         
