@@ -169,6 +169,9 @@ jobs:
       - name: Run PHP Tests (Pest)
         run: |
           cd app
+          php ../composer.phar install --dev --optimize-autoloader --ignore-platform-reqs
+          cd ..
+          cd app
           ./vendor/bin/pest --display-deprecations --display-errors --display-notices
           cd ..
 
