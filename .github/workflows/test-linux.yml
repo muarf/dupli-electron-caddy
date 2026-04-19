@@ -70,7 +70,8 @@ jobs:
             libxcb-dri3-0 \
             ghostscript \
             imagemagick \
-            php8.2-sqlite3
+            php8.2-sqlite3 \
+            php8.2-gd
       
       - name: Verify SQLite FTS5 Support
         run: |
