@@ -166,6 +166,22 @@ jobs:
           rm caddy_2.7.6_linux_amd64.tar.gz
           chmod +x caddy/caddy
 
+      - name: Run PHP Tests (Pest)
+        run: |
+          cd app
+          ./vendor/bin/pest --display-deprecations --display-errors --display-notices
+          cd ..
+
+      - name: Ensure correct Caddy binary
+        run: |
+          rm -rf caddy/
+          npm run download-caddy
+          chmod +x caddy/caddy
+
+      - name: Run JS Tests (Jest)
+        run: |
+          npm test -- --runInBand --forceExit
+
       - name: Build Linux Beta
         run: |
           npx electron-builder --config electron-builder-beta.yml -l deb AppImage
