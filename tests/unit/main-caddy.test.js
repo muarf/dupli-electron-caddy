@@ -2,7 +2,7 @@
 jest.mock('electron', () => ({
     app: {
         disableHardwareAcceleration: jest.fn(),
-        whenReady: jest.fn(() => Promise.resolve()),
+        whenReady: jest.fn(() => new Promise(() => {})),
         on: jest.fn(),
         quit: jest.fn(),
         isPackaged: false,
@@ -150,27 +150,28 @@ describe('main-caddy.js Unit Tests', () => {
 
     describe('Secure Purge logic', () => {
         let http;
+        let requestSpy;
         
-        beforeEach(() => {
+        beforeAll(() => {
             http = require('http');
-            jest.mock('http', () => ({
-                request: jest.fn(() => ({
-                    on: jest.fn(),
-                    end: jest.fn()
-                }))
-            }));
+        });
+
+        beforeEach(() => {
+            requestSpy = jest.spyOn(http, 'request').mockImplementation((options, cb) => {
+                const mockReq = { 
+                    on: jest.fn().mockReturnThis(), 
+                    end: jest.fn() 
+                };
+                return mockReq;
+            });
+        });
+
+        afterEach(() => {
+            requestSpy.mockRestore();
         });
 
         test('scheduleSecurePurge triggers http request to /?secure_purge', () => {
-            const http = require('http');
-            const mockReq = { 
-                on: jest.fn().mockReturnThis(), 
-                end: jest.fn() 
-            };
-            http.request.mockReturnValue(mockReq);
-
             // Access internal function (exported for test)
-            mainCaddy.scheduleSecurePurge();
             
             // The triggerPurge inside scheduleSecurePurge is wrapped in a setTimeout (line 59)
             // We need to run timers
@@ -178,10 +179,11 @@ describe('main-caddy.js Unit Tests', () => {
             mainCaddy.scheduleSecurePurge();
             jest.advanceTimersByTime(11000);
             
-            expect(http.request).toHaveBeenCalledWith(
+            expect(requestSpy).toHaveBeenCalledWith(
                 expect.objectContaining({ path: '/?secure_purge' }),
                 expect.any(Function)
             );
+            jest.clearAllTimers();
             jest.useRealTimers();
         });
     });

@@ -3180,6 +3180,17 @@ ipcMain.handle('reanalyze-print-job', async (event, jobId) => {
 // ============ Handlers pour le module d'impression ============
 
 // Obtenir les capacités d'une imprimante
+// Nettoyer le cache périodiquement (sauf en test pour éviter de bloquer Jest)
+if (process.env.NODE_ENV !== 'test') {
+    setInterval(() => {
+        const now = Date.now();
+        for (const [key, value] of printOptionsCache.entries()) {
+            if (now - value.timestamp > PRINT_OPTIONS_CACHE_TIMEOUT) {
+                printOptionsCache.delete(key);
+            }
+        }
+    }, 3600000); // Exécuter toutes les heures
+}
 ipcMain.handle('get-printer-capabilities', async (event, printerName) => {
     try {
         if (!printEngine.isAvailable()) {
