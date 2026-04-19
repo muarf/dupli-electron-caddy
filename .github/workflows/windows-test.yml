@@ -26,6 +26,13 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Enable PHP extensions
+        run: |
+          php -m | Select-String -Pattern "pdo_sqlite"
+          if ($LASTEXITCODE -ne 0) {
+            php -d "extension=sqlite3" -d "extension=pdo_sqlite" -r "echo 'Extensions loaded'"
+          }
+
       - name: Install Composer and PHP dependencies
         run: |
           php -r "Copy('https://getcomposer.org/installer', 'composer-setup.php');"
@@ -35,6 +42,9 @@ jobs:
           php ../composer.phar install --optimize-autoloader --ignore-platform-reqs
           cd ..
           del composer-setup.php
+
+      - name: Check PHP extensions
+        run: php -m
 
       - name: Install system dependencies
         run: |
@@ -51,7 +61,7 @@ jobs:
       - name: Run PHP Tests (Pest)
         run: |
           cd app
-          php ./vendor/bin/pest --display-deprecations --display-errors --display-notices
+          php -d "extension=sqlite3" -d "extension=pdo_sqlite" ./vendor/bin/pest --display-deprecations --display-errors --display-notices
           cd ..
 
       - name: Run JS Tests (Jest)
