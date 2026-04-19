@@ -32,7 +32,7 @@ jobs:
           php composer-setup.php
           php composer.phar --version
           cd app
-          php ../composer.phar install --dev --optimize-autoloader --ignore-platform-reqs
+          php ../composer.phar install --optimize-autoloader --ignore-platform-reqs
           cd ..
           del composer-setup.php
 
@@ -51,7 +51,7 @@ jobs:
       - name: Run PHP Tests (Pest)
         run: |
           cd app
-          php ../vendor/bin/pest --display-deprecations --display-errors --display-notices
+          php ./vendor/bin/pest --display-deprecations --display-errors --display-notices
           cd ..
 
       - name: Run JS Tests (Jest)
