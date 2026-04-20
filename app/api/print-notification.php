@@ -70,7 +70,7 @@ try {
 
     if ($alreadyRecorded) {
         error_log(sprintf("[DOUBLON] Job %s sur %s déjà enregistré (%s), ignoré.", $data['jobId'], $data['printerName'], $platform));
-        echo json_encode(['success' => true, 'message' => 'Job déjà enregistré, ignoré']);
+        echo json_encode(['success' => true, 'message' => 'Job déjà enregistré, ignoré', 'already_recorded' => true]);
         exit;
     }
 

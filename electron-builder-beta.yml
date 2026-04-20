@@ -29,6 +29,7 @@ files:
   - "app/**/*"
   - "!app/.git/**/*"
   - "!app/.phpunit.result.cache"
+  - bin/**/*
   - ghostscript/**/*
   - caddy/**/*
   - utils/**/*
@@ -94,7 +95,8 @@ mac:
     - Caddyfile
     - php-install-guide.html
     - app/**/*
-    - ghostscript/**/*
+    - bin/**/*
+  - ghostscript/**/*
     - caddy/**/*
     - utils/**/*
     - "php/**/*"
@@ -102,7 +104,8 @@ mac:
   asarUnpack:
     - "php/**/*"
     - "app/**/*"
-    - ghostscript/**/*
+    - bin/**/*
+  - ghostscript/**/*
     - caddy/**/*
     - Caddyfile
     - src/**/*
@@ -130,7 +133,8 @@ win:
     - app/php.ini
     - php-install-guide.html
     - app/**/*
-    - ghostscript/**/*
+    - bin/**/*
+  - ghostscript/**/*
     - caddy/**/*
     - utils/**/*
     - "php/**/*"

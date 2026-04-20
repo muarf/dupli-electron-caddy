@@ -53,10 +53,10 @@ function get_binary_path(string $name, ?string $env_var = null): ?string
 
     // 3. Fallback vers les anciens dossiers (compatibilité initiale)
     $legacy_map = [
-        'gs' => "/../../../ghostscript/gswin64c$ext",
+        'gs' => "/../../../ghostscript/gs$ext",
         'gpcl6' => "/../../../ghostscript/gpcl6win64$ext",
         'gxps' => "/../../../ghostscript/gxpswin64$ext",
-        'magick' => "/../../../imagemagick/magick$ext"
+        'magick' => "/../../../bin/$platform/magick$ext"
     ];
 
     if (isset($legacy_map[$name])) {

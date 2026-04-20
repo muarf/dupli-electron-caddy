@@ -143,6 +143,22 @@ function check_system_dependencies(): array
                 'critical' => true,
                 'help' => get_package_install_help('bin', 'ghostscript', $distro)
             ],
+            'gpcl6' => [
+                'name' => 'GhostPCL (gpcl6)',
+                'status' => false,
+                'version' => null,
+                'path' => null,
+                'critical' => true,
+                'help' => 'Nécessaire pour les imprimantes Kyocera/PCL'
+            ],
+            'gxps' => [
+                'name' => 'GhostXPS (gxps)',
+                'status' => false,
+                'version' => null,
+                'path' => null,
+                'critical' => true,
+                'help' => 'Nécessaire pour les fichiers XPS'
+            ],
             'imagemagick' => [
                 'name' => 'ImageMagick',
                 'status' => false,
@@ -188,33 +204,57 @@ function check_system_dependencies(): array
 
     // === Vérifier Ghostscript ===
     // 1. Priorité au binaire local
-    $gs_local_path = realpath(__DIR__ . '/../../bin/win-x64/gs/' . ($is_windows ? 'gswin64c.exe' : 'gs'));
+    $gs_local_path = realpath(__DIR__ . '/../../../bin/win-x64/' . ($is_windows ? 'gs.exe' : 'gs'));
     if ($gs_local_path && file_exists($gs_local_path)) {
         $results['dependencies']['ghostscript']['status'] = true;
         $results['dependencies']['ghostscript']['path'] = $gs_local_path;
         $cmd = escapeshellarg($gs_local_path) . " -v 2>&1";
         $results['dependencies']['ghostscript']['version'] = trim(shell_exec($cmd));
     } else {
-        // 2. Fallback binaire global
-        $gs_cmd = $is_windows ? 'where gswin64c.exe 2>NUL' : 'which gs 2>/dev/null';
-        $gs_path = trim(shell_exec($gs_cmd));
-        if ($gs_path) {
-            // where sous Windows peut renvoyer plusieurs lignes, on prend la première
-            $gs_path = explode("\n", str_replace("\r", "", $gs_path))[0];
+        // Fallback gswin64c.exe
+        $gs_local_path = realpath(__DIR__ . '/../../../bin/win-x64/' . ($is_windows ? 'gswin64c.exe' : 'gs'));
+        if ($gs_local_path && file_exists($gs_local_path)) {
             $results['dependencies']['ghostscript']['status'] = true;
-            $results['dependencies']['ghostscript']['path'] = $gs_path;
-            $results['dependencies']['ghostscript']['version'] = trim(shell_exec(escapeshellarg($gs_path) . " --version 2>&1"));
+            $results['dependencies']['ghostscript']['path'] = $gs_local_path;
+            $results['dependencies']['ghostscript']['version'] = trim(shell_exec(escapeshellarg($gs_local_path) . " -v 2>&1"));
+        } else {
+            // 2. Fallback binaire global
+            $gs_cmd = $is_windows ? 'where gs.exe 2>NUL' : 'which gs 2>/dev/null';
+            $gs_path = trim(shell_exec($gs_cmd));
+            if (!$gs_path && $is_windows) $gs_path = trim(shell_exec('where gswin64c.exe 2>NUL'));
+            
+            if ($gs_path) {
+                $gs_path = explode("\n", str_replace("\r", "", $gs_path))[0];
+                $results['dependencies']['ghostscript']['status'] = true;
+                $results['dependencies']['ghostscript']['path'] = $gs_path;
+                $results['dependencies']['ghostscript']['version'] = trim(shell_exec(escapeshellarg($gs_path) . " --version 2>&1"));
+            }
         }
+    }
+
+    // === Vérifier GhostPCL (gpcl6) ===
+    $gpcl_local_path = realpath(__DIR__ . '/../../../bin/win-x64/' . ($is_windows ? 'gpcl6.exe' : 'gpcl6'));
+    if ($gpcl_local_path && file_exists($gpcl_local_path)) {
+        $results['dependencies']['gpcl6']['status'] = true;
+        $results['dependencies']['gpcl6']['path'] = $gpcl_local_path;
+        $results['dependencies']['gpcl6']['version'] = trim(shell_exec(escapeshellarg($gpcl_local_path) . " -v 2>&1"));
+    }
+
+    // === Vérifier GhostXPS (gxps) ===
+    $gxps_local_path = realpath(__DIR__ . '/../../../bin/win-x64/' . ($is_windows ? 'gxps.exe' : 'gxps'));
+    if ($gxps_local_path && file_exists($gxps_local_path)) {
+        $results['dependencies']['gxps']['status'] = true;
+        $results['dependencies']['gxps']['path'] = $gxps_local_path;
+        $results['dependencies']['gxps']['version'] = trim(shell_exec(escapeshellarg($gxps_local_path) . " -v 2>&1"));
     }
 
     // === Vérifier ImageMagick ===
     // 1. Priorité au binaire local
-    $magick_local_path = realpath(__DIR__ . '/../../bin/win-x64/magick/' . ($is_windows ? 'magick.exe' : 'magick'));
+    $magick_local_path = realpath(__DIR__ . '/../../../bin/win-x64/' . ($is_windows ? 'magick.exe' : 'magick'));
     if ($magick_local_path && file_exists($magick_local_path)) {
         $results['dependencies']['imagemagick']['status'] = true;
         $results['dependencies']['imagemagick']['path'] = $magick_local_path;
         $cmd = escapeshellarg($magick_local_path) . " -version 2>&1";
-        // On prend juste la première ligne
         $lines = explode("\n", trim(shell_exec($cmd)));
         $results['dependencies']['imagemagick']['version'] = trim($lines[0] ?? '');
     } else {

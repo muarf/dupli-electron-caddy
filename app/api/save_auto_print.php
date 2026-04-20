@@ -126,6 +126,14 @@ try {
     if ($machine_id === null && isset($mapping['machine_id']))
         $machine_id = $mapping['machine_id'];
     $con_pdo = pdo_connect(); // Connexion brute pour les fonctions legacy si besoin
+    
+    // DEBUG: Log connection result
+    file_put_contents(__DIR__ . '/debug_log.txt', "DEBUG: pdo_connect called\n", FILE_APPEND);
+    if (!$con_pdo) {
+        file_put_contents(__DIR__ . '/debug_log.txt', "ERROR: pdo_connect returned null\n", FILE_APPEND);
+    } else {
+        file_put_contents(__DIR__ . '/debug_log.txt', "DEBUG: PDO connected OK\n", FILE_APPEND);
+    }
 
     $date = time();
     $paye = "non"; // Par défaut
@@ -139,26 +147,53 @@ try {
     $message = "";
     $details = [];
 
+    // DEBUG trace
+    file_put_contents(__DIR__ . '/debug_log.txt', "DEBUG: Before beginTransaction\n", FILE_APPEND);
     $con_pdo->beginTransaction();
+    file_put_contents(__DIR__ . '/debug_log.txt', "DEBUG: After beginTransaction OK\n", FILE_APPEND);
 
-    // SÉCURITÉ ANTI-DOUBLON SESSION : Vérifier si ce job unique n'a pas déjà été enregistré par un autre onglet
-    if ($original_job_id && !$simulate) {
+// SÉCURITÉ ANTI-DOUBLON SESSION : Vérifier si ce job unique n'a pas déjà été enregistré par un autre onglet
+        if ($original_job_id && !$simulate) {
         $platform = $input['platform'] ?? 'windows'; // Assume windows if not provided, but Electron/AutoTirage should send it
         
-        $checkSql = "SELECT COUNT(*) FROM recorded_print_jobs WHERE (job_id = ? AND printer_name = ?)";
+        // FIX 2: Prioriser print_job_id (interne) et vérifier l'ancienneté
+        // Si le job enregistré a plus de X heures, on ignore la collision (ID Windows recyclé)
+        $maxHours = 2; // Configurable: 2 heures
+        $checkSql = "SELECT print_job_id, recorded_at FROM recorded_print_jobs 
+                 WHERE (job_id = ? AND printer_name = ?)";
         $checkParams = [strval($original_job_id), $printerName];
-        
-        if ($internal_id) {
-            $checkSql .= " OR print_job_id = ?";
-            $checkParams[] = $internal_id;
-        }
 
         $check = $con_pdo->prepare($checkSql);
         $check->execute($checkParams);
-        if ($check->fetchColumn() > 0) {
-            $con_pdo->rollBack();
-            echo json_encode(['success' => true, 'message' => 'Job déjà enregistré par une autre session.']);
-            exit;
+        $existingJob = $check->fetch(PDO::FETCH_ASSOC);
+        
+        if ($existingJob) {
+            // FIX 1: Vérifier l'ancienneté - si ancien, ignorer la collision
+            $recordedAt = strtotime($existingJob['recorded_at']);
+            $hoursAgo = (time() - $recordedAt) / 3600;
+            
+            if ($hoursAgo > $maxHours) {
+                // Job trop ancien, probablement ID recyclé - supprimer l'ancien et continuer
+                file_put_contents(__DIR__ . '/debug_log.txt', "[INFO] Ancien job ($hoursAgo h) supprimé pour ID recyclé\n", FILE_APPEND);
+                $con_pdo->exec("DELETE FROM recorded_print_jobs WHERE job_id = " . intval($original_job_id) . " AND printer_name = '" . $printerName . "'");
+            } 
+            // FIX 2: Vérifier print_job_id interne si présent
+            elseif ($internal_id && !empty($existingJob['print_job_id'])) {
+                if ($existingJob['print_job_id'] == $internal_id) {
+                    // Même job interne - vraie collision
+                    $con_pdo->rollBack();
+                    echo json_encode(['success' => true, 'message' => 'Job déjà enregistré.', 'already_recorded' => true]);
+                    exit;
+                }
+                // print_job_id différent - c'est un nouveau job avec le même job_id Windows (recycled)
+                $con_pdo->exec("DELETE FROM recorded_print_jobs WHERE job_id = " . intval($original_job_id) . " AND printer_name = '" . $printerName . "'");
+            }
+            else {
+                // Ni print_job_id ni ancienneté - vraie collision
+                $con_pdo->rollBack();
+                echo json_encode(['success' => true, 'message' => 'Job déjà enregistré.', 'already_recorded' => true]);
+                exit;
+            }
         }
 
         // Marquer immédiatement pour éviter les clics impulsés

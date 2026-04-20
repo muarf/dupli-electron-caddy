@@ -1210,6 +1210,7 @@
         "communication_error": "Server communication error",
         "internal_error": "Internal error: missing job details",
         "add_error": "Error adding to session. Please try again.",
+        "already_recorded": "Job already recently processed. Skipped.",
         "delete_error": "Error deleting",
         "job_deleted": "Job deleted from pool",
         "jobs_deleted": ":count jobs deleted from pool",
