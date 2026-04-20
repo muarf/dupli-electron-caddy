@@ -1214,6 +1214,7 @@
         "communication_error": "Erreur de communication serveur",
         "internal_error": "Erreur interne: détails du job manquants",
         "add_error": "Erreur lors de l'ajout à la session. Veuillez réessayer.",
+        "already_recorded": "Job déjà traité récemment. Ignoré.",
         "delete_error": "Erreur lors de la suppression",
         "job_deleted": "Job supprimé du pool",
         "jobs_deleted": ":count jobs supprimés du pool",

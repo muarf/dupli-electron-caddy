@@ -18,6 +18,7 @@ files:
   - "app/**/*"
   - "!app/.git/**/*"              # Exclure le dossier .git (non nécessaire pour l'app)
   - "!app/.phpunit.result.cache"   # Exclure le cache PHPUnit
+  - bin/**/*
   - ghostscript/**/*
   - caddy/**/*
   - utils/**/*
@@ -92,7 +93,8 @@ mac:
     - php-fpm.conf
     - php-install-guide.html
     - app/**/*
-    - ghostscript/**/*
+    - bin/**/*
+  - ghostscript/**/*
     - caddy/**/*
     - utils/**/*
     - "php/**/*"  # Inclure PHP pour macOS
@@ -129,7 +131,8 @@ win:
     - app/php.ini  # Inclure explicitement php.ini pour Windows (nécessaire pour les extensions SQLite)
     - php-install-guide.html
     - app/**/*
-    - ghostscript/**/*
+    - bin/**/*
+  - ghostscript/**/*
     - caddy/**/*
     - utils/**/*
     - "php/**/*"  # Inclure PHP pour Windows

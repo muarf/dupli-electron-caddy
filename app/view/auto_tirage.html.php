@@ -923,6 +923,12 @@
                         addLog('info', '🔧 DEBUG: ' + result.debug_info);
                         console.log('DEBUG INFO:', result.debug_info);
                     }
+                    // FIX 3: Gérer le cas "job déjà enregistré" séparément
+                    if (result.already_recorded) {
+                        console.log('Job déjà enregistré, ignoré:', result.message || '');
+                        addLog('info', '⏭️ <?php _ejs('auto_tirage.already_recorded'); ?>');
+                        return true; // Ne pas considérer comme une erreur
+                    }
                     if (!result.details) {
                         console.error('CRITICAL: result.details is null/undefined', result);
                         addLog('error', '❌ <?php _ejs('auto_tirage.internal_error'); ?>');
