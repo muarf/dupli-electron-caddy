@@ -96,7 +96,8 @@ class PrintSessionManager {
                                     id: job.id,
                                     thumbnail_url: analysisResult.thumbnailUrl,
                                     fill_rate: analysisResult.fillRate,
-                                    is_grayscale: analysisResult.isGrayscale
+                                    is_grayscale: analysisResult.isGrayscale,
+                                    total_pages: analysisResult.totalPages
                                 })
                             });
                             regenerated++;
@@ -164,17 +165,50 @@ class PrintSessionManager {
         // NOUVEAU WORKFLOW: Juste notifier, pas d'auto-assignation
 
         // Anti-spam: Vérifier si déjà notifié récemment
+        // MODIF: Autoriser si fillRate > 0 ou thumbnailUrl présent (analyse terminée)
         const jobId = jobData.jobId || jobData.id || jobData.JobId;
-        if (jobId && this.processedJobIds.has(jobId)) {
-            console.log('[PrintSessionManager] Job déjà notifié, ignoré:', jobId);
+        const hasAnalysis = (jobData.FillRate > 0 || jobData.fillRate > 0 || 
+                         (jobData.ThumbnailUrl || jobData.thumbnailUrl || '').length > 0);
+        
+        if (jobId && this.processedJobIds.has(jobId) && !hasAnalysis) {
+            console.log('[PrintSessionManager] Job déjà notifié sans analyse, ignoré:', jobId);
             return;
         }
-        if (jobId) {
+        if (jobId && !this.processedJobIds.has(jobId)) {
             this.processedJobIds.add(jobId);
             setTimeout(() => this.processedJobIds.delete(jobId), 60000);
+        } else if (jobId && hasAnalysis) {
+            console.log('[PrintSessionManager] Mise à jour avec analyse terminée pour job:', jobId);
         }
 
-        // L'utilisateur va sur auto_tirage pour assigner manuellement
+        // Envoyer à print-notification pour enregistrer en base
+        try {
+            const response = await fetch('?print_notification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jobId: jobData.JobId || jobData.jobId,
+                    document: jobData.Document || jobData.documentName,
+                    printerName: jobData.PrinterName || jobData.printerName,
+                    status: jobData.Status || jobData.status,
+                    totalPages: jobData.TotalPages || jobData.totalPages,
+                    paperSize: jobData.PaperSize || jobData.paperSize,
+                    duplex: jobData.IsDuplex || jobData.duplex,
+                    colorMode: jobData.ColorMode || jobData.colorMode,
+                    copies: jobData.Copies || jobData.copies || 1,
+                    fillRate: jobData.FillRate || jobData.fillRate || 0,
+                    thumbnailUrl: jobData.ThumbnailUrl || jobData.thumbnailUrl || '',
+                    timestamp: jobData.TimeSubmitted || jobData.timestamp || new Date().toISOString(),
+                    eventType: 'job_detected',
+                    platform: 'win32'
+                })
+            });
+            const result = await response.json();
+            console.log('[PrintSessionManager] Notification sent:', result);
+        } catch (e) {
+            console.error('[PrintSessionManager] Error sending notification:', e);
+        }
+
         /* 
         if (this.showSessionSelectionModal) {
             this.showSessionSelectionModal(jobData);
