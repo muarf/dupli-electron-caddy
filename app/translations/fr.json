@@ -34,7 +34,9 @@
         "pdf_merge": "Fusionner des PDF",
         "pdf_merge_desc": "Combiner plusieurs fichiers en un seul",
         "resizer": "Redimensionner PDF/Images",
-        "resizer_desc": "Adapter au format A4 ou A3"
+        "resizer_desc": "Adapter au format A4 ou A3",
+        "pdf_organizer": "Organiser les pages",
+        "pdf_organizer_desc": "Réorganiser, pivoter ou supprimer des pages"
     },
     "footer": {
         "previous": "Précédent",
@@ -1650,5 +1652,25 @@
         "all_pages": "Toutes les pages : Chaque page du PDF est traitée.",
         "margins": "Marges : L'outil centre automatiquement le contenu.",
         "quality": "Qualité : Les images sont traitées en haute résolution (300 DPI)."
+    },
+    "pdf_organizer": {
+        "title": "Organisateur de Pages PDF",
+        "subtitle": "Réorganisez, pivotez, supprimez ou ajoutez des pages visuellement.",
+        "add_files": "Ajouter des PDFs",
+        "insert_blank": "Insérer page blanche",
+        "generate": "Générer le PDF final",
+        "generating": "Génération en cours...",
+        "success": "PDF organisé avec succès !",
+        "download": "Télécharger le document",
+        "rotate_l": "90° Gauche",
+        "rotate_r": "90° Droite",
+        "delete": "Supprimer",
+        "duplicate": "Dupliquer",
+        "page": "Page",
+        "blank": "Page Blanche",
+        "thumbnail_error": "Erreur de vignette",
+        "empty_msg": "Glissez ou ajoutez un fichier PDF pour commencer.",
+        "clear_all": "Tout effacer",
+        "processing_files": "Analyse des fichiers et génération des vignettes..."
     }
 }

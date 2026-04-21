@@ -171,6 +171,13 @@
                 <small class="text-muted d-block"><?php _e('header.resizer_desc'); ?></small>
               </a>
             </li>
+            <li>
+              <a href="?pdf_organizer">
+                <i class="fa fa-th-large" style="color: #764ba2; margin-right: 8px;"></i>
+                <strong><?php _e('header.pdf_organizer'); ?></strong>
+                <small class="text-muted d-block"><?php _e('header.pdf_organizer_desc'); ?></small>
+              </a>
+            </li>
             <li role="separator" class="divider"></li>
             <li>
               <a href="?riso_separator">
