@@ -32,7 +32,9 @@
         "image_processor_desc": "Traitement d'image",
         "auto_tirage": "Auto Tirage",
         "pdf_merge": "Fusionner des PDF",
-        "pdf_merge_desc": "Combiner plusieurs fichiers en un seul"
+        "pdf_merge_desc": "Combiner plusieurs fichiers en un seul",
+        "resizer": "Redimensionner PDF/Images",
+        "resizer_desc": "Adapter au format A4 ou A3"
     },
     "footer": {
         "previous": "Précédent",
@@ -1618,5 +1620,35 @@
         "clear_all": "Tout effacer",
         "merging": "Fusion en cours...",
         "error_min_files": "Veuillez sélectionner au moins deux fichiers pour la fusion."
+    },
+    "resizer": {
+        "title": "Redimensionnement A4/A3",
+        "subtitle": "Adapter vos documents aux formats d'impression standards",
+        "upload_file": "Télécharger un fichier PDF ou Image",
+        "file_placeholder": "Choisir un fichier",
+        "process": "Redimensionner",
+        "download_result": "Télécharger le fichier redimensionné",
+        "drag_drop": "Glissez votre fichier ici",
+        "click_select": "ou cliquez pour sélectionner un fichier",
+        "target_format": "Format cible",
+        "mode": "Mode de redimensionnement",
+        "orientation": "Orientation",
+        "alignment": "Alignement",
+        "fit": "Ajuster (tout voir)",
+        "fill": "Remplir et Rogner (sans bandes blanches)",
+        "center": "Taille réelle et Centrer",
+        "auto": "Automatique (détecter)",
+        "portrait": "Portrait",
+        "landscape": "Paysage",
+        "centered": "Centré",
+        "top_left": "En haut à gauche",
+        "bottom_right": "En bas à droite",
+        "processing": "Redimensionnement en cours...",
+        "success": "Fichier redimensionné avec succès !",
+        "how_it_works": "Comment ça marche ?",
+        "how_it_works_desc": "Cet outil traite vos PDFs et images pour les adapter au format choisi :",
+        "all_pages": "Toutes les pages : Chaque page du PDF est traitée.",
+        "margins": "Marges : L'outil centre automatiquement le contenu.",
+        "quality": "Qualité : Les images sont traitées en haute résolution (300 DPI)."
     }
 }

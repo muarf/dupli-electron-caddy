@@ -164,6 +164,13 @@
                 <small class="text-muted d-block"><?php _e('header.pdf_merge_desc'); ?></small>
               </a>
             </li>
+            <li>
+              <a href="?resizer">
+                <i class="fa fa-expand" style="color: #f8b195; margin-right: 8px;"></i>
+                <strong><?php _e('header.resizer'); ?></strong>
+                <small class="text-muted d-block"><?php _e('header.resizer_desc'); ?></small>
+              </a>
+            </li>
             <li role="separator" class="divider"></li>
             <li>
               <a href="?riso_separator">
