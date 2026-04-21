@@ -292,6 +292,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $updates[] = "color_mode = ?";
                     $params[] = $isGrayscale ? 'Monochrome' : 'Color';
                 }
+                if (isset($input['total_pages'])) {
+                    $updates[] = "total_pages = ?";
+                    $params[] = intval($input['total_pages']);
+                }
                 
                 if (!empty($updates)) {
                     $params[] = $id;

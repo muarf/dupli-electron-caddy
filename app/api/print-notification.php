@@ -74,17 +74,32 @@ try {
         exit;
     }
 
-    // 0b. Vérifier si le job est déjà dans print_jobs (non validé) pour éviter les doublons de détection simultanée
-    $checkPendingSql = "SELECT 1 FROM print_jobs WHERE job_id = ? AND created_at > datetime('now', '-5 minutes')";
+    // 0b. Vérifier si le job est déjà dans print_jobs (non validé)
+    // MODIF: Autoriser mise à jour si on a des meilleures données (fillRate > 0 ou thumbnail)
+    $checkPendingSql = "SELECT id, fill_rate, thumbnail_url FROM print_jobs WHERE job_id = ? AND created_at > datetime('now', '-5 minutes')";
     $checkPendingParams = [strval($data['jobId'])];
     if ($platform !== 'linux') {
         $checkPendingSql .= " AND printer_name = ?";
         $checkPendingParams[] = $data['printerName'];
     }
     
-    if ($db->selectOne($checkPendingSql, $checkPendingParams)) {
-        echo json_encode(['success' => true, 'message' => 'Job déjà en attente, ignoré']);
-        exit;
+    $existingJob = $db->selectOne($checkPendingSql, $checkPendingParams);
+    
+    if ($existingJob) {
+        // Vérifier si les nouvelles données sont "meilleures" (contiennent analyse)
+        $newHasFillRate = isset($data['fillRate']) && $data['fillRate'] > 0;
+        $newHasThumbnail = isset($data['thumbnailUrl']) && !empty($data['thumbnailUrl']);
+        $existingHasFillRate = isset($existingJob['fill_rate']) && $existingJob['fill_rate'] > 0;
+        $existingHasThumbnail = !empty($existingJob['thumbnail_url']);
+        
+        $hasBetterData = ($newHasFillRate && !$existingHasFillRate) || 
+                         ($newHasThumbnail && !$existingHasThumbnail);
+        
+        if (!$hasBetterData) {
+            echo json_encode(['success' => true, 'message' => 'Job déjà en attente sans nouvelles données, ignoré']);
+            exit;
+        }
+        // Si meilleures données dispo, on continue pour faire UPDATE
     }
 
     // Vérifier si la table existe, sinon la créer
@@ -132,32 +147,74 @@ try {
     $documentFull = $data['document'];
     $documentDisplay = basename($data['document']); // Extrait toujours le nom de fichier
     
-    // Insérer ou mettre à jour le job d'impression
-    $db->execute("
-        INSERT OR REPLACE INTO print_jobs 
-        (job_id, document, document_full_path, document_display_name, owner, printer_name, status, pages_printed, total_pages, size, time_submitted, event_type, timestamp, fill_rate, color_mode, duplex, thumbnail_url, paper_size, copies)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ", [
-        $data['jobId'],
-        $documentDisplay,              // 'document' contient maintenant le nom court (rétrocompatibilité)
-        $documentFull,                 // 'document_full_path' garde le chemin complet (trace)
-        $documentDisplay,              // 'document_display_name' pour l'affichage UI
-        $data['owner'] ?? null,
-        $data['printerName'],
-        $data['status'],
-        $data['pagesPrinted'] ?? 0,
-        $data['totalPages'] ?? 0,
-        $data['size'] ?? 0,
-        $data['timeSubmitted'] ?? null,
-        $data['eventType'] ?? 'unknown',
-        $data['timestamp'],
-        $data['fillRate'] ?? 0,
-        $data['colorMode'] ?? 'unknown',
-        isset($data['duplex']) ? ($data['duplex'] ? 1 : 0) : 0,
-        $data['thumbnailUrl'] ?? '',
-        $data['paperSize'] ?? '',
-        $data['copies'] ?? 1
-    ]);
+    // Vérifier si job existe déjà (pour UPDATE au lieu de INSERT)
+    $existingJobId = $db->selectOne(
+        "SELECT id FROM print_jobs WHERE job_id = ? AND printer_name = ?",
+        [strval($data['jobId']), $data['printerName']]
+    );
+    
+    if ($existingJobId) {
+        // UPDATE si job existe déjà (préserve le timestamp original)
+        $db->execute("
+            UPDATE print_jobs SET
+                document = ?,
+                document_full_path = ?,
+                document_display_name = ?,
+                status = ?,
+                pages_printed = ?,
+                total_pages = ?,
+                size = ?,
+                fill_rate = COALESCE(NULLIF(?, 0), fill_rate),
+                color_mode = COALESCE(NULLIF(?, 'unknown'), color_mode),
+                duplex = ?,
+                thumbnail_url = COALESCE(NULLIF(?, ''), thumbnail_url),
+                paper_size = ?,
+                copies = ?
+            WHERE id = ?
+        ", [
+            $documentDisplay,
+            $documentFull,
+            $documentDisplay,
+            $data['status'],
+            $data['pagesPrinted'] ?? 0,
+            $data['totalPages'] ?? 0,
+            $data['size'] ?? 0,
+            $data['fillRate'] ?? 0,
+            $data['colorMode'] ?? 'unknown',
+            isset($data['duplex']) ? ($data['duplex'] ? 1 : 0) : 0,
+            $data['thumbnailUrl'] ?? '',
+            $data['paperSize'] ?? '',
+            $data['copies'] ?? 1,
+            $existingJobId['id']
+        ]);
+    } else {
+        // INSERT nouveau job
+        $db->execute("
+            INSERT INTO print_jobs 
+            (job_id, document, document_full_path, document_display_name, owner, printer_name, status, pages_printed, total_pages, size, time_submitted, event_type, timestamp, fill_rate, color_mode, duplex, thumbnail_url, paper_size, copies)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ", [
+            $data['jobId'],
+            $documentDisplay,
+            $documentFull,
+            $documentDisplay,
+            $data['owner'] ?? null,
+            $data['printerName'],
+            $data['status'],
+            $data['pagesPrinted'] ?? 0,
+            $data['totalPages'] ?? 0,
+            $data['size'] ?? 0,
+            $data['timeSubmitted'] ?? null,
+            $data['eventType'] ?? 'unknown',
+            $data['timestamp'],
+            $data['fillRate'] ?? 0,
+            $data['colorMode'] ?? 'unknown',
+            isset($data['duplex']) ? ($data['duplex'] ? 1 : 0) : 0,
+            $data['thumbnailUrl'] ?? '',
+            $data['paperSize'] ?? '',
+            $data['copies'] ?? 1
+        ]);
+    }
 
     // Log pour le débogage (optionnel)
     error_log(sprintf(
