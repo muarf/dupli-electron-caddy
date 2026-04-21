@@ -25,7 +25,33 @@
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "wininet.lib")
 
-// Global debug file path
+// Forward declarations
+std::string LPWSTRToUTF8(LPWSTR lpwstr);
+std::wstring ToWString(const std::string &str);
+void LogDebug(const std::string &msg);
+
+// Helper: Enable "Keep Printed Jobs" on a printer
+void EnsureKeepPrintedJobs(HANDLE hPrinter) {
+  DWORD needed;
+  GetPrinterW(hPrinter, 2, NULL, 0, &needed);
+  if (needed > 0) {
+    std::vector<BYTE> buffer(needed);
+    if (GetPrinterW(hPrinter, 2, buffer.data(), needed, &needed)) {
+      PRINTER_INFO_2W *pInfo = (PRINTER_INFO_2W *)buffer.data();
+      if (!(pInfo->Attributes & PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS)) {
+        pInfo->Attributes |= PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS;
+        if (!SetPrinterW(hPrinter, 2, (LPBYTE)pInfo, 0)) {
+          LogDebug("Failed to set PRINTER_ATTRIBUTE_KEEPPRINTEDJOBS. Error: " +
+                   std::to_string(GetLastError()));
+        } else {
+          LogDebug("Successfully enabled KEEPPRINTEDJOBS for printer: " +
+                   LPWSTRToUTF8(pInfo->pPrinterName));
+        }
+      }
+    }
+  }
+}
+
 // Global debug file path
 const std::string DEBUG_LOG_PATH =
     "C:\\Users\\Dupli\\AppData\\Local\\Programs\\dupli-electron-"
@@ -38,6 +64,8 @@ void LogDebug(const std::string &message) {
     logFile.close();
   }
 }
+
+// Struct JobDetails is defined in win32-printer.h
 
 // Cache structure for SPL analysis results
 struct SplAnalysisCache {
@@ -59,12 +87,6 @@ struct EmfConversionResult {
 // Global cache for SPL analysis
 std::map<std::string, SplAnalysisCache> splAnalysisCache;
 
-// --- Helpers ---
-
-Napi::String StringToNapiString(Napi::Env env, const std::string &str) {
-  return Napi::String::New(env, str.c_str());
-}
-
 std::string LPWSTRToUTF8(LPWSTR lpwstr) {
   if (lpwstr == nullptr) return "";
   int size_needed = WideCharToMultiByte(CP_UTF8, 0, lpwstr, -1, NULL, 0, NULL, NULL);
@@ -81,12 +103,21 @@ std::wstring ToWString(const std::string &str) {
   return wstrTo;
 }
 
+Napi::String StringToNapiString(Napi::Env env, const std::string &str) {
+  return Napi::String::New(env, str.c_str());
+}
+
+// Forward declaration for logging
+void LogDebug(const std::string &msg);
+
 // --- MonitorWorker Implementation ---
 
 void MonitorWorker::Execute(const ExecutionProgress &progress) {
   // Store previously seen jobs with their status and page count
-  // Key: printerName_jobId, Value: "status_totalPages" string
+  // Key: jobUuid, Value: "state" string
   std::map<std::string, std::string> seenJobStates;
+  // Track jobs that reached stable state (SPOOLING=0) and were reported final
+  std::set<std::string> finalJobs;
 
   while (!stopRequested_) {
     // Enumerate all printers
@@ -96,7 +127,7 @@ void MonitorWorker::Execute(const ExecutionProgress &progress) {
 
     if (needed > 0) {
       std::vector<BYTE> buffer(needed);
-if (EnumPrintersW(PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS, NULL, 2,
+      if (EnumPrintersW(PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS, NULL, 2,
                         buffer.data(), needed, &needed, &returned)) {
         PRINTER_INFO_2W *printers = (PRINTER_INFO_2W *)buffer.data();
 
@@ -105,13 +136,16 @@ if (EnumPrintersW(PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS, NULL, 2,
           HANDLE hPrinter;
 
           if (OpenPrinterW(printers[i].pPrinterName, &hPrinter, NULL)) {
+            // Ensure printer keeps jobs so we can analyze them even if they are fast
+            EnsureKeepPrintedJobs(hPrinter);
+
             DWORD jobNeeded, jobReturned;
             EnumJobsW(hPrinter, 0, 100, 2, NULL, 0, &jobNeeded, &jobReturned);
 
             if (jobNeeded > 0) {
               std::vector<BYTE> jobBuffer(jobNeeded);
               if (EnumJobsW(hPrinter, 0, 100, 2, jobBuffer.data(), jobNeeded,
-                           &jobNeeded, &jobReturned)) {
+                           &jobReturned, &jobReturned)) { // System API wants both but we use jobReturned
                 JOB_INFO_2W *jobs = (JOB_INFO_2W *)jobBuffer.data();
 
                 for (DWORD j = 0; j < jobReturned; j++) {
@@ -120,25 +154,41 @@ if (EnumPrintersW(PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS, NULL, 2,
                   // Get full job details to determine current state
                   JobDetails details = GetJobInfo(hPrinter, jobId);
 
-                  // Create a key and state string for this job
-                  std::string jobKey =
-                      printerName + "_" + std::to_string(jobId);
+                  // Create a truly unique key for this job (Printer_ID_StartTime)
+                  std::string jobKey = details.jobUuid;
+                  
+                  // Construct a state string to detect changes
                   std::string currentState =
-                      details.statusStr + "_" +
-                      std::to_string(details.totalPages) + "_" +
-                      std::to_string(details.fillRate) + "_" +
                       details.statusStr + "_" +
                       std::to_string(details.totalPages) + "_" +
                       std::to_string(details.fillRate) + "_" +
                       std::to_string(details.isGrayscale) + "_" +
                       details.thumbnailUrl;
 
-                  // Report if this is a new job OR if state changed (status or
-                  // page count)
-                  if (seenJobStates.find(jobKey) == seenJobStates.end() ||
-                      seenJobStates[jobKey] != currentState) {
+                  // Report if this is a new job OR if state changed
+                  bool isNew = (seenJobStates.find(jobKey) == seenJobStates.end());
+                  bool hasChanged = !isNew && (seenJobStates[jobKey] != currentState);
+
+                  if (isNew || hasChanged) {
                     seenJobStates[jobKey] = currentState;
-                    progress.Send(&details, 1);
+
+                    std::vector<JobDetails> data;
+                    data.push_back(details);
+                    progress.Send(data.data(), data.size());
+                  }
+
+                  // If job is STABLE (not spooling) and NOT yet finalized and NOT printing
+                  // We treat it as finished and delete it from spooler to cleanup
+                  if (details.statusStr != "Spooling" && details.statusStr != "Printing" &&
+                      finalJobs.find(jobKey) == finalJobs.end() && details.totalPages > 0) {
+                    
+                    LogDebug("Job " + jobKey + " is stable. Requesting SPOOLER DELETE.");
+                    if (SetJob(hPrinter, jobId, 0, NULL, JOB_CONTROL_DELETE)) {
+                        finalJobs.insert(jobKey);
+                        LogDebug("Successfully deleted job " + jobKey + " from Windows spooler.");
+                    } else {
+                        LogDebug("Failed to delete job " + jobKey + ". Error: " + std::to_string(GetLastError()));
+                    }
                   }
                 }
               }
@@ -149,8 +199,7 @@ if (EnumPrintersW(PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS, NULL, 2,
       }
     }
 
-    // Poll every 100ms (faster to catch page count updates before job
-    // disappears)
+    // Poll every 100ms
     Sleep(100);
   }
 }
@@ -1200,12 +1249,22 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
         isGrayscale = cached.isGrayscale;
         fillRate = cached.fillRate;
         thumbnailUrl = cached.thumbnailUrl;
-        totalPages = cached.totalPages;
+        
+        // Re-apply correction even on cache hits: 
+        // If Windows reports N pages (totalPages > 0) and cache says N+1, keep Windows value.
+        if (totalPages > 0 && cached.totalPages == totalPages + 1) {
+            LogDebug("Correcting cached page count: trust Windows (" + std::to_string(totalPages) + 
+                     ") over cached analysis (" + std::to_string(cached.totalPages) + ")");
+            // totalPages remains the Windows count (input)
+        } else {
+            totalPages = cached.totalPages;
+        }
+
         LogDebug("AnalyzeSpoolFile: Using cached result (Size unchanged: " +
                  std::to_string(currentSize) +
                  ") - Grayscale=" + std::to_string(isGrayscale) +
                  ", FillRate=" + std::to_string(fillRate) +
-                 ", totalPages=" + std::to_string(totalPages));
+                 ", final totalPages=" + std::to_string(totalPages));
         return;
       } else {
         LogDebug("AnalyzeSpoolFile: File Grew (" +
@@ -1327,8 +1386,16 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
   
   // Use detected page count from PHP API if available, otherwise use analyzed count
   if (conversion.totalPages > 0) {
-    totalPages = conversion.totalPages;
-    LogDebug("Using detected totalPages from PHP API: " + std::to_string(totalPages));
+    // If we have a valid Windows count (passed in totalPages) and PHP analysis
+    // finds more pages, we trust the Windows count if it's the 31 vs 30 case
+    if (totalPages > 0 && conversion.totalPages == totalPages + 1) {
+      LogDebug("Correcting page count: trust Windows (" + std::to_string(totalPages) + 
+               ") over analysis (" + std::to_string(conversion.totalPages) + ")");
+      // Keep totalPages as is (the Windows count)
+    } else {
+      totalPages = conversion.totalPages;
+      LogDebug("Using detected totalPages from PHP API: " + std::to_string(totalPages));
+    }
   } else if (pagesAnalyzed > 0) {
     totalPages = (DWORD)pagesAnalyzed;
     LogDebug("Using analyzed page count: " + std::to_string(totalPages));
@@ -1461,6 +1528,14 @@ JobDetails MonitorWorker::GetJobInfo(HANDLE hPrinter, DWORD jobId) {
     details.isGrayscale = false; // Assume color if driver says so
   }
 
+  // Generate unique UUID
+  details.jobUuid = details.printerName + "_" + std::to_string(jobId) + "_" + details.timeSubmitted;
+  // Sanitize UUID (replace spaces with underscores)
+  for (size_t i = 0; i < details.jobUuid.length(); ++i) {
+    if (details.jobUuid[i] == ' ') details.jobUuid[i] = '_';
+    if (details.jobUuid[i] == ':') details.jobUuid[i] = '-';
+  }
+
   // Analyze spool file for ACTUAL color content and fill rate
   // Analyze spool file for ACTUAL color content and fill rate
   // This will overwrite isGrayscale ONLY if analysis succeeds.
@@ -1473,26 +1548,28 @@ JobDetails MonitorWorker::GetJobInfo(HANDLE hPrinter, DWORD jobId) {
 }
 
 void MonitorWorker::OnProgress(const JobDetails *data, size_t count) {
-  Napi::HandleScope scope(env_);
+  Napi::Env env = this->Env();
+  Napi::HandleScope scope(env);
 
   for (size_t i = 0; i < count; i++) {
-    Napi::Object obj = Napi::Object::New(env_);
-    obj.Set("jobId", Napi::Number::New(env_, data[i].jobId));
-    obj.Set("printerName", StringToNapiString(env_, data[i].printerName));
-    obj.Set("documentName", StringToNapiString(env_, data[i].documentName));
-    obj.Set("status", StringToNapiString(env_, data[i].statusStr));
-    obj.Set("paperSize", Napi::Number::New(env_, data[i].paperSize));
-    obj.Set("duplex", Napi::Number::New(env_, data[i].duplex));
-    obj.Set("color", Napi::Number::New(env_, data[i].color));
-    obj.Set("totalPages", Napi::Number::New(env_, data[i].totalPages));
-    obj.Set("copies", Napi::Number::New(env_, data[i].copies));
-    obj.Set("icmMethod", Napi::Number::New(env_, data[i].icmMethod));
-    obj.Set("isGrayscale", Napi::Boolean::New(env_, data[i].isGrayscale));
-    obj.Set("fillRate", Napi::Number::New(env_, data[i].fillRate));
-    obj.Set("thumbnailUrl", StringToNapiString(env_, data[i].thumbnailUrl));
-    obj.Set("timeSubmitted", StringToNapiString(env_, data[i].timeSubmitted));
+    Napi::Object obj = Napi::Object::New(env);
+    obj.Set("jobId", Napi::Number::New(env, data[i].jobId));
+    obj.Set("jobUuid", StringToNapiString(env, data[i].jobUuid));
+    obj.Set("printerName", StringToNapiString(env, data[i].printerName));
+    obj.Set("documentName", StringToNapiString(env, data[i].documentName));
+    obj.Set("status", StringToNapiString(env, data[i].statusStr));
+    obj.Set("paperSize", Napi::Number::New(env, data[i].paperSize));
+    obj.Set("duplex", Napi::Number::New(env, data[i].duplex));
+    obj.Set("color", Napi::Number::New(env, data[i].color));
+    obj.Set("totalPages", Napi::Number::New(env, data[i].totalPages));
+    obj.Set("copies", Napi::Number::New(env, data[i].copies));
+    obj.Set("icmMethod", Napi::Number::New(env, data[i].icmMethod));
+    obj.Set("isGrayscale", Napi::Boolean::New(env, data[i].isGrayscale));
+    obj.Set("fillRate", Napi::Number::New(env, data[i].fillRate));
+    obj.Set("thumbnailUrl", StringToNapiString(env, data[i].thumbnailUrl));
+    obj.Set("timeSubmitted", StringToNapiString(env, data[i].timeSubmitted));
 
-    Callback().Call({Napi::String::New(env_, "job"), obj});
+    Callback().Call({Napi::String::New(env, "job"), obj});
   }
 }
 
