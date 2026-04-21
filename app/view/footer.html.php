@@ -39,7 +39,8 @@ if (file_exists($print_modal_path)) {
 ?>
 
 <!-- Print Session Manager - Toast Notifications CSS -->
-<link href="public/css/toast-notifications.css" rel="stylesheet" type="text/css">
+<?php $base_path = $base_path ?? (defined('BASE_PATH') ? BASE_PATH : ''); ?>
+<link href="<?= $base_path ?>css/toast-notifications.css" rel="stylesheet" type="text/css">
 
 <!-- Global Utility & Print Session Manager -->
 <script>
@@ -150,4 +151,4 @@ if (file_exists($print_modal_path)) {
         });
     }
 </script>
-<script src="public/js/print-session-manager.js"></script>
+<script src="<?= $base_path ?>js/print-session-manager.js"></script>

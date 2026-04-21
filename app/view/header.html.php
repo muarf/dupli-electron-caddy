@@ -1,5 +1,6 @@
 <!-- CSS pour l'édition inline des traductions -->
-<link rel="stylesheet" href="public/css/inline-translation.css">
+<?php $base_path = $base_path ?? ''; ?>
+<link rel="stylesheet" href="<?= $base_path ?>css/inline-translation.css">
 
 <style>
   .navbar-brand {
@@ -245,7 +246,7 @@
 </div>
 
 <!-- Auto-updater UI (Electron uniquement - ne s'active pas en mode PHP standalone) -->
-<script src="public/js/updater-ui.js"></script>
+<script src="<?= $base_path ?>js/updater-ui.js"></script>
 
 <!-- JavaScript pour l'édition inline des traductions -->
-<script src="public/js/inline-translation.js"></script>
+<script src="<?= $base_path ?>js/inline-translation.js"></script>

@@ -33,12 +33,12 @@ function get_linux_distro_info(): string
  */
 function get_package_install_help(string $type, string $pkg_key, string $distro): string
 {
-    $commands = [
-        'debian' => ['pref' => 'sudo apt-get install ', 'ext_prefix' => 'php-'],
-        'fedora' => ['pref' => 'sudo dnf install ', 'ext_prefix' => 'php-'],
-        'arch' => ['pref' => 'sudo pacman -S ', 'ext_prefix' => 'php-'],
+$commands = [
+        'debian' => ['pref' => 'sudo apt-get install -y ', 'ext_prefix' => 'php8.5-'],
+        'fedora' => ['pref' => 'sudo dnf install -y ', 'ext_prefix' => 'php-'],
+        'arch' => ['pref' => 'sudo pacman -S --noconfirm ', 'ext_prefix' => 'php-'],
         'windows' => ['pref' => 'Activez dans php.ini : ', 'ext_prefix' => 'php_'],
-        'unknown' => ['pref' => 'Installez ', 'ext_prefix' => 'php-']
+        'unknown' => ['pref' => 'sudo apt-get install -y ', 'ext_prefix' => 'php-']
     ];
 
     if (PHP_OS_FAMILY === 'Windows') {
@@ -50,10 +50,18 @@ function get_package_install_help(string $type, string $pkg_key, string $distro)
     if ($type === 'bin') {
         $bins = [
             'ghostscript' => 'ghostscript',
-            'imagemagick' => 'imagemagick'
+            'imagemagick' => 'imagemagick',
+            'gpcl6' => 'ghostscript',
+            'gxps' => 'libgxps-utils'
         ];
         if ($distro === 'windows') {
             return "Téléchargez et installez " . ($bins[$pkg_key] ?? $pkg_key);
+        }
+        if ($distro === 'debian') {
+            if ($pkg_key === 'gxps') return 'sudo apt-get install -y libgxps-utils';
+            if ($pkg_key === 'gpcl6') return 'sudo apt-get install -y ghostscript (inclut gpcl6)';
+            if ($pkg_key === 'ghostscript') return 'sudo apt-get install -y ghostscript';
+            if ($pkg_key === 'imagemagick') return 'sudo apt-get install -y imagemagick';
         }
         return $d['pref'] . ($bins[$pkg_key] ?? $pkg_key);
     }
@@ -80,11 +88,11 @@ function get_aggregated_install_command(array $packages): string
     }
 
     $commands = [
-        'debian' => ['pref' => 'sudo apt-get install -y ', 'ext_prefix' => 'php-'],
+        'debian' => ['pref' => 'sudo apt-get install -y ', 'ext_prefix' => 'php8.5-'],
         'fedora' => ['pref' => 'sudo dnf install -y ', 'ext_prefix' => 'php-'],
         'arch' => ['pref' => 'sudo pacman -S --noconfirm ', 'ext_prefix' => 'php-'],
         'windows' => ['pref' => 'Modules à activer : ', 'ext_prefix' => 'extension='],
-        'unknown' => ['pref' => 'sudo apt-get install ', 'ext_prefix' => 'php-']
+        'unknown' => ['pref' => 'sudo apt-get install -y ', 'ext_prefix' => 'php-']
     ];
 
     // Sur PHP Windows "unknown" (souvent serveur mutualisé ou IIS), on ne propose pas sudo
@@ -96,7 +104,9 @@ function get_aggregated_install_command(array $packages): string
     
     $bins = [
         'ghostscript' => 'ghostscript',
-        'imagemagick' => 'imagemagick'
+        'imagemagick' => 'imagemagick',
+        'gpcl6' => 'ghostscript',
+        'gxps' => 'libgxps-utils'
     ];
     
     $exts = [
@@ -148,16 +158,16 @@ function check_system_dependencies(): array
                 'status' => false,
                 'version' => null,
                 'path' => null,
-                'critical' => true,
-                'help' => 'Nécessaire pour les imprimantes Kyocera/PCL'
+                'critical' => false,
+                'help' => 'Inclut dans ghostscript (sudo apt-get install -y ghostscript). Optionnel pour imprimantes Kyocera PCL.'
             ],
             'gxps' => [
                 'name' => 'GhostXPS (gxps)',
                 'status' => false,
                 'version' => null,
                 'path' => null,
-                'critical' => true,
-                'help' => 'Nécessaire pour les fichiers XPS'
+                'critical' => false,
+                'help' => 'sudo apt-get install -y libgxps-utils'
             ],
             'imagemagick' => [
                 'name' => 'ImageMagick',
@@ -182,24 +192,24 @@ function check_system_dependencies(): array
     $results['php_extensions'] = [
         'imagick' => [
             'name' => 'PHP Imagick', 
-            'status' => extension_loaded('imagick'), 
+            'status' => extension_loaded('imagick') || shell_exec('php8.5 -m 2>/dev/null | grep imagick'),
             'critical' => true, 
-            'help' => $is_electron_windows ? 'Téléchargez php_imagick.dll et activez "extension=imagick" dans ' . $php_ini_path : get_package_install_help('ext', 'imagick', $distro)
+            'help' => $is_electron_windows ? 'Téléchargez php_imagick.dll et activez "extension=imagick" dans ' . $php_ini_path : 'sudo apt-get install -y php8.5-imagick (ou vérifiez php8.5)'
         ],
         'gd' => [
             'name' => 'PHP GD', 
-            'status' => extension_loaded('gd'), 
+            'status' => extension_loaded('gd') || shell_exec('php8.5 -m 2>/dev/null | grep gd'),
             'critical' => true, 
-            'help' => $is_electron_windows ? 'Décommentez "extension=gd" dans ' . $php_ini_path : get_package_install_help('ext', 'gd', $distro)
+            'help' => $is_electron_windows ? 'Décommentez "extension=gd" dans ' . $php_ini_path : 'sudo apt-get install -y php8.5-gd (ou vérifiez php8.5)'
         ],
         'sqlite3' => [
             'name' => 'PHP SQLite3', 
-            'status' => extension_loaded('sqlite3'), 
+            'status' => extension_loaded('sqlite3') || shell_exec('php8.5 -m 2>/dev/null | grep sqlite3'),
             'critical' => true, 
-            'help' => $is_electron_windows ? 'Décommentez "extension=sqlite3" dans ' . $php_ini_path : get_package_install_help('ext', 'sqlite3', $distro)
+            'help' => $is_electron_windows ? 'Décommentez "extension=sqlite3" dans ' . $php_ini_path : 'sudo apt-get install -y php8.5-sqlite3 (ou vérifiez php8.5)'
         ],
-        'mbstring' => ['name' => 'PHP Mbstring', 'status' => extension_loaded('mbstring'), 'critical' => true, 'help' => get_package_install_help('ext', 'mbstring', $distro)],
-        'xml' => ['name' => 'PHP XML', 'status' => extension_loaded('xml'), 'critical' => true, 'help' => get_package_install_help('ext', 'xml', $distro)],
+        'mbstring' => ['name' => 'PHP Mbstring', 'status' => extension_loaded('mbstring') || shell_exec('php8.5 -m 2>/dev/null | grep mbstring'), 'critical' => true, 'help' => 'sudo apt-get install -y php8.5-mbstring'],
+        'xml' => ['name' => 'PHP XML', 'status' => extension_loaded('xml') || shell_exec('php8.5 -m 2>/dev/null | grep -E "xml|SimpleXML"'), 'critical' => true, 'help' => 'sudo apt-get install -y php8.5-xml'],
     ];
 
     // === Vérifier Ghostscript ===
@@ -232,12 +242,17 @@ function check_system_dependencies(): array
         }
     }
 
-    // === Vérifier GhostPCL (gpcl6) ===
+    // === Vérifier GhostPCL (gpcl6) - souvent inclus dans ghostscript ===
     $gpcl_local_path = realpath(__DIR__ . '/../../../bin/win-x64/' . ($is_windows ? 'gpcl6.exe' : 'gpcl6'));
     if ($gpcl_local_path && file_exists($gpcl_local_path)) {
         $results['dependencies']['gpcl6']['status'] = true;
         $results['dependencies']['gpcl6']['path'] = $gpcl_local_path;
         $results['dependencies']['gpcl6']['version'] = trim(shell_exec(escapeshellarg($gpcl_local_path) . " -v 2>&1"));
+    } elseif ($results['dependencies']['ghostscript']['status'] && !$is_windows) {
+        // Sur Linux, gpcl6 est inclus dans ghostscript
+        $results['dependencies']['gpcl6']['status'] = true;
+        $results['dependencies']['gpcl6']['path'] = $results['dependencies']['ghostscript']['path'];
+        $results['dependencies']['gpcl6']['version'] = $results['dependencies']['ghostscript']['version'];
     }
 
     // === Vérifier GhostXPS (gxps) ===
@@ -246,6 +261,14 @@ function check_system_dependencies(): array
         $results['dependencies']['gxps']['status'] = true;
         $results['dependencies']['gxps']['path'] = $gxps_local_path;
         $results['dependencies']['gxps']['version'] = trim(shell_exec(escapeshellarg($gxps_local_path) . " -v 2>&1"));
+    } elseif ($results['dependencies']['ghostscript']['status'] && !$is_windows) {
+        // Vérifier si libgxps-utils est installé
+        $gxps_check = trim(shell_exec('which xpstops 2>/dev/null'));
+        if ($gxps_check) {
+            $results['dependencies']['gxps']['status'] = true;
+            $results['dependencies']['gxps']['path'] = $gxps_check;
+            $results['dependencies']['gxps']['version'] = 'xpstops (libgxps-utils)';
+        }
     }
 
     // === Vérifier ImageMagick ===

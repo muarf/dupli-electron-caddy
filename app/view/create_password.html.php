@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Création du mot de passe administrateur - Dupli</title>
-    <link href="public/css/bootstrap.css" rel="stylesheet" type="text/css">
-    <link href="public/css/font-awesome.min.css" rel="stylesheet" type="text/css">
-    <script src="public/js/jquery.min.js"></script>
-    <script src="public/js/bootstrap.min.js"></script>
+    <link href="<?= $base_path ?>css/bootstrap.css" rel="stylesheet" type="text/css">
+    <link href="<?= $base_path ?>css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <script src="<?= $base_path ?>js/jquery.min.js"></script>
+    <script src="<?= $base_path ?>js/bootstrap.min.js"></script>
     <style>
         .password-container {
             max-width: 600px;

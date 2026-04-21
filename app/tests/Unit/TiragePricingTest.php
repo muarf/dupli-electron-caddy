@@ -4,7 +4,19 @@ beforeAll(function () {
     $_SERVER['REQUEST_METHOD'] = $_SERVER['REQUEST_METHOD'] ?? 'GET';
     $_GET = [];
     require_once __DIR__ . '/../../controler/functions/paths.php';
-require_once __DIR__ . '/../../models/tirage_multimachines.php';
+    
+    [$dbPath, $pdo] = create_test_sqlite_database();
+    configure_sqlite_conf($dbPath);
+    
+    $pdo->exec('CREATE TABLE IF NOT EXISTS photocopieurs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        marque TEXT,
+        modele TEXT,
+        type_encre TEXT,
+        actif INTEGER
+    )');
+    
+    require_once __DIR__ . '/../../models/tirage_multimachines.php';
 });
 
 it('calcule le coût par page toner couleur en tenant compte du taux de remplissage', function () {

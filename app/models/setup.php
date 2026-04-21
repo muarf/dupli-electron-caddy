@@ -28,14 +28,22 @@ function Action($conf = null){
     // Message de succès après upload
     $success = isset($_GET['upload_success']) ? "Base de données restaurée avec succès !" : null;
     
+    // Détecter si mode standalone (pas Electron)
+    $is_standalone = !isset($_SERVER['ELECTRON_RUNNING']) && php_sapi_name() === 'cli-server';
+    $base_path = $is_standalone ? '' : 'public/';
+    
     $result = array(
         'step' => 'setup',
         'mode' => $mode,
         'errors' => $errors,
-        'success' => $success
+        'success' => $success,
+        'base_path' => $base_path
     );
     
-    return template("../view/setup.html.php", $result);
+    // Rendu direct sans template() pour éviter double encapsulation HTML
+    extract($result);
+    include(__DIR__ . '/../view/setup.html.php');
+    return '';
 }
 }
 ?>
