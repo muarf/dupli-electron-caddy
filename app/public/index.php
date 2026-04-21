@@ -334,24 +334,32 @@ if ($page === 'download_resized') {
 }
 
 if ($page === 'download_organized') {
+    $session = $_GET['sess'] ?? $_GET['session'] ?? '';
     $file = $_GET['file'] ?? '';
-    if (empty($file)) {
+    
+    if (empty($session) && empty($file)) {
         http_response_code(400);
-        die('Fichier non spécifié');
+        die('Session ou fichier non spécifié');
     }
     
-    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_organizer' . DIRECTORY_SEPARATOR;
-    $filepath = $tmp_dir . basename($file);
+    $tmp_dir = getTmpDir() . DIRECTORY_SEPARATOR . 'duplicator_organizer' . DIRECTORY_SEPARATOR;
     
-    if (file_exists($filepath) && strpos(realpath($filepath), realpath($tmp_dir)) === 0) {
+    if (!empty($session)) {
+        $session_dir = $tmp_dir . $session . DIRECTORY_SEPARATOR;
+        $filepath = $session_dir . 'output.pdf';
+    } else {
+        $filepath = $tmp_dir . basename($file);
+    }
+    
+    if (file_exists($filepath)) {
         header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="' . basename($file) . '"');
+        header('Content-Disposition: attachment; filename="organized.pdf"');
         header('Content-Length: ' . filesize($filepath));
         readfile($filepath);
         exit;
     } else {
         http_response_code(404);
-        die('Fichier non trouvé');
+        die('Fichier non trouvé: ' . $filepath);
     }
 }
 
@@ -363,8 +371,15 @@ if ($page === 'organizer_thumb') {
         die('Paramètres manquants');
     }
     
-    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_organizer' . DIRECTORY_SEPARATOR . $sess . DIRECTORY_SEPARATOR;
-    $filepath = $tmp_dir . basename($file);
+    // Utiliser getTmpDir() pour la cohérence avec l'upload
+    $tmp_dir = getTmpDir() . DIRECTORY_SEPARATOR . 'duplicator_organizer' . DIRECTORY_SEPARATOR . $sess . DIRECTORY_SEPARATOR;
+    $thumbs_dir = $tmp_dir . 'thumbs' . DIRECTORY_SEPARATOR;
+    
+    // Chercher dans thumbs/ puis à la racine
+    $filepath = $thumbs_dir . basename($file);
+    if (!file_exists($filepath)) {
+        $filepath = $tmp_dir . basename($file);
+    }
     
     if (file_exists($filepath) && strpos(realpath($filepath), realpath($tmp_dir)) === 0) {
         header('Content-Type: image/png');
@@ -373,7 +388,7 @@ if ($page === 'organizer_thumb') {
         exit;
     } else {
         http_response_code(404);
-        die('Vignette non trouvée');
+        die('Vignette non trouvée: ' . $filepath);
     }
 }
 
@@ -1082,8 +1097,12 @@ if (in_array($page, $page_secure, true)) {
         // Appeler Action() et récupérer le contenu
         $content = Action($conf);
 
+        // Détecter si mode standalone pour les chemins de ressources
+        $is_standalone = !isset($_SERVER['ELECTRON_RUNNING']) && php_sapi_name() === 'cli-server';
+        $base_path = $is_standalone ? '' : 'public/';
+
         // Créer le tableau final en préservant les variables du modèle
-        $array = array('header' => $header, 'footer' => $footer, 'content' => $content);
+        $array = array('header' => $header, 'footer' => $footer, 'content' => $content, 'base_path' => $base_path);
 
         // Si Action() a défini des variables dans $GLOBALS, les ajouter
         if (isset($GLOBALS['model_variables']) && is_array($GLOBALS['model_variables'])) {
