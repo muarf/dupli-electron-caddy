@@ -32,7 +32,9 @@
         "image_processor_desc": "Image Processing",
         "auto_tirage": "Auto Print",
         "pdf_merge": "Merge PDFs",
-        "pdf_merge_desc": "Combine multiple files into one"
+        "pdf_merge_desc": "Combine multiple files into one",
+        "resizer": "Resize PDF/Images",
+        "resizer_desc": "Fit to A4 or A3 format"
     },
     "footer": {
         "previous": "Previous",
@@ -1614,5 +1616,35 @@
         "clear_all": "Clear all",
         "merging": "Merging...",
         "error_min_files": "Please select at least two files for merging."
+    },
+    "resizer": {
+        "title": "A4/A3 Resizing",
+        "subtitle": "Fit your documents to standard printing formats",
+        "upload_file": "Upload a PDF or Image file",
+        "file_placeholder": "Choose a file",
+        "process": "Resize",
+        "download_result": "Download resized file",
+        "drag_drop": "Drag your file here",
+        "click_select": "or click to select a file",
+        "target_format": "Target Format",
+        "mode": "Resizing Mode",
+        "orientation": "Orientation",
+        "alignment": "Alignment",
+        "fit": "Fit (see all)",
+        "fill": "Fill & Crop (no white bands)",
+        "center": "Real size & Center",
+        "auto": "Automatic (detect)",
+        "portrait": "Portrait",
+        "landscape": "Landscape",
+        "centered": "Centered",
+        "top_left": "Top-Left",
+        "bottom_right": "Bottom-Right",
+        "processing": "Resizing in progress...",
+        "success": "File resized successfully!",
+        "how_it_works": "How it works?",
+        "how_it_works_desc": "This tool processes your PDFs and images to fit the chosen format:",
+        "all_pages": "All pages: Each page of the PDF is processed.",
+        "margins": "Margins: The tool automatically centers the content.",
+        "quality": "Quality: Images are processed in high resolution (300 DPI)."
     }
 }
