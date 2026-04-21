@@ -104,6 +104,12 @@ try {
         }
     }
     
+    // Inférence du colorMode si absent
+    $colorModeStr = $data['colorMode'] ?? 'unknown';
+    if (($colorModeStr === 'unknown' || empty($colorModeStr)) && isset($data['isGrayscale'])) {
+        $colorModeStr = $data['isGrayscale'] ? 'Monochrome' : 'Color';
+    }
+    
     $existingJob = $db->selectOne($checkPendingSql, $checkPendingParams);
     
     if ($existingJob) {
@@ -171,7 +177,7 @@ try {
             $data['size'] ?? 0,
             $data['fillRate'] ?? 0,
             $data['fillRate'] ?? 0,
-            $data['colorMode'] ?? 'unknown',
+            $colorModeStr,
             isset($data['duplex']) ? ($data['duplex'] ? 1 : 0) : 0,
             $data['thumbnailUrl'] ?? '',
             $data['paperSize'] ?? '',
@@ -201,7 +207,7 @@ try {
             $data['eventType'] ?? 'unknown',
             $data['timestamp'],
             $data['fillRate'] ?? 0,
-            $data['colorMode'] ?? 'unknown',
+            $colorModeStr,
             isset($data['duplex']) ? ($data['duplex'] ? 1 : 0) : 0,
             $data['thumbnailUrl'] ?? '',
             $data['paperSize'] ?? '',

@@ -30,7 +30,9 @@
         "imposition_book_desc": "Cut & Stack for cutting",
         "image_processor": "Contrast \/ Brightness \/ Bitmap",
         "image_processor_desc": "Image Processing",
-        "auto_tirage": "Auto Print"
+        "auto_tirage": "Auto Print",
+        "pdf_merge": "Merge PDFs",
+        "pdf_merge_desc": "Combine multiple files into one"
     },
     "footer": {
         "previous": "Previous",
@@ -1592,5 +1594,25 @@
         "imposition_tracts": "Flyer Imposition",
         "sending": "Sending...",
         "success": "Print job sent successfully!"
+    },
+    "pdf_merge": {
+        "title": "Merge PDFs",
+        "subtitle": "Combine multiple files into one",
+        "upload_files": "Upload PDF files",
+        "files_placeholder": "Choose PDF files",
+        "process": "Merge PDFs",
+        "download_result": "Download merged PDF",
+        "drag_drop": "Drag your PDFs here",
+        "click_select": "or click to select files",
+        "select_files": "Select PDFs",
+        "file_info": "PDF only – Maximum 50 MB per file",
+        "files_selected": "file(s) selected",
+        "merge_success": "PDFs merged successfully!",
+        "ready_msg": "The merged file is ready for download.",
+        "order_hint": "Drag files to change merging order.",
+        "add_more": "Add more files",
+        "clear_all": "Clear all",
+        "merging": "Merging...",
+        "error_min_files": "Please select at least two files for merging."
     }
 }

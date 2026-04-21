@@ -30,7 +30,9 @@
         "imposition_book_desc": "Cut & Stack pour découpe",
         "image_processor": "Contraste \/ Luminosité \/ Bitmap",
         "image_processor_desc": "Traitement d'image",
-        "auto_tirage": "Auto Tirage"
+        "auto_tirage": "Auto Tirage",
+        "pdf_merge": "Fusionner des PDF",
+        "pdf_merge_desc": "Combiner plusieurs fichiers en un seul"
     },
     "footer": {
         "previous": "Précédent",
@@ -1596,5 +1598,25 @@
         "imposition_tracts": "Imposition Tracts",
         "sending": "Envoi...",
         "success": "Impression lancée avec succès !"
+    },
+    "pdf_merge": {
+        "title": "Fusionner des PDF",
+        "subtitle": "Combiner plusieurs fichiers en un seul",
+        "upload_files": "Télécharger des fichiers PDF",
+        "files_placeholder": "Choisir des fichiers PDF",
+        "process": "Fusionner les PDF",
+        "download_result": "Télécharger le PDF fusionné",
+        "drag_drop": "Glissez vos PDF ici",
+        "click_select": "ou cliquez pour sélectionner des fichiers",
+        "select_files": "Sélectionner des PDF",
+        "file_info": "PDF uniquement – Maximum 50 Mo par fichier",
+        "files_selected": "fichier(s) sélectionné(s)",
+        "merge_success": "PDF fusionnés avec succès !",
+        "ready_msg": "Le fichier fusionné est prêt à être téléchargé.",
+        "order_hint": "Glissez les fichiers pour changer l'ordre de fusion.",
+        "add_more": "Ajouter d'autres fichiers",
+        "clear_all": "Tout effacer",
+        "merging": "Fusion en cours...",
+        "error_min_files": "Veuillez sélectionner au moins deux fichiers pour la fusion."
     }
 }

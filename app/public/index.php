@@ -277,6 +277,34 @@ if ($page === 'download_png') {
     exit;
 }
 
+if ($page === 'download_merged') {
+    $file = $_GET['file'] ?? '';
+    $session = $_GET['session'] ?? '';
+
+    if (empty($file) || empty($session)) {
+        http_response_code(400);
+        die('Paramètres manquants');
+    }
+
+    $tmp_dir = getTmpDir() . DIRECTORY_SEPARATOR . 'duplicator_pdf_merge' . DIRECTORY_SEPARATOR . $session . DIRECTORY_SEPARATOR;
+    $filename = basename($file);
+    $filepath = $tmp_dir . $filename;
+
+    if (!file_exists($filepath) || strpos(realpath($filepath), realpath($tmp_dir)) !== 0) {
+        http_response_code(404);
+        die('Fichier non trouvé ou expiré');
+    }
+
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Length: ' . filesize($filepath));
+    header('Cache-Control: no-cache, must-revalidate');
+    header('Expires: 0');
+
+    readfile($filepath);
+    exit;
+}
+
 if ($page === 'view_pdf') {
     // Inclure le fichier API depuis le dossier api/
     $api_file = __DIR__ . '/../api/view_pdf.php';
@@ -843,7 +871,8 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base', 'accueil', 'devis', 'tirage_multimachines', 'changement', 'admin', 'admin_aide_machines', 'admin_translations', 'installation', 'setup', 'setup_save', 'setup_upload', 'create_password', 'stats', 'imposition', 'imposition_brochure', 'imposition_livre', 'unimpose', 'imposition_tracts', 'png_to_pdf', 'pdf_to_png', 'riso_separator', 'image_processor', 'taux_remplissage', 'aide_machines', 'error', 'lang', 'ajax_edit_tambours', 'ajax_get_tambour_prices', 'download_pdf', 'download_png', 'download_unimposed', 'download_processed', 'download_backup', 'view_pdf', 'get-machine-template', 'upload_aide_pdf', 'view_aide_pdf', 'bibliotheque', 'upload_bibliotheque', 'search_bibliotheque', 'preview_directory', 'index_file', 'start_indexing', 'get_indexing_status', 'delete_bibliotheque_file', 'get_bibliotheque_thumbnail', 'get_bibliotheque_file', 'check_print_jobs', 'print_notification', 'auto_tirage', 'sessions', 'get_session_jobs', 'get_session_staging_jobs', 'get_pending_jobs', 'convert_emf_to_png', 'convert_pcl_to_png', 'convert_xps_to_png', 'secure_purge');
+$page_secure = array('base', 'accueil', 'devis', 'tirage_multimachines', 'changement', 'admin', 'admin_aide_machines', 'admin_translations', 'installation', 'setup', 'setup_save', 'setup_upload', 'create_password', 'stats', 'imposition', 'imposition_brochure', 'imposition_livre', 'unimpose', 'imposition_tracts', 'png_to_pdf', 'pdf_to_png', 'pdf_merge', 'riso_separator', 'image_processor', 'taux_remplissage', 'aide_machines', 'error', 'lang', 'ajax_edit_tambours', 'ajax_get_tambour_prices', 'download_pdf', 'download_png', 'download_merged', 'download_unimposed', 'download_processed', 'download_backup', 'view_pdf', 'get-machine-template', 'upload_aide_pdf', 'view_aide_pdf', 'bibliotheque', 'upload_bibliotheque', 'search_bibliotheque', 'preview_directory', 'index_file', 'start_indexing', 'get_indexing_status', 'delete_bibliotheque_file', 'get_bibliotheque_thumbnail', 'get_bibliotheque_file', 'check_print_jobs', 'print_notification', 'auto_tirage', 'sessions', 'get_session_jobs', 'get_session_staging_jobs', 'get_pending_jobs', 'convert_emf_to_png', 'convert_pcl_to_png', 'convert_xps_to_png', 'secure_purge');
+
 error_log("[PASSWORD_CHECK] ===== DEBUT VERIFICATION =====");
 error_log("[PASSWORD_CHECK] Page demandée (avant vérification): " . $page);
 error_log("[PASSWORD_CHECK] Page dans page_secure: " . (in_array($page, $page_secure, true) ? 'OUI' : 'NON'));
