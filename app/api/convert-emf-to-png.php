@@ -215,14 +215,14 @@ foreach ($emfPositions as $index => $startOffset) {
     $endOffset = isset($emfPositions[$index + 1]) ? $emfPositions[$index + 1] : filesize($splFile);
     $length = $endOffset - $startOffset;
 
-    if ($length > 0) {
+    if ($length > 2048) {
         fseek($handle, $startOffset);
         $emfData = fread($handle, $length);
         
         $tempEmf = $outputDir . "page_$index.emf";
         file_put_contents($tempEmf, $emfData);
     } else {
-        debugLog("Skipping EMF at index $index: Length is 0 or invalid ($length)");
+        debugLog("Skipping EMF at index $index: Length is too small ($length), likely metadata/header record.");
         continue;
     }
     

@@ -52,90 +52,10 @@ try {
     // Créer le gestionnaire de base de données
     $db = create_database_manager();
 
-    // 0. Vérifier si le job a déjà été enregistré définitivement RECEMMENT (2 heures max)
-    // Cela évite les faux positifs quand Windows recycle les Job IDs (48, 49...) après un certain temps.
-    $platform = $data['platform'] ?? 'windows';
-    
-    $checkSql = "SELECT 1 FROM recorded_print_jobs WHERE job_id = ? AND recorded_at > datetime('now', '-2 hours')";
-    $checkParams = [strval($data['jobId'])];
-    
-    if ($platform !== 'linux') {
-        // Sur Windows, l'ID n'est courageusement unique que PAR imprimante
-        $checkSql .= " AND printer_name = ?";
-        $checkParams[] = $data['printerName'];
-    }
-    // Sur Linux, l'ID CUPS est unique au système, donc on ignore printer_name pour fusionner les détections multiples
-
-    $alreadyRecorded = $db->selectOne($checkSql, $checkParams);
-
-    if ($alreadyRecorded) {
-        error_log(sprintf("[DOUBLON] Job %s sur %s déjà enregistré (%s), ignoré.", $data['jobId'], $data['printerName'], $platform));
-        echo json_encode(['success' => true, 'message' => 'Job déjà enregistré, ignoré', 'already_recorded' => true]);
-        exit;
-    }
-
-    // 0b. Vérifier si le job est déjà dans print_jobs (non validé)
-    // MODIF: Autoriser mise à jour si on a des meilleures données (fillRate > 0 ou thumbnail)
-    $checkPendingSql = "SELECT id, fill_rate, thumbnail_url FROM print_jobs WHERE job_id = ? AND created_at > datetime('now', '-5 minutes')";
-    $checkPendingParams = [strval($data['jobId'])];
-    if ($platform !== 'linux') {
-        $checkPendingSql .= " AND printer_name = ?";
-        $checkPendingParams[] = $data['printerName'];
-    }
-    
-    $existingJob = $db->selectOne($checkPendingSql, $checkPendingParams);
-    
-    if ($existingJob) {
-        // Vérifier si les nouvelles données sont "meilleures" (contiennent analyse)
-        $newHasFillRate = isset($data['fillRate']) && $data['fillRate'] > 0;
-        $newHasThumbnail = isset($data['thumbnailUrl']) && !empty($data['thumbnailUrl']);
-        $existingHasFillRate = isset($existingJob['fill_rate']) && $existingJob['fill_rate'] > 0;
-        $existingHasThumbnail = !empty($existingJob['thumbnail_url']);
-        
-        $hasBetterData = ($newHasFillRate && !$existingHasFillRate) || 
-                         ($newHasThumbnail && !$existingHasThumbnail);
-        
-        if (!$hasBetterData) {
-            echo json_encode(['success' => true, 'message' => 'Job déjà en attente sans nouvelles données, ignoré']);
-            exit;
-        }
-        // Si meilleures données dispo, on continue pour faire UPDATE
-    }
-
-    // Vérifier si la table existe, sinon la créer
-    $db->execute("
-        CREATE TABLE IF NOT EXISTS print_jobs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            job_id TEXT NOT NULL,
-            document TEXT NOT NULL,
-            owner TEXT,
-            printer_name TEXT NOT NULL,
-            status TEXT NOT NULL,
-            pages_printed INTEGER DEFAULT 0,
-            total_pages INTEGER DEFAULT 0,
-            size INTEGER DEFAULT 0,
-            time_submitted TEXT,
-            event_type TEXT,
-            timestamp TEXT NOT NULL,
-            fill_rate REAL DEFAULT 0,
-            color_mode TEXT DEFAULT 'unknown',
-            duplex INTEGER DEFAULT 0,
-            thumbnail_url TEXT,
-            paper_size TEXT,
-            copies INTEGER DEFAULT 1,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            session_id INTEGER,
-            calculated_price REAL DEFAULT 0,
-            machine_type TEXT,
-            machine_id INTEGER,
-            machine_name TEXT,
-            contact TEXT,
-            staged INTEGER DEFAULT 0,
-            UNIQUE(job_id, printer_name, timestamp)
-        )
-    ");
-
-    // S'assurer que les nouvelles colonnes existent (si version antérieure sans migrations)
+    // S'assurer que les colonnes nécessaires existent
+    try {
+        $db->execute("ALTER TABLE print_jobs ADD COLUMN job_uuid TEXT");
+    } catch(Exception $e) {}
     try {
         $db->execute("ALTER TABLE print_jobs ADD COLUMN document_full_path TEXT");
     } catch(Exception $e) {}
@@ -143,9 +63,78 @@ try {
         $db->execute("ALTER TABLE print_jobs ADD COLUMN document_display_name TEXT");
     } catch(Exception $e) {}
 
-    // Extraire le nom de fichier pour l'affichage (avec trace du chemin complet)
-    $documentFull = $data['document'];
-    $documentDisplay = basename($data['document']); // Extrait toujours le nom de fichier
+    $jobUuid = $data['jobUuid'] ?? null;
+    $jobId = strval($data['jobId']);
+    $platform = $data['platform'] ?? 'windows';
+
+    // 0. Vérifier si le job a déjà été enregistré définitivement RECEMMENT
+    $checkSql = "SELECT 1 FROM recorded_print_jobs WHERE ";
+    $checkParams = [];
+    if ($jobUuid) {
+        $checkSql .= "job_uuid = ?";
+        $checkParams[] = $jobUuid;
+    } else {
+        $checkSql .= "job_id = ? AND recorded_at > datetime('now', '-2 hours')";
+        $checkParams[] = $jobId;
+        if ($platform !== 'linux') {
+            $checkSql .= " AND printer_name = ?";
+            $checkParams[] = $data['printerName'];
+        }
+    }
+
+    $alreadyRecorded = $db->selectOne($checkSql, $checkParams);
+
+    if ($alreadyRecorded) {
+        echo json_encode(['success' => true, 'message' => 'Job déjà enregistré, ignoré', 'already_recorded' => true]);
+        exit;
+    }
+
+    // 0b. Vérifier si le job est déjà dans print_jobs (non validé)
+    $checkPendingSql = "SELECT id, fill_rate, thumbnail_url, total_pages, status FROM print_jobs WHERE ";
+    $checkPendingParams = [];
+    if ($jobUuid) {
+        $checkPendingSql .= "job_uuid = ?";
+        $checkPendingParams[] = $jobUuid;
+    } else {
+        $checkPendingSql .= "job_id = ? AND created_at > datetime('now', '-10 minutes')";
+        $checkPendingParams[] = $jobId;
+        if ($platform !== 'linux') {
+            $checkPendingSql .= " AND printer_name = ?";
+            $checkPendingParams[] = $data['printerName'];
+        }
+    }
+    
+    $existingJob = $db->selectOne($checkPendingSql, $checkPendingParams);
+    
+    if ($existingJob) {
+        $newPages = intval($data['totalPages'] ?? 0);
+        $oldPages = intval($existingJob['total_pages'] ?? 0);
+        $newStatus = $data['status'] ?? '';
+        $oldStatus = $existingJob['status'] ?? '';
+        $newFill = floatval($data['fillRate'] ?? 0);
+        $oldFill = floatval($existingJob['fill_rate'] ?? 0);
+        $newThumb = !empty($data['thumbnailUrl']);
+        $oldThumb = !empty($existingJob['thumbnail_url']);
+
+        // Autoriser l'update si :
+        // - Plus de pages détectées
+        // - Statut différent
+        // - Fill rate différent (plus précis)
+        // - Thumbnail arrive alors qu'elle manquait
+        $hasBetterData = ($newPages > $oldPages) || 
+                         ($newStatus !== $oldStatus) ||
+                         (abs($newFill - $oldFill) > 0.01) ||
+                         ($newThumb && !$oldThumb);
+        
+        if (!$hasBetterData) {
+            echo json_encode(['success' => true, 'message' => 'Données identiques, ignoré']);
+            exit;
+        }
+    }
+
+    // Extraire le nom de fichier
+    $documentFull = $data['document'] ?? 'Sans Nom';
+    $documentDisplay = basename($documentFull);
     
     // Vérifier si job existe déjà (pour UPDATE au lieu de INSERT)
     $existingJobId = $db->selectOne(
@@ -164,12 +153,13 @@ try {
                 pages_printed = ?,
                 total_pages = ?,
                 size = ?,
-                fill_rate = COALESCE(NULLIF(?, 0), fill_rate),
+                fill_rate = CASE WHEN ? > 0 THEN ? ELSE fill_rate END,
                 color_mode = COALESCE(NULLIF(?, 'unknown'), color_mode),
                 duplex = ?,
                 thumbnail_url = COALESCE(NULLIF(?, ''), thumbnail_url),
                 paper_size = ?,
-                copies = ?
+                copies = ?,
+                job_uuid = ?
             WHERE id = ?
         ", [
             $documentDisplay,
@@ -180,21 +170,24 @@ try {
             $data['totalPages'] ?? 0,
             $data['size'] ?? 0,
             $data['fillRate'] ?? 0,
+            $data['fillRate'] ?? 0,
             $data['colorMode'] ?? 'unknown',
             isset($data['duplex']) ? ($data['duplex'] ? 1 : 0) : 0,
             $data['thumbnailUrl'] ?? '',
             $data['paperSize'] ?? '',
             $data['copies'] ?? 1,
+            $jobUuid,
             $existingJobId['id']
         ]);
     } else {
         // INSERT nouveau job
         $db->execute("
             INSERT INTO print_jobs 
-            (job_id, document, document_full_path, document_display_name, owner, printer_name, status, pages_printed, total_pages, size, time_submitted, event_type, timestamp, fill_rate, color_mode, duplex, thumbnail_url, paper_size, copies)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (job_id, job_uuid, document, document_full_path, document_display_name, owner, printer_name, status, pages_printed, total_pages, size, time_submitted, event_type, timestamp, fill_rate, color_mode, duplex, thumbnail_url, paper_size, copies)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ", [
             $data['jobId'],
+            $jobUuid,
             $documentDisplay,
             $documentFull,
             $documentDisplay,

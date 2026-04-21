@@ -154,56 +154,46 @@ try {
 
 // SÉCURITÉ ANTI-DOUBLON SESSION : Vérifier si ce job unique n'a pas déjà été enregistré par un autre onglet
         if ($original_job_id && !$simulate) {
-        $platform = $input['platform'] ?? 'windows'; // Assume windows if not provided, but Electron/AutoTirage should send it
-        
-        // FIX 2: Prioriser print_job_id (interne) et vérifier l'ancienneté
-        // Si le job enregistré a plus de X heures, on ignore la collision (ID Windows recyclé)
-        $maxHours = 2; // Configurable: 2 heures
-        $checkSql = "SELECT print_job_id, recorded_at FROM recorded_print_jobs 
-                 WHERE (job_id = ? AND printer_name = ?)";
-        $checkParams = [strval($original_job_id), $printerName];
-
-        $check = $con_pdo->prepare($checkSql);
-        $check->execute($checkParams);
-        $existingJob = $check->fetch(PDO::FETCH_ASSOC);
-        
-        if ($existingJob) {
-            // FIX 1: Vérifier l'ancienneté - si ancien, ignorer la collision
-            $recordedAt = strtotime($existingJob['recorded_at']);
-            $hoursAgo = (time() - $recordedAt) / 3600;
+            $platform = $input['platform'] ?? 'windows';
             
-            if ($hoursAgo > $maxHours) {
-                // Job trop ancien, probablement ID recyclé - supprimer l'ancien et continuer
-                file_put_contents(__DIR__ . '/debug_log.txt', "[INFO] Ancien job ($hoursAgo h) supprimé pour ID recyclé\n", FILE_APPEND);
-                $con_pdo->exec("DELETE FROM recorded_print_jobs WHERE job_id = " . intval($original_job_id) . " AND printer_name = '" . $printerName . "'");
-            } 
-            // FIX 2: Vérifier print_job_id interne si présent
-            elseif ($internal_id && !empty($existingJob['print_job_id'])) {
-                if ($existingJob['print_job_id'] == $internal_id) {
-                    // Même job interne - vraie collision
+            $maxHours = 2;
+            $checkSql = "SELECT print_job_id, recorded_at FROM recorded_print_jobs 
+                     WHERE (job_id = ? AND printer_name = ?)";
+            $checkParams = [strval($original_job_id), $printerName];
+
+            $check = $con_pdo->prepare($checkSql);
+            $check->execute($checkParams);
+            $existingJob = $check->fetch(PDO::FETCH_ASSOC);
+            
+            if ($existingJob) {
+                $recordedAt = strtotime($existingJob['recorded_at']);
+                $hoursAgo = (time() - $recordedAt) / 3600;
+                
+                if ($hoursAgo > $maxHours) {
+                    file_put_contents(__DIR__ . '/debug_log.txt', "[INFO] Ancien job ($hoursAgo h) supprimé pour ID recyclé\n", FILE_APPEND);
+                    $con_pdo->exec("DELETE FROM recorded_print_jobs WHERE job_id = " . intval($original_job_id) . " AND printer_name = '" . $printerName . "'");
+                } 
+                elseif ($internal_id && !empty($existingJob['print_job_id'])) {
+                    if ($existingJob['print_job_id'] == $internal_id) {
+                        // Même job interne - On autorise la mise à jour (ex: passage de 5 à 30 pages)
+                        file_put_contents(__DIR__ . '/debug_log.txt', "[INFO] Mise à jour métadonnées autorisée pour job interne $internal_id\n", FILE_APPEND);
+                    }
+                    else {
+                        // print_job_id différent - c'est un nouveau job avec le même job_id Windows (recycled)
+                        $con_pdo->exec("DELETE FROM recorded_print_jobs WHERE job_id = " . intval($original_job_id) . " AND printer_name = '" . $printerName . "'");
+                    }
+                }
+                else {
                     $con_pdo->rollBack();
                     echo json_encode(['success' => true, 'message' => 'Job déjà enregistré.', 'already_recorded' => true]);
                     exit;
                 }
-                // print_job_id différent - c'est un nouveau job avec le même job_id Windows (recycled)
-                $con_pdo->exec("DELETE FROM recorded_print_jobs WHERE job_id = " . intval($original_job_id) . " AND printer_name = '" . $printerName . "'");
             }
-            else {
-                // Ni print_job_id ni ancienneté - vraie collision
-                $con_pdo->rollBack();
-                echo json_encode(['success' => true, 'message' => 'Job déjà enregistré.', 'already_recorded' => true]);
-                exit;
-            }
-        }
 
-        // Marquer immédiatement pour éviter les clics impulsés
-        $mark = $con_pdo->prepare("INSERT INTO recorded_print_jobs (job_id, printer_name, print_job_id) VALUES (?, ?, ?)");
-        $mark->execute([strval($original_job_id), $printerName, $internal_id]);
-    }
-    // Log valid information about the DB
-    global $conf;
-    $db_path_used = $conf['dsn'] ?? 'unknown';
-    file_put_contents(__DIR__ . '/debug_log.txt', "DB_PATH_USED: $db_path_used\n", FILE_APPEND);
+            // Marquer (ou confirmer le marquage)
+            $mark = $con_pdo->prepare("INSERT OR IGNORE INTO recorded_print_jobs (job_id, printer_name, print_job_id) VALUES (?, ?, ?)");
+            $mark->execute([strval($original_job_id), $printerName, $internal_id]);
+        }
 
     file_put_contents(__DIR__ . '/debug_log.txt', "INIT: Printer='$printerName', Type='$machine_type'\n", FILE_APPEND);
     file_put_contents(__DIR__ . '/debug_log.txt', "HEX: " . bin2hex($machine_type) . "\n", FILE_APPEND);

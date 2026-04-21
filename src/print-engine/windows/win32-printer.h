@@ -9,6 +9,7 @@
 // Structure simple pour passer les données du thread C++ vers JS
 struct JobDetails {
   DWORD jobId;
+  std::string jobUuid;
   std::string printerName;
   std::string documentName;
   std::string statusStr; // "Spooling", "Printing", etc.
