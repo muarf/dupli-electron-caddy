@@ -1486,15 +1486,37 @@
                 const result = await window.electronAPI.reanalyzePrintJob(jobId);
                 
                 if (result.success) {
-                    addLog('success', `✅ Ré-analyse terminée pour le job ${jobId}`);
-                    // Le polling naturel mettra à jour l'UI, mais on peut forcer un check_print_jobs immédiat
+                    addLog('process', `📊 Résultat: ${result.totalPages} pages, ${result.fillRate?.toFixed(1)}% fillRate, ${result.isGrayscale ? 'N&B' : 'Couleur'}`);
+                    
+                    // Mettre à jour la DB avec les résultats
+                    const response = await fetch('?check_print_jobs', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'update_job_analysis',
+                            id: jobId,
+                            thumbnail_url: result.thumbnailUrl || '',
+                            fill_rate: result.fillRate || 0,
+                            is_grayscale: result.isGrayscale,
+                            total_pages: result.totalPages || 0
+                        })
+                    });
+                    const updateResult = await response.json();
+                    
+                    if (updateResult.success) {
+                        addLog('success', `✅ Mise à jour DB: ${result.totalPages} pages, ${result.fillRate?.toFixed(1)}%`);
+                    } else {
+                        addLog('error', `⚠️ Mise à jour DB échouée: ${updateResult.error}`);
+                    }
+                    
+                    // Rafraîchir l'affichage
                     await checkPrintJobs();
                 } else {
                     addLog('error', `❌ Échec de la ré-analyse: ${result.error}`);
                 }
             } catch (e) {
                 console.error("Erreur ré-analyse:", e);
-                addLog('error', `❌ Erreur lors de l'appel à la ré-analyse`);
+                addLog('error', `��� Erreur lors de l'appel à la ré-analyse`);
             } finally {
                 icon.classList.remove('fa-spin');
                 btn.disabled = false;

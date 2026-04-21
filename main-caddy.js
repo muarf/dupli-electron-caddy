@@ -3151,13 +3151,19 @@ ipcMain.handle('delete-print-job', async (event, printerName, jobId) => {
 // Handler pour réanalyser un job d'impression (force re-calcul fill rate, couleur, thumbnail)
 ipcMain.handle('reanalyze-print-job', async (event, jobId) => {
     console.log(`[IPC] reanalyze-print-job: Réanalyse du job ${jobId}...`);
+    
+    // Convertir en nombre si nécessaire
+    const numericJobId = parseInt(jobId, 10);
+    if (isNaN(numericJobId) || numericJobId <= 0) {
+        return { success: false, error: 'Job ID invalide: ' + jobId };
+    }
 
     try {
         if (!printerMonitor) {
             return { success: false, error: 'PrinterMonitor non initialisé' };
         }
 
-        const result = await printerMonitor.reanalyzeJob(jobId);
+        const result = await printerMonitor.reanalyzeJob(numericJobId);
 
         if (result && result.success) {
             console.log(`[IPC] Job ${jobId} réanalysé: fillRate=${result.fillRate}%, isGrayscale=${result.isGrayscale}`);
@@ -3165,7 +3171,8 @@ ipcMain.handle('reanalyze-print-job', async (event, jobId) => {
                 success: true,
                 isGrayscale: result.isGrayscale,
                 fillRate: result.fillRate,
-                thumbnailUrl: result.thumbnailUrl
+                thumbnailUrl: result.thumbnailUrl,
+                totalPages: result.totalPages || 0
             };
         } else {
             console.log(`[IPC] Réanalyse échouée pour job ${jobId}`);

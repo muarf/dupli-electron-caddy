@@ -265,16 +265,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             } elseif ($action === 'update_job_analysis') {
                 // === MISE À JOUR COMPLÈTE APRÈS RÉANALYSE C++ ===
-                // Met à jour thumbnail, fill_rate et color_mode
+                // Met à jour thumbnail, fill_rate, color_mode et total_pages
                 
-                if (!isset($input['id'])) {
-                    throw new Exception("Paramètre manquant (id)");
+                $targetId = null;
+                
+                // Priorité: utiliser job_id Windows si fourni
+                if (isset($input['job_id'])) {
+                    $jobIdWindows = strval($input['job_id']);
+                    $printerName = $input['printer_name'] ?? '';
+                    
+                    // Chercher par job_id Windows
+                    $existingJob = $db->selectOne(
+                        "SELECT id FROM print_jobs WHERE job_id = ? AND printer_name = ? ORDER BY created_at DESC LIMIT 1",
+                        [$jobIdWindows, $printerName]
+                    );
+                    
+                    if ($existingJob) {
+                        $targetId = $existingJob['id'];
+                    }
                 }
                 
-                $id = intval($input['id']);
+                // Fallback: utiliser id DB direct
+                if (!$targetId && isset($input['id'])) {
+                    $targetId = intval($input['id']);
+                }
+                
+                if (!$targetId) {
+                    throw new Exception("Paramètre manquant (id ou job_id)");
+                }
+                
                 $thumbnailUrl = $input['thumbnail_url'] ?? null;
                 $fillRate = isset($input['fill_rate']) ? floatval($input['fill_rate']) : null;
-                $isGrayscale = isset($input['is_grayscale']) ? (bool)$input['is_grayscale'] : null;
+                // Corriger: (bool)'false' = true en PHP, il faut utiliser filter_var
+                $isGrayscaleRaw = $input['is_grayscale'] ?? null;
+                $isGrayscale = $isGrayscaleRaw !== null && $isGrayscaleRaw !== false && $isGrayscaleRaw !== 'false' && $isGrayscaleRaw !== '0' && $isGrayscaleRaw !== 0;
                 
                 // Construire la requête dynamiquement
                 $updates = [];
@@ -288,9 +312,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $updates[] = "fill_rate = ?";
                     $params[] = $fillRate;
                 }
-                if ($isGrayscale !== null) {
+                if ($isGrayscaleRaw !== null) {
+                    $colorMode = !$isGrayscale ? 'Color' : 'Monochrome';
+                    error_log("[update_job_analysis] is_grayscale raw=" . var_export($isGrayscaleRaw, true) . " -> color_mode=" . $colorMode);
                     $updates[] = "color_mode = ?";
-                    $params[] = $isGrayscale ? 'Monochrome' : 'Color';
+                    $params[] = $colorMode;
                 }
                 if (isset($input['total_pages'])) {
                     $updates[] = "total_pages = ?";
@@ -298,12 +324,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 if (!empty($updates)) {
-                    $params[] = $id;
+                    $params[] = $targetId;
                     $sql = "UPDATE print_jobs SET " . implode(', ', $updates) . " WHERE id = ?";
                     $db->execute($sql, $params);
                 }
                 
-                echo json_encode(['success' => true]);
+                echo json_encode(['success' => true, 'updated_id' => $targetId]);
                 exit;
 
             } else {
