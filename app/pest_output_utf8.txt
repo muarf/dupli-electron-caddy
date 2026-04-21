@@ -1,0 +1,129 @@
+
+  [37;41;1m FAIL [39;49;22m[39m Tests\Unit\HealthCheckTest[39m
+  [31;1m⨯[39;22m[39m [2mget_package_install_help returns correct command for debian[22m[39m
+  [31;1m⨯[39;22m[39m [2mget_package_install_help returns correct command for fedora[22m[39m
+  [31;1m⨯[39;22m[39m [2mget_aggregated_install_command groups packages correctly[22m[39m
+  [32;1m✓[39;22m[39m [2mget_global_install_command handles empty results[22m[39m
+  [32;1m✓[39;22m[39m [2mget_global_install_command return command when dependency missing[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\I18nManagerTest[39m
+  [32;1m✓[39;22m[39m [2mit retourne les traductions françaises par défaut[22m[39m
+  [32;1m✓[39;22m[39m [2mit permet de changer de langue pour charger les traductions anglaises[22m[39m
+  [32;1m✓[39;22m[39m [2mit retourne la clé brute lorsque la traduction est inexistante[22m[39m
+  [32;1m✓[39;22m[39m [2mit détecte la langue préférée issue des entêtes navigateur[22m[39m
+DEBUG PEST: Step require_pricing_dependencies START
+2026-04-19 16:59:06 [INFO] Application Duplicator initialisée avec succès [Context: init.php]
+2026-04-19 16:59:06 [INFO] Fichier func.php chargé [Context: func.php]
+DEBUG PEST: Step require_pricing_dependencies - func.php loaded
+DEBUG PEST: Step require_pricing_dependencies END
+DEBUG PEST: Step require_pricing_dependencies START
+DEBUG PEST: Step require_pricing_dependencies - func.php loaded
+DEBUG PEST: Step require_pricing_dependencies END
+DEBUG PEST: Step require_pricing_dependencies START
+DEBUG PEST: Step require_pricing_dependencies - func.php loaded
+DEBUG PEST: Step require_pricing_dependencies END
+DEBUG PEST: Step require_pricing_dependencies START
+DEBUG PEST: Step require_pricing_dependencies - func.php loaded
+DEBUG PEST: Step require_pricing_dependencies END
+DEBUG PEST: Step require_pricing_dependencies START
+DEBUG PEST: Step require_pricing_dependencies - func.php loaded
+DEBUG PEST: Step require_pricing_dependencies END
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\PricingFunctionsTest[39m
+  [32;1m✓[39;22m[39m [2mit récupère les prix structurés pour dupli et photocop[22m[39m
+  [32;1m✓[39;22m[39m [2mit insère ou met à jour un prix machine[22m[39m
+  [32;1m✓[39;22m[39m [2mit met à jour le prix du papier[22m[39m
+  [32;1m✓[39;22m[39m [2mit calcule le montant dû pour un duplicopieur actif[22m[39m
+  [32;1m✓[39;22m[39m [2mit calcule le montant dû pour une marque de photocopieur[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\SecureDeleteTest[39m
+  [32;1m✓[39;22m[39m [2msecure_delete should return true for non-existent file[22m[39m
+  [32;1m✓[39;22m[39m [2msecure_delete should delete an existing file[22m[39m
+  [32;1m✓[39;22m[39m [2msecure_delete should handle empty files[22m[39m
+  [32;1m✓[39;22m[39m [2msecure_delete should handle large files[22m[39m
+[SPOOL MANAGER] Suppression fichiers Job 999 : FP00999.SPL, FP00999.SHD
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\SpoolManagerTest[39m
+  [32;1m✓[39;22m[39m [2mfindSpoolFile detects standard naming[22m[39m
+  [32;1m✓[39;22m[39m [2mfindSpoolFile detects file pooling naming via SHD[22m[39m
+  [32;1m✓[39;22m[39m [2mfindSpoolFile returns null if ID mismatch in SHD[22m[39m
+  [32;1m✓[39;22m[39m [2mdeleteSpoolFiles deletes both SPL and SHD[22m[39m
+DEBUG last(Ricoh): tirage 0 - date=14.11.23, id=5
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\TirageFunctionsTest[39m
+  [32;1m✓[39;22m[39m [2mit insère un tirage photocopieur avec insert_photocop[22m[39m
+  [32;1m✓[39;22m[39m [2mit marque un tirage photocopieur comme payé[22m[39m
+  [32;1m✓[39;22m[39m [2mit renvoie les derniers tirages photocopieurs paginés[22m[39m
+  [32;1m✓[39;22m[39m [2mit supprime un tirage duplicopieur par nom de machine[22m[39m
+
+  [30;42;1m PASS [39;49;22m[39m Tests\Unit\TiragePricingTest[39m
+  [32;1m✓[39;22m[39m [2mit calcule le coût par page toner couleur en tenant compte du taux de remplissage[22m[39m
+  [32;1m✓[39;22m[39m [2mit calcule le coût par page encre noir et blanc sans multiplicateur[22m[39m
+  [32;1m✓[39;22m[39m [2mit calcule un devis A3 en ajoutant papier et encre[22m[39m
+  [32;1m✓[39;22m[39m [2mit réduit le coût en A4 en divisant le prix page par deux[22m[39m
+
+  [2m---[22m
+
+  [31;1m• Tests\Unit\HealthCheckTest [39;22m> [31;1mget_package_install_help returns correct command for debian[39;22m
+[39;1m  Failed asserting that two strings are identical.[39;22m
+
+  at [32mC:\Users\Dupli\AppData\Local\Programs\dupli-electron-caddy\app\tests\Unit\HealthCheckTest.php[39m:[32m7[39m
+      3▕ require_once __DIR__ . '/../../controler/functions/health_check.php';
+      4▕ 
+      5▕ test('get_package_install_help returns correct command for debian', function () {
+      6▕     $cmd = get_package_install_help('bin', 'ghostscript', 'debian');
+  ➜   7▕     expect($cmd)->toBe('sudo apt-get install ghostscript');
+      8▕     
+      9▕     $cmd = get_package_install_help('ext', 'gd', 'debian');
+     10▕     expect($cmd)->toBe('sudo apt-get install php-gd');
+     11▕ });
+
+  [33m1   [39m[39;1mC:\Users\Dupli\AppData\Local\Programs\dupli-electron-caddy\app\vendor\bin\pest[39;22m:[39;1m115[39;22m
+  [37m    include("C:\Users\Dupli\AppData\Local\Programs\dupli-electron-caddy\app\vendor\pestphp\pest\bin\pest")[39m
+  --- Expected
+  +++ Actual
+  @@ @@
+  -'sudo apt-get install ghostscript'
+  +'Téléchargez et installez ghostscript'
+  [31;1m• Tests\Unit\HealthCheckTest [39;22m> [31;1mget_package_install_help returns correct command for fedora[39;22m
+[39;1m  Failed asserting that two strings are identical.[39;22m
+
+  at [32mC:\Users\Dupli\AppData\Local\Programs\dupli-electron-caddy\app\tests\Unit\HealthCheckTest.php[39m:[32m15[39m
+     11▕ });
+     12▕ 
+     13▕ test('get_package_install_help returns correct command for fedora', function () {
+     14▕     $cmd = get_package_install_help('bin', 'ghostscript', 'fedora');
+  ➜  15▕     expect($cmd)->toBe('sudo dnf install ghostscript');
+     16▕     
+     17▕     $cmd = get_package_install_help('ext', 'gd', 'fedora');
+     18▕     expect($cmd)->toBe('sudo dnf install php-gd');
+     19▕ });
+
+  [33m1   [39m[39;1mC:\Users\Dupli\AppData\Local\Programs\dupli-electron-caddy\app\vendor\bin\pest[39;22m:[39;1m115[39;22m
+  [37m    include("C:\Users\Dupli\AppData\Local\Programs\dupli-electron-caddy\app\vendor\pestphp\pest\bin\pest")[39m
+  --- Expected
+  +++ Actual
+  @@ @@
+  -'sudo dnf install ghostscript'
+  +'Téléchargez et installez ghostscript'
+  [31;1m• Tests\Unit\HealthCheckTest [39;22m> [31;1mget_aggregated_install_command groups packages correctly[39;22m
+[39;1m  Failed asserting that 'Modules à activer : ghostscript, extension=gd, extension=mbstring' contains "php-gd".[39;22m
+
+  at [32mC:\Users\Dupli\AppData\Local\Programs\dupli-electron-caddy\app\tests\Unit\HealthCheckTest.php[39m:[32m32[39m
+     28▕     // This function calls get_linux_distro_info(), which might return 'debian' on this system
+     29▕     $cmd = get_aggregated_install_command($packages);
+     30▕     
+     31▕     expect($cmd)->toContain('ghostscript');
+  ➜  32▕     expect($cmd)->toContain('php-gd');
+     33▕     expect($cmd)->toContain('php-mbstring');
+     34▕ });
+     35▕ 
+     36▕ test('get_global_install_command handles empty results', function () {
+
+  [33m1   [39m[39;1mC:\Users\Dupli\AppData\Local\Programs\dupli-electron-caddy\app\vendor\bin\pest[39;22m:[39;1m115[39;22m
+  [37m    include("C:\Users\Dupli\AppData\Local\Programs\dupli-electron-caddy\app\vendor\pestphp\pest\bin\pest")[39m
+
+
+  [37;1mTests:  [39;22m[31;1m3 failed[39;22m[39m, [39m[32;1m27 passed[39;22m
+  [37;1mTime:   [39;22m[39m0.46s[39m
+

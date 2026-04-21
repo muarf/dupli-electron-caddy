@@ -47,15 +47,17 @@ struct SplAnalysisCache {
   std::string thumbnailUrl;
   std::string documentName; // New: to verify jobId recycling
   DWORD lastFileSize;       // New: to detect if document is still growing
+  DWORD totalPages;         // New: to cache detected page count
 };
 
 struct EmfConversionResult {
   std::vector<std::wstring> pngPaths;
   std::string thumbnailUrl;
+  DWORD totalPages; // New: to store detected page count from PHP API
 };
 
 // Global cache for SPL analysis
-std::map<DWORD, SplAnalysisCache> splAnalysisCache;
+std::map<std::string, SplAnalysisCache> splAnalysisCache;
 
 // --- Helpers ---
 
@@ -640,6 +642,29 @@ EmfConversionResult ConvertEmfToPngViaPhpApi(DWORD jobId) {
     LogDebug("Found " + std::to_string(result.pngPaths.size()) +
              " PNG files from PHP API");
 
+    // Parse total_pages OR page_count (EMF/XPS)
+    size_t tpPos = response.find("\"total_pages\":");
+    if (tpPos == std::string::npos) tpPos = response.find("\"page_count\":");
+    if (tpPos != std::string::npos) {
+      // Skip the key + colon, find the number start
+      size_t colonPos = response.find(":", tpPos);
+      if (colonPos != std::string::npos) {
+        tpPos = colonPos + 1;
+        // Skip whitespace
+        while (tpPos < response.size() && (response[tpPos] == ' ' || response[tpPos] == '\t')) tpPos++;
+        size_t tpEnd = response.find(",", tpPos);
+        if (tpEnd == std::string::npos) tpEnd = response.find("}", tpPos);
+        if (tpEnd != std::string::npos) {
+          std::string tpStr = response.substr(tpPos, tpEnd - tpPos);
+          result.totalPages = (DWORD)atoi(tpStr.c_str());
+          LogDebug("Parsed total_pages/page_count: " + std::to_string(result.totalPages));
+        }
+      }
+    } else {
+      // Fallback: count PNGs generated
+      result.totalPages = (DWORD)result.pngPaths.size();
+    }
+
   } catch (...) {
     LogDebug("Exception in ConvertEmfToPngViaPhpApi");
   }
@@ -727,6 +752,29 @@ EmfConversionResult ConvertPclToPngViaPhpApi(DWORD jobId) {
 
     LogDebug("Found " + std::to_string(result.pngPaths.size()) +
              " PNG files from PHP PCL API");
+
+    // Parse total_pages OR page_count (PCL returns page_count)
+    size_t tpPos = response.find("\"total_pages\":");
+    if (tpPos == std::string::npos) tpPos = response.find("\"page_count\":");
+    if (tpPos != std::string::npos) {
+      // Skip the key + colon, find the number start
+      size_t colonPos = response.find(":", tpPos);
+      if (colonPos != std::string::npos) {
+        tpPos = colonPos + 1;
+        // Skip whitespace
+        while (tpPos < response.size() && (response[tpPos] == ' ' || response[tpPos] == '\t')) tpPos++;
+        size_t tpEnd = response.find(",", tpPos);
+        if (tpEnd == std::string::npos) tpEnd = response.find("}", tpPos);
+        if (tpEnd != std::string::npos) {
+          std::string tpStr = response.substr(tpPos, tpEnd - tpPos);
+          result.totalPages = (DWORD)atoi(tpStr.c_str());
+          LogDebug("Parsed PCL total_pages/page_count: " + std::to_string(result.totalPages));
+        }
+      }
+    } else {
+      // Fallback: count PNGs generated
+      result.totalPages = (DWORD)result.pngPaths.size();
+    }
 
   } catch (...) {
     LogDebug("Exception in ConvertPclToPngViaPhpApi");
@@ -841,6 +889,19 @@ EmfConversionResult ConvertXpsToPngViaPhpApi(DWORD jobId) {
         LogDebug("XPS conversion successful, " +
                  std::to_string(result.pngPaths.size()) + " pages");
 
+        // Parse total_pages if present
+        size_t tpPos = response.find("\"total_pages\":");
+        if (tpPos != std::string::npos) {
+          tpPos += 14;
+          size_t tpEnd = response.find(",", tpPos);
+          if (tpEnd == std::string::npos) tpEnd = response.find("}", tpPos);
+          if (tpEnd != std::string::npos) {
+            std::string tpStr = response.substr(tpPos, tpEnd - tpPos);
+            result.totalPages = (DWORD)atoi(tpStr.c_str());
+            LogDebug("Parsed XPS total_pages: " + std::to_string(result.totalPages));
+          }
+        }
+
         // Success! Break loop
         break;
       } else {
@@ -929,15 +990,16 @@ float AnalyzePngPixels(const std::wstring &pngPath, bool &isGrayscale) {
       fillRate = (estimatedFilledPixels / totalPixels) * 100.0f;
 
       // Update grayscale status based on percentage of colored pixels
-      // Threshold: 0.5% of pixels must be colored to be considered Color mode
-      // This ignores small anti-aliasing artifacts or compression noise
+      // Threshold: 0.1% of pixels must be colored to be considered Color mode (lowered from 0.5%)
+      // This catches documents with small color elements (logos, etc.)
+      // FIX: Once color is detected, it remains color for the entire job
       double colorPercentage =
           ((double)coloredPixels / (double)sampledPixels) * 100.0;
-      if (colorPercentage > 0.5) {
+      if (colorPercentage > 0.1) {
         isGrayscale = false;
-      } else {
-        isGrayscale = true;
       }
+
+      LogDebug("Color detection: " + std::to_string(colorPercentage) + "% colored pixels");
 
       LogDebug("Fill rate: " + std::to_string(fillRate) + "% (sampled " +
                std::to_string(sampledPixels) + "/" +
@@ -1100,15 +1162,19 @@ std::wstring FindSplFileByJobId(DWORD jobId, const std::wstring &spoolPath) {
 // Now uses Ghostscript + pixel analysis for accurate results
 void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
                       bool &isGrayscale, float &fillRate,
-                      std::string &thumbnailUrl) {
+                      std::string &thumbnailUrl, DWORD &totalPages) {
   LogDebug("AnalyzeSpoolFile: Starting PIXEL ANALYSIS for Job " +
            std::to_string(jobId) + " (" + documentName + ")");
 
   fillRate = 0.0f;
 
+  // FIX: Use jobId + documentName as cache key to avoid cross-contamination
+  // between different jobs with same document name
+  std::string cacheKey = std::to_string(jobId) + "|" + documentName;
+
   // Check cache first
-  if (splAnalysisCache.find(jobId) != splAnalysisCache.end()) {
-    SplAnalysisCache cached = splAnalysisCache[jobId];
+  if (splAnalysisCache.find(cacheKey) != splAnalysisCache.end()) {
+    SplAnalysisCache cached = splAnalysisCache[cacheKey];
 
     // Verify if it's the SAME document. If not, ignore cache (jobId recycled)
     if (cached.documentName == documentName) {
@@ -1134,10 +1200,12 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
         isGrayscale = cached.isGrayscale;
         fillRate = cached.fillRate;
         thumbnailUrl = cached.thumbnailUrl;
+        totalPages = cached.totalPages;
         LogDebug("AnalyzeSpoolFile: Using cached result (Size unchanged: " +
                  std::to_string(currentSize) +
                  ") - Grayscale=" + std::to_string(isGrayscale) +
-                 ", FillRate=" + std::to_string(fillRate));
+                 ", FillRate=" + std::to_string(fillRate) +
+                 ", totalPages=" + std::to_string(totalPages));
         return;
       } else {
         LogDebug("AnalyzeSpoolFile: File Grew (" +
@@ -1251,11 +1319,20 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
   }
 
   // Update Cache
-  splAnalysisCache[jobId] = {isGrayscale, fillRate, "now",
+  splAnalysisCache[cacheKey] = {isGrayscale, fillRate, "now",
                              conversion.thumbnailUrl, documentName};
 
   // IMPORTANT: Assign back to output parameter so caller sees it immediately
   thumbnailUrl = conversion.thumbnailUrl;
+  
+  // Use detected page count from PHP API if available, otherwise use analyzed count
+  if (conversion.totalPages > 0) {
+    totalPages = conversion.totalPages;
+    LogDebug("Using detected totalPages from PHP API: " + std::to_string(totalPages));
+  } else if (pagesAnalyzed > 0) {
+    totalPages = (DWORD)pagesAnalyzed;
+    LogDebug("Using analyzed page count: " + std::to_string(totalPages));
+  }
 
   LogDebug("[FILLRATE] Average Fill Rate: " + std::to_string(fillRate) +
            "% across " + std::to_string(pagesAnalyzed) + " page(s)");
@@ -1272,16 +1349,17 @@ void AnalyzeSpoolFile(DWORD jobId, const std::string &documentName,
 
   // Cache the result - BUT NEVER cache 0-page results to avoid the race condition
   // where the job is detected during spooling (empty file) and cached as 0
-  if (pagesAnalyzed > 0) {
+  if (pagesAnalyzed > 0 || conversion.totalPages > 0) {
     SplAnalysisCache cacheEntry;
     cacheEntry.isGrayscale = isGrayscale;
     cacheEntry.fillRate = fillRate;
     cacheEntry.timestamp = std::to_string(time(NULL));
     cacheEntry.thumbnailUrl = conversion.thumbnailUrl;
     cacheEntry.documentName = documentName;
-    cacheEntry.lastFileSize = fileSize; // Store current size
-    splAnalysisCache[jobId] = cacheEntry;
-    LogDebug("AnalyzeSpoolFile: Cached result for Job " + std::to_string(jobId));
+    cacheEntry.lastFileSize = fileSize;
+    cacheEntry.totalPages = totalPages; // Store detected page count
+    splAnalysisCache[cacheKey] = cacheEntry;
+    LogDebug("AnalyzeSpoolFile: Cached result for Job " + std::to_string(jobId) + " with key " + cacheKey);
   } else {
     LogDebug("AnalyzeSpoolFile: NOT caching 0-page result for Job " + std::to_string(jobId));
   }
@@ -1389,7 +1467,7 @@ JobDetails MonitorWorker::GetJobInfo(HANDLE hPrinter, DWORD jobId) {
   // CRITICAL: We now allow analysis during spooling because size-tracking
   // will re-trigger analysis when the file grows.
   AnalyzeSpoolFile(jobId, details.documentName, details.isGrayscale,
-                   details.fillRate, details.thumbnailUrl);
+                   details.fillRate, details.thumbnailUrl, details.totalPages);
 
   return details;
 }
@@ -1611,19 +1689,26 @@ Napi::Value ReanalyzeJob(const Napi::CallbackInfo &info) {
            std::to_string(jobId));
 
   // Clear cache for this job to force re-analysis
-  if (splAnalysisCache.find(jobId) != splAnalysisCache.end()) {
-    splAnalysisCache.erase(jobId);
-    LogDebug("[ReanalyzeJob] Cleared cache for Job " + std::to_string(jobId));
+  // Build cache key prefix (jobId|) and remove all matching entries
+  std::string keyPrefix = std::to_string(jobId) + "|";
+  for (auto it = splAnalysisCache.begin(); it != splAnalysisCache.end();) {
+    if (it->first.substr(0, keyPrefix.length()) == keyPrefix) {
+      LogDebug("[ReanalyzeJob] Cleared cache for key " + it->first);
+      it = splAnalysisCache.erase(it);
+    } else {
+      ++it;
+    }
   }
 
   // Perform analysis
   bool isGrayscale = true;
   float fillRate = 0.0f;
   std::string thumbnailUrl = "";
+  DWORD totalPages = 0;
   std::string documentName =
       "ReanalyzedJob"; // Placeholder, we don't have doc name here
 
-  AnalyzeSpoolFile(jobId, documentName, isGrayscale, fillRate, thumbnailUrl);
+  AnalyzeSpoolFile(jobId, documentName, isGrayscale, fillRate, thumbnailUrl, totalPages);
 
   // Build result object
   Napi::Object result = Napi::Object::New(env);
@@ -1631,6 +1716,7 @@ Napi::Value ReanalyzeJob(const Napi::CallbackInfo &info) {
   result.Set("isGrayscale", Napi::Boolean::New(env, isGrayscale));
   result.Set("fillRate", Napi::Number::New(env, fillRate));
   result.Set("thumbnailUrl", Napi::String::New(env, thumbnailUrl));
+  result.Set("totalPages", Napi::Number::New(env, totalPages));
 
   LogDebug("[ReanalyzeJob] Result: success=" +
            std::to_string(!thumbnailUrl.empty()) +

@@ -12,6 +12,7 @@ class PrintSessionManager {
         this.isElectron = typeof window.electronAPI !== 'undefined';
         this.toastContainer = null;
         this.processedJobIds = new Set(); // Pour éviter les doublons de notifications
+        this.lastJobData = new Map(); // Stocker dernières données pour comparaison
 
         console.log('[PrintSessionManager] Initialized', {
             mode: this.isElectron ? 'Electron' : 'Standalone PHP',
@@ -50,6 +51,54 @@ class PrintSessionManager {
         setTimeout(() => this.regenerateMissingThumbnails(), 3000);
 
         console.log('[PrintSessionManager] Thumbnail polling démarré (10s)');
+    }
+
+    /**
+     * Programmer une réanalyse après délai pour mettre à jour les valeurs analysées
+     */
+    scheduleReanalysis(jobId) {
+        const delayMs = 3000; // 3 secondes après détection
+        
+        setTimeout(async () => {
+            try {
+                // Convertir en nombre pour le C++
+                const numericJobId = parseInt(jobId, 10);
+                console.log('[PrintSessionManager] Réanalyse scheduled pour job:', numericJobId);
+                
+                if (window.electronAPI && window.electronAPI.reanalyzePrintJob) {
+                    const result = await window.electronAPI.reanalyzePrintJob(numericJobId);
+                    
+                    if (result && result.success) {
+                        console.log('[PrintSessionManager] Réanalyse result:', result);
+                        
+                        // Obtenir le printer name des données stockées
+                        const jobData = this.lastJobData.get(jobId) || {};
+                        const printerName = jobData.PrinterName || jobData.printerName || '';
+                        
+                        // Mettre à jour la DB avec les valeurs analysées
+                        await fetch('?check_print_jobs', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                action: 'update_job_analysis',
+                                job_id: numericJobId,
+                                printer_name: printerName,
+                                thumbnail_url: result.thumbnailUrl || '',
+                                fill_rate: result.fillRate || 0,
+                                is_grayscale: result.isGrayscale,
+                                total_pages: result.totalPages || 0
+                            })
+                        });
+                        
+                        console.log('[PrintSessionManager] DB mise à jour pour job:', numericJobId, result.totalPages, 'pages');
+                    } else {
+                        console.warn('[PrintSessionManager] Réanalyse échouée pour job:', numericJobId, result);
+                    }
+                }
+            } catch (e) {
+                console.error('[PrintSessionManager] Erreur réanalyse scheduled:', e);
+            }
+        }, delayMs);
     }
 
     /**
@@ -164,21 +213,26 @@ class PrintSessionManager {
 
         // NOUVEAU WORKFLOW: Juste notifier, pas d'auto-assignation
 
-        // Anti-spam: Vérifier si déjà notifié récemment
-        // MODIF: Autoriser si fillRate > 0 ou thumbnailUrl présent (analyse terminée)
         const jobId = jobData.jobId || jobData.id || jobData.JobId;
-        const hasAnalysis = (jobData.FillRate > 0 || jobData.fillRate > 0 || 
-                         (jobData.ThumbnailUrl || jobData.thumbnailUrl || '').length > 0);
         
-        if (jobId && this.processedJobIds.has(jobId) && !hasAnalysis) {
-            console.log('[PrintSessionManager] Job déjà notifié sans analyse, ignoré:', jobId);
+        // Anti-spam: Empêcher spam, mais programer réanalyse pour mise à jour
+        if (jobId && this.processedJobIds.has(jobId)) {
+            console.log('[PrintSessionManager] Job déjà notifié, ignoré:', jobId);
             return;
         }
-        if (jobId && !this.processedJobIds.has(jobId)) {
+        
+if (jobId) {
             this.processedJobIds.add(jobId);
-            setTimeout(() => this.processedJobIds.delete(jobId), 60000);
-        } else if (jobId && hasAnalysis) {
-            console.log('[PrintSessionManager] Mise à jour avec analyse terminée pour job:', jobId);
+            setTimeout(() => {
+                this.processedJobIds.delete(jobId);
+                this.lastJobData.delete(jobId);
+            }, 60000);
+            
+            // Stocker données pour comparaison
+            this.lastJobData.set(jobId, {...jobData});
+            
+            // Programmer réanalyse pour mise à jour
+            this.scheduleReanalysis(jobId);
         }
 
         // Envoyer à print-notification pour enregistrer en base
