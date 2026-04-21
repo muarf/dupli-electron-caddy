@@ -157,6 +157,13 @@
                 <small class="text-muted d-block"><?php _e('header.pdf_to_images_desc'); ?></small>
               </a>
             </li>
+            <li>
+              <a href="?pdf_merge">
+                <i class="fa fa-compress" style="color: #f8b195; margin-right: 8px;"></i>
+                <strong><?php _e('header.pdf_merge'); ?></strong>
+                <small class="text-muted d-block"><?php _e('header.pdf_merge_desc'); ?></small>
+              </a>
+            </li>
             <li role="separator" class="divider"></li>
             <li>
               <a href="?riso_separator">

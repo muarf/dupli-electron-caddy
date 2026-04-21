@@ -602,7 +602,7 @@
             
             // Format technical details
             const isDuplex = (job.duplex == 1 || job.duplex == '1' || job.duplex === true || String(job.duplex).toLowerCase() === 'oui');
-            const colorMode = (String(job.color_mode).toLowerCase().includes('color') || String(job.color_mode) === '1') ? '<?php echo __js('tirage_multimachines.color'); ?>' : 'N&B';
+            const colorMode = (String(job.color_mode).toLowerCase().includes('color') || String(job.color_mode) === '2') ? '<?php echo __js('tirage_multimachines.color'); ?>' : 'N&B';
             const duplexLabel = isDuplex ? 'R/V' : 'Recto';
             const rawFillValue = parseFloat(job.fill_rate || 0);
             const fillPct = rawFillValue.toFixed(1) + '%';

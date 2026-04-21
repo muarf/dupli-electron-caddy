@@ -178,10 +178,12 @@ void MonitorWorker::Execute(const ExecutionProgress &progress) {
                   }
 
                   // If job is STABLE (not spooling) and NOT yet finalized and NOT printing
-                  // We treat it as finished and delete it from spooler to cleanup
+                  // We treat it as finished. 
+                  // NOTE: Manual deletion disabled to allow reanalysis and keep SPL files.
                   if (details.statusStr != "Spooling" && details.statusStr != "Printing" &&
                       finalJobs.find(jobKey) == finalJobs.end() && details.totalPages > 0) {
                     
+                    /*
                     LogDebug("Job " + jobKey + " is stable. Requesting SPOOLER DELETE.");
                     if (SetJob(hPrinter, jobId, 0, NULL, JOB_CONTROL_DELETE)) {
                         finalJobs.insert(jobKey);
@@ -189,6 +191,8 @@ void MonitorWorker::Execute(const ExecutionProgress &progress) {
                     } else {
                         LogDebug("Failed to delete job " + jobKey + ". Error: " + std::to_string(GetLastError()));
                     }
+                    */
+                    finalJobs.insert(jobKey); // Still mark as finalized internally to avoid repeated logs
                   }
                 }
               }
