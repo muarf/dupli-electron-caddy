@@ -34,7 +34,9 @@
         "pdf_merge": "Merge PDFs",
         "pdf_merge_desc": "Combine multiple files into one",
         "resizer": "Resize PDF/Images",
-        "resizer_desc": "Fit to A4 or A3 format"
+        "resizer_desc": "Fit to A4 or A3 format",
+        "pdf_organizer": "Organize Pages",
+        "pdf_organizer_desc": "Reorder, rotate or delete pages"
     },
     "footer": {
         "previous": "Previous",
@@ -1646,5 +1648,25 @@
         "all_pages": "All pages: Each page of the PDF is processed.",
         "margins": "Margins: The tool automatically centers the content.",
         "quality": "Quality: Images are processed in high resolution (300 DPI)."
+    },
+    "pdf_organizer": {
+        "title": "PDF Page Organizer",
+        "subtitle": "Reorder, rotate, delete or add pages visually.",
+        "add_files": "Add PDFs",
+        "insert_blank": "Insert Blank Page",
+        "generate": "Generate Final PDF",
+        "generating": "Generating...",
+        "success": "PDF organized successfully!",
+        "download": "Download Document",
+        "rotate_l": "90° Left",
+        "rotate_r": "90° Right",
+        "delete": "Delete",
+        "duplicate": "Duplicate",
+        "page": "Page",
+        "blank": "Blank Page",
+        "thumbnail_error": "Thumbnail Error",
+        "empty_msg": "Drag or add a PDF file to start.",
+        "clear_all": "Clear All",
+        "processing_files": "Analyzing files and generating thumbnails..."
     }
 }
