@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleFiles(files) {
         if (!files.length) return;
         
-        showLoading("<?php _e('pdf_organizer.processing_files'); ?>");
+        showLoading("<?php _ejs('pdf_organizer.processing_files'); ?>");
         
         const formData = new FormData();
         for (let file of files) formData.append('pdfs[]', file);
@@ -391,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Generate Final PDF
     document.getElementById('btn-generate').addEventListener('click', function() {
         const btn = this;
-        showLoading("<?php _e('pdf_organizer.generating'); ?>");
+        showLoading("<?php _ejs('pdf_organizer.generating'); ?>");
         btn.classList.add('disabled');
 
         const formData = new FormData();
