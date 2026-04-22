@@ -59,10 +59,9 @@ jobs:
           ls caddy
 
       - name: Run PHP Tests (Pest)
+        working-directory: app
         run: |
-          cd app
           php -d "extension=sqlite3" -d "extension=pdo_sqlite" vendor/bin/pest --group=unit --display-deprecations --display-errors
-          cd ..
 
       - name: Run JS Tests (Jest)
         run: |
