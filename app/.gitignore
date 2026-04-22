@@ -36,7 +36,7 @@ Thumbs.db
 
 # Tests
 test_*.php
-!tests/helpers/test_helpers.php
+!tests/helpers/*.php
 
 # PDFs générés et fichiers temporaires
 *.pdf

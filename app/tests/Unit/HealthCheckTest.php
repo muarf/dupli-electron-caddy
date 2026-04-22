@@ -4,18 +4,18 @@ require_once __DIR__ . '/../../controler/functions/health_check.php';
 
 test('get_package_install_help returns correct command for debian', function () {
     $cmd = get_package_install_help('bin', 'ghostscript', 'debian');
-    expect($cmd)->toBe('sudo apt-get install ghostscript');
+    expect($cmd)->toBe('sudo apt-get install -y ghostscript');
     
     $cmd = get_package_install_help('ext', 'gd', 'debian');
-    expect($cmd)->toBe('sudo apt-get install php-gd');
+    expect($cmd)->toBe('sudo apt-get install -y php-gd');
 });
 
 test('get_package_install_help returns correct command for fedora', function () {
     $cmd = get_package_install_help('bin', 'ghostscript', 'fedora');
-    expect($cmd)->toBe('sudo dnf install ghostscript');
+    expect($cmd)->toBe('sudo dnf install -y ghostscript');
     
     $cmd = get_package_install_help('ext', 'gd', 'fedora');
-    expect($cmd)->toBe('sudo dnf install php-gd');
+    expect($cmd)->toBe('sudo dnf install -y php-gd');
 });
 
 test('get_aggregated_install_command groups packages correctly', function () {
