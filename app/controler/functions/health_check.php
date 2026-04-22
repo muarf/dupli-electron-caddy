@@ -3,6 +3,8 @@
  * Fonctions de diagnostic et de santé du système
  */
 
+require_once __DIR__ . '/binary_utilities.php';
+
 /**
  * Détecte la distribution Linux
  */
@@ -71,10 +73,21 @@ $commands = [
         'gd' => 'gd',
         'sqlite3' => ($distro === 'arch' ? 'sqlite' : 'sqlite3'),
         'mbstring' => 'mbstring',
-        'xml' => 'xml'
+        'xml' => 'xml',
+        'zip' => 'zip'
     ];
 
-    return $d['pref'] . $d['ext_prefix'] . ($exts[$pkg_key] ?? $pkg_key);
+    $php_ver = (PHP_VERSION_ID >= 80400) ? '8.4' : ((PHP_VERSION_ID >= 80300) ? '8.3' : '8.5'); // Fallback intelligent
+    if (defined('PHP_MAJOR_VERSION') && defined('PHP_MINOR_VERSION')) {
+        $php_ver = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+    }
+    
+    $prefix = $d['ext_prefix'];
+    if ($distro === 'debian' && $prefix === 'php8.5-') {
+        $prefix = "php{$php_ver}-";
+    }
+
+    return $d['pref'] . $prefix . ($exts[$pkg_key] ?? $pkg_key);
 }
 
 /**
@@ -189,64 +202,43 @@ function check_system_dependencies(): array
     // Si on est sous Windows, l'aide à l'installation d'extensions est spécifique
     $is_electron_windows = $is_windows && (strpos(__DIR__, 'dupli-electron') !== false || strpos(__DIR__, 'dupli-php-dev') !== false);
 
+    $php_bin = escapeshellarg(PHP_BINARY);
     $results['php_extensions'] = [
         'gd' => [
             'name' => 'PHP GD', 
-            'status' => extension_loaded('gd') || shell_exec('php8.5 -m 2>/dev/null | grep gd'),
+            'status' => extension_loaded('gd') || @shell_exec("$php_bin -m 2>/dev/null | grep gd"),
             'critical' => true, 
-            'help' => $is_electron_windows ? 'Décommentez "extension=gd" dans ' . $php_ini_path : 'sudo apt-get install -y php8.5-gd (ou vérifiez php8.5)'
+            'help' => $is_electron_windows ? 'Décommentez "extension=gd" dans ' . $php_ini_path : get_package_install_help('ext', 'gd', $distro)
         ],
         'sqlite3' => [
             'name' => 'PHP SQLite3', 
-            'status' => extension_loaded('sqlite3') || shell_exec('php8.5 -m 2>/dev/null | grep sqlite3'),
+            'status' => extension_loaded('sqlite3') || @shell_exec("$php_bin -m 2>/dev/null | grep sqlite3"),
             'critical' => true, 
-            'help' => $is_electron_windows ? 'Décommentez "extension=sqlite3" dans ' . $php_ini_path : 'sudo apt-get install -y php8.5-sqlite3 (ou vérifiez php8.5)'
+            'help' => $is_electron_windows ? 'Décommentez "extension=sqlite3" dans ' . $php_ini_path : get_package_install_help('ext', 'sqlite3', $distro)
         ],
-        'mbstring' => ['name' => 'PHP Mbstring', 'status' => extension_loaded('mbstring') || shell_exec('php8.5 -m 2>/dev/null | grep mbstring'), 'critical' => true, 'help' => 'sudo apt-get install -y php8.5-mbstring'],
-        'xml' => ['name' => 'PHP XML', 'status' => extension_loaded('xml') || shell_exec('php8.5 -m 2>/dev/null | grep -E "xml|SimpleXML"'), 'critical' => true, 'help' => 'sudo apt-get install -y php8.5-xml'],
+        'mbstring' => ['name' => 'PHP Mbstring', 'status' => extension_loaded('mbstring') || @shell_exec("$php_bin -m 2>/dev/null | grep mbstring"), 'critical' => true, 'help' => get_package_install_help('ext', 'mbstring', $distro)],
+        'xml' => ['name' => 'PHP XML', 'status' => extension_loaded('xml') || @shell_exec("$php_bin -m 2>/dev/null | grep -E \"xml|SimpleXML\""), 'critical' => true, 'help' => get_package_install_help('ext', 'xml', $distro)],
     ];
 
     // === Vérifier Ghostscript ===
-    // 1. Priorité au binaire local
-    $gs_local_path = realpath(__DIR__ . '/../../../bin/win-x64/' . ($is_windows ? 'gs.exe' : 'gs'));
-    if ($gs_local_path && file_exists($gs_local_path)) {
+    $gs_path = get_ghostscript_path();
+    if ($gs_path && (file_exists($gs_path) || (PHP_OS_FAMILY !== 'Windows' && trim(shell_exec("which ".escapeshellarg($gs_path)." 2>/dev/null"))))) {
         $results['dependencies']['ghostscript']['status'] = true;
-        $results['dependencies']['ghostscript']['path'] = $gs_local_path;
-        $cmd = escapeshellarg($gs_local_path) . " -v 2>&1";
-        $results['dependencies']['ghostscript']['version'] = trim(shell_exec($cmd));
-    } else {
-        // Fallback gswin64c.exe
-        $gs_local_path = realpath(__DIR__ . '/../../../bin/win-x64/' . ($is_windows ? 'gswin64c.exe' : 'gs'));
-        if ($gs_local_path && file_exists($gs_local_path)) {
-            $results['dependencies']['ghostscript']['status'] = true;
-            $results['dependencies']['ghostscript']['path'] = $gs_local_path;
-            $results['dependencies']['ghostscript']['version'] = trim(shell_exec(escapeshellarg($gs_local_path) . " -v 2>&1"));
-        } else {
-            // 2. Fallback binaire global
-            $gs_cmd = $is_windows ? 'where gs.exe 2>NUL' : 'which gs 2>/dev/null';
-            $gs_path = trim(shell_exec($gs_cmd));
-            if (!$gs_path && $is_windows) $gs_path = trim(shell_exec('where gswin64c.exe 2>NUL'));
-            
-            if ($gs_path) {
-                $gs_path = explode("\n", str_replace("\r", "", $gs_path))[0];
-                $results['dependencies']['ghostscript']['status'] = true;
-                $results['dependencies']['ghostscript']['path'] = $gs_path;
-                $results['dependencies']['ghostscript']['version'] = trim(shell_exec(escapeshellarg($gs_path) . " --version 2>&1"));
-            }
-        }
+        $results['dependencies']['ghostscript']['path'] = $gs_path;
+        $v_cmd = ($is_windows ? escapeshellarg($gs_path) . " -v" : escapeshellarg($gs_path) . " --version");
+        $results['dependencies']['ghostscript']['version'] = trim(@shell_exec("$v_cmd 2>&1"));
     }
 
-    // === Vérifier GhostPCL (gpcl6) - souvent inclus dans ghostscript ===
-    $gpcl_local_path = realpath(__DIR__ . '/../../../bin/win-x64/' . ($is_windows ? 'gpcl6.exe' : 'gpcl6'));
-    if ($gpcl_local_path && file_exists($gpcl_local_path)) {
+    // === Vérifier GhostPCL (gpcl6) ===
+    $gpcl_path = get_binary_path('gpcl6');
+    if ($gpcl_path && (file_exists($gpcl_path) || (PHP_OS_FAMILY !== 'Windows' && trim(shell_exec("which ".escapeshellarg($gpcl_path)." 2>/dev/null"))))) {
         $results['dependencies']['gpcl6']['status'] = true;
-        $results['dependencies']['gpcl6']['path'] = $gpcl_local_path;
-        $results['dependencies']['gpcl6']['version'] = trim(shell_exec(escapeshellarg($gpcl_local_path) . " -v 2>&1"));
+        $results['dependencies']['gpcl6']['path'] = $gpcl_path;
+        $results['dependencies']['gpcl6']['version'] = trim(@shell_exec(escapeshellarg($gpcl_path) . " -v 2>&1"));
     } elseif ($results['dependencies']['ghostscript']['status'] && !$is_windows) {
-        // Sur Linux, gpcl6 est inclus dans ghostscript
+        // Sur Linux, gpcl6 est parfois inclus dans ghostscript ou absent mais on simule si GS est là
         $results['dependencies']['gpcl6']['status'] = true;
         $results['dependencies']['gpcl6']['path'] = $results['dependencies']['ghostscript']['path'];
-        $results['dependencies']['gpcl6']['version'] = $results['dependencies']['ghostscript']['version'];
     }
 
     // === Vérifier GhostXPS (gxps) ===
@@ -266,30 +258,14 @@ function check_system_dependencies(): array
     }
 
     // === Vérifier ImageMagick ===
-    // 1. Priorité au binaire local
-    $magick_local_path = realpath(__DIR__ . '/../../../bin/win-x64/' . ($is_windows ? 'magick.exe' : 'magick'));
-    if ($magick_local_path && file_exists($magick_local_path)) {
+    $magick_path = get_binary_path('magick');
+    if ($magick_path && (file_exists($magick_path) || (PHP_OS_FAMILY !== 'Windows' && trim(shell_exec("which ".escapeshellarg($magick_path)." 2>/dev/null"))))) {
         $results['dependencies']['imagemagick']['status'] = true;
-        $results['dependencies']['imagemagick']['path'] = $magick_local_path;
-        $cmd = escapeshellarg($magick_local_path) . " -version 2>&1";
-        $lines = explode("\n", trim(shell_exec($cmd)));
-        $results['dependencies']['imagemagick']['version'] = trim($lines[0] ?? '');
-    } else {
-        // 2. Fallback binaire global
-        $magick_cmd = $is_windows ? 'where magick.exe 2>NUL' : 'which magick 2>/dev/null';
-        $magick_path = trim(shell_exec($magick_cmd));
-        if (!$magick_path && !$is_windows) {
-            $magick_path = trim(shell_exec('which convert 2>/dev/null'));
-        }
-        
-        if ($magick_path) {
-            $magick_path = explode("\n", str_replace("\r", "", $magick_path))[0];
-            $results['dependencies']['imagemagick']['status'] = true;
-            $results['dependencies']['imagemagick']['path'] = $magick_path;
-            $cmd = escapeshellarg($magick_path) . ($is_windows ? " -version" : " -version | head -n 1");
-            $lines = explode("\n", trim(shell_exec($cmd)));
-            $results['dependencies']['imagemagick']['version'] = trim($lines[0] ?? '');
-        }
+        $results['dependencies']['imagemagick']['path'] = $magick_path;
+        $v_cmd = escapeshellarg($magick_path) . " -version 2>&1";
+        $magick_v = trim(@shell_exec($v_cmd));
+        $magick_lines = explode("\n", $magick_v);
+        $results['dependencies']['imagemagick']['version'] = trim($magick_lines[0] ?? '');
     }
 
     // Vérifier les permissions
