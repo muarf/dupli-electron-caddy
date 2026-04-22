@@ -62,10 +62,9 @@ jobs:
         working-directory: app
         shell: bash
         run: |
-          echo "Contenu de vendor/bin :"
-          ls vendor/bin
-          echo "Lancement de Pest..."
-          php -d "extension=sqlite3" -d "extension=pdo_sqlite" vendor/bin/pest --group=unit --display-deprecations --display-errors
+          echo "Lancement des tests avec Composer..."
+          export PHP_INI_SCAN_DIR=""
+          php -d "extension=sqlite3" -d "extension=pdo_sqlite" ../composer.phar test -- --group=unit --display-deprecations --display-errors
 
       - name: Run JS Tests (Jest)
         run: |
