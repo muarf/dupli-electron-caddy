@@ -25,6 +25,7 @@ jobs:
       - name: Determine version
         id: get-version
         run: |
+          git fetch --tags
           SHORT_SHA=$(git rev-parse --short HEAD)
           BUILD_NUM=$(date +%Y%m%d%H%M%S)
           VERSION="2.0.0-alpha.${BUILD_NUM}+${SHORT_SHA}"
@@ -34,6 +35,7 @@ jobs:
 
   test-linux-alpha:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -52,6 +54,7 @@ jobs:
           php-version: '8.2'
           extensions: sqlite3, pdo_sqlite, dom, curl, libxml, mbstring, zip
           tools: composer
+          coverage: none
 
       - name: Install system dependencies
         run: |
@@ -61,7 +64,9 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
-          cd app && composer install --optimize-autoloader --ignore-platform-reqs
+          cd app
+          composer install --optimize-autoloader --ignore-platform-reqs
+          cd ..
 
       - name: Download Caddy
         run: |
@@ -71,11 +76,152 @@ jobs:
           rm caddy_2.7.6_linux_amd64.tar.gz
           chmod +x caddy/caddy
 
+      - name: Run PHP Tests (Pest)
+        run: |
+          chmod +x app/tests/helpers/mock_binary.sh
+          cd app
+          ./vendor/bin/pest --display-deprecations --display-errors --display-notices
+          cd ..
+
       - name: Run JS Tests (Jest)
         run: npm test -- --runInBand --forceExit
 
+  test-windows-alpha:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: sqlite3, pdo_sqlite, dom, curl, libxml, mbstring, zip
+          tools: composer
+          coverage: none
+
+      - name: Install system dependencies (Choco)
+        run: |
+          choco install ghostscript -y
+          choco install imagemagick -y
+
+      - name: Install dependencies
+        run: |
+          npm install
+          cd app
+          composer install --optimize-autoloader --ignore-platform-reqs
+          cd ..
+
+      - name: Run PHP Tests (Pest)
+        working-directory: app
+        run: |
+          $phpPath = (Get-Command php).Source
+          $pestPath = "vendor\bin\pest.bat"
+          & $phpPath $pestPath --group=unit --display-deprecations --display-errors
+
+      - name: Run JS Tests (Jest)
+        run: npm test -- --runInBand --forceExit
+
+  create-alpha-release:
+    needs: [get-version, test-linux-alpha, test-windows-alpha]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Create Alpha Release
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const tag = '${{ needs.get-version.outputs.tag }}';
+            const version = '${{ needs.get-version.outputs.version }}';
+            const shortSha = context.sha.substring(0, 7);
+            
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tag,
+              name: `Duplicator Alpha v${version}`,
+              body: `## 🧪 Version ALPHA\n\nCette version est générée automatiquement pour tester la PR.\n\nCommit: \`${shortSha}\`\nBranch: \`${context.ref}\`\nCanal: **alpha**`,
+              draft: false,
+              prerelease: true
+            });
+
+  build-linux-alpha:
+    needs: [get-version, create-alpha-release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Composer and PHP dependencies
+        run: |
+          curl -sS https://getcomposer.org/installer | php
+          cd app
+          php ../composer.phar install --no-dev --optimize-autoloader --ignore-platform-reqs
+          cd ..
+
+      - name: Download Caddy
+        run: |
+          mkdir -p caddy
+          wget -q https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_linux_amd64.tar.gz
+          tar -xzf caddy_2.7.6_linux_amd64.tar.gz -C caddy/
+          rm caddy_2.7.6_linux_amd64.tar.gz
+          chmod +x caddy/caddy
+
+      - name: Update package.json for Alpha
+        run: |
+          VERSION="${{ needs.get-version.outputs.version }}"
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '$VERSION';
+            pkg.name = 'dupli-electron-alpha';
+            pkg.productName = 'Duplicator Alpha';
+            if (!pkg.build) pkg.build = {};
+            pkg.build.appId = 'com.dupli.alpha';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      - name: Build Linux Alpha
+        run: npx electron-builder --config electron-builder-beta.yml -l deb AppImage -c.publish.channel=alpha
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Linux Alpha artifacts
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.get-version.outputs.tag }}
+          files: |
+            dist/Duplicator-Alpha-*
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-windows-alpha:
-    needs: [get-version, test-linux-alpha]
+    needs: [get-version, create-alpha-release]
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
@@ -89,6 +235,20 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+
+      - name: Update package.json for Alpha
+        run: |
+          $VERSION = '${{ needs.get-version.outputs.version }}'
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '$VERSION';
+            pkg.name = 'dupli-electron-alpha';
+            pkg.productName = 'Duplicator Alpha';
+            if (!pkg.build) pkg.build = {};
+            pkg.build.appId = 'com.dupli.alpha';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
 
       - name: Install dependencies
         run: npm install --omit=optional
@@ -106,37 +266,19 @@ jobs:
           Expand-Archive -Path "caddy_windows.zip" -DestinationPath "caddy" -Force
           Remove-Item "caddy_windows.zip"
 
-      - name: Update package.json for Alpha
-        run: |
-          $VERSION = '${{ needs.get-version.outputs.version }}'
-          node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.version = '$VERSION';
-            pkg.name = 'dupli-electron-alpha';
-            pkg.productName = 'Duplicator Alpha';
-            if (!pkg.build) pkg.build = {};
-            pkg.build.appId = 'com.dupli.alpha';
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-          "
-
       - name: Build Windows Alpha
         run: npx electron-builder --config electron-builder-beta.yml --win -c.publish.channel=alpha
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create Alpha Release
+      - name: Upload Windows Alpha artifacts
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.get-version.outputs.tag }}
-          name: Duplicator Alpha v${{ needs.get-version.outputs.version }}
-          body: |
-            ## 🧪 Version ALPHA (Test PR)
-            Cette version est générée automatiquement pour tester la PR.
-            Canal de mise à jour: **alpha**
-          prerelease: true
           files: |
             dist/Duplicator-Alpha-*.exe
+            dist/Duplicator-Alpha-*.zip
             dist/alpha.yml
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
