@@ -165,7 +165,9 @@ function handleGenerate() {
             putenv("PATH=$bin_dir;" . getenv("PATH"));
             
             // Utiliser identify pour obtenir les dimensions via CLI
-            $cmd = escapeshellarg($magick) . " identify -format \"%w|%h\" " . escapeshellarg($first_pdf_path . "[0]");
+            $identify = get_binary_path('identify');
+            $identify_cmd = (strpos($identify, ' ') !== false) ? $identify : escapeshellarg($identify);
+            $cmd = $identify_cmd . " -format \"%w|%h\" " . escapeshellarg($first_pdf_path . "[0]");
             $out = shell_exec($cmd);
             if ($out && strpos($out, '|') !== false) {
                 list($blank_width, $blank_height) = explode('|', $out);
