@@ -87,13 +87,16 @@ function get_binary_path(string $name, ?string $env_var = null): ?string
         $sys_path = ($path = shell_exec("which " . escapeshellarg($name) . " 2>/dev/null")) !== null ? trim($path) : "";
         if ($sys_path) return $sys_path;
 
-        // Fallback spécial linux magick/convert
+        // Fallback spécial linux magick/convert/identify
         if ($name === 'magick') {
             $convert_path = ($path = shell_exec("which convert 2>/dev/null")) !== null ? trim($path) : "";
             if ($convert_path) return $convert_path;
         } elseif ($name === 'convert') {
             $magick_path = ($path = shell_exec("which magick 2>/dev/null")) !== null ? trim($path) : "";
             if ($magick_path) return $magick_path;
+        } elseif ($name === 'identify') {
+            $magick_path = ($path = shell_exec("which magick 2>/dev/null")) !== null ? trim($path) : "";
+            if ($magick_path) return $magick_path . " identify";
         }
     }
 

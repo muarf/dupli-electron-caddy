@@ -82,6 +82,13 @@ jobs:
           ./vendor/bin/pest --display-deprecations --display-errors --display-notices
           cd ..
 
+      - name: Download Caddy
+        run: |
+          wget -q https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_linux_amd64.tar.gz
+          tar -xzf caddy_2.7.6_linux_amd64.tar.gz -C caddy/
+          rm caddy_2.7.6_linux_amd64.tar.gz
+          chmod +x caddy/caddy
+
       - name: Run JS Tests (Jest)
         run: npm test -- --runInBand --forceExit
 

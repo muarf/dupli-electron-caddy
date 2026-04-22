@@ -1,0 +1,289 @@
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9716956Z    FAILED  Tests\Feature\ConversionApiTest > it convertit un EMF…   Exception   
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9735693Z   run_endpoint failed for api/convert-emf-to-png.php.
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9736349Z Raw snippet (first 3000 chars):
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9736720Z {"error":"No PNG files generated"}
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9736983Z END RAW SNIPPET
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9742817Z 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9743044Z   at tests/Pest.php:167
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9749548Z     163▕         $errorMsg = "run_endpoint failed for $file_path.\n";
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9750615Z     164▕         $errorMsg .= "Raw snippet (first 3000 chars):\n";
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9751251Z     165▕         $errorMsg .= substr($output, 0, 3000) . "\n";
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9751667Z     166▕         $errorMsg .= "END RAW SNIPPET";
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9752061Z   ➜ 167▕         throw new \Exception($errorMsg);
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9752382Z     168▕     }
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9752592Z     169▕     
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9753087Z     170▕     return $data ?? ['success' => false, 'error' => 'Invalid JSON', 'raw_output' => $output];
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9753552Z     171▕ }
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9753657Z 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9753758Z   1   tests/Pest.php:167
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9754055Z   2   tests/Feature/ConversionApiTest.php:29
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9754264Z 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9784070Z   ────────────────────────────────────────────────────────────────────────────  
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9854449Z    FAILED  Tests\Feature\TirageActionTest > it calcule le…   RuntimeException   
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9855752Z   run_action failed with code 255 - Output:  - Stderr: === NOUVEAU TEST MULTIMACHINES 2026-04-22 12:59:05 ===
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9856737Z === TEST LOG SIMPLE 12:59:05 ===
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9857316Z === POST DATA DEBUG - REQUEST_METHOD: POST
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9857903Z === POST DATA DEBUG - POST count: 3
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9858541Z === POST DATA DEBUG - POST keys: contact, machines, ok
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9863022Z === POST DATA DEBUG - POST content: a:3:{s:7:"contact";s:5:"Alice";s:8:"machines";a:2:{i:0;a:10:{s:4:"type";s:12:"duplicopieur";s:11:"mode_saisie";s:9:"compteurs";s:15:"duplicopieur_id";i:1;s:9:"master_av";i:100;s:9:"master_ap";i:105;s:10:"passage_av";i:1000;s:10:"passage_ap";i:1200;s:2:"rv";s:3:"non";s:15:"feuilles_payees";s:3:"non";s:7:"tambour";s:12:"tambour_noir";}i:1;a:4:{s:4:"type";s:12:"photocopieur";s:7:"machine";s:5:"Ricoh";s:9:"fill_rate";d:0.5;s:9:"brochures";a:1:{i:0;a:6:{s:14:"nb_exemplaires";i:50;s:11:"nb_feuilles";i
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9868025Z PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000]: General error: 1 no such table: prix in /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/models/tirage_multimachines.php:117
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9869585Z Stack trace:
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9870937Z #0 /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/models/tirage_multimachines.php(117): PDO->prepare()
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9872804Z #1 /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/models/tirage_multimachines.php(677): getMachinePrices()
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9874513Z #2 /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/run_action.php(47): Action()
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9875648Z #3 {main}
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9876622Z   thrown in /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/models/tirage_multimachines.php on line 117
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9877510Z 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9877753Z   at tests/Feature/TirageActionTest.php:232
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9878639Z     228▕     fclose($pipes[0]); fclose($pipes[1]); fclose($pipes[2]);
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9879418Z     229▕     $exitCode = proc_close($process);
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9879929Z     230▕     
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9880633Z     231▕     if ($exitCode !== 0) {
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9881829Z   ➜ 232▕         throw new RuntimeException("run_action failed with code $exitCode - Output: $output - Stderr: $stderr");
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9882797Z     233▕     }
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9883145Z     234▕     
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9883506Z     235▕     return [
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9884110Z     236▕         'vars' => json_decode($output, true) ?: [],
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9884531Z 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9884793Z   1   tests/Feature/TirageActionTest.php:232
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9885384Z   2   tests/Feature/TirageActionTest.php:31
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9885725Z 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9910255Z   ────────────────────────────────────────────────────────────────────────────  
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9979567Z    FAILED  Tests\Feature\TirageActionTest > it enregistre les tirages lors d…   
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9980599Z   Failed asserting that an array is empty.
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9981216Z 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9981727Z   at tests/Feature/TirageActionTest.php:66
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9991092Z      62▕         error_log("ERREURS ENREGISTREMENT: " . print_r($vars['errors'], true));
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9992085Z      63▕         error_log("STDERR: " . $result['stderr']);
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9992718Z      64▕     }
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9993119Z      65▕ 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9993697Z   ➜  66▕     expect($vars['errors'] ?? [])->toBeEmpty();
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9994449Z      67▕     if (!isset($vars['success_message'])) {
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9995022Z      68▕     }
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9995688Z      69▕     expect($vars['success_message'] ?? '')->toContain('succès');
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9996308Z      70▕
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9996490Z 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9996758Z   1   tests/Feature/TirageActionTest.php:66
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:06.9997112Z 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0027854Z   ────────────────────────────────────────────────────────────────────────────  
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0097422Z    FAILED  Tests\Unit\HealthCheckTest > get_package_install_help returns cor…   
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0098329Z   Failed asserting that two strings are identical.
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0098979Z   -'sudo apt-get install -y php-gd'
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0099550Z   +'sudo apt-get install -y php8.2-gd'
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0100219Z   
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0100401Z 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0100647Z   at tests/Unit/HealthCheckTest.php:10
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0104779Z       6▕     $cmd = get_package_install_help('bin', 'ghostscript', 'debian');
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0105901Z       7▕     expect($cmd)->toBe('sudo apt-get install -y ghostscript');
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0106640Z       8▕     
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0107276Z       9▕     $cmd = get_package_install_help('ext', 'gd', 'debian');
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0108500Z   ➜  10▕     expect($cmd)->toBe('sudo apt-get install -y php-gd');
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0109114Z      11▕ });
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0109453Z      12▕ 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0110545Z      13▕ test('get_package_install_help returns correct command for fedora', function () {
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0111693Z      14▕     $cmd = get_package_install_help('bin', 'ghostscript', 'fedora');
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0112192Z 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0112428Z   1   tests/Unit/HealthCheckTest.php:10
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0112762Z 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0141729Z   ────────────────────────────────────────────────────────────────────────────  
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0210598Z    FAILED  Tests\Unit\HealthCheckTest > get_aggregated_install_command group…   
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0212042Z   Expected: sudo apt-get install -y ghostscript php8.5-gd php8.5-mbstring
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0212616Z 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0212788Z   To contain: php-gd
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0213033Z 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0213269Z   at tests/Unit/HealthCheckTest.php:32
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0217868Z      28▕     // This function calls get_linux_distro_info(), which might return 'debian' on this system
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0219009Z      29▕     $cmd = get_aggregated_install_command($packages);
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0219591Z      30▕     
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0220382Z      31▕     expect($cmd)->toContain('ghostscript');
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0221195Z   ➜  32▕     expect($cmd)->toContain('php-gd');
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0221905Z      33▕     expect($cmd)->toContain('php-mbstring');
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0222458Z      34▕ });
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0222807Z      35▕ 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0223508Z      36▕ test('get_global_install_command handles empty results', function () {
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0224051Z 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0224292Z   1   tests/Unit/HealthCheckTest.php:32
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0224659Z 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0224678Z 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0225009Z   Tests:    5 failed, 2 skipped, 112 passed (321 assertions)
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0225578Z   Duration: 6.47s
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0225801Z 
+test-linux-beta	Run PHP Tests (Pest)	2026-04-22T12:59:07.0365214Z ##[error]Process completed with exit code 2.
+test-linux-beta	Post Checkout code	﻿2026-04-22T12:59:07.0455502Z Post job cleanup.
+test-linux-beta	Post Checkout code	2026-04-22T12:59:07.1408644Z [command]/usr/bin/git version
+test-linux-beta	Post Checkout code	2026-04-22T12:59:07.1445520Z git version 2.53.0
+test-linux-beta	Post Checkout code	2026-04-22T12:59:07.1488832Z Temporarily overriding HOME='/home/runner/work/_temp/2e620df4-73c9-4c23-8974-5b81f62f8bd2' before making global git config changes
+test-linux-beta	Post Checkout code	2026-04-22T12:59:07.1489895Z Adding repository directory to the temporary git global config as a safe directory
+test-linux-beta	Post Checkout code	2026-04-22T12:59:07.1494709Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/dupli-electron-caddy/dupli-electron-caddy
+test-linux-beta	Post Checkout code	2026-04-22T12:59:07.1530263Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+test-linux-beta	Post Checkout code	2026-04-22T12:59:07.1561849Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+test-linux-beta	Post Checkout code	2026-04-22T12:59:07.1783960Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+test-linux-beta	Post Checkout code	2026-04-22T12:59:07.1804296Z http.https://github.com/.extraheader
+test-linux-beta	Post Checkout code	2026-04-22T12:59:07.1816011Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+test-linux-beta	Post Checkout code	2026-04-22T12:59:07.1846103Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+test-linux-beta	Post Checkout code	2026-04-22T12:59:07.2062431Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+test-linux-beta	Post Checkout code	2026-04-22T12:59:07.2092928Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+test-linux-beta	Complete job	﻿2026-04-22T12:59:07.2425042Z Cleaning up orphan processes
+test-linux-beta	Complete job	2026-04-22T12:59:07.2838060Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-node@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+get-version	Set up job	﻿2026-04-22T12:58:02.6043807Z Current runner version: '2.333.1'
+get-version	Set up job	2026-04-22T12:58:02.6069867Z ##[group]Runner Image Provisioner
+get-version	Set up job	2026-04-22T12:58:02.6070780Z Hosted Compute Agent
+get-version	Set up job	2026-04-22T12:58:02.6071284Z Version: 20260213.493
+get-version	Set up job	2026-04-22T12:58:02.6072066Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
+get-version	Set up job	2026-04-22T12:58:02.6072792Z Build Date: 2026-02-13T00:28:41Z
+get-version	Set up job	2026-04-22T12:58:02.6073437Z Worker ID: {cc39c8dd-75d0-4bec-a191-cc04688b6b86}
+get-version	Set up job	2026-04-22T12:58:02.6074254Z Azure Region: westus3
+get-version	Set up job	2026-04-22T12:58:02.6074832Z ##[endgroup]
+get-version	Set up job	2026-04-22T12:58:02.6076078Z ##[group]Operating System
+get-version	Set up job	2026-04-22T12:58:02.6076770Z Ubuntu
+get-version	Set up job	2026-04-22T12:58:02.6077282Z 24.04.4
+get-version	Set up job	2026-04-22T12:58:02.6077722Z LTS
+get-version	Set up job	2026-04-22T12:58:02.6078276Z ##[endgroup]
+get-version	Set up job	2026-04-22T12:58:02.6078962Z ##[group]Runner Image
+get-version	Set up job	2026-04-22T12:58:02.6079543Z Image: ubuntu-24.04
+get-version	Set up job	2026-04-22T12:58:02.6080151Z Version: 20260413.86.1
+get-version	Set up job	2026-04-22T12:58:02.6081129Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260413.86/images/ubuntu/Ubuntu2404-Readme.md
+get-version	Set up job	2026-04-22T12:58:02.6082811Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260413.86
+get-version	Set up job	2026-04-22T12:58:02.6083744Z ##[endgroup]
+get-version	Set up job	2026-04-22T12:58:02.6084781Z ##[group]GITHUB_TOKEN Permissions
+get-version	Set up job	2026-04-22T12:58:02.6086723Z Contents: write
+get-version	Set up job	2026-04-22T12:58:02.6087266Z Metadata: read
+get-version	Set up job	2026-04-22T12:58:02.6087919Z ##[endgroup]
+get-version	Set up job	2026-04-22T12:58:02.6090911Z Secret source: Actions
+get-version	Set up job	2026-04-22T12:58:02.6091660Z Prepare workflow directory
+get-version	Set up job	2026-04-22T12:58:02.6435757Z Prepare all required actions
+get-version	Set up job	2026-04-22T12:58:02.6475139Z Getting action download info
+get-version	Set up job	2026-04-22T12:58:03.0662054Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+get-version	Set up job	2026-04-22T12:58:03.2825133Z Complete job name: get-version
+get-version	Checkout code	﻿2026-04-22T12:58:03.3641009Z ##[group]Run actions/checkout@v4
+get-version	Checkout code	2026-04-22T12:58:03.3641811Z with:
+get-version	Checkout code	2026-04-22T12:58:03.3642176Z   fetch-depth: 0
+get-version	Checkout code	2026-04-22T12:58:03.3642613Z   repository: muarf/dupli-electron-caddy
+get-version	Checkout code	2026-04-22T12:58:03.3643325Z   token: ***
+get-version	Checkout code	2026-04-22T12:58:03.3643728Z   ssh-strict: true
+get-version	Checkout code	2026-04-22T12:58:03.3644129Z   ssh-user: git
+get-version	Checkout code	2026-04-22T12:58:03.3644525Z   persist-credentials: true
+get-version	Checkout code	2026-04-22T12:58:03.3644974Z   clean: true
+get-version	Checkout code	2026-04-22T12:58:03.3645361Z   sparse-checkout-cone-mode: true
+get-version	Checkout code	2026-04-22T12:58:03.3645840Z   fetch-tags: false
+get-version	Checkout code	2026-04-22T12:58:03.3646230Z   show-progress: true
+get-version	Checkout code	2026-04-22T12:58:03.3646636Z   lfs: false
+get-version	Checkout code	2026-04-22T12:58:03.3647002Z   submodules: false
+get-version	Checkout code	2026-04-22T12:58:03.3647405Z   set-safe-directory: true
+get-version	Checkout code	2026-04-22T12:58:03.3647983Z ##[endgroup]
+get-version	Checkout code	2026-04-22T12:58:03.4735110Z Syncing repository: muarf/dupli-electron-caddy
+get-version	Checkout code	2026-04-22T12:58:03.4736893Z ##[group]Getting Git version info
+get-version	Checkout code	2026-04-22T12:58:03.4737737Z Working directory is '/home/runner/work/dupli-electron-caddy/dupli-electron-caddy'
+get-version	Checkout code	2026-04-22T12:58:03.4739157Z [command]/usr/bin/git version
+get-version	Checkout code	2026-04-22T12:58:03.4777744Z git version 2.53.0
+get-version	Checkout code	2026-04-22T12:58:03.4802827Z ##[endgroup]
+get-version	Checkout code	2026-04-22T12:58:03.4817016Z Temporarily overriding HOME='/home/runner/work/_temp/85efd3ea-7672-4545-b769-eeae9daf3d96' before making global git config changes
+get-version	Checkout code	2026-04-22T12:58:03.4819216Z Adding repository directory to the temporary git global config as a safe directory
+get-version	Checkout code	2026-04-22T12:58:03.4831037Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/dupli-electron-caddy/dupli-electron-caddy
+get-version	Checkout code	2026-04-22T12:58:03.4864508Z Deleting the contents of '/home/runner/work/dupli-electron-caddy/dupli-electron-caddy'
+get-version	Checkout code	2026-04-22T12:58:03.4867884Z ##[group]Initializing the repository
+get-version	Checkout code	2026-04-22T12:58:03.4872273Z [command]/usr/bin/git init /home/runner/work/dupli-electron-caddy/dupli-electron-caddy
+get-version	Checkout code	2026-04-22T12:58:03.4929947Z hint: Using 'master' as the name for the initial branch. This default branch name
+get-version	Checkout code	2026-04-22T12:58:03.4931416Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+get-version	Checkout code	2026-04-22T12:58:03.4932420Z hint: to use in all of your new repositories, which will suppress this warning,
+get-version	Checkout code	2026-04-22T12:58:03.4933103Z hint: call:
+get-version	Checkout code	2026-04-22T12:58:03.4933460Z hint:
+get-version	Checkout code	2026-04-22T12:58:03.4934441Z hint: 	git config --global init.defaultBranch <name>
+get-version	Checkout code	2026-04-22T12:58:03.4935305Z hint:
+get-version	Checkout code	2026-04-22T12:58:03.4936080Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+get-version	Checkout code	2026-04-22T12:58:03.4937402Z hint: 'development'. The just-created branch can be renamed via this command:
+get-version	Checkout code	2026-04-22T12:58:03.4938425Z hint:
+get-version	Checkout code	2026-04-22T12:58:03.4939171Z hint: 	git branch -m <name>
+get-version	Checkout code	2026-04-22T12:58:03.4939808Z hint:
+get-version	Checkout code	2026-04-22T12:58:03.4940371Z hint: Disable this message with "git config set advice.defaultBranchName false"
+get-version	Checkout code	2026-04-22T12:58:03.4941453Z Initialized empty Git repository in /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/.git/
+get-version	Checkout code	2026-04-22T12:58:03.4943672Z [command]/usr/bin/git remote add origin https://github.com/muarf/dupli-electron-caddy
+get-version	Checkout code	2026-04-22T12:58:03.4975104Z ##[endgroup]
+get-version	Checkout code	2026-04-22T12:58:03.4975849Z ##[group]Disabling automatic garbage collection
+get-version	Checkout code	2026-04-22T12:58:03.4979307Z [command]/usr/bin/git config --local gc.auto 0
+get-version	Checkout code	2026-04-22T12:58:03.5010116Z ##[endgroup]
+get-version	Checkout code	2026-04-22T12:58:03.5010795Z ##[group]Setting up auth
+get-version	Checkout code	2026-04-22T12:58:03.5016979Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+get-version	Checkout code	2026-04-22T12:58:03.5048630Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+get-version	Checkout code	2026-04-22T12:58:03.5329130Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+get-version	Checkout code	2026-04-22T12:58:03.5361313Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+get-version	Checkout code	2026-04-22T12:58:03.5594603Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+get-version	Checkout code	2026-04-22T12:58:03.5627130Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+get-version	Checkout code	2026-04-22T12:58:03.5882937Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+get-version	Checkout code	2026-04-22T12:58:03.5920054Z ##[endgroup]
+get-version	Checkout code	2026-04-22T12:58:03.5920820Z ##[group]Fetching the repository
+get-version	Checkout code	2026-04-22T12:58:03.5928545Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+get-version	Checkout code	2026-04-22T12:58:16.5196842Z From https://github.com/muarf/dupli-electron-caddy
+get-version	Checkout code	2026-04-22T12:58:16.5201124Z  * [new branch]      console-wrapper             -> origin/console-wrapper
+get-version	Checkout code	2026-04-22T12:58:16.5203403Z  * [new branch]      dev                         -> origin/dev
+get-version	Checkout code	2026-04-22T12:58:16.5205906Z  * [new branch]      feat/icon-gnome-deb-fixes   -> origin/feat/icon-gnome-deb-fixes
+get-version	Checkout code	2026-04-22T12:58:16.5208696Z  * [new branch]      feature/bibliotheque-improvements -> origin/feature/bibliotheque-improvements
+get-version	Checkout code	2026-04-22T12:58:16.5211750Z  * [new branch]      feature/cmyk-and-color-fix  -> origin/feature/cmyk-and-color-fix
+get-version	Checkout code	2026-04-22T12:58:16.5214884Z  * [new branch]      feature/cross-platform-unification -> origin/feature/cross-platform-unification
+get-version	Checkout code	2026-04-22T12:58:16.5218441Z  * [new branch]      feature/image-processor-improvements -> origin/feature/image-processor-improvements
+get-version	Checkout code	2026-04-22T12:58:16.5222009Z  * [new branch]      feature/impression-complete -> origin/feature/impression-complete
+get-version	Checkout code	2026-04-22T12:58:16.5225381Z  * [new branch]      feature/impression-ouverture-systeme -> origin/feature/impression-ouverture-systeme
+get-version	Checkout code	2026-04-22T12:58:16.5229063Z  * [new branch]      feature/linux-spool-analyzer -> origin/feature/linux-spool-analyzer
+get-version	Checkout code	2026-04-22T12:58:16.5232629Z  * [new branch]      feature/multi-session-management -> origin/feature/multi-session-management
+get-version	Checkout code	2026-04-22T12:58:16.5236161Z  * [new branch]      feature/multi-session-sync  -> origin/feature/multi-session-sync
+get-version	Checkout code	2026-04-22T12:58:16.5239649Z  * [new branch]      feature/php-error-handling  -> origin/feature/php-error-handling
+get-version	Checkout code	2026-04-22T12:58:16.5243106Z  * [new branch]      feature/php-fatal-monitoring -> origin/feature/php-fatal-monitoring
+get-version	Checkout code	2026-04-22T12:58:16.5246353Z  * [new branch]      feature/print-engine        -> origin/feature/print-engine
+get-version	Checkout code	2026-04-22T12:58:16.5250161Z  * [new branch]      feature/printer-monitor-integration -> origin/feature/printer-monitor-integration
+get-version	Checkout code	2026-04-22T12:58:16.5253551Z  * [new branch]      fix-linux-appimage          -> origin/fix-linux-appimage
+get-version	Checkout code	2026-04-22T12:58:16.5255873Z  * [new branch]      fix-workflow-build          -> origin/fix-workflow-build
+get-version	Checkout code	2026-04-22T12:58:16.5257781Z  * [new branch]      fix-xps-ps-pcl              -> origin/fix-xps-ps-pcl
+get-version	Checkout code	2026-04-22T12:58:16.5259928Z  * [new branch]      fix/auto-tirage-logic       -> origin/fix/auto-tirage-logic
+get-version	Checkout code	2026-04-22T12:58:16.5262032Z  * [new branch]      fix/backup-dir-userdata     -> origin/fix/backup-dir-userdata
+get-version	Checkout code	2026-04-22T12:58:16.5264594Z  * [new branch]      fix/backup-readonly-filesystem-linux -> origin/fix/backup-readonly-filesystem-linux
+get-version	Checkout code	2026-04-22T12:58:16.5267070Z  * [new branch]      fix/getjobw-windows         -> origin/fix/getjobw-windows
+get-version	Checkout code	2026-04-22T12:58:16.5269077Z  * [new branch]      fix/macos-build             -> origin/fix/macos-build
+get-version	Checkout code	2026-04-22T12:58:16.5270867Z  * [new branch]      fix/macos-workflow          -> origin/fix/macos-workflow
+get-version	Checkout code	2026-04-22T12:58:16.5273014Z  * [new branch]      fix/windows-8.1-compatibility -> origin/fix/windows-8.1-compatibility
+get-version	Checkout code	2026-04-22T12:58:16.5275076Z  * [new branch]      main                        -> origin/main
+get-version	Checkout code	2026-04-22T12:58:16.5276645Z  * [new branch]      pr-15                       -> origin/pr-15
+get-version	Checkout code	2026-04-22T12:58:16.5278564Z  * [new branch]      update-from-php-dev         -> origin/update-from-php-dev
+get-version	Checkout code	2026-04-22T12:58:16.5280898Z  * [new tag]         android-v4                  -> android-v4
+get-version	Checkout code	2026-04-22T12:58:16.5282394Z  * [new tag]         android-v5                  -> android-v5
+get-version	Checkout code	2026-04-22T12:58:16.5283824Z  * [new tag]         v1.0.0                      -> v1.0.0
+get-version	Checkout code	2026-04-22T12:58:16.5285201Z  * [new tag]         v1.0.1                      -> v1.0.1
+get-version	Checkout code	2026-04-22T12:58:16.5286578Z  * [new tag]         v1.0.10                     -> v1.0.10
+get-version	Checkout code	2026-04-22T12:58:16.5287960Z  * [new tag]         v1.0.11                     -> v1.0.11
+get-version	Checkout code	2026-04-22T12:58:16.5289505Z  * [new tag]         v1.0.12                     -> v1.0.12
+get-version	Checkout code	2026-04-22T12:58:16.5290886Z  * [new tag]         v1.0.13                     -> v1.0.13
+get-version	Checkout code	2026-04-22T12:58:16.5292256Z  * [new tag]         v1.0.14                     -> v1.0.14
+get-version	Checkout code	2026-04-22T12:58:16.5293611Z  * [new tag]         v1.0.15                     -> v1.0.15
+get-version	Checkout code	2026-04-22T12:58:16.5295005Z  * [new tag]         v1.0.16                     -> v1.0.16
+get-version	Checkout code	2026-04-22T12:58:16.5296404Z  * [new tag]         v1.0.17                     -> v1.0.17
+get-version	Checkout code	2026-04-22T12:58:16.5297796Z  * [new tag]         v1.0.18                     -> v1.0.18
+get-version	Checkout code	2026-04-22T12:58:16.5299349Z  * [new tag]         v1.0.19                     -> v1.0.19
+get-version	Checkout code	2026-04-22T12:58:16.5300763Z  * [new tag]         v1.0.2                      -> v1.0.2
+get-version	Checkout code	2026-04-22T12:58:16.5302173Z  * [new tag]         v1.0.3                      -> v1.0.3
+get-version	Checkout code	2026-04-22T12:58:16.5303559Z  * [new tag]         v1.0.56                     -> v1.0.56
+get-version	Checkout code	2026-04-22T12:58:16.5304965Z  * [new tag]         v1.0.57                     -> v1.0.57
+get-version	Checkout code	2026-04-22T12:58:16.5306360Z  * [new tag]         v1.0.58                     -> v1.0.58
+get-version	Checkout code	2026-04-22T12:58:16.5307751Z  * [new tag]         v1.0.59                     -> v1.0.59
+get-version	Checkout code	2026-04-22T12:58:16.5309348Z  * [new tag]         v1.0.60                     -> v1.0.60
+get-version	Checkout code	2026-04-22T12:58:16.5310777Z  * [new tag]         v1.0.61                     -> v1.0.61
+get-version	Checkout code	2026-04-22T12:58:16.5312195Z  * [new tag]         v1.0.62                     -> v1.0.62
+get-version	Checkout code	2026-04-22T12:58:16.5313615Z  * [new tag]         v1.0.63                     -> v1.0.63
+get-version	Checkout code	2026-04-22T12:58:16.5314997Z  * [new tag]         v1.0.64                     -> v1.0.64
+get-version	Checkout code	2026-04-22T12:58:16.5316370Z  * [new tag]         v1.0.65                     -> v1.0.65
+get-version	Checkout code	2026-04-22T12:58:16.5318072Z  * [new tag]         v1.0.66                     -> v1.0.66
+get-version	Checkout code	2026-04-22T12:58:16.5319629Z  * [new tag]         v1.0.67                     -> v1.0.67
+get-version	Checkout code	2026-04-22T12:58:16.5320978Z  * [new tag]         v1.0.68                     -> v1.0.68
+get-version	Checkout code	2026-04-22T12:58:16.5322479Z  * [new tag]         v1.0.69                     -> v1.0.69
+get-version	Checkout code	2026-04-22T12:58:16.5323802Z  * [new tag]         v1.0.70                     -> v1.0.70
+get-version	Checkout code	2026-04-22T12:58:16.5325136Z  * [new tag]         v1.0.71                     -> v1.0.71
+get-version	Checkout code	2026-04-22T12:58:16.5326455Z  * [new tag]         v1.0.72                     -> v1.0.72
+get-version	Checkout code	2026-04-22T12:58:16.5327768Z  * [new tag]         v1.0.73                     -> v1.0.73
+get-version	Checkout code	2026-04-22T12:58:16.5329264Z  * [new tag]         v1.0.74                     -> v1.0.74
+get-version	Checkout code	2026-04-22T12:58:16.5330624Z  * [new tag]         v1.0.75                     -> v1.0.75
+get-version	Checkout code	2026-04-22T12:58:16.5331942Z  * [new tag]         v1.0.76                     -> v1.0.76
+get-version	Checkout code	2026-04-22T12:58:16.5333272Z  * [new tag]         v1.0.77                     -> v1.0.77
+get-version	Checkout code	2026-04-22T12:58:16.5334592Z  * [new tag]         v1.0.8                      -> v1.0.8
+get-version	Checkout code	2026-04-22T12:58:16.5335898Z  * [new tag]         v1.0.9                      -> v1.0.9
+get-version	Checkout code	2026-04-22T12:58:16.5337212Z  * [new tag]         v1.1.0                      -> v1.1.0
+get-version	Checkout code	2026-04-22T12:58:16.5338516Z  * [new tag]         v1.1.1                      -> v1.1.1
+get-version	Checkout code	2026-04-22T12:58:16.5340029Z  * [new tag]         v1.1.10                     -> v1.1.10
+get-version	Checkout code	2026-04-22T12:58:16.5341364Z  * [new tag]         v1.1.11                     -> v1.1.11
