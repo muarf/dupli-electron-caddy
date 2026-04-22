@@ -63,6 +63,14 @@ jobs:
           npm install
           cd app && composer install --optimize-autoloader --ignore-platform-reqs
 
+      - name: Download Caddy
+        run: |
+          mkdir -p caddy
+          wget -q https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_linux_amd64.tar.gz
+          tar -xzf caddy_2.7.6_linux_amd64.tar.gz -C caddy/
+          rm caddy_2.7.6_linux_amd64.tar.gz
+          chmod +x caddy/caddy
+
       - name: Run JS Tests (Jest)
         run: npm test -- --runInBand --forceExit
 
@@ -84,6 +92,19 @@ jobs:
 
       - name: Install dependencies
         run: npm install --omit=optional
+
+      - name: Install Composer and PHP dependencies
+        run: |
+          Invoke-WebRequest -Uri "https://getcomposer.org/download/latest-stable/composer.phar" -OutFile "composer.phar"
+          cd app
+          php ../composer.phar install --no-dev --optimize-autoloader --ignore-platform-reqs
+          cd ..
+
+      - name: Download Caddy
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_windows_amd64.zip" -OutFile "caddy_windows.zip"
+          Expand-Archive -Path "caddy_windows.zip" -DestinationPath "caddy" -Force
+          Remove-Item "caddy_windows.zip"
 
       - name: Update package.json for Alpha
         run: |
