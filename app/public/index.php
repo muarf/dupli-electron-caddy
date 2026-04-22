@@ -1097,9 +1097,8 @@ if (in_array($page, $page_secure, true)) {
         // Appeler Action() et récupérer le contenu
         $content = Action($conf);
 
-        // Détecter si mode standalone pour les chemins de ressources
-        $is_standalone = !isset($_SERVER['ELECTRON_RUNNING']) && php_sapi_name() === 'cli-server';
-        $base_path = $is_standalone ? '' : 'public/';
+        // Le base_path est vide car la racine web est désormais toujours le dossier public/
+        $base_path = '';
 
         // Créer le tableau final en préservant les variables du modèle
         $array = array('header' => $header, 'footer' => $footer, 'content' => $content, 'base_path' => $base_path);

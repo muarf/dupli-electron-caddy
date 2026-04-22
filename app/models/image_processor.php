@@ -414,7 +414,31 @@ function convert_to_bitmap_dithering($image) {
     $width = imagesx($image);
     $height = imagesy($image);
     
-    // 1. Essayer d'utiliser Imagick (Extension PHP) - Recommandé pour perf
+    // 1. Essayer d'utiliser le binaire Magick (CLI) - Performant et portable
+    $magick_path = get_binary_path('magick');
+    if ($magick_path && $magick_path !== 'magick') {
+        try {
+            $tmp_in = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dither_in_' . uniqid() . '.png';
+            $tmp_out = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dither_out_' . uniqid() . '.png';
+            imagepng($image, $tmp_in);
+            
+            // Floyd-Steinberg dithering via CLI
+            $cmd = escapeshellarg($magick_path) . " " . escapeshellarg($tmp_in) . " -colorspace gray -dither FloydSteinberg -colors 2 " . escapeshellarg($tmp_out);
+            exec($cmd);
+            
+            if (file_exists($tmp_out)) {
+                $new_image = imagecreatefrompng($tmp_out);
+                @unlink($tmp_in);
+                @unlink($tmp_out);
+                if ($new_image !== false) return $new_image;
+            }
+            @unlink($tmp_in);
+        } catch (Exception $e) {
+            error_log("Erreur Magick CLI dithering: " . $e->getMessage());
+        }
+    }
+
+    // 2. Essayer d'utiliser Imagick (Extension PHP)
     if (extension_loaded('imagick')) {
         try {
             // Sauvegarder l'image GD dans un buffer pour la passer à Imagick

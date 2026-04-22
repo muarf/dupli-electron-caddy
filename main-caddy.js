@@ -1156,12 +1156,13 @@ function startPhpFpm() {
         // car public est le document root mais vendor est au niveau de public
         const appBasePath = appPath; // Root is app/
         const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
+        const appPublicPath = path.join(appPath, 'public');
         console.log('Configuration PHP pour Linux packagé/AppImage (PHP système)');
-        console.log('Document root (public):', appPath);
+        console.log('Document root (public):', appPublicPath);
         console.log('App base path (pour vendor):', appBasePath);
         phpArgs = [
             '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
-            '-t', appPath, // Document root = public
+            '-t', appPublicPath, // Document root = public
             '-d', `include_path=${appBasePath}:${vendorPath}:.`,
             '-d', 'display_errors=1',
             '-d', 'log_errors=1',
@@ -1204,6 +1205,7 @@ function startPhpFpm() {
         const appBasePath = appPath; // Root is app/
         const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
 
+        const appPublicPath = path.join(appPath, 'public');
         console.log('Configuration PHP pour Windows');
         console.log('isPackaged:', isPackaged);
         console.log('PHP Ini Path:', phpIniPath);
@@ -1211,11 +1213,12 @@ function startPhpFpm() {
         console.log('PHP Ext Path:', phpExtPath);
         console.log('PHP Ext exists:', fs.existsSync(phpExtPath));
         console.log('App base path (pour vendor):', appBasePath);
+        console.log('Document root (public):', appPublicPath);
 
         phpArgs = [
             '-c', phpIniPath,
             '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
-            '-t', appPath,
+            '-t', appPublicPath,
             '-d', `extension_dir=${phpExtPath.replace(/\\/g, '/')}`, // Utiliser des slashes pour Windows
             '-d', 'extension=php_sqlite3.dll', // Charger explicitement SQLite3
             '-d', 'extension=php_pdo_sqlite.dll', // Charger explicitement PDO SQLite
@@ -1239,9 +1242,11 @@ function startPhpFpm() {
             ? path.resolve(devExtPath)
             : path.resolve(packagedExtPath);
 
+        const appPublicPath = path.join(appPath, 'public');
         console.log('Configuration PHP pour macOS/dev');
         console.log('isPackaged:', isPackaged);
         console.log('PHP Ext Path:', phpExtPath);
+        console.log('Document root (public):', appPublicPath);
 
         // Ajouter le répertoire parent au include_path pour que vendor/autoload.php soit accessible
         const appBasePath = appPath; // Root is app/
@@ -1251,7 +1256,7 @@ function startPhpFpm() {
             phpArgs = [
                 '-c', phpIniPath,
                 '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
-                '-t', appPath,
+                '-t', appPublicPath,
                 '-d', `extension_dir=${phpExtPath}`,  // extension_dir avant include_path pour cohérence
                 '-d', `include_path=${appBasePath}:${vendorPath}:.`,
                 '-d', 'display_errors=1',
@@ -1268,7 +1273,7 @@ function startPhpFpm() {
             const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
             phpArgs = [
                 '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
-                '-t', appPath,
+                '-t', appPublicPath,
                 '-d', `include_path=${appBasePath}:${vendorPath}:.`,
                 '-d', 'display_errors=1',
                 '-d', 'log_errors=1',
@@ -1285,7 +1290,8 @@ function startPhpFpm() {
     const phpDir = path.dirname(phpPath);
     const env = {
         ...process.env,
-        DUPLICATOR_DB_PATH: getDatabasePath()
+        DUPLICATOR_DB_PATH: getDatabasePath(),
+        ELECTRON_RUNNING: '1'
     };
 
     // Sur Windows, ajouter le répertoire PHP au PATH pour que les DLL soient accessibles
@@ -1366,13 +1372,13 @@ function startPhpServer() {
 
     // Pas de php.ini pour éviter les erreurs d'extensions
     // Ajouter le répertoire parent au include_path pour que vendor/autoload.php soit accessible
-    const appBasePath = path.join(appPath, '..'); // Remonter de public/ vers app/
-    const vendorPath = path.join(appBasePath, 'vendor'); // Chemin vers vendor avec le bon séparateur
+    const appPublicPath = path.join(appPath, 'public');
+    const vendorPath = path.join(appPath, 'vendor');
     const pathSeparator = isWindows ? ';' : ':';
     phpFpmProcess = spawn(phpPath, [
         '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
-        '-t', appPath,
-        '-d', `include_path=${appBasePath}${pathSeparator}${vendorPath}${pathSeparator}.`,
+        '-t', appPublicPath,
+        '-d', `include_path=${appPath}${pathSeparator}${vendorPath}${pathSeparator}.`,
         '-d', 'display_errors=1',
         '-d', 'upload_max_filesize=50M',
         '-d', 'post_max_size=50M',
@@ -1385,7 +1391,8 @@ function startPhpServer() {
         stdio: ['pipe', 'pipe', 'pipe'],
         env: {
             ...process.env,
-            DUPLICATOR_DB_PATH: getDatabasePath()
+            DUPLICATOR_DB_PATH: getDatabasePath(),
+            ELECTRON_RUNNING: '1'
         }
     });
 

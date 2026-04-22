@@ -3,7 +3,7 @@
 
             <!-- Admin Warning Container -->
             <div id="admin-warning-container"></div>
-            <script src="public/js/admin-warning.js"></script>
+            <script src="js/admin-warning.js"></script>
 
             <?php if (isset($health_check) && $health_check['critical_missing']): ?>
                 <div class="alert alert-danger" style="margin-top: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(220,53,69,0.2);">

@@ -190,12 +190,6 @@ function check_system_dependencies(): array
     $is_electron_windows = $is_windows && (strpos(__DIR__, 'dupli-electron') !== false || strpos(__DIR__, 'dupli-php-dev') !== false);
 
     $results['php_extensions'] = [
-        'imagick' => [
-            'name' => 'PHP Imagick', 
-            'status' => extension_loaded('imagick') || shell_exec('php8.5 -m 2>/dev/null | grep imagick'),
-            'critical' => true, 
-            'help' => $is_electron_windows ? 'Téléchargez php_imagick.dll et activez "extension=imagick" dans ' . $php_ini_path : 'sudo apt-get install -y php8.5-imagick (ou vérifiez php8.5)'
-        ],
         'gd' => [
             'name' => 'PHP GD', 
             'status' => extension_loaded('gd') || shell_exec('php8.5 -m 2>/dev/null | grep gd'),
