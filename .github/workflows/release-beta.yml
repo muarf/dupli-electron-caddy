@@ -129,8 +129,7 @@ jobs:
 
       - name: Run PHP Tests (Pest)
         working-directory: app
-        run: |
-          .\vendor\bin\pest.bat --group=unit --display-deprecations --display-errors
+        run: php vendor/bin/pest --group=unit --display-deprecations --display-errors
 
       - name: Run JS Tests (Jest)
         run: npm test -- --runInBand --forceExit
