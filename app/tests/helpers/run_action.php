@@ -37,6 +37,7 @@ if (php_sapi_name() === 'cli' && isset($argv[0]) && basename(__FILE__) === basen
     require_once __DIR__ . '/../../controler/functions/machines.php';
     require_once __DIR__ . '/../../controler/functions/tirage.php';
     require_once __DIR__ . '/../../models/migrations/DatabaseMigrationManager.php';
+    require_once __DIR__ . '/test_db_helpers.php';
 
     [$dbPath, $pdo] = create_test_sqlite_database();
     configure_sqlite_conf($dbPath);

@@ -36,7 +36,7 @@ function get_binary_path(string $name, ?string $env_var = null): ?string
     // 1. Vérifier la variable d'environnement (priorité haute)
     if ($env_var) {
         $env_path = getenv($env_var);
-        if ($env_path && (file_exists($env_path) || trim(shell_exec("which " . escapeshellarg($env_path) . " 2>/dev/null")))) {
+        if ($env_path && (file_exists($env_path) || ($path = shell_exec("which " . escapeshellarg($env_path) . " 2>/dev/null")) !== null && trim($path) !== "")) {
             return $env_path;
         }
     }
@@ -83,17 +83,16 @@ function get_binary_path(string $name, ?string $env_var = null): ?string
         }
     }
 
-    // 4. Fallback système final via 'which'
     if (!$is_windows) {
-        $sys_path = trim(shell_exec("which " . escapeshellarg($name) . " 2>/dev/null"));
+        $sys_path = ($path = shell_exec("which " . escapeshellarg($name) . " 2>/dev/null")) !== null ? trim($path) : "";
         if ($sys_path) return $sys_path;
 
         // Fallback spécial linux magick/convert
         if ($name === 'magick') {
-            $convert_path = trim(shell_exec("which convert 2>/dev/null"));
+            $convert_path = ($path = shell_exec("which convert 2>/dev/null")) !== null ? trim($path) : "";
             if ($convert_path) return $convert_path;
         } elseif ($name === 'convert') {
-            $magick_path = trim(shell_exec("which magick 2>/dev/null"));
+            $magick_path = ($path = shell_exec("which magick 2>/dev/null")) !== null ? trim($path) : "";
             if ($magick_path) return $magick_path;
         }
     }
