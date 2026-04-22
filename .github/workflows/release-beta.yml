@@ -70,12 +70,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm install --ignore-scripts
+          npm install
           cd app
           composer install --optimize-autoloader --ignore-platform-reqs
           cd ..
-        env:
-          ELECTRON_SKIP_NATIVE_REBUILD: 1
 
       - name: Run PHP Tests (Pest)
         run: |
