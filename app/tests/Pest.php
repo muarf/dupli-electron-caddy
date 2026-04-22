@@ -87,21 +87,11 @@ function run_endpoint(string $file_path, array $get_params = [], array $env_vars
     // Prepare query string
     $query = http_build_query($get_params);
     
-    // Prepare env variables for the child process
-    $env_cmd = "";
-    foreach ($env_vars as $key => $val) {
-        $env_cmd .= "export $key=" . escapeshellarg($val) . " && ";
-    }
-
+    // Prepare env variables for the child process - use the $env array of proc_open for cross-platform support
+    $process_env = array_merge($_ENV, getenv(), $env_vars);
+    
     // We'll use the CLI to run the script. 
-    // To simulate $_GET and $_POST, we can use a wrapper or the fact that some of our APIs check $_REQUEST which we can't easily set from CLI.
-    // HOWEVER, we can use the `-d` flag of PHP to set them if the script was a web server, but here it's CLI.
-    
-    // Most of our APIs use $_REQUEST or $_GET. For CLI, we'll need to "spoof" them.
-    // We can create a temporary wrapper script that sets the globals then includes the API.
-    
-    $wrapper = sys_get_temp_dir() . '/endpoint_wrapper_' . uniqid() . '.php';
-    $post_json = json_encode($post_data);
+    $wrapper = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'endpoint_wrapper_' . uniqid() . '.php';
     
     $wrapper_code = "<?php
 \$_GET = " . var_export($get_params, true) . ";
@@ -109,14 +99,12 @@ function run_endpoint(string $file_path, array $get_params = [], array $env_vars
 \$_REQUEST = array_merge(\$_GET, \$_POST);
 \$_SERVER['REQUEST_METHOD'] = '" . (empty($post_data) ? 'GET' : 'POST') . "';
 
-// Mock php://input
-// We can't easily mock php://input, but we can override it if the API uses a helper
-// For now, let's just include the file.
 include '" . addslashes($abs_path) . "';
 ";
     file_put_contents($wrapper, $wrapper_code);
 
-    $command = "{$env_cmd} php " . escapeshellarg($wrapper) . " 2>&1";
+    $php_binary = (PHP_OS_FAMILY === 'Windows') ? 'php' : 'php'; // Standard 'php' command
+    $command = "php " . escapeshellarg($wrapper);
     
     $descriptorspec = [
         0 => ["pipe", "r"],  // stdin
@@ -124,7 +112,7 @@ include '" . addslashes($abs_path) . "';
         2 => ["pipe", "w"]   // stderr
     ];
 
-    $process = proc_open($command, $descriptorspec, $pipes);
+    $process = proc_open($command, $descriptorspec, $pipes, null, $process_env);
 
     if (is_resource($process)) {
         if (!empty($post_data)) {
