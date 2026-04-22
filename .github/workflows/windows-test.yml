@@ -60,11 +60,12 @@ jobs:
 
       - name: Run PHP Tests (Pest)
         working-directory: app
+        shell: bash
         run: |
           echo "Contenu de vendor/bin :"
           ls vendor/bin
           echo "Lancement de Pest..."
-          php -d "extension=sqlite3" -d "extension=pdo_sqlite" vendor/pestphp/pest/bin/pest --group=unit --display-deprecations --display-errors
+          php -d "extension=sqlite3" -d "extension=pdo_sqlite" vendor/bin/pest --group=unit --display-deprecations --display-errors
 
       - name: Run JS Tests (Jest)
         run: |
