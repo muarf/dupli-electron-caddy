@@ -31,16 +31,37 @@ function get_linux_distro_info(): string
 }
 
 /**
+ * Retourne le préfixe des paquets d'extension PHP selon la distro
+ */
+function get_php_extension_prefix(string $distro): string
+{
+    if ($distro === 'fedora' || $distro === 'arch' || $distro === 'unknown') {
+        return 'php-';
+    }
+    if ($distro === 'windows') {
+        return 'php_';
+    }
+    if ($distro === 'debian') {
+        $php_ver = (PHP_VERSION_ID >= 80400) ? '8.4' : ((PHP_VERSION_ID >= 80300) ? '8.3' : '8.5'); // Fallback intelligent
+        if (defined('PHP_MAJOR_VERSION') && defined('PHP_MINOR_VERSION')) {
+            $php_ver = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+        }
+        return "php{$php_ver}-";
+    }
+    return 'php-';
+}
+
+/**
  * Retourne la commande d'installation pour un paquet donné
  */
 function get_package_install_help(string $type, string $pkg_key, string $distro): string
 {
-$commands = [
-        'debian' => ['pref' => 'sudo apt-get install -y ', 'ext_prefix' => 'php8.5-'],
-        'fedora' => ['pref' => 'sudo dnf install -y ', 'ext_prefix' => 'php-'],
-        'arch' => ['pref' => 'sudo pacman -S --noconfirm ', 'ext_prefix' => 'php-'],
-        'windows' => ['pref' => 'Activez dans php.ini : ', 'ext_prefix' => 'php_'],
-        'unknown' => ['pref' => 'sudo apt-get install -y ', 'ext_prefix' => 'php-']
+    $commands = [
+        'debian' => ['pref' => 'sudo apt-get install -y '],
+        'fedora' => ['pref' => 'sudo dnf install -y '],
+        'arch' => ['pref' => 'sudo pacman -S --noconfirm '],
+        'windows' => ['pref' => 'Activez dans php.ini : '],
+        'unknown' => ['pref' => 'sudo apt-get install -y ']
     ];
 
     if (PHP_OS_FAMILY === 'Windows') {
@@ -77,16 +98,7 @@ $commands = [
         'zip' => 'zip'
     ];
 
-    $php_ver = (PHP_VERSION_ID >= 80400) ? '8.4' : ((PHP_VERSION_ID >= 80300) ? '8.3' : '8.5'); // Fallback intelligent
-    if (defined('PHP_MAJOR_VERSION') && defined('PHP_MINOR_VERSION')) {
-        $php_ver = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
-    }
-    
-    $prefix = $d['ext_prefix'];
-    if ($distro === 'debian' && $prefix === 'php8.5-') {
-        $prefix = "php{$php_ver}-";
-    }
-
+        $prefix = get_php_extension_prefix($distro);
     return $d['pref'] . $prefix . ($exts[$pkg_key] ?? $pkg_key);
 }
 
@@ -100,20 +112,20 @@ function get_aggregated_install_command(array $packages): string
         $distro = 'windows';
     }
 
-    $commands = [
-        'debian' => ['pref' => 'sudo apt-get install -y ', 'ext_prefix' => 'php8.5-'],
-        'fedora' => ['pref' => 'sudo dnf install -y ', 'ext_prefix' => 'php-'],
-        'arch' => ['pref' => 'sudo pacman -S --noconfirm ', 'ext_prefix' => 'php-'],
-        'windows' => ['pref' => 'Modules à activer : ', 'ext_prefix' => 'extension='],
-        'unknown' => ['pref' => 'sudo apt-get install -y ', 'ext_prefix' => 'php-']
+        $commands = [
+        'debian' => ['pref' => 'sudo apt-get install -y '],
+        'fedora' => ['pref' => 'sudo dnf install -y '],
+        'arch' => ['pref' => 'sudo pacman -S --noconfirm '],
+        'windows' => ['pref' => 'Modules à activer : '],
+        'unknown' => ['pref' => 'sudo apt-get install -y ']
     ];
 
-    // Sur PHP Windows "unknown" (souvent serveur mutualisé ou IIS), on ne propose pas sudo
     if (PHP_OS_FAMILY === 'Windows' && $distro === 'unknown') {
         $distro = 'windows';
     }
 
     $d = $commands[$distro] ?? $commands['unknown'];
+    $prefix = get_php_extension_prefix($distro);
     
     $bins = [
         'ghostscript' => 'ghostscript',
@@ -132,10 +144,10 @@ function get_aggregated_install_command(array $packages): string
 
     $resolved_pkgs = [];
     foreach ($packages as $pkg) {
-        if ($pkg['type'] === 'bin') {
+                if ($pkg['type'] === 'bin') {
             $resolved_pkgs[] = $bins[$pkg['key']] ?? $pkg['key'];
         } else {
-            $resolved_pkgs[] = $d['ext_prefix'] . ($exts[$pkg['key']] ?? $pkg['key']);
+            $resolved_pkgs[] = $prefix . ($exts[$pkg['key']] ?? $pkg['key']);
         }
     }
 

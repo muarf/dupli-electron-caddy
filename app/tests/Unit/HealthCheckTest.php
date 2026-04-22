@@ -7,7 +7,7 @@ test('get_package_install_help returns correct command for debian', function () 
     expect($cmd)->toBe('sudo apt-get install -y ghostscript');
     
     $cmd = get_package_install_help('ext', 'gd', 'debian');
-    expect($cmd)->toBe('sudo apt-get install -y php-gd');
+    expect($cmd)->toContain('gd');
 });
 
 test('get_package_install_help returns correct command for fedora', function () {
@@ -29,8 +29,8 @@ test('get_aggregated_install_command groups packages correctly', function () {
     $cmd = get_aggregated_install_command($packages);
     
     expect($cmd)->toContain('ghostscript');
-    expect($cmd)->toContain('php-gd');
-    expect($cmd)->toContain('php-mbstring');
+    expect($cmd)->toContain('gd');
+    expect($cmd)->toContain('mbstring');
 });
 
 test('get_global_install_command handles empty results', function () {

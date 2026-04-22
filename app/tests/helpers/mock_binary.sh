@@ -29,13 +29,15 @@ done
 # Special case for ImageMagick which doesn't use -sOutputFile
 if [[ "$*" == *"density"* ]]; then
     # It's likely the EMF conversion
-    # Command was: "magick" -density 72 "temp.emf" -background white -flatten "output.png"
-    # The last arg is the output
-    LAST_ARG="${@: -1}"
-    if [[ $LAST_ARG == *.png ]]; then
-        touch "$LAST_ARG"
-        echo "Mock (IM): Touched $LAST_ARG"
-    fi
+    # Command was: "magick" -density 72 "temp.emf" -background white -flatten "output.png" 2>&1
+    # Iterate to find the .png file among arguments
+    for arg in "$@"; do
+        if [[ $arg == *.png ]]; then
+            touch "$arg"
+            echo "Mock (IM): Touched $arg"
+            break
+        fi
+    done
 fi
 
 exit 0
