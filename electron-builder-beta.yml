@@ -96,7 +96,7 @@ mac:
     - php-install-guide.html
     - app/**/*
     - bin/**/*
-  - ghostscript/**/*
+    - ghostscript/**/*
     - caddy/**/*
     - utils/**/*
     - "php/**/*"
@@ -105,7 +105,7 @@ mac:
     - "php/**/*"
     - "app/**/*"
     - bin/**/*
-  - ghostscript/**/*
+    - ghostscript/**/*
     - caddy/**/*
     - Caddyfile
     - src/**/*
@@ -134,7 +134,7 @@ win:
     - php-install-guide.html
     - app/**/*
     - bin/**/*
-  - ghostscript/**/*
+    - ghostscript/**/*
     - caddy/**/*
     - utils/**/*
     - "php/**/*"
