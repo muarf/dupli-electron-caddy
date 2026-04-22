@@ -6,6 +6,9 @@ on:
     branches:
       - 'main'
       - 'feature/cross-platform-unification'
+  pull_request:
+    branches:
+      - 'feature/cross-platform-unification'
 
 permissions:
   contents: write
