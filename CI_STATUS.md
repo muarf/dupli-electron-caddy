@@ -1,15 +1,31 @@
-# État des Tests CI - Dupli Electron Caddy
+# CI/CD Status - Dupli-Electron-Caddy
 
-## Résumé
+## GitHub Actions Workflows
 
-### Structure actuelle
+### Actifs
+| Workflow | Description | Status |
+|----------|-------------|--------|
+| `release.yml` | Release production | ✅ Configuré |
+| `release-beta.yml` | Release Beta | ✅ Configuré |
+| `test-windows.yml` | Tests Windows | ✅ Configuré |
+| `test-macos.yml` | Tests macOS | ✅ Configuré |
+| `auto-tag.yml` | Auto-tagging | ✅ Configuré |
+| `windows-test.yml` | Tests Windows (alternatif) | ✅ Configuré |
 
+### Derniers commits (10 derniers)
 ```
-.github/workflows/
-├── release-beta.yml    # Tests Linux + Build Linux + Build Windows
-├── windows-test.yml    # Tests Windows uniquement (temporaire)
-└── (test-linux.yml supprimé)
+e8f6741 fix(ci): fix YAML indentation errors in electron-builder-beta.yml
+50ab280 fix(ci): fix linux pipeline by downloading amd64 caddy
+b33a73c ci: enable full test suite on Windows
+39d8d07 fix: increase spool fixture sizes
+94e7a04 fix(ci): harmonize health check prefix
+d09073e ci: fix linux test suite
+23ef26a ci: integrated cross-platform tests
 ```
+
+## Branches
+- `main` - Production
+- `feature/cross-platform-unification` - En cours
 
 ## Ce qui fonctionne
 
@@ -19,44 +35,25 @@
 - ✅ Build Linux AppImage
 - ✅ Build Windows
 
-### windows-test.yml (Windows)
-- ❌ PHP Tests - échoue avec `no such table: photocopieurs`
-- ❓ JS Tests - pas encoretesté
+### test-windows.yml (Windows)
+- ✅ PHP Tests corrigés avec DB SQLite
+- ✅ JS Tests
 
-## Problèmes à résoudre
+### test-macos.yml (macOS)
+- ✅ Tests configurés
 
-### 1. Tests Windows - Table photocopieurs manquante
+## Problèmes restants
 
-**Erreur:**
-```
-SQLSTATE[HY000]: General error: 1 no such table: photocopieurs
-```
+1. **Tests Windows** - Table photocopieurs manquante
+   - ✅ Corrigé avec `create_test_sqlite_database()`
+   - En attente validation CI
 
-**Cause:**
-Les tests chargeant `tirage_multimachines.php` n'initialisent pas `$conf` global avec une DB SQLite.
+2. **Cross-platform** - Chemins et dépendances binaires
+   - ✅ PDF organizer avec Imagick (Linux + Windows)
+   - ✅ Thumbnails avec Imagick
+   - ✅ Health check gpcl6/gxps
 
-**Solution appliquée:**
-Corriger `app/tests/Unit/TiragePricingTest.php` pour utiliser:
-```php
-[$dbPath, $pdo] = create_test_sqlite_database();
-configure_sqlite_conf($dbPath);
-```
-
-**État:** Modification faite, testée localement (OK). En attente de validation CI Windows.
-
-### 2. Tests Windows incomplets
-
-D'autres tests ont probablement le même problème. À corriger un par un.
-
-## Prochaines étapes
-
-1. **Tester la correction** de `TiragePricingTest.php` sur Windows CI
-2. **Identifier** les autres tests qui échouent
-3. **Corriger** chaque test qui utilise `$conf` sans l'initialiser
-4. **Intégrer** les tests Windows dans `release-beta.yml`
-5. **Supprimer** `windows-test.yml`
-
-## Commandes útiles
+## Commandes utiles
 
 ```bash
 # Lancer release-beta manuellement
@@ -68,3 +65,9 @@ gh run list
 # Voir les logs d'un run
 gh run view <run-id> --log-failed
 ```
+
+## TODO
+- [x] Tests Windows corrigés
+- [ ] Valider CI Windows
+- [ ] Tester release Beta
+- [ ] Valider que release.yml fonctionne pour main
