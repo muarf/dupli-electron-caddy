@@ -39,7 +39,10 @@
                             <span id="total-pages">0</span> <?php _e('pdf_organizer.page'); ?>(s)
                         </div>
                         <div class="btn-group">
-                            <button id="add-blank" class="btn btn-default" style="border-radius: 20px 0 0 20px; padding: 8px 15px;">
+                            <button id="add-pdf" class="btn btn-default" style="border-radius: 20px 0 0 20px; padding: 8px 15px;">
+                                <i class="fa fa-file-pdf-o" style="color: #e53e3e;"></i> <?php _e('pdf_organizer.add_pdf'); ?>
+                            </button>
+                            <button id="add-blank" class="btn btn-default" style="padding: 8px 15px;">
                                 <i class="fa fa-plus" style="color: #48bb78;"></i> <?php _e('pdf_organizer.insert_blank'); ?>
                             </button>
                             <button id="clear-all" class="btn btn-default" style="border-radius: 0 20px 20px 0; padding: 8px 15px; color: #f56565;">
@@ -187,9 +190,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     let sessionId = null;
     let pageSequence = []; // List of {type, file_id, page_num, rotation}
+    let justDropped = false; // Global flag to prevent click after drop
 
     // Initialize
     pdfInput.addEventListener('change', (e) => handleFiles(e.target.files));
+    
+    // Add PDF button
+    document.getElementById('add-pdf').addEventListener('click', () => pdfInput.click());
 
     // Drag and drop events for file upload - handle via input as it covers the area
     pdfInput.addEventListener('dragenter', () => dropZone.style.borderColor = '#2a5298');
@@ -247,21 +254,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 rotation: 0
             });
         });
-    }
-
-    function renderUI() {
+        // Hide upload container after first file
         if (pageSequence.length > 0) {
             uploadContainer.style.display = 'none';
             interface.style.display = 'block';
             toolbar.style.display = 'flex';
         }
+    }
 
+    function renderUI() {
+        console.log('renderUI: pages=' + pageSequence.length);
         pagesGrid.innerHTML = '';
+        
         pageSequence.forEach((p, idx) => {
             const card = createPageCard(p, idx);
             pagesGrid.appendChild(card);
         });
-
+        
         totalPagesLabel.textContent = pageSequence.length;
         initDragAndDrop();
     }
@@ -271,6 +280,15 @@ document.addEventListener('DOMContentLoaded', function() {
         div.className = 'page-card';
         div.draggable = true;
         div.dataset.id = p.id;
+        
+        // Prevent click after drop
+        div.addEventListener('mousedown', (e) => {
+            if (justDropped) {
+                e.stopPropagation();
+                e.preventDefault();
+                console.log('CLICK blocked due to justDropped');
+            }
+        });
 
         const isBlank = p.type === 'blank';
         const thumbStyle = p.rotation ? `transform: rotate(${p.rotation}deg)` : '';
@@ -374,16 +392,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 const id = e.dataTransfer.getData('text/plain');
                 const targetId = card.dataset.id;
+                console.log('DROP: id=' + id + ' targetId=' + targetId + ' same=' + (id === targetId));
                 
                 if (id === targetId) return;
 
                 const fromIdx = pageSequence.findIndex(p => p.id === id);
                 const toIdx = pageSequence.findIndex(p => p.id === targetId);
+                console.log('MOVE: fromIdx=' + fromIdx + ' toIdx=' + toIdx + ' pages=' + pageSequence.length);
 
                 const item = pageSequence.splice(fromIdx, 1)[0];
                 pageSequence.splice(toIdx, 0, item);
                 
+                justDropped = true;
+                setTimeout(() => { justDropped = false; console.log('justDropped reset'); }, 200);
+                
                 renderUI();
+            });
+            
+            card.addEventListener('click', (e) => {
+                console.log('CLICK on card:', card.dataset.id, 'justDropped=', justDropped);
             });
         });
     }

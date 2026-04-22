@@ -1653,6 +1653,7 @@
         "title": "PDF Page Organizer",
         "subtitle": "Reorder, rotate, delete or add pages visually.",
         "add_files": "Add PDFs",
+        "add_pdf": "Add PDF",
         "insert_blank": "Insert Blank Page",
         "generate": "Generate Final PDF",
         "generating": "Generating...",

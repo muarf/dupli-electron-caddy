@@ -1657,6 +1657,7 @@
         "title": "Organisateur de Pages PDF",
         "subtitle": "Réorganisez, pivotez, supprimez ou ajoutez des pages visuellement.",
         "add_files": "Ajouter des PDFs",
+        "add_pdf": "Ajouter PDF",
         "insert_blank": "Insérer page blanche",
         "generate": "Générer le PDF final",
         "generating": "Génération en cours...",
