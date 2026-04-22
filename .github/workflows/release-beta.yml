@@ -1,7 +1,11 @@
 name: Build and Release Beta
 
 on:
-  workflow_dispatch:  # Permet de lancer manuellement
+  workflow_dispatch:
+  push:
+    branches:
+      - 'main'
+      - 'feature/cross-platform-unification'
 
 permissions:
   contents: write
@@ -21,48 +25,128 @@ jobs:
       - name: Determine version
         id: get-version
         run: |
-          # 1. On récupère les tags existants
           git fetch --tags
-          
-          # 2. On cherche le dernier tag qui ressemble à v2.0.X-beta
           LAST_TAG=$(git tag -l "v2.0.*-beta*" | sort -V | tail -n 1)
-          
           if [ -z "$LAST_TAG" ]; then
-            # Si aucun tag 2.0 n'existe, on commence à 2.0.1
             NEXT_PATCH=1
           else
-            # On extrait le numéro de patch (le 'X' dans v2.0.X)
-            # Expression régulière pour extraire le chiffre après "v2.0." et avant le tiret "-"
             LAST_PATCH=$(echo $LAST_TAG | sed -nE 's/v2\.0\.([0-9]+)-beta.*/\1/p')
             NEXT_PATCH=$((LAST_PATCH + 1))
           fi
-          
-          # 3. Création des variables
           SHORT_SHA=$(git rev-parse --short HEAD)
           BUILD_NUM=$(date +%Y%m%d%H%M%S)
-          
           VERSION="2.0.${NEXT_PATCH}-beta.${BUILD_NUM}+${SHORT_SHA}"
           TAG="v2.0.${NEXT_PATCH}-beta.${BUILD_NUM}"
-          
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "✅ Version beta: $VERSION"
-          echo "✅ Tag: $TAG"
+
+  test-linux-beta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: sqlite3, pdo_sqlite, dom, curl, libxml, mbstring, zip
+          tools: composer
+          coverage: none
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev ghostscript imagemagick
+
+      - name: Install dependencies
+        run: |
+          npm install
+          cd app
+          composer install --optimize-autoloader --ignore-platform-reqs
+          cd ..
+
+      - name: Run PHP Tests (Pest)
+        run: |
+          cd app
+          ./vendor/bin/pest --display-deprecations --display-errors --display-notices
+          cd ..
+
+      - name: Run JS Tests (Jest)
+        run: npm test -- --runInBand --forceExit
+
+  test-windows-beta:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: sqlite3, pdo_sqlite, dom, curl, libxml, mbstring, zip
+          tools: composer
+          coverage: none
+
+      - name: Install system dependencies (Choco)
+        run: |
+          choco install ghostscript -y
+          choco install imagemagick -y
+
+      - name: Install dependencies
+        run: |
+          npm install
+          cd app
+          composer install --optimize-autoloader --ignore-platform-reqs
+          cd ..
+
+      - name: Run PHP Tests (Pest)
+        working-directory: app
+        run: |
+          $phpPath = (Get-Command php).Source
+          $pestPath = "vendor\bin\pest.bat"
+          & $phpPath $pestPath --group=unit --display-deprecations --display-errors
+
+      - name: Run JS Tests (Jest)
+        run: npm test -- --runInBand --forceExit
 
   create-beta-release:
-    needs: get-version
+    needs: [get-version, test-linux-beta, test-windows-beta]
     runs-on: ubuntu-latest
     steps:
-      - name: Create GitHub Release (Beta)
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Create or Update Beta Release
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const tag = '${{ needs.get-version.outputs.tag }}';
             const version = '${{ needs.get-version.outputs.version }}';
-            const shortSha = '${{ github.sha }}'.substring(0, 7);
+            const shortSha = context.sha.substring(0, 7);
             
             try {
-              const release = await github.rest.repos.getReleaseByTag({
+              await github.rest.repos.getReleaseByTag({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 tag: tag
@@ -75,20 +159,7 @@ jobs:
                   repo: context.repo.repo,
                   tag_name: tag,
                   name: `Duplicator Beta v${version}`,
-                  body: `## 🧪 Version Beta v${version}
-            
-            ⚠️ **Ceci est une version BETA** - Contient les dernières fonctionnalités mais peut être instable.
-            
-            ### 🔄 Channel Beta
-            Cette version coexiste avec la stable. Elle a son propre dossier de données et son propre mécanisme de mise à jour.
-            
-            ### 📦 Fichiers disponibles
-            - **Duplicator-Beta-Setup-${version}.exe** - Installeur Windows
-            - **Duplicator-Beta-${version}-linux-x86_64.AppImage** - Linux AppImage
-            - **Duplicator-Beta-${version}-linux-amd64.deb** - Paquet Debian
-            
-            Commit: \`${shortSha}\`
-            Branch: \`feature/cross-platform-unification\``,
+                  body: `## 🧪 Version Beta v${version}\n\n⚠️ **Ceci est une version BETA**\n\nCommit: \`${shortSha}\`\nBranch: \`${context.ref}\``,
                   draft: false,
                   prerelease: true
                 });
@@ -106,20 +177,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          clean: true
           submodules: recursive
-          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev ghostscript imagemagick
 
       - name: Install dependencies
         run: npm install
@@ -138,25 +202,6 @@ jobs:
           rm caddy_2.7.6_linux_amd64.tar.gz
           chmod +x caddy/caddy
 
-      - name: Run PHP Tests (Pest)
-        run: |
-          cd app
-          php ../composer.phar install --dev --optimize-autoloader --ignore-platform-reqs
-          cd ..
-          cd app
-          ./vendor/bin/pest --display-deprecations --display-errors --display-notices
-          cd ..
-
-      - name: Ensure correct Caddy binary
-        run: |
-          rm -rf caddy/
-          npm run download-caddy
-          chmod +x caddy/caddy
-
-      - name: Run JS Tests (Jest)
-        run: |
-          npm test -- --runInBand --forceExit
-
       - name: Update package.json for Beta
         run: |
           VERSION="${{ needs.get-version.outputs.version }}"
@@ -166,28 +211,19 @@ jobs:
             pkg.version = '$VERSION';
             pkg.name = 'dupli-electron-beta';
             pkg.productName = 'Duplicator Beta';
-            pkg.description = 'Duplicator Beta - Test new features';
             if (!pkg.build) pkg.build = {};
             pkg.build.appId = 'com.dupli.beta';
-            pkg.build.productName = 'Duplicator Beta';
             pkg.build.publish = {
               provider: 'github',
               owner: 'muarf',
               repo: 'dupli-electron-caddy',
-              channel: 'beta',
-              releaseType: 'prerelease'
+              channel: 'beta'
             };
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-            console.log('✅ package.json configuré pour la beta');
           "
-          grep -E '"version"|"name"|"productName"|"appId"' package.json
 
       - name: Build Linux Beta
-        run: |
-          npx electron-builder --config electron-builder-beta.yml -l deb AppImage
-          # Dupliquer le fichier yml pour que les anciens clients (sur le canal 'latest') trouvent la mise à jour
-          cp dist/beta-linux.yml dist/latest-linux.yml
-          cp dist/beta-linux.yml dist/latest-linux-appimage.yml
+        run: npx electron-builder --config electron-builder-beta.yml -l deb AppImage
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -197,15 +233,12 @@ jobs:
           tag_name: ${{ needs.get-version.outputs.tag }}
           files: |
             dist/Duplicator-Beta-*
-            dist/beta-linux.yml
-            dist/latest-linux.yml
-            dist/latest-linux-deb.yml
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-windows-beta:
-    needs: [get-version, create-beta-release, build-linux-beta]
+    needs: [get-version, create-beta-release]
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
@@ -213,7 +246,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
-          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -230,19 +262,9 @@ jobs:
             pkg.version = '$VERSION';
             pkg.name = 'dupli-electron-beta';
             pkg.productName = 'Duplicator Beta';
-            pkg.description = 'Duplicator Beta - Test new features';
             if (!pkg.build) pkg.build = {};
             pkg.build.appId = 'com.dupli.beta';
-            pkg.build.productName = 'Duplicator Beta';
-            pkg.build.publish = {
-              provider: 'github',
-              owner: 'muarf',
-              repo: 'dupli-electron-caddy',
-              channel: 'beta',
-              releaseType: 'prerelease'
-            };
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-            console.log('✅ package.json configuré pour la beta');
           "
 
       - name: Install dependencies
