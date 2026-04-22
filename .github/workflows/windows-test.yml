@@ -61,15 +61,15 @@ jobs:
       - name: Run PHP Tests (Pest)
         working-directory: app
         run: |
-          $PestPath = Join-Path $env:GITHUB_WORKSPACE "app/vendor/pestphp/pest/bin/pest"
-          echo "Verification de l'existence de Pest : $PestPath"
+          $PestPath = "$env:GITHUB_WORKSPACE\app\vendor\pestphp\pest\bin\pest"
+          Write-Host "Checking for Pest at: $PestPath"
           if (Test-Path $PestPath) {
-            echo "Pest trouve !"
-            php -d "extension=sqlite3" -d "extension=pdo_sqlite" $PestPath --group=unit --display-deprecations --display-errors
+            Write-Host "Pest entry point found. Starting execution..."
+            & php -d "extension=sqlite3" -d "extension=pdo_sqlite" $PestPath --group=unit --display-deprecations --display-errors
           } else {
-            echo "ERREUR : Pest est introuvable a l'emplacement $PestPath"
-            echo "Recherche de pest dans vendor..."
-            Get-ChildItem -Path vendor -Filter pest -Recurse
+            Write-Host "ERROR: Pest not found at $PestPath"
+            Write-Host "Listing recursive vendor/bin content:"
+            ls -R vendor/bin
             exit 1
           }
 
