@@ -35,6 +35,7 @@ class DatabaseMigrationManager
             require_once __DIR__ . '/add_nb_exemplaires.php';
             require_once __DIR__ . '/add_staging_columns.php';
             require_once __DIR__ . '/add_document_display_fields.php';
+            require_once __DIR__ . '/add_print_job_id_to_recorded_print_jobs.php';
 
             $migrations = [
                 'tirage_global_id' => [$this, 'migrateTirageGlobalId'],
@@ -61,6 +62,9 @@ class DatabaseMigrationManager
                 },
                 'add_document_display_fields' => function () {
                     migrate_add_document_display_fields($this->db);
+                },
+                'add_print_job_id_to_recorded_print_jobs' => function () {
+                    migrate_add_print_job_id_to_recorded_print_jobs($this->db);
                 },
                 'printer_mappings_table' => [$this, 'createPrinterMappingsTable'],
                 // Ajouter d'autres migrations ici à l'avenir
