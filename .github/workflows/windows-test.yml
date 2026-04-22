@@ -61,17 +61,21 @@ jobs:
       - name: Run PHP Tests (Pest)
         working-directory: app
         run: |
-          $PestPath = "$env:GITHUB_WORKSPACE\app\vendor\pestphp\pest\bin\pest"
-          Write-Host "Checking for Pest at: $PestPath"
-          if (Test-Path $PestPath) {
-            Write-Host "Pest entry point found. Starting execution..."
-            & php -d "extension=sqlite3" -d "extension=pdo_sqlite" $PestPath --group=unit --display-deprecations --display-errors
-          } else {
-            Write-Host "ERROR: Pest not found at $PestPath"
-            Write-Host "Listing recursive vendor/bin content:"
-            ls -R vendor/bin
-            exit 1
+          $RawPestPath = "$env:GITHUB_WORKSPACE\app\vendor\pestphp\pest\bin\pest"
+          $PestPhpPath = "$env:GITHUB_WORKSPACE\app\vendor\pestphp\pest\bin\pest.php"
+          
+          if (Test-Path $RawPestPath) {
+              Copy-Item $RawPestPath $PestPhpPath -Force
+              Write-Host "Pest entry point copied to .php"
           }
+
+          $phpDir = Split-Path (Get-Command php).Source
+          $extDir = Join-Path $phpDir "ext"
+          
+          Write-Host "PHP Dir: $phpDir"
+          Write-Host "Ext Dir: $extDir"
+          
+          & php -d "extension_dir=$extDir" -d "extension=php_sqlite3.dll" -d "extension=php_pdo_sqlite.dll" $PestPhpPath --group=unit --display-deprecations --display-errors
 
       - name: Run JS Tests (Jest)
         run: |
