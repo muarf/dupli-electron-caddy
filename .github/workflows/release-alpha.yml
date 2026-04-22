@@ -1,0 +1,121 @@
+name: Build and Release Alpha (PR Test)
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+      - 'feature/cross-platform-unification'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  get-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      tag: ${{ steps.get-version.outputs.tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: get-version
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          BUILD_NUM=$(date +%Y%m%d%H%M%S)
+          VERSION="2.0.0-alpha.${BUILD_NUM}+${SHORT_SHA}"
+          TAG="v2.0.0-alpha.${BUILD_NUM}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+  test-linux-alpha:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: sqlite3, pdo_sqlite, dom, curl, libxml, mbstring, zip
+          tools: composer
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev ghostscript imagemagick libpixman-1-dev
+
+      - name: Install dependencies
+        run: |
+          npm install
+          cd app && composer install --optimize-autoloader --ignore-platform-reqs
+
+      - name: Run JS Tests (Jest)
+        run: npm test -- --runInBand --forceExit
+
+  build-windows-alpha:
+    needs: [get-version, test-linux-alpha]
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install --omit=optional
+
+      - name: Update package.json for Alpha
+        run: |
+          $VERSION = '${{ needs.get-version.outputs.version }}'
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '$VERSION';
+            pkg.name = 'dupli-electron-alpha';
+            pkg.productName = 'Duplicator Alpha';
+            if (!pkg.build) pkg.build = {};
+            pkg.build.appId = 'com.dupli.alpha';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      - name: Build Windows Alpha
+        run: npx electron-builder --config electron-builder-beta.yml --win -c.publish.channel=alpha
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Alpha Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.get-version.outputs.tag }}
+          name: Duplicator Alpha v${{ needs.get-version.outputs.version }}
+          body: |
+            ## 🧪 Version ALPHA (Test PR)
+            Cette version est générée automatiquement pour tester la PR.
+            Canal de mise à jour: **alpha**
+          prerelease: true
+          files: |
+            dist/Duplicator-Alpha-*.exe
+            dist/alpha.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
