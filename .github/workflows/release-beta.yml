@@ -8,7 +8,7 @@ on:
       - 'feature/cross-platform-unification'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   get-version:
@@ -130,9 +130,7 @@ jobs:
       - name: Run PHP Tests (Pest)
         working-directory: app
         run: |
-          $phpPath = (Get-Command php).Source
-          $pestPath = "vendor\bin\pest.bat"
-          & $phpPath $pestPath --group=unit --display-deprecations --display-errors
+          .\vendor\bin\pest.bat --group=unit --display-deprecations --display-errors
 
       - name: Run JS Tests (Jest)
         run: npm test -- --runInBand --forceExit
@@ -140,6 +138,8 @@ jobs:
   create-beta-release:
     needs: [get-version, test-linux-beta, test-windows-beta]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -181,6 +181,8 @@ jobs:
     needs: [get-version, create-beta-release]
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -249,6 +251,8 @@ jobs:
     needs: [get-version, create-beta-release]
     runs-on: windows-latest
     timeout-minutes: 30
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
