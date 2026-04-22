@@ -316,6 +316,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Page Operations
     window.rotatePage = function(id, angle) {
+        if (justDropped) return;
         const p = pageSequence.find(x => x.id === id);
         if (p) {
             p.rotation = (p.rotation + angle) % 360;
@@ -325,6 +326,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     window.duplicatePage = function(id) {
+        if (justDropped) return;
         const idx = pageSequence.findIndex(x => x.id === id);
         if (idx !== -1) {
             const copy = JSON.parse(JSON.stringify(pageSequence[idx]));
@@ -335,6 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     window.deletePage = function(id) {
+        if (justDropped) return;
         pageSequence = pageSequence.filter(x => x.id !== id);
         if (pageSequence.length === 0) {
             uploadContainer.style.display = 'block';
@@ -390,6 +393,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             card.addEventListener('drop', (e) => {
                 e.preventDefault();
+                e.stopPropagation(); // Avoid bubbling to window
+                
                 const id = e.dataTransfer.getData('text/plain');
                 const targetId = card.dataset.id;
                 console.log('DROP: id=' + id + ' targetId=' + targetId + ' same=' + (id === targetId));
@@ -398,13 +403,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const fromIdx = pageSequence.findIndex(p => p.id === id);
                 const toIdx = pageSequence.findIndex(p => p.id === targetId);
+                
+                if (fromIdx === -1 || toIdx === -1) return;
+
                 console.log('MOVE: fromIdx=' + fromIdx + ' toIdx=' + toIdx + ' pages=' + pageSequence.length);
 
                 const item = pageSequence.splice(fromIdx, 1)[0];
                 pageSequence.splice(toIdx, 0, item);
                 
+                // Intensify the protection against phantom clicks
                 justDropped = true;
-                setTimeout(() => { justDropped = false; console.log('justDropped reset'); }, 200);
+                setTimeout(() => { 
+                    justDropped = false; 
+                    console.log('justDropped reset'); 
+                }, 300); // 300ms is safer for browser click cooldown
                 
                 renderUI();
             });

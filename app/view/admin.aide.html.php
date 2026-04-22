@@ -2,9 +2,9 @@
 // Inclure Quill.js
 ?>
 <!-- Quill.js CSS -->
-<link href="public/js/quill/quill.snow.css" rel="stylesheet">
+<link href="js/quill/quill.snow.css" rel="stylesheet">
 <!-- Quill.js JS -->
-<script src="public/js/quill/quill.min.js"></script>
+<script src="js/quill/quill.min.js"></script>
 
 <style>
   /* Style pour le bouton PDF personnalisé dans Quill.js */
@@ -171,7 +171,7 @@
                     <p style="text-align: center;"><?php _e('admin_aide.default_instructions'); ?></p>
                   </div>
                   <div style="text-align: center;">
-                    <img src="public/img/compteur.png" style="width: 80%;">
+                    <img src="img/compteur.png" style="width: 80%;">
                   </div>
                 </div>
                 <small class="text-muted">
@@ -323,7 +323,7 @@
             '  <p style="text-align: center;">Instructions pour ' + machine + '...</p>' +
             '</div>' +
             '<div style="text-align: center;">' +
-            '  <img src="public/img/compteur.png" style="width: 80%;">' +
+            '  <img src="img/compteur.png" style="width: 80%;">' +
             '</div>';
 
           setTimeout(function () {
@@ -392,7 +392,7 @@
       '  <p style="text-align: center;">Instructions pour cette machine...</p>' +
       '</div>' +
       '<div style="text-align: center;">' +
-      '  <img src="public/img/compteur.png" style="width: 80%;">' +
+      '  <img src="img/compteur.png" style="width: 80%;">' +
       '</div>';
 
     setTimeout(function () {

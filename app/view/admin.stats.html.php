@@ -1,7 +1,7 @@
 <!-- Quill.js CSS -->
-<link href="public/js/quill/quill.snow.css" rel="stylesheet">
+<link href="js/quill/quill.snow.css" rel="stylesheet">
 <!-- Quill.js JS -->
-<script src="public/js/quill/quill.min.js"></script>
+<script src="js/quill/quill.min.js"></script>
 
 <div class="section">
   <div class="container">

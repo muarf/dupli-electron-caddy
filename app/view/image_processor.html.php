@@ -1,7 +1,7 @@
 <!-- PDF.js pour la prévisualisation des PDFs -->
-<script src="public/js/build/pdf.js" defer></script>
+<script src="js/build/pdf.js" defer></script>
 <!-- Riso Tools pour les fonctions de traitement -->
-<script src="public/js/riso-tools.js" defer></script>
+<script src="js/riso-tools.js" defer></script>
 
 <style>
     .image-processor-container {

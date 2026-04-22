@@ -377,7 +377,7 @@
 </style>
 
 <!-- PDF.js -->
-<script src="public/js/build/pdf.js"></script>
+<script src="js/build/pdf.js"></script>
 <script>
     let currentFiles = [];
     let filesToIndex = [];
