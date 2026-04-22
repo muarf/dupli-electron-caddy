@@ -23,30 +23,22 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: sqlite3, pdo_sqlite, dom, curl, libxml, mbstring, zip
+          tools: composer
+          coverage: none
+
+      - name: Install Node dependencies
         run: npm install
 
-      - name: Enable PHP extensions
-        run: |
-          php -m | Select-String -Pattern "pdo_sqlite"
-          if ($LASTEXITCODE -ne 0) {
-            php -d "extension=sqlite3" -d "extension=pdo_sqlite" -r "echo 'Extensions loaded'"
-          }
+      - name: Install PHP dependencies (Composer)
+        working-directory: app
+        run: composer install --optimize-autoloader --ignore-platform-reqs
 
-      - name: Install Composer and PHP dependencies
-        run: |
-          php -r "Copy('https://getcomposer.org/installer', 'composer-setup.php');"
-          php composer-setup.php
-          php composer.phar --version
-          cd app
-          php ../composer.phar install --optimize-autoloader --ignore-platform-reqs
-          cd ..
-          del composer-setup.php
-
-      - name: Check PHP extensions
-        run: php -m
-
-      - name: Install system dependencies
+      - name: Install system dependencies (Choco)
         run: |
           choco install ghostscript -y
           choco install imagemagick -y
@@ -56,27 +48,10 @@ jobs:
           Invoke-WebRequest -Uri https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_windows_amd64.zip -OutFile caddy.zip
           Expand-Archive caddy.zip -DestinationPath caddy -Force
           del caddy.zip
-          ls caddy
 
       - name: Run PHP Tests (Pest)
         working-directory: app
-        run: |
-          $RawPestPath = "$env:GITHUB_WORKSPACE\app\vendor\pestphp\pest\bin\pest"
-          $PestPhpPath = "$env:GITHUB_WORKSPACE\app\vendor\pestphp\pest\bin\pest.php"
-          
-          if (Test-Path $RawPestPath) {
-              Copy-Item $RawPestPath $PestPhpPath -Force
-              Write-Host "Pest entry point copied to .php"
-          }
-
-          $phpDir = Split-Path (Get-Command php).Source
-          $extDir = Join-Path $phpDir "ext"
-          
-          Write-Host "PHP Dir: $phpDir"
-          Write-Host "Ext Dir: $extDir"
-          
-          & php -d "extension_dir=$extDir" -d "extension=php_sqlite3.dll" -d "extension=php_pdo_sqlite.dll" $PestPhpPath --group=unit --display-deprecations --display-errors
+        run: ./vendor/bin/pest --group=unit --display-deprecations --display-errors
 
       - name: Run JS Tests (Jest)
-        run: |
-          npm test -- --runInBand --forceExit
+        run: npm test -- --runInBand --forceExit
