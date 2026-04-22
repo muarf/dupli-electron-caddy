@@ -81,7 +81,9 @@ function handleUpload() {
                 $magick = get_binary_path('magick');
                 // S'assurer que le dossier des binaires est dans le PATH pour que Magick trouve Ghostscript
                 $bin_dir = dirname($magick);
-                putenv("PATH=$bin_dir;" . getenv("PATH"));
+                if ($bin_dir !== '.') {
+                    putenv("PATH=$bin_dir" . PATH_SEPARATOR . getenv("PATH"));
+                }
                 
                 // On utilise -scene 1 pour commencer le numérotage à _page_001.png
                 $cmd = escapeshellarg($magick) . " -density 72 " . escapeshellarg($dest_path) . " -quality 85 -scene 1 " . escapeshellarg($thumbs_dir . $file_id . "_page_%03d.png");

@@ -51,6 +51,15 @@ function get_binary_path(string $name, ?string $env_var = null): ?string
         return $local_path;
     }
 
+    // Cas spécial pour ImageMagick : fallback magick <-> convert
+    if ($name === 'magick' || $name === 'convert') {
+        $alt_name = ($name === 'magick' ? 'convert' : 'magick');
+        $alt_local_path = realpath(__DIR__ . "/../../../bin/$platform/$alt_name$ext");
+        if ($alt_local_path && file_exists($alt_local_path) && ($is_windows || is_executable($alt_local_path))) {
+            return $alt_local_path;
+        }
+    }
+
     // 3. Fallback vers les anciens dossiers (compatibilité initiale)
     $legacy_map = [
         'gs' => "/../../../ghostscript/gs$ext",
@@ -64,8 +73,8 @@ function get_binary_path(string $name, ?string $env_var = null): ?string
         if ($legacy_path && file_exists($legacy_path)) {
             // Sur Linux ARM64, on vérifie que ce n'est pas un binaire x64 par erreur
             if (!$is_windows && strpos($platform, 'arm64') !== false) {
-                $file_info = shell_exec("file " . escapeshellarg($legacy_path));
-                if (strpos($file_info, 'x86-64') !== false) {
+                $file_info = @shell_exec("file " . escapeshellarg($legacy_path));
+                if ($file_info && strpos($file_info, 'x86-64') !== false) {
                     // C'est un binaire x64 sur un système ARM64 -> on ignore pour forcer le fallback système
                     return $name; 
                 }
@@ -74,7 +83,21 @@ function get_binary_path(string $name, ?string $env_var = null): ?string
         }
     }
 
-    // 4. Fallback système final
+    // 4. Fallback système final via 'which'
+    if (!$is_windows) {
+        $sys_path = trim(shell_exec("which " . escapeshellarg($name) . " 2>/dev/null"));
+        if ($sys_path) return $sys_path;
+
+        // Fallback spécial linux magick/convert
+        if ($name === 'magick') {
+            $convert_path = trim(shell_exec("which convert 2>/dev/null"));
+            if ($convert_path) return $convert_path;
+        } elseif ($name === 'convert') {
+            $magick_path = trim(shell_exec("which magick 2>/dev/null"));
+            if ($magick_path) return $magick_path;
+        }
+    }
+
     return $name;
 }
 
