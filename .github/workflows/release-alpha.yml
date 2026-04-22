@@ -202,13 +202,16 @@ jobs:
             pkg.productName = 'Duplicator Alpha';
             if (!pkg.build) pkg.build = {};
             pkg.build.appId = 'com.dupli.alpha';
+            if (!pkg.build.publish) pkg.build.publish = {};
+            pkg.build.publish.channel = 'alpha';
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
 
       - name: Build Linux Alpha
-        run: npx electron-builder --config electron-builder-beta.yml -l deb AppImage -c.publish.channel=alpha
+        run: npx electron-builder --config electron-builder-beta.yml -l deb AppImage --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_FOR_PULL_REQUEST: true
 
       - name: Upload Linux Alpha artifacts
         uses: softprops/action-gh-release@v1
@@ -247,6 +250,8 @@ jobs:
             pkg.productName = 'Duplicator Alpha';
             if (!pkg.build) pkg.build = {};
             pkg.build.appId = 'com.dupli.alpha';
+            if (!pkg.build.publish) pkg.build.publish = {};
+            pkg.build.publish.channel = 'alpha';
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
 
@@ -267,9 +272,10 @@ jobs:
           Remove-Item "caddy_windows.zip"
 
       - name: Build Windows Alpha
-        run: npx electron-builder --config electron-builder-beta.yml --win -c.publish.channel=alpha
+        run: npx electron-builder --config electron-builder-beta.yml --win --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_FOR_PULL_REQUEST: true
 
       - name: Upload Windows Alpha artifacts
         uses: softprops/action-gh-release@v1
