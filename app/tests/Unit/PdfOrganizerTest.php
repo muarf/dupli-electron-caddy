@@ -26,7 +26,7 @@ test('PDF Organizer can generate thumbnails from a PDF via CLI', function () {
     // Simulate handleUpload logic for binary check
     $magick = get_binary_path('magick');
     $bin_dir = dirname($magick);
-    putenv("PATH=$bin_dir;" . getenv("PATH"));
+    putenv("PATH=$bin_dir" . PATH_SEPARATOR . getenv("PATH"));
     
     $cmd = escapeshellarg($magick) . " -density 72 " . escapeshellarg($dest_path) . " -quality 85 -scene 1 " . escapeshellarg($thumbs_dir . $file_id . "_page_%03d.png");
     exec($cmd);
