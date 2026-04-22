@@ -60,11 +60,18 @@ jobs:
 
       - name: Run PHP Tests (Pest)
         working-directory: app
-        shell: bash
         run: |
-          echo "Lancement des tests avec Composer..."
-          export PHP_INI_SCAN_DIR=""
-          php -d "extension=sqlite3" -d "extension=pdo_sqlite" ../composer.phar test -- --group=unit --display-deprecations --display-errors
+          $PestPath = Join-Path $env:GITHUB_WORKSPACE "app/vendor/pestphp/pest/bin/pest"
+          echo "Verification de l'existence de Pest : $PestPath"
+          if (Test-Path $PestPath) {
+            echo "Pest trouve !"
+            php -d "extension=sqlite3" -d "extension=pdo_sqlite" $PestPath --group=unit --display-deprecations --display-errors
+          } else {
+            echo "ERREUR : Pest est introuvable a l'emplacement $PestPath"
+            echo "Recherche de pest dans vendor..."
+            Get-ChildItem -Path vendor -Filter pest -Recurse
+            exit 1
+          }
 
       - name: Run JS Tests (Jest)
         run: |
