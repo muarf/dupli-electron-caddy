@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../../models/image_processor.php';
 require_once __DIR__ . '/../../controler/functions/binary_utilities.php';
 
-uses()->group('processor');
+uses()->group('unit', 'processor');
 
 test('Image Processor can perform dithering via CLI', function () {
     // Create a 100x100 gradient image

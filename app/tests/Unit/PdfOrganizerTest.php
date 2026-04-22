@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../../models/pdf_organizer.php';
 require_once __DIR__ . '/../../controler/functions/paths.php';
 
-uses()->group('organizer');
+uses()->group('unit', 'organizer');
 
 test('PDF Organizer can generate thumbnails from a PDF via CLI', function () {
     // Preparation
