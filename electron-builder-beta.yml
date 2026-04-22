@@ -5,6 +5,14 @@ appId: com.dupli.beta
 productName: Duplicator Beta
 afterPack: scripts/afterpack-linux.js
 
+# Skip native module rebuild
+npmRebuild: false
+nodeGypRebuild: false
+
+asar: true
+asarUnpack:
+  - "**/node_modules/canvas/**/*"
+
 directories:
   output: dist
 
