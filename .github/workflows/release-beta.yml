@@ -129,7 +129,10 @@ jobs:
 
       - name: Run PHP Tests (Pest)
         working-directory: app
-        run: php vendor/pestphp/pest/bin/pest --group=unit --display-deprecations --display-errors
+        run: |
+          $phpPath = (Get-Command php).Source
+          $pestPath = "vendor\bin\pest.bat"
+          & $phpPath $pestPath --group=unit --display-deprecations --display-errors
 
       - name: Run JS Tests (Jest)
         run: npm test -- --runInBand --forceExit
@@ -279,13 +282,10 @@ jobs:
           "
 
       - name: Install dependencies
-        run: npm install --omit=optional
-
-      - name: Install Composer and PHP dependencies
         run: |
-          Invoke-WebRequest -Uri "https://getcomposer.org/download/latest-stable/composer.phar" -OutFile "composer.phar"
+          npm install
           cd app
-          php ../composer.phar install --no-dev --optimize-autoloader --ignore-platform-reqs
+          composer install --no-dev --optimize-autoloader --ignore-platform-reqs
           cd ..
 
       - name: Download Caddy
