@@ -14,6 +14,7 @@ if (php_sapi_name() !== 'cli') {
 require_once __DIR__ . '/../controler/func.php';
 require_once __DIR__ . '/../controler/conf.php';
 require_once __DIR__ . '/../controler/functions/bibliotheque.php';
+require_once __DIR__ . '/../controler/functions/binary_utilities.php';
 
 // Arguments
 $path = $argv[1] ?? '';
@@ -61,13 +62,7 @@ function generatePdfThumbnail($pdfPath) {
         $thumbPath = $thumbDir . DIRECTORY_SEPARATOR . $filename;
         $relativePath = 'thumbnails/pdf/' . $filename;
         
-        $gs = 'gs';
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            $gs = 'gswin64c.exe';
-            if (!trim(shell_exec('where gswin64c.exe 2>NUL'))) {
-                $gs = 'gswin32c.exe';
-            }
-        }
+        $gs = get_ghostscript_path();
         
         $cmd = sprintf(
             '%s -q -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -sDEVICE=png16m -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -r72 -dFirstPage=1 -dLastPage=1 -sOutputFile=%s %s',

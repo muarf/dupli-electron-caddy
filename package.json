@@ -69,7 +69,7 @@
       "Caddyfile",
       "app/**/*",
       "php/**/*",
-      "ghostscript/**/*",
+      "bin/**/*",
       "caddy/**/*",
       "src/**/*",
       "utils/**/*",
@@ -83,7 +83,7 @@
     "asarUnpack": [
       "php/**/*",
       "app/**/*",
-      "ghostscript/**/*",
+      "bin/**/*",
       "caddy/**/*",
       "src/**/*",
       "utils/**/*"

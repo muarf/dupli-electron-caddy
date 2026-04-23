@@ -44,7 +44,9 @@ function convert_pdf_to_images_preserve_size($pdf_file, $output_dir, $base_filen
         // Vérifier que Ghostscript est disponible
         $gs_command = 'gs';
         if (PHP_OS_FAMILY === 'Windows') {
-            $gs_command = __DIR__ . '/../ghostscript/gswin64c.exe';
+            // 1. Essayer de détecter Ghostscript via l'utilitaire centralisé
+    require_once __DIR__ . '/../controler/functions/binary_utilities.php';
+    $gs_command = get_ghostscript_path();
             if (!file_exists($gs_command)) {
                 throw new Exception("Ghostscript Windows non trouvé : " . $gs_command);
             }

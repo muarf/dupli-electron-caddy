@@ -19,7 +19,6 @@ files:
   - "!app/.git/**/*"              # Exclure le dossier .git (non nécessaire pour l'app)
   - "!app/.phpunit.result.cache"   # Exclure le cache PHPUnit
   - bin/**/*
-  - ghostscript/**/*
   - caddy/**/*
   - utils/**/*
   - src/**/*
@@ -94,7 +93,6 @@ mac:
     - php-install-guide.html
     - app/**/*
     - bin/**/*
-  - ghostscript/**/*
     - caddy/**/*
     - utils/**/*
     - "php/**/*"  # Inclure PHP pour macOS
@@ -103,7 +101,7 @@ mac:
     - "php/**/*"
     - "app/**/*"
     - "!app/.git/**/*"               # Exclure le dossier .git (non nécessaire pour l'app)
-    - "ghostscript/**/*"
+    - "bin/**/*"
     - "caddy/**/*"
     - "Caddyfile"
     - "src/**/*"
@@ -132,7 +130,6 @@ win:
     - php-install-guide.html
     - app/**/*
     - bin/**/*
-  - ghostscript/**/*
     - caddy/**/*
     - utils/**/*
     - "php/**/*"  # Inclure PHP pour Windows
