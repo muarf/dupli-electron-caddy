@@ -62,9 +62,6 @@ function get_binary_path(string $name, ?string $env_var = null): ?string
 
     // 3. Fallback vers les anciens dossiers (compatibilité initiale)
     $legacy_map = [
-        'gs' => "/../../../ghostscript/gs$ext",
-        'gpcl6' => "/../../../ghostscript/gpcl6win64$ext",
-        'gxps' => "/../../../ghostscript/gxpswin64$ext",
         'magick' => "/../../../bin/$platform/magick$ext"
     ];
 
@@ -110,7 +107,47 @@ function get_binary_path(string $name, ?string $env_var = null): ?string
  */
 function get_ghostscript_path(): string
 {
-    return get_binary_path('gs', 'DUPLICATOR_GS_PATH') ?: 'gs';
+    $gs = get_binary_path('gs', 'DUPLICATOR_GS_PATH');
+    
+    // Sur Windows, si 'gs' n'est pas trouvé, essayer 'gswin64c'
+    if (PHP_OS_FAMILY === 'Windows' && $gs === 'gs') {
+        $gswin64c = get_binary_path('gswin64c');
+        if ($gswin64c !== 'gswin64c') {
+            return $gswin64c;
+        }
+    }
+    
+    return $gs ?: 'gs';
+}
+
+/**
+ * Retourne le chemin vers l'exécutable ImageMagick
+ * 
+ * @return string
+ */
+function get_magick_path(): string
+{
+    return get_binary_path('magick') ?: 'magick';
+}
+
+/**
+ * Retourne le chemin vers l'exécutable GhostPCL
+ * 
+ * @return string
+ */
+function get_gpcl6_path(): string
+{
+    return get_binary_path('gpcl6') ?: 'gpcl6';
+}
+
+/**
+ * Retourne le chemin vers l'exécutable GhostXPS
+ * 
+ * @return string
+ */
+function get_gxps_path(): string
+{
+    return get_binary_path('gxps') ?: 'gxps';
 }
 
 /**

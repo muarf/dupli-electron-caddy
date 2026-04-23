@@ -383,7 +383,8 @@ class BibliothequeManager {
         // Détection Ghostscript (EXACTEMENT comme dans pdf_to_png.php)
         $gs_command = 'gs';
         if (PHP_OS_FAMILY === 'Windows') {
-            $gs_command = __DIR__ . '/../ghostscript/gswin64c.exe';
+            require_once __DIR__ . '/../controler/functions/binary_utilities.php';
+            $gs_command = get_ghostscript_path();
             if (!file_exists($gs_command)) {
                 return false;
             }

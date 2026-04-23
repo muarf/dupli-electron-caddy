@@ -2,7 +2,6 @@
 /**
  * Fonctions de diagnostic et de santé du système
  */
-
 require_once __DIR__ . '/binary_utilities.php';
 
 /**
@@ -98,7 +97,7 @@ function get_package_install_help(string $type, string $pkg_key, string $distro)
         'zip' => 'zip'
     ];
 
-        $prefix = get_php_extension_prefix($distro);
+    $prefix = get_php_extension_prefix($distro);
     return $d['pref'] . $prefix . ($exts[$pkg_key] ?? $pkg_key);
 }
 
@@ -112,7 +111,7 @@ function get_aggregated_install_command(array $packages): string
         $distro = 'windows';
     }
 
-        $commands = [
+    $commands = [
         'debian' => ['pref' => 'sudo apt-get install -y '],
         'fedora' => ['pref' => 'sudo dnf install -y '],
         'arch' => ['pref' => 'sudo pacman -S --noconfirm '],
@@ -144,7 +143,7 @@ function get_aggregated_install_command(array $packages): string
 
     $resolved_pkgs = [];
     foreach ($packages as $pkg) {
-                if ($pkg['type'] === 'bin') {
+        if ($pkg['type'] === 'bin') {
             $resolved_pkgs[] = $bins[$pkg['key']] ?? $pkg['key'];
         } else {
             $resolved_pkgs[] = $prefix . ($exts[$pkg['key']] ?? $pkg['key']);
@@ -234,33 +233,31 @@ function check_system_dependencies(): array
 
     // === Vérifier Ghostscript ===
     $gs_path = get_ghostscript_path();
-    if ($gs_path && (file_exists($gs_path) || (PHP_OS_FAMILY !== 'Windows' && trim(shell_exec("which ".escapeshellarg($gs_path)." 2>/dev/null"))))) {
+    if ($gs_path && (file_exists($gs_path) || trim(shell_exec(($is_windows ? "where " : "which ") . escapeshellarg($gs_path) . " 2>&1")))) {
         $results['dependencies']['ghostscript']['status'] = true;
         $results['dependencies']['ghostscript']['path'] = $gs_path;
-        $v_cmd = ($is_windows ? escapeshellarg($gs_path) . " -v" : escapeshellarg($gs_path) . " --version");
-        $results['dependencies']['ghostscript']['version'] = trim(@shell_exec("$v_cmd 2>&1"));
+        $results['dependencies']['ghostscript']['version'] = trim(shell_exec(escapeshellarg($gs_path) . ($is_windows ? " -v 2>&1" : " --version 2>&1")));
     }
 
     // === Vérifier GhostPCL (gpcl6) ===
-    $gpcl_path = get_binary_path('gpcl6');
-    if ($gpcl_path && (file_exists($gpcl_path) || (PHP_OS_FAMILY !== 'Windows' && trim(shell_exec("which ".escapeshellarg($gpcl_path)." 2>/dev/null"))))) {
+    $gpcl_path = get_gpcl6_path();
+    if ($gpcl_path && (file_exists($gpcl_path) || trim(shell_exec(($is_windows ? "where " : "which ") . escapeshellarg($gpcl_path) . " 2>&1")))) {
         $results['dependencies']['gpcl6']['status'] = true;
         $results['dependencies']['gpcl6']['path'] = $gpcl_path;
-        $results['dependencies']['gpcl6']['version'] = trim(@shell_exec(escapeshellarg($gpcl_path) . " -v 2>&1"));
+        $results['dependencies']['gpcl6']['version'] = trim(shell_exec(escapeshellarg($gpcl_path) . " -v 2>&1"));
     } elseif ($results['dependencies']['ghostscript']['status'] && !$is_windows) {
-        // Sur Linux, gpcl6 est parfois inclus dans ghostscript ou absent mais on simule si GS est là
         $results['dependencies']['gpcl6']['status'] = true;
         $results['dependencies']['gpcl6']['path'] = $results['dependencies']['ghostscript']['path'];
+        $results['dependencies']['gpcl6']['version'] = $results['dependencies']['ghostscript']['version'];
     }
 
     // === Vérifier GhostXPS (gxps) ===
-    $gxps_local_path = realpath(__DIR__ . '/../../../bin/win-x64/' . ($is_windows ? 'gxps.exe' : 'gxps'));
-    if ($gxps_local_path && file_exists($gxps_local_path)) {
+    $gxps_path = get_gxps_path();
+    if ($gxps_path && (file_exists($gxps_path) || trim(shell_exec(($is_windows ? "where " : "which ") . escapeshellarg($gxps_path) . " 2>&1")))) {
         $results['dependencies']['gxps']['status'] = true;
-        $results['dependencies']['gxps']['path'] = $gxps_local_path;
-        $results['dependencies']['gxps']['version'] = trim(shell_exec(escapeshellarg($gxps_local_path) . " -v 2>&1"));
+        $results['dependencies']['gxps']['path'] = $gxps_path;
+        $results['dependencies']['gxps']['version'] = trim(shell_exec(escapeshellarg($gxps_path) . " -v 2>&1"));
     } elseif ($results['dependencies']['ghostscript']['status'] && !$is_windows) {
-        // Vérifier si libgxps-utils est installé
         $gxps_check = trim(shell_exec('which xpstops 2>/dev/null'));
         if ($gxps_check) {
             $results['dependencies']['gxps']['status'] = true;
@@ -270,14 +267,21 @@ function check_system_dependencies(): array
     }
 
     // === Vérifier ImageMagick ===
-    $magick_path = get_binary_path('magick');
-    if ($magick_path && (file_exists($magick_path) || (PHP_OS_FAMILY !== 'Windows' && trim(shell_exec("which ".escapeshellarg($magick_path)." 2>/dev/null"))))) {
+    $magick_path = get_magick_path();
+    if ($magick_path && (file_exists($magick_path) || trim(shell_exec(($is_windows ? "where " : "which ") . escapeshellarg($magick_path) . " 2>&1")))) {
         $results['dependencies']['imagemagick']['status'] = true;
         $results['dependencies']['imagemagick']['path'] = $magick_path;
-        $v_cmd = escapeshellarg($magick_path) . " -version 2>&1";
-        $magick_v = trim(@shell_exec($v_cmd));
-        $magick_lines = explode("\n", $magick_v);
-        $results['dependencies']['imagemagick']['version'] = trim($magick_lines[0] ?? '');
+        $cmd = escapeshellarg($magick_path) . " -version 2>&1";
+        $lines = explode("\n", trim(shell_exec($cmd)));
+        $results['dependencies']['imagemagick']['version'] = trim($lines[0] ?? '');
+    } elseif (!$is_windows) {
+        $convert_path = trim(shell_exec('which convert 2>/dev/null'));
+        if ($convert_path) {
+            $results['dependencies']['imagemagick']['status'] = true;
+            $results['dependencies']['imagemagick']['path'] = $convert_path;
+            $lines = explode("\n", trim(shell_exec(escapeshellarg($convert_path) . " -version | head -n 1")));
+            $results['dependencies']['imagemagick']['version'] = trim($lines[0] ?? '');
+        }
     }
 
     // Vérifier les permissions
