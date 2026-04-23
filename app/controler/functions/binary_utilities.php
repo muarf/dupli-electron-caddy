@@ -41,14 +41,21 @@ function get_binary_path(string $name, ?string $env_var = null): ?string
         }
     }
 
-    $is_windows = (PHP_OS_FAMILY === 'Windows');
-    $ext = $is_windows ? '.exe' : '';
-    $platform = get_binary_platform_dir();
-
     // 2. Vérifier dans les dossiers de l'application (bin/)
-    $local_path = realpath(__DIR__ . "/../../../bin/$platform/$name$ext");
-    if ($local_path && file_exists($local_path) && ($is_windows || is_executable($local_path))) {
-        return $local_path;
+    $platform = get_binary_platform_dir();
+    $ext = (PHP_OS_FAMILY === 'Windows') ? '.exe' : '';
+    
+    // On tente plusieurs profondeurs car la structure peut varier selon le mode (dev vs packagé)
+    $search_paths = [
+        __DIR__ . "/../../../bin/$platform/$name$ext", // Mode dev: app/controler/functions/../../../bin/
+        __DIR__ . "/../../bin/$platform/$name$ext",    // Cas où app/ est la racine
+        dirname(__DIR__, 3) . "/bin/$platform/$name$ext" // Chemin absolu calculé
+    ];
+
+    foreach ($search_paths as $path) {
+        if (file_exists($path)) {
+            return realpath($path) ?: $path;
+        }
     }
 
     // Cas spécial pour ImageMagick : fallback magick <-> convert

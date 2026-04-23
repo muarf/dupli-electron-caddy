@@ -15,7 +15,22 @@ $result = [
 
 $gs_path = get_ghostscript_path();
 
-if (!$gs_path || (PHP_OS_FAMILY === 'Windows' && strpos($gs_path, 'gs') === 0 && !file_exists($gs_path))) {
+// Vérifier si le binaire existe ou est accessible dans le PATH
+$is_accessible = false;
+if ($gs_path) {
+    if (file_exists($gs_path)) {
+        $is_accessible = true;
+    } else {
+        // Test via where/which pour les fallbacks système
+        $check_cmd = (PHP_OS_FAMILY === 'Windows' ? "where " : "which ") . escapeshellarg($gs_path);
+        $check_res = @shell_exec("$check_cmd 2>&1");
+        if (!empty(trim($check_res)) && strpos($check_res, 'pas de') === false) {
+            $is_accessible = true;
+        }
+    }
+}
+
+if (!$is_accessible) {
     $result['error'] = 'Ghostscript non trouvé';
     $result['error_code'] = 'NOT_FOUND';
     echo json_encode($result);
