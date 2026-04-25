@@ -315,6 +315,7 @@ class PrinterMonitor {
             let fillRate = 0;
             let isColor = false;
             let thumbnailUrl = '';
+            let totalPages = 1;
 
             if (format === 'pdf' || format === 'ps') {
                 // === PDF/PS: Ghostscript ink_cov ===
@@ -325,6 +326,7 @@ class PrinterMonitor {
                 }
                 fillRate = inkResult.fillRate;
                 isColor = inkResult.isColor;
+                totalPages = inkResult.pages || 1;
                 thumbnailUrl = await this._gsThumbnail(tmpPath, jobId);
 
             } else if (format === 'png' || format === 'jpeg') {
@@ -347,7 +349,8 @@ class PrinterMonitor {
                 success: true,
                 isGrayscale: !isColor,
                 fillRate: fillRate,
-                thumbnailUrl: thumbnailUrl
+                thumbnailUrl: thumbnailUrl,
+                totalPages: totalPages
             };
         } catch (err) {
             console.error(`❌ [ReanalyzeJob Linux] Erreur inattendue:`, err);
