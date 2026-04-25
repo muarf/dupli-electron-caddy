@@ -13,6 +13,9 @@ nodeGypRebuild: false
 asar: true
 asarUnpack:
   - "**/node_modules/canvas/**/*"
+  - "bin/**/*"
+  - "ghostscript/**/*"
+  - "caddy/**/*"
 
 directories:
   output: dist

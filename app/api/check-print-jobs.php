@@ -14,6 +14,27 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
+// #region agent log
+function __agentNdjson(string $hypothesisId, string $message, array $data = [], string $runId = 'pre'): void
+{
+    try {
+        $payload = [
+            'sessionId' => '8593f8',
+            'runId' => $runId,
+            'hypothesisId' => $hypothesisId,
+            'location' => 'app/api/check-print-jobs.php',
+            'message' => $message,
+            'data' => $data,
+            'timestamp' => (int) (microtime(true) * 1000),
+        ];
+        $logPath = __DIR__ . '/../../debug-8593f8.log';
+        @file_put_contents($logPath, json_encode($payload, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND);
+    } catch (Throwable $e) {
+        // ignore
+    }
+}
+// #endregion
+
 // Gérer les requêtes OPTIONS (CORS preflight)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -353,6 +374,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ob_start();
 
 try {
+    $t0 = microtime(true);
+    __agentNdjson('E', 'check_print_jobs: start', [
+        'method' => $_SERVER['REQUEST_METHOD'] ?? null,
+        'query' => $_GET ?? null,
+    ]);
+
     require_once(__DIR__ . '/../controler/conf.php');
     require_once(__DIR__ . '/../controler/functions/database.php');
     require_once(__DIR__ . '/../controler/functions/utilities.php');
@@ -360,9 +387,11 @@ try {
     // Nettoyer le buffer de sortie
     ob_end_clean();
     $db = create_database_manager();
+    __agentNdjson('E', 'check_print_jobs: db connected', ['elapsed_ms' => (int)((microtime(true)-$t0)*1000)]);
 
     // Vérifier si la table existe
     if (!$db->tableExists('print_jobs')) {
+        __agentNdjson('E', 'check_print_jobs: no table', ['elapsed_ms' => (int)((microtime(true)-$t0)*1000)]);
         echo json_encode([
             'success' => false,
             'error' => 'La table print_jobs n\'existe pas encore',
@@ -416,12 +445,26 @@ try {
     ";
 
     // Récupérer tous les jobs d'impression non encore enregistrés, triés par date décroissante
+    $tJobs = microtime(true);
     $jobs = $db->select($sql);
+    __agentNdjson('E', 'check_print_jobs: jobs selected', [
+        'elapsed_ms' => (int)((microtime(true)-$t0)*1000),
+        'select_jobs_ms' => (int)((microtime(true)-$tJobs)*1000),
+        'jobs_count' => is_array($jobs) ? count($jobs) : null,
+        'show_history' => $show_history,
+    ]);
 
     // Compter le total
+    $tCount = microtime(true);
     $total = $db->count('print_jobs');
+    __agentNdjson('E', 'check_print_jobs: total counted', [
+        'elapsed_ms' => (int)((microtime(true)-$t0)*1000),
+        'count_ms' => (int)((microtime(true)-$tCount)*1000),
+        'total_jobs' => $total,
+    ]);
 
     // Statistiques par imprimante
+    $tStats1 = microtime(true);
     $statsByPrinter = $db->select("
         SELECT 
             printer_name,
@@ -431,8 +474,14 @@ try {
         GROUP BY printer_name
         ORDER BY total_jobs DESC
     ");
+    __agentNdjson('E', 'check_print_jobs: stats by_printer', [
+        'elapsed_ms' => (int)((microtime(true)-$t0)*1000),
+        'stats_printer_ms' => (int)((microtime(true)-$tStats1)*1000),
+        'rows' => is_array($statsByPrinter) ? count($statsByPrinter) : null,
+    ]);
 
     // Statistiques par statut
+    $tStats2 = microtime(true);
     $statsByStatus = $db->select("
         SELECT 
             status,
@@ -441,7 +490,13 @@ try {
         GROUP BY status
         ORDER BY count DESC
     ");
+    __agentNdjson('E', 'check_print_jobs: stats by_status', [
+        'elapsed_ms' => (int)((microtime(true)-$t0)*1000),
+        'stats_status_ms' => (int)((microtime(true)-$tStats2)*1000),
+        'rows' => is_array($statsByStatus) ? count($statsByStatus) : null,
+    ]);
 
+    __agentNdjson('E', 'check_print_jobs: success', ['elapsed_ms' => (int)((microtime(true)-$t0)*1000)]);
     echo json_encode([
         'success' => true,
         'total_jobs' => $total,
@@ -455,6 +510,9 @@ try {
 } catch (Exception $e) {
     // Nettoyer le buffer avant d'envoyer l'erreur
     ob_end_clean();
+    __agentNdjson('E', 'check_print_jobs: exception', [
+        'error' => $e->getMessage(),
+    ]);
     http_response_code(500);
     echo json_encode([
         'success' => false,
@@ -464,6 +522,9 @@ try {
 } catch (Error $e) {
     // Nettoyer le buffer avant d'envoyer l'erreur
     ob_end_clean();
+    __agentNdjson('E', 'check_print_jobs: fatal', [
+        'error' => $e->getMessage(),
+    ]);
     http_response_code(500);
     echo json_encode([
         'success' => false,

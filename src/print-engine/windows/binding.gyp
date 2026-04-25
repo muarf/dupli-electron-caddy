@@ -11,6 +11,14 @@
       "cflags!": [ "-fno-exceptions" ],
       "cflags_cc!": [ "-fno-exceptions" ],
       "defines": [ "NAPI_DISABLE_CPP_EXCEPTIONS" ],
+      "msvs_settings": {
+        "VCLibrarianTool": {
+          "LinkTimeCodeGeneration": "false"
+        },
+        "VCLinkerTool": {
+          "LinkTimeCodeGeneration": "0"
+        }
+      },
       "conditions": [
         ["OS=='win'", {
           "sources": [ "win32-printer.cc" ],
