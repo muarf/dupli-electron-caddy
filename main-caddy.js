@@ -6,7 +6,7 @@ const os = require('os');
 const net = require('net');
 const http = require('http');
 const { checkWindowsCompatibility, applyCompatibilitySettings } = require('./utils/windows-compatibility');
-const { startMonitoring, reanalyzeJob } = require('./utils/printer-monitor');
+const PrinterMonitor = require('./utils/printer-monitor');
 const printEngine = require('./src/print-engine');
 const { isRunningAsAdmin, restartAsAdmin } = require('./utils/admin-checker');
 
@@ -130,7 +130,7 @@ checkWindowsCompatibility();
 let mainWindow;
 let caddyProcess;
 let phpFpmProcess;
-let stopPrinterMonitor = null; // Fonction retournée par startMonitoring()
+let printerMonitor = null; // Moniteur d'imprimantes Windows
 let serverPort = 8000; // Port par défaut
 const PHP_SERVER_PORT = 8001;
 let frontendPort = serverPort;
@@ -1680,27 +1680,183 @@ async function stopAllChildrenGracefully() {
     } catch { }
     try { stopPhpErrorLogWatcher(); } catch { }
     try {
-    try {
-        if (stopPrinterMonitor) {
-            stopPrinterMonitor();
-            stopPrinterMonitor = null;
+        if (printerMonitor) {
+            printerMonitor.stop();
+            printerMonitor = null;
         }
-    } catch { }
     } catch { }
 }
 
+// Démarrer le moniteur d'imprimantes (Windows + Linux)
 function startPrinterMonitor() {
     if (process.platform !== 'win32' && process.platform !== 'linux') {
+        console.log('[DEBUG startPrinterMonitor] platform not supported');
         console.log('Le moniteur d\'imprimantes n\'est pas supporté sur cet OS');
         return;
     }
 
-    if (stopPrinterMonitor) {
+    if (printerMonitor) {
         console.log('Le moniteur d\'imprimantes est déjà démarré');
         return;
     }
 
     try {
+        printerMonitor = new PrinterMonitor({
+            phpApiUrl: `http://127.0.0.1:${PHP_SERVER_PORT}`,
+            onPrintJob: (printData) => {
+                // PATCH: Si le nom est un nom générique de Ghostscript ou Electron, 
+                // essayer de trouver le vrai nom dans le cache basé sur l'imprimante
+                let docName = printData.Document;
+                let bestMatch = null; // Déclaré ici pour être accessible pour l'enrichissement
+
+                const genericNames = [
+                    'ghostscript', 'ghostscript output', 'dupli-print', 'print job',
+                    'untitled', 'gswin64c', 'gswin64', 'gs output', 'output', 'outp'
+                ];
+
+                const lowerDocName = (docName || '').toLowerCase().trim();
+                const now = Date.now();
+                const windowMs = 300000; // 5 minutes (augmenté pour les impressions longues)
+
+                // Toujours chercher un match dans le cache (pour enrichir les options même si le nom n'est pas générique)
+                let bestTime = 0;
+                for (const [key, entry] of printOptionsCache.entries()) {
+                    const monitorPrinter = (printData.PrinterName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const cachePrinter = (entry.options && entry.options.printer || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+                    const printerMatches = cachePrinter && (
+                        monitorPrinter.includes(cachePrinter) ||
+                        cachePrinter.includes(monitorPrinter) ||
+                        monitorPrinter === cachePrinter
+                    );
+
+                    if (printerMatches) {
+                        const age = now - entry.timestamp;
+                        if (age < windowMs && entry.timestamp > bestTime) {
+                            bestMatch = entry;
+                            bestTime = entry.timestamp;
+                        }
+                    }
+                }
+
+                // FALLBACK ULTIME: Si aucun match par imprimante, prendre le job le plus récent du cache 
+                if (!bestMatch && printOptionsCache.size > 0) {
+                    const entries = Array.from(printOptionsCache.values()).sort((a, b) => b.timestamp - a.timestamp);
+                    const mostRecent = entries[0];
+                    if (now - mostRecent.timestamp < 20000) { // Si moins de 20s
+                        bestMatch = mostRecent;
+                        console.log(`⚠️ [PRINT_MONITOR] Match par proximité temporelle (20s)`);
+                    }
+                }
+
+                // Si nom générique, remplacer par le nom du cache
+                if (genericNames.some(g => lowerDocName.includes(g)) || !lowerDocName) {
+                    const debugMsg = `🔍 [PRINT_MONITOR] Nom générique détecté ("${docName}"), recherche dans le cache (${printOptionsCache.size} entrées)...`;
+                    console.log(debugMsg);
+                    sendToRenderer('console-log', { message: debugMsg, type: 'info' });
+
+                    if (bestMatch && bestMatch.options && (bestMatch.options.fileName || bestMatch.options.document)) {
+                        const recoveredName = bestMatch.options.fileName || bestMatch.options.document;
+                        const successMsg = `✅ [PRINT_MONITOR] Match trouvé ! Remplacement de "${docName}" par "${recoveredName}"`;
+                        console.log(successMsg);
+                        sendToRenderer('console-log', { message: successMsg, type: 'success' });
+                        docName = recoveredName;
+                    } else {
+                        let cacheDump = [];
+                        for (const [key, entry] of printOptionsCache.entries()) {
+                            const cPrinter = (entry.options && entry.options.printer) || 'N/A';
+                            const age = Math.round((now - entry.timestamp) / 1000);
+                            cacheDump.push(`- Key: ${key.substring(0, 20)}... | Printer: "${cPrinter}" | Age: ${age}s`);
+                        }
+
+                        const failMsg = `❌ [PRINT_MONITOR] Aucun match pour "${printData.PrinterName}". \nContenu du cache (${printOptionsCache.size} clés) :\n${cacheDump.join('\n')}`;
+                        console.log(failMsg);
+                        sendToRenderer('console-log', { message: failMsg, type: 'warning' });
+                    }
+                }
+
+                // Construire les données enrichies avec les options du cache si disponibles
+                let enrichedPrintData = { ...printData, Document: docName };
+
+                // Si on a trouvé un match dans le cache, utiliser les options stockées
+                // car le moniteur natif ne peut pas lire ces valeurs depuis Ghostscript
+                if (bestMatch && bestMatch.options) {
+                    const cachedOpts = bestMatch.options;
+
+                    // Enrichir avec duplex depuis le cache (le natif retourne toujours 0 pour GS)
+                    if (cachedOpts.duplex) {
+                        const isDuplex = cachedOpts.duplex === 'duplex' || cachedOpts.duplex === 'tumble';
+                        enrichedPrintData.IsDuplex = isDuplex;
+                        console.log(`📋 [CACHE] Duplex enrichi depuis cache: ${cachedOpts.duplex} → IsDuplex=${isDuplex}`);
+                    }
+
+                    // Enrichir avec paperSize depuis le cache
+                    if (cachedOpts.paperSize && (!enrichedPrintData.PaperSize || enrichedPrintData.PaperSize === 'Unknown')) {
+                        enrichedPrintData.PaperSize = cachedOpts.paperSize;
+                        console.log(`📋 [CACHE] PaperSize enrichi depuis cache: ${cachedOpts.paperSize}`);
+                    }
+
+                    // Enrichir avec colorMode depuis le cache
+                    if (cachedOpts.colorMode) {
+                        const isColor = cachedOpts.colorMode === 'color';
+                        enrichedPrintData.ColorMode = isColor ? 'Color' : 'Monochrome';
+                        console.log(`📋 [CACHE] ColorMode enrichi depuis cache: ${cachedOpts.colorMode}`);
+                    }
+
+                    // Enrichir avec copies depuis le cache si pas défini
+                    if (cachedOpts.copies && (!enrichedPrintData.Copies || enrichedPrintData.Copies <= 1)) {
+                        enrichedPrintData.Copies = cachedOpts.copies;
+                        console.log(`📋 [CACHE] Copies enrichi depuis cache: ${cachedOpts.copies}`);
+                    }
+                }
+
+                // Envoyer la notification au renderer
+                sendToRenderer('print-job-detected', enrichedPrintData);
+                console.log('Impression détectée:', enrichedPrintData);
+
+                // Envoyer les données à l'API PHP pour enregistrement en base
+                const http = require('http');
+                const postData = JSON.stringify({
+                    jobId: String(enrichedPrintData.JobId),
+                    document: enrichedPrintData.Document,
+                    printerName: enrichedPrintData.PrinterName,
+                    status: enrichedPrintData.Status,
+                    totalPages: enrichedPrintData.TotalPages || 0,
+                    paperSize: enrichedPrintData.PaperSize,
+                    duplex: enrichedPrintData.IsDuplex,
+                    colorMode: enrichedPrintData.ColorMode,
+                    copies: enrichedPrintData.Copies || 1,
+                    fillRate: enrichedPrintData.FillRate || 0,
+                    thumbnailUrl: enrichedPrintData.ThumbnailUrl || '',
+                    timestamp: enrichedPrintData.TimeSubmitted || new Date().toISOString(),
+                    eventType: 'job_detected',
+                    platform: process.platform
+                });
+
+                const options = {
+                    hostname: '127.0.0.1',
+                    port: PHP_SERVER_PORT,
+                    path: '/index.php?print_notification',
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Content-Length': Buffer.byteLength(postData)
+                    }
+                };
+
+                const req = http.request(options, (res) => {
+                    let data = '';
+                    res.on('data', chunk => data += chunk);
+                    res.on('end', () => {
+                        if (res.statusCode === 200) {
+                            console.log('✅ Notification PHP enregistrée:', data);
+                        } else {
+                            console.error('⚠️ Erreur API PHP:', res.statusCode, data);
+                        }
+                    });
+                });
+
+                req.on('error', (e) => {
                     console.error('❌ Erreur envoi notification PHP:', e.message);
                 });
 
@@ -2008,6 +2164,9 @@ function createWindow() {
                     mainWindow.loadURL(fallbackUrl);
                     mainWindow.show();
                 }
+
+                // Démarrer le moniteur d'imprimantes sur Linux (fallback case)
+                startPrinterMonitor();
             } else {
                 frontendPort = serverPort;
                 sendToRenderer(PHP_STATUS_CHANNEL, {
@@ -2067,7 +2226,7 @@ function createWindow() {
                     console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
                 }
 
-                // Démarrer le moniteur d'imprimantes Windows après le démarrage des serveurs
+                // Démarrer le moniteur d'imprimantes après le démarrage des serveurs
                 startPrinterMonitor();
             }
         } catch (error) {
@@ -2754,8 +2913,13 @@ ipcMain.handle('get-printers', async () => {
         // Fallback sur le moniteur si Electron échoue (cas rare)
         if (process.platform === 'win32' || process.platform === 'linux') {
             try {
-                const addon = require('./build/Release/win32-printer');
-                const printers = addon.getPrinters();
+                let monitorToUse = printerMonitor;
+                if (!monitorToUse) {
+                    monitorToUse = new PrinterMonitor({
+                        phpApiUrl: `http://127.0.0.1:${PHP_SERVER_PORT}`
+                    });
+                }
+                const printers = await monitorToUse.getPrinters();
                 return { success: true, printers: printers };
             } catch (e) {
                 return { success: false, error: error.message };
@@ -2771,14 +2935,17 @@ ipcMain.handle('toggle-printer-monitor', async (event, start) => {
     if (process.platform !== 'win32' && process.platform !== 'linux') {
         return { success: false, error: 'Disponible uniquement sur Windows/Linux' };
     }
+
     try {
         if (start) {
-            if (!stopPrinterMonitor) startPrinterMonitor();
+            if (!printerMonitor) {
+                startPrinterMonitor();
+            }
             return { success: true, status: 'started' };
         } else {
-            if (stopPrinterMonitor) {
-                stopPrinterMonitor();
-                stopPrinterMonitor = null;
+            if (printerMonitor) {
+                printerMonitor.stop();
+                printerMonitor = null;
             }
             return { success: true, status: 'stopped' };
         }
@@ -2993,33 +3160,33 @@ ipcMain.handle('delete-print-job', async (event, printerName, jobId) => {
 });
 
 // Handler pour réanalyser un job d'impression (force re-calcul fill rate, couleur, thumbnail)
-ipcMain.handle('reanalyze-print-job', async (event, jobId, documentName, format, splPath, driverColor) => {
+ipcMain.handle('reanalyze-print-job', async (event, jobId) => {
     console.log(`[IPC] reanalyze-print-job: Réanalyse du job ${jobId}...`);
-
+    
+    // Convertir en nombre si nécessaire
     const numericJobId = parseInt(jobId, 10);
     if (isNaN(numericJobId) || numericJobId <= 0) {
         return { success: false, error: 'Job ID invalide: ' + jobId };
     }
 
     try {
-        const result = await reanalyzeJob(
-            numericJobId,
-            documentName || 'ReanalyzedJob',
-            format       || 'unknown',
-            splPath,
-            driverColor  || 0
-        );
+        if (!printerMonitor) {
+            return { success: false, error: 'PrinterMonitor non initialisé' };
+        }
 
-        if (result && (result.success !== false)) {
+        const result = await printerMonitor.reanalyzeJob(numericJobId);
+
+        if (result && result.success) {
             console.log(`[IPC] Job ${jobId} réanalysé: fillRate=${result.fillRate}%, isGrayscale=${result.isGrayscale}`);
             return {
-                success:      true,
-                isGrayscale:  result.isGrayscale,
-                fillRate:     result.fillRate,
+                success: true,
+                isGrayscale: result.isGrayscale,
+                fillRate: result.fillRate,
                 thumbnailUrl: result.thumbnailUrl,
-                totalPages:   result.totalPages || 0
+                totalPages: result.totalPages || 0
             };
         } else {
+            console.log(`[IPC] Réanalyse échouée pour job ${jobId}`);
             return { success: false, error: 'Analyse échouée (fichier SPL introuvable ou format non supporté)' };
         }
     } catch (err) {

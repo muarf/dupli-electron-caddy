@@ -50,8 +50,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getPrinterMonitorStatus: () => ipcRenderer.invoke('get-printer-monitor-status'),
     deletePrinter: (printerName) => ipcRenderer.invoke('delete-printer', printerName),
     deletePrintJob: (printerName, jobId) => ipcRenderer.invoke('delete-print-job', printerName, jobId),
-    reanalyzePrintJob: (jobId, documentName, format, splPath, driverColor) =>
-        ipcRenderer.invoke('reanalyze-print-job', jobId, documentName, format, splPath, driverColor),
+    reanalyzePrintJob: (jobId) => ipcRenderer.invoke('reanalyze-print-job', jobId),
     onPrintJobDetected: (callback) => {
         ipcRenderer.on('print-job-detected', (event, payload) => callback(payload));
     },
