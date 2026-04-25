@@ -130,9 +130,15 @@ checkWindowsCompatibility();
 let mainWindow;
 let caddyProcess;
 let phpFpmProcess;
+let phpConvertProcess;
 let stopPrinterMonitor = null; // Fonction retournée par startMonitoring()
+const printerMonitor = { // Wrapper pour le status du moniteur
+    get monitoring() { return stopPrinterMonitor !== null; },
+    stop() { if (stopPrinterMonitor) { stopPrinterMonitor(); stopPrinterMonitor = null; } }
+};
 let serverPort = 8000; // Port par défaut
 const PHP_SERVER_PORT = 8001;
+const PHP_CONVERT_PORT = 8002; // Serveur PHP séparé pour conversions (évite de bloquer /check_print_jobs)
 let frontendPort = serverPort;
 let tempCaddyfilePath = null; // Chemin du Caddyfile temporaire si créé
 const PHP_LOG_CHANNEL = 'php-log';
@@ -169,6 +175,145 @@ let phpErrorLogWatcher = null;
 let phpErrorLogPath = null;
 let phpErrorLogLastSize = 0;
 let phpErrorLogRetryTimeout = null;
+
+function getPhpAppPath() {
+    const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isPackaged = app.isPackaged;
+    const isLinux = process.platform === 'linux';
+    const isWindows = process.platform === 'win32';
+    const isMacOS = process.platform === 'darwin';
+
+    let appPath;
+    if (isAppImage || isMacOS || (isLinux && isPackaged)) {
+        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app');
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'app');
+        if (fs.existsSync(noAsarPath)) appPath = noAsarPath;
+        else if (fs.existsSync(asarPath)) appPath = asarPath;
+        else appPath = noAsarPath;
+    } else if (isWindows) {
+        const asarPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app');
+        const noAsarPath = path.join(process.resourcesPath, 'app', 'app');
+        if (fs.existsSync(noAsarPath)) appPath = noAsarPath;
+        else if (fs.existsSync(asarPath)) appPath = asarPath;
+        else appPath = path.join(__dirname, 'app');
+    } else {
+        appPath = path.join(__dirname, 'app');
+    }
+
+    return appPath;
+}
+
+function buildPhpArgsForPort(port) {
+    const phpPath = getPhpPath();
+    const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
+    const isPackaged = app.isPackaged;
+    const isLinux = process.platform === 'linux';
+    const isWindows = process.platform === 'win32';
+
+    const appPath = getPhpAppPath();
+
+    // Créer le répertoire de sessions s'il n'existe pas (cross-platform)
+    const sessionPath = path.join(os.tmpdir(), 'duplicator_sessions');
+    if (!fs.existsSync(sessionPath)) {
+        fs.mkdirSync(sessionPath, { recursive: true });
+    }
+
+    let phpArgs;
+    if (isAppImage || (isLinux && isPackaged)) {
+        const appBasePath = appPath;
+        const vendorPath = path.join(appBasePath, 'vendor');
+        const appPublicPath = path.join(appPath, 'public');
+        phpArgs = [
+            '-S', `127.0.0.1:${port}`,
+            '-t', appPublicPath,
+            '-d', `include_path=${appBasePath}:${vendorPath}:.`,
+            '-d', 'display_errors=1',
+            '-d', 'log_errors=1',
+            '-d', 'upload_max_filesize=50M',
+            '-d', 'post_max_size=50M',
+            '-d', 'max_input_vars=10000',
+            '-d', 'max_input_nesting_level=256',
+            '-d', `session.save_path=${sessionPath}`
+        ];
+    } else if (isWindows) {
+        const asarExtPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'php', 'ext');
+        const noAsarExtPath = path.join(process.resourcesPath, 'app', 'php', 'ext');
+        const devExtPath = path.join(__dirname, 'php', 'ext');
+
+        const phpIniCandidates = [
+            path.join(appPath, '..', 'php', 'php.ini'),
+            path.join(appPath, '..', 'php.ini'),
+        ];
+        let phpIniPath = phpIniCandidates[0];
+        for (const candidate of phpIniCandidates) {
+            if (fs.existsSync(candidate)) { phpIniPath = candidate; break; }
+        }
+
+        let phpExtPath;
+        if (!isPackaged && fs.existsSync(devExtPath)) phpExtPath = path.resolve(devExtPath);
+        else if (fs.existsSync(noAsarExtPath)) phpExtPath = path.resolve(noAsarExtPath);
+        else phpExtPath = path.resolve(asarExtPath);
+
+        const appBasePath = appPath;
+        const vendorPath = path.join(appBasePath, 'vendor');
+        const appPublicPath = path.join(appPath, 'public');
+
+        phpArgs = [
+            '-c', phpIniPath,
+            '-S', `127.0.0.1:${port}`,
+            '-t', appPublicPath,
+            '-d', `extension_dir=${phpExtPath.replace(/\\/g, '/')}`,
+            '-d', 'extension=php_sqlite3.dll',
+            '-d', 'extension=php_pdo_sqlite.dll',
+            '-d', `include_path=${appBasePath};${vendorPath};.`,
+            '-d', 'display_errors=1',
+            '-d', 'log_errors=1',
+            '-d', 'upload_max_filesize=50M',
+            '-d', 'post_max_size=50M',
+            '-d', 'max_input_vars=10000',
+            '-d', 'max_input_nesting_level=256',
+            '-d', `session.save_path=${sessionPath}`
+        ];
+    } else {
+        // macOS/dev
+        const appBasePath = appPath;
+        const vendorPath = path.join(appBasePath, 'vendor');
+        const appPublicPath = path.join(appPath, 'public');
+        phpArgs = [
+            '-S', `127.0.0.1:${port}`,
+            '-t', appPublicPath,
+            '-d', `include_path=${appBasePath}:${vendorPath}:.`,
+            '-d', 'display_errors=1',
+            '-d', 'log_errors=1',
+            '-d', 'upload_max_filesize=50M',
+            '-d', 'post_max_size=50M',
+            '-d', 'max_input_vars=10000',
+            '-d', 'max_input_nesting_level=256',
+            '-d', `session.save_path=${sessionPath}`
+        ];
+    }
+
+    return { phpPath, phpArgs, appPath };
+}
+
+function startPhpConvertServer() {
+    const { phpPath, phpArgs } = buildPhpArgsForPort(PHP_CONVERT_PORT);
+    console.log(`Démarrage serveur PHP conversions sur ${PHP_CONVERT_PORT}...`);
+    phpConvertProcess = spawn(phpPath, phpArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
+
+    phpConvertProcess.stdout.on('data', (data) => handlePhpOutput('STDOUT', data));
+    phpConvertProcess.stderr.on('data', (data) => handlePhpOutput('STDERR', data));
+
+    phpConvertProcess.on('exit', (code, signal) => {
+        const msg = `Serveur PHP conversions arrêté (code=${code}, signal=${signal})`;
+        console.error(msg);
+        phpConvertProcess = null;
+        // Redémarrage best-effort (ne pas boucler agressivement)
+        setTimeout(() => {
+            try { if (!phpConvertProcess && !app.isQuiting) startPhpConvertServer(); } catch {}
+        }, 2000);
+    });
+}
 
 function sendToRenderer(channel, payload) {
     try {
@@ -1638,10 +1783,10 @@ async function stopProcesses() {
     stopPhpErrorLogWatcher();
 
     // Arrêter le moniteur d'imprimantes
-    if (printerMonitor) {
+    if (stopPrinterMonitor) {
         try {
-            printerMonitor.stop();
-            printerMonitor = null;
+            stopPrinterMonitor();
+            stopPrinterMonitor = null;
         } catch (error) {
             console.error('Erreur lors de l\'arrêt du moniteur d\'imprimantes:', error);
         }
@@ -2015,6 +2160,9 @@ function createWindow() {
 
         try {
             await startPhpFpm();
+            // Démarrer un 2e serveur PHP dédié aux conversions lourdes
+            // pour éviter de bloquer le serveur principal (polling UI: check_print_jobs).
+            try { startPhpConvertServer(); } catch (e) { console.error('Erreur startPhpConvertServer:', e.message); }
             await startCaddy();
 
             const appUrl = `http://127.0.0.1:${serverPort}/`;
@@ -2866,7 +3014,7 @@ ipcMain.handle('get-printer-monitor-status', () => {
 
     return {
         available: true,
-        status: printerMonitor && printerMonitor.monitoring ? 'active' : 'inactive'
+        status: stopPrinterMonitor !== null ? 'active' : 'inactive'
     };
 });
 
@@ -2941,10 +3089,7 @@ ipcMain.handle('delete-print-job', async (event, printerName, jobId) => {
 
     console.log(`[IPC] delete-print-job: Suppression du job ${id}...`);
 
-    // Notifier le moniteur pour qu'il ignore ce job s'il le re-détecte pendant la suppression
-    if (printerMonitor && printerMonitor.addDeletingJob) {
-        printerMonitor.addDeletingJob(id);
-    }
+    // Le job sera supprimé via PowerShell ci-dessous
 
     // Fonction helper pour exécuter PowerShell
     const runPowerShell = (psScript) => {
@@ -3174,10 +3319,7 @@ function storePrintOptions(pdfPath, options) {
     console.log('   Clés utilisées:', [fileName, baseName, normalizedFileName].join(', '));
     console.log('   Options:', JSON.stringify(cacheEntry.options, null, 2));
 
-    // Passer au moniteur si disponible
-    if (printerMonitor && printerMonitor.setPrintOptions) {
-        printerMonitor.setPrintOptions(fileName, cacheEntry);
-    }
+    // Le cache printOptions est déjà stocké ci-dessus dans printOptionsCache
 
     return cacheEntry;
 }

@@ -607,6 +607,10 @@
             const rawFillValue = parseFloat(job.fill_rate || 0);
             const fillPct = rawFillValue.toFixed(1) + '%';
 
+            // Mapping formats papier
+            const paperMap = { '9': 'A4', '8': 'A3', '11': 'A5', '1': 'Letter', '5': 'Legal' };
+            const paperLabel = paperMap[String(job.paper_size)] || job.paper_size || 'A4';
+
             const actions = job.stabilizing ? `
                 <div class="text-center">
                     <i class="fa fa-spinner fa-spin text-primary"></i>
@@ -636,7 +640,7 @@
                 </div>
             </td>
             <td>
-                <span class="badge badge-secondary">${job.paper_size || 'A4'}</span>
+                <span class="badge badge-secondary">${paperLabel}</span>
                 <span class="badge badge-info">${colorMode}</span>
                 <span class="badge badge-light border">${duplexLabel}</span>
                 <div class="mt-1"><small>${pages} pages</small></div>

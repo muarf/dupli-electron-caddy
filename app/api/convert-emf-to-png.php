@@ -133,65 +133,99 @@ if (!$splFile || !file_exists($splFile)) {
     exit;
 }
 
-// Ouvrir le fichier SPL en lecture
-$handle = fopen($splFile, 'rb');
-if (!$handle) {
-    debugLog("Failed to open SPL file: $splFile");
-    echo json_encode(['error' => 'Failed to open SPL file']);
-    exit;
-}
+// Fichier de cache pour les positions EMF
+$cacheFile = $outputDir . 'emf_positions.cache';
 
-// Se positionner au début (on va scanner tout le fichier)
-fseek($handle, 0);
-
-// Extraire TOUS les EMF (Signature 0x01000000)
-$bufferSize = 65536;
-$emfSignature = "\x01\x00\x00\x00";
-$emfPositions = [];
-$pos = 0;
-
-while (!feof($handle)) {
-    $chunk = fread($handle, $bufferSize);
-    $lastFound = 0;
-    while (($found = strpos($chunk, $emfSignature, $lastFound)) !== false) {
-        $actualPos = $pos + $found;
-        
-        // Vérifier si c'est un vrai début d'EMF (Signature " EMF" à l'offset 40)
-        fseek($handle, $actualPos + 40);
-        $signature = fread($handle, 4);
-        if ($signature === " EMF") {
-            $emfPositions[] = $actualPos;
-            debugLog("Valid EMF found at offset: $actualPos");
+if (file_exists($cacheFile) && file_exists($splFile) && filemtime($cacheFile) >= filemtime($splFile)) {
+    debugLog("Using cached EMF positions from $cacheFile");
+    $emfPositions = json_decode(file_get_contents($cacheFile), true);
+} else {
+    // Attendre que le fichier soit stable (sa taille ne change plus)
+    // Optimisation : Si le fichier est déjà très gros, on réduit l'attente
+    $maxWait = (filesize($splFile) > 10 * 1024 * 1024) ? 1 : 3;
+    $lastSize = -1;
+    $stableCount = 0;
+    while ($stableCount < $maxWait) {
+        clearstatcache();
+        $currentSize = filesize($splFile);
+        if ($currentSize === $lastSize && $currentSize > 0) {
+            $stableCount++;
         } else {
-            // debugLog("Ignored false positive EMF signature at offset: $actualPos");
+            $lastSize = $currentSize;
+            $stableCount = 0;
+        }
+        if ($stableCount < $maxWait) sleep(1);
+    }
+
+    $handle = fopen($splFile, "rb");
+    if (!$handle) {
+        debugLog("Failed to open SPL file");
+        echo json_encode(['error' => 'Failed to open SPL file']);
+        exit;
+    }
+
+    $bufferSize = 256 * 1024; // Augmenté à 256KB pour plus de rapidité
+    $emfSignature = "\x01\x00\x00\x00";
+    $emfPositions = [];
+    $pos = 0;
+
+    while (!feof($handle)) {
+        $chunk = fread($handle, $bufferSize);
+        $bytesRead = strlen($chunk);
+        if ($bytesRead === 0) break;
+        
+        $lastFound = 0;
+        while (($found = strpos($chunk, $emfSignature, $lastFound)) !== false) {
+            $actualPos = $pos + $found;
+            
+            // Peek ahead to verify signature " EMF" at offset 40
+            $currentPos = ftell($handle);
+            fseek($handle, $actualPos + 40);
+            $signature = fread($handle, 4);
+            fseek($handle, $currentPos); // Restore
+
+            if ($signature === " EMF") {
+                $emfPositions[] = $actualPos;
+            }
+            
+            $lastFound = $found + 4;
+            if (count($emfPositions) > 500) break 2;
         }
         
-        $lastFound = $found + 4;
-        
-        // Sécurité pour ne pas saturer si le fichier est corrompu
-        if (count($emfPositions) > 500) break 2;
+        if ($bytesRead < $bufferSize) break;
+        fseek($handle, $pos + $bytesRead - 3);
+        $pos = ftell($handle);
     }
-    
-    if (feof($handle)) break;
-    
-    // Remettre le pointeur pour la lecture du prochain chunk
-    fseek($handle, $pos + $bufferSize - 3);
-    $pos = ftell($handle);
+    fclose($handle);
+
+    // Sauvegarder dans le cache
+    if (!empty($emfPositions)) {
+        file_put_contents($cacheFile, json_encode($emfPositions));
+        debugLog("Cached " . count($emfPositions) . " EMF positions.");
+    }
 }
 
 if (empty($emfPositions)) {
     debugLog("No EMF signatures found in SPL");
-    fclose($handle);
     echo json_encode(['error' => 'No EMF signatures found in SPL']);
     exit;
 }
 
+// Ré-ouvrir le fichier pour l'extraction
+$handle = fopen($splFile, 'rb');
+
 // Créer le dossier de sortie (Accessible publiquement)
 $outputDir = __DIR__ . '/../public/thumbnails/' . $jobId . '/';
+/* 
+ * Optimisation pour les gros fichiers : On ne supprime plus le dossier
+ * pour permettre la reprise en cas de timeout précédent.
+ */
+/*
 if (is_dir($outputDir)) {
     debugLog("Clearing existing output dir: $outputDir");
     rrmdir($outputDir);
 }
+*/
 
 if (!is_dir($outputDir)) {
     mkdir($outputDir, 0777, true);
@@ -228,6 +262,18 @@ foreach ($emfPositions as $index => $startOffset) {
     
     $outputPng = $outputDir . "page_$index.png";
     
+    // Optimisation : Si le PNG existe déjà et n'est pas vide, on passe à la suite
+    if (file_exists($outputPng) && filesize($outputPng) > 0) {
+        // Mais on garde l'entrée dans generatedPages pour que le JSON soit complet
+        $generatedPages[] = [
+            'page' => $index,
+            'path' => $outputPng,
+            'size' => filesize($outputPng),
+            'url' => $baseUrl . "page_$index.png"
+        ];
+        continue;
+    }
+
     // Conversion avec ImageMagick (Resolution basse 72 DPI)
     $command = sprintf(
         '"%s" -density 72 "%s" -background white -flatten "%s" 2>&1',
@@ -241,6 +287,8 @@ foreach ($emfPositions as $index => $startOffset) {
     exec($command, $output, $returnVar);
     
     if ($returnVar === 0 && file_exists($outputPng)) {
+        debugLog("Page $index: EMF Size " . round($length / 1024) . " KB converted successfully.");
+
         $generatedPages[] = [
             'page' => $index,
             'path' => $outputPng,
@@ -256,6 +304,19 @@ foreach ($emfPositions as $index => $startOffset) {
 }
 
 fclose($handle);
+
+// Optimisation : Filtrer les pages potentiellement vides à la fin
+$totalFound = count($generatedPages);
+if ($totalFound > 1) {
+    $lastPageIndex = $totalFound - 1;
+    $lastPage = $generatedPages[$lastPageIndex];
+    // Si la dernière page est très petite (< 5KB), c'est probablement une page blanche de fin
+    if (filesize($lastPage['path']) < 5120) {
+        debugLog("Removing potentially blank last page: " . $lastPage['path']);
+        @unlink($lastPage['path']);
+        array_pop($generatedPages);
+    }
+}
 
 if (empty($generatedPages)) {
     debugLog("No PNG files generated");

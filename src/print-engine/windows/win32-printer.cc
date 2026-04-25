@@ -64,7 +64,7 @@ std::string MonitorWorker::DetectSplFormat(const std::string& splPath) {
                           nullptr, OPEN_EXISTING, 0, nullptr);
   if (hf == INVALID_HANDLE_VALUE) return "unknown";
 
-  unsigned char buf[256] = {};
+  unsigned char buf[8192] = {};
   DWORD read = 0;
   ReadFile(hf, buf, sizeof(buf), &read, nullptr);
   CloseHandle(hf);
@@ -83,15 +83,21 @@ std::string MonitorWorker::DetectSplFormat(const std::string& splPath) {
   if (read >= 9 && memcmp(buf, "\x1B%-12345X", 9) == 0)
     return "PCL";
 
-  // EMF : cherche la signature " EMF" (0x20464D45) dans les 256 premiers octets
+  // Scan for signatures in the whole buffer (useful if metadata headers are present)
+  
+  // EMF : cherche la signature " EMF" (0x20464D45)
   for (size_t i = 40; i + 4 <= read; i++) {
     if (buf[i] == ' ' && buf[i+1] == 'E' && buf[i+2] == 'M' && buf[i+3] == 'F') {
-      if (i >= 40) {
-        DWORD type;
-        memcpy(&type, buf + (i - 40), sizeof(DWORD));
-        if (type == 1) return "EMF";
-      }
+      // Le type (1) est 40 octets avant la signature " EMF"
+      DWORD type;
+      memcpy(&type, buf + (i - 40), sizeof(DWORD));
+      if (type == 1) return "EMF";
     }
+  }
+
+  for (size_t i = 0; i + 3 < read; i++) {
+    if (buf[i] == '%' && buf[i+1] == '!' && buf[i+2] == 'P' && buf[i+3] == 'S')
+      return "PostScript";
   }
 
   // ESC générique PCL
@@ -164,7 +170,7 @@ std::string MonitorWorker::FindSplPath(uint32_t jobId) {
             FindClose(hFind);
             std::wstring splName = shdName.substr(0, shdName.rfind(L'.')) + L".SPL";
             std::wstring splFull = spoolDir + splName;
-            return PathFileExistsW(splFull.c_str()) ? WideToUtf8(splFull) : "";
+            return PathFileExistsW(splFull.c_str()) ? WideToUtf8(splFull.c_str()) : "";
           }
         }
         CloseHandle(hShd);
@@ -174,7 +180,7 @@ std::string MonitorWorker::FindSplPath(uint32_t jobId) {
   FindClose(hFind);
 
   // 3. Fallback : SPL FP le plus récent
-  if (!bestFpSpl.empty()) return WideToUtf8(bestFpSpl);
+  if (!bestFpSpl.empty()) return WideToUtf8(bestFpSpl.c_str());
 
   return "";
 }
@@ -444,9 +450,9 @@ Napi::Value ReanalyzeJob(const Napi::CallbackInfo& info) {
   if (info.Length() < 1 || !info[0].IsNumber()) return env.Null();
   uint32_t jobId = info[0].As<Napi::Number>().Uint32Value();
 
-  // On crée un worker temporaire (sans le lancer) pour utiliser ses méthodes privées
-  // Ou on rend les méthodes statiques. Ici on va juste instancier localement.
-  MonitorWorker worker(Napi::Function(), env); 
+  // Worker temporaire (non lancé) pour réutiliser les helpers SPL.
+  Napi::Function noop = Napi::Function::New(env, [](const Napi::CallbackInfo&) {});
+  MonitorWorker worker(noop, env);
   
   std::string splPath = worker.FindSplPath(jobId);
   std::string format = worker.DetectSplFormat(splPath);

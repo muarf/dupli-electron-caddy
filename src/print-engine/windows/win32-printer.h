@@ -31,7 +31,7 @@ struct JobEvent {
 // ---------------------------------------------------------------------------
 class MonitorWorker : public Napi::AsyncProgressWorker<JobEvent> {
 public:
-  MonitorWorker(Napi::Function& callback, Napi::Env env)
+  MonitorWorker(Napi::Function callback, Napi::Env env)
     : Napi::AsyncProgressWorker<JobEvent>(callback), env_(env) {}
 
   void Execute(const ExecutionProgress& progress) override;
@@ -39,16 +39,14 @@ public:
 
   void Stop() { stopRequested_ = true; }
 
+  // Helpers réutilisables (non dépendants du thread worker)
+  std::string DetectSplFormat(const std::string& splPath);
+  std::string FindSplPath(uint32_t jobId);
+
 private:
   Napi::Env env_;
   // Lit les métadonnées brutes d'un job via GetJobW
   JobEvent    GetJobEvent(void* hPrinter, uint32_t jobId);
-
-  // Détecte le format en lisant les premiers octets du SPL
-  std::string DetectSplFormat(const std::string& splPath);
-
-  // Trouve le chemin SPL pour un jobId donné
-  std::string FindSplPath(uint32_t jobId);
 
   volatile bool stopRequested_ = false;
 };
