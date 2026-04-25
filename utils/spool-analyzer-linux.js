@@ -53,20 +53,14 @@ class LinuxSpoolAnalyzer extends EventEmitter {
 
     pollJobs() {
         // FIXE RACE CONDITION: Utiliser -W all pour voir aussi les jobs déjà complétés.
-        // Les imprimantes non connectées (ou rapides) finissent en <300ms,
-        // avant le prochain poll de 5s. Avec 'not-completed' on les ratait toujours.
-        // On filtre nous-mêmes sur les jobs récents (< 30s) pour éviter de re-notifier
-        // tous les vieux jobs au démarrage.
         exec(`lpstat -W all -o`, (err, stdout) => {
             if (err) {
+                console.log('[DEBUG pollJobs] lpstat error:', err.message);
                 return;
             }
 
             const lines = stdout.split('\n');
-            const now = Date.now();
-            // On garde une fenêtre de 30 secondes pour ne capturer que les jobs récents
-            // et éviter de re-notifier les anciens au démarrage
-            const MAX_AGE_MS = 30000;
+            console.log('[DEBUG pollJobs] lines count:', lines.length);
 
             for (const line of lines) {
                 // Format: "PrinterName-JobId   user   size   date time"
@@ -77,7 +71,12 @@ class LinuxSpoolAnalyzer extends EventEmitter {
                 const jobId = parseInt(match[2], 10);
                 const user = match[3];
 
-                if (isNaN(jobId) || this.processedJobIds.has(jobId)) continue;
+                console.log('[DEBUG pollJobs] found job:', jobId, 'printer:', printerName);
+
+                if (isNaN(jobId) || this.processedJobIds.has(jobId)) {
+                    console.log('[DEBUG pollJobs] skipping job', jobId, 'already processed or NaN');
+                    continue;
+                }
 
                 // Filtrer sur la date du job pour ignorer les anciens
                 // Extraire la partie date/heure de la ligne lpstat
