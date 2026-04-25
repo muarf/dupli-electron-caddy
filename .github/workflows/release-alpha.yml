@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - 'unified-printed-monitoring'
+      - 'unified-printer-monitoring'
 
 permissions:
   contents: write
