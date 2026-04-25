@@ -109,12 +109,38 @@ class LinuxSpoolAnalyzer extends EventEmitter {
     }
 
     async analyzeNewJob(jobId, printerName, user) {
-        // Formater le numéro de job (ex: 39 -> d00039-001)
         const paddedId = jobId.toString().padStart(5, '0');
-        const filename = `d${paddedId}-001`;
+        const filename = `c${paddedId}-001`;
         const filePath = path.join(this.spoolDir, filename);
 
-        console.log(`📄 Nouveau job détecté via Polling: #${jobId} (Spool attendu: ${filename})`);
+        console.log(`📄 Nouveau job détecté via Polling: #${jobId} (Spool: ${filename})`);
+
+        let fileSize = 0;
+        try {
+            const stats = fs.statSync(filePath);
+            fileSize = stats.size;
+        } catch (e) {
+            console.warn(`⚠️ Spool file ${filename} non trouvé - job peut-être déjà parti`);
+        }
+
+        if (fileSize === 0 || !fs.existsSync(filePath)) {
+            const jobInfo = {
+                JobId: jobId,
+                PrinterName: printerName || 'Unknown',
+                Document: `Job ${jobId} (${user})`,
+                Status: 'Completed',
+                TotalPages: 1,
+                PaperSize: 'A4',
+                IsDuplex: false,
+                ColorMode: 'Unknown',
+                Copies: 1,
+                FillRate: 0,
+                ThumbnailUrl: '',
+                TimeSubmitted: new Date().toISOString()
+            };
+            this.emit('job', jobInfo);
+            return;
+        }
 
         try {
             // Vérifier que le fichier spool existe bien physiquement (permission de lecture directe)
