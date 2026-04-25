@@ -2,6 +2,7 @@
   "targets": [
     {
       "target_name": "win32-printer",
+      "sources": [ "win32-printer.cc" ],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")"
       ],
@@ -13,14 +14,12 @@
       "defines": [ "NAPI_DISABLE_CPP_EXCEPTIONS" ],
       "conditions": [
         ["OS=='win'", {
-          "sources": [ "win32-printer.cc" ],
           "libraries": [
             "-lwinspool.lib"
           ]
-        }, {
-          "sources": [ "stubs.cc" ]
         }]
       ]
     }
   ]
 }
+
