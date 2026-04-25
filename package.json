@@ -131,7 +131,6 @@
     "node-addon-api": "^7.0.0",
     "pdfjs-dist": "^3.11.174",
     "pdfkit": "^0.17.2",
-    "sharp": "^0.34.5",
     "sqlite3": "^5.1.7"
   },
   "productName": "Duplicator Beta"
