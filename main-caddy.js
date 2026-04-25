@@ -296,10 +296,32 @@ function buildPhpArgsForPort(port) {
     return { phpPath, phpArgs, appPath };
 }
 
+function getPhpEnv(phpPath) {
+    const phpDir = path.dirname(phpPath);
+    const env = {
+        ...process.env,
+        DUPLICATOR_DB_PATH: getDatabasePath(),
+        ELECTRON_RUNNING: '1'
+    };
+
+    // Sur Windows, ajouter le rpertoire PHP au PATH pour que les DLL soient accessibles
+    if (process.platform === 'win32') {
+        const pathSeparator = ';';
+        env.PATH = `${phpDir}${pathSeparator}${env.PATH || ''}`;
+    }
+    
+    return env;
+}
+
 function startPhpConvertServer() {
     const { phpPath, phpArgs } = buildPhpArgsForPort(PHP_CONVERT_PORT);
-    console.log(`Démarrage serveur PHP conversions sur ${PHP_CONVERT_PORT}...`);
-    phpConvertProcess = spawn(phpPath, phpArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
+    const env = getPhpEnv(phpPath);
+    
+    console.log(`Dmarrage serveur PHP conversions sur ${PHP_CONVERT_PORT}...`);
+    phpConvertProcess = spawn(phpPath, phpArgs, { 
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: env
+    });
 
     phpConvertProcess.stdout.on('data', (data) => handlePhpOutput('STDOUT', data));
     phpConvertProcess.stderr.on('data', (data) => handlePhpOutput('STDERR', data));
@@ -1431,20 +1453,7 @@ function startPhpFpm() {
         }
     }
 
-    // Préparer l'environnement avec le PATH mis à jour pour Windows
-    const phpDir = path.dirname(phpPath);
-    const env = {
-        ...process.env,
-        DUPLICATOR_DB_PATH: getDatabasePath(),
-        ELECTRON_RUNNING: '1'
-    };
-
-    // Sur Windows, ajouter le répertoire PHP au PATH pour que les DLL soient accessibles
-    if (process.platform === 'win32') {
-        const pathSeparator = process.platform === 'win32' ? ';' : ':';
-        env.PATH = `${phpDir}${pathSeparator}${env.PATH || ''}`;
-        console.log('PATH mis à jour avec le répertoire PHP:', phpDir);
-    }
+    const env = getPhpEnv(phpPath);
 
     phpFpmProcess = spawn(phpPath, phpArgs, {
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -1520,6 +1529,7 @@ function startPhpServer() {
     const appPublicPath = path.join(appPath, 'public');
     const vendorPath = path.join(appPath, 'vendor');
     const pathSeparator = isWindows ? ';' : ':';
+    const env = getPhpEnv(phpPath);
     phpFpmProcess = spawn(phpPath, [
         '-S', `127.0.0.1:${PHP_SERVER_PORT}`,
         '-t', appPublicPath,
@@ -1534,11 +1544,7 @@ function startPhpServer() {
         '-d', `session.save_path=${sessionPath}`
     ], {
         stdio: ['pipe', 'pipe', 'pipe'],
-        env: {
-            ...process.env,
-            DUPLICATOR_DB_PATH: getDatabasePath(),
-            ELECTRON_RUNNING: '1'
-        }
+        env: env
     });
 
     phpFpmProcess.stdout.on('data', (data) => handlePhpOutput('STDOUT', data));
