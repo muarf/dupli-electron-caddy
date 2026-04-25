@@ -19,7 +19,7 @@ const sharp = require('sharp');
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
-const PHP_API_BASE = 'http://127.0.0.1:8001';
+const PHP_API_BASE = 'http://127.0.0.1:8002';
 const PHP_TIMEOUT = 10000;
 const LOG_PATH = path.join(
     os.platform() === 'win32' ? (process.env.LOCALAPPDATA || 'C:\\') : '/tmp',
