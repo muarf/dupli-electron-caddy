@@ -133,6 +133,9 @@ if (!$splFile || !file_exists($splFile)) {
     exit;
 }
 
+// Créer le dossier de sortie (Accessible publiquement)
+$outputDir = __DIR__ . '/../public/thumbnails/' . $jobId . '/';
+
 // Fichier de cache pour les positions EMF
 $cacheFile = $outputDir . 'emf_positions.cache';
 
@@ -213,9 +216,6 @@ if (empty($emfPositions)) {
 
 // Ré-ouvrir le fichier pour l'extraction
 $handle = fopen($splFile, 'rb');
-
-// Créer le dossier de sortie (Accessible publiquement)
-$outputDir = __DIR__ . '/../public/thumbnails/' . $jobId . '/';
 /* 
  * Optimisation pour les gros fichiers : On ne supprime plus le dossier
  * pour permettre la reprise en cas de timeout précédent.
