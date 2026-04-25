@@ -1,0 +1,166 @@
+# Configuration electron-builder pour la version ALPHA
+# Cette config crée une app séparée "Duplicator Alpha" avec son propre channel de mise à jour
+# Dédiée à la branche unified-printed-monitoring
+
+appId: com.dupli.alpha
+productName: Duplicator Alpha
+afterPack: scripts/afterpack-linux.js
+
+# Skip native module rebuild
+npmRebuild: false
+nodeGypRebuild: false
+
+asar: true
+asarUnpack:
+  - "**/node_modules/canvas/**/*"
+
+directories:
+  output: dist
+
+icon: icons/icon-alpha.png
+
+# Configuration de publication spécifique alpha
+publish:
+  provider: github
+  owner: muarf
+  repo: dupli-electron-caddy
+  channel: alpha
+  releaseType: prerelease
+  publishAutoUpdate: true
+
+files:
+  - main-caddy.js
+  - main.js
+  - preload.js
+  - icons/**/*
+  - Caddyfile
+  - php-install-guide.html
+  - "app/**/*"
+  - "!app/.git/**/*"
+  - "!app/.phpunit.result.cache"
+  - bin/**/*
+  - ghostscript/**/*
+  - caddy/**/*
+  - utils/**/*
+  - src/**/*
+  - "!app/vendor/phpunit/**/*"
+  - "!app/vendor/pestphp/**/*"
+  - "!app/vendor/sebastian/**/*"
+  - "!app/vendor/**/tests/**/*"
+  - "!app/vendor/**/test/**/*"
+  - "!app/vendor/**/docs/**/*"
+
+extraResources:
+  - from: icons/icon-alpha.png
+    to: icons/icon.png
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+  icon: icons
+  category: Office
+  executableName: duplicator-alpha
+  executableArgs: ["--no-sandbox", "--disable-gpu", "--disable-setuid-sandbox"]
+  desktop:
+    entry:
+      Name: Duplicator Alpha
+      Comment: Duplicator Alpha - Test unified monitoring
+      StartupWMClass: duplicator-alpha
+      Icon: duplicator-alpha
+      Terminal: false
+      Type: Application
+      Categories: Office;
+  maintainer: "Duplicator Alpha <alpha@duplicator.app>"
+  asar: false
+  artifactName: Duplicator-Alpha-${version}-${arch}.${ext}
+
+deb:
+  synopsis: Duplicator Alpha - Test version (Unified Monitoring)
+  priority: optional
+  depends:
+    - libc6
+    - libgtk-3-0
+    - libnss3
+    - libxss1
+    - libasound2
+    - libgbm1
+    - libxshmfence1
+  afterInstall: build/deb/postinst
+
+mac:
+  target:
+    - target: dmg
+      arch: [x64]
+  category: public.app-category.productivity
+  files:
+    - main-caddy.js
+    - main.js
+    - preload.js
+    - icons/**/*
+    - Caddyfile
+    - php-install-guide.html
+    - app/**/*
+    - bin/**/*
+    - ghostscript/**/*
+    - caddy/**/*
+    - utils/**/*
+    - "php/**/*"
+    - src/**/*
+  asarUnpack:
+    - "php/**/*"
+    - "app/**/*"
+    - bin/**/*
+    - ghostscript/**/*
+    - caddy/**/*
+    - Caddyfile
+    - src/**/*
+  artifactName: Duplicator-Alpha-${version}-${arch}.${ext}
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+    - target: zip
+      arch: [x64]
+  forceCodeSigning: false
+  asar: false
+  requestedExecutionLevel: requireAdministrator
+  files:
+    - main-caddy.js
+    - main.js
+    - preload.js
+    - icons/**/*
+    - Caddyfile
+    - php-fpm.conf
+    - app/php.ini
+    - php-install-guide.html
+    - app/**/*
+    - bin/**/*
+    - ghostscript/**/*
+    - caddy/**/*
+    - utils/**/*
+    - "php/**/*"
+    - src/**/*
+    - "!app/vendor/phpunit/**/*"
+    - "!app/vendor/pestphp/**/*"
+    - "!app/vendor/sebastian/**/*"
+    - "!app/vendor/**/tests/**/*"
+    - "!app/vendor/**/test/**/*"
+    - "!app/vendor/**/docs/**/*"
+  artifactName: Duplicator-Alpha-${version}-${arch}.${ext}
+
+nsis:
+  perMachine: true
+  include: build/installer.nsh
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Duplicator Alpha
+  deleteAppDataOnUninstall: false
+  artifactName: Duplicator-Alpha-Setup-${version}.exe
