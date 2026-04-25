@@ -1680,12 +1680,10 @@ async function stopAllChildrenGracefully() {
     } catch { }
     try { stopPhpErrorLogWatcher(); } catch { }
     try {
-    try {
         if (stopPrinterMonitor) {
             stopPrinterMonitor();
             stopPrinterMonitor = null;
         }
-    } catch { }
     } catch { }
 }
 
@@ -1701,33 +1699,105 @@ function startPrinterMonitor() {
     }
 
     try {
-                    console.error('❌ Erreur envoi notification PHP:', e.message);
-                });
+        const addonPath = path.join(__dirname, 'src/print-engine/windows/build/Release/win32-printer.node');
+        const addon = process.platform === 'win32' && fs.existsSync(addonPath) ? require('./src/print-engine/windows/build/Release/win32-printer') : null;
 
-                req.write(postData);
-                req.end();
-            },
-            onError: (error) => {
-                console.error('Erreur moniteur d\'imprimantes:', error);
-                sendToRenderer('print-monitor-error', { error: error });
+        stopPrinterMonitor = startMonitoring(addon, (jobData) => {
+            let docName = jobData.Document || jobData.documentName;
+            let bestMatch = null;
+            let bestTime = 0;
+
+            const genericNames = [
+                'ghostscript', 'ghostscript output', 'dupli-print', 'print job',
+                'untitled', 'gswin64c', 'gswin64', 'gs output', 'output', 'outp'
+            ];
+            const lowerDocName = (docName || '').toLowerCase().trim();
+            const now = Date.now();
+            const windowMs = 300000;
+
+            for (const [key, entry] of printOptionsCache.entries()) {
+                const monitorPrinter = (jobData.PrinterName || jobData.printerName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                const cachePrinter = (entry.options && entry.options.printer || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                const printerMatches = cachePrinter && (
+                    monitorPrinter.includes(cachePrinter) ||
+                    cachePrinter.includes(monitorPrinter) ||
+                    monitorPrinter === cachePrinter
+                );
+                if (printerMatches) {
+                    const age = now - entry.timestamp;
+                    if (age < windowMs && entry.timestamp > bestTime) {
+                        bestMatch = entry;
+                        bestTime = entry.timestamp;
+                    }
+                }
             }
+
+            if (genericNames.some(g => lowerDocName.includes(g)) || !lowerDocName) {
+                if (bestMatch && bestMatch.options && (bestMatch.options.fileName || bestMatch.options.document)) {
+                    docName = bestMatch.options.fileName || bestMatch.options.document;
+                }
+            }
+
+            const enrichedPrintData = {
+                JobId:        jobData.JobId || jobData.jobId,
+                Document:     docName,
+                PrinterName:  jobData.PrinterName || jobData.printerName,
+                Status:       jobData.Status || jobData.status,
+                TotalPages:   jobData.TotalPages || jobData.totalPages,
+                PaperSize:    jobData.PaperSize || jobData.paperSize,
+                IsDuplex:     jobData.IsDuplex || jobData.duplex > 1,
+                ColorMode:    jobData.ColorMode || (jobData.isGrayscale ? 'Monochrome' : 'Color'),
+                Copies:       jobData.Copies || jobData.copies || 1,
+                FillRate:     jobData.FillRate || jobData.fillRate || 0,
+                ThumbnailUrl: jobData.ThumbnailUrl || jobData.thumbnailUrl || '',
+                TimeSubmitted:jobData.TimeSubmitted || jobData.timeSubmitted || new Date().toISOString(),
+                IsGrayscale:  jobData.isGrayscale,
+                SplPath:      jobData.SplPath || jobData.splPath,
+                Format:       jobData.Format || jobData.format,
+            };
+
+            sendToRenderer('print-job-detected', enrichedPrintData);
+
+            const postData = JSON.stringify({
+                jobId:        String(enrichedPrintData.JobId),
+                document:     enrichedPrintData.Document,
+                printerName:  enrichedPrintData.PrinterName,
+                status:       enrichedPrintData.Status,
+                totalPages:   enrichedPrintData.TotalPages || 0,
+                paperSize:    enrichedPrintData.PaperSize,
+                duplex:       enrichedPrintData.IsDuplex,
+                colorMode:    enrichedPrintData.ColorMode,
+                copies:       enrichedPrintData.Copies || 1,
+                fillRate:     enrichedPrintData.FillRate || 0,
+                thumbnailUrl: enrichedPrintData.ThumbnailUrl || '',
+                timestamp:    enrichedPrintData.TimeSubmitted,
+                eventType:    'job_detected',
+                platform:     process.platform
+            });
+
+            const req = http.request({
+                hostname: '127.0.0.1',
+                port:     PHP_SERVER_PORT,
+                path:     '/index.php?print_notification',
+                method:   'POST',
+                headers: {
+                    'Content-Type':   'application/json',
+                    'Content-Length': Buffer.byteLength(postData)
+                }
+            }, (res) => {
+                res.on('data', () => {});
+            });
+            req.on('error', e => console.error('❌ Erreur envoi notification PHP:', e.message));
+            req.write(postData);
+            req.end();
         });
 
-        const started = printerMonitor.start();
-        if (started) {
-            console.log('✅ Moniteur d\'imprimantes Windows démarré avec succès');
+        if (stopPrinterMonitor) {
+            console.log('✅ Moniteur d\'imprimantes démarré');
             sendToRenderer('print-monitor-started', { status: 'active' });
-            // Afficher aussi dans la console du renderer
-            if (mainWindow && !mainWindow.isDestroyed()) {
-                mainWindow.webContents.executeJavaScript(`
-                    console.log('%c✅ Moniteur d\'imprimantes Windows démarré', 'color: green; font-weight: bold;');
-                `).catch(() => { });
-            }
-        } else {
-            console.error('❌ Échec du démarrage du moniteur d\'imprimantes');
         }
     } catch (error) {
-        console.error('Erreur lors de l\'initialisation du moniteur d\'imprimantes:', error);
+        console.error('Erreur moniteur d\'imprimantes:', error);
         sendToRenderer('print-monitor-error', { error: error.message });
     }
 }

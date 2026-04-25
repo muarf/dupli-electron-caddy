@@ -59,14 +59,17 @@ async function analyzePng(pngPath) {
         const r = data[i], g = data[i + 1], b = data[i + 2];
         const lum = (r + g + b) / 3;
         if (lum < 210) filledPixels++; // Seuil de remplissage
-        if (Math.abs(r - g) > 15 || Math.abs(g - b) > 15 || Math.abs(r - b) > 15) {
+        
+        // Seuil de couleur augmenté de 15 à 25 pour éviter les faux positifs (anti-aliasing, compression)
+        if (Math.abs(r - g) > 25 || Math.abs(g - b) > 25 || Math.abs(r - b) > 25) {
             coloredPixels++;
         }
     }
 
     return { 
         fillRate: (filledPixels / totalPixels) * 100, 
-        isColor: (coloredPixels / totalPixels) > 0.001 
+        // Seuil de ratio augmenté de 0.001 (0.1%) à 0.005 (0.5%) pour plus de robustesse
+        isColor: (coloredPixels / totalPixels) > 0.005 
     };
 }
 
@@ -78,7 +81,7 @@ async function analyzePng(pngPath) {
  * Windows : Utilise l'API PHP locale
  */
 async function convertWindows(jobId, format) {
-    const endpointMap = { EMF: 'convert_emf_to_png', PCL: 'convert_pcl_to_png', XPS: 'convert_xps_to_png', RAW: 'convert_pcl_to_png' };
+    const endpointMap = { EMF: 'convert_emf_to_png', PCL: 'convert_pcl_to_png', XPS: 'convert_xps_to_png', RAW: 'convert_pcl_to_png', PostScript: 'convert_ps_to_png' };
     const endpoint = endpointMap[format];
     if (!endpoint) return null;
 
@@ -158,16 +161,22 @@ async function analyzeJob(ev) {
 
     if (!conv || !conv.pngPaths.length) return null;
 
-    // Analyse Sharp
+    // Analyse Sharp : Règle hybride
+    // 1. Si le driver dit Noir et Blanc (1), on respecte le choix de l'utilisateur.
+    // 2. Si le driver dit Couleur (2), on analyse les pixels pour voir si on peut "rétrograder" en N&B.
     let totalFill = 0;
-    let isGrayscale = (driverColor === 1);
+    let foundRealColor = false;
+    
     for (const png of conv.pngPaths) {
         try {
             const { fillRate, isColor } = await analyzePng(png);
             totalFill += fillRate;
-            if (isColor) isGrayscale = false;
+            if (isColor) foundRealColor = true;
         } catch (e) {}
     }
+
+    // Le job est gris si (Le driver a été forcé en N&B) OU (L'analyse n'a trouvé aucune couleur)
+    const isGrayscale = (driverColor === 1) || !foundRealColor;
 
     const result = {
         isGrayscale,
@@ -189,16 +198,29 @@ function startMonitoring(nativeAddon, onJob) {
     if (os.platform() === 'win32' && nativeAddon) {
         nativeAddon.startPrinterMonitor(async (type, raw) => {
             if (type !== 'job') return;
+            
+            // Envoyer immédiatement les infos de base pour éviter l'impression de lenteur
+            onJob({
+                ...raw,
+                isGrayscale: (raw.color === 1),
+                fillRate: 0,
+                thumbnailUrl: '',
+                isAnalyzing: true
+            });
+
             let analysis = null;
             if (raw.splPath && raw.status !== 'Deleting' && raw.format !== 'unknown') {
                 analysis = await analyzeJob(raw).catch(() => null);
             }
+
+            // Renvoyer le job enrichi avec la miniature et l'analyse
             onJob({
                 ...raw,
                 isGrayscale: analysis?.isGrayscale ?? (raw.color === 1),
                 fillRate: analysis?.fillRate ?? 0,
                 thumbnailUrl: analysis?.thumbnailUrl ?? '',
                 totalPages: analysis?.totalPages || raw.totalPages,
+                isAnalyzing: false
             });
         });
         return () => nativeAddon.stopPrinterMonitor();
