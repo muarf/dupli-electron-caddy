@@ -109,7 +109,7 @@ class LinuxSpoolAnalyzer extends EventEmitter {
 
     async analyzeNewJob(jobId, printerName, user) {
         const paddedId = jobId.toString().padStart(5, '0');
-        const filename = `c${paddedId}-001`;
+        const filename = `c${paddedId}`;
         const filePath = path.join(this.spoolDir, filename);
 
         console.log(`📄 Nouveau job détecté via Polling: #${jobId} (Spool: ${filename})`);
