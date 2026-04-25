@@ -10,12 +10,7 @@ afterPack: scripts/afterpack-linux.js
 npmRebuild: false
 nodeGypRebuild: false
 
-asar: true
-asarUnpack:
-  - "**/node_modules/canvas/**/*"
-  - "bin/**/*"
-  - "ghostscript/**/*"
-  - "caddy/**/*"
+asar: false
 
 directories:
   output: dist
