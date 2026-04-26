@@ -1,6 +1,6 @@
 <?php
 // Script de maintenance exécuté en arrière-plan
-// Reçoit : chemin (argv1), récursif (argv2), jobId (argv3)
+// Reçoit : chemin/action (argv1), récursif (argv2), jobId (argv3), mode (argv4)
 
 // Ignore user abort and remove time limit
 ignore_user_abort(true);
@@ -17,12 +17,13 @@ require_once __DIR__ . '/../controler/functions/bibliotheque.php';
 require_once __DIR__ . '/../controler/functions/binary_utilities.php';
 
 // Arguments
-$path = $argv[1] ?? '';
+$param = $argv[1] ?? '';
 $recursive = ($argv[2] ?? '0') === '1';
 $jobId = $argv[3] ?? '';
+$mode = $argv[4] ?? 'index'; // 'index', 'regenerate_thumbnails'
 
-if (empty($path) || empty($jobId)) {
-    die("Arguments manquants.\n");
+if (empty($jobId)) {
+    die("JobId manquant.\n");
 }
 
 $logDir = __DIR__ . '/../logs/indexing_status';
@@ -47,10 +48,11 @@ function updateStatus($status, $percent, $currentFile = '', $scannedCount = 0, $
     file_put_contents($statusFile, json_encode($data));
 }
 
-function generatePdfThumbnail($pdfPath) {
+function generateThumbnail($filePath, $type) {
     try {
         $baseDir = getBibliothequeDir();
-        $thumbDir = $baseDir . DIRECTORY_SEPARATOR . 'thumbnails' . DIRECTORY_SEPARATOR . 'pdf';
+        $thumbSubDir = 'thumbnails/' . $type;
+        $thumbDir = $baseDir . DIRECTORY_SEPARATOR . $thumbSubDir;
         
         if (!is_dir($thumbDir)) {
             if (!mkdir($thumbDir, 0777, true)) {
@@ -58,23 +60,37 @@ function generatePdfThumbnail($pdfPath) {
             }
         }
         
-        $filename = md5(uniqid($pdfPath, true)) . '.png';
+        $filename = md5($filePath . filemtime($filePath)) . '.png';
         $thumbPath = $thumbDir . DIRECTORY_SEPARATOR . $filename;
-        $relativePath = 'thumbnails/pdf/' . $filename;
+        $relativePath = $thumbSubDir . '/' . $filename;
         
-        $gs = get_ghostscript_path();
-        
-        $cmd = sprintf(
-            '%s -q -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -sDEVICE=png16m -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -r72 -dFirstPage=1 -dLastPage=1 -sOutputFile=%s %s',
-            escapeshellarg($gs),
-            escapeshellarg($thumbPath),
-            escapeshellarg($pdfPath)
-        );
-        
-        exec($cmd . ' 2>&1', $output, $returnVar);
-        
-        if ($returnVar === 0 && file_exists($thumbPath)) {
-            return $relativePath;
+        if (file_exists($thumbPath)) return $relativePath;
+
+        if ($type === 'pdf') {
+            $gs = get_ghostscript_path();
+            // Workaround for Windows special characters
+            $tmpPdf = sys_get_temp_dir() . '/gs_temp_' . uniqid() . '.pdf';
+            if (!copy($filePath, $tmpPdf)) return null;
+
+            $cmd = sprintf(
+                '%s -q -dQUIET -dSAFER -dBATCH -dNOPAUSE -dNOPROMPT -sDEVICE=png16m -dMaxBitmap=500000000 -dAlignToPixels=0 -dGridFitTT=2 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -r72 -dFirstPage=1 -dLastPage=1 -sOutputFile=%s %s',
+                escapeshellarg($gs),
+                escapeshellarg($thumbPath),
+                escapeshellarg($tmpPdf)
+            );
+            
+            exec($cmd . ' 2>&1', $output, $returnVar);
+            @unlink($tmpPdf);
+            
+            if ($returnVar === 0 && file_exists($thumbPath)) {
+                resizeImage($thumbPath, 200, 200);
+                return $relativePath;
+            }
+        } else if ($type === 'png') {
+            if (copy($filePath, $thumbPath)) {
+                resizeImage($thumbPath, 200, 200);
+                return $relativePath;
+            }
         }
         return null;
     } catch (Exception $e) {
@@ -82,80 +98,125 @@ function generatePdfThumbnail($pdfPath) {
     }
 }
 
-try {
-    updateStatus('scanning', 0);
-    
-    // 1. Scanner les fichiers
-    $files = scanDirectoryForLibrary($path, $recursive);
-    $totalFiles = count($files);
-    
-    if ($totalFiles === 0) {
-        updateStatus('completed', 100, '', 0, 0, 0);
-        exit(0);
-    }
-    
-    updateStatus('indexing', 0, '', $totalFiles, 0, 0);
-    
-    // 2. Traiter chaque fichier et l'insérer
-    $pdo = pdo_connect();
-    $indexedCount = 0;
-    $errorCount = 0;
-    
-    // Préparer les requêtes
-    $checkStmt = $pdo->prepare("SELECT id FROM bibliotheque_files WHERE filepath = ?");
-    $insertStmt = $pdo->prepare("
-        INSERT INTO bibliotheque_files 
-        (filename, filepath, file_type, file_size, is_external, created_at, thumbnail_path) 
-        VALUES (?, ?, ?, ?, 1, datetime('now'), ?)
-    ");
-    
-    set_time_limit(0); // Pas de timeout
-    
-    foreach ($files as $index => $file) {
-        $percent = round(($index / $totalFiles) * 100);
-        
-        // Mettre à jour le statut tous les 5 fichiers ou à la fin
-        if ($index % 5 === 0 || $index === $totalFiles - 1) {
-            updateStatus('indexing', $percent, basename($file['path']), $totalFiles, $indexedCount, $errorCount);
+function resizeImage($file, $w, $h) {
+    try {
+        list($width, $height) = getimagesize($file);
+        $r = $width / $height;
+        if ($w/$h > $r) {
+            $newwidth = $h*$r;
+            $newheight = $h;
+        } else {
+            $newheight = $w/$r;
+            $newwidth = $w;
         }
-        
-        try {
-            // Vérifier si le fichier existe déjà
-            $checkStmt->execute([$file['path']]);
-            if ($checkStmt->fetch()) {
-                // Déjà indexé, on l'ajoute juste au compte des succès
-                $indexedCount++;
-                continue;
-            }
-            
-            $thumbnailPath = null;
-            if ($file['type'] === 'pdf') {
-                $thumbnailPath = generatePdfThumbnail($file['path']);
-            }
-            
-            // Insérer
-            $insertStmt->execute([
-                $file['filename'],
-                $file['path'],
-                $file['type'],
-                $file['size'],
-                $thumbnailPath
-            ]);
-            
-            $indexedCount++;
+        $src = imagecreatefrompng($file);
+        $dst = imagecreatetruecolor($newwidth, $newheight);
+        imagecolortransparent($dst, imagecolorallocatealpha($dst, 0, 0, 0, 127));
+        imagealphablending($dst, false);
+        imagesavealpha($dst, true);
+        imagecopyresampled($dst, $src, 0, 0, 0, 0, $newwidth, $newheight, $width, $height);
+        imagepng($dst, $file);
+        imagedestroy($src);
+        imagedestroy($dst);
+    } catch (Exception $e) {}
+}
 
-            
-        } catch (Exception $e) {
-            $errorCount++;
-            error_log("Erreur indexation fichier " . $file['path'] . " : " . $e->getMessage());
+try {
+    $pdo = pdo_connect();
+
+    if ($mode === 'regenerate_thumbnails') {
+        updateStatus('indexing', 0, 'Préparation...');
+        
+        $stmt = $pdo->query("SELECT id, filepath, file_type FROM bibliotheque_files");
+        $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $totalFiles = count($files);
+        
+        if ($totalFiles === 0) {
+            updateStatus('completed', 100);
+            exit(0);
         }
+
+        $indexedCount = 0;
+        $errorCount = 0;
+        $updStmt = $pdo->prepare("UPDATE bibliotheque_files SET thumbnail_path = ? WHERE id = ?");
+
+        foreach ($files as $index => $file) {
+            $percent = round(($index / $totalFiles) * 100);
+            if ($index % 5 === 0 || $index === $totalFiles - 1) {
+                updateStatus('indexing', $percent, basename($file['filepath']), $totalFiles, $indexedCount, $errorCount);
+            }
+
+            $thumb = generateThumbnail($file['filepath'], $file['file_type']);
+            if ($thumb) {
+                $updStmt->execute([$thumb, $file['id']]);
+                $indexedCount++;
+            } else {
+                $errorCount++;
+            }
+        }
+        updateStatus('completed', 100, '', $totalFiles, $indexedCount, $errorCount);
+    } 
+    else {
+        // Mode index / rescan
+        $paths = explode('|', $param);
+        $allFiles = [];
+        
+        updateStatus('scanning', 0);
+        foreach ($paths as $path) {
+            if (empty($path)) continue;
+            $found = scanDirectoryForLibrary($path, $recursive);
+            $allFiles = array_merge($allFiles, $found);
+        }
+        
+        $totalFiles = count($allFiles);
+        if ($totalFiles === 0) {
+            updateStatus('completed', 100);
+            exit(0);
+        }
+
+        updateStatus('indexing', 0, '', $totalFiles, 0, 0);
+        
+        $indexedCount = 0;
+        $errorCount = 0;
+        
+        $checkStmt = $pdo->prepare("SELECT id FROM bibliotheque_files WHERE filepath = ?");
+        $insertStmt = $pdo->prepare("
+            INSERT INTO bibliotheque_files 
+            (filename, filepath, file_type, file_size, is_external, created_at, thumbnail_path, source_directory) 
+            VALUES (?, ?, ?, ?, 1, datetime('now'), ?, ?)
+        ");
+        
+        foreach ($allFiles as $index => $file) {
+            $percent = round(($index / $totalFiles) * 100);
+            if ($index % 5 === 0 || $index === $totalFiles - 1) {
+                updateStatus('indexing', $percent, basename($file['path']), $totalFiles, $indexedCount, $errorCount);
+            }
+            
+            try {
+                $checkStmt->execute([$file['path']]);
+                if ($checkStmt->fetch()) {
+                    $indexedCount++;
+                    continue;
+                }
+                
+                $thumb = generateThumbnail($file['path'], $file['type']);
+                $insertStmt->execute([
+                    $file['filename'],
+                    $file['path'],
+                    $file['type'],
+                    $file['size'],
+                    $thumb,
+                    dirname($file['path'])
+                ]);
+                $indexedCount++;
+            } catch (Exception $e) {
+                $errorCount++;
+            }
+        }
+        updateStatus('completed', 100, '', $totalFiles, $indexedCount, $errorCount);
     }
-    
-    // Terminé
-    updateStatus('completed', 100, '', $totalFiles, $indexedCount, $errorCount);
-    
+
 } catch (Exception $e) {
-    // Erreur fatale
-    error_log("Erreur fatale job indexation $jobId : " . $e->getMessage());
+    error_log("Erreur fatale job bibliotheque $jobId : " . $e->getMessage());
     updateStatus('fatal_error', 0, '', 0, 0, 0, "Erreur fatale: " . $e->getMessage());
 }

@@ -19,11 +19,17 @@
     </div>
 
     <!-- Zone d'indexation de dossier -->
+    <!-- Zone d'indexation et maintenance -->
     <div class="card mb-4">
         <div class="card-body text-center">
-            <button class="btn btn-primary btn-lg" onclick="openIndexModal()">
-                <i class="fa fa-folder-open"></i> <?php _e('library.index_folder'); ?>
-            </button>
+            <div class="d-flex justify-content-center flex-wrap gap-3">
+                <button class="btn btn-primary btn-lg" onclick="openIndexModal()">
+                    <i class="fa fa-folder-open"></i> <?php _e('library.index_folder'); ?>
+                </button>
+                <button class="btn btn-outline-warning btn-lg" onclick="openMaintenanceModal()">
+                    <i class="fa fa-wrench"></i> <?php _e('library.maintenance'); ?>
+                </button>
+            </div>
             <p class="text-muted mt-2 mb-0"><small><?php _e('library.index_folder_desc'); ?></small></p>
         </div>
     </div>
@@ -171,6 +177,134 @@
 </div>
 
 
+
+<!-- Modal Maintenance -->
+<div class="modal fade" id="maintenanceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa fa-wrench"></i> <?php _e('library.maintenance_modal_title'); ?></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="<?php echo __('common.close'); ?>">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="maintenanceStatusArea" class="mb-3" style="display:none;">
+                    <div class="alert alert-info" id="maintenanceStatusMsg"></div>
+                </div>
+
+                <div class="row g-3">
+                    <!-- Diagnostic -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6><i class="fa fa-stethoscope"></i> <?php _e('library.integrity_check'); ?></h6>
+                                <p class="small text-muted"><?php _e('library.integrity_check_desc'); ?></p>
+                                <button class="btn btn-sm btn-info" onclick="runMaintenance('check_integrity', this)">
+                                    <i class="fa fa-play"></i> <?php _e('common.start'); ?>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Nettoyage Orphelins -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6><i class="fa fa-trash"></i> <?php _e('library.clean_orphans'); ?></h6>
+                                <p class="small text-muted"><?php _e('library.clean_orphans_desc'); ?></p>
+                                <button class="btn btn-sm btn-warning" onclick="runMaintenance('clean_orphans', this)">
+                                    <i class="fa fa-play"></i> <?php _e('common.start'); ?>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Régénération Miniatures -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6><i class="fa fa-refresh"></i> <?php _e('library.regenerate_thumbnails'); ?></h6>
+                                <p class="small text-muted"><?php _e('library.regenerate_thumbnails_desc'); ?></p>
+                                <button class="btn btn-sm btn-primary" onclick="runMaintenance('regenerate_thumbnails', this)">
+                                    <i class="fa fa-play"></i> <?php _e('common.start'); ?>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Réparation FTS5 -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6><i class="fa fa-search"></i> <?php _e('library.repair_fts'); ?></h6>
+                                <p class="small text-muted"><?php _e('library.repair_fts_desc'); ?></p>
+                                <button class="btn btn-sm btn-secondary" onclick="runMaintenance('repair_fts', this)">
+                                    <i class="fa fa-play"></i> <?php _e('common.start'); ?>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Rescan -->
+                    <div class="col-md-12">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6><i class="fa fa-search-plus"></i> <?php _e('library.rescan'); ?></h6>
+                                <p class="small text-muted"><?php _e('library.rescan_desc'); ?></p>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="runMaintenance('rescan', this, {mode: 'internal'})">
+                                        <?php _e('library.rescan_internal'); ?>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="runMaintenance('rescan', this, {mode: 'external'})">
+                                        <?php _e('library.rescan_external'); ?>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="runMaintenance('rescan', this, {mode: 'all'})">
+                                        <?php _e('library.rescan_all'); ?>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Reset -->
+                    <div class="col-md-12">
+                        <div class="card border-danger">
+                            <div class="card-body">
+                                <h6 class="text-danger"><i class="fa fa-warning"></i> <?php _e('library.reset_library'); ?></h6>
+                                <p class="small text-muted"><?php _e('library.reset_library_desc'); ?></p>
+                                <div class="form-check mb-2">
+                                    <input type="checkbox" class="form-check-input" id="deletePhysicalFiles">
+                                    <label class="form-check-label small" for="deletePhysicalFiles"><?php _e('library.delete_physical_files'); ?></label>
+                                </div>
+                                <button class="btn btn-sm btn-danger" onclick="runMaintenance('reset_library', this)">
+                                    <i class="fa fa-trash-o"></i> <?php _e('common.delete'); ?>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="maintenanceResults" class="mt-4" style="display:none;">
+                    <hr>
+                    <h6><?php _e('library.integrity_results'); ?> :</h6>
+                    <ul class="list-group list-group-flush small">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <?php _e('library.files_ok'); ?>
+                            <span class="badge badge-success badge-pill" id="res-ok">0</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <?php _e('library.files_missing'); ?>
+                            <span class="badge badge-danger badge-pill" id="res-missing-file">0</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <?php _e('library.thumbs_missing'); ?>
+                            <span class="badge badge-warning badge-pill" id="res-missing-thumb">0</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal"><?php _e('common.close'); ?></button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <style>
     .upload-drop-zone {
@@ -1327,4 +1461,86 @@
         renderPage(pageNum);
     }
 
+    function openMaintenanceModal() {
+        const modal = $('#maintenanceModal');
+        modal.modal('show');
+        $('#maintenanceStatusArea').hide();
+        $('#maintenanceResults').hide();
+    }
+
+    function runMaintenance(action, btn, params = {}) {
+        if (action === 'reset_library' && !confirm('<?php echo __js('library.confirm_reset'); ?>')) {
+            return;
+        }
+
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+
+        $('#maintenanceStatusArea').show();
+        $('#maintenanceStatusMsg').text('<?php echo __js('library.maintenance_in_progress'); ?>');
+
+        if (action === 'reset_library') {
+            params.delete_files = document.getElementById('deletePhysicalFiles').checked;
+        }
+
+        fetch('?bibliotheque_maintenance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, params })
+        })
+        .then(response => response.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+
+            if (data.success) {
+                if (action === 'check_integrity') {
+                    $('#maintenanceResults').show();
+                    $('#res-ok').text(data.results.ok);
+                    $('#res-missing-file').text(data.results.missing_file.length);
+                    $('#res-missing-thumb').text(data.results.missing_thumb.length);
+                    $('#maintenanceStatusArea').hide();
+                } else if (action === 'clean_orphans') {
+                    $('#maintenanceStatusMsg').text('<?php echo __js('library.orphans_cleaned'); ?>'.replace(':count', data.count));
+                    loadFiles();
+                } else if (action === 'repair_fts') {
+                    $('#maintenanceStatusMsg').text('<?php echo __js('library.fts_repaired'); ?>');
+                } else if (action === 'reset_library') {
+                    $('#maintenanceStatusMsg').text('<?php echo __js('library.library_reset'); ?>');
+                    loadFiles();
+                } else if (action === 'regenerate_thumbnails' || action === 'rescan') {
+                    const msg = action === 'rescan' ? '<?php echo __js('library.rescan_started'); ?>' : '<?php echo __js('library.thumbs_regen_started'); ?>';
+                    $('#maintenanceStatusMsg').text(msg);
+                    pollMaintenanceJob(data.job_id);
+                }
+            } else {
+                showAppModal({ message: data.error || 'Erreur inconnue', type: 'danger' });
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            console.error(err);
+        });
+    }
+
+    function pollMaintenanceJob(jobId) {
+        const interval = setInterval(() => {
+            fetch('?get_indexing_status&job_id=' + jobId)
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'completed') {
+                    clearInterval(interval);
+                    $('#maintenanceStatusMsg').text('Terminé !');
+                    loadFiles();
+                } else if (data.status === 'indexing' || data.status === 'scanning') {
+                    $('#maintenanceStatusMsg').text(`${data.status === 'indexing' ? 'Traitement' : 'Scan'} : ${data.percent}% (${data.current_file})`);
+                } else if (data.status === 'fatal_error') {
+                    clearInterval(interval);
+                    $('#maintenanceStatusMsg').text('Erreur fatale: ' + data.error_msg);
+                }
+            });
+        }, 1000);
+    }
 </script>

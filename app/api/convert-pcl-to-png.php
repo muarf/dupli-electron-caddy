@@ -383,12 +383,7 @@ __agentNdjson('B', 'Converter selected', [
     'isPostScript' => $isPostScript,
 ]);
 
-$command = sprintf(
-    '"%s" -dNOPAUSE -dBATCH -dSAFER -dQUIET -sDEVICE=png16m -r72 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile="%s" "%s" 2>&1',
-    $realGsPath ?: $converterPath,
-    $outputImage,
-    $realSplFile ?: $splFile
-);
+$command = escapeshellarg($realGsPath ?: $converterPath) . " -dNOPAUSE -dBATCH -dSAFER -dQUIET -sDEVICE=png16m -r72 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($outputImage) . " " . escapeshellarg($realSplFile ?: $splFile) . " 2>&1";
 
 debugLog("Running command: $command");
 

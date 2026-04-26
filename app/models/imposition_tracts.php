@@ -133,16 +133,11 @@ function analyzePDFFormat($pdfFile)
 
             $cleanedPdfFile = $tmp_dir . 'cleaned_tracts_' . $timestamp . '.pdf';
 
-                $gs_command = get_ghostscript_path();
-                if (!$gs_command) {
-                    throw new Exception("Ghostscript n'a pas été trouvé sur ce système. Veuillez l'installer.");
-                }
+            $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($originalFile);
+            $gs_result = run_ghostscript($gs_args);
 
-            $cmd = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($originalFile) . " 2>&1";
-            exec($cmd, $output, $returnCode);
-
-            if ($returnCode !== 0 || !file_exists($cleanedPdfFile) || filesize($cleanedPdfFile) == 0) {
-                throw new Exception("Impossible de nettoyer le PDF avec Ghostscript. Erreur: " . implode("\n", $output));
+            if (!$gs_result['success'] || !file_exists($cleanedPdfFile) || filesize($cleanedPdfFile) == 0) {
+                throw new Exception("Impossible de nettoyer le PDF avec Ghostscript. Erreur: " . $gs_result['output']);
             }
 
             // Réessayer avec le PDF nettoyé
@@ -341,16 +336,11 @@ function processImpositionTracts($is_from_lib = false)
 
         $cleanedPdfFile = $tmp_dir . 'cleaned_tracts_' . $timestamp . '.pdf';
 
-        $gs_command = get_ghostscript_path();
-        if (!$gs_command) {
-            throw new Exception("Ghostscript n'a pas été trouvé sur ce système. Veuillez l'installer.");
-        }
+        $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($inputFile);
+        $gs_result = run_ghostscript($gs_args);
 
-        $command = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($inputFile) . " 2>&1";
-        $output = shell_exec($command);
-
-        if (!file_exists($cleanedPdfFile) || filesize($cleanedPdfFile) == 0) {
-            throw new Exception("Échec du nettoyage Ghostscript. Sortie: " . $output);
+        if (!$gs_result['success'] || !file_exists($cleanedPdfFile) || filesize($cleanedPdfFile) == 0) {
+            throw new Exception("Échec du nettoyage Ghostscript. Sortie: " . $gs_result['output']);
         }
 
         // Utiliser le fichier nettoyé pour l'analyse

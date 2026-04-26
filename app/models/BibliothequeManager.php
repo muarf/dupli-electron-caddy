@@ -855,6 +855,136 @@ class BibliothequeManager {
         $stmt = $this->db->prepare("UPDATE bibliotheque_files SET filename = ?, updated_at = datetime('now') WHERE id = ?");
         return $stmt->execute([$newName, $id]);
     }
+
+    /**
+     * MAINTENANCE: Vérifie l'intégrité de la bibliothèque
+     */
+    public function checkIntegrity() {
+        $stmt = $this->db->query("SELECT id, filename, filepath, thumbnail_path FROM bibliotheque_files");
+        $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $results = [
+            'total' => count($files),
+            'ok' => 0,
+            'missing_file' => [],
+            'missing_thumb' => []
+        ];
+        
+        foreach ($files as $file) {
+            $fileMissing = !file_exists($file['filepath']);
+            $thumbMissing = empty($file['thumbnail_path']) || !file_exists($this->baseDir . DIRECTORY_SEPARATOR . $file['thumbnail_path']);
+            
+            if ($fileMissing) {
+                $results['missing_file'][] = [
+                    'id' => $file['id'],
+                    'filename' => $file['filename'],
+                    'path' => $file['filepath']
+                ];
+            }
+            
+            if ($thumbMissing) {
+                $results['missing_thumb'][] = [
+                    'id' => $file['id'],
+                    'filename' => $file['filename']
+                ];
+            }
+            
+            if (!$fileMissing && !$thumbMissing) {
+                $results['ok']++;
+            }
+        }
+        
+        return $results;
+    }
+
+    /**
+     * MAINTENANCE: Supprime les entrées BDD dont le fichier physique est manquant
+     */
+    public function cleanOrphans() {
+        $integrity = $this->checkIntegrity();
+        $count = 0;
+        
+        if (!empty($integrity['missing_file'])) {
+            $ids = array_column($integrity['missing_file'], 'id');
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $stmt = $this->db->prepare("DELETE FROM bibliotheque_files WHERE id IN ($placeholders)");
+            $stmt->execute($ids);
+            $count = $stmt->rowCount();
+        }
+        
+        return $count;
+    }
+
+    /**
+     * MAINTENANCE: Prépare la régénération des miniatures
+     */
+    public function prepareRegenerateThumbnails() {
+        // 1. Vider les chemins en base
+        $this->db->exec("UPDATE bibliotheque_files SET thumbnail_path = NULL");
+        
+        // 2. Supprimer physiquement les dossiers de miniatures
+        $this->recursiveDelete($this->baseDir . DIRECTORY_SEPARATOR . 'thumbnails' . DIRECTORY_SEPARATOR . 'pdf');
+        $this->recursiveDelete($this->baseDir . DIRECTORY_SEPARATOR . 'thumbnails' . DIRECTORY_SEPARATOR . 'png');
+        
+        // Recréer la structure
+        $this->createDirectoryStructure();
+        
+        return true;
+    }
+
+    private function recursiveDelete($dir) {
+        if (!is_dir($dir)) return;
+        $files = array_diff(scandir($dir), ['.', '..']);
+        foreach ($files as $file) {
+            $path = $dir . DIRECTORY_SEPARATOR . $file;
+            (is_dir($path)) ? $this->recursiveDelete($path) : unlink($path);
+        }
+    }
+
+    /**
+     * MAINTENANCE: Répare l'index FTS5
+     */
+    public function repairFTS() {
+        try {
+            return $this->db->exec("INSERT INTO bibliotheque_files_fts(bibliotheque_files_fts) VALUES('rebuild')");
+        } catch (Exception $e) {
+            error_log("Erreur repairFTS: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * MAINTENANCE: Vide entièrement la bibliothèque
+     */
+    public function resetLibrary($deleteFiles = false) {
+        if ($deleteFiles) {
+            $stmt = $this->db->query("SELECT filepath FROM bibliotheque_files WHERE is_external = 0");
+            while ($path = $stmt->fetchColumn()) {
+                if (file_exists($path)) @unlink($path);
+            }
+        }
+        
+        // Supprimer toutes les miniatures
+        $this->recursiveDelete($this->baseDir . DIRECTORY_SEPARATOR . 'thumbnails' . DIRECTORY_SEPARATOR . 'pdf');
+        $this->recursiveDelete($this->baseDir . DIRECTORY_SEPARATOR . 'thumbnails' . DIRECTORY_SEPARATOR . 'png');
+        
+        // Vider les tables
+        $this->db->exec("DELETE FROM bibliotheque_files");
+        // Les triggers s'occupent de FTS5 mais on peut forcer le rebuild si besoin
+        try {
+            $this->db->exec("DELETE FROM bibliotheque_files_fts");
+        } catch (Exception $e) {}
+        
+        return true;
+    }
+
+    /**
+     * MAINTENANCE: Récupère les dossiers externes connus
+     */
+    public function getKnownExternalDirectories() {
+        $stmt = $this->db->query("SELECT DISTINCT source_directory FROM bibliotheque_files WHERE is_external = 1 AND source_directory IS NOT NULL");
+        return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
 }
 
 

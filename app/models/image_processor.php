@@ -40,18 +40,6 @@ function convert_pdf_to_images_preserve_size($pdf_file, $output_dir, $base_filen
         // Utiliser 300 DPI pour préserver la qualité/résolution du PDF original
         // Le DPI détermine la résolution des images générées, pas la taille finale
         $dpi = 300;
-        
-        // Vérifier que Ghostscript est disponible
-        $gs_command = 'gs';
-        if (PHP_OS_FAMILY === 'Windows') {
-            // 1. Essayer de détecter Ghostscript via l'utilitaire centralisé
-    require_once __DIR__ . '/../controler/functions/binary_utilities.php';
-    $gs_command = get_ghostscript_path();
-            if (!file_exists($gs_command)) {
-                throw new Exception("Ghostscript Windows non trouvé : " . $gs_command);
-            }
-        }
-        
         // Vérifier que le fichier PDF existe
         if (!file_exists($pdf_file)) {
             throw new Exception("Le fichier PDF n'existe pas : " . $pdf_file);
@@ -65,18 +53,16 @@ function convert_pdf_to_images_preserve_size($pdf_file, $output_dir, $base_filen
         // Générer un préfixe avec le nom du fichier original
         $prefix = $base_filename . '_page_%03d.png';
         $output_pattern = $output_dir . $prefix;
-        
+
         // Utiliser Ghostscript pour convertir le PDF en PNG à haute résolution
         // IMPORTANT: Utiliser -dUseCropBox=true pour que les images générées correspondent
         // exactement aux dimensions détectées par FPDI (qui lit aussi la CropBox)
-        $command = $gs_command . " -dNOPAUSE -dBATCH -dUseCropBox=true -sDEVICE=png16m -r" . intval($dpi) . " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($output_pattern) . " " . escapeshellarg($pdf_file) . " 2>&1";
+        $gs_args = "-dNOPAUSE -dBATCH -dUseCropBox=true -sDEVICE=png16m -r" . intval($dpi) . " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($output_pattern) . " " . escapeshellarg($pdf_file);
         
-        $output = [];
-        $return_var = 0;
-        exec($command, $output, $return_var);
+        $gs_result = run_ghostscript($gs_args);
         
-        if ($return_var !== 0) {
-            throw new Exception("Erreur lors de la conversion avec Ghostscript. Code: " . $return_var . " Output: " . implode("\n", $output));
+        if (!$gs_result['success']) {
+            throw new Exception("Erreur lors de la conversion avec Ghostscript. Code: " . $gs_result['error'] . " Output: " . $gs_result['output']);
         }
         
         // Lister les fichiers PNG créés
@@ -416,17 +402,14 @@ function convert_to_bitmap_dithering($image) {
     $width = imagesx($image);
     $height = imagesy($image);
     
-    // 1. Essayer d'utiliser le binaire Magick (CLI) - Performant et portable
-    $magick_path = get_binary_path('magick');
-    if ($magick_path && $magick_path !== 'magick') {
         try {
             $tmp_in = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dither_in_' . uniqid() . '.png';
             $tmp_out = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dither_out_' . uniqid() . '.png';
             imagepng($image, $tmp_in);
             
             // Floyd-Steinberg dithering via CLI
-            $cmd = escapeshellarg($magick_path) . " " . escapeshellarg($tmp_in) . " -colorspace gray -dither FloydSteinberg -colors 2 " . escapeshellarg($tmp_out);
-            exec($cmd);
+            $magick_args = escapeshellarg($tmp_in) . " -colorspace gray -dither FloydSteinberg -colors 2 " . escapeshellarg($tmp_out);
+            run_imagemagick($magick_args);
             
             if (file_exists($tmp_out)) {
                 $new_image = imagecreatefrompng($tmp_out);
@@ -438,7 +421,6 @@ function convert_to_bitmap_dithering($image) {
         } catch (Exception $e) {
             error_log("Erreur Magick CLI dithering: " . $e->getMessage());
         }
-    }
 
     // 2. Essayer d'utiliser Imagick (Extension PHP)
     if (extension_loaded('imagick')) {

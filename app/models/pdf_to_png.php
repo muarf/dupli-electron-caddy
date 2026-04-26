@@ -9,11 +9,6 @@ use setasign\Fpdi\Tcpdf\Fpdi;
  */
 function convert_pdf_to_png($pdf_file, $output_dir, $dpi = 150, $base_filename = 'page') {
     try {
-        $gs_command = get_ghostscript_path();
-        if (!$gs_command) {
-            throw new Exception("Ghostscript n'a pas été trouvé sur ce système. Veuillez l'installer.");
-        }
-        
         // Vérifier que le fichier PDF existe
         if (!file_exists($pdf_file)) {
             throw new Exception("Le fichier PDF n'existe pas : " . $pdf_file);
@@ -27,16 +22,14 @@ function convert_pdf_to_png($pdf_file, $output_dir, $dpi = 150, $base_filename =
         // Générer un préfixe avec le nom du fichier original
         $prefix = $base_filename . '_page_%03d.png';
         $output_pattern = $output_dir . $prefix;
-        
+
         // Utiliser Ghostscript pour convertir le PDF en PNG
-        $command = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=png16m -r" . intval($dpi) . " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($output_pattern) . " " . escapeshellarg($pdf_file) . " 2>&1";
+        $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=png16m -r" . intval($dpi) . " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($output_pattern) . " " . escapeshellarg($pdf_file);
         
-        $output = [];
-        $return_var = 0;
-        exec($command, $output, $return_var);
+        $gs_result = run_ghostscript($gs_args);
         
-        if ($return_var !== 0) {
-            throw new Exception("Erreur lors de la conversion avec Ghostscript. Code: " . $return_var . " Output: " . implode("\n", $output));
+        if (!$gs_result['success']) {
+            throw new Exception("Erreur lors de la conversion avec Ghostscript. Code: " . $gs_result['error'] . " Output: " . $gs_result['output']);
         }
         
         // Lister les fichiers PNG créés

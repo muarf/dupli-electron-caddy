@@ -120,12 +120,6 @@ function calculate_fill_rate($image_path, $tolerance = 245) {
  */
 function convert_pdf_to_image_for_analysis($pdf_file, $output_dir, $page_number = 1, $dpi = 150) {
     try {
-        // Vérifier que Ghostscript est disponible (utilise la fonction centralisée)
-        $gs_path = get_ghostscript_path();
-        if (!$gs_path) {
-            throw new Exception("Ghostscript n'a pas été trouvé sur ce système.");
-        }
-        
         // Vérifier que le fichier PDF existe
         if (!file_exists($pdf_file)) {
             throw new Exception("Le fichier PDF n'existe pas : " . $pdf_file);
@@ -141,22 +135,17 @@ function convert_pdf_to_image_for_analysis($pdf_file, $output_dir, $page_number 
         // Générer un nom de fichier unique pour l'image
         $timestamp = date('YmdHis');
         $output_file = $output_dir . 'page_' . $timestamp . '.png';
-        
+
         // Convertir la première page du PDF en PNG
-        // escapeshellarg() sur $gs_path pour gérer les espaces dans le chemin (ex: "Program Files")
-        $command = escapeshellarg($gs_path) . " -dNOPAUSE -dBATCH -sDEVICE=png16m -r" . intval($dpi) . 
+        $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=png16m -r" . intval($dpi) . 
                    " -dFirstPage=" . intval($page_number) . " -dLastPage=" . intval($page_number) .
                    " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . 
-                   escapeshellarg($output_file) . " " . escapeshellarg($pdf_file) . " 2>&1";
+                   escapeshellarg($output_file) . " " . escapeshellarg($pdf_file);
         
-        error_log("GS command: " . $command);
+        $gs_result = run_ghostscript($gs_args);
         
-        $output = [];
-        $return_var = 0;
-        exec($command, $output, $return_var);
-        
-        if ($return_var !== 0) {
-            throw new Exception("Erreur lors de la conversion avec Ghostscript. Code: " . $return_var . " Output: " . implode("\n", $output));
+        if (!$gs_result['success']) {
+            throw new Exception("Erreur lors de la conversion avec Ghostscript. Code: " . $gs_result['error'] . " Output: " . $gs_result['output']);
         }
         
         if (!file_exists($output_file)) {
