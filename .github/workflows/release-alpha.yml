@@ -277,6 +277,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Rebuild Native Modules
+        run: npm run rebuild:print-engine
+
       - name: Install Composer and PHP dependencies
         run: |
           Invoke-WebRequest -Uri "https://getcomposer.org/download/latest-stable/composer.phar" -OutFile "composer.phar"
