@@ -553,6 +553,18 @@ if ($page === 'bibliotheque_maintenance') {
     }
 }
 
+if ($page === 'run_background_maintenance') {
+    $api_file = __DIR__ . '/../api/run_background_maintenance.php';
+    if (file_exists($api_file)) {
+        require_once $api_file;
+        exit;
+    } else {
+        http_response_code(500);
+        echo json_encode(['error' => 'API file not found']);
+        exit;
+    }
+}
+
 
 if ($page === 'manage_mappings' || isset($_GET['manage_mappings'])) {
     $api_file = __DIR__ . '/../api/manage_mappings.php';

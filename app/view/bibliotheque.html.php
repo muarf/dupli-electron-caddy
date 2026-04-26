@@ -1077,7 +1077,12 @@
         const pollInterval = setInterval(async () => {
             try {
                 const statusRes = await fetch('?get_indexing_status&job_id=' + jobId);
-                const statusData = await statusRes.json();
+                if (!statusRes.ok) {
+                    console.warn("Indexing poll error (HTTP " + statusRes.status + ")");
+                    return; // On réessaiera au prochain tour
+                }
+                const statusData = await statusRes.json().catch(() => null);
+                if (!statusData) return;
                 
                 if (statusData.percent) {
                     progressBar.style.width = statusData.percent + '%';
