@@ -33,6 +33,7 @@ function get_binary_platform_dir(): string
  */
 function get_binary_path(string $name, ?string $env_var = null): ?string
 {
+    $is_windows = PHP_OS_FAMILY === 'Windows';
     // 1. Vérifier la variable d'environnement (priorité haute)
     if ($env_var) {
         $env_path = getenv($env_var);

@@ -94,7 +94,8 @@ function get_package_install_help(string $type, string $pkg_key, string $distro)
         'sqlite3' => ($distro === 'arch' ? 'sqlite' : 'sqlite3'),
         'mbstring' => 'mbstring',
         'xml' => 'xml',
-        'zip' => 'zip'
+        'zip' => 'zip',
+        'curl' => 'curl'
     ];
 
     $prefix = get_php_extension_prefix($distro);
@@ -138,7 +139,8 @@ function get_aggregated_install_command(array $packages): string
         'gd' => 'gd',
         'sqlite3' => ($distro === 'arch' ? 'sqlite' : 'sqlite3'),
         'mbstring' => 'mbstring',
-        'xml' => 'xml'
+        'xml' => 'xml',
+        'curl' => 'curl'
     ];
 
     $resolved_pkgs = [];
@@ -229,6 +231,7 @@ function check_system_dependencies(): array
         ],
         'mbstring' => ['name' => 'PHP Mbstring', 'status' => extension_loaded('mbstring') || @shell_exec("$php_bin -m 2>/dev/null | grep mbstring"), 'critical' => true, 'help' => get_package_install_help('ext', 'mbstring', $distro)],
         'xml' => ['name' => 'PHP XML', 'status' => extension_loaded('xml') || @shell_exec("$php_bin -m 2>/dev/null | grep -E \"xml|SimpleXML\""), 'critical' => true, 'help' => get_package_install_help('ext', 'xml', $distro)],
+        'curl' => ['name' => 'PHP CURL', 'status' => extension_loaded('curl') || @shell_exec("$php_bin -m 2>/dev/null | grep curl"), 'critical' => true, 'help' => get_package_install_help('ext', 'curl', $distro)],
     ];
 
     // === Vérifier Ghostscript ===
