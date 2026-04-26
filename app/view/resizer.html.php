@@ -35,6 +35,7 @@
                                 </label>
                                 <select name="target_format" class="form-control input-lg" style="border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: none;">
                                     <option value="A4" selected>A4 (210 x 297 mm)</option>
+                                    <option value="A5">A5 (148 x 210 mm)</option>
                                     <option value="A3">A3 (297 x 420 mm)</option>
                                 </select>
                             </div>

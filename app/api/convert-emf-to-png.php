@@ -275,20 +275,10 @@ foreach ($emfPositions as $index => $startOffset) {
     }
 
     // Conversion avec ImageMagick (Resolution basse 72 DPI)
-    $command = sprintf(
-        '"%s" -density 72 "%s" -background white -flatten "%s" 2>&1',
-        $imPath,
-        $tempEmf,
-        $outputPng
-    );
+    $magick_args = "-density 72 " . escapeshellarg($tempEmf) . " -background white -flatten " . escapeshellarg($outputPng);
+    $im_result = run_imagemagick($magick_args);
     
-    $output = [];
-    $returnVar = 0;
-    exec($command, $output, $returnVar);
-    
-    if ($returnVar === 0 && file_exists($outputPng)) {
-        debugLog("Page $index: EMF Size " . round($length / 1024) . " KB converted successfully.");
-
+    if ($im_result['success'] && file_exists($outputPng)) {
         $generatedPages[] = [
             'page' => $index,
             'path' => $outputPng,
@@ -296,7 +286,7 @@ foreach ($emfPositions as $index => $startOffset) {
             'url' => $baseUrl . "page_$index.png"
         ];
     } else {
-        debugLog("Conversion failed for page $index. Command: $command");
+        debugLog("Conversion failed for page $index. Output: " . $im_result['output']);
     }
     
     // Supprimer l'EMF temporaire

@@ -69,19 +69,21 @@
                                         </h4>
                                     </div>
                                     <div class="panel-body">
-                                        <div class="radio">
-                                            <label>
+                                            <label class="btn btn-outline-primary p-3 mb-2" style="border-radius: 12px; min-width: 150px;">
                                                 <input type="radio" name="format" value="A4" checked>
                                                 <strong>A4</strong> <span class="text-muted">(210 × 297 mm)</span>
                                             </label>
-                                        </div>
-                                        <div class="radio">
-                                            <label>
+
+                                            <label class="btn btn-outline-primary p-3 mb-2" style="border-radius: 12px; min-width: 150px;">
+                                                <input type="radio" name="format" value="A5">
+                                                <strong>A5</strong> <span class="text-muted">(148 × 210 mm)</span>
+                                            </label>
+
+                                            <label class="btn btn-outline-primary p-3 mb-2" style="border-radius: 12px; min-width: 150px;">
                                                 <input type="radio" name="format" value="A3">
                                                 <strong>A3</strong> <span class="text-muted">(297 × 420 mm)</span>
                                             </label>
                                         </div>
-                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-6">

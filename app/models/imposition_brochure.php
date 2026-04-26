@@ -319,13 +319,11 @@ function Action($conf)
                 $cleanedPdfFile = $tmp_dir . 'cleaned_' . $timestamp . '.pdf';
                 
                 // Nettoyer le PDF avec Ghostscript
-                require_once __DIR__ . '/../controler/functions/binary_utilities.php';
-                $gs_command = get_ghostscript_path();
-                $command = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($pdfFile) . " 2>&1";
-                $output = shell_exec($command);
+                $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($pdfFile);
+                $gs_result = run_ghostscript($gs_args);
                 
-                if (!file_exists($cleanedPdfFile) || filesize($cleanedPdfFile) == 0) {
-                    throw new Exception("Échec du nettoyage Ghostscript. Sortie: " . $output);
+                if (!$gs_result['success'] || !file_exists($cleanedPdfFile) || filesize($cleanedPdfFile) == 0) {
+                    throw new Exception("Échec du nettoyage Ghostscript. Sortie: " . $gs_result['output']);
                 }
                 
                 // Réessayer avec le PDF nettoyé

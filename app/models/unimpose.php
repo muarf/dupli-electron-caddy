@@ -27,8 +27,10 @@ function unimpose_split_double_pages($input_file, $output_file) {
         throw new Exception("Ghostscript n'a pas été trouvé sur ce système. Veuillez l'installer.");
     }
     
-    $command = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($input_file) . " 2>&1";
-    $output = shell_exec($command);
+    $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($input_file);
+    $gs_result = run_ghostscript($gs_args);
+    $output = $gs_result['output'];
+    $returnCode = $gs_result['success'] ? 0 : 1;
     
     if (!file_exists($cleanedPdfFile) || filesize($cleanedPdfFile) == 0) {
         throw new Exception("Échec du nettoyage Ghostscript. Sortie: " . $output);
@@ -91,8 +93,10 @@ function unimpose_booklet($input_file, $output_file) {
         throw new Exception("Ghostscript n'a pas été trouvé sur ce système. Veuillez l'installer.");
     }
     
-    $command = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($input_file) . " 2>&1";
-    $output = shell_exec($command);
+    $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($input_file);
+    $gs_result = run_ghostscript($gs_args);
+    $output = $gs_result['output'];
+    $returnCode = $gs_result['success'] ? 0 : 1;
     
     if (!file_exists($cleanedPdfFile) || filesize($cleanedPdfFile) == 0) {
         throw new Exception("Échec du nettoyage Ghostscript. Sortie: " . $output);
