@@ -5,7 +5,7 @@
 // Ignore user abort and remove time limit
 ignore_user_abort(true);
 set_time_limit(0);
-ini_set('memory_limit', '512M');
+ini_set('memory_limit', '1024M');
 
 // Définir que nous sommes en CLI pour éviter les headers ou affichages intempestifs
 if (php_sapi_name() !== 'cli') {
@@ -158,6 +158,12 @@ function extractPdfMetadata($path) {
     $pageCount = 0;
     $extractedText = '';
     try {
+        // Ignorer les fichiers de plus de 30 Mo pour l'extraction de texte (risqué pour la RAM)
+        if (filesize($path) > 30 * 1024 * 1024) {
+            error_log("extractPdfMetadata: File too large (>30MB), skipping text extraction for $path");
+            return ['pages' => 0, 'text' => '[Fichier trop lourd pour l\'indexation du texte]'];
+        }
+
         $parser = new Parser();
         $pdf = $parser->parseFile($path);
         $pages = $pdf->getPages();
@@ -172,7 +178,7 @@ function extractPdfMetadata($path) {
         unset($pdf);
         unset($pages);
         unset($parser);
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         error_log("Error extracting PDF metadata for $path: " . $e->getMessage());
     }
     return ['pages' => $pageCount, 'text' => $extractedText];
