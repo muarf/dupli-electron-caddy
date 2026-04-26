@@ -5,6 +5,7 @@
 // Ignore user abort and remove time limit
 ignore_user_abort(true);
 set_time_limit(0);
+ini_set('memory_limit', '512M');
 
 // Définir que nous sommes en CLI pour éviter les headers ou affichages intempestifs
 if (php_sapi_name() !== 'cli') {
@@ -15,6 +16,9 @@ require_once __DIR__ . '/../controler/func.php';
 require_once __DIR__ . '/../controler/conf.php';
 require_once __DIR__ . '/../controler/functions/bibliotheque.php';
 require_once __DIR__ . '/../controler/functions/binary_utilities.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use Smalot\PdfParser\Parser;
 
 // Arguments
 $param = $argv[1] ?? '';
@@ -99,8 +103,25 @@ function generateThumbnail($filePath, $type) {
 }
 
 function resizeImage($file, $w, $h) {
+    $src = null;
+    $dst = null;
     try {
-        list($width, $height) = getimagesize($file);
+        if (!file_exists($file)) return;
+        
+        // Get dimensions
+        $info = getimagesize($file);
+        if (!$info) return;
+        
+        list($width, $height) = $info;
+        
+        // Check if image is extremely large to avoid memory crash even with 512MB
+        // Estimated memory: width * height * 4 bytes for GD (32-bit color)
+        $estimatedMemory = $width * $height * 4;
+        if ($estimatedMemory > 200 * 1024 * 1024) { // > 200MB estimated
+             error_log("resizeImage: Image too large ($width x $height). Skipping resize to avoid crash.");
+             return;
+        }
+
         $r = $width / $height;
         if ($w/$h > $r) {
             $newwidth = $h*$r;
@@ -109,20 +130,86 @@ function resizeImage($file, $w, $h) {
             $newheight = $w/$r;
             $newwidth = $w;
         }
+        
         $src = imagecreatefrompng($file);
+        if (!$src) return;
+
         $dst = imagecreatetruecolor($newwidth, $newheight);
+        if (!$dst) {
+            imagedestroy($src);
+            return;
+        }
+
         imagecolortransparent($dst, imagecolorallocatealpha($dst, 0, 0, 0, 127));
         imagealphablending($dst, false);
         imagesavealpha($dst, true);
         imagecopyresampled($dst, $src, 0, 0, 0, 0, $newwidth, $newheight, $width, $height);
         imagepng($dst, $file);
-        imagedestroy($src);
-        imagedestroy($dst);
-    } catch (Exception $e) {}
+        
+    } catch (Throwable $e) {
+        error_log("resizeImage error: " . $e->getMessage());
+    } finally {
+        if ($src) imagedestroy($src);
+        if ($dst) imagedestroy($dst);
+    }
+}
+
+function extractPdfMetadata($path) {
+    $pageCount = 0;
+    $extractedText = '';
+    try {
+        $parser = new Parser();
+        $pdf = $parser->parseFile($path);
+        $pages = $pdf->getPages();
+        $pageCount = count($pages);
+        
+        $maxTextLength = 500000;
+        $extractedText = $pdf->getText();
+        if (strlen($extractedText) > $maxTextLength) {
+            $extractedText = substr($extractedText, 0, $maxTextLength) . '...';
+        }
+        
+        unset($pdf);
+        unset($pages);
+        unset($parser);
+    } catch (Exception $e) {
+        error_log("Error extracting PDF metadata for $path: " . $e->getMessage());
+    }
+    return ['pages' => $pageCount, 'text' => $extractedText];
 }
 
 try {
     $pdo = pdo_connect();
+
+    if ($mode === 'index_text') {
+        updateStatus('indexing_text', 0, 'Préparation...');
+        
+        $stmt = $pdo->query("SELECT id, filepath FROM bibliotheque_files WHERE file_type = 'pdf' AND (extracted_text IS NULL OR extracted_text = '')");
+        $files = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $totalFiles = count($files);
+        
+        if ($totalFiles === 0) {
+            updateStatus('completed', 100);
+            exit(0);
+        }
+
+        $indexedCount = 0;
+        $errorCount = 0;
+        $updStmt = $pdo->prepare("UPDATE bibliotheque_files SET page_count = ?, extracted_text = ? WHERE id = ?");
+
+        foreach ($files as $index => $file) {
+            $percent = round(($index / $totalFiles) * 100);
+            updateStatus('indexing_text', $percent, basename($file['filepath']), $totalFiles, $indexedCount, $errorCount);
+
+            $metadata = extractPdfMetadata($file['filepath']);
+            $updStmt->execute([$metadata['pages'], $metadata['text'], $file['id']]);
+            $indexedCount++;
+            
+            if (function_exists('gc_collect_cycles')) gc_collect_cycles();
+        }
+        updateStatus('completed', 100, '', $totalFiles, $indexedCount, $errorCount);
+        exit(0);
+    }
 
     if ($mode === 'regenerate_thumbnails') {
         updateStatus('indexing', 0, 'Préparation...');

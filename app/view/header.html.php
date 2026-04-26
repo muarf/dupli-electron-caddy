@@ -250,3 +250,9 @@
 
 <!-- JavaScript pour l'édition inline des traductions -->
 <script src="<?= $base_path ?>js/inline-translation.js"></script>
+
+<script>
+// Lancer la maintenance en arrière-plan (indexation texte, etc.)
+// Le script API gère lui-même un verrou de 5 minutes pour ne pas se lancer à chaque clic
+fetch('?run_background_maintenance').catch(e => console.warn("Background maintenance error", e));
+</script>
