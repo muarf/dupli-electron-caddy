@@ -60,6 +60,12 @@ try {
 
         case 'rescan':
             $mode = $params['mode'] ?? 'internal';
+
+            if ($mode !== 'internal' && !isElectron()) {
+                echo json_encode(['success' => false, 'error' => 'Le scan de dossiers externes est interdit en mode serveur.']);
+                break;
+            }
+
             $allPaths = [];
             
             if ($mode === 'internal' || $mode === 'all') {

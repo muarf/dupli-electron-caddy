@@ -23,14 +23,18 @@
     <div class="card mb-4">
         <div class="card-body text-center">
             <div class="d-flex justify-content-center flex-wrap gap-3">
+                <?php if (isElectron()): ?>
                 <button class="btn btn-primary btn-lg" onclick="openIndexModal()">
                     <i class="fa fa-folder-open"></i> <?php _e('library.index_folder'); ?>
                 </button>
+                <?php endif; ?>
                 <button class="btn btn-outline-warning btn-lg" onclick="openMaintenanceModal()">
                     <i class="fa fa-wrench"></i> <?php _e('library.maintenance'); ?>
                 </button>
             </div>
+            <?php if (isElectron()): ?>
             <p class="text-muted mt-2 mb-0"><small><?php _e('library.index_folder_desc'); ?></small></p>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -252,12 +256,14 @@
                                     <button class="btn btn-sm btn-outline-primary" onclick="runMaintenance('rescan', this, {mode: 'internal'})">
                                         <?php _e('library.rescan_internal'); ?>
                                     </button>
+                                    <?php if (isElectron()): ?>
                                     <button class="btn btn-sm btn-outline-primary" onclick="runMaintenance('rescan', this, {mode: 'external'})">
                                         <?php _e('library.rescan_external'); ?>
                                     </button>
                                     <button class="btn btn-sm btn-outline-primary" onclick="runMaintenance('rescan', this, {mode: 'all'})">
                                         <?php _e('library.rescan_all'); ?>
                                     </button>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
