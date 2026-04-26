@@ -2231,6 +2231,9 @@ function createWindow() {
                 } else {
                     mainWindow.loadURL(fallbackUrl);
                     mainWindow.show();
+
+                    // fix(69ee116): Démarrer le moniteur d'imprimantes sur Linux en cas de fallback Caddy
+                    startPrinterMonitor();
                 }
             } else {
                 frontendPort = serverPort;
