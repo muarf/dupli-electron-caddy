@@ -347,7 +347,7 @@
         let processedJobIds = new Set();
         let pendingJobs = new Map(); // For stabilization
         let sessionJobs = []; // List of validated jobs ready for checkout
-        const STABILIZATION_DELAY = 10000;
+        const STABILIZATION_DELAY = 1000;
         // Initialiser à 24h en arrière pour récupérer les jobs en attente
         let lastCheckTime = Date.now() - (24 * 60 * 60 * 1000);
         let pollingInterval = null;

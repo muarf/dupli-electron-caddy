@@ -365,6 +365,11 @@ function handlePhpOutput(source, data) {
         return;
     }
 
+    // Filtrer le bruit des logs d'accès du serveur PHP interne
+    if (message.includes('Accepted') || message.includes('Closing') || (message.includes('[') && message.includes(']:'))) {
+        return;
+    }
+
     const timestamp = new Date().toISOString();
     const logLine = `[${timestamp}] [PHP ${source}] ${message}`;
 
@@ -1786,6 +1791,13 @@ async function stopProcesses() {
         });
     }
 
+    if (phpConvertProcess) {
+        try {
+            phpConvertProcess.kill();
+            phpConvertProcess = null;
+        } catch (e) { }
+    }
+
     stopPhpErrorLogWatcher();
 
     // Arrêter le moniteur d'imprimantes
@@ -1827,6 +1839,12 @@ async function stopAllChildrenGracefully() {
             if (caddyProcess && !caddyProcess.killed) {
                 try { caddyProcess.kill('SIGKILL'); } catch { }
             }
+        }
+    } catch { }
+    try {
+        if (phpConvertProcess && !phpConvertProcess.killed) {
+            phpConvertProcess.kill('SIGKILL');
+            phpConvertProcess = null;
         }
     } catch { }
     try { stopPhpErrorLogWatcher(); } catch { }
