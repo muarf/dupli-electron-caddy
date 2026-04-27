@@ -9,7 +9,8 @@ describe('Application Electron E2E (Simplifié)', () => {
             
             expect(allDeps).toHaveProperty('electron');
             expect(allDeps).toHaveProperty('jest');
-            expect(packageJson.devDependencies).toHaveProperty('spectron');
+            expect(packageJson.devDependencies).toHaveProperty('@playwright/test');
+            expect(packageJson.devDependencies).not.toHaveProperty('spectron');
         });
 
         test('devrait avoir les scripts de test configurés', () => {
