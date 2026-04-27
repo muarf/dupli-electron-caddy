@@ -1,5 +1,6 @@
 #pragma once
 #include <napi.h>
+#include <atomic>
 #include <string>
 #include <vector>
 #include <windows.h>
@@ -48,7 +49,7 @@ private:
   // Lit les métadonnées brutes d'un job via GetJobW
   JobEvent    GetJobEvent(void* hPrinter, uint32_t jobId);
 
-  volatile bool stopRequested_ = false;
+  std::atomic<bool> stopRequested_{false};
 };
 
 // ---------------------------------------------------------------------------

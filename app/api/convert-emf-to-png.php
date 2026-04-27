@@ -203,6 +203,7 @@ if (file_exists($cacheFile) && file_exists($splFile) && filemtime($cacheFile) >=
 
     // Sauvegarder dans le cache
     if (!empty($emfPositions)) {
+        if (!is_dir($outputDir)) mkdir($outputDir, 0777, true);
         file_put_contents($cacheFile, json_encode($emfPositions));
         debugLog("Cached " . count($emfPositions) . " EMF positions.");
     }

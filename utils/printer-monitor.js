@@ -13,7 +13,7 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const { exec } = require('child_process');
+const { exec, execFile } = require('child_process');
 const sharp = require('sharp');
 
 // ---------------------------------------------------------------------------
@@ -114,11 +114,15 @@ async function convertLinux(jobId, splPath) {
     if (!fs.existsSync(jobDir)) fs.mkdirSync(jobDir, { recursive: true });
 
     const outputPattern = path.join(jobDir, 'page_%d.png');
-    // gs -o output_%d.png -sDEVICE=png16m -r72 input
-    const cmd = `gs -dNOPAUSE -dBATCH -dSAFER -dQUIET -sDEVICE=png16m -r72 -sOutputFile="${outputPattern}" "${splPath}"`;
+    const args = [
+        '-dNOPAUSE', '-dBATCH', '-dSAFER', '-dQUIET',
+        '-sDEVICE=png16m', '-r72',
+        `-sOutputFile=${outputPattern}`,
+        splPath
+    ];
 
     return new Promise((resolve) => {
-        exec(cmd, (err) => {
+        execFile('gs', args, (err) => {
             if (err) return resolve(null);
             const pngFiles = fs.readdirSync(jobDir)
                 .filter(f => f.endsWith('.png'))
@@ -183,7 +187,7 @@ async function analyzeJob(ev) {
         fillRate: totalFill / conv.pngPaths.length,
         thumbnailUrl: conv.thumbnailUrl,
         totalPages: conv.totalPages,
-        splSize: fs.statSync(splPath).size,
+        splSize: (function() { try { return fs.statSync(splPath).size; } catch(e) { return 0; } })(),
         documentName
     };
 

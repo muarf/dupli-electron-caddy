@@ -939,6 +939,7 @@ class BibliothequeManager {
             $path = $dir . DIRECTORY_SEPARATOR . $file;
             (is_dir($path)) ? $this->recursiveDelete($path) : unlink($path);
         }
+        @rmdir($dir);
     }
 
     /**

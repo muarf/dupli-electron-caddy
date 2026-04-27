@@ -149,7 +149,7 @@ $stableCount = 0;
 // Fast-fail: Sniff header immediately. If it's not a ZIP (PK\x03\x04), don't wait 30s.
 $h = @fopen($splFile, 'rb');
 if ($h) {
-    $head = fread($h, 1024);
+    $head = fread($h, 65536);
     fclose($h);
     if (strpos($head, "PK\x03\x04") === false) {
         debugLog("Fast-fail: No XPS/ZIP signature found in header. Skipping wait.");

@@ -189,7 +189,8 @@ function get_gxps_path(): string
  */
 function run_ghostscript(string $args): array
 {
-    return run_binary('gs', $args, 'DUPLICATOR_GS_PATH');
+    $path = get_ghostscript_path();
+    return run_binary($path, $args, 'DUPLICATOR_GS_PATH');
 }
 
 /**
