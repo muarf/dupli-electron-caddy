@@ -57,23 +57,30 @@ async function analyzePng(pngPath) {
 
     const { width, height, channels } = info;
     const totalPixels = width * height;
-    let filledPixels = 0;
+    let totalDensity = 0;
     let coloredPixels = 0;
 
     for (let i = 0; i < data.length; i += channels) {
         const r = data[i], g = data[i + 1], b = data[i + 2];
-        const lum = (r + g + b) / 3;
-        if (lum < 210) filledPixels++; // Seuil de remplissage
+        const rP = r / 255, gP = g / 255, bP = b / 255;
         
-        // Seuil de couleur augmenté de 15 à 25 pour éviter les faux positifs (anti-aliasing, compression)
+        // Simulation CMYK à partir de RGB pour correspondre à Ghostscript
+        const k = 1 - Math.max(rP, gP, bP);
+        const c = k === 1 ? 0 : (1 - rP - k) / (1 - k);
+        const m = k === 1 ? 0 : (1 - gP - k) / (1 - k);
+        const y = k === 1 ? 0 : (1 - bP - k) / (1 - k);
+        
+        totalDensity += (c + m + y + k);
+        
+        // Seuil de couleur pour détection isColor
         if (Math.abs(r - g) > 25 || Math.abs(g - b) > 25 || Math.abs(r - b) > 25) {
             coloredPixels++;
         }
     }
 
     return { 
-        fillRate: (filledPixels / totalPixels) * 100, 
-        // Seuil de ratio augmenté de 0.001 (0.1%) à 0.005 (0.5%) pour plus de robustesse
+        // Le taux est la moyenne de densité * 100 pour avoir un pourcentage
+        fillRate: (totalDensity / totalPixels) * 100, 
         isColor: (coloredPixels / totalPixels) > 0.005 
     };
 }
@@ -205,7 +212,8 @@ async function convertLinux(jobId, splPath) {
                         // 1. La somme CMJ est significative (> 2% en moyenne par page)
                         // 2. ET il y a un déséquilibre (saturation > 1%) indiquant une vraie teinte.
                         isColor = (avgC + avgM + avgY > 2.0) && (maxDiff > 1.0);
-                        fillRate = (tC + tM + tY + tK) / (pages * 4);
+                        // Nouvelle formule : Somme brute des canaux pour refléter la consommation réelle (C+M+J+N)
+                        fillRate = (tC + tM + tY + tK) / pages;
                     }
                 }
 
