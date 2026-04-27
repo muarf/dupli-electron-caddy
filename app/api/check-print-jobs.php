@@ -424,9 +424,19 @@ try {
         error_log("Purge recorded_print_jobs failed: " . $e->getMessage());
     }
 
-    // Gestion du filtre d'historique
+    // Gestion du filtre d'historique et de session
     $show_history = isset($_GET['history']) && $_GET['history'] === 'true';
-    $where_clause = $show_history ? "" : "WHERE rpj.print_job_id IS NULL AND pj.session_id IS NULL";
+    $sessionId = isset($_GET['session_id']) ? intval($_GET['session_id']) : null;
+    
+    if ($show_history) {
+        $where_clause = "";
+    } else {
+        $where_clause = "WHERE rpj.print_job_id IS NULL AND (pj.session_id IS NULL";
+        if ($sessionId) {
+            $where_clause .= " OR pj.session_id = $sessionId";
+        }
+        $where_clause .= ")";
+    }
 
     $sql = "
         SELECT
