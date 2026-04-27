@@ -3,6 +3,21 @@
  * Script pour vérifier les enregistrements d'impression dans la base de données
  */
 
+// NOUVEAU: Proxy pour les miniatures sur Linux (car dossier app/public est en lecture seule sur AppImage)
+if (isset($_GET['get_linux_thumb'])) {
+    $filename = basename($_GET['get_linux_thumb']);
+    $thumbPath = "/tmp/dupli_thumbnails/" . $filename;
+    if (file_exists($thumbPath)) {
+        header('Content-Type: image/png');
+        header('Cache-Control: public, max-age=86400');
+        readfile($thumbPath);
+        exit;
+    }
+    // Fallback si l'image n'existe pas encore
+    http_response_code(404);
+    exit;
+}
+
 // Désactiver l'affichage des erreurs pour éviter de polluer le JSON
 error_reporting(E_ALL);
 ini_set('display_errors', 0);

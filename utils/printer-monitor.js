@@ -31,10 +31,10 @@ const LOG_PATH = path.join(
     'dupli-electron-caddy', 'logs', 'node_monitor.log'
 );
 
-// Dossier pour miniatures temporaires sur Linux (dans le public pour accès HTTP)
-const LINUX_THUMB_DIR = path.join(__dirname, '..', 'app', 'public', 'thumbnails', 'print_jobs');
+// Dossier pour miniatures temporaires sur Linux (dans /tmp car app/public est en lecture seule sur AppImage)
+const LINUX_THUMB_DIR = '/tmp/dupli_thumbnails';
 if (os.platform() === 'linux' && !fs.existsSync(LINUX_THUMB_DIR)) {
-    fs.mkdirSync(LINUX_THUMB_DIR, { recursive: true });
+    try { fs.mkdirSync(LINUX_THUMB_DIR, { recursive: true }); } catch (e) { console.error('Erreur creation LINUX_THUMB_DIR:', e.message); }
 }
 
 function log(msg) {
@@ -115,9 +115,7 @@ async function convertWindows(jobId, format) {
  * Linux : Utilise Ghostscript (gs) en local
  */
 async function convertLinux(jobId, splPath) {
-    const jobDir = path.join(LINUX_THUMB_DIR, String(jobId));
-    if (!fs.existsSync(jobDir)) fs.mkdirSync(jobDir, { recursive: true });
-    const outputPattern = path.join(jobDir, 'page_%d.png');
+    const outputPattern = path.join(LINUX_THUMB_DIR, `job_${jobId}_page_%d.png`);
 
     return new Promise((resolve) => {
         const tmpCopy = path.join('/tmp', `convert_job_${jobId}.pdf`);
@@ -169,10 +167,13 @@ async function convertLinux(jobId, splPath) {
                 // Nettoyage de la copie temporaire
                 try { fs.unlinkSync(tmpCopy); } catch (e) {}
 
-                const pngFiles = fs.readdirSync(jobDir)
-                    .filter(f => f.endsWith('.png'))
-                    .map(f => path.join(jobDir, f))
-                    .sort();
+                const pngFiles = fs.readdirSync(LINUX_THUMB_DIR)
+                    .filter(f => f.startsWith(`job_${jobId}_page_`) && f.endsWith('.png'))
+                    .map(f => path.join(LINUX_THUMB_DIR, f))
+                    .sort((a, b) => {
+                        // Tri naturel pour éviter job_120_page_10 avant job_120_page_2
+                        return a.length - b.length || a.localeCompare(b);
+                    });
                 
                 if (!pngFiles.length) return resolve(null);
 
@@ -209,7 +210,7 @@ async function convertLinux(jobId, splPath) {
                 }
 
                 resolve({
-                    thumbnailUrl: `http://127.0.0.1:8000/thumbnails/print_jobs/${jobId}/${path.basename(pngFiles[0])}`,
+                    thumbnailUrl: `http://127.0.0.1:8000/index.php?get_linux_thumb=${path.basename(pngFiles[0])}`,
                     pngPaths: pngFiles,
                     totalPages: pngFiles.length,
                     // Valeurs déjà analysées par GS
