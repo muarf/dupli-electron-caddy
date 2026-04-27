@@ -1840,6 +1840,7 @@ async function stopAllChildrenGracefully() {
 
 function startPrinterMonitor() {
     if (process.platform !== 'win32' && process.platform !== 'linux') {
+        console.log('[DEBUG startPrinterMonitor] platform not supported');
         console.log('Le moniteur d\'imprimantes n\'est pas supporté sur cet OS');
         return;
     }
@@ -2235,6 +2236,9 @@ function createWindow() {
                     // fix(69ee116): Démarrer le moniteur d'imprimantes sur Linux en cas de fallback Caddy
                     startPrinterMonitor();
                 }
+
+                // Démarrer le moniteur d'imprimantes sur Linux (fallback case)
+                startPrinterMonitor();
             } else {
                 frontendPort = serverPort;
                 sendToRenderer(PHP_STATUS_CHANNEL, {
@@ -2294,7 +2298,7 @@ function createWindow() {
                     console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
                 }
 
-                // Démarrer le moniteur d'imprimantes Windows après le démarrage des serveurs
+                // Démarrer le moniteur d'imprimantes après le démarrage des serveurs
                 startPrinterMonitor();
             }
         } catch (error) {
