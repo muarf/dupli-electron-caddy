@@ -65,7 +65,10 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev ghostscript imagemagick libpixman-1-dev
+          sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev ghostscript imagemagick libpixman-1-dev xvfb
+
+      - name: Install Playwright system dependencies
+        run: npx playwright install-deps
 
       - name: Install dependencies
         run: |
@@ -89,7 +92,10 @@ jobs:
           chmod +x caddy/caddy
 
       - name: Run JS Tests (Jest)
-        run: npm test -- --runInBand --forceExit
+        run: xvfb-run npm test -- --runInBand --forceExit
+
+      - name: Run E2E Tests (Playwright)
+        run: xvfb-run npm run test:e2e
 
   test-windows-alpha:
     runs-on: windows-latest
@@ -135,6 +141,9 @@ jobs:
 
       - name: Run JS Tests (Jest)
         run: npm test -- --runInBand --forceExit
+
+      - name: Run E2E Tests (Playwright)
+        run: npm run test:e2e
 
   create-alpha-release:
     needs: [get-version, test-linux-alpha, test-windows-alpha]
