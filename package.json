@@ -19,6 +19,7 @@
     "test:integration:simple": "jest --testPathPattern=caddy-php-simple",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
     "rebuild:print-engine": "cd src/print-engine/windows && node-gyp rebuild"
   },
   "keywords": [],
@@ -26,6 +27,7 @@
   "license": "ISC",
   "description": "Duplicator - Application de duplication de documents",
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/jest": "^29.5.14",
     "cross-env": "^10.1.0",
     "electron": "^30.0.0",
@@ -37,8 +39,7 @@
   "jest": {
     "testEnvironment": "node",
     "testMatch": [
-      "**/tests/**/*.test.js",
-      "**/tests/**/*.spec.js"
+      "**/tests/**/*.test.js"
     ],
     "collectCoverageFrom": [
       "main*.js",
