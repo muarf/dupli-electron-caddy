@@ -122,51 +122,87 @@ async function convertLinux(jobId, splPath) {
     return new Promise((resolve) => {
         const tmpCopy = path.join('/tmp', `convert_job_${jobId}.pdf`);
         
-        // Détection automatique du chemin si splPath est undefined (cas de la réanalyse Linux)
+        // Détection automatique du chemin
         let sourcePath = splPath;
         if (!sourcePath && os.platform() === 'linux') {
             const paddedId = String(jobId).padStart(5, '0');
             sourcePath = `/var/spool/cups/d${paddedId}-001`;
             if (!fs.existsSync(sourcePath)) {
-                sourcePath = `/var/spool/cups/d${paddedId}`; // Fallback sans -001
+                sourcePath = `/var/spool/cups/d${paddedId}`;
             }
         }
 
         if (!sourcePath || !fs.existsSync(sourcePath)) {
-            console.error(`❌ Fichier spool introuvable pour le job ${jobId} (sourcePath: ${sourcePath})`);
+            console.error(`❌ Fichier spool introuvable pour le job ${jobId}`);
             return resolve(null);
         }
 
         try {
             fs.copyFileSync(sourcePath, tmpCopy);
         } catch (e) {
-            console.error(`❌ Impossible de copier le spool ${sourcePath} vers ${tmpCopy}:`, e.message);
+            console.error(`❌ Erreur copie spool ${jobId}:`, e.message);
             return resolve(null);
         }
 
-        const args = [
+        // 1. Génération des PNG pour miniatures
+        const gsArgs = [
             '-dNOPAUSE', '-dBATCH', '-dSAFER', '-dQUIET',
             '-sDEVICE=png16m', '-r72',
             `-sOutputFile=${outputPattern}`,
             tmpCopy
         ];
 
-        execFile('gs', args, (err) => {
-            // Nettoyage de la copie temporaire
-            try { fs.unlinkSync(tmpCopy); } catch (e) {}
+        execFile('gs', gsArgs, (err) => {
+            if (err) {
+                try { fs.unlinkSync(tmpCopy); } catch(e){}
+                return resolve(null);
+            }
 
-            if (err) return resolve(null);
-            const pngFiles = fs.readdirSync(jobDir)
-                .filter(f => f.endsWith('.png'))
-                .map(f => path.join(jobDir, f))
-                .sort();
-            
-            if (!pngFiles.length) return resolve(null);
+            // 2. Analyse de l'encre (ink_cov) - Plus stable que Sharp sur Linux
+            const inkArgs = [
+                '-dNOPAUSE', '-dBATCH', '-dSAFER', '-dQUIET',
+                '-o', '-', '-sDEVICE=ink_cov',
+                tmpCopy
+            ];
 
-            resolve({
-                thumbnailUrl: `file://${pngFiles[0]}`, // Note: Electron peut lire file:// si configuré
-                pngPaths: pngFiles,
-                totalPages: pngFiles.length
+            execFile('gs', inkArgs, (inkErr, stdout) => {
+                // Nettoyage de la copie temporaire
+                try { fs.unlinkSync(tmpCopy); } catch (e) {}
+
+                const pngFiles = fs.readdirSync(jobDir)
+                    .filter(f => f.endsWith('.png'))
+                    .map(f => path.join(jobDir, f))
+                    .sort();
+                
+                if (!pngFiles.length) return resolve(null);
+
+                let isColor = false;
+                let fillRate = 0;
+
+                if (!inkErr && stdout) {
+                    const lines = stdout.split('\n').filter(l => l.trim().match(/^\s*\d+\.\d+/));
+                    let tC = 0, tM = 0, tY = 0, tK = 0, pages = 0;
+                    for (const line of lines) {
+                        const p = line.trim().split(/\s+/).map(parseFloat);
+                        if (p.length >= 4) {
+                            tC += p[0]; tM += p[1]; tY += p[2]; tK += p[3];
+                            pages++;
+                        }
+                    }
+                    if (pages > 0) {
+                        isColor = (tC + tM + tY) > 0.5;
+                        fillRate = (tC + tM + tY + tK) / (pages * 4);
+                    }
+                }
+
+                resolve({
+                    thumbnailUrl: `file://${pngFiles[0]}`,
+                    pngPaths: pngFiles,
+                    totalPages: pngFiles.length,
+                    // Valeurs déjà analysées par GS
+                    isColor: isColor,
+                    fillRate: fillRate
+                });
             });
         });
     });
@@ -198,11 +234,24 @@ async function analyzeJob(ev) {
     if (!conv || !conv.pngPaths.length) return null;
 
     // Analyse Sharp : Règle hybride
-    // 1. Si le driver dit Noir et Blanc (1), on respecte le choix de l'utilisateur.
-    // 2. Si le driver dit Couleur (2), on analyse les pixels pour voir si on peut "rétrograder" en N&B.
+    // Sur Linux, on a déjà récupéré isColor et fillRate via Ghostscript (plus stable).
+    if (conv.fillRate !== undefined && conv.isColor !== undefined && os.platform() === 'linux') {
+        const result = {
+            success: true,
+            jobId: jobId,
+            isGrayscale: !conv.isColor,
+            fillRate: conv.fillRate,
+            thumbnailUrl: conv.thumbnailUrl,
+            totalPages: conv.totalPages,
+            splSize: 0
+        };
+        try { result.splSize = fs.statSync(splPath).size; } catch {}
+        analysisCache.set(cacheKey, result);
+        return result;
+    }
+
     let totalFill = 0;
     let foundRealColor = false;
-    
     for (const png of conv.pngPaths) {
         try {
             const { fillRate, isColor } = await analyzePng(png);
