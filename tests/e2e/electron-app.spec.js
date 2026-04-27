@@ -36,9 +36,13 @@ test.describe('Application Electron E2E', () => {
         // On ne passe pas par electronApp.close() ni evaluate() car ces API
         // restent bloquées en attendant que PHP/Caddy s'arrêtent proprement.
         try {
-            // Le signe "-" devant le PID permet de tuer tout le GROUPE de processus
-            // (Electron + PHP + Caddy) d'un seul coup sous Linux.
-            process.kill(-electronPid, 'SIGKILL');
+            if (process.platform === 'win32') {
+                process.kill(electronPid, 'SIGKILL');
+            } else {
+                // Le signe "-" devant le PID permet de tuer tout le GROUPE de processus
+                // (Electron + PHP + Caddy) d'un seul coup sous Linux.
+                process.kill(-electronPid, 'SIGKILL');
+            }
         } catch {
             // Déjà mort
         }
@@ -89,18 +93,30 @@ test.describe('Application Electron E2E', () => {
         test('devrait gérer les messages IPC (openFile)', async () => {
             // Tester l'ouverture de fichier via IPC
             // Sur Windows/CI, on n'attend pas forcément la résolution complète
-            // car l'ouverture d'un fichier externe peut perturber le contexte Playwright
+            // car l'ouverture d'un fichier externe peut perturber le contexte Playwright.
+            // Cependant, on vérifie si l'appel échoue immédiatement.
             const result = await window.evaluate(async () => {
                 if (window.electronAPI && window.electronAPI.openFile) {
-                    // On lance l'appel et on retourne un succès immédiat pour l'API
-                    window.electronAPI.openFile('test.pdf').catch(() => {});
-                    return { success: true };
+                    try {
+                        const call = window.electronAPI.openFile('test.pdf');
+                        // On attend un tout petit peu pour voir si l'appel IPC crashe tout de suite
+                        await Promise.race([
+                            call,
+                            new Promise(resolve => setTimeout(resolve, 200))
+                        ]);
+                        return { success: true };
+                    } catch (e) {
+                        return { success: false, error: e.message };
+                    }
                 }
                 return 'API not found';
             });
             
             expect(result).toBeDefined();
             expect(result).not.toBe('API not found');
+            if (typeof result === 'object') {
+                expect(result.success).toBe(true);
+            }
         });
 
         test('devrait gérer le nettoyage des fichiers temporaires', async () => {
