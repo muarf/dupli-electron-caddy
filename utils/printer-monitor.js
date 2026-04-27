@@ -31,8 +31,8 @@ const LOG_PATH = path.join(
     'dupli-electron-caddy', 'logs', 'node_monitor.log'
 );
 
-// Dossier pour miniatures temporaires sur Linux
-const LINUX_THUMB_DIR = '/tmp/dupli-thumbnails';
+// Dossier pour miniatures temporaires sur Linux (dans le public pour accès HTTP)
+const LINUX_THUMB_DIR = path.join(__dirname, '..', 'app', 'public', 'thumbnails', 'print_jobs');
 if (os.platform() === 'linux' && !fs.existsSync(LINUX_THUMB_DIR)) {
     fs.mkdirSync(LINUX_THUMB_DIR, { recursive: true });
 }
@@ -190,13 +190,26 @@ async function convertLinux(jobId, splPath) {
                         }
                     }
                     if (pages > 0) {
-                        isColor = (tC + tM + tY) > 0.5;
+                        // Règle de saturation : si C, M et Y sont très proches, c'est du gris/noir soutenu.
+                        // On calcule l'écart maximal entre les composantes CMJ.
+                        const avgC = tC / pages;
+                        const avgM = tM / pages;
+                        const avgY = tY / pages;
+                        const diffCM = Math.abs(avgC - avgM);
+                        const diffMY = Math.abs(avgM - avgY);
+                        const diffCY = Math.abs(avgC - avgY);
+                        const maxDiff = Math.max(diffCM, diffMY, diffCY);
+
+                        // On considère que c'est de la couleur seulement si :
+                        // 1. La somme CMJ est significative (> 2% en moyenne par page)
+                        // 2. ET il y a un déséquilibre (saturation > 1%) indiquant une vraie teinte.
+                        isColor = (avgC + avgM + avgY > 2.0) && (maxDiff > 1.0);
                         fillRate = (tC + tM + tY + tK) / (pages * 4);
                     }
                 }
 
                 resolve({
-                    thumbnailUrl: `file://${pngFiles[0]}`,
+                    thumbnailUrl: `http://127.0.0.1:8000/thumbnails/print_jobs/${jobId}/${path.basename(pngFiles[0])}`,
                     pngPaths: pngFiles,
                     totalPages: pngFiles.length,
                     // Valeurs déjà analysées par GS

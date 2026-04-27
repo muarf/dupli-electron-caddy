@@ -105,43 +105,56 @@ class LinuxSpoolAnalyzer extends EventEmitter {
         let filename = `d${paddedId}-001`;
         let filePath = path.join(this.spoolDir, filename);
 
-        // Fallback si le suffixe -001 n'est pas présent (rare sous CUPS mais possible)
-        if (!fs.existsSync(filePath)) {
-            const fallback = path.join(this.spoolDir, `d${paddedId}`);
-            if (fs.existsSync(fallback)) {
-                filePath = fallback;
-                filename = `d${paddedId}`;
-            }
-        }
+        // 1. Notification immédiate au statut "Spooling"
+        const initialJobInfo = {
+            JobId: jobId,
+            PrinterName: printerName || 'Unknown',
+            Document: `Job ${jobId} (${user})`,
+            Status: 'Spooling',
+            TotalPages: 0,
+            IsDuplex: false,
+            ColorMode: 'Unknown',
+            FillRate: 0,
+            TimeSubmitted: new Date().toISOString()
+        };
+        this.emit('job', initialJobInfo);
 
-        console.log(`📄 Nouveau job détecté via Polling: #${jobId} (Spool: ${filename})`);
-
+        // 2. Attente de stabilité du fichier spool
         let fileSize = 0;
-        try {
-            const stats = fs.statSync(filePath);
-            fileSize = stats.size;
-        } catch (e) {
-            console.warn(`⚠️ Spool file ${filename} non trouvé - job peut-être déjà parti`);
+        let lastSize = -1;
+        let attempts = 0;
+        const maxAttempts = 15; // 15 secondes max d'attente
+
+        while (attempts < maxAttempts) {
+            if (fs.existsSync(filePath)) {
+                fileSize = fs.statSync(filePath).size;
+            } else {
+                // Essayer le fallback sans -001
+                const fallback = path.join(this.spoolDir, `d${paddedId}`);
+                if (fs.existsSync(fallback)) {
+                    filePath = fallback;
+                    filename = `d${paddedId}`;
+                    fileSize = fs.statSync(filePath).size;
+                }
+            }
+
+            // Si le fichier existe et que sa taille est stable, on sort
+            if (fileSize > 0 && fileSize === lastSize) {
+                break;
+            }
+
+            lastSize = fileSize;
+            attempts++;
+            await new Promise(r => setTimeout(r, 1000)); // Attendre 1s entre chaque vérification
         }
 
-        if (fileSize === 0 || !fs.existsSync(filePath)) {
-            const jobInfo = {
-                JobId: jobId,
-                PrinterName: printerName || 'Unknown',
-                Document: `Job ${jobId} (${user})`,
-                Status: 'Completed',
-                TotalPages: 1,
-                PaperSize: 'A4',
-                IsDuplex: false,
-                ColorMode: 'Unknown',
-                Copies: 1,
-                FillRate: 0,
-                ThumbnailUrl: '',
-                TimeSubmitted: new Date().toISOString()
-            };
-            this.emit('job', jobInfo);
+        if (fileSize === 0) {
+            console.warn(`⚠️ Spool file ${filename} reste vide ou introuvable après ${maxAttempts}s.`);
             return;
         }
+
+        // Tentative de récupération des métadonnées via IPP
+        const ippData = await this.fetchIppAttributes(jobId);
 
         try {
             // Vérifier que le fichier spool existe bien physiquement (permission de lecture directe)
@@ -153,8 +166,6 @@ class LinuxSpoolAnalyzer extends EventEmitter {
             }
 
             // Analyser le contenu (Ghostscript) pour le taux de remplissage
-            // On COPIE vers /tmp car Ghostscript (via AppArmor) a souvent interdiction 
-            // de lire directement dans /var/spool/cups.
             const tmpCopy = path.join('/tmp', `analyze_job_${jobId}.pdf`);
             fs.copyFileSync(filePath, tmpCopy);
 
@@ -167,11 +178,11 @@ class LinuxSpoolAnalyzer extends EventEmitter {
             const jobInfo = {
                 JobId: jobId,
                 PrinterName: printerName || 'Unknown',
-                Document: `Job ${jobId} (${user})`, // Difficile d'avoir le vrai titre sans IPP root
+                Document: ippData.documentName || `Job ${jobId} (${user})`,
                 Status: 'Printing',
                 TotalPages: analysis.totalPages,
                 PaperSize: 'A4',
-                IsDuplex: false,
+                IsDuplex: ippData.isDuplex,
                 ColorMode: analysis.isColor ? 'Color' : 'Monochrome',
                 Copies: 1,
                 FillRate: analysis.fillRate,
@@ -224,8 +235,17 @@ class LinuxSpoolAnalyzer extends EventEmitter {
 
                 if (pages === 0) pages = 1;
 
-                const isColor = (totalC + totalM + totalY) > 0.5;
-                // GS ink_cov donne des pourcentages (0-100), moyenne des 4 canaux
+                // Règle de saturation améliorée (ignorer Rich Black)
+                const avgC = totalC / pages;
+                const avgM = totalM / pages;
+                const avgY = totalY / pages;
+                const maxDiff = Math.max(
+                    Math.abs(avgC - avgM),
+                    Math.abs(avgM - avgY),
+                    Math.abs(avgC - avgY)
+                );
+
+                const isColor = (avgC + avgM + avgY > 2.0) && (maxDiff > 1.0);
                 const fillRate = (totalC + totalM + totalY + totalK) / (pages * 4);
 
                 resolve({
@@ -233,6 +253,36 @@ class LinuxSpoolAnalyzer extends EventEmitter {
                     fillRate,
                     totalPages: pages
                 });
+            });
+        });
+    }
+
+    /**
+     * Interroge CUPS via IPP pour obtenir les attributs détaillés
+     */
+    fetchIppAttributes(jobId) {
+        return new Promise((resolve) => {
+            const cmd = `ipptool -tv ipp://localhost:631/jobs/${jobId} /usr/share/cups/ipptool/get-job-attributes.test`;
+            exec(cmd, (err, stdout) => {
+                const data = {
+                    isDuplex: false,
+                    documentName: null
+                };
+
+                if (!err && stdout) {
+                    // Analyse du Recto-Verso
+                    if (stdout.includes('sides (keyword) = two-sided')) {
+                        data.isDuplex = true;
+                    }
+                    
+                    // Analyse du nom du document
+                    const nameMatch = stdout.match(/job-name \(nameWithoutLanguage\) = (.*)/);
+                    if (nameMatch && nameMatch[1].trim()) {
+                        data.documentName = nameMatch[1].trim();
+                    }
+                }
+
+                resolve(data);
             });
         });
     }
