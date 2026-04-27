@@ -216,7 +216,12 @@ if (empty($emfPositions)) {
 }
 
 // Ré-ouvrir le fichier pour l'extraction
-$handle = fopen($splFile, 'rb');
+$handle = @fopen($splFile, 'rb');
+if (!$handle) {
+    debugLog("ERROR: Failed to re-open SPL file for extraction: $splFile");
+    echo json_encode(['error' => 'Failed to re-open SPL file for extraction', 'job_id' => $jobId]);
+    exit;
+}
 /* 
  * Optimisation pour les gros fichiers : On ne supprime plus le dossier
  * pour permettre la reprise en cas de timeout précédent.
