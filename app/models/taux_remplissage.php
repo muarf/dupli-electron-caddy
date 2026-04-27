@@ -115,32 +115,24 @@ function calculate_fill_rate($image_path, $tolerance = 245) {
     }
 }
 
-/**
- * Convertit un PDF en image PNG pour analyse
- */
-function convert_pdf_to_image_for_analysis($pdf_file, $output_dir, $page_number = 1, $dpi = 150) {
+function convert_pdf_to_images_for_analysis($pdf_file, $output_dir, $dpi = 150) {
     try {
-        // Vérifier que le fichier PDF existe
         if (!file_exists($pdf_file)) {
             throw new Exception("Le fichier PDF n'existe pas : " . $pdf_file);
         }
         
-        // Créer le dossier de sortie s'il n'existe pas
         if (!is_dir($output_dir)) {
             if (!mkdir($output_dir, 0777, true)) {
                 throw new Exception("Impossible de créer le dossier de sortie : " . $output_dir);
             }
         }
         
-        // Générer un nom de fichier unique pour l'image
-        $timestamp = date('YmdHis');
-        $output_file = $output_dir . 'page_' . $timestamp . '.png';
+        $output_pattern = $output_dir . 'page_%d.png';
 
-        // Convertir la première page du PDF en PNG
+        // Convertir TOUTES les pages du PDF en PNG
         $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=png16m -r" . intval($dpi) . 
-                   " -dFirstPage=" . intval($page_number) . " -dLastPage=" . intval($page_number) .
                    " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . 
-                   escapeshellarg($output_file) . " " . escapeshellarg($pdf_file);
+                   escapeshellarg($output_pattern) . " " . escapeshellarg($pdf_file);
         
         $gs_result = run_ghostscript($gs_args);
         
@@ -148,14 +140,18 @@ function convert_pdf_to_image_for_analysis($pdf_file, $output_dir, $page_number 
             throw new Exception("Erreur lors de la conversion avec Ghostscript. Code: " . $gs_result['error'] . " Output: " . $gs_result['output']);
         }
         
-        if (!file_exists($output_file)) {
-            throw new Exception("L'image n'a pas été créée. Le PDF est peut-être vide ou corrompu.");
+        // Récupérer la liste des fichiers créés
+        $files = glob($output_dir . 'page_*.png');
+        if (empty($files)) {
+            throw new Exception("Aucune image n'a été créée.");
         }
         
-        return $output_file;
+        // Trier les fichiers par numéro de page (tri naturel)
+        natsort($files);
+        return array_values($files);
         
     } catch (Exception $e) {
-        error_log("Erreur lors de la conversion PDF vers image : " . $e->getMessage());
+        error_log("Erreur lors de la conversion PDF vers images : " . $e->getMessage());
         throw $e;
     }
 }
@@ -245,42 +241,56 @@ function Action($conf) {
                     
                     if (move_uploaded_file($_FILES["file"]["tmp_name"], $uploadFile)) {
                         error_log("Fichier déplacé avec succès");
-                        $image_to_analyze = $uploadFile;
                         
-                        // Si c'est un PDF, le convertir en image
+                        $images_to_analyze = array();
+                        
+                        // Si c'est un PDF, le convertir en plusieurs images
                         if ($mimeType === 'application/pdf') {
-                            error_log("Conversion PDF en image...");
-                            $page_to_analyze = isset($_POST['page_number']) ? intval($_POST['page_number']) : 1;
-                            if ($page_to_analyze < 1) $page_to_analyze = 1;
-                            
+                            error_log("Conversion PDF en images (toutes les pages)...");
                             $outputDir = $tmpDir . 'analysis_' . $timestamp . '/';
-                            $image_to_analyze = convert_pdf_to_image_for_analysis($uploadFile, $outputDir, $page_to_analyze);
-                            error_log("Image créée: " . $image_to_analyze);
+                            $images_to_analyze = convert_pdf_to_images_for_analysis($uploadFile, $outputDir);
+                            error_log(count($images_to_analyze) . " images créées");
+                        } else {
+                            $images_to_analyze = array($uploadFile);
                         }
                         
-                        // Calculer le taux de remplissage
-                        error_log("Calcul du taux de remplissage...");
-                        $result = calculate_fill_rate($image_to_analyze, $tolerance);
-                        error_log("Calcul terminé: " . $result['fill_rate'] . "%");
+                        // Calculer le taux de remplissage moyen
+                        error_log("Calcul du taux de remplissage sur " . count($images_to_analyze) . " page(s)...");
+                        $total_fill = 0;
+                        $page_count = count($images_to_analyze);
+                        $last_result = null;
+                        
+                        foreach ($images_to_analyze as $img) {
+                            $last_result = calculate_fill_rate($img, $tolerance);
+                            $total_fill += $last_result['fill_rate'];
+                        }
+                        
+                        $average_fill = $total_fill / $page_count;
+                        $result = $last_result; // Garder les infos de la dernière page (dimensions etc)
+                        $result['fill_rate'] = round($average_fill, 2);
+                        $result['empty_rate'] = round(100 - $average_fill, 2);
+                        $result['page_count'] = $page_count;
+                        
+                        error_log("Calcul terminé: " . $result['fill_rate'] . "% sur $page_count page(s)");
                         $success = true;
                         
-                        // GESTION DE L'IMAGE DE PREVIEW
-                        // Lire le contenu de l'image pour l'encoder en base64
-                        // Cela évite d'avoir à stocker l'image dans public/tmp
-                        $imageData = base64_encode(file_get_contents($image_to_analyze));
-                        $mime = mime_content_type($image_to_analyze);
+                        // GESTION DE L'IMAGE DE PREVIEW (Première page)
+                        $preview_img = $images_to_analyze[0];
+                        $imageData = base64_encode(file_get_contents($preview_img));
+                        $mime = mime_content_type($preview_img);
                         $preview_url = 'data:' . $mime . ';base64,' . $imageData;
                         
                         $result['preview_url'] = $preview_url;
                         $result['filename'] = $_FILES["file"]["name"];
                         $result['tolerance'] = $tolerance;
                         
-                        error_log("Preview générée en base64");
+                        error_log("Preview générée en base64 (page 1)");
                         
                         // Nettoyer les fichiers temporaires
-                        // 1. L'image analysée (si différente de l'upload)
-                        if ($image_to_analyze !== $uploadFile && file_exists($image_to_analyze)) {
-                            unlink($image_to_analyze);
+                        foreach ($images_to_analyze as $img) {
+                            if ($img !== $uploadFile && file_exists($img)) {
+                                unlink($img);
+                            }
                         }
                         // 2. Le dossier d'analyse si créé
                         if (isset($outputDir) && is_dir($outputDir)) {
