@@ -109,8 +109,17 @@ class LinuxSpoolAnalyzer extends EventEmitter {
 
     async analyzeNewJob(jobId, printerName, user) {
         const paddedId = jobId.toString().padStart(5, '0');
-        const filename = `c${paddedId}`;
-        const filePath = path.join(this.spoolDir, filename);
+        let filename = `d${paddedId}-001`;
+        let filePath = path.join(this.spoolDir, filename);
+
+        // Fallback si le suffixe -001 n'est pas présent (rare sous CUPS mais possible)
+        if (!fs.existsSync(filePath)) {
+            const fallback = path.join(this.spoolDir, `d${paddedId}`);
+            if (fs.existsSync(fallback)) {
+                filePath = fallback;
+                filename = `d${paddedId}`;
+            }
+        }
 
         console.log(`📄 Nouveau job détecté via Polling: #${jobId} (Spool: ${filename})`);
 
@@ -151,7 +160,15 @@ class LinuxSpoolAnalyzer extends EventEmitter {
             }
 
             // Analyser le contenu (Ghostscript) pour le taux de remplissage
-            const analysis = await this.analyzeContent(filePath);
+            // On COPIE vers /tmp car Ghostscript (via AppArmor) a souvent interdiction 
+            // de lire directement dans /var/spool/cups.
+            const tmpCopy = path.join('/tmp', `analyze_job_${jobId}.pdf`);
+            fs.copyFileSync(filePath, tmpCopy);
+
+            const analysis = await this.analyzeContent(tmpCopy);
+
+            // Nettoyage
+            try { fs.unlinkSync(tmpCopy); } catch (e) {}
 
             // Construire l'événement
             const jobInfo = {
