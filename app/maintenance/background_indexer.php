@@ -127,14 +127,14 @@ function resizeImage($file, $w, $h) {
             $newwidth = $h*$r;
             $newheight = $h;
         } else {
-            $newheight = $w/$r;
-            $newwidth = $w;
+            $newheight = (int)($w/$r);
+            $newwidth = (int)$w;
         }
         
         $src = imagecreatefrompng($file);
         if (!$src) return;
 
-        $dst = imagecreatetruecolor($newwidth, $newheight);
+        $dst = imagecreatetruecolor((int)$newwidth, (int)$newheight);
         if (!$dst) {
             imagedestroy($src);
             return;

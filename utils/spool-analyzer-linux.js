@@ -122,7 +122,7 @@ class LinuxSpoolAnalyzer extends EventEmitter {
             console.warn(`⚠️ Spool file ${filename} non trouvé - job peut-être déjà parti`);
         }
 
-        if (fileSize === 0 || !fs.existsSync(filePath)) {
+        if (fileSize === 0) {
             const jobInfo = {
                 JobId: jobId,
                 PrinterName: printerName || 'Unknown',

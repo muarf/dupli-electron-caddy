@@ -452,6 +452,7 @@ if ($page === 'upload_bibliotheque') {
         exit;
     } else {
         http_response_code(500);
+        header('Content-Type: application/json');
         echo json_encode(['error' => 'API file not found']);
         exit;
     }
@@ -464,6 +465,7 @@ if ($page === 'search_bibliotheque') {
         exit;
     } else {
         http_response_code(500);
+        header('Content-Type: application/json');
         echo json_encode(['error' => 'API file not found']);
         exit;
     }
@@ -476,6 +478,7 @@ if ($page === 'preview_directory') {
         exit;
     } else {
         http_response_code(500);
+        header('Content-Type: application/json');
         echo json_encode(['error' => 'API file not found']);
         exit;
     }
@@ -488,6 +491,7 @@ if ($page === 'index_file') {
         exit;
     } else {
         http_response_code(500);
+        header('Content-Type: application/json');
         echo json_encode(['error' => 'API file not found']);
         exit;
     }
@@ -500,6 +504,7 @@ if ($page === 'delete_bibliotheque_file') {
         exit;
     } else {
         http_response_code(500);
+        header('Content-Type: application/json');
         echo json_encode(['error' => 'API file not found']);
         exit;
     }
@@ -512,6 +517,7 @@ if ($page === 'rename_bibliotheque_file') {
         exit;
     } else {
         http_response_code(500);
+        header('Content-Type: application/json');
         echo json_encode(['error' => 'API file not found']);
         exit;
     }
@@ -524,6 +530,7 @@ if ($page === 'start_indexing') {
         exit;
     } else {
         http_response_code(500);
+        header('Content-Type: application/json');
         echo json_encode(['error' => 'API file not found']);
         exit;
     }
@@ -536,6 +543,7 @@ if ($page === 'get_indexing_status') {
         exit;
     } else {
         http_response_code(500);
+        header('Content-Type: application/json');
         echo json_encode(['error' => 'API file not found']);
         exit;
     }
@@ -548,6 +556,7 @@ if ($page === 'bibliotheque_maintenance') {
         exit;
     } else {
         http_response_code(500);
+        header('Content-Type: application/json');
         echo json_encode(['error' => 'API file not found']);
         exit;
     }
@@ -560,6 +569,7 @@ if ($page === 'run_background_maintenance') {
         exit;
     } else {
         http_response_code(500);
+        header('Content-Type: application/json');
         echo json_encode(['error' => 'API file not found']);
         exit;
     }

@@ -13,25 +13,6 @@
 #pragma comment(lib, "winspool.lib")
 
 // ---------------------------------------------------------------------------
-// Logging minimal — chemin dynamique via %LOCALAPPDATA%
-// ---------------------------------------------------------------------------
-static std::string GetLogPath() {
-  wchar_t buf[MAX_PATH];
-  if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, buf))) {
-    std::wstring ws(buf);
-    ws += L"\\dupli-electron-caddy\\logs\\native_debug.log";
-    return std::string(ws.begin(), ws.end());
-  }
-  return "C:\\native_debug.log"; // fallback ultime
-}
-
-static void Log(const std::string& msg) {
-  static const std::string path = GetLogPath();
-  std::ofstream f(path, std::ios::app);
-  if (f) f << msg << "\n";
-}
-
-// ---------------------------------------------------------------------------
 // Conversions string
 // ---------------------------------------------------------------------------
 static std::string WideToUtf8(LPCWSTR w) {
@@ -50,6 +31,25 @@ static std::wstring Utf8ToWide(const std::string& s) {
   std::wstring w(n - 1, L'\0');
   MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, &w[0], n);
   return w;
+}
+
+// ---------------------------------------------------------------------------
+// Logging minimal — chemin dynamique via %LOCALAPPDATA%
+// ---------------------------------------------------------------------------
+static std::string GetLogPath() {
+  wchar_t buf[MAX_PATH];
+  if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, buf))) {
+    std::wstring ws(buf);
+    ws += L"\\dupli-electron-caddy\\logs\\native_debug.log";
+    return WideToUtf8(ws.c_str());
+  }
+  return "C:\\native_debug.log"; // fallback ultime
+}
+
+static void Log(const std::string& msg) {
+  static const std::string path = GetLogPath();
+  std::ofstream f(path, std::ios::app);
+  if (f) f << msg << "\n";
 }
 
 // ---------------------------------------------------------------------------
