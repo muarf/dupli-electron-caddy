@@ -54,13 +54,9 @@ class LinuxSpoolAnalyzer extends EventEmitter {
     pollJobs() {
         // FIXE RACE CONDITION: Utiliser -W all pour voir aussi les jobs déjà complétés.
         exec(`lpstat -W all -o`, (err, stdout) => {
-            if (err) {
-                console.log('[DEBUG pollJobs] lpstat error:', err.message);
-                return;
-            }
+            if (err) return;
 
             const lines = stdout.split('\n');
-            console.log('[DEBUG pollJobs] lines count:', lines.length);
 
             for (const line of lines) {
                 // Format: "PrinterName-JobId   user   size   date time"
@@ -71,10 +67,7 @@ class LinuxSpoolAnalyzer extends EventEmitter {
                 const jobId = parseInt(match[2], 10);
                 const user = match[3];
 
-                console.log('[DEBUG pollJobs] found job:', jobId, 'printer:', printerName);
-
                 if (isNaN(jobId) || this.processedJobIds.has(jobId)) {
-                    console.log('[DEBUG pollJobs] skipping job', jobId, 'already processed or NaN');
                     continue;
                 }
 
