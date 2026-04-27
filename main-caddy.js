@@ -2709,6 +2709,11 @@ ipcMain.handle('open-file', async (event, filePath) => {
             fullPath = path.join(__dirname, 'app', filePath);
         }
 
+        if (process.env.CI) {
+            console.log('Mode CI détecté : simulation de l\'ouverture de', fullPath);
+            return { success: true };
+        }
+
         await shell.openPath(fullPath);
         return { success: true };
     } catch (error) {
