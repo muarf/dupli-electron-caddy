@@ -16,6 +16,11 @@ const os = require('os');
 const { exec, execFile } = require('child_process');
 const sharp = require('sharp');
 
+// Stabilisation Linux : désactiver le cache et limiter la concurrence
+// pour éviter les crashs SIGABRT (libvips) lors du traitement de gros jobs.
+sharp.cache(false);
+sharp.concurrency(1);
+
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
