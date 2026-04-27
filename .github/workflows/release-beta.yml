@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - 'main'
       - 'feature/cross-platform-unification'
 
 permissions:
@@ -66,7 +65,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev ghostscript imagemagick libpixman-1-dev
+          sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev ghostscript imagemagick libpixman-1-dev xvfb
 
       - name: Install dependencies
         run: |
@@ -74,6 +73,9 @@ jobs:
           cd app
           composer install --optimize-autoloader --ignore-platform-reqs
           cd ..
+
+      - name: Install Playwright system dependencies
+        run: npx playwright install-deps
 
       - name: Run PHP Tests (Pest)
         run: |
@@ -90,7 +92,10 @@ jobs:
           chmod +x caddy/caddy
 
       - name: Run JS Tests (Jest)
-        run: npm test -- --runInBand --forceExit
+        run: xvfb-run npm test -- --runInBand --forceExit
+
+      - name: Run E2E Tests (Playwright)
+        run: xvfb-run npm run test:e2e
 
   test-windows-beta:
     runs-on: windows-latest
@@ -137,6 +142,9 @@ jobs:
       - name: Run JS Tests (Jest)
         run: npm test -- --runInBand --forceExit
 
+      - name: Run E2E Tests (Playwright)
+        run: npm run test:e2e
+
   create-beta-release:
     needs: [get-version, test-linux-beta, test-windows-beta]
     runs-on: ubuntu-latest
@@ -167,7 +175,7 @@ jobs:
                   repo: context.repo.repo,
                   tag_name: tag,
                   name: `Duplicator Beta v${version}`,
-                  body: `## 🧪 Version Beta v${version}\n\n⚠️ **Ceci est une version BETA**\n\nCommit: \`${shortSha}\`\nBranch: \`${context.ref}\``,
+                  body: `## 🧪 Version Beta v${version}\n\n⚠️ **Ceci est une version BETA (Unified Monitoring)**\n\nCommit: \`${shortSha}\`\nBranch: \`${context.ref}\``,
                   draft: false,
                   prerelease: true
                 });
@@ -276,7 +284,10 @@ jobs:
           "
 
       - name: Install dependencies
-        run: npm install --omit=optional
+        run: npm install
+
+      - name: Rebuild Native Modules
+        run: npm run rebuild:print-engine
 
       - name: Install Composer and PHP dependencies
         run: |
