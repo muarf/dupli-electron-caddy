@@ -113,16 +113,26 @@ async function convertLinux(jobId, splPath) {
     const jobDir = path.join(LINUX_THUMB_DIR, String(jobId));
     if (!fs.existsSync(jobDir)) fs.mkdirSync(jobDir, { recursive: true });
 
-    const outputPattern = path.join(jobDir, 'page_%d.png');
+    const tmpCopy = path.join('/tmp', `convert_job_${jobId}.pdf`);
+    try {
+        fs.copyFileSync(splPath, tmpCopy);
+    } catch (e) {
+        console.error(`❌ Impossible de copier le spool ${splPath} vers ${tmpCopy}:`, e.message);
+        return resolve(null);
+    }
+
     const args = [
         '-dNOPAUSE', '-dBATCH', '-dSAFER', '-dQUIET',
         '-sDEVICE=png16m', '-r72',
         `-sOutputFile=${outputPattern}`,
-        splPath
+        tmpCopy
     ];
 
     return new Promise((resolve) => {
         execFile('gs', args, (err) => {
+            // Nettoyage de la copie temporaire
+            try { fs.unlinkSync(tmpCopy); } catch (e) {}
+
             if (err) return resolve(null);
             const pngFiles = fs.readdirSync(jobDir)
                 .filter(f => f.endsWith('.png'))
