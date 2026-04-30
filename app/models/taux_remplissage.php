@@ -344,7 +344,6 @@ function Action($conf) {
     ));
 }
 }
-}
 
 ?>
 
