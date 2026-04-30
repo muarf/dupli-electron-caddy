@@ -2409,11 +2409,19 @@ function setupAutoUpdater() {
         name.includes('beta') ||
         version.includes('beta') ||
         app.getAppPath().toLowerCase().includes('beta');
-    const channel = isBeta ? 'beta' : 'latest';
-    autoUpdater.allowPrerelease = isBeta;
+    const isAlpha = (typeof app.getAppId === 'function' && app.getAppId() === 'com.dupli.alpha') ||
+        name.includes('alpha') ||
+        version.includes('alpha') ||
+        app.getAppPath().toLowerCase().includes('alpha');
+    
+    let channel = 'latest';
+    if (isBeta) channel = 'beta';
+    if (isAlpha) channel = 'alpha';
+
+    autoUpdater.allowPrerelease = isBeta || isAlpha;
     autoUpdater.logger = console;
 
-    console.log(`[AutoUpdater] Mode détecté: ${isBeta ? 'BETA (channel: beta)' : 'STABLE (channel: latest)'}`);
+    console.log(`[AutoUpdater] Mode détecté: ${isAlpha ? 'ALPHA (channel: alpha)' : (isBeta ? 'BETA (channel: beta)' : 'STABLE (channel: latest)')}`);
 
     // Détecter le format de l'application
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
