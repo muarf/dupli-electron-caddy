@@ -5,7 +5,7 @@ use setasign\Fpdi\TcpdfFpdi as TCPDI;
 require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/Support/PdfTestHelpers.php';
 
-it('réordonne les pages A5 en complétant jusqu’au multiple de 8', function () {
+it('réordonne les pages A5 en complétant jusqu'au multiple de 8', function () {
     $pages = runPdfTool('imposition', 'reordering_pages_a5', [10]);
 
     expect($pages)->toBeArray();
@@ -87,7 +87,7 @@ it('convertit un PDF en PNG grâce à Ghostscript', function () {
     }
 });
 
-it('analyse le format d’un PDF pour l’imposition de tracts', function () {
+it('analyse le format d'un PDF pour l'imposition de tracts', function () {
     $pdfPath = createSamplePdf(1);
     try {
         $analysis = runPdfTool('imposition_tracts', 'analyzePDFFormat', [[
@@ -120,7 +120,7 @@ it('convertit un PDF en image pour analyse du taux de remplissage', function () 
     mkdir($outputDir, 0777, true);
 
     try {
-        $imagePath = runPdfTool('taux_remplissage', 'convert_pdf_to_image_for_analysis', [$pdfPath, $outputDir, 1, 72]);
+        $imagePath = runPdfTool('taux_remplissage', 'convert_pdf_to_thumbnail', [$pdfPath, $outputDir, 72]);
         expect(file_exists($imagePath))->toBeTrue();
     } finally {
         cleanupPath($pdfPath);
@@ -188,5 +188,3 @@ function runPdfTool(string $module, string $function, array $args = [], array $o
 
     return $response['result'];
 }
-
-
