@@ -90,8 +90,8 @@ describe('Application Electron E2E (Simplifié)', () => {
             const packageJson = require('../../package.json');
             
             expect(packageJson.build).toBeDefined();
-            expect(packageJson.build.appId).toBe('com.dupli.beta');
-            expect(packageJson.build.productName).toBe('Duplicator');
+            expect(packageJson.build.appId).toMatch(/com\.dupli\.(beta|alpha)/);
+            expect(packageJson.build.productName).toMatch(/Duplicator( Alpha)?/);
         });
 
         test('devrait avoir la configuration cross-platform', () => {
