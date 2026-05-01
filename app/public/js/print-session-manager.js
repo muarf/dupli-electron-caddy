@@ -284,7 +284,7 @@ class PrintSessionManager {
         }
         */
 
-        this.showToast('Impression détectée', jobData, true);
+        // this.showToast('Impression détectée', jobData, true);
 
         /* ANCIEN WORKFLOW DÉSACTIVÉ - L'utilisateur assigne manuellement sur auto_tirage
         // Si session active → assigner automatiquement
