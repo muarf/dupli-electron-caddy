@@ -1401,6 +1401,7 @@ function startPhpFpm() {
             '-d', 'post_max_size=50M',
             '-d', 'max_input_vars=10000',
             '-d', 'max_input_nesting_level=256',
+            '-d', 'memory_limit=1024M',
             '-d', `session.save_path=${sessionPath}`
         ];
     } else {
@@ -1437,6 +1438,7 @@ function startPhpFpm() {
                 '-d', 'post_max_size=50M',
                 '-d', 'max_input_vars=10000',
                 '-d', 'max_input_nesting_level=256',
+                '-d', 'memory_limit=1024M',
                 '-d', `session.save_path=${sessionPath}`
             ];
         } else {
@@ -1453,6 +1455,7 @@ function startPhpFpm() {
                 '-d', 'post_max_size=50M',
                 '-d', 'max_input_vars=10000',
                 '-d', 'max_input_nesting_level=256',
+                '-d', 'memory_limit=1024M',
                 '-d', `session.save_path=${sessionPath}`
             ];
         }
@@ -1545,7 +1548,7 @@ function startPhpServer() {
         '-d', 'max_input_vars=10000',
         '-d', 'max_input_nesting_level=256',
         '-d', 'max_execution_time=300',
-        '-d', 'memory_limit=256M',
+        '-d', 'memory_limit=1024M',
         '-d', `session.save_path=${sessionPath}`
     ], {
         stdio: ['pipe', 'pipe', 'pipe'],
