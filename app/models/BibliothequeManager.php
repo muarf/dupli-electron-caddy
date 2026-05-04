@@ -1,13 +1,18 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../controler/functions/bibliotheque.php';
+require_once __DIR__ . '/../controler/functions/binary_utilities.php';
+require_once __DIR__ . '/SettingsManager.php';
 
 use Smalot\PdfParser\Parser;
+use voku\helper\StopWords;
 
 class BibliothequeManager {
     private $db;
     private $baseDir;
     private $thumbnailsDir;
+
+    // Plus besoin de la liste statique manuelle
     
     public function __construct() {
         $this->db = pdo_connect();
@@ -31,6 +36,14 @@ class BibliothequeManager {
                 error_log("Erreur création auto FTS5: " . $e->getMessage());
             }
         }
+
+        // Initialiser les réglages IA par défaut (idempotent)
+        try {
+            $settingsManager = new SettingsManager($this->db);
+            $settingsManager->initAiSettings();
+        } catch (Exception $e) {
+            error_log("Erreur initAiSettings: " . $e->getMessage());
+        }
     }
     
     /**
@@ -41,6 +54,7 @@ class BibliothequeManager {
             // Créer la table virtuelle FTS5
             $this->db->exec("CREATE VIRTUAL TABLE IF NOT EXISTS bibliotheque_files_fts USING fts5(
                 filename,
+                tags,
                 extracted_text,
                 content='bibliotheque_files',
                 content_rowid='id'
@@ -48,27 +62,27 @@ class BibliothequeManager {
             
             // Triggers
             $this->db->exec("CREATE TRIGGER IF NOT EXISTS bibliotheque_files_ai AFTER INSERT ON bibliotheque_files BEGIN
-                INSERT INTO bibliotheque_files_fts(rowid, filename, extracted_text) 
-                VALUES (new.id, new.filename, new.extracted_text);
+                INSERT INTO bibliotheque_files_fts(rowid, filename, tags, extracted_text) 
+                VALUES (new.id, new.filename, new.tags, new.extracted_text);
             END");
             
             $this->db->exec("CREATE TRIGGER IF NOT EXISTS bibliotheque_files_ad AFTER DELETE ON bibliotheque_files BEGIN
-                INSERT INTO bibliotheque_files_fts(bibliotheque_files_fts, rowid, filename, extracted_text) 
-                VALUES('delete', old.id, old.filename, old.extracted_text);
+                INSERT INTO bibliotheque_files_fts(bibliotheque_files_fts, rowid, filename, tags, extracted_text) 
+                VALUES('delete', old.id, old.filename, old.tags, old.extracted_text);
             END");
             
             $this->db->exec("CREATE TRIGGER IF NOT EXISTS bibliotheque_files_au AFTER UPDATE ON bibliotheque_files BEGIN
-                INSERT INTO bibliotheque_files_fts(bibliotheque_files_fts, rowid, filename, extracted_text) 
-                VALUES('delete', old.id, old.filename, old.extracted_text);
-                INSERT INTO bibliotheque_files_fts(rowid, filename, extracted_text) 
-                VALUES (new.id, new.filename, new.extracted_text);
+                INSERT INTO bibliotheque_files_fts(bibliotheque_files_fts, rowid, filename, tags, extracted_text) 
+                VALUES('delete', old.id, old.filename, old.tags, old.extracted_text);
+                INSERT INTO bibliotheque_files_fts(rowid, filename, tags, extracted_text) 
+                VALUES (new.id, new.filename, new.tags, new.extracted_text);
             END");
             
             // Remplir si vide
             $count = $this->db->query("SELECT COUNT(*) FROM bibliotheque_files_fts")->fetchColumn();
             if ($count == 0) {
-                $this->db->exec("INSERT INTO bibliotheque_files_fts(rowid, filename, extracted_text) 
-                    SELECT id, filename, extracted_text FROM bibliotheque_files");
+                $this->db->exec("INSERT INTO bibliotheque_files_fts(rowid, filename, tags, extracted_text) 
+                    SELECT id, filename, tags, extracted_text FROM bibliotheque_files");
             }
         } catch (Exception $e) {
             error_log("Erreur createFTS5Table: " . $e->getMessage());
@@ -131,7 +145,7 @@ class BibliothequeManager {
     /**
      * Ajoute un fichier externe (indexation sans copie)
      */
-    public function addExternalFile($path) {
+    public function addExternalFile($path, $forceUpdate = false) {
         if (!file_exists($path)) {
             throw new Exception("Le fichier n'existe pas : $path");
         }
@@ -144,203 +158,353 @@ class BibliothequeManager {
         $stmt->execute([$path]);
         $row = $stmt->fetch();
         
-        if ($row) {
-            // Le fichier existe. A-t-il une miniature ?
+        if ($row && !$forceUpdate) {
+            // Le fichier existe et on ne force pas. On vérifie juste la miniature.
             if (empty($row['thumbnail_path']) || !file_exists($this->baseDir . '/' . $row['thumbnail_path'])) {
-                // Pas de miniature (ou fichier manquant), on réessaie !
                 $thumbPath = $this->generateThumbnail($path, $ext);
-                
                 if ($thumbPath) {
-                    // Update DB
                     $upd = $this->db->prepare("UPDATE bibliotheque_files SET thumbnail_path = ? WHERE id = ?");
                     $upd->execute([$thumbPath, $row['id']]);
-                    return ['status' => 'updated', 'message' => 'Miniature régénérée'];
-                } else {
-                    // Echec génération (sera loggué comme erreur si on throw, ou juste warning)
-                    // L'utilisateur voulait une erreur visible
-                    throw new Exception("Impossible de générer la miniature pour ce fichier existant.");
                 }
             }
-            
             return ['status' => 'exists', 'message' => 'Fichier déjà indexé'];
         }
         
-        return $this->registerFile($path, $filename, $ext, true);
+        $updateId = $row ? $row['id'] : null;
+        return $this->registerFile($path, $filename, $ext, true, $updateId);
     }
     
     /**
+     * Analyse technique approfondie du PDF (Format, Couleur, Imposition)
+     */
+    private function analyzePdf($path, $originalName, $pageCount) {
+        $gs_command = get_ghostscript_path();
+        
+        $metadata = [
+            'format' => 'Inconnu',
+            'dimensions' => '0x0',
+            'is_color' => false,
+            'imposition' => 'inconnu',
+            'pages' => $pageCount, // Valeur par défaut
+            'analysis_date' => date('Y-m-d H:i')
+        ];
+
+        // 1. Détection Imposition par nom de fichier (Regex)
+        $lowerName = strtolower($originalName);
+        if (preg_match('/(ppp|page_par_page|original)/', $lowerName)) {
+            $metadata['imposition'] = 'ppp';
+        } elseif (preg_match('/(imposed|imp|conv|2up|4up|montage|tirage|cahier|livret)/', $lowerName)) {
+            $metadata['imposition'] = 'imposé';
+        }
+
+        // 2. Analyse physique via Ghostscript
+        $tmpPdf = resolveTempDir() . '/gs_analyze_' . uniqid() . '.pdf';
+        if (copy($path, $tmpPdf)) {
+            // A. Nombre de pages et Format/Dimensions
+            // On récupère le nombre de pages d'abord
+            $cmdPages = $gs_command . " -q -dNODISPLAY -c \"(" . addslashes($tmpPdf) . ") (r) file runpdfbegin pdfpagecount = quit\"";
+            $outputPages = [];
+            exec($cmdPages, $outputPages, $returnVar);
+            if ($returnVar === 0 && !empty($outputPages)) {
+                $metadata['pages'] = intval($outputPages[0]);
+            }
+
+            $cmdFormat = $gs_command . " -q -dNODISPLAY -dNOSAFER -c \"(" . addslashes($tmpPdf) . ") (r) file runpdfbegin 1 pdfgetpage /MediaBox get == quit\"";
+            $output = [];
+            exec($cmdFormat, $output, $returnVar);
+            
+            if ($returnVar === 0 && !empty($output)) {
+                $bbox = trim($output[0] ?? '', "[] ");
+                $parts = preg_split('/\s+/', $bbox);
+                if (count($parts) >= 4) {
+                    $widthPts = floatval($parts[2]) - floatval($parts[0]);
+                    $heightPts = floatval($parts[3]) - floatval($parts[1]);
+                    
+                    $wMm = round($widthPts * 0.352778);
+                    $hMm = round($heightPts * 0.352778);
+                    $metadata['dimensions'] = "{$wMm}x{$hMm}";
+                    
+                    $maxDim = max($wMm, $hMm);
+                    $minDim = min($wMm, $hMm);
+                    
+                    if ($maxDim >= 410 && $maxDim <= 460 && $minDim >= 280 && $minDim <= 330) {
+                        $metadata['format'] = 'A3/SRA3';
+                    } elseif ($maxDim >= 280 && $maxDim <= 310 && $minDim >= 190 && $minDim <= 220) {
+                        $metadata['format'] = 'A4';
+                    } elseif ($maxDim >= 190 && $maxDim <= 220 && $minDim >= 130 && $minDim <= 160) {
+                        $metadata['format'] = 'A5';
+                    } else {
+                        $metadata['format'] = 'Spécifique';
+                    }
+                }
+            }
+
+            // B. Couleur (inkcov) - Analyse intégrale du document
+            $cmdColor = $gs_command . " -q -o - -sDEVICE=inkcov " . escapeshellarg($tmpPdf);
+            $output = [];
+            exec($cmdColor, $output, $returnVar);
+            foreach ($output as $line) {
+                if (preg_match('/^\s*([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+CMYK\s+OK/', $line, $matches)) {
+                    if (floatval($matches[1]) > 0.001 || floatval($matches[2]) > 0.001 || floatval($matches[3]) > 0.001) {
+                        $metadata['is_color'] = true;
+                        break;
+                    }
+                }
+            }
+            @unlink($tmpPdf);
+        }
+
+        // 3. Heuristique finale pour l'imposition (Règle A3 + 2 pages)
+        if ($metadata['imposition'] === 'inconnu') {
+            if ($metadata['format'] === 'A3/SRA3' && $pageCount >= 2) {
+                $metadata['imposition'] = 'imposé';
+            } else {
+                $metadata['imposition'] = 'ppp';
+            }
+        }
+
+        return $metadata;
+    }
+
+    /**
+     * Extrait les mots-clés les plus fréquents d'un texte avec Racinisation (Stemming)
+     */
+    public function extractKeywords($text, $title = '', $limit = 20) {
+        if (empty($text)) return [];
+
+        $text = mb_strtolower($text, 'UTF-8');
+        $titleClean = mb_strtolower($title, 'UTF-8');
+        
+        // Découpage en mots (lettres uniquement, min 4 caractères)
+        preg_match_all('/[a-zàâçéèêëîïôûù]{4,}/u', $text, $matches);
+        $words = $matches[0];
+        
+        // StopWords
+        $stopWordsHelper = new StopWords();
+        $stopWords = array_merge($stopWordsHelper->getStopWordsFromLanguage('fr'), [
+            'plus', 'fait', 'faire', 'c\'est', 'qu\'est-ce', 'peu', 'tous', 'tout', 'être', 'donner', 
+            'pourtant', 'point', 'page', 'cette', 'ceux', 'elles', 'ainsi', 'alors', 'entre', 'sous',
+            'être', 'avoir', 'donc', 'avec', 'mais', 'pour', 'dans', 'nous', 'vous', 'leur', 'leurs',
+            'quelque', 'certains', 'comme'
+        ]);
+        
+        // Stemmer Snowball
+        $stemmer = new \Wamania\Snowball\Stemmer\French();
+        
+        $stemGroups = [];
+        foreach ($words as $word) {
+            if (in_array($word, $stopWords)) continue;
+            
+            try {
+                $stem = $stemmer->stem($word);
+            } catch (Exception $e) {
+                $stem = $word;
+            }
+            
+            if (!isset($stemGroups[$stem])) { 
+                $stemGroups[$stem] = ['word' => $word, 'score' => 0]; 
+            }
+            
+            $score = 1;
+            // Bonus énorme si le mot est dans le titre (exact ou stem)
+            if (mb_strpos($titleClean, $word) !== false) {
+                $score += 500;
+            }
+            
+            $stemGroups[$stem]['score'] += $score;
+        }
+        
+        // Trier par score décroissant
+        uasort($stemGroups, function($a, $b) { 
+            return $b['score'] <=> $a['score']; 
+        });
+        
+        // Récupérer les mots originaux les plus représentatifs
+        $res = [];
+        foreach($stemGroups as $g) { 
+            $res[] = $g['word']; 
+            if (count($res) >= $limit) break; 
+        }
+        return $res;
+    }
+
+    /**
+     * Affine les mots-clés en utilisant Ollama pour en faire des tags intelligents
+     */
+    private function refineTagsWithAI($keywords, $filename) {
+        // Tentative d'appel à Ollama (API locale par défaut)
+        $ollamaUrl = "http://localhost:11434/api/generate";
+        $prompt = "Voici les 20 mots les plus cités dans ce pdf [$filename] : " . implode(', ', $keywords) . ".\n";
+        $prompt .= "Analyse aussi s'il y a des noms propres ou concepts dans le titre et ajoute-les à ta réflexion.\n";
+        $prompt .= "CONSIGNE : Parmi ces mots uniquement, choisis les 5 tags les plus pertinents pour caractériser le document.\n";
+        $prompt .= "N'invente rien. Réponds uniquement par les 5 tags séparés par des virgules sans aucune phrase.";
+
+        $data = [
+            "model" => "qwen2.5:0.5b", 
+            "prompt" => $prompt,
+            "stream" => false
+        ];
+        
+        // Supprimer le message système car Ministral préfère les instructions dans le prompt
+
+        $ch = curl_init($ollamaUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_TIMEOUT, 300); // 5 minutes : on privilégie la qualité à la vitesse
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode === 200 && $response) {
+            $json = json_decode($response, true);
+            $tags = $json['response'] ?? implode(', ', array_slice($keywords, 0, 4));
+            // Nettoyage : remplacer les sauts de ligne par des virgules et enlever les doubles virgules/espaces
+            $tags = str_replace(["\n", "\r"], ', ', $tags);
+            $tags = preg_replace('/,\s*,/', ',', $tags);
+            return trim($tags, " \t\n\r\0\x0B,");
+        }
+
+        // Si Ollama échoue, on renvoie les 4 premiers mots-clés PHP
+        return implode(', ', array_slice($keywords, 0, 4));
+    }
+
+    /**
+     * Met à jour uniquement les métadonnées techniques d'un fichier (sans toucher aux chunks/vecteurs)
+     */
+    public function reanalyzeMetadata($id) {
+        $file = $this->getFile($id);
+        if (!$file) return false;
+
+        $path = $file['filepath'];
+        if (!file_exists($path)) return false;
+
+        // Analyse physique (GS)
+        $techMetadata = $this->analyzePdf($path, $file['filename'], $file['page_count']);
+        $pageCount = $techMetadata['pages'] ?? $file['page_count'];
+
+        // Extraction de texte pour les tags uniquement
+        $text = "";
+        try {
+            $parser = new \Smalot\PdfParser\Parser();
+            $pdf = $parser->parseFile($path);
+            $text = $pdf->getText();
+        } catch (Exception $e) {}
+
+        // Tags simples (5 mots)
+        $keywords = $this->extractKeywords($text, $file['filename'], 5);
+        $tags = implode(', ', $keywords);
+
+        // Update DB
+        $stmt = $this->db->prepare("UPDATE bibliotheque_files SET page_count = ?, tags = ?, metadata_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+        return $stmt->execute([
+            $pageCount,
+            $tags,
+            json_encode($techMetadata),
+            $id
+        ]);
+    }
+
+    /**
      * Enregistre le fichier en base et génère les métadonnées
      */
-    private function registerFile($path, $originalName, $type, $isExternal) {
+    private function registerFile($path, $originalName, $type, $isExternal, $updateId = null) {
         try {
-            // Augmenter la limite de mémoire pour l'indexation (1 GB pour gérer les gros PDFs)
             $originalMemoryLimit = ini_get('memory_limit');
             ini_set('memory_limit', '1024M');
             
-            // 1. Générer la miniature
+            // 1. Miniature
             $thumbnailPath = $this->generateThumbnail($path, $type);
-            // Si null, continuer sans thumbnail (ne pas bloquer l'upload)
             
-            // 2. Extraire les infos (pages, texte)
+            // 2. Extraction Infos
             $pageCount = 0;
             $extractedText = '';
+            $tags = '';
+            $techMetadata = [];
             
             if ($type === 'pdf') {
                 try {
                     $parser = new Parser();
                     $pdf = $parser->parseFile($path);
-                    $pages = $pdf->getPages();
-                    $pageCount = count($pages);
+                    $pageCount = count($pdf->getPages());
+                    $extractedText = $pdf->getText();
                     
-                    // Extraire le texte de TOUTES les pages
-                    // Traitement par batch pour éviter de tout charger en mémoire d'un coup
-                    try {
-                        $textParts = [];
-                        $maxTextLength = 500000; // Limite de 500KB de texte pour la recherche
-                        $currentLength = 0;
-                        
-                        // Essayer d'abord la méthode rapide (getText() sur tout le PDF)
-                        try {
-                            $extractedText = $pdf->getText();
-                            // Si le texte est trop long, on le tronque mais on garde le maximum
-                            if (strlen($extractedText) > $maxTextLength) {
-                                $extractedText = substr($extractedText, 0, $maxTextLength) . '...';
-                            }
-                        } catch (Exception $e) {
-                            // Si getText() échoue, extraire page par page
-                            error_log("getText() échoué, extraction page par page pour $path: " . $e->getMessage());
-                            
-                            // Traiter les pages par batch de 50 pour libérer la mémoire
-                            $batchSize = 50;
-                            for ($i = 0; $i < $pageCount; $i++) {
-                                try {
-                                    $pageText = $pages[$i]->getText();
-                                    $textParts[] = $pageText;
-                                    $currentLength += strlen($pageText);
-                                    
-                                    // Libérer la mémoire périodiquement
-                                    if (($i + 1) % $batchSize === 0) {
-                                        if (function_exists('gc_collect_cycles')) {
-                                            gc_collect_cycles();
-                                        }
-                                    }
-                                    
-                                    // Arrêter si on atteint la limite de texte
-                                    if ($currentLength >= $maxTextLength) {
-                                        break;
-                                    }
-                                } catch (Exception $pageError) {
-                                    // Continuer avec la page suivante si une page échoue
-                                    error_log("Erreur extraction page $i du PDF $path: " . $pageError->getMessage());
-                                    continue;
-                                }
-                            }
-                            
-                            $extractedText = implode(' ', $textParts);
-                            // Tronquer si nécessaire
-                            if (strlen($extractedText) > $maxTextLength) {
-                                $extractedText = substr($extractedText, 0, $maxTextLength) . '...';
-                            }
-                        }
-                    } catch (Exception $e) {
-                        error_log("Erreur extraction texte PDF $path: " . $e->getMessage());
-                        $extractedText = '';
-                    }
+                    // Nettoyage des artefacts de PDF (ex: <>)
+                    $extractedText = str_replace('<>', ' ', $extractedText);
                     
-                    // Libérer la mémoire explicitement
-                    unset($pdf);
-                    unset($pages);
-                    unset($parser);
-                    if (function_exists('gc_collect_cycles')) {
-                        gc_collect_cycles();
+                    if (strlen($extractedText) > 500000) {
+                        $extractedText = substr($extractedText, 0, 500000) . '...';
                     }
-                } catch (\Error $e) {
-                    // Gérer les erreurs fatales (mémoire, etc.)
-                    error_log("Erreur fatale extraction PDF $path: " . $e->getMessage());
-                    $extractedText = '';
-                    // Essayer quand même de compter les pages avec une méthode alternative
-                    try {
-                        // Utiliser pdftk ou pdfinfo si disponible, sinon on garde pageCount = 0
-                        $pageCount = 0;
-                    } catch (Exception $e2) {
-                        // Ignorer
-                    }
-                } catch (Exception $e) {
-                    error_log("Erreur extraction texte PDF $path: " . $e->getMessage());
-                    $extractedText = '';
-                }
-            }
-            
-            // 3. Enregistrer en base
-            $stmt = $this->db->prepare("
-                INSERT INTO bibliotheque_files 
-                (filename, filepath, file_type, thumbnail_path, file_size, page_count, extracted_text, is_external, source_directory, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-            ");
-            
-            $sourceDir = $isExternal ? dirname($path) : null;
-            
-            $params = [
-                $originalName,
-                $path,
-                $type,
-                $thumbnailPath,
-                filesize($path),
-                $pageCount,
-                $extractedText,
-                $isExternal ? 1 : 0,
-                $sourceDir
-            ];
 
-            try {
-                $stmt->execute($params);
-            } catch (\Exception $e) {
-                // Auto-guérison pour l'erreur FTS5 "invalid file format"
-                // On utilise stripos pour être insensible à la casse et on attrape Exception générique
-                if (stripos($e->getMessage(), 'invalid fts5 file format') !== false) {
-                    error_log("[BitbiothequeManager] FTS5 corruption detected. Attempting auto-rebuild...");
-                    try {
-                        $this->db->exec("INSERT INTO bibliotheque_files_fts(bibliotheque_files_fts) VALUES('rebuild')");
-                        error_log("[BitbiothequeManager] FTS5 index rebuilt successfully. Retrying insert...");
-                        // Réessayer l'insertion
-                        $stmt->execute($params);
-                    } catch (\Exception $rebuildEx) {
-                        error_log("[BitbiothequeManager] Failed to rebuild FTS5 index: " . $rebuildEx->getMessage());
-                        throw $e; // Relancer l'erreur originale si la réparation échoue
-                    }
-                } else {
-                    throw $e; // Relancer si ce n'est pas l'erreur FTS5
+                    // Métadonnées (Format, Couleur)
+                    $techMetadata = $this->analyzePdf($path, $originalName, $pageCount);
+                    $pageCount = $techMetadata['pages'] ?? $pageCount;
+                    
+                    // Tags (5 mots-clés PHP les plus fréquents)
+                    $keywords = $this->extractKeywords($extractedText, $originalName, 5);
+                    $tags = implode(', ', $keywords);
+
+                } catch (Exception $e) {
+                    error_log("Erreur extraction PDF $path: " . $e->getMessage());
                 }
             }
             
-            // Restaurer la limite de mémoire originale
-            ini_set('memory_limit', $originalMemoryLimit);
-            
-            // Forcer le garbage collection pour libérer la mémoire
-            if (function_exists('gc_collect_cycles')) {
-                gc_collect_cycles();
+            $metadataJson = json_encode($techMetadata);
+            $sourceDir = $isExternal ? dirname($path) : null;
+            $fileSize = file_exists($path) ? filesize($path) : 0;
+
+            if ($updateId) {
+                // UPDATE
+                $stmt = $this->db->prepare("
+                    UPDATE bibliotheque_files 
+                    SET filename = ?, filepath = ?, file_type = ?, thumbnail_path = ?, file_size = ?, 
+                        page_count = ?, extracted_text = ?, metadata_json = ?, tags = ?, 
+                        is_external = ?, source_directory = ?, updated_at = datetime('now')
+                    WHERE id = ?
+                ");
+                $stmt->execute([
+                    $originalName, $path, $type, $thumbnailPath, $fileSize,
+                    $pageCount, $extractedText, $metadataJson, $tags,
+                    $isExternal ? 1 : 0, $sourceDir, $updateId
+                ]);
+                $finalId = $updateId;
+            } else {
+                // INSERT
+                $stmt = $this->db->prepare("
+                    INSERT INTO bibliotheque_files 
+                    (filename, filepath, file_type, thumbnail_path, file_size, page_count, extracted_text, metadata_json, tags, is_external, source_directory, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+                ");
+                $stmt->execute([
+                    $originalName, $path, $type, $thumbnailPath, $fileSize,
+                    $pageCount, $extractedText, $metadataJson, $tags,
+                    $isExternal ? 1 : 0, $sourceDir
+                ]);
+                $finalId = $this->db->lastInsertId();
             }
             
+            // Sync FTS5
+            try {
+                $this->db->exec("INSERT INTO bibliotheque_files_fts(rowid, filename, extracted_text) 
+                                 SELECT id, filename, extracted_text FROM bibliotheque_files WHERE id = $finalId
+                                 ON CONFLICT(rowid) DO UPDATE SET filename=excluded.filename, extracted_text=excluded.extracted_text");
+            } catch (Exception $e) { /* FTS fail non-bloquant */ }
+
+            // 4. Génération des chunks pour le RAG
+            if (!empty($extractedText)) {
+                $this->generateChunksForFile($finalId, $extractedText);
+            }
+
+            ini_set('memory_limit', $originalMemoryLimit);
             return [
-                'status' => 'success',
-                'id' => $this->db->lastInsertId(),
+                'status' => $updateId ? 'updated' : 'success',
+                'id' => $finalId,
                 'filename' => $originalName
             ];
             
-        } catch (\Error $e) {
-            // Gérer les erreurs fatales (mémoire, etc.)
-            error_log("Erreur fatale lors de l'enregistrement du fichier $path: " . $e->getMessage());
-            // Restaurer la limite de mémoire
-            if (isset($originalMemoryLimit)) {
-                ini_set('memory_limit', $originalMemoryLimit);
-            }
-            throw new Exception("Erreur lors de l'indexation du fichier (mémoire insuffisante ou fichier corrompu): " . basename($path));
         } catch (Exception $e) {
-            error_log("Erreur lors de l'enregistrement du fichier $path: " . $e->getMessage());
-            // Restaurer la limite de mémoire
-            if (isset($originalMemoryLimit)) {
-                ini_set('memory_limit', $originalMemoryLimit);
-            }
+            if (isset($originalMemoryLimit)) ini_set('memory_limit', $originalMemoryLimit);
             throw $e;
         }
     }
@@ -383,7 +547,6 @@ class BibliothequeManager {
         // Détection Ghostscript (EXACTEMENT comme dans pdf_to_png.php)
         $gs_command = 'gs';
         if (PHP_OS_FAMILY === 'Windows') {
-            require_once __DIR__ . '/../controler/functions/binary_utilities.php';
             $gs_command = get_ghostscript_path();
             if (!file_exists($gs_command)) {
                 return false;
@@ -393,7 +556,7 @@ class BibliothequeManager {
         // WORKAROUND: Copier le fichier vers un chemin temporaire ASCII simple
         // Ghostscript sur Windows via cmd.exe gère très mal les caractères spéciaux (accents, !, etc.)
         // dans les chemins passés en argument via exec().
-        $tmpPdf = sys_get_temp_dir() . '/gs_temp_' . uniqid() . '.pdf';
+        $tmpPdf = resolveTempDir() . '/gs_temp_' . uniqid() . '.pdf';
         if (!copy($pdfPath, $tmpPdf)) {
             error_log("Impossible de copier le PDF vers temp pour thumbnail: $pdfPath");
             return false;
@@ -479,14 +642,20 @@ class BibliothequeManager {
             return '';
         }
         
+        // Mettre chaque mot entre guillemets et ajouter une astérisque
+        $quotedWords = array_map(function($w) {
+            $w = str_replace('"', '""', $w); // Échapper les guillemets existants
+            return '"' . $w . '"*';
+        }, $words);
+        
         // Comportement intelligent : AND pour 2-3 mots, OR pour 4+ mots
-        $wordCount = count($words);
+        $wordCount = count($quotedWords);
         if ($wordCount >= 2 && $wordCount <= 3) {
             // Tous les mots requis
-            return implode(' AND ', $words);
+            return implode(' AND ', $quotedWords);
         } else {
             // Au moins un mot
-            return implode(' OR ', $words);
+            return implode(' OR ', $quotedWords);
         }
     }
     
@@ -618,17 +787,16 @@ class BibliothequeManager {
     }
     
     /**
-     * Recherche avec FTS5 et ranking
+     * Recherche Full-Text avec FTS5
      */
-    private function getAllFilesWithFTS($search, $type = '') {
+    private function getAllFilesWithFTS($search, $type = '', $filters = []) {
         $ftsQuery = $this->prepareFTSQuery($search);
         
         if (empty($ftsQuery)) {
-            return [];
+            return $this->getAllFilesWithLike($search, $type, $filters);
         }
         
-        $sql = "SELECT b.*, 
-                bm25(bibliotheque_files_fts, 10.0, 1.0) as rank
+        $sql = "SELECT b.*, bibliotheque_files_fts.rank 
                 FROM bibliotheque_files b
                 JOIN bibliotheque_files_fts ON bibliotheque_files_fts.rowid = b.id
                 WHERE bibliotheque_files_fts MATCH ?";
@@ -638,8 +806,46 @@ class BibliothequeManager {
             $sql .= " AND b.file_type = ?";
             $params[] = $type;
         }
+
+        // Appliquer les filtres techniques
+        if (!empty($filters)) {
+            if (!empty($filters['format'])) {
+                $sql .= " AND json_extract(b.metadata_json, '$.format') = ?";
+                $params[] = $filters['format'];
+            }
+            if (!empty($filters['color'])) {
+                $isColor = $filters['color'] === 'color' ? 1 : 0;
+                $sql .= " AND json_extract(b.metadata_json, '$.is_color') = ?";
+                $params[] = $isColor;
+            }
+            if (!empty($filters['imposition'])) {
+                $sql .= " AND json_extract(b.metadata_json, '$.imposition') = ?";
+                $params[] = $filters['imposition'];
+            }
+            if (!empty($filters['tag'])) {
+                $this->applyTagFilters($sql, $params, $filters['tag'], 'b');
+            }
+        }
         
-        $sql .= " ORDER BY rank, b.created_at DESC LIMIT 100";
+        // Gestion du tri
+        $sortBy = $filters['sort_by'] ?? 'rank';
+        $sortOrder = $filters['sort_order'] ?? 'ASC';
+        
+        // Sécurisation du tri pour éviter les injections
+        $allowedSortFields = ['id', 'filename', 'file_size', 'created_at', 'updated_at', 'page_count', 'rank'];
+        if (!in_array($sortBy, $allowedSortFields)) $sortBy = 'rank';
+        if (!in_array(strtoupper($sortOrder), ['ASC', 'DESC'])) $sortOrder = 'ASC';
+
+        $sql .= " ORDER BY $sortBy $sortOrder";
+        
+        // Gestion de la pagination
+        if (isset($filters['limit']) && isset($filters['offset'])) {
+            $sql .= " LIMIT ? OFFSET ?";
+            $params[] = (int)$filters['limit'];
+            $params[] = (int)$filters['offset'];
+        } else {
+            $sql .= " LIMIT 100";
+        }
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
@@ -666,7 +872,7 @@ class BibliothequeManager {
     /**
      * Recherche multi-mots avec LIKE (fallback)
      */
-    private function getAllFilesWithLike($search, $type = '') {
+    private function getAllFilesWithLike($search, $type = '', $filters = []) {
         // Découper la recherche en mots
         $words = preg_split('/\s+/', trim($search));
         // Filtrer les mots de moins de 2 caractères
@@ -680,19 +886,57 @@ class BibliothequeManager {
         $conditions = [];
         $params = [];
         foreach ($words as $word) {
-            $conditions[] = "(filename LIKE ? OR extracted_text LIKE ?)";
+            $conditions[] = "(b.filename LIKE ? OR b.extracted_text LIKE ? OR b.tags LIKE ?)";
+            $params[] = "%$word%";
             $params[] = "%$word%";
             $params[] = "%$word%";
         }
         
-        $sql = "SELECT * FROM bibliotheque_files WHERE (" . implode(" AND ", $conditions) . ")";
+        $sql = "SELECT b.* FROM bibliotheque_files b WHERE (" . implode(" AND ", $conditions) . ")";
         
         if (!empty($type)) {
-            $sql .= " AND file_type = ?";
+            $sql .= " AND b.file_type = ?";
             $params[] = $type;
         }
         
-        $sql .= " ORDER BY created_at DESC LIMIT 100";
+        // Appliquer les filtres techniques
+        if (!empty($filters)) {
+            if (!empty($filters['format'])) {
+                $sql .= " AND json_extract(b.metadata_json, '$.format') = ?";
+                $params[] = $filters['format'];
+            }
+            if (!empty($filters['color'])) {
+                $isColor = $filters['color'] === 'color' ? 1 : 0;
+                $sql .= " AND json_extract(b.metadata_json, '$.is_color') = ?";
+                $params[] = $isColor;
+            }
+            if (!empty($filters['imposition'])) {
+                $sql .= " AND json_extract(b.metadata_json, '$.imposition') = ?";
+                $params[] = $filters['imposition'];
+            }
+            if (!empty($filters['tag'])) {
+                $this->applyTagFilters($sql, $params, $filters['tag'], 'b');
+            }
+        }
+        
+        // Gestion du tri
+        $sortBy = $filters['sort_by'] ?? 'created_at';
+        $sortOrder = $filters['sort_order'] ?? 'DESC';
+        
+        $allowedSortFields = ['id', 'filename', 'file_size', 'created_at', 'updated_at', 'page_count'];
+        if (!in_array($sortBy, $allowedSortFields)) $sortBy = 'created_at';
+        if (!in_array(strtoupper($sortOrder), ['ASC', 'DESC'])) $sortOrder = 'DESC';
+
+        $sql .= " ORDER BY $sortBy $sortOrder";
+        
+        // Gestion de la pagination
+        if (isset($filters['limit']) && isset($filters['offset'])) {
+            $sql .= " LIMIT ? OFFSET ?";
+            $params[] = (int)$filters['limit'];
+            $params[] = (int)$filters['offset'];
+        } else {
+            $sql .= " LIMIT 100";
+        }
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
@@ -720,20 +964,43 @@ class BibliothequeManager {
      * Recherche avec correction de fautes de frappe (fuzzy search)
      * Optimisé : limite à 50 fichiers et utilise seulement le nom de fichier
      */
-    private function getAllFilesWithFuzzy($search, $type = '') {
+    private function getAllFilesWithFuzzy($search, $type = '', $filters = []) {
         // Seulement si la recherche fait au moins 3 caractères
         if (strlen($search) < 3) {
             return [];
         }
         
-        // Limiter à 50 fichiers pour la performance (fuzzy search coûteux)
-        // On récupère les 50 fichiers les plus récents pour limiter le calcul Levenshtein
+        // Gestion du tri pour la recherche fuzzy
+        $allowedSort = ['filename', 'page_count', 'created_at', 'file_size'];
+        $sort = isset($filters['sort']) && in_array($filters['sort'], $allowedSort) ? $filters['sort'] : 'created_at';
+        $order = isset($filters['order']) && strtoupper($filters['order']) === 'ASC' ? 'ASC' : 'DESC';
+        
         $sql = "SELECT * FROM bibliotheque_files WHERE 1=1";
         $params = [];
         
         if (!empty($type)) {
             $sql .= " AND file_type = ?";
             $params[] = $type;
+        }
+
+        // Appliquer les filtres techniques
+        if (!empty($filters)) {
+            if (!empty($filters['format'])) {
+                $sql .= " AND json_extract(metadata_json, '$.format') = ?";
+                $params[] = $filters['format'];
+            }
+            if (!empty($filters['color'])) {
+                $isColor = $filters['color'] === 'color' ? 1 : 0;
+                $sql .= " AND json_extract(metadata_json, '$.is_color') = ?";
+                $params[] = $isColor;
+            }
+            if (!empty($filters['imposition'])) {
+                $sql .= " AND json_extract(metadata_json, '$.imposition') = ?";
+                $params[] = $filters['imposition'];
+            }
+            if (!empty($filters['tag'])) {
+                $this->applyTagFilters($sql, $params, $filters['tag']);
+            }
         }
         
         $sql .= " ORDER BY created_at DESC LIMIT 50";
@@ -769,49 +1036,195 @@ class BibliothequeManager {
     /**
      * Recherche hybride : FTS5 → LIKE → Fuzzy
      */
-    public function getAllFiles($search = '', $type = '') {
-        // Si pas de recherche, retourner tous les fichiers
+    public function getAllFiles($search = '', $type = '', $filters = []) {
+        // Si pas de recherche, retourner tous les fichiers (avec filtres éventuels)
         if (empty($search)) {
-            $sql = "SELECT * FROM bibliotheque_files WHERE 1=1";
+            $sql = "SELECT * FROM bibliotheque_files b WHERE 1=1";
             $params = [];
             
             if (!empty($type)) {
-                $sql .= " AND file_type = ?";
+                $sql .= " AND b.file_type = ?";
                 $params[] = $type;
             }
+
+            // Appliquer les filtres techniques
+            if (!empty($filters)) {
+                if (!empty($filters['format'])) {
+                    $sql .= " AND json_extract(b.metadata_json, '$.format') = ?";
+                    $params[] = $filters['format'];
+                }
+                if (!empty($filters['color'])) {
+                    $isColor = $filters['color'] === 'color' ? 1 : 0;
+                    $sql .= " AND json_extract(b.metadata_json, '$.is_color') = ?";
+                    $params[] = $isColor;
+                }
+                if (!empty($filters['imposition'])) {
+                    $sql .= " AND json_extract(b.metadata_json, '$.imposition') = ?";
+                    $params[] = $filters['imposition'];
+                }
+                if (!empty($filters['tag'])) {
+                    $this->applyTagFilters($sql, $params, $filters['tag'], 'b');
+                }
+            }
             
-            $sql .= " ORDER BY created_at DESC";
+            // Gestion du tri
+            $sortBy = $filters['sort_by'] ?? 'created_at';
+            $sortOrder = $filters['sort_order'] ?? 'DESC';
+            
+            $allowedSortFields = ['id', 'filename', 'file_size', 'created_at', 'updated_at', 'page_count'];
+            if (!in_array($sortBy, $allowedSortFields)) $sortBy = 'created_at';
+            if (!in_array(strtoupper($sortOrder), ['ASC', 'DESC'])) $sortOrder = 'DESC';
+
+            $sql .= " ORDER BY $sortBy $sortOrder";
+            
+            // Gestion de la pagination
+            if (isset($filters['limit']) && isset($filters['offset'])) {
+                $sql .= " LIMIT ? OFFSET ?";
+                $params[] = (int)$filters['limit'];
+                $params[] = (int)$filters['offset'];
+            }
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
         
+        // ... (FTS, LIKE, Fuzzy logic)
+        // Note: Les méthodes appelées ci-dessous doivent aussi gérer sort et limit
+        
         // Vérifier si FTS5 est disponible
         if ($this->hasFTS5Support()) {
             // Utiliser FTS5
-            $results = $this->getAllFilesWithFTS($search, $type);
+            try {
+                $results = $this->getAllFilesWithFTS($search, $type, $filters);
+            } catch (Exception $e) {
+                error_log("FTS5 Search failed: " . $e->getMessage() . " - Falling back to LIKE");
+                $results = $this->getAllFilesWithLike($search, $type, $filters);
+            }
             
             // Si aucun résultat, essayer LIKE puis fuzzy search
             if (empty($results)) {
-                $results = $this->getAllFilesWithLike($search, $type);
+                $results = $this->getAllFilesWithLike($search, $type, $filters);
                 
-                // Si toujours aucun résultat, essayer fuzzy search (limité et optimisé)
+                // Si toujours aucun résultat, essayer fuzzy search
                 if (empty($results)) {
-                    $results = $this->getAllFilesWithFuzzy($search, $type);
+                    $results = $this->getAllFilesWithFuzzy($search, $type, $filters);
                 }
             }
         } else {
-            // Fallback : utiliser LIKE
-            $results = $this->getAllFilesWithLike($search, $type);
-            
-            // Si aucun résultat, essayer fuzzy search (limité et optimisé)
+            $results = $this->getAllFilesWithLike($search, $type, $filters);
             if (empty($results)) {
-                $results = $this->getAllFilesWithFuzzy($search, $type);
+                $results = $this->getAllFilesWithFuzzy($search, $type, $filters);
             }
         }
         
         return $results;
+    }
+
+    /**
+     * Compte le nombre total de fichiers correspondants aux critères (pour la pagination)
+     */
+    public function countAllFiles($search = '', $type = '', $filters = []) {
+        $sql = "SELECT COUNT(*) FROM bibliotheque_files b";
+        $params = [];
+        
+        if (!empty($search)) {
+            if ($this->hasFTS5Support()) {
+                $ftsQuery = $this->prepareFTSQuery($search);
+                if (empty($ftsQuery)) {
+                    // Fallback sur LIKE si pas de mots valides
+                    $sql = "SELECT COUNT(*) FROM bibliotheque_files b";
+                    $params = [];
+                    // ... sera géré par la suite de la fonction
+                } else {
+                    $sql = "SELECT COUNT(*) FROM bibliotheque_files b JOIN bibliotheque_files_fts ON bibliotheque_files_fts.rowid = b.id WHERE bibliotheque_files_fts MATCH ?";
+                    $params = [$ftsQuery];
+                }
+            } else {
+                $words = preg_split('/\s+/', trim($search));
+                $words = array_filter($words, function($w) { return strlen($w) >= 2; });
+                if (!empty($words)) {
+                    $conditions = [];
+                    foreach ($words as $word) {
+                        $conditions[] = "(b.filename LIKE ? OR b.extracted_text LIKE ? OR b.tags LIKE ?)";
+                        $params[] = "%$word%";
+                        $params[] = "%$word%";
+                        $params[] = "%$word%";
+                    }
+                    $sql .= " WHERE (" . implode(" AND ", $conditions) . ")";
+                } else {
+                    $sql .= " WHERE 1=1";
+                }
+            }
+        } else {
+            $sql .= " WHERE 1=1";
+        }
+        
+        if (!empty($type)) {
+            $sql .= " AND b.file_type = ?";
+            $params[] = $type;
+        }
+
+        if (!empty($filters)) {
+            if (!empty($filters['format'])) {
+                $sql .= " AND json_extract(b.metadata_json, '$.format') = ?";
+                $params[] = $filters['format'];
+            }
+            if (!empty($filters['color'])) {
+                $isColor = $filters['color'] === 'color' ? 1 : 0;
+                $sql .= " AND json_extract(b.metadata_json, '$.is_color') = ?";
+                $params[] = $isColor;
+            }
+            if (!empty($filters['imposition'])) {
+                $sql .= " AND json_extract(b.metadata_json, '$.imposition') = ?";
+                $params[] = $filters['imposition'];
+            }
+            if (!empty($filters['tag'])) {
+                $this->applyTagFilters($sql, $params, $filters['tag'], 'b');
+            }
+        }
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return (int)$stmt->fetchColumn();
+    }
+
+    /**
+     * Met à jour les métadonnées et les tags d'un fichier
+     */
+    public function updateMetadata($id, $data) {
+        $allowedFields = ['filename', 'tags', 'page_count'];
+        $updates = [];
+        $params = [];
+        
+        foreach ($data as $key => $value) {
+            if (in_array($key, $allowedFields)) {
+                $updates[] = "$key = ?";
+                $params[] = $value;
+            }
+        }
+        
+        if (isset($data['format']) || isset($data['is_color']) || isset($data['imposition'])) {
+            // Récupérer le JSON actuel
+            $file = $this->getFile($id);
+            $meta = $file['metadata_json'] ? JSON_decode($file['metadata_json'], true) : [];
+            
+            if (isset($data['format'])) $meta['format'] = $data['format'];
+            if (isset($data['is_color'])) $meta['is_color'] = (bool)$data['is_color'];
+            if (isset($data['imposition'])) $meta['imposition'] = $data['imposition'];
+            
+            $updates[] = "metadata_json = ?";
+            $params[] = json_encode($meta);
+        }
+        
+        if (empty($updates)) return false;
+        
+        $updates[] = "updated_at = datetime('now')";
+        $params[] = $id;
+        
+        $sql = "UPDATE bibliotheque_files SET " . implode(", ", $updates) . " WHERE id = ?";
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute($params);
     }
     
     public function getFile($id) {
@@ -820,26 +1233,55 @@ class BibliothequeManager {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
     
-    public function deleteFile($id) {
+    public function deleteFile($id, $deleteFromDisk = true) {
         $file = $this->getFile($id);
         if (!$file) return false;
         
-        // Supprimer la miniature
-        $thumbPath = $this->baseDir . DIRECTORY_SEPARATOR . $file['thumbnail_path'];
-        if (file_exists($thumbPath)) {
-            unlink($thumbPath);
-        }
-        
-        // Supprimer le fichier physique SI c'est un fichier interne (is_external = 0)
-        if ($file['is_external'] == 0) {
-            if (file_exists($file['filepath'])) {
-                unlink($file['filepath']);
+        $this->db->beginTransaction();
+        try {
+            // 1. Récupérer les IDs des chunks pour nettoyer les vecteurs
+            $stmt = $this->db->prepare("SELECT id FROM bibliotheque_chunks WHERE file_id = ?");
+            $stmt->execute([$id]);
+            $chunkIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            if (!empty($chunkIds)) {
+                $placeholders = implode(',', array_fill(0, count($chunkIds), '?'));
+                
+                // 2. Supprimer les vecteurs
+                $stmt = $this->db->prepare("DELETE FROM bibliotheque_vectors WHERE chunk_id IN ($placeholders)");
+                $stmt->execute($chunkIds);
+                
+                // 3. Supprimer les chunks
+                $stmt = $this->db->prepare("DELETE FROM bibliotheque_chunks WHERE id IN ($placeholders)");
+                $stmt->execute($chunkIds);
             }
+            
+            // 4. Supprimer la miniature
+            if (!empty($file['thumbnail_path'])) {
+                $thumbPath = $this->baseDir . DIRECTORY_SEPARATOR . $file['thumbnail_path'];
+                if (file_exists($thumbPath)) {
+                    @unlink($thumbPath);
+                }
+            }
+            
+            // 5. Supprimer le fichier physique (si demandé)
+            if ($deleteFromDisk && $file['is_external'] == 0) {
+                if (!empty($file['filepath']) && file_exists($file['filepath'])) {
+                    @unlink($file['filepath']);
+                }
+            }
+            
+            // 6. Supprimer de la base principale
+            $stmt = $this->db->prepare("DELETE FROM bibliotheque_files WHERE id = ?");
+            $stmt->execute([$id]);
+            
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Erreur lors de la suppression du fichier $id: " . $e->getMessage());
+            throw $e;
         }
-        
-        // Supprimer de la base
-        $stmt = $this->db->prepare("DELETE FROM bibliotheque_files WHERE id = ?");
-        return $stmt->execute([$id]);
     }
 
     /**
@@ -947,9 +1389,28 @@ class BibliothequeManager {
      */
     public function repairFTS() {
         try {
-            return $this->db->exec("INSERT INTO bibliotheque_files_fts(bibliotheque_files_fts) VALUES('rebuild')");
+            $this->db->beginTransaction();
+            // Supprimer l'ancienne table FTS
+            $this->db->exec("DROP TABLE IF EXISTS bibliotheque_files_fts");
+            // La recréer avec le nouveau schéma (via createFTS5Table ou manuellement ici)
+            $this->db->exec("CREATE VIRTUAL TABLE bibliotheque_files_fts USING fts5(
+                filename,
+                tags,
+                extracted_text,
+                content='bibliotheque_files',
+                content_rowid='id'
+            )");
+            // La remplir
+            $this->db->exec("INSERT INTO bibliotheque_files_fts(rowid, filename, tags, extracted_text) 
+                SELECT id, filename, tags, extracted_text FROM bibliotheque_files");
+            
+            $this->db->commit();
+            return true;
         } catch (Exception $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
             error_log("Erreur repairFTS: " . $e->getMessage());
+            // Tenter de recréer les triggers au cas où
+            $this->createFTS5Table();
             return false;
         }
     }
@@ -985,6 +1446,165 @@ class BibliothequeManager {
     public function getKnownExternalDirectories() {
         $stmt = $this->db->query("SELECT DISTINCT source_directory FROM bibliotheque_files WHERE is_external = 1 AND source_directory IS NOT NULL");
         return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
+    /**
+     * Récupère tous les tags uniques utilisés dans la bibliothèque
+     */
+    public function getAllUniqueTags() {
+        try {
+            $stmt = $this->db->query("SELECT tags FROM bibliotheque_files WHERE tags IS NOT NULL AND tags != ''");
+            $allTags = [];
+            while ($row = $stmt->fetchColumn()) {
+                $tags = explode(',', $row);
+                foreach ($tags as $tag) {
+                    $trimmed = trim($tag);
+                    if ($trimmed !== '') {
+                        $allTags[$trimmed] = true;
+                    }
+                }
+            }
+            $result = array_map('strval', array_keys($allTags));
+            sort($result);
+            return $result;
+        } catch (Exception $e) {
+            error_log("Erreur getAllUniqueTags: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Découpe un texte en morceaux de taille fixe avec un chevauchement
+     */
+    public function chunkText($text, $chunkSize = 300, $overlap = 50) {
+        if (empty($text)) return [];
+        
+        // Nettoyage basique (espaces multiples, et artefacts <>)
+        $text = str_replace('<>', ' ', $text);
+        $text = preg_replace('/\s+/u', ' ', $text);
+        $words = explode(' ', $text);
+        $totalWords = count($words);
+        
+        $chunks = [];
+        $start = 0;
+        
+        while ($start < $totalWords) {
+            $end = min($start + $chunkSize, $totalWords);
+            $chunkWords = array_slice($words, $start, $end - $start);
+            
+            if (!empty($chunkWords)) {
+                $chunks[] = [
+                    'content' => implode(' ', $chunkWords),
+                    'word_count' => count($chunkWords)
+                ];
+            }
+            
+            // Si on a atteint la fin, on s'arrête
+            if ($end === $totalWords) break;
+            
+            // Sinon on avance en reculant de l'overlap
+            $start += ($chunkSize - $overlap);
+            
+            // Sécurité pour éviter les boucles infinies si overlap >= chunkSize
+            if ($overlap >= $chunkSize) $start += $chunkSize;
+        }
+        
+        return $chunks;
+    }
+
+    /**
+     * Génère et enregistre les chunks pour un fichier donné
+     */
+    public function generateChunksForFile($fileId, $text) {
+        // 1. Supprimer les anciens chunks
+        $this->db->prepare("DELETE FROM bibliotheque_chunks WHERE file_id = ?")->execute([$fileId]);
+        
+        // 2. Découper le texte
+        $chunks = $this->chunkText($text, 300, 50);
+        
+        // 3. Insérer les nouveaux chunks
+        $stmt = $this->db->prepare("INSERT INTO bibliotheque_chunks (file_id, chunk_index, content, word_count) VALUES (?, ?, ?, ?)");
+        $stmtFts = $this->db->prepare("INSERT INTO bibliotheque_chunks_fts (rowid, content) VALUES (?, ?)");
+        
+        foreach ($chunks as $index => $chunk) {
+            $stmt->execute([$fileId, $index, $chunk['content'], $chunk['word_count']]);
+            $chunkId = $this->db->lastInsertId();
+            
+            try {
+                $stmtFts->execute([$chunkId, $chunk['content']]);
+            } catch (Exception $e) { /* FTS fail non-bloquant */ }
+        }
+        
+        return count($chunks);
+    }
+
+    /**
+     * Applique les filtres de tags (Inclusion/Exclusion) à une requête SQL
+     * @param string &$sql La requête SQL en cours de construction
+     * @param array &$params Les paramètres de la requête
+     * @param string $tagFilter Chaîne de tags séparés par des virgules (ex: "histoire,-secret")
+     * @param string $alias Alias de la table bibliotheque_files dans la requête
+     */
+    private function applyTagFilters(&$sql, &$params, $tagFilter, $alias = 'b') {
+        if (empty($tagFilter)) return;
+        
+        $tags = explode(',', $tagFilter);
+        foreach ($tags as $tag) {
+            $tag = trim($tag);
+            if (empty($tag)) continue;
+            
+            $isExclusion = false;
+            if (strpos($tag, '-') === 0) {
+                $isExclusion = true;
+                $tag = ltrim($tag, '-');
+            }
+            
+            $cleanTag = strtolower(str_replace(' ', '', $tag));
+            $tagPattern = "%," . $cleanTag . ",%";
+            
+            // On normalise les tags pour la recherche : on entoure de virgules et on enlève les espaces
+            $normalizedTags = "',' || LOWER(REPLACE(COALESCE(" . $alias . ".tags, ''), ' ', '')) || ','";
+            
+            if ($isExclusion) {
+                // Exclusion : le tag ne doit PAS être présent
+                $sql .= " AND $normalizedTags NOT LIKE ?";
+            } else {
+                // Inclusion : le tag DOIT être présent
+                $sql .= " AND $normalizedTags LIKE ?";
+            }
+            $params[] = $tagPattern;
+        }
+    }
+
+    /**
+     * Recherche vectorielle filtrée par tags
+     */
+    public function searchVector($qVector, $limit = 20, $tagFilter = '') {
+        $sql = "SELECT v.chunk_id, v.vector 
+                FROM bibliotheque_vectors v
+                JOIN bibliotheque_chunks c ON v.chunk_id = c.id
+                JOIN bibliotheque_files b ON c.file_id = b.id
+                WHERE 1=1";
+        $params = [];
+        
+        $this->applyTagFilters($sql, $params, $tagFilter, 'b');
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $vectors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $scores = [];
+        foreach ($vectors as $vData) {
+            $vector = array_values(unpack('f*', $vData['vector']));
+            $dotProduct = 0;
+            foreach ($qVector as $i => $val) { 
+                $dotProduct += $val * ($vector[$i] ?? 0); 
+            }
+            $scores[$vData['chunk_id']] = $dotProduct;
+        }
+        
+        arsort($scores);
+        return array_slice(array_keys($scores), 0, $limit);
     }
 }
 
