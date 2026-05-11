@@ -16,6 +16,11 @@ const os = require('os');
 const { exec, execFile } = require('child_process');
 const sharp = require('sharp');
 
+// Stabilisation Linux : désactiver le cache et limiter la concurrence
+// pour éviter les crashs SIGABRT (libvips) lors du traitement de gros jobs.
+sharp.cache(false);
+sharp.concurrency(1);
+
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
@@ -26,10 +31,10 @@ const LOG_PATH = path.join(
     'dupli-electron-caddy', 'logs', 'node_monitor.log'
 );
 
-// Dossier pour miniatures temporaires sur Linux
-const LINUX_THUMB_DIR = '/tmp/dupli-thumbnails';
+// Dossier pour miniatures temporaires sur Linux (dans /tmp car app/public est en lecture seule sur AppImage)
+const LINUX_THUMB_DIR = '/tmp/dupli_thumbnails';
 if (os.platform() === 'linux' && !fs.existsSync(LINUX_THUMB_DIR)) {
-    fs.mkdirSync(LINUX_THUMB_DIR, { recursive: true });
+    try { fs.mkdirSync(LINUX_THUMB_DIR, { recursive: true }); } catch (e) { console.error('Erreur creation LINUX_THUMB_DIR:', e.message); }
 }
 
 function log(msg) {
@@ -52,23 +57,30 @@ async function analyzePng(pngPath) {
 
     const { width, height, channels } = info;
     const totalPixels = width * height;
-    let filledPixels = 0;
+    let totalDensity = 0;
     let coloredPixels = 0;
 
     for (let i = 0; i < data.length; i += channels) {
         const r = data[i], g = data[i + 1], b = data[i + 2];
-        const lum = (r + g + b) / 3;
-        if (lum < 210) filledPixels++; // Seuil de remplissage
+        const rP = r / 255, gP = g / 255, bP = b / 255;
         
-        // Seuil de couleur augmenté de 15 à 25 pour éviter les faux positifs (anti-aliasing, compression)
+        // Simulation CMYK à partir de RGB pour correspondre à Ghostscript
+        const k = 1 - Math.max(rP, gP, bP);
+        const c = k === 1 ? 0 : (1 - rP - k) / (1 - k);
+        const m = k === 1 ? 0 : (1 - gP - k) / (1 - k);
+        const y = k === 1 ? 0 : (1 - bP - k) / (1 - k);
+        
+        totalDensity += (c + m + y + k);
+        
+        // Seuil de couleur pour détection isColor
         if (Math.abs(r - g) > 25 || Math.abs(g - b) > 25 || Math.abs(r - b) > 25) {
             coloredPixels++;
         }
     }
 
     return { 
-        fillRate: (filledPixels / totalPixels) * 100, 
-        // Seuil de ratio augmenté de 0.001 (0.1%) à 0.005 (0.5%) pour plus de robustesse
+        // Le taux est la moyenne de densité * 100 pour avoir un pourcentage
+        fillRate: (totalDensity / totalPixels) * 100, 
         isColor: (coloredPixels / totalPixels) > 0.005 
     };
 }
@@ -110,31 +122,109 @@ async function convertWindows(jobId, format) {
  * Linux : Utilise Ghostscript (gs) en local
  */
 async function convertLinux(jobId, splPath) {
-    const jobDir = path.join(LINUX_THUMB_DIR, String(jobId));
-    if (!fs.existsSync(jobDir)) fs.mkdirSync(jobDir, { recursive: true });
-
-    const outputPattern = path.join(jobDir, 'page_%d.png');
-    const args = [
-        '-dNOPAUSE', '-dBATCH', '-dSAFER', '-dQUIET',
-        '-sDEVICE=png16m', '-r72',
-        `-sOutputFile=${outputPattern}`,
-        splPath
-    ];
+    const outputPattern = path.join(LINUX_THUMB_DIR, `job_${jobId}_page_%d.png`);
 
     return new Promise((resolve) => {
-        execFile('gs', args, (err) => {
-            if (err) return resolve(null);
-            const pngFiles = fs.readdirSync(jobDir)
-                .filter(f => f.endsWith('.png'))
-                .map(f => path.join(jobDir, f))
-                .sort();
-            
-            if (!pngFiles.length) return resolve(null);
+        const tmpCopy = path.join('/tmp', `convert_job_${jobId}.pdf`);
+        
+        // Détection automatique du chemin
+        let sourcePath = splPath;
+        if (!sourcePath && os.platform() === 'linux') {
+            const paddedId = String(jobId).padStart(5, '0');
+            sourcePath = `/var/spool/cups/d${paddedId}-001`;
+            if (!fs.existsSync(sourcePath)) {
+                sourcePath = `/var/spool/cups/d${paddedId}`;
+            }
+        }
 
-            resolve({
-                thumbnailUrl: `file://${pngFiles[0]}`, // Note: Electron peut lire file:// si configuré
-                pngPaths: pngFiles,
-                totalPages: pngFiles.length
+        if (!sourcePath || !fs.existsSync(sourcePath)) {
+            console.error(`❌ Fichier spool introuvable pour le job ${jobId}`);
+            return resolve(null);
+        }
+
+        try {
+            fs.copyFileSync(sourcePath, tmpCopy);
+        } catch (e) {
+            console.error(`❌ Erreur copie spool ${jobId}:`, e.message);
+            return resolve(null);
+        }
+
+        // 1. Génération des PNG pour miniatures
+        const gsArgs = [
+            '-dNOPAUSE', '-dBATCH', '-dSAFER', '-dQUIET',
+            '-sDEVICE=png16m', '-r72',
+            `-sOutputFile=${outputPattern}`,
+            tmpCopy
+        ];
+
+        execFile('gs', gsArgs, (err) => {
+            if (err) {
+                try { fs.unlinkSync(tmpCopy); } catch(e){}
+                return resolve(null);
+            }
+
+            // 2. Analyse de l'encre (ink_cov) - Plus stable que Sharp sur Linux
+            const inkArgs = [
+                '-dNOPAUSE', '-dBATCH', '-dSAFER', '-dQUIET',
+                '-o', '-', '-sDEVICE=ink_cov',
+                tmpCopy
+            ];
+
+            execFile('gs', inkArgs, (inkErr, stdout) => {
+                // Nettoyage de la copie temporaire
+                try { fs.unlinkSync(tmpCopy); } catch (e) {}
+
+                const pngFiles = fs.readdirSync(LINUX_THUMB_DIR)
+                    .filter(f => f.startsWith(`job_${jobId}_page_`) && f.endsWith('.png'))
+                    .map(f => path.join(LINUX_THUMB_DIR, f))
+                    .sort((a, b) => {
+                        // Tri naturel pour éviter job_120_page_10 avant job_120_page_2
+                        return a.length - b.length || a.localeCompare(b);
+                    });
+                
+                if (!pngFiles.length) return resolve(null);
+
+                let isColor = false;
+                let fillRate = 0;
+
+                if (!inkErr && stdout) {
+                    const lines = stdout.split('\n').filter(l => l.trim().match(/^\s*\d+\.\d+/));
+                    let tC = 0, tM = 0, tY = 0, tK = 0, pages = 0;
+                    for (const line of lines) {
+                        const p = line.trim().split(/\s+/).map(parseFloat);
+                        if (p.length >= 4) {
+                            tC += p[0]; tM += p[1]; tY += p[2]; tK += p[3];
+                            pages++;
+                        }
+                    }
+                    if (pages > 0) {
+                        // Règle de saturation : si C, M et Y sont très proches, c'est du gris/noir soutenu.
+                        // On calcule l'écart maximal entre les composantes CMJ.
+                        const avgC = tC / pages;
+                        const avgM = tM / pages;
+                        const avgY = tY / pages;
+                        const diffCM = Math.abs(avgC - avgM);
+                        const diffMY = Math.abs(avgM - avgY);
+                        const diffCY = Math.abs(avgC - avgY);
+                        const maxDiff = Math.max(diffCM, diffMY, diffCY);
+
+                        // On considère que c'est de la couleur seulement si :
+                        // 1. La somme CMJ est significative (> 2% en moyenne par page)
+                        // 2. ET il y a un déséquilibre (saturation > 1%) indiquant une vraie teinte.
+                        isColor = (avgC + avgM + avgY > 2.0) && (maxDiff > 1.0);
+                        // Nouvelle formule : Somme brute des canaux pour refléter la consommation réelle (C+M+J+N)
+                        fillRate = (tC + tM + tY + tK) / pages;
+                    }
+                }
+
+                resolve({
+                    thumbnailUrl: `http://127.0.0.1:8000/index.php?get_linux_thumb=${path.basename(pngFiles[0])}`,
+                    pngPaths: pngFiles,
+                    totalPages: pngFiles.length,
+                    // Valeurs déjà analysées par GS
+                    isColor: isColor,
+                    fillRate: fillRate
+                });
             });
         });
     });
@@ -166,11 +256,24 @@ async function analyzeJob(ev) {
     if (!conv || !conv.pngPaths.length) return null;
 
     // Analyse Sharp : Règle hybride
-    // 1. Si le driver dit Noir et Blanc (1), on respecte le choix de l'utilisateur.
-    // 2. Si le driver dit Couleur (2), on analyse les pixels pour voir si on peut "rétrograder" en N&B.
+    // Sur Linux, on a déjà récupéré isColor et fillRate via Ghostscript (plus stable).
+    if (conv.fillRate !== undefined && conv.isColor !== undefined && os.platform() === 'linux') {
+        const result = {
+            success: true,
+            jobId: jobId,
+            isGrayscale: !conv.isColor,
+            fillRate: conv.fillRate,
+            thumbnailUrl: conv.thumbnailUrl,
+            totalPages: conv.totalPages,
+            splSize: 0
+        };
+        try { result.splSize = fs.statSync(splPath).size; } catch {}
+        analysisCache.set(cacheKey, result);
+        return result;
+    }
+
     let totalFill = 0;
     let foundRealColor = false;
-    
     for (const png of conv.pngPaths) {
         try {
             const { fillRate, isColor } = await analyzePng(png);

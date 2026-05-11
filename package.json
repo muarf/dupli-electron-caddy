@@ -1,6 +1,6 @@
 {
-  "name": "dupli-electron-beta",
-  "version": "2.0.1-beta.local",
+  "name": "dupli-electron-alpha",
+  "version": "2.0.1-alpha.local",
   "main": "main-caddy.js",
   "scripts": {
     "start": "electron . --no-sandbox --disable-gpu",
@@ -21,6 +21,7 @@
     "test:e2e:smoke": "xvfb-run -a playwright test tests/e2e/smoke.test.js",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
     "rebuild:print-engine": "cd src/print-engine/windows && node-gyp rebuild"
   },
   "keywords": [],
@@ -40,8 +41,7 @@
   "jest": {
     "testEnvironment": "node",
     "testMatch": [
-      "**/tests/**/*.test.js",
-      "**/tests/**/*.spec.js"
+      "**/tests/**/*.test.js"
     ],
     "collectCoverageFrom": [
       "main*.js",
@@ -57,8 +57,8 @@
     ]
   },
   "build": {
-    "appId": "com.dupli.beta",
-    "productName": "Duplicator",
+    "appId": "com.dupli.alpha",
+    "productName": "Duplicator Alpha",
     "directories": {
       "output": "dist"
     },

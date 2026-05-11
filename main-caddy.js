@@ -365,6 +365,11 @@ function handlePhpOutput(source, data) {
         return;
     }
 
+    // Filtrer le bruit des logs d'accès du serveur PHP interne
+    if (message.includes('Accepted') || message.includes('Closing') || (message.includes('[') && message.includes(']:'))) {
+        return;
+    }
+
     const timestamp = new Date().toISOString();
     const logLine = `[${timestamp}] [PHP ${source}] ${message}`;
 
@@ -1396,6 +1401,7 @@ function startPhpFpm() {
             '-d', 'post_max_size=50M',
             '-d', 'max_input_vars=10000',
             '-d', 'max_input_nesting_level=256',
+            '-d', 'memory_limit=1024M',
             '-d', `session.save_path=${sessionPath}`
         ];
     } else {
@@ -1432,6 +1438,7 @@ function startPhpFpm() {
                 '-d', 'post_max_size=50M',
                 '-d', 'max_input_vars=10000',
                 '-d', 'max_input_nesting_level=256',
+                '-d', 'memory_limit=1024M',
                 '-d', `session.save_path=${sessionPath}`
             ];
         } else {
@@ -1448,6 +1455,7 @@ function startPhpFpm() {
                 '-d', 'post_max_size=50M',
                 '-d', 'max_input_vars=10000',
                 '-d', 'max_input_nesting_level=256',
+                '-d', 'memory_limit=1024M',
                 '-d', `session.save_path=${sessionPath}`
             ];
         }
@@ -1540,7 +1548,7 @@ function startPhpServer() {
         '-d', 'max_input_vars=10000',
         '-d', 'max_input_nesting_level=256',
         '-d', 'max_execution_time=300',
-        '-d', 'memory_limit=256M',
+        '-d', 'memory_limit=1024M',
         '-d', `session.save_path=${sessionPath}`
     ], {
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -1786,6 +1794,13 @@ async function stopProcesses() {
         });
     }
 
+    if (phpConvertProcess) {
+        try {
+            phpConvertProcess.kill();
+            phpConvertProcess = null;
+        } catch (e) { }
+    }
+
     stopPhpErrorLogWatcher();
 
     // Arrêter le moniteur d'imprimantes
@@ -1829,6 +1844,12 @@ async function stopAllChildrenGracefully() {
             }
         }
     } catch { }
+    try {
+        if (phpConvertProcess && !phpConvertProcess.killed) {
+            phpConvertProcess.kill('SIGKILL');
+            phpConvertProcess = null;
+        }
+    } catch { }
     try { stopPhpErrorLogWatcher(); } catch { }
     try {
         if (stopPrinterMonitor) {
@@ -1840,6 +1861,7 @@ async function stopAllChildrenGracefully() {
 
 function startPrinterMonitor() {
     if (process.platform !== 'win32' && process.platform !== 'linux') {
+        console.log('[DEBUG startPrinterMonitor] platform not supported');
         console.log('Le moniteur d\'imprimantes n\'est pas supporté sur cet OS');
         return;
     }
@@ -2235,6 +2257,9 @@ function createWindow() {
                     // fix(69ee116): Démarrer le moniteur d'imprimantes sur Linux en cas de fallback Caddy
                     startPrinterMonitor();
                 }
+
+                // Démarrer le moniteur d'imprimantes sur Linux (fallback case)
+                startPrinterMonitor();
             } else {
                 frontendPort = serverPort;
                 sendToRenderer(PHP_STATUS_CHANNEL, {
@@ -2294,7 +2319,7 @@ function createWindow() {
                     console.log(`Serveurs démarrés avec succès sur le port ${serverPort}`);
                 }
 
-                // Démarrer le moniteur d'imprimantes Windows après le démarrage des serveurs
+                // Démarrer le moniteur d'imprimantes après le démarrage des serveurs
                 startPrinterMonitor();
             }
         } catch (error) {
@@ -2387,11 +2412,19 @@ function setupAutoUpdater() {
         name.includes('beta') ||
         version.includes('beta') ||
         app.getAppPath().toLowerCase().includes('beta');
-    const channel = isBeta ? 'beta' : 'latest';
-    autoUpdater.allowPrerelease = isBeta;
+    const isAlpha = (typeof app.getAppId === 'function' && app.getAppId() === 'com.dupli.alpha') ||
+        name.includes('alpha') ||
+        version.includes('alpha') ||
+        app.getAppPath().toLowerCase().includes('alpha');
+    
+    let channel = 'latest';
+    if (isBeta) channel = 'beta';
+    if (isAlpha) channel = 'alpha';
+
+    autoUpdater.allowPrerelease = isBeta || isAlpha;
     autoUpdater.logger = console;
 
-    console.log(`[AutoUpdater] Mode détecté: ${isBeta ? 'BETA (channel: beta)' : 'STABLE (channel: latest)'}`);
+    console.log(`[AutoUpdater] Mode détecté: ${isAlpha ? 'ALPHA (channel: alpha)' : (isBeta ? 'BETA (channel: beta)' : 'STABLE (channel: latest)')}`);
 
     // Détecter le format de l'application
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
@@ -2707,6 +2740,11 @@ ipcMain.handle('open-file', async (event, filePath) => {
             fullPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'app', filePath);
         } else {
             fullPath = path.join(__dirname, 'app', filePath);
+        }
+
+        if (process.env.CI) {
+            console.log('Mode CI détecté : simulation de l\'ouverture de', fullPath);
+            return { success: true };
         }
 
         await shell.openPath(fullPath);
