@@ -347,7 +347,7 @@
         let processedJobIds = new Set();
         let pendingJobs = new Map(); // For stabilization
         let sessionJobs = []; // List of validated jobs ready for checkout
-        const STABILIZATION_DELAY = 10000;
+        const STABILIZATION_DELAY = 1000;
         // Initialiser à 24h en arrière pour récupérer les jobs en attente
         let lastCheckTime = Date.now() - (24 * 60 * 60 * 1000);
         let pollingInterval = null;
@@ -428,8 +428,11 @@
 
         async function checkPrintJobs() {
             try {
-                const response = await fetch(`?check_print_jobs&after=${lastCheckTime}`);
+                let url = `?check_print_jobs&after=${lastCheckTime}`;
+                if (currentSessionId) url += `&session_id=${currentSessionId}`;
+                const response = await fetch(url);
                 const data = await response.json();
+                if (data.jobs) console.log(`[AutoTirage] Polling: ${data.jobs.length} jobs reçus (session_id=${currentSessionId})`);
 
                 if (data.success && data.jobs && data.jobs.length > 0) {
                     const newJobs = data.jobs.filter(job => {
@@ -445,13 +448,10 @@
                     });
                 }
 
-                // Check for updates on ALREADY PROCESSED jobs (Live Update)
+                // Check for updates on ALL jobs (Session or Buffer)
                 if (data.jobs && data.jobs.length > 0) {
                     data.jobs.forEach(job => {
-                        // Use String() to handle type mismatch (string vs number)
-                        if (processedJobIds.has(job.job_id) || processedJobIds.has(String(job.job_id))) {
-                            checkForUpdate(job);
-                        }
+                        checkForUpdate(job);
                     });
                 }
 
@@ -515,14 +515,21 @@
 
         function checkForUpdate(apiJob) {
             // 1. Check Session Jobs
-            const existingIndex = sessionJobs.findIndex(j => String(j.originalJobId) === String(apiJob.job_id));
+            const existingIndex = sessionJobs.findIndex(j => {
+                const match = String(j.originalJobId) === String(apiJob.job_id);
+                return match;
+            });
             if (existingIndex !== -1) {
                 const currentJob = sessionJobs[existingIndex];
                 const newFillRate = parseFloat(apiJob.fill_rate || 0);
                 const oldFillRate = parseFloat(currentJob.raw_fill_rate || 0);
                 const thumbnailUpdate = !currentJob.thumbnail_url && apiJob.thumbnail_url;
+                const normalizedNewFill = (newFillRate > 1.0) ? newFillRate / 100.0 : newFillRate;
+                const fillRateChanged = Math.abs(normalizedNewFill - oldFillRate) > 0.001;
 
-                if (currentJob.raw_total_pages !== apiJob.total_pages || thumbnailUpdate) {
+
+                if (currentJob.raw_total_pages !== apiJob.total_pages || thumbnailUpdate || fillRateChanged) {
+                    console.log(`[AutoTirage] 🚀 Triggering update for job ${apiJob.job_id}`);
                     simulateJob(apiJob, existingIndex);
                 }
                 return;
@@ -532,12 +539,22 @@
             const jobIdKey = String(apiJob.job_id);
             if (bufferJobs.has(jobIdKey)) {
                 const existing = bufferJobs.get(jobIdKey);
-                // Only update if something relevant changed (pages, thumbnail, or ID)
-                if (existing.total_pages !== apiJob.total_pages ||
-                    existing.thumbnail_url !== apiJob.thumbnail_url ||
-                    String(existing.id) !== String(apiJob.id)) {
+                // Only update if something relevant changed (pages, thumbnail, fill_rate or ID)
+                const newFill = parseFloat(apiJob.fill_rate || 0);
+                const oldFill = parseFloat(existing.fill_rate || 0);
+                
+                const pagesChanged = existing.total_pages !== apiJob.total_pages;
+                const thumbChanged = existing.thumbnail_url !== apiJob.thumbnail_url;
+                const fillChanged = Math.abs(newFill - oldFill) > 0.001;
+                const idChanged = String(existing.id) !== String(apiJob.id);
+
+                if (pagesChanged || thumbChanged || fillChanged || idChanged) {
                     addToBuffer(apiJob);
                 }
+            } else if (currentSessionId && apiJob.session_id == currentSessionId) {
+                // Special case: Job is assigned to current session on server but not in local sessionJobs
+                console.log(`[AutoTirage] 📥 Job ${apiJob.job_id} assigned to session ${currentSessionId} on server. Moving to session.`);
+                handleJobCandidate(apiJob);
             }
         }
 
@@ -617,7 +634,7 @@
                     <div style="font-size: 10px;" class="text-muted"><?php _ejs('auto_tirage.stabilization'); ?></div>
                 </div>
             ` : `
-                <button class="btn btn-info btn-sm" onclick="refreshJobAnalysis('${job.job_id}', this)" title="<?php echo __js('common.refresh'); ?>">
+                <button class="btn btn-info btn-sm" onclick="refreshJobAnalysis('${job.job_id}', this, '${job.printer_name.replace(/'/g, "\\'")}')" title="<?php echo __js('common.refresh'); ?>">
                     <i class="fa fa-refresh"></i>
                 </button>
                 <button class="btn btn-primary btn-sm" onclick="moveBufferToSession('${job.job_id}')" title="<?php echo __js('auto_tirage.add_selected'); ?>">
@@ -1476,7 +1493,7 @@
             saveSession();
         };
 
-        window.refreshJobAnalysis = async function (jobId, btn) {
+        window.refreshJobAnalysis = async function (jobId, btn, printerName = '') {
             if (!window.electronAPI || !window.electronAPI.reanalyzePrintJob) {
                 return showAppModal({ message: "API Electron non disponible", type: "warning" });
             }
@@ -1486,7 +1503,7 @@
             btn.disabled = true;
 
             try {
-                addLog('process', `🔄 Ré-analyse forcée pour le job ${jobId}...`);
+                addLog('process', `🔄 Ré-analyse forcée pour le job ${jobId} (${printerName})...`);
                 const result = await window.electronAPI.reanalyzePrintJob(jobId);
                 
                 if (result.success) {
@@ -1498,7 +1515,8 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             action: 'update_job_analysis',
-                            id: jobId,
+                            job_id: jobId,
+                            printer_name: printerName,
                             thumbnail_url: result.thumbnailUrl || '',
                             fill_rate: result.fillRate || 0,
                             is_grayscale: result.isGrayscale,

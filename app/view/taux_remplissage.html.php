@@ -104,6 +104,12 @@
                                                 <td><strong><?php _e('taux_remplissage.tolerance_used'); ?></strong></td>
                                                 <td><?= $result['tolerance'] ?> / 255</td>
                                             </tr>
+                                            <?php if (isset($result['page_count']) && $result['page_count'] > 1): ?>
+                                            <tr>
+                                                <td><strong><?php _e('taux_remplissage.pages_analyzed'); ?></strong></td>
+                                                <td><?= $result['page_count'] ?></td>
+                                            </tr>
+                                            <?php endif; ?>
                                         </table>
                                     </div>
                                 </div>
@@ -201,14 +207,7 @@
                                             </p>
                                         </div>
 
-                                        <div class="form-group" id="pageNumberGroup" style="<?= ($from_lib_file && $from_lib_file['file_type'] === 'pdf') ? 'display: block;' : 'display: none;' ?>">
-                                            <label for="page_number">
-                                                <strong><?php _e('taux_remplissage.page_to_analyze'); ?></strong>
-                                                <span class="text-muted"><?php _e('taux_remplissage.multi_page_help'); ?></span>
-                                            </label>
-                                            <input type="number" class="form-control" name="page_number"
-                                                id="page_number" min="1" value="1" style="max-width: 200px;">
-                                        </div>
+                                        <!-- Analyse automatique de toutes les pages pour les PDF -->
                                     </div>
                                 </div>
                             </div>
@@ -377,18 +376,9 @@
                 showAppModal({ message:  'Veuillez sélectionner un fichier valide.' , type: 'warning' });
                 return;
             }
-
             // Supprimer lib_file_id si présent car on a sélectionné un nouveau fichier
             const libInput = document.getElementById('lib_file_id');
             if (libInput) libInput.remove();
-
-            // Afficher le groupe de numéro de page si c'est un PDF
-            if (file.type === 'application/pdf') {
-                pageNumberGroup.style.display = 'block';
-            } else {
-                pageNumberGroup.style.display = 'none';
-            }
-
             fileName.textContent = file.name + ' (' + (file.size / 1024 / 1024).toFixed(2) + ' MB)';
             uploadText.style.display = 'none';
             fileInfo.style.display = 'block';
@@ -399,7 +389,6 @@
             fileInput.value = '';
             uploadText.style.display = 'block';
             fileInfo.style.display = 'none';
-            pageNumberGroup.style.display = 'none';
         };
 
         // Protection contre double soumission

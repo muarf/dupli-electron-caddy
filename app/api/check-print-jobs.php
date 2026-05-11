@@ -3,6 +3,21 @@
  * Script pour vérifier les enregistrements d'impression dans la base de données
  */
 
+// NOUVEAU: Proxy pour les miniatures sur Linux (car dossier app/public est en lecture seule sur AppImage)
+if (isset($_GET['get_linux_thumb'])) {
+    $filename = basename($_GET['get_linux_thumb']);
+    $thumbPath = "/tmp/dupli_thumbnails/" . $filename;
+    if (file_exists($thumbPath)) {
+        header('Content-Type: image/png');
+        header('Cache-Control: public, max-age=86400');
+        readfile($thumbPath);
+        exit;
+    }
+    // Fallback si l'image n'existe pas encore
+    http_response_code(404);
+    exit;
+}
+
 // Désactiver l'affichage des erreurs pour éviter de polluer le JSON
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
@@ -409,9 +424,19 @@ try {
         error_log("Purge recorded_print_jobs failed: " . $e->getMessage());
     }
 
-    // Gestion du filtre d'historique
+    // Gestion du filtre d'historique et de session
     $show_history = isset($_GET['history']) && $_GET['history'] === 'true';
-    $where_clause = $show_history ? "" : "WHERE rpj.print_job_id IS NULL AND pj.session_id IS NULL";
+    $sessionId = isset($_GET['session_id']) ? intval($_GET['session_id']) : null;
+    
+    if ($show_history) {
+        $where_clause = "";
+    } else {
+        $where_clause = "WHERE rpj.print_job_id IS NULL AND (pj.session_id IS NULL";
+        if ($sessionId) {
+            $where_clause .= " OR pj.session_id = $sessionId";
+        }
+        $where_clause .= ")";
+    }
 
     $sql = "
         SELECT
