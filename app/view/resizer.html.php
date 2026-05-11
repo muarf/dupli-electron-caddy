@@ -158,15 +158,29 @@ document.addEventListener('DOMContentLoaded', function() {
     fileInput.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
     fileInput.addEventListener('drop', () => dropZone.classList.remove('dragover'));
 
+    const preloadedData = <?php echo isset($preloaded_data) ? json_encode($preloaded_data) : 'null'; ?>;
+    if (preloadedData) {
+        fileList.innerHTML = '<span class="label label-primary" style="font-size: 14px; padding: 8px 15px; border-radius: 20px;"><i class="fa fa-book" style="margin-right: 8px;"></i>' + preloadedData.filename + '</span>';
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'lib_file_id';
+        hiddenInput.value = preloadedData.id;
+        form.appendChild(hiddenInput);
+    }
+
     fileInput.addEventListener('change', function() {
         if (this.files.length) {
             fileList.innerHTML = '<span class="label label-primary" style="font-size: 14px; padding: 8px 15px; border-radius: 20px;"><i class="fa fa-file" style="margin-right: 8px;"></i>' + this.files[0].name + '</span>';
+            // Remove hidden input if user selects a manual file
+            const existingHidden = form.querySelector('input[name="lib_file_id"]');
+            if (existingHidden) existingHidden.remove();
         }
     });
 
     form.addEventListener('submit', function(e) {
         e.preventDefault();
-        if (!fileInput.files.length) {
+        const hasLibFile = form.querySelector('input[name="lib_file_id"]');
+        if (!fileInput.files.length && !hasLibFile) {
             alert('Veuillez sélectionner un fichier.');
             return;
         }

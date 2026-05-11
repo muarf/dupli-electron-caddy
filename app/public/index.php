@@ -247,11 +247,12 @@ if ($page === 'download_png') {
         die('Fichier non spécifié');
     }
 
-    // Déterminer le répertoire temporaire selon le contexte
+    // Déterminer le répertoire temporaire selon le contexte (utiliser resolveTempDir pour la cohérence)
+    $base_tmp = resolveTempDir();
     if (!empty($dir)) {
-        $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_pdf_to_png' . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR;
+        $tmp_dir = $base_tmp . DIRECTORY_SEPARATOR . 'duplicator_pdf_to_png' . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR;
     } else {
-        $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_pdf_to_png' . DIRECTORY_SEPARATOR;
+        $tmp_dir = $base_tmp . DIRECTORY_SEPARATOR . 'duplicator_pdf_to_png' . DIRECTORY_SEPARATOR;
     }
 
     // Sécuriser le nom de fichier
@@ -614,6 +615,85 @@ if ($page === 'get_bibliotheque_thumbnail') {
     }
 }
 
+if ($page === 'chat_rag') {
+    $api_file = __DIR__ . '/../api/chat_rag.php';
+    if (file_exists($api_file)) {
+        require_once $api_file;
+        exit;
+    } else {
+        http_response_code(500);
+        echo json_encode(['error' => 'API file not found']);
+        exit;
+    }
+}
+
+if ($page === 'save_ai_settings') {
+    $api_file = __DIR__ . '/../api/save_ai_settings.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    http_response_code(500); echo json_encode(['error' => 'API file not found']); exit;
+}
+
+if ($page === 'studio_process') {
+    $api_file = __DIR__ . '/../api/studio_process.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    http_response_code(500); echo json_encode(['error' => 'API studio_process non trouvée']); exit;
+}
+
+if ($page === 'download_studio') {
+    $file = $_GET['file'] ?? '';
+    if (empty($file)) { http_response_code(400); die('Fichier non spécifié'); }
+    $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR;
+    $filename = basename($file);
+    $filepath = $tmpDir . $filename;
+    $realFile = realpath($filepath);
+    $realDir  = realpath($tmpDir);
+    if (!$realFile || !$realDir || strpos($realFile, $realDir) !== 0 || !file_exists($filepath)) {
+        http_response_code(404); die('Fichier non trouvé ou expiré');
+    }
+    $ext = strtolower(pathinfo($filepath, PATHINFO_EXTENSION));
+    $mimeMap = ['pdf' => 'application/pdf', 'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg'];
+    $mime = $mimeMap[$ext] ?? 'application/octet-stream';
+    header('Content-Type: ' . $mime);
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Length: ' . filesize($filepath));
+    header('Cache-Control: no-cache, must-revalidate');
+    readfile($filepath);
+    exit;
+}
+
+if ($page === 'preview_studio') {
+    $file = $_GET['file'] ?? '';
+    if (empty($file)) { http_response_code(400); die('Fichier non spécifié'); }
+    $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR;
+    $filename = basename($file);
+    $filepath = $tmpDir . $filename;
+    $realFile = realpath($filepath);
+    $realDir  = realpath($tmpDir);
+    if (!$realFile || !$realDir || strpos($realFile, $realDir) !== 0 || !file_exists($filepath)) {
+        http_response_code(404); die('Fichier non trouvé ou expiré');
+    }
+    $ext = strtolower(pathinfo($filepath, PATHINFO_EXTENSION));
+    $mimeMap = ['png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'pdf' => 'application/pdf'];
+    $mime = $mimeMap[$ext] ?? 'image/png';
+    header('Content-Type: ' . $mime);
+    header('Content-Disposition: inline; filename="' . $filename . '"');
+    header('Content-Length: ' . filesize($filepath));
+    header('Cache-Control: no-store');
+    header('X-Frame-Options: SAMEORIGIN');
+    readfile($filepath);
+    exit;
+}
+
+if ($page === 'trigger_vectorization') {
+    $api_file = __DIR__ . '/../api/trigger_vectorization.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    http_response_code(500); echo json_encode(['error' => 'API file not found']); exit;
+}
+if ($page === 'get_bibliotheque_tags') {
+    $api_file = __DIR__ . '/../api/get_bibliotheque_tags.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    http_response_code(500); echo json_encode(['error' => 'API file not found']); exit;
+}
 if ($page === 'get_bibliotheque_file') {
     $api_file = __DIR__ . '/../api/get_bibliotheque_file.php';
     if (file_exists($api_file)) {
@@ -622,6 +702,44 @@ if ($page === 'get_bibliotheque_file') {
     } else {
         http_response_code(500);
         echo json_encode(['error' => 'API file not found']);
+        exit;
+    }
+}
+
+if ($page === 'bibliotheque_list') {
+    $api_file = __DIR__ . '/../api/bibliotheque_list.php';
+    if (file_exists($api_file)) {
+        require_once $api_file;
+        exit;
+    } else {
+        http_response_code(500);
+        echo json_encode(['error' => 'API bibliotheque_list non trouvée']);
+        exit;
+    }
+}
+
+if ($page === 'get_bibliotheque_file_info') {
+    $api_file = __DIR__ . '/../api/get_bibliotheque_file_info.php';
+    if (file_exists($api_file)) {
+        require_once $api_file;
+        exit;
+    } else {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'API info non trouvée']);
+        exit;
+    }
+}
+
+if ($page === 'update_bibliotheque_metadata') {
+    $api_file = __DIR__ . '/../api/update_bibliotheque_metadata.php';
+    if (file_exists($api_file)) {
+        require_once $api_file;
+        exit;
+    } else {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'API update non trouvée']);
         exit;
     }
 }
@@ -767,8 +885,8 @@ if ($page === 'save_auto_print') {
 
 if ($page === 'download_unimposed') {
     $file = $_GET['file'] ?? '';
-    // Utiliser le répertoire temporaire système
-    $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_unimpose' . DIRECTORY_SEPARATOR;
+    // Utiliser le répertoire temporaire système (via resolveTempDir pour la cohérence)
+    $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_unimpose' . DIRECTORY_SEPARATOR;
 
     // Sécuriser le nom de fichier
     $filename = basename($file);
@@ -803,11 +921,12 @@ if ($page === 'download_processed') {
         die('Fichier non spécifié');
     }
 
-    // Déterminer le répertoire temporaire selon le contexte
+    // Déterminer le répertoire temporaire selon le contexte (utiliser resolveTempDir pour la cohérence)
+    $base_tmp = resolveTempDir();
     if (!empty($dir)) {
-        $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR;
+        $tmp_dir = $base_tmp . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR;
     } else {
-        $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
+        $tmp_dir = $base_tmp . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
     }
 
     // Sécuriser le nom de fichier
@@ -1005,7 +1124,7 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base', 'accueil', 'devis', 'tirage_multimachines', 'changement', 'admin', 'admin_aide_machines', 'admin_translations', 'installation', 'setup', 'setup_save', 'setup_upload', 'create_password', 'stats', 'imposition', 'imposition_brochure', 'imposition_livre', 'unimpose', 'imposition_tracts', 'png_to_pdf', 'pdf_to_png', 'pdf_merge', 'resizer', 'pdf_organizer', 'riso_separator', 'image_processor', 'taux_remplissage', 'aide_machines', 'error', 'lang', 'ajax_edit_tambours', 'ajax_get_tambour_prices', 'download_pdf', 'download_png', 'download_organized', 'organizer_thumb', 'download_merged', 'download_resized', 'download_unimposed', 'download_processed', 'download_backup', 'view_pdf', 'get-machine-template', 'upload_aide_pdf', 'view_aide_pdf', 'bibliotheque', 'upload_bibliotheque', 'search_bibliotheque', 'preview_directory', 'index_file', 'start_indexing', 'get_indexing_status', 'delete_bibliotheque_file', 'get_bibliotheque_thumbnail', 'get_bibliotheque_file', 'check_print_jobs', 'print_notification', 'auto_tirage', 'sessions', 'get_session_jobs', 'get_session_staging_jobs', 'get_pending_jobs', 'convert_emf_to_png', 'convert_pcl_to_png', 'convert_xps_to_png', 'secure_purge');
+$page_secure = array('base', 'accueil', 'devis', 'tirage_multimachines', 'changement', 'admin', 'admin_aide_machines', 'admin_translations', 'installation', 'setup', 'setup_save', 'setup_upload', 'create_password', 'stats', 'imposition', 'imposition_brochure', 'imposition_livre', 'unimpose', 'imposition_tracts', 'png_to_pdf', 'pdf_to_png', 'pdf_merge', 'resizer', 'pdf_organizer', 'riso_separator', 'image_processor', 'taux_remplissage', 'aide_machines', 'error', 'lang', 'ajax_edit_tambours', 'ajax_get_tambour_prices', 'download_pdf', 'download_png', 'download_organized', 'organizer_thumb', 'download_merged', 'download_resized', 'download_unimposed', 'download_processed', 'download_backup', 'view_pdf', 'get-machine-template', 'upload_aide_pdf', 'view_aide_pdf', 'bibliotheque', 'bibliotheque_list', 'get_bibliotheque_file_info', 'update_bibliotheque_metadata', 'upload_bibliotheque', 'search_bibliotheque', 'preview_directory', 'index_file', 'start_indexing', 'get_indexing_status', 'delete_bibliotheque_file', 'get_bibliotheque_thumbnail', 'get_bibliotheque_file', 'chat_rag', 'check_print_jobs', 'print_notification', 'auto_tirage', 'sessions', 'get_session_jobs', 'get_session_staging_jobs', 'get_pending_jobs', 'convert_emf_to_png', 'convert_pcl_to_png', 'convert_xps_to_png', 'secure_purge', 'admin_bibliotheque_ia', 'save_ai_settings', 'trigger_vectorization', 'studio', 'studio_process', 'download_studio', 'preview_studio');
 
 error_log("[PASSWORD_CHECK] ===== DEBUT VERIFICATION =====");
 error_log("[PASSWORD_CHECK] Page demandée (avant vérification): " . $page);

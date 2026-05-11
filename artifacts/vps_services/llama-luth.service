@@ -1,0 +1,14 @@
+[Unit]
+Description=Llama.cpp Server - Luth (Fast)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu
+ExecStart=/home/ubuntu/llama.cpp/build/bin/llama-server -m /home/ubuntu/models/Luth-1.7B-Instruct-Q8_0.gguf -c 8192 --port 11436 -t 4 --host 0.0.0.0
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

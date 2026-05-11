@@ -201,7 +201,7 @@
                                             </p>
                                         </div>
 
-                                        <div class="form-group" id="pageNumberGroup" style="display: none;">
+                                        <div class="form-group" id="pageNumberGroup" style="<?= ($from_lib_file && $from_lib_file['file_type'] === 'pdf') ? 'display: block;' : 'display: none;' ?>">
                                             <label for="page_number">
                                                 <strong><?php _e('taux_remplissage.page_to_analyze'); ?></strong>
                                                 <span class="text-muted"><?php _e('taux_remplissage.multi_page_help'); ?></span>
@@ -220,15 +220,15 @@
                             <div style="font-size: 48px; color: #84fab0; margin-bottom: 20px;">
                                 <i class="fa fa-file-image-o"></i>
                             </div>
-                            <div id="uploadText">
+                            <div id="uploadText" style="<?= $from_lib_file ? 'display:none;' : '' ?>">
                                 <h3 style="color: #333; margin-bottom: 10px;"><?php _e('taux_remplissage.drag_drop'); ?>
                                 </h3>
                                 <p style="color: #666; margin-bottom: 20px;">
                                     <?php _e('taux_remplissage.click_select'); ?></p>
                                 <input type="file" name="file" id="file"
                                     accept="application/pdf,.pdf,image/jpeg,image/jpg,image/png,image/gif"
-                                    style="display: none;" required>
-                                <button type="button" class="btn btn-lg"
+                                    style="display: none;" <?= $from_lib_file ? '' : 'required' ?>>
+                                <button type="button" class="btn btn-lg" id="selectFileButton"
                                     style="background: #84fab0; border: none; color: white; padding: 12px 30px; border-radius: 25px;">
                                     <i class="fa fa-upload"></i> <?php _e('taux_remplissage.select_file'); ?>
                                 </button>
@@ -236,12 +236,17 @@
                                     <i class="fa fa-info-circle"></i> <?php _e('taux_remplissage.file_info'); ?>
                                 </p>
                             </div>
-                            <div id="fileInfo" style="display: none;">
+                            <div id="fileInfo" style="<?= $from_lib_file ? 'display:block;' : 'display:none;' ?>">
                                 <h4 style="color: #333; margin-bottom: 10px;">
                                     <i class="fa fa-check-circle" style="color: #28a745; margin-right: 10px;"></i>
                                     <?php _e('taux_remplissage.file_selected'); ?>
                                 </h4>
-                                <p id="fileName" style="color: #666; margin-bottom: 15px;"></p>
+                                <p id="fileName" style="color: #666; margin-bottom: 15px;">
+                                    <?= $from_lib_file ? htmlspecialchars($from_lib_file['filename']) : '' ?>
+                                </p>
+                                <?php if ($from_lib_file): ?>
+                                    <input type="hidden" name="lib_file_id" id="lib_file_id" value="<?= $from_lib_file['id'] ?>">
+                                <?php endif; ?>
                                 <button type="submit" class="btn btn-success btn-lg">
                                     <i class="fa fa-calculator"></i> <?php _e('taux_remplissage.calculate_btn'); ?>
                                 </button>
@@ -317,7 +322,7 @@
         });
 
         // Gestion du clic sur le bouton
-        const selectBtn = document.querySelector('#uploadText button');
+        const selectBtn = document.getElementById('selectFileButton');
         if (selectBtn) {
             selectBtn.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -369,9 +374,13 @@
         function handleFileSelect(file) {
             const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'];
             if (!validTypes.includes(file.type)) {
-                showAppModal({ message:  'FIXME_EMPTY_KEY' , type: 'warning' });
+                showAppModal({ message:  'Veuillez sélectionner un fichier valide.' , type: 'warning' });
                 return;
             }
+
+            // Supprimer lib_file_id si présent car on a sélectionné un nouveau fichier
+            const libInput = document.getElementById('lib_file_id');
+            if (libInput) libInput.remove();
 
             // Afficher le groupe de numéro de page si c'est un PDF
             if (file.type === 'application/pdf') {

@@ -403,8 +403,8 @@ function convert_to_bitmap_dithering($image) {
     $height = imagesy($image);
     
         try {
-            $tmp_in = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dither_in_' . uniqid() . '.png';
-            $tmp_out = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dither_out_' . uniqid() . '.png';
+            $tmp_in = resolveTempDir() . DIRECTORY_SEPARATOR . 'dither_in_' . uniqid() . '.png';
+            $tmp_out = resolveTempDir() . DIRECTORY_SEPARATOR . 'dither_out_' . uniqid() . '.png';
             imagepng($image, $tmp_in);
             
             // Floyd-Steinberg dithering via CLI
@@ -611,7 +611,7 @@ function Action($conf) {
         }
         
         $progress_key = $_GET['progress_key'];
-        $progress_file = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor_progress_' . $progress_key . '.json';
+        $progress_file = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor_progress_' . $progress_key . '.json';
         
         // Cette requête doit être rapide, pas de timeout
         set_time_limit(5); // Maximum 5 secondes pour lire un fichier
@@ -661,11 +661,12 @@ function Action($conf) {
                         $errors[] = "Le fichier est trop volumineux (maximum 50MB).";
                     } else {
                         // Créer le dossier temporaire
-                        $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
+                        $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
                         if (!is_dir($tmpDir)) {
                             if (!mkdir($tmpDir, 0777, true)) {
                                 throw new Exception("Impossible de créer le dossier temporaire.");
                             }
+                            @chmod($tmpDir, 0777);
                         }
                         
                         $timestamp = date('YmdHis');
@@ -747,11 +748,12 @@ function Action($conf) {
                 // Si on a un fichier bibliothèque, créer un $_FILES simulé
                 if ($from_lib_file) {
                     // Créer un fichier temporaire copié depuis la bibliothèque
-                    $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
+                    $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
                     if (!is_dir($tmpDir)) {
                         if (!mkdir($tmpDir, 0777, true)) {
                             throw new Exception("Impossible de créer le dossier temporaire.");
                         }
+                        @chmod($tmpDir, 0777);
                     }
                     
                     $timestamp = date('YmdHis');
@@ -807,11 +809,12 @@ function Action($conf) {
                         $errors[] = "Le fichier est trop volumineux (maximum 50MB).";
                     } else {
                     // Créer le dossier temporaire
-                    $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
+                    $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
                     if (!is_dir($tmpDir)) {
                         if (!mkdir($tmpDir, 0777, true)) {
                             throw new Exception("Impossible de créer le dossier temporaire.");
                         }
+                        @chmod($tmpDir, 0777);
                     }
                     
                     $timestamp = date('YmdHis');
@@ -821,7 +824,7 @@ function Action($conf) {
                     
                     // Créer une clé de progression
                     $progress_key = uniqid('proc_', true);
-                    $progress_file = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor_progress_' . $progress_key . '.json';
+                    $progress_file = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor_progress_' . $progress_key . '.json';
                     
                     // Initialiser la progression
                     file_put_contents($progress_file, json_encode(array(

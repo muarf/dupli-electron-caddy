@@ -26,7 +26,9 @@ if (!$id) {
 
 try {
     $manager = new BibliothequeManager();
-    $success = $manager->deleteFile($id);
+    $deleteFromDisk = isset($data['delete_from_disk']) ? (bool)$data['delete_from_disk'] : true;
+    
+    $success = $manager->deleteFile($id, $deleteFromDisk);
     
     if ($success) {
         echo json_encode(['success' => true]);

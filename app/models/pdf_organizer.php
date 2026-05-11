@@ -17,7 +17,17 @@ if (!function_exists('Action')) {
         $download_url = '';
         
         $action = $_POST['action'] ?? '';
+        $preloaded_data = null;
         
+        // Gérer le pré-chargement depuis la bibliothèque
+        if (isset($_GET['from_lib']) && !empty($_GET['from_lib'])) {
+            try {
+                $preloaded_data = handleLibFile($_GET['from_lib']);
+            } catch (Exception $e) {
+                $errors[] = "Erreur lors du chargement depuis la bibliothèque : " . $e->getMessage();
+            }
+        }
+
         // Gérer les requêtes AJAX (POST avec action)
         if (isset($_SERVER["REQUEST_METHOD"]) && $_SERVER["REQUEST_METHOD"] == "POST" && !empty($action)) {
             header('Content-Type: application/json');
@@ -38,9 +48,65 @@ if (!function_exists('Action')) {
         return template("../view/pdf_organizer.html.php", array(
             'errors' => $errors,
             'success' => $success,
-            'download_url' => $download_url
+            'download_url' => $download_url,
+            'preloaded_data' => $preloaded_data
         ));
     }
+}
+
+/**
+ * Gère le chargement d'un fichier depuis la bibliothèque
+ */
+function handleLibFile($id) {
+    require_once __DIR__ . '/BibliothequeManager.php';
+    $libManager = new BibliothequeManager();
+    $file = $libManager->getFile($id);
+    
+    if (!$file || !file_exists($file['filepath'])) {
+        throw new Exception("Fichier de bibliothèque introuvable.");
+    }
+
+    $session_id = uniqid('org_');
+    $tmp_base = getTmpDir() . DIRECTORY_SEPARATOR . 'duplicator_organizer' . DIRECTORY_SEPARATOR . $session_id . DIRECTORY_SEPARATOR;
+    
+    $originals_dir = $tmp_base . 'originals' . DIRECTORY_SEPARATOR;
+    $thumbs_dir = $tmp_base . 'thumbs' . DIRECTORY_SEPARATOR;
+
+    if (!is_dir($originals_dir)) mkdir($originals_dir, 0777, true);
+    if (!is_dir($thumbs_dir)) mkdir($thumbs_dir, 0777, true);
+
+    $file_id = uniqid('file_');
+    $dest_path = $originals_dir . $file_id . '.pdf';
+
+    if (copy($file['filepath'], $dest_path)) {
+        try {
+            $magick_args = "-density 72 " . escapeshellarg($dest_path) . " -quality 85 -scene 1 " . escapeshellarg($thumbs_dir . $file_id . "_page_%03d.png");
+            run_imagemagick($magick_args);
+        } catch (Exception $e) {
+            error_log("[pdf_organizer] ImageMagick error during lib pre-load: " . $e->getMessage());
+        }
+        
+        $pages = glob($thumbs_dir . $file_id . '_page_*.png');
+        sort($pages);
+
+        $results = [];
+        foreach ($pages as $idx => $page_path) {
+            $page_num = $idx + 1;
+            $results[] = [
+                'file_id' => $file_id,
+                'file_name' => $file['filename'],
+                'page_num' => $page_num,
+                'thumb_url' => "?organizer_thumb&file=" . urlencode(basename($page_path)) . "&sess=" . urlencode($session_id)
+            ];
+        }
+        
+        return [
+            'session_id' => $session_id,
+            'pages' => $results
+        ];
+    }
+    
+    throw new Exception("Impossible de copier le fichier vers l'espace temporaire.");
 }
 
 /**

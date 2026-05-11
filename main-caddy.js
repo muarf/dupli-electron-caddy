@@ -2092,7 +2092,7 @@ function createWindow() {
             sandbox: false,
             offscreen: false
         },
-        show: false
+        show: process.env.NODE_ENV === 'test' ? true : false
     });
 
     // Définir explicitement le titre pour Linux (aide à la correspondance WMClass)

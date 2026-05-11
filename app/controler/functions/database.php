@@ -299,6 +299,7 @@ function pdo_connect()
             $db->exec("PRAGMA synchronous=NORMAL");
             $db->exec("PRAGMA temp_store=MEMORY"); // Optimisation mémoire
             $db->exec("PRAGMA cache_size=10000"); // Cache plus important
+            $db->exec("PRAGMA foreign_keys = ON;"); // Activer les contraintes de clés étrangères
         }
         
         return $db;
