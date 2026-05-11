@@ -17,6 +17,8 @@
     "test:unit": "jest --testPathPattern=unit",
     "test:integration": "jest --testPathPattern=integration",
     "test:integration:simple": "jest --testPathPattern=caddy-php-simple",
+    "test:e2e": "xvfb-run -a playwright test",
+    "test:e2e:smoke": "xvfb-run -a playwright test tests/e2e/smoke.test.js",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "rebuild:print-engine": "cd src/print-engine/windows && node-gyp rebuild"
@@ -26,6 +28,7 @@
   "license": "ISC",
   "description": "Duplicator - Application de duplication de documents",
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/jest": "^29.5.14",
     "cross-env": "^10.1.0",
     "electron": "^30.0.0",

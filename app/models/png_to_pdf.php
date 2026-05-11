@@ -107,12 +107,13 @@ function Action($conf) {
             $format = in_array($_POST['format'] ?? '', $allowed_formats) ? $_POST['format'] : 'A4';
             $orientation = isset($_POST['orientation']) && $_POST['orientation'] === 'L' ? 'L' : 'P';
             
-            // Utiliser sys_get_temp_dir() pour être compatible AppImage
-            $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_png_to_pdf' . DIRECTORY_SEPARATOR;
+            // Utiliser resolveTempDir() pour plus de compatibilité (centralisé)
+            $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_png_to_pdf' . DIRECTORY_SEPARATOR;
             if (!is_dir($tmpDir)) {
                 if (!mkdir($tmpDir, 0777, true)) {
                     throw new Exception("Impossible de créer le répertoire temporaire : " . $tmpDir);
                 }
+                @chmod($tmpDir, 0777);
             }
             
             $uploadedFiles = [];

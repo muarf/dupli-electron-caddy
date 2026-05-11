@@ -39,12 +39,17 @@ function scanDirectoryForLibrary($dir, $recursive = false) {
         $path = $dir . DIRECTORY_SEPARATOR . $item;
         
         if (is_dir($path)) {
+            // Exclure les dossiers de miniatures (système)
+            if (strpos(strtolower($item), 'thumbnail') !== false) {
+                continue;
+            }
             if ($recursive) {
                 $files = array_merge($files, scanDirectoryForLibrary($path, true));
             }
         } else {
             $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-            if ($ext === 'pdf' || $ext === 'png') {
+            // On ne scanne que les PDF pour la bibliothèque principale
+            if ($ext === 'pdf') {
                 $files[] = [
                     'path' => $path,
                     'filename' => $item,

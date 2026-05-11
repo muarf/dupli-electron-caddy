@@ -11,7 +11,9 @@
         "php": ">=8.2",
         "setasign/fpdi-tcpdf": "^2.3",
         "smalot/pdfparser": "^2.12",
-        "setasign/fpdf": "^1.8"
+        "setasign/fpdf": "^1.8",
+        "voku/stop-words": "^2.0",
+        "wamania/php-stemmer": "^4.0"
     },
     "require-dev": {
         "pestphp/pest": "^3.0"

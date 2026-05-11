@@ -188,9 +188,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadingText = document.getElementById('loading-text');
     const totalPagesLabel = document.getElementById('total-pages');
     
-    let sessionId = null;
+    let sessionId = <?php echo isset($preloaded_data['session_id']) ? json_encode($preloaded_data['session_id']) : 'null'; ?>;
     let pageSequence = []; // List of {type, file_id, page_num, rotation}
     let justDropped = false; // Global flag to prevent click after drop
+
+    // Gestion du pré-chargement
+    const preloadedPages = <?php echo isset($preloaded_data['pages']) ? json_encode($preloaded_data['pages']) : 'null'; ?>;
+    if (preloadedPages && preloadedPages.length > 0) {
+        addPagesToSequence(preloadedPages);
+        renderUI();
+    }
 
     // Initialize
     pdfInput.addEventListener('change', (e) => handleFiles(e.target.files));

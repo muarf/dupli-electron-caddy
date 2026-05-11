@@ -101,12 +101,13 @@ function Action($conf) {
             } elseif ($_FILES["pdf"]["size"] > 50 * 1024 * 1024) {
                 $errors[] = "Le fichier est trop volumineux (maximum 50MB).";
             } else {
-                // Utiliser sys_get_temp_dir() pour être compatible AppImage
-                $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_pdf_to_png' . DIRECTORY_SEPARATOR;
+                // Utiliser resolveTempDir() pour plus de compatibilité (centralisé)
+                $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_pdf_to_png' . DIRECTORY_SEPARATOR;
                 if (!is_dir($tmpDir)) {
                     if (!mkdir($tmpDir, 0777, true)) {
                         throw new Exception("Impossible de créer le répertoire temporaire : " . $tmpDir);
                     }
+                    @chmod($tmpDir, 0777);
                 }
                 
                 $timestamp = date('YmdHis');

@@ -30,9 +30,33 @@ try {
     $manager = new BibliothequeManager();
     $result = $manager->addUploadedFile($_FILES['file']);
     
+    // Vérification de l'activation IA
+    require_once __DIR__ . '/../models/SettingsManager.php';
+    $db = pdo_connect();
+    $settingsManager = new SettingsManager($db);
+    $aiEnabled = (int)$settingsManager->get('ai_enabled', 0);
+    
+    $jobId = null;
+    if ($aiEnabled && isset($result['id'])) {
+        $scriptPath = realpath(__DIR__ . '/../maintenance/background_indexer.php');
+        $logFile = __DIR__ . '/../../logs/background_indexer.log';
+        if ($scriptPath) {
+            $cmd = sprintf(
+                'nohup php %s %s >> %s 2>&1 &',
+                escapeshellarg($scriptPath),
+                escapeshellarg($result['id']),
+                escapeshellarg($logFile)
+            );
+            exec($cmd);
+            $jobId = 'idx_' . $result['id'];
+        }
+    }
+    
     echo json_encode([
         'success' => true,
-        'file' => $result
+        'file' => $result,
+        'ai_enabled' => (bool)$aiEnabled,
+        'job_id' => $jobId
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Exception $e) {
     http_response_code(500);

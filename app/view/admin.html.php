@@ -91,6 +91,23 @@
           </div>
         </div>
         
+        <!-- Intelligence Artificielle -->
+        <div class="panel panel-primary">
+          <div class="panel-heading">
+            <h3 class="panel-title"><i class="fa fa-magic"></i> Intelligence Artificielle &amp; Bibliothèque</h3>
+          </div>
+          <div class="panel-body">
+            <div class="row">
+              <div class="col-md-12">
+                <a href="?admin_bibliotheque_ia" class="btn btn-primary btn-block btn-lg">
+                  <i class="fa fa-cog"></i> Configurer l'IA &amp; la Bibliothèque
+                </a>
+                <small class="text-muted">Endpoints LLM, Embedding, Token, Prompt système, Vectorisation.</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Gestion des traductions -->
         <div class="panel panel-success">
           <div class="panel-heading">

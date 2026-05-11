@@ -20,12 +20,32 @@ function Action($conf) {
         $result = array();
 
         try {
-            if (!isset($_FILES["file"])) {
-                throw new Exception("Aucun fichier n'a été uploadé.");
-            }
+            $pdfFile = null;
+            $originalName = null;
+            $is_pdf = false;
 
-            if ($_FILES["file"]["error"] != UPLOAD_ERR_OK) {
-                throw new Exception("Erreur d'upload code: " . $_FILES["file"]["error"]);
+            // Cas 1 : Fichier bibliothèque
+            if (isset($_POST['lib_file_id']) && !empty($_POST['lib_file_id'])) {
+                require_once __DIR__ . '/BibliothequeManager.php';
+                $libManager = new BibliothequeManager();
+                $file = $libManager->getFile($_POST['lib_file_id']);
+                if ($file && file_exists($file['filepath'])) {
+                    $pdfFile = $file['filepath'];
+                    $originalName = $file['filename'];
+                    $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+                    $is_pdf = ($extension === 'pdf');
+                } else {
+                    throw new Exception("Fichier de bibliothèque introuvable.");
+                }
+            } 
+            // Cas 2 : Fichier uploadé
+            elseif (isset($_FILES["file"]) && $_FILES["file"]["error"] == UPLOAD_ERR_OK) {
+                $pdfFile = $_FILES["file"]["tmp_name"];
+                $originalName = $_FILES["file"]["name"];
+                $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+                $is_pdf = ($extension === 'pdf');
+            } else {
+                throw new Exception("Aucun fichier n'a été sélectionné.");
             }
 
             $target_format = $_POST['target_format'] ?? 'A4';
@@ -49,12 +69,7 @@ function Action($conf) {
             $tmpDir = $tmpBase . $session_id . DIRECTORY_SEPARATOR;
             if (!is_dir($tmpDir)) mkdir($tmpDir, 0777, true);
 
-            $filename = $_FILES["file"]["name"];
-            $tmpPath = $_FILES["file"]["tmp_name"];
-            $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-            $is_pdf = ($extension === 'pdf');
-
-            $outputFilename = pathinfo($filename, PATHINFO_FILENAME) . "_resized_" . $target_format . ".pdf";
+            $outputFilename = pathinfo($originalName, PATHINFO_FILENAME) . "_resized_" . $target_format . ".pdf";
             $outputPath = $tmpDir . $outputFilename;
 
             $pdf = new PDF();
@@ -64,7 +79,7 @@ function Action($conf) {
             $pdf->SetAutoPageBreak(false, 0);
 
             if ($is_pdf) {
-                $pageCount = $pdf->setSourceFile($tmpPath);
+                $pageCount = $pdf->setSourceFile($pdfFile);
                 for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
                     $tplIdx = $pdf->importPage($pageNo);
                     $size = $pdf->getTemplateSize($tplIdx);
@@ -113,7 +128,7 @@ function Action($conf) {
                     $pdf->useTemplate($tplIdx, $posX, $posY, $finalW, $finalH);
                 }
             } else {
-                $size = @getimagesize($tmpPath);
+                $size = @getimagesize($pdfFile);
                 if (!$size) throw new Exception("Impossible de lire les dimensions de l'image.");
                 $src_w_px = $size[0];
                 $src_h_px = $size[1];
@@ -148,7 +163,7 @@ function Action($conf) {
                     $posX = ($final_target_w - $finalW) / 2;
                     $posY = ($final_target_h - $finalH) / 2;
                 }
-                $pdf->Image($tmpPath, $posX, $posY, $finalW, $finalH);
+                $pdf->Image($pdfFile, $posX, $posY, $finalW, $finalH);
             }
 
             $pdf->Output($outputPath, 'F');
@@ -167,5 +182,17 @@ function Action($conf) {
         exit;
     }
 
-    return template("../view/resizer.html.php", array());
+    $preloaded_data = null;
+    if (isset($_GET['from_lib']) && !empty($_GET['from_lib'])) {
+        require_once __DIR__ . '/BibliothequeManager.php';
+        $libManager = new BibliothequeManager();
+        $file = $libManager->getFile($_GET['from_lib']);
+        if ($file) {
+            $preloaded_data = $file;
+        }
+    }
+
+    return template("../view/resizer.html.php", array(
+        'preloaded_data' => $preloaded_data
+    ));
 }

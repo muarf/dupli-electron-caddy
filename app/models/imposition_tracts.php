@@ -264,13 +264,13 @@ function processImpositionTracts($is_from_lib = false)
         error_log("[IMPOSITION_TRACTS] Fichier temporaire lisible: " . (is_readable($tempFile) ? 'OUI' : 'NON'));
     }
 
-    // Utiliser resolveTempDir() pour être compatible AppImage
-    $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR;
+    // Utiliser resolveTempDir() pour plus de compatibilité (centralisé)
+    $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_tracts' . DIRECTORY_SEPARATOR;
     error_log("[IMPOSITION_TRACTS] Répertoire temporaire: " . $tmp_dir);
     if (!file_exists($tmp_dir)) {
         error_log("[IMPOSITION_TRACTS] Création répertoire temporaire");
-        $mkdirResult = mkdir($tmp_dir, 0755, true);
-        error_log("[IMPOSITION_TRACTS] Résultat mkdir: " . ($mkdirResult ? 'SUCCÈS' : 'ÉCHEC'));
+        mkdir($tmp_dir, 0777, true);
+        @chmod($tmp_dir, 0777);
     }
     error_log("[IMPOSITION_TRACTS] Répertoire existe: " . (file_exists($tmp_dir) ? 'OUI' : 'NON'));
     error_log("[IMPOSITION_TRACTS] Répertoire accessible en écriture: " . (is_writable($tmp_dir) ? 'OUI' : 'NON'));
@@ -279,32 +279,29 @@ function processImpositionTracts($is_from_lib = false)
     error_log("[IMPOSITION_TRACTS] Fichier destination: " . $inputFile);
 
     // Déplacer le fichier uploadé
-    // Pour les fichiers de la bibliothèque, utiliser rename() au lieu de move_uploaded_file()
-    // car move_uploaded_file() ne fonctionne que pour les fichiers uploadés via HTTP POST
     error_log("[IMPOSITION_TRACTS] Tentative déplacement de " . $tempFile . " vers " . $inputFile . " (from_lib: " . ($is_from_lib ? 'OUI' : 'NON') . ")");
 
     $moveResult = false;
     if ($is_from_lib) {
-        // Fichier de la bibliothèque : utiliser rename()
+        // Fichier de la bibliothèque : utiliser rename() ou copy()
         if (file_exists($tempFile)) {
             $moveResult = rename($tempFile, $inputFile);
-        } else {
-            $moveResult = false;
+            if (!$moveResult) {
+                // Fallback si rename échoue entre différents systèmes de fichiers
+                $moveResult = copy($tempFile, $inputFile);
+                if ($moveResult) @unlink($tempFile);
+            }
         }
     } else {
         // Fichier uploadé normalement : utiliser move_uploaded_file()
         $moveResult = move_uploaded_file($tempFile, $inputFile);
     }
 
-    error_log("[IMPOSITION_TRACTS] Résultat déplacement: " . ($moveResult ? 'SUCCÈS' : 'ÉCHEC'));
-
     if (!$moveResult) {
-        error_log("[IMPOSITION_TRACTS] ERREUR: déplacement a échoué");
-        error_log("[IMPOSITION_TRACTS] tempFile existe: " . (file_exists($tempFile) ? 'OUI' : 'NON'));
-        error_log("[IMPOSITION_TRACTS] inputFile existe après move: " . (file_exists($inputFile) ? 'OUI' : 'NON'));
         $lastError = error_get_last();
-        error_log("[IMPOSITION_TRACTS] Dernière erreur PHP: " . ($lastError ? $lastError['message'] : 'N/A'));
-        throw new Exception("Impossible de déplacer le fichier uploadé.");
+        $errorDetail = $lastError ? " : " . $lastError['message'] : "";
+        error_log("[IMPOSITION_TRACTS] ERREUR: déplacement a échoué" . $errorDetail);
+        throw new Exception("Impossible de déplacer le fichier vers le répertoire temporaire (" . $tmp_dir . "). Vérifiez les permissions." . $errorDetail);
     }
 
     // Vérifier les permissions du fichier déplacé
