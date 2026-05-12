@@ -190,6 +190,9 @@ class AdminMachineManager {
         $query = $db->prepare('INSERT INTO photocopieurs (marque, modele, type_encre, actif) VALUES (?, ?, ?, 1)');
         $query->execute([$name, $name, $type_encre]);
         
+        // Capturer l'ID immédiatement avant tout autre INSERT
+        $machine_id = $db->lastInsertId();
+        
         // Toujours créer une entrée dans cons
         $query = $db->prepare('INSERT INTO cons (date, machine, type, nb_p, nb_m) VALUES (?, ?, "passage", ?, 0)');
         $query->execute([$date, $name, $passage_counter]);
@@ -203,7 +206,7 @@ class AdminMachineManager {
             $this->insertPhotocopieurTonerPrix($db, $name, $data);
         }
         
-        return $db->lastInsertId();
+        return $machine_id;
     }
     
     /**

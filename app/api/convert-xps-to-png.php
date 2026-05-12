@@ -146,6 +146,18 @@ $startTime = time();
 $lastSize = 0;
 $stableCount = 0;
 
+// Fast-fail: Sniff header immediately. If it's not a ZIP (PK\x03\x04), don't wait 30s.
+$h = @fopen($splFile, 'rb');
+if ($h) {
+    $head = fread($h, 65536);
+    fclose($h);
+    if (strpos($head, "PK\x03\x04") === false) {
+        debugLog("Fast-fail: No XPS/ZIP signature found in header. Skipping wait.");
+        echo json_encode(['error' => 'Not an XPS file (fast-fail)']);
+        exit;
+    }
+}
+
 while (time() - $startTime < $maxWait) {
     // Try to copy current content of SPL to shadow file
     // Suppress warnings as fopen might fail if locked
@@ -283,12 +295,7 @@ foreach ($oldPngs as $oldPng) {
 $outputImage = $outputDir . 'page_%d.png';
 
 // Construire la commande GhostXPS
-$command = sprintf(
-    '"%s" -dNOPAUSE -dBATCH -dSAFER -dQUIET -sDEVICE=png16m -r72 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile="%s" "%s" 2>&1',
-    $gsPath,
-    $outputImage,
-    $tempFile
-);
+$command = escapeshellarg($gsPath) . " -dNOPAUSE -dBATCH -dSAFER -dQUIET -sDEVICE=png16m -r72 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($outputImage) . " " . escapeshellarg($tempFile) . " 2>&1";
 
 debugLog("Command: $command");
 

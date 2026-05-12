@@ -11,6 +11,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+if (!isElectron()) {
+    http_response_code(403);
+    echo json_encode(['error' => 'L\'indexation de dossiers arbitraires est interdite en mode serveur.']);
+    exit;
+}
+
 $data = json_decode(file_get_contents('php://input'), true);
 $path = $data['path'] ?? '';
 $recursive = $data['recursive'] ?? false;

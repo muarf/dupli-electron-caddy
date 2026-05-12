@@ -103,7 +103,8 @@ function Action($conf) {
         if (isset($_SERVER["REQUEST_METHOD"]) && $_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["images"]) && !empty($_FILES["images"]["name"][0])) {
             
             // Récupérer le format choisi
-            $format = isset($_POST['format']) && $_POST['format'] === 'A3' ? 'A3' : 'A4';
+            $allowed_formats = ['A4', 'A5', 'A3'];
+            $format = in_array($_POST['format'] ?? '', $allowed_formats) ? $_POST['format'] : 'A4';
             $orientation = isset($_POST['orientation']) && $_POST['orientation'] === 'L' ? 'L' : 'P';
             
             // Utiliser sys_get_temp_dir() pour être compatible AppImage
@@ -187,7 +188,8 @@ function Action($conf) {
         // Traitement du fichier bibliothèque
         if ($from_lib_file) {
             // Récupérer le format choisi
-            $format = isset($_POST['format']) && $_POST['format'] === 'A3' ? 'A3' : 'A4';
+            $allowed_formats = ['A4', 'A5', 'A3'];
+            $format = in_array($_POST['format'] ?? '', $allowed_formats) ? $_POST['format'] : 'A4';
             $orientation = isset($_POST['orientation']) && $_POST['orientation'] === 'L' ? 'L' : 'P';
             
             // Utiliser sys_get_temp_dir() pour être compatible AppImage

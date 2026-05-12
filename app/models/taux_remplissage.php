@@ -116,58 +116,106 @@ function calculate_fill_rate($image_path, $tolerance = 245) {
 }
 
 /**
- * Convertit un PDF en image PNG pour analyse
+ * Analyse le taux de remplissage d'un PDF via Ghostscript (INK_COV)
+ * Beaucoup plus rapide et précis que l'analyse pixel par pixel en PHP.
+ * Calcule la moyenne de couverture sur l'ensemble des pages.
  */
-function convert_pdf_to_image_for_analysis($pdf_file, $output_dir, $page_number = 1, $dpi = 150) {
+function analyze_pdf_ink_coverage_gs($pdf_file) {
     try {
-        // Vérifier que Ghostscript est disponible (utilise la fonction centralisée)
-        $gs_path = get_ghostscript_path();
-        if (!$gs_path) {
-            throw new Exception("Ghostscript n'a pas été trouvé sur ce système.");
-        }
+        error_log("analyze_pdf_ink_coverage_gs: Début de l'analyse pour " . $pdf_file);
         
-        // Vérifier que le fichier PDF existe
-        if (!file_exists($pdf_file)) {
-            throw new Exception("Le fichier PDF n'existe pas : " . $pdf_file);
-        }
+        // -q pour mode silencieux, -sDEVICE=ink_cov pour la couverture d'encre
+        $gs_args = "-q -dNOPAUSE -dBATCH -sDEVICE=ink_cov -o - " . escapeshellarg($pdf_file);
+        $gs_result = run_ghostscript($gs_args);
         
-        // Créer le dossier de sortie s'il n'existe pas
-        if (!is_dir($output_dir)) {
-            if (!mkdir($output_dir, 0777, true)) {
-                throw new Exception("Impossible de créer le dossier de sortie : " . $output_dir);
+        if (!$gs_result['success']) {
+            error_log("Erreur Ghostscript dans analyze_pdf_ink_coverage_gs: " . $gs_result['output']);
+            throw new Exception("Erreur Ghostscript: " . $gs_result['output']);
+        }
+
+        $output = $gs_result['output'];
+        $lines = explode("\n", $output);
+        $totalC = 0; $totalM = 0; $totalY = 0; $totalK = 0;
+        $pageCount = 0;
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            // Le format ink_cov est : C M Y K CMYK OK
+            // Exemple : 0.07498  0.07050  0.06968  0.09209 CMYK OK
+            if (preg_match('/^\s*(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)/', $line, $matches)) {
+                $totalC += (float)$matches[1];
+                $totalM += (float)$matches[2];
+                $totalY += (float)$matches[3];
+                $totalK += (float)$matches[4];
+                $pageCount++;
+                error_log("Page $pageCount détectée: C=" . $matches[1] . " M=" . $matches[2] . " Y=" . $matches[3] . " K=" . $matches[4]);
             }
         }
-        
-        // Générer un nom de fichier unique pour l'image
-        $timestamp = date('YmdHis');
-        $output_file = $output_dir . 'page_' . $timestamp . '.png';
-        
-        // Convertir la première page du PDF en PNG
-        // escapeshellarg() sur $gs_path pour gérer les espaces dans le chemin (ex: "Program Files")
-        $command = escapeshellarg($gs_path) . " -dNOPAUSE -dBATCH -sDEVICE=png16m -r" . intval($dpi) . 
-                   " -dFirstPage=" . intval($page_number) . " -dLastPage=" . intval($page_number) .
-                   " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . 
-                   escapeshellarg($output_file) . " " . escapeshellarg($pdf_file) . " 2>&1";
-        
-        error_log("GS command: " . $command);
-        
-        $output = [];
-        $return_var = 0;
-        exec($command, $output, $return_var);
-        
-        if ($return_var !== 0) {
-            throw new Exception("Erreur lors de la conversion avec Ghostscript. Code: " . $return_var . " Output: " . implode("\n", $output));
+
+        if ($pageCount === 0) {
+            error_log("Ghostscript n'a renvoyé aucune donnée de couverture. Output: " . $output);
+            throw new Exception("Ghostscript n'a détecté aucune donnée de couverture.");
         }
+
+        // Calculer les moyennes par page
+        $avgC = $totalC / $pageCount;
+        $avgM = $totalM / $pageCount;
+        $avgY = $totalY / $pageCount;
+        $avgK = $totalK / $pageCount;
+
+        // Formule demandée par l'utilisateur : Somme des canaux (C+M+J+N)
+        // Les valeurs renvoyées par ink_cov sont déjà en pourcentages (0-100).
+        $fillRate = ($avgC + $avgM + $avgY + $avgK);
         
-        if (!file_exists($output_file)) {
-            throw new Exception("L'image n'a pas été créée. Le PDF est peut-être vide ou corrompu.");
-        }
-        
-        return $output_file;
-        
+        // Détection couleur heuristique
+        $maxDiff = max(abs($avgC - $avgM), abs($avgM - $avgY), abs($avgC - $avgY));
+        $isColor = ($avgC + $avgM + $avgY > 0.01) && ($maxDiff > 0.005);
+
+        error_log("Analyse PDF terminée: $pageCount pages, Taux moyen=" . round($fillRate, 2) . "%");
+
+        return array(
+            'fill_rate' => round($fillRate, 2),
+            'empty_rate' => round(max(0, 100 - $fillRate), 2),
+            'page_count' => $pageCount,
+            'is_color' => $isColor,
+            'avg_c' => $avgC,
+            'avg_m' => $avgM,
+            'avg_y' => $avgY,
+            'avg_k' => $avgK,
+            'success' => true
+        );
+
     } catch (Exception $e) {
-        error_log("Erreur lors de la conversion PDF vers image : " . $e->getMessage());
+        error_log("Erreur analyse GS : " . $e->getMessage());
         throw $e;
+    }
+}
+
+/**
+ * Convertit un PDF en image PNG (première page seulement) pour la miniature
+ */
+function convert_pdf_to_thumbnail($pdf_file, $output_dir, $dpi = 72) {
+    try {
+        if (!is_dir($output_dir)) {
+            mkdir($output_dir, 0777, true);
+        }
+        $output_file = $output_dir . DIRECTORY_SEPARATOR . 'thumb_' . time() . '_' . uniqid() . '.png';
+        
+        // -q pour le silence
+        $gs_args = "-q -dNOPAUSE -dBATCH -sDEVICE=png16m -r" . intval($dpi) . 
+                   " -dFirstPage=1 -dLastPage=1 -sOutputFile=" . 
+                   escapeshellarg($output_file) . " " . escapeshellarg($pdf_file);
+        
+        $res = run_ghostscript($gs_args);
+        if (!$res['success']) {
+            error_log("Échec création miniature PDF: " . $res['output']);
+            return null;
+        }
+        
+        return file_exists($output_file) ? $output_file : null;
+    } catch (Exception $e) { 
+        error_log("Exception convert_pdf_to_thumbnail: " . $e->getMessage());
+        return null; 
     }
 }
 
@@ -179,23 +227,17 @@ function Action($conf) {
     
     try {
         error_log("=== TAUX_REMPLISSAGE - Début Action() ===");
-        error_log("REQUEST_METHOD: " . ($_SERVER["REQUEST_METHOD"] ?? 'N/A'));
-        error_log("POST data: " . print_r($_POST, true));
-        error_log("FILES data: " . print_r($_FILES, true));
         
         if (isset($_SERVER["REQUEST_METHOD"]) && $_SERVER["REQUEST_METHOD"] == "POST") {
             
-            // Récupérer la tolérance
+            // Récupérer la tolérance (uniquement pour les images simples)
             $tolerance = isset($_POST['tolerance']) ? intval($_POST['tolerance']) : 245;
             if ($tolerance < 0) $tolerance = 0;
             if ($tolerance > 255) $tolerance = 255;
             
-            error_log("Tolérance: " . $tolerance);
-            
             // Vérifier si un fichier a été uploadé
             if (!isset($_FILES["file"])) {
                 $errors[] = "Aucun fichier n'a été uploadé.";
-                error_log("ERREUR: Aucun fichier dans \$_FILES");
             } elseif ($_FILES["file"]["error"] != UPLOAD_ERR_OK) {
                 $error_messages = array(
                     UPLOAD_ERR_INI_SIZE => 'Le fichier dépasse la limite upload_max_filesize du php.ini.',
@@ -207,148 +249,99 @@ function Action($conf) {
                     UPLOAD_ERR_EXTENSION => 'Une extension PHP a arrêté l\'upload du fichier.'
                 );
                 $error_code = $_FILES["file"]["error"];
-                $error_msg = isset($error_messages[$error_code]) ? $error_messages[$error_code] : "Erreur inconnue ($error_code)";
-                $errors[] = "Erreur d'upload : " . $error_msg;
-                error_log("ERREUR UPLOAD: " . $error_msg);
+                $errors[] = "Erreur d'upload : " . ($error_messages[$error_code] ?? "Erreur inconnue ($error_code)");
             } else {
-                error_log("Fichier uploadé avec succès, vérification du type MIME...");
-                
                 // Vérifier le type MIME
                 $finfo = finfo_open(FILEINFO_MIME_TYPE);
                 $mimeType = finfo_file($finfo, $_FILES["file"]["tmp_name"]);
                 finfo_close($finfo);
                 
-                error_log("Type MIME détecté: " . $mimeType);
-                error_log("Taille du fichier: " . $_FILES["file"]["size"]);
+                error_log("Fichier: " . $_FILES["file"]["name"] . " (MIME: $mimeType, Taille: " . $_FILES["file"]["size"] . ")");
                 
                 $allowed_types = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'];
                 
                 if (!in_array($mimeType, $allowed_types)) {
-                    $errors[] = "Le fichier doit être un PDF ou une image (JPEG, PNG, GIF). Type détecté: " . $mimeType;
-                    error_log("Type MIME non autorisé: " . $mimeType);
+                    $errors[] = "Le fichier doit être un PDF ou une image (JPEG, PNG, GIF).";
                 } elseif ($_FILES["file"]["size"] == 0) {
                     $errors[] = "Le fichier est vide.";
-                    error_log("Fichier vide");
-                } elseif ($_FILES["file"]["size"] > 50 * 1024 * 1024) {
-                    $errors[] = "Le fichier est trop volumineux (maximum 50MB).";
-                    error_log("Fichier trop volumineux: " . $_FILES["file"]["size"]);
+                } elseif ($_FILES["file"]["size"] > 100 * 1024 * 1024) { // Augmenté à 100MB pour les gros PDF
+                    $errors[] = "Le fichier est trop volumineux (maximum 100MB).";
                 } else {
-                    error_log("Validation OK, début du traitement...");
-                    
-                    // Créer le dossier tmp système pour l'AppImage
-                    $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_fillrate' . DIRECTORY_SEPARATOR;
+                    // Créer le dossier tmp
+                    $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dupli_fillrate' . DIRECTORY_SEPARATOR;
                     if (!is_dir($tmpDir)) {
-                        error_log("Création du dossier tmp: " . $tmpDir);
-                        if (!mkdir($tmpDir, 0777, true)) {
-                            $errors[] = "Impossible de créer le dossier temporaire.";
-                            error_log("ERREUR: mkdir a échoué pour " . $tmpDir);
-                            // Fallback vers le dossier public/tmp si le dossier système échoue
-                            $tmpDir = __DIR__ . '/../public/tmp/';
-                            if (!is_dir($tmpDir)) mkdir($tmpDir, 0777, true);
-                        }
+                        @mkdir($tmpDir, 0777, true);
                     }
                     
-                    $timestamp = date('YmdHis');
                     $extension = pathinfo($_FILES["file"]["name"], PATHINFO_EXTENSION);
-                    $uploadFile = $tmpDir . "upload_" . $timestamp . "." . $extension;
-                    
-                    error_log("Déplacement du fichier vers: " . $uploadFile);
+                    $uploadFile = $tmpDir . "anal_" . time() . "_" . uniqid() . "." . $extension;
                     
                     if (move_uploaded_file($_FILES["file"]["tmp_name"], $uploadFile)) {
-                        error_log("Fichier déplacé avec succès");
-                        $image_to_analyze = $uploadFile;
                         
-                        // Si c'est un PDF, le convertir en image
                         if ($mimeType === 'application/pdf') {
-                            error_log("Conversion PDF en image...");
-                            $page_to_analyze = isset($_POST['page_number']) ? intval($_POST['page_number']) : 1;
-                            if ($page_to_analyze < 1) $page_to_analyze = 1;
+                            // ANALYSE PDF VIA GHOSTSCRIPT (Rapide et Multi-pages)
+                            $result = analyze_pdf_ink_coverage_gs($uploadFile);
                             
-                            $outputDir = $tmpDir . 'analysis_' . $timestamp . '/';
-                            $image_to_analyze = convert_pdf_to_image_for_analysis($uploadFile, $outputDir, $page_to_analyze);
-                            error_log("Image créée: " . $image_to_analyze);
+                            // Générer une miniature
+                            $outputDir = $tmpDir . 'thumb_' . time();
+                            $thumbPath = convert_pdf_to_thumbnail($uploadFile, $outputDir);
+                            
+                            if ($thumbPath) {
+                                $thumbInfo = getimagesize($thumbPath);
+                                $result['width'] = $thumbInfo[0] ?? 0;
+                                $result['height'] = $thumbInfo[1] ?? 0;
+                                $result['total_pixels'] = $result['width'] * $result['height'];
+                                // Estimation factice des pixels remplis basée sur le taux
+                                $result['filled_pixels'] = round($result['total_pixels'] * ($result['fill_rate'] / 100));
+                                $result['empty_pixels'] = $result['total_pixels'] - $result['filled_pixels'];
+
+                                $imageData = base64_encode(file_get_contents($thumbPath));
+                                $result['preview_url'] = 'data:image/png;base64,' . $imageData;
+                                
+                                // Nettoyage miniature
+                                @unlink($thumbPath);
+                                @rmdir($outputDir);
+                            } else {
+                                $result['preview_url'] = ''; // Pas de miniature
+                                $result['width'] = 0;
+                                $result['height'] = 0;
+                                $result['total_pixels'] = 0;
+                                $result['filled_pixels'] = 0;
+                                $result['empty_pixels'] = 0;
+                            }
+                        } else {
+                            // ANALYSE IMAGE PIXEL PAR PIXEL (Ancien mode)
+                            $result = calculate_fill_rate($uploadFile, $tolerance);
+                            $imageData = base64_encode(file_get_contents($uploadFile));
+                            $result['preview_url'] = 'data:' . $mimeType . ';base64,' . $imageData;
+                            $result['page_count'] = 1;
                         }
                         
-                        // Calculer le taux de remplissage
-                        error_log("Calcul du taux de remplissage...");
-                        $result = calculate_fill_rate($image_to_analyze, $tolerance);
-                        error_log("Calcul terminé: " . $result['fill_rate'] . "%");
-                        $success = true;
-                        
-                        // GESTION DE L'IMAGE DE PREVIEW
-                        // Lire le contenu de l'image pour l'encoder en base64
-                        // Cela évite d'avoir à stocker l'image dans public/tmp
-                        $imageData = base64_encode(file_get_contents($image_to_analyze));
-                        $mime = mime_content_type($image_to_analyze);
-                        $preview_url = 'data:' . $mime . ';base64,' . $imageData;
-                        
-                        $result['preview_url'] = $preview_url;
                         $result['filename'] = $_FILES["file"]["name"];
                         $result['tolerance'] = $tolerance;
+                        $success = true;
                         
-                        error_log("Preview générée en base64");
-                        
-                        // Nettoyer les fichiers temporaires
-                        // 1. L'image analysée (si différente de l'upload)
-                        if ($image_to_analyze !== $uploadFile && file_exists($image_to_analyze)) {
-                            unlink($image_to_analyze);
-                        }
-                        // 2. Le dossier d'analyse si créé
-                        if (isset($outputDir) && is_dir($outputDir)) {
-                            rmdir($outputDir);
-                        }
-                        // 3. Le fichier uploadé original
-                        if (file_exists($uploadFile)) {
-                            unlink($uploadFile);
-                        }
-                        
-                        error_log("Nettoyage effectué");
-                        error_log("Traitement terminé avec succès");
+                        // Nettoyage du fichier uploadé
+                        @unlink($uploadFile);
                     } else {
-                        $errors[] = "Erreur lors de l'upload du fichier (move_uploaded_file a échoué).";
-                        error_log("ERREUR: move_uploaded_file a échoué");
+                        $errors[] = "Erreur interne lors du déplacement du fichier temporaire.";
                     }
                 }
             }
-        } else {
-            error_log("Pas de requête POST, affichage du formulaire");
         }
     } catch (Exception $e) {
-        error_log("=== EXCEPTION CAPTURÉE ===");
-        error_log("Message: " . $e->getMessage());
-        error_log("Fichier: " . $e->getFile());
-        error_log("Ligne: " . $e->getLine());
-        error_log("Trace: " . $e->getTraceAsString());
-        $errors[] = "Erreur lors du traitement : " . $e->getMessage();
+        error_log("Exception dans Action: " . $e->getMessage());
+        $errors[] = "Erreur : " . $e->getMessage();
     } catch (Error $e) {
-        error_log("=== ERREUR FATALE CAPTURÉE ===");
-        error_log("Message: " . $e->getMessage());
-        error_log("Fichier: " . $e->getFile());
-        error_log("Ligne: " . $e->getLine());
-        error_log("Trace: " . $e->getTraceAsString());
-        $errors[] = "Erreur fatale : " . $e->getMessage();
+        error_log("Erreur fatale dans Action: " . $e->getMessage());
+        $errors[] = "Erreur système : " . $e->getMessage();
     }
     
-    error_log("=== Fin Action() - Erreurs: " . count($errors) . ", Succès: " . ($success ? 'OUI' : 'NON') . " ===");
-    
-    try {
-        $template_result = template("../view/taux_remplissage.html.php", array(
-            'errors' => $errors,
-            'success' => $success,
-            'result' => $result
-        ));
-        error_log("Template généré avec succès");
-        return $template_result;
-    } catch (Exception $e) {
-        error_log("=== ERREUR LORS DU TEMPLATE ===");
-        error_log("Message: " . $e->getMessage());
-        error_log("Trace: " . $e->getTraceAsString());
-        
-        // En cas d'erreur de template, afficher quelque chose
-        return '<div class="container"><div class="alert alert-danger"><h1>Erreur</h1><p>' . 
-               htmlspecialchars($e->getMessage()) . '</p><pre>' . 
-               htmlspecialchars($e->getTraceAsString()) . '</pre></div></div>';
-    }
+    return template("../view/taux_remplissage.html.php", array(
+        'errors' => $errors,
+        'success' => $success,
+        'result' => $result
+    ));
 }
 }
 

@@ -1,1330 +1,1594 @@
+<?php
+/**
+ * Vue Bibliothèque avec Assistant IA (conditionnel selon réglages admin)
+ */
+require_once __DIR__ . '/../models/SettingsManager.php';
+$_bib_db = pdo_connect();
+$_bib_settings = new SettingsManager($_bib_db);
+$ai_enabled = (int)$_bib_settings->get('ai_enabled', 0);
+
+// --- SÉCURITÉ PAR MOT DE PASSE ---
+$bib_password = $_bib_settings->get('bibliotheque_password', '');
+$is_admin = isset($_SESSION['user']);
+$is_authenticated = isset($_SESSION['bib_authenticated']) && $_SESSION['bib_authenticated'] === true;
+
+if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
+    if (isset($_POST['bib_pass'])) {
+        if ($_POST['bib_pass'] === $bib_password) {
+            $_SESSION['bib_authenticated'] = true;
+            // Redirection pour éviter de renvoyer le formulaire
+            header('Location: ?bibliotheque');
+            exit;
+        } else {
+            $bib_error = "Mot de passe incorrect.";
+        }
+    }
+    // Affichage du formulaire de login dédié
+    include __DIR__ . '/bibliotheque_login.html.php';
+    return;
+}
+?>
 <div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h1 class="mb-0"><i class="fa fa-book"></i> <?php _e('library.title'); ?></h1>
-        </div>
-    </div>
-
-    <!-- Zone d'upload séparée et bien visible -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="upload-drop-zone" id="dropZone">
-                <i class="fa fa-cloud-upload"></i>
-                <span class="drop-zone-text"><?php _e('library.drag_drop_files'); ?></span>
-                <span class="drop-zone-subtext"><?php _e('library.click_to_select'); ?></span>
-                <input type="file" id="fileInput" class="d-none" style="display: none !important;" accept=".pdf,.png"
-                    multiple>
-            </div>
-        </div>
-    </div>
-
-    <!-- Zone d'indexation de dossier -->
-    <div class="card mb-4">
-        <div class="card-body text-center">
-            <button class="btn btn-primary btn-lg" onclick="openIndexModal()">
-                <i class="fa fa-folder-open"></i> <?php _e('library.index_folder'); ?>
-            </button>
-            <p class="text-muted mt-2 mb-0"><small><?php _e('library.index_folder_desc'); ?></small></p>
-        </div>
-    </div>
-
-    <!-- Barre de recherche -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="input-group input-group-lg">
-                <span class="input-group-text"><i class="fa fa-search"></i></span>
-                <input type="text" class="form-control" id="searchInput"
-                    placeholder="<?php echo __('library.search_placeholder'); ?>">
-            </div>
-        </div>
-    </div>
-
-    <!-- Grille de fichiers -->
-    <div class="row" id="fileGrid">
-        <!-- Les fichiers seront chargés ici -->
-    </div>
-</div>
-
-<!-- Modal Visualisation PDF -->
-<div class="modal fade" id="pdfViewerModal" tabindex="-1">
-    <div class="modal-dialog modal-xl" style="max-width: 95vw;">
-        <div class="modal-content" style="border-radius: 15px; overflow: hidden;">
-            <div class="modal-header">
-                <h5 class="modal-title" id="pdfViewerTitle"><?php _e('library.visualisation_pdf'); ?></h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label= "<?php echo __('common.close'); ?>" >
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body" style="padding: 0;">
-                <div id="pdfViewerContainer"
-                    style="position: relative; width: 100%; height: 80vh; overflow: auto; background: #525252;">
-                    <div id="pdfLoadingIndicator"
-                        style="display: none; text-align: center; padding: 50px; color: white;">
-                        <i class="fa fa-spinner fa-spin fa-3x"></i>
-                        <p style="margin-top: 20px;"><?php _e('library.loading_pdf'); ?></p>
-                    </div>
-                    <canvas id="pdfCanvas" style="display: none; margin: 0 auto;"></canvas>
-                    <div id="pdfImageView" style="display: none; text-align: center; padding: 20px;">
-                        <img id="pdfImageElement" style="max-width: 100%; height: auto; display: block; margin: 0 auto;"
-                            alt="Image">
-                    </div>
-                </div>
-                <div
-                    style="padding: 15px; background: #f8f9fa; border-top: 1px solid #dee2e6; position: sticky; bottom: 0; z-index: 10;">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2"
-                        style="flex-wrap: nowrap;">
-                        <div class="d-flex align-items-center gap-2" style="flex-shrink: 0;">
-                            <button class="btn btn-sm btn-primary" id="prevPage" onclick="changePage(-1)">
-                                <i class="fa fa-chevron-left"></i> <?php _e('common.previous'); ?>
-                            </button>
-                            <span class="mx-2" style="white-space: nowrap; color: #212529; font-weight: 500;"><?php _e('library.page'); ?>
-                                <input type="number" id="pageInput" min="1" value="1"
-                                    style="width: 60px; text-align: center; display: inline-block; padding: 4px 8px; border: 1px solid #ced4da; border-radius: 4px; background: white; color: #212529; font-weight: 600;"
-                                    onchange="goToPage(parseInt(this.value))"> / <span id="totalPages"
-                                    style="color: #495057; font-weight: 600;">1</span></span>
-                            <button class="btn btn-sm btn-primary" id="nextPage" onclick="changePage(1)">
-                                <?php _e('common.next'); ?> <i class="fa fa-chevron-right"></i>
-                            </button>
-                        </div>
-                        <div class="d-flex align-items-center gap-2" id="modalActions"
-                            style="flex-shrink: 0; position: relative; border-left: 2px solid #dee2e6; padding-left: 15px; margin-left: 15px;">
-                            <!-- Les boutons d'action seront ajoutés ici dynamiquement -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Indexation Dossier -->
-<div class="modal fade" id="indexModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><?php _e('library.index_external_folder'); ?></h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label= "<?php echo __('common.close'); ?>" >
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-info">
-                    <i class="fa fa-info-circle"></i> <?php _e('library.index_info'); ?>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label"><?php _e('library.folder_path'); ?></label>
-                    <div class="input-group">
-                        <input type="text" class="form-control" id="folderPath" placeholder="/chemin/vers/le/dossier">
-
-                        <!-- Bouton pour Tauri -->
-                        <button class="btn btn-outline-secondary" type="button" onclick="browseFolder()" id="browseBtn"
-                            style="display:none;">
-                            <i class="fa fa-folder-open"></i> <?php _e('library.browse'); ?>
-                        </button>
-
-                        <!-- Bouton pour Web Standard (Simulé pour l'UX, mais limité par sécurité) -->
-                        <button class="btn btn-outline-secondary" type="button" id="webBrowseInfo"
-                            onclick="showAppModal({ title: '<?php echo addslashes(__('library.path_help_title')); ?>', message: '<?php echo addslashes(__('library.path_help_msg')); ?>', type: 'info' })">
-                            <i class="fa fa-info-circle"></i> <?php _e('library.path_help_btn'); ?>
-                        </button>
-                    </div>
-                    <small class="text-muted"><?php _e('library.path_absolute_help'); ?></small>
-                </div>
-                <div class="mb-3 form-check">
-                    <input type="checkbox" class="form-check-input" id="recursiveCheck">
-                    <label class="form-check-label" for="recursiveCheck"><?php _e('library.recursive_index'); ?></label>
-                </div>
-
-                <div class="d-grid gap-2 mb-3">
-                    <button class="btn btn-secondary" onclick="previewDirectory()">
-                        <i class="fa fa-search"></i> <?php _e('library.analyze_folder'); ?>
-                    </button>
-                </div>
-
-                <div class="progress mb-3" style="display:none;" id="indexProgress">
-                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
-                </div>
-
-                <div id="previewArea" style="display:none;">
-                    <h6><i class="fa fa-files-o"></i> <?php _e('library.files_found'); ?> <span id="foundCount">0</span></h6>
-                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                        <table class="table table-sm table-striped">
-                            <thead>
-                                <tr>
-                                    <th><?php _e('library.file'); ?></th>
-                                    <th><?php _e('library.type'); ?></th>
-                                    <th><?php _e('library.size'); ?></th>
-                                </tr>
-                            </thead>
-                            <tbody id="previewList"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal"><?php _e('common.close'); ?></button>
-                <button type="button" class="btn btn-primary" onclick="startIndexing()" id="indexBtn" disabled><?php _e('library.start_index'); ?></button>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-
-<style>
-    .upload-drop-zone {
-        border: 3px dashed #dee2e6;
-        border-radius: 12px;
-        padding: 50px 20px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-        color: #6c757d;
+    <style>
+    /* --- DESIGN SYSTEM PREMIUM --- */
+    :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --secondary: #a855f7;
+        --bg-light: #f8fafc;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
     }
 
-    .upload-drop-zone:hover,
-    .upload-drop-zone.dragover {
-        background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
-        border-color: #0d6efd;
-        color: #0d6efd;
-        transform: scale(1.01);
-    }
-
-    .upload-drop-zone i {
-        font-size: 3.5em;
-        margin-bottom: 15px;
-        color: #6c757d;
-        transition: color 0.3s;
-    }
-
-    .upload-drop-zone:hover i,
-    .upload-drop-zone.dragover i {
-        color: #0d6efd;
-    }
-
-    .drop-zone-text {
-        display: block;
-        font-size: 1.2em;
-        font-weight: 500;
-        margin-bottom: 8px;
-        color: #495057;
-    }
-
-    .drop-zone-subtext {
-        display: block;
-        font-size: 0.9em;
-        color: #6c757d;
-    }
-
-    .file-card {
-        transition: transform 0.2s, box-shadow 0.2s;
-        border: 1px solid #e0e0e0;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-        border-radius: 8px;
-        overflow: visible;
+    /* Toolbar Bibliothèque */
+    .library-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-items: center;
         background: white;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
+        padding: 15px 20px;
+        border-radius: 15px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        margin-bottom: 25px;
+        border: 1px solid #f1f5f9;
+    }
+    .search-container {
+        flex: 1;
+        min-width: 300px;
         position: relative;
     }
-
-    .file-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-        border-color: #0d6efd;
+    .search-container i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
     }
-
-    .file-thumb-wrapper {
-        overflow: hidden;
-        border-radius: 8px 8px 0 0;
-    }
-
-    .file-thumb {
-        height: 200px;
+    #search_query {
         width: 100%;
-        object-fit: contain;
-        background: #f8f9fa;
-        border-bottom: 1px solid #eee;
-        padding: 15px;
+        height: 45px;
+        padding-left: 45px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
+        transition: all 0.3s;
     }
-
-    .card-body {
-        padding: 15px;
-        flex: 1;
+    #search_query:focus {
+        background: white;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        outline: none;
+    }
+    .filter-group {
         display: flex;
-        flex-direction: column;
-        min-height: 120px;
+        gap: 10px;
+    }
+    .filter-group select {
+        height: 45px;
+        padding: 0 15px;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        background: white;
+        font-size: 0.9rem;
+        cursor: pointer;
     }
 
-    .card-title {
-        font-size: 0.95rem;
-        font-weight: 600;
-        margin-bottom: 8px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        color: #212529;
+    /* Sidebar Chat AI */
+    #aiChatStatus {
+        font-size: 0.8rem;
+        color: var(--primary);
+        padding: 5px 15px;
+        margin-bottom: 10px;
+        border-radius: 20px;
+        background: rgba(var(--primary-rgb), 0.1);
+        display: none;
+        width: fit-content;
     }
-
-    .file-meta {
-        font-size: 0.85rem;
-        color: #6c757d;
-        margin-bottom: 12px;
-        flex-shrink: 0;
-    }
-
-    .file-actions {
-        margin-top: auto;
+    
+    /* Bouton flottant Chat AI */
+    .floating-ai-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        border-radius: 30px;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        color: white;
         display: flex;
-        flex-direction: column;
-        gap: 6px;
-        padding-top: 8px;
-        position: relative;
-        z-index: 1;
-    }
-
-    .file-actions-row {
-        display: flex;
-        gap: 6px;
-        width: 100%;
-    }
-
-    .file-actions-row .btn {
-        flex: 1;
-        font-size: 0.82rem; /* Légèrement plus petit pour tenir sur deux colonnes */
-        display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 6px 4px; /* Réduit le padding pour éviter les débordements */
-        white-space: nowrap;
-        min-width: 0;
-        width: 100%; /* Force la largeur si dans un btn-group */
-    }
-
-    .file-actions .btn-group {
-        flex: 1;
-        display: flex;
-        position: relative;
-    }
-
-    .file-actions .btn-group {
-        position: static;
-    }
-
-    .file-actions .btn-group .dropdown-menu {
-        position: fixed;
-        z-index: 9999;
-        min-width: 200px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-
-    .file-actions-menu-trigger {
-        position: relative;
-    }
-
-    .floating-menu .dropdown-item:hover {
-        background-color: #f5f5f5;
-    }
-
-    .file-thumb {
+        font-size: 1.5rem;
+        box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
         cursor: pointer;
+        z-index: 1000;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: none;
+        outline: none;
+    }
+    .floating-ai-btn:hover {
+        transform: scale(1.1) rotate(5deg);
+        box-shadow: 0 15px 30px rgba(99, 102, 241, 0.5);
+    }
+    .floating-ai-btn:active {
+        transform: scale(0.9);
+    }
+    @media (max-width: 768px) {
+        .floating-ai-btn {
+            bottom: 20px;
+            right: 20px;
+            width: 55px;
+            height: 55px;
+        }
     }
 
-    .file-actions .btn i {
-        margin-right: 5px;
+    #aiStatusText {
+        font-style: italic;
+    }
+    .ai-bubble {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px 18px 18px 4px;
+        padding: 12px 16px;
+        margin-bottom: 15px;
+        max-width: 85%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+    .ai-chat-sidebar {
+        position: fixed;
+        right: -450px;
+        top: 0;
+        width: 420px;
+        height: 100vh;
+        background: #ffffff;
+        box-shadow: -10px 0 30px rgba(0,0,0,0.1);
+        z-index: 2000;
+        transition: right 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        display: flex;
+        flex-direction: column;
+    }
+    .ai-chat-sidebar.active { right: 0; }
+    
+    /* Styles pour les badges de tags */
+    .tag-badge {
+        display: flex;
+        align-items: center;
+        background: #f1f5f9;
+        color: #475569;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        border: 1px solid #e2e8f0;
+        margin: 2px 0;
+    }
+    .tag-badge.tag-exclude {
+        background: #fef2f2;
+        color: #ef4444;
+        border-color: #fee2e2;
+    }
+    .tag-badge .remove-tag {
+        margin-left: 6px;
+        cursor: pointer;
+        opacity: 0.5;
+    }
+    .tag-badge .remove-tag:hover { opacity: 1; }
+    
+    .autocomplete-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        transition: background 0.2s;
+        font-size: 0.9rem;
+    }
+    .autocomplete-item:hover { background: #f8fafc; color: var(--primary); }
+    .autocomplete-item strong { color: var(--primary); }
+    
+    .ai-chat-header {
+        padding: 25px 20px;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        color: white;
+        position: relative;
+    }
+    .ai-chat-header h5 { font-weight: 700; letter-spacing: -0.5px; }
+    
+    .ai-chat-body {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        background: #fcfcfd;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .chat-message {
+        padding: 15px 20px;
+        border-radius: 18px;
+        max-width: 90%;
+        font-size: 1.2rem !important; /* Plus grand */
+        line-height: 1.6;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .chat-message.user {
+        background: var(--primary);
+        color: white;
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
+    }
+    .chat-message.ai {
+        background: white;
+        color: var(--text-main);
+        align-self: flex-start;
+        border: 1px solid #f1f5f9;
+        border-bottom-left-radius: 4px;
     }
 
-    .badge-ext {
-        background-color: rgba(13, 110, 253, 0.9);
-        backdrop-filter: blur(2px);
-        font-size: 0.75rem;
+    /* Styles pour les extraits de recherche */
+    mark {
+        background: rgba(99, 102, 241, 0.15);
+        color: var(--primary-dark);
+        font-weight: 600;
+        padding: 0 2px;
+        border-radius: 3px;
+    }
+    
+    .file-match-contexts {
+        margin-top: 8px;
+        padding-left: 12px;
+        border-left: 2px solid #e2e8f0;
+        font-size: 0.8rem;
+        line-height: 1.5;
+        color: var(--text-muted);
+    }
+    
+    .file-match-contexts .context-item {
+        margin-bottom: 4px;
+    }
+    
+    .file-match-contexts .context-item:last-child {
+        margin-bottom: 0;
     }
 
-    .border-start-primary {
-        border-left: 4px solid #0d6efd !important;
+    /* Footer & Input Alignment */
+    .ai-chat-footer {
+        padding: 20px;
+        padding-bottom: env(safe-area-inset-bottom, 30px); /* Sécurité mobile */
+        background: white;
+        border-top: 1px solid #f1f5f9;
     }
-
-    .btn-delete-card {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        width: 28px;
-        height: 28px;
+    @media (max-width: 768px) {
+        .ai-chat-sidebar {
+            width: 100%;
+            right: -100%;
+        }
+        .ai-chat-footer {
+            padding-bottom: 80px; /* Remonte le champ sur mobile pour éviter les barres du navigateur */
+        }
+    }
+    .chat-input-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #f1f5f9;
+        padding: 6px 6px 6px 15px;
+        border-radius: 25px;
+        border: 2px solid transparent;
+        transition: all 0.3s;
+    }
+    .chat-input-wrapper:focus-within {
+        background: white;
+        border-color: var(--primary);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+    }
+    #aiChatInput {
+        flex: 1;
+        border: none;
+        background: transparent;
+        outline: none;
+        height: 40px;
+        font-size: 0.95rem;
+    }
+    #aiChatBtn {
+        width: 40px;
+        height: 40px;
         border-radius: 50%;
-        background: rgba(220, 53, 69, 0.85);
+        background: var(--primary);
         color: white;
         border: none;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    #aiChatBtn:hover { transform: scale(1.05); background: var(--primary-dark); }
+    #aiChatBtn.btn-danger { background: #ef4444; }
+
+    /* Sources & Thinking */
+    /* AI Overview (SGE Style) */
+    .ai-overview-box {
+        background: linear-gradient(to bottom right, #fcfdff, #f8f9ff);
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 25px;
+        margin-bottom: 30px;
+        display: none;
+        box-shadow: 0 4px 20px rgba(99, 102, 241, 0.05);
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        display: none;
+        animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .ai-overview-header {
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+    }
+    .ai-overview-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--primary);
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-size: 20px;
-        font-weight: bold;
-        line-height: 1;
-        z-index: 10;
+        gap: 10px;
+    }
+    .ai-overview-content {
+        font-size: 2rem !important; /* GÉANT */
+        line-height: 1.6;
+        color: var(--text-main);
+        margin-bottom: 25px;
+        font-weight: 400;
+    }
+    .ai-thought-box {
+        font-size: 1.2rem !important;
+        color: #713f12;
+        font-style: italic;
+        background: #fefce8; /* Jaune post-it */
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        border: 1px dashed #fef08a;
+        border-left: 6px solid #facc15;
+        position: relative;
+    }
+    .ai-thought-box::before {
+        content: "💭 RÉFLEXION INTERNE DE L'IA";
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 800;
+        margin-bottom: 10px;
+        color: #a16207;
+        letter-spacing: 0.05em;
+    }
+    .ai-overview-sources {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Plus large */
+        gap: 12px;
+        padding-top: 15px;
+        border-top: 1px dashed #e2e8f0;
+    }
+    .source-card {
+        background: white;
+        border: 1px solid #f1f5f9;
+        padding: 15px;
+        border-radius: 10px;
+        font-size: 1.1rem !important; /* Plus grand */
+        transition: all 0.2s;
         cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
-
-    .btn-delete-card:hover {
-        background: rgba(220, 53, 69, 1);
-        transform: scale(1.1);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    .source-card:hover {
+        border-color: var(--primary);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     }
-</style>
+    .source-card.is-top { border-left: 3px solid #28a745; }
+    
+    #aiContextArea { border-radius: 12px; margin: 0 20px 10px 20px; border: 1px solid #e2e8f0; }
+    #aiThoughtArea { border-radius: 12px; margin: 0 20px 10px 20px; border: 1px solid #f1f5f9; background: #fafafa; }
+    </style>
 
-<!-- PDF.js -->
-<script src="js/build/pdf.js"></script>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0 font-weight-bold"><i class="fa fa-book-open text-primary"></i> Bibliothèque</h2>
+        <div class="text-muted">662 documents disponibles</div>
+    </div>
+
+    <!-- Toolbar Premium -->
+    <div class="library-toolbar">
+        <div class="search-container">
+            <i class="fa fa-search"></i>
+            <input type="text" id="search_query" placeholder="Rechercher un livre, un auteur, une thématique..." onkeypress="if(event.key === 'Enter') { event.preventDefault(); triggerAiSearch(); }">
+        </div>
+        
+        <div class="filter-group">
+            <select id="filter_format">
+                <option value="">Format</option>
+                <option value="A3">A3</option>
+                <option value="A4">A4</option>
+                <option value="A5">A5</option>
+                <option value="A6">A6</option>
+            </select>
+            
+            <select id="filter_color">
+                <option value="">Couleur</option>
+                <option value="NB">N&B</option>
+                <option value="Couleur">Couleur</option>
+            </select>
+
+            <div class="position-relative" style="min-width: 250px;">
+                <div id="tag_filter_wrapper" class="d-flex align-items-center flex-wrap" style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 2px 10px; min-height: 45px; background: #fff; cursor: text;" onclick="document.getElementById('tag_filter_input').focus()">
+                    <div id="active_tags" class="d-flex flex-wrap" style="gap: 5px;"></div>
+                    <input type="text" id="tag_filter_input" placeholder="Tags (+/-)..." style="border: none; outline: none; flex: 1; min-width: 80px; padding: 8px 0; font-size: 0.9rem;" autocomplete="off">
+                    <button class="btn btn-link p-0 text-muted ml-2" onclick="const v = $('#tag_filter_input').val().trim(); if(v) addTagFilter(v); return false;"><i class="fa fa-plus-circle"></i></button>
+                </div>
+                <div id="tag_autocomplete" class="shadow-lg border rounded" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1050; background: white; max-height: 250px; overflow-y: auto; margin-top: 5px;"></div>
+            </div>
+
+            <?php if ($ai_enabled): ?>
+            <select id="ai_model" class="ml-2" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0 10px; height: 45px; background: #f8fafc; color: #475569; font-weight: 500;">
+                <option value="fast">🚀 Mode Rapide (Luth)</option>
+                <option value="pro">🧠 Mode Expert (Gemma)</option>
+            </select>
+            <?php endif; ?>
+        </div>
+
+        <?php if ($ai_enabled): ?>
+        <button class="btn btn-primary px-4 shadow-sm" type="button" onclick="triggerAiSearch()" style="border-radius: 12px; height: 45px;">
+            <i class="fa fa-magic mr-2"></i> Assistant IA
+        </button>
+        <?php endif; ?>
+    </div>
+
+    <!-- Zone d'upload -->
+    <div class="mb-3">
+        <button class="btn btn-outline-secondary btn-sm" type="button" data-toggle="collapse" data-target="#uploadZone" style="border-radius: 8px;">
+            <i class="fa fa-cloud-upload"></i> Ajouter des documents
+        </button>
+        <div class="collapse mt-2" id="uploadZone">
+            <div id="dropZone" style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; background: #f8fafc; transition: all 0.3s;"
+                 onclick="document.getElementById('fileInput').click()"
+                 ondragover="event.preventDefault(); this.style.borderColor='#6366f1'; this.style.background='#eef2ff';"
+                 ondragleave="this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc';"
+                 ondrop="event.preventDefault(); this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc'; handleFiles(event.dataTransfer.files);">
+                <i class="fa fa-cloud-upload" style="font-size: 2em; color: #94a3b8; margin-bottom: 10px;"></i><br>
+                <span style="color: #64748b;">Glissez vos PDF ici ou cliquez pour parcourir</span>
+                <input type="file" id="fileInput" class="d-none" accept=".pdf,.png" multiple
+                       onchange="handleFiles(this.files)">
+            </div>
+            <div id="uploadProgress" class="mt-2"></div>
+        </div>
+    </div>
+
+    <?php if ($ai_enabled): ?>
+    <!-- Zone AI Overview (SGE) -->
+    <div id="aiOverviewContainer" class="ai-overview-box">
+        <div class="ai-overview-header d-flex justify-content-between align-items-center mb-2">
+            <div class="ai-overview-title m-0">
+                <i class="fa fa-magic"></i> Aperçu par l'IA
+                <span id="aiOverviewLoading" style="display:none; font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">
+                    <i class="fa fa-circle-notch fa-spin"></i> Recherche en cours...
+                </span>
+                <span id="aiOverviewStatus" class="ml-2" style="font-size: 0.75rem; opacity: 0.8; font-weight: normal; font-style: italic;"></span>
+            </div>
+            <button class="btn btn-sm btn-link text-muted p-0" onclick="document.getElementById('aiOverviewContainer').style.display='none'"><i class="fa fa-times"></i></button>
+        </div>
+        <div id="aiOverviewThought" style="display:none; font-size: 0.85rem; color: #64748b; font-style: italic; margin-bottom: 10px; padding: 10px; background: #f8fafc; border-radius: 10px;"></div>
+        <div id="aiOverviewContent" class="ai-overview-content"></div>
+        <div id="aiOverviewSources" class="ai-overview-sources"></div>
+    </div>
+    <?php endif; ?>
+
+    <!-- VUE DEBUG IA -->
+    <?php if (isset($_GET['debug']) && $_GET['debug'] == 1): ?>
+    <script>console.log("DUPLI: Debug View Rendered");</script>
+    <div id="aiDebugView" class="debug-container mb-4 p-4 bg-white shadow-lg" style="border-radius: 20px; border-top: 5px solid #dc3545; position: sticky; top: 10px; z-index: 1050; max-height: 80vh; overflow-y: auto;">
+        <h3 class="mb-4 d-flex justify-content-between align-items-center">
+            <span><i class="fa fa-bug text-danger"></i> Historique de Debug IA (28 messages injectés)</span>
+            <div>
+                <button onclick="location.reload()" class="btn btn-sm btn-outline-info mr-2"><i class="fa fa-refresh"></i> Actualiser</button>
+                <a href="?bibliotheque" class="btn btn-sm btn-outline-secondary">Fermer le Debug</a>
+            </div>
+        </h3>
+        
+        <?php
+        $historyFile = __DIR__ . '/../../logs/chat_history.json';
+        $history = file_exists($historyFile) ? json_decode(file_get_contents($historyFile), true) : [];
+        if (empty($history)): ?>
+            <p class="text-muted italic">Aucun historique disponible pour le moment.</p>
+        <?php else: ?>
+            <div class="table-responsive">
+                <table class="table table-hover border">
+                    <thead class="bg-light">
+                        <tr>
+                            <th style="width: 150px;">Timestamp</th>
+                            <th>Modèle / Temps</th>
+                            <th>Question / Réponse</th>
+                            <th>Détails Techniques</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach (array_slice($history, 0, 20) as $item): ?>
+                        <tr>
+                            <td class="small text-muted"><?= $item['timestamp'] ?></td>
+                            <td>
+                                <span class="badge badge-<?= $item['model'] === 'pro' ? 'primary' : 'info' ?>">
+                                    <?= $item['model'] === 'pro' ? '🧠 EXPERT' : '🚀 RAPIDE' ?>
+                                </span>
+                                <br><small class="font-weight-bold"><?= $item['elapsed'] ?>s</small>
+                            </td>
+                            <td>
+                                <div class="mb-3" style="font-size: 1.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+                                    <strong>QUESTION :</strong> <span style="color: #1e293b;"><?= htmlspecialchars($item['question']) ?></span>
+                                </div>
+                                
+                                <?php if (!empty($item['thought'])): ?>
+                                <div class="ai-thought-box">
+                                    <?= nl2br(htmlspecialchars($item['thought'])) ?>
+                                </div>
+                                <?php endif; ?>
+
+                                <div style="font-size: 1.5rem !important; line-height: 1.5; background: #f0f7ff; padding: 20px; border-radius: 12px; border-left: 5px solid #007bff; color: #1e293b;">
+                                    <strong>RÉPONSE :</strong> <?= nl2br(htmlspecialchars($item['response'])) ?>
+                                </div>
+                            </td>
+                            <td>
+                                <button class="btn btn-xs btn-outline-info mb-1" onclick="$(this).next().toggle()">Voir Prompt complet</button>
+                                <div style="display:none; font-size: 0.75rem; background: #1e293b; color: #94a3b8; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                                    <?= nl2br(htmlspecialchars($item['prompt'])) ?>
+                                </div>
+                                <br>
+                                <?php if (!empty($item['thought'])): ?>
+                                <button class="btn btn-xs btn-outline-warning mb-1" onclick="$(this).next().toggle()">Voir Pensée</button>
+                                <div style="display:none; font-size: 0.8rem; font-style: italic; color: #475569; background: #fffbeb; padding: 10px; border: 1px solid #fde68a; border-radius: 5px; margin-bottom: 10px;">
+                                    <?= nl2br(htmlspecialchars($item['thought'])) ?>
+                                </div>
+                                <?php endif; ?>
+                                <br>
+                                <div style="font-size: 1rem; margin-top: 10px; background: white; padding: 15px; border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
+                                    <div class="mb-2 font-weight-bold text-success"><i class="fa fa-database"></i> Sources utilisées pour cette réponse :</div>
+                                    <?php foreach ($item['sources'] as $idx => $src): 
+                                        $uniqueId = "debug_src_" . md5($item['timestamp'] . $idx);
+                                    ?>
+                                        <div class="mb-3 pb-3 border-bottom">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <a href="javascript:void(0)" onclick="openPdfViewer(<?= $src['id'] ?? 0 ?>, '<?= addslashes($src['title']) ?>')" class="font-weight-bold text-primary" style="font-size: 1.2rem;">
+                                                    <i class="fa fa-file-pdf-o"></i> <?= htmlspecialchars($src['title']) ?>
+                                                </a>
+                                            </div>
+                                            <?php 
+                                            $extracts = $src['contents'] ?? (!empty($src['content']) ? [$src['content']] : []);
+                                            if (!empty($extracts)): ?>
+                                                <div class="text-muted mb-1" style="font-size: 0.85rem; font-style: italic;">Extraits du texte (Contexte) :</div>
+                                                <?php foreach ($extracts as $cIdx => $content): ?>
+                                                    <div id="<?= $uniqueId ?>_<?= $cIdx ?>" style="font-size: 1.1rem; color: #334155; background: #f1f5f9; padding: 12px; border-radius: 8px; border-left: 4px solid #6366f1; line-height: 1.5; margin-bottom: 8px;">
+                                                        <?= nl2br(htmlspecialchars($content)) ?>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <div class="small text-muted italic">Extrait non disponible (Ancien log ou source secondaire)</div>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
+    <!-- Liste des fichiers (Tableau ou Grille) -->
+    <div id="library_content">
+        <!-- Rempli par AJAX -->
+    </div>
+
+    <?php if ($ai_enabled): ?>
+    <button class="floating-ai-btn" onclick="toggleAiChat()" title="Ouvrir l'Assistant Chat">
+        <i class="fa fa-comments"></i>
+    </button>
+    <?php endif; ?>
+
+    <!-- Modal de Confirmation de Suppression -->
+    <div class="modal fade" id="deleteFileModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+                <div class="modal-header bg-danger text-white border-0 py-3" style="border-radius: 20px 20px 0 0;">
+                    <h5 class="modal-title font-weight-bold"><i class="fa fa-trash mr-2"></i> Supprimer du document</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="mb-3 text-dark font-weight-bold" id="delete_filename_display"></p>
+                    <p class="text-muted small">Cette action supprimera définitivement le document de la bibliothèque et de l'indexation IA (vecteurs).</p>
+                    
+                    <div class="custom-control custom-checkbox mt-4 p-3 bg-light rounded border">
+                        <input type="checkbox" class="custom-control-input" id="delete_from_disk_check" checked>
+                        <label class="custom-control-label font-weight-bold text-danger" for="delete_from_disk_check">
+                            Supprimer également le fichier physique sur le disque dur
+                        </label>
+                        <small class="d-block text-muted mt-1 ml-4">Attention : Si coché, le fichier sera définitivement effacé de votre ordinateur.</small>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4">
+                    <input type="hidden" id="delete_file_id">
+                    <button type="button" class="btn btn-light px-4" data-dismiss="modal" style="border-radius: 12px;">Annuler</button>
+                    <button type="button" class="btn btn-danger px-4 shadow-sm" onclick="confirmDeleteFile()" style="border-radius: 12px;">
+                        <i class="fa fa-trash mr-2"></i> Confirmer la suppression
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
 <script>
-    let currentFiles = [];
-    let filesToIndex = [];
-    let pdfDoc = null;
-    let currentPage = 1;
-    let pdfViewerFileId = null;
+    function toggleAiChat() {
+        document.getElementById('aiChatSidebar').classList.toggle('active');
+    }
 
-    document.addEventListener('DOMContentLoaded', function () {
-        loadFiles();
+    let currentAiMode = 'fast';
+    let aiAbortController = null;
+    let isAiGenerating = false;
 
-        // Drag & Drop
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
+    function setAiMode(mode) {
+        if (isAiGenerating) return;
+        currentAiMode = mode;
+        document.getElementById('modeFastLabel').classList.toggle('active', mode === 'fast');
+        document.getElementById('modeProLabel').classList.toggle('active', mode === 'pro');
+    }
 
-        // Empêcher la propagation du clic depuis l'input file
-        fileInput.addEventListener('click', (e) => {
-            e.stopPropagation();
+    function updateAiStatus(text, show = true) {
+        const statusDiv = document.getElementById('aiChatStatus');
+        const statusText = document.getElementById('aiStatusText');
+        if (!statusDiv || !statusText) return;
+        
+        let icon = '<i class="fa fa-circle-notch fa-spin"></i> ';
+        if (text.includes("Analyse")) icon = '<i class="fa fa-search fa-pulse"></i> ';
+        if (text.includes("Sources")) icon = '<i class="fa fa-book"></i> ';
+        if (text.includes("Lecture")) icon = '<i class="fa fa-glasses fa-fade"></i> ';
+        if (text.includes("Rédaction")) icon = '<i class="fa fa-pen-nib fa-bounce"></i> ';
+        if (text.includes("Connexion")) icon = '<i class="fa fa-wifi"></i> ';
+
+        statusText.innerHTML = icon + text;
+        statusDiv.style.display = show ? 'block' : 'none';
+    }
+
+    function updateAiChatBtn(generating = false) {
+        const btn = document.getElementById('aiChatBtn');
+        const icon = document.getElementById('aiChatIcon');
+        isAiGenerating = generating;
+        
+        if (generating) {
+            btn.classList.add('btn-danger');
+            icon.className = 'fa fa-stop';
+        } else {
+            btn.classList.remove('btn-danger');
+            icon.className = 'fa fa-paper-plane';
+        }
+    }
+
+    async function sendAiMessage() {
+        const input = document.getElementById('aiChatInput');
+        if (isAiGenerating) {
+            if (aiAbortController) aiAbortController.abort();
+            return;
+        }
+
+        const question = input.value.trim();
+        if (!question) return;
+
+        addChatMessage('user', question);
+        input.value = '';
+        
+        const contextArea = document.getElementById('aiContextArea');
+        const contextDetails = document.getElementById('aiContextDetails');
+        const thoughtArea = document.getElementById('aiThoughtArea');
+        const thoughtContent = document.getElementById('aiThoughtContent');
+        
+        contextArea.style.display = 'none';
+        contextDetails.innerHTML = '';
+        thoughtArea.style.display = 'none';
+        thoughtContent.innerHTML = '';
+        
+        updateAiStatus("Recherche...");
+        updateAiChatBtn(true);
+        
+        aiAbortController = new AbortController();
+
+        try {
+            const response = await fetch('?chat_rag', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    question: question, 
+                    mode: currentAiMode,
+                    tags: activeTags.join(',')
+                }),
+                signal: aiAbortController.signal
+            });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let aiMsgDiv = null;
+            let fullContent = "";
+            let isThinking = true;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                const chunk = decoder.decode(value);
+                const lines = chunk.split("\n");
+                
+                for (const line of lines) {
+                    if (line.startsWith("data: ")) {
+                        try {
+                            const data = JSON.parse(line.substring(6));
+                            if (data.type === 'status') {
+                                updateAiStatus(data.message);
+                                if (data.sources && data.sources.length > 0) {
+                                    const contextArea = document.getElementById('aiContextArea');
+                                    const contextDetails = document.getElementById('aiContextDetails');
+                                    contextArea.style.display = 'block';
+                                    contextDetails.style.display = 'block'; // Afficher par défaut
+                                    contextDetails.innerHTML = ''; // Nettoyer avant
+                                    data.sources.forEach((src, idx) => {
+                                        const sourceId = `src_${Date.now()}_${idx}`;
+                                        const topBadge = src.is_top ? '<span class="badge badge-success mr-2" style="font-size:0.6rem; vertical-align:middle;">TOP</span>' : '';
+                                        const scoreInfo = src.score ? `<small class="text-muted ml-2">(Score: ${src.score})</small>` : '';
+                                        const borderStyle = src.is_top ? 'border-left: 3px solid #28a745 !important;' : 'border-left: 3px solid #ddd !important; opacity: 0.8;';
+
+                                        contextDetails.innerHTML += `
+                                            <div class="mb-2 p-2 border rounded bg-white shadow-sm" style="font-size: 0.85rem; ${borderStyle}">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        ${topBadge}
+                                                        <strong onclick="openPdfViewer(${src.id}, '${src.title.replace(/'/g, "\\'")}')" style="cursor:pointer; color:var(--primary)">${src.title}</strong>
+                                                        ${scoreInfo}
+                                                    </div>
+                                                    <button class="btn btn-xs btn-link p-0 text-muted" onclick="$('#${sourceId}').toggle()">Afficher l'extrait</button>
+                                                </div>
+                                                <div id="${sourceId}" style="display:none; margin-top:5px; color:#64748b; border-top:1px dashed #eee; padding-top:5px; font-size: 0.8rem;">
+                                                    ${src.content.replace(/\n/g, '<br>')}
+                                                </div>
+                                            </div>`;
+                                    });
+                                }
+                            }
+                            if (data.type === 'content') {
+                                let text = data.content;
+                                if (isThinking && currentAiMode === 'pro') {
+                                    // Si ça ne commence pas par <think>, on arrête de penser immédiatement
+                                    if (fullContent === "" && !text.includes("<think>") && !text.startsWith("<")) {
+                                        isThinking = false;
+                                    } else {
+                                        thoughtArea.style.display = 'block';
+                                        if (text.includes("</think>")) {
+                                            const parts = text.split("</think>");
+                                            thoughtContent.innerHTML += parts[0].replace(/\n/g, '<br>');
+                                            isThinking = false;
+                                            updateAiStatus("Rédaction...");
+                                            text = parts[1] || "";
+                                            if (text.trim() === "") return;
+                                        } else {
+                                            thoughtContent.innerHTML += text.replace(/\n/g, '<br>');
+                                            return;
+                                        }
+                                    }
+                                }
+                                
+                                if (!aiMsgDiv) aiMsgDiv = addChatMessage('ai', '');
+                                fullContent += text;
+                                aiMsgDiv.innerHTML = fullContent.replace(/\n/g, '<br>');
+                                document.getElementById('aiChatBody').scrollTop = document.getElementById('aiChatBody').scrollHeight;
+                            }
+                            if (data.type === 'done') {
+                                updateAiStatus("Terminé", false);
+                                updateAiChatBtn(false);
+                            }
+                            if (data.type === 'error') {
+                                addChatMessage('ai', 'Erreur : ' + data.message);
+                                updateAiChatBtn(false);
+                            }
+                        } catch (e) {}
+                    }
+                }
+            }
+        } catch (err) {
+            updateAiChatBtn(false);
+            updateAiStatus("", false);
+        }
+    }
+
+    function addChatMessage(role, text) {
+        const body = document.getElementById('aiChatBody');
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `chat-message ${role}`;
+        msgDiv.innerHTML = text;
+        body.appendChild(msgDiv);
+        body.scrollTop = body.scrollHeight;
+        return msgDiv;
+    }
+
+    // --- LOGIQUE FILTRES ---
+    let searchTimeout = null;
+    let currentSort = 'created_at';
+    let currentOrder = 'DESC';
+    let activeTags = [];
+    let allTagsList = [];
+
+    $(document).ready(function() {
+        loadLibrary();
+        
+        $('#search_query').on('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => loadLibrary(1), 300);
         });
 
-        dropZone.addEventListener('click', (e) => {
-            if (e.target !== fileInput) {
-                fileInput.click();
+        $('#filter_format, #filter_color').on('change', function() {
+            loadLibrary(1);
+        });
+
+        // Autocomplete Tags
+        $('#tag_filter_input').on('input', function() {
+            const val = $(this).val().toLowerCase();
+            
+            // Si l'utilisateur tape une virgule ou un espace à la fin, on valide le tag
+            if (val.length > 1 && (val.endsWith(',') || val.endsWith(' '))) {
+                const tag = val.substring(0, val.length - 1).trim();
+                if (tag) addTagFilter(tag);
+                return;
+            }
+
+            const isExclude = val.startsWith('-');
+            const searchVal = isExclude ? val.substring(1) : val;
+            
+            if (searchVal.length < 1) {
+                $('#tag_autocomplete').hide();
+                return;
+            }
+
+            // On force la conversion en String pour éviter le crash sur les tags numériques
+            const matches = allTagsList.filter(t => String(t).toLowerCase().includes(searchVal));
+            if (matches.length > 0) {
+                let html = '';
+                matches.forEach(m => {
+                    const sM = String(m);
+                    const display = isExclude ? `Exclure : <strong>${sM}</strong>` : `Inclure : <strong>${sM}</strong>`;
+                    const tagVal = isExclude ? `-${sM}` : sM;
+                    html += `<div class="autocomplete-item" onclick="addTagFilter('${tagVal.replace(/'/g, "\\'")}')">${display}</div>`;
+                });
+                $('#tag_autocomplete').html(html).show();
+            } else {
+                $('#tag_autocomplete').hide();
             }
         });
 
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
+        // Touche Entrée et gestion du focus
+        $('#tag_filter_input').on('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                const val = $(this).val().trim();
+                if (val) {
+                    addTagFilter(val);
+                }
+                return false;
+            }
+            // Retour arrière pour supprimer le dernier tag si le champ est vide
+            if (e.key === 'Backspace' && $(this).val() === '' && activeTags.length > 0) {
+                removeTagFilter(activeTags[activeTags.length - 1]);
+            }
         });
 
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
+        // Hide autocomplete on click outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.position-relative').length) {
+                $('#tag_autocomplete').hide();
+            }
         });
 
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            handleFiles(e.dataTransfer.files);
-        });
-
-        fileInput.addEventListener('change', () => {
-            handleFiles(fileInput.files);
-        });
-
-        // Recherche
-        let searchTimeout;
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                loadFiles(e.target.value);
-            }, 300);
-        });
-
-        // Check for Tauri or Electron
-        const isTauri = typeof window !== 'undefined' && window.__TAURI__;
-        const isElectron = typeof window !== 'undefined' && window.electronAPI;
-
-        if (isTauri || isElectron) {
-            document.getElementById('browseBtn').style.display = 'block';
-            document.getElementById('webBrowseInfo').style.display = 'none';
-        } else {
-            document.getElementById('browseBtn').style.display = 'none';
-            document.getElementById('webBrowseInfo').style.display = 'block';
-        }
-        
-        // Vérifier si une indexation est en cours
-        checkActiveJob();
+        loadTags();
     });
 
-    function handleFiles(files) {
-        Array.from(files).forEach(file => {
-            uploadFile(file);
+    function addTagFilter(tag) {
+        if (!activeTags.includes(tag)) {
+            activeTags.push(tag);
+            updateTagUI();
+            $('#tag_filter_input').val('');
+            $('#tag_autocomplete').hide();
+            loadLibrary(1);
+        }
+    }
+
+    function removeTagFilter(tag) {
+        activeTags = activeTags.filter(t => t !== tag);
+        updateTagUI();
+        loadLibrary(1);
+    }
+
+    function updateTagUI() {
+        const container = $('#active_tags');
+        container.empty();
+        activeTags.forEach(tag => {
+            const isExclude = tag.startsWith('-');
+            const tagName = isExclude ? tag.substring(1) : tag;
+            const badge = $(`
+                <div class="tag-badge ${isExclude ? 'tag-exclude' : ''}">
+                    ${isExclude ? '<i class="fa fa-minus-circle mr-1"></i>' : ''}
+                    ${tagName}
+                    <span class="remove-tag" onclick="removeTagFilter('${tag}')">&times;</span>
+                </div>
+            `);
+            container.append(badge);
         });
+    }
+
+    function loadLibrary(page = 1, sort = null, order = null) {
+        if (sort) currentSort = sort;
+        if (order) currentOrder = order;
+
+        const query = $('#search_query').val();
+        const format = $('#filter_format').val();
+        const color = $('#filter_color').val();
+        const tag = activeTags.join(',');
+
+        console.log("--- loadLibrary ---");
+        console.log("Params:", { query, format, color, tag, page, sort_by: currentSort, sort_order: currentOrder });
+
+        $('#library_content').css('opacity', '0.5');
+
+        $.ajax({
+            url: '?bibliotheque_list',
+            method: 'GET',
+            data: { 
+                query, 
+                format, 
+                color, 
+                tag, 
+                page, 
+                sort_by: currentSort, 
+                sort_order: currentOrder 
+            },
+            success: function(html) {
+                console.log("Success: HTML reçu (" + html.length + " caractères)");
+                $('#library_content').html(html).css('opacity', '1');
+                if (page > 1) {
+                    $('html, body').animate({ scrollTop: $('#library_content').offset().top - 100 }, 200);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Erreur AJAX:", status, error);
+                console.log("Response text:", xhr.responseText);
+                $('#library_content').html('<div class="alert alert-danger">Erreur lors du chargement (voir console).</div>').css('opacity', '1');
+            }
+        });
+    }
+
+    function filterByTag(tag) {
+        addTagFilter(tag);
+    }
+
+    function loadTags() {
+        $.getJSON('?get_bibliotheque_tags', function(tags) {
+            allTagsList = tags;
+        });
+    }
+
+    function viewFile(id) {
+        window.open('?get_bibliotheque_file&id=' + id, '_blank');
+    }
+
+    function openDeleteModal(id, filename) {
+        $('#delete_file_id').val(id);
+        $('#delete_filename_display').text(filename);
+        $('#delete_from_disk_check').prop('checked', true);
+        $('#deleteFileModal').modal('show');
+    }
+
+    function confirmDeleteFile() {
+        const id = $('#delete_file_id').val();
+        const fromDisk = $('#delete_from_disk_check').is(':checked');
+        
+        const btn = $('#deleteFileModal .btn-danger');
+        const oldHtml = btn.html();
+        btn.prop('disabled', true).html('<i class="fa fa-circle-notch fa-spin"></i> Suppression...');
+        
+        $.ajax({
+            url: '?delete_bibliotheque_file',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ id: id, delete_from_disk: fromDisk }),
+            success: function(response) {
+                $('#deleteFileModal').modal('hide');
+                loadLibrary();
+            },
+            error: function(xhr) {
+                alert("Erreur lors de la suppression : " + (xhr.responseJSON?.error || "Erreur inconnue"));
+            },
+            complete: function() {
+                btn.prop('disabled', false).html(oldHtml);
+            }
+        });
+    }
+
+    function editFile(id) {
+        $.ajax({
+            url: '?get_bibliotheque_file_info',
+            method: 'GET',
+            data: { id: id },
+            success: function(response) {
+                if (response.success) {
+                    const file = response.file;
+                    $('#edit_file_id').val(file.id);
+                    $('#edit_filename').val(file.filename);
+                    $('#edit_page_count').val(file.page_count);
+                    $('#edit_tags').val(file.tags || '');
+                    
+                    // Nouveaux champs
+                    const meta = file.metadata || {};
+                    $('#edit_is_color').val(meta.is_color ? '1' : '0');
+                    $('#edit_imposition').val(meta.imposition || 'ppp');
+                    
+                    $('#editFileModal').modal('show');
+                } else {
+                    alert('Erreur: ' + response.error);
+                }
+            },
+            error: function() {
+                alert('Erreur lors de la récupération des informations du fichier.');
+            }
+        });
+    }
+
+    function saveMetadata() {
+        const id = $('#edit_file_id').val();
+        const data = {
+            id: id,
+            filename: $('#edit_filename').val(),
+            page_count: $('#edit_page_count').val(),
+            tags: $('#edit_tags').val(),
+            is_color: $('#edit_is_color').val() === '1',
+            imposition: $('#edit_imposition').val()
+        };
+
+        const btn = $('#btnSaveMetadata');
+        const originalText = btn.html();
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Enregistrement...');
+
+        $.ajax({
+            url: '?update_bibliotheque_metadata',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(response) {
+                if (response.success) {
+                    $('#editFileModal').modal('hide');
+                    loadLibrary(1); // Recharger la liste
+                } else {
+                    alert('Erreur: ' + response.message);
+                }
+            },
+            error: function(xhr) {
+                alert('Erreur lors de l\'enregistrement : ' + (xhr.responseJSON ? xhr.responseJSON.error : 'Erreur inconnue'));
+            },
+            complete: function() {
+                btn.prop('disabled', false).html(originalText);
+            }
+        });
+    }
+
+    // --- UPLOAD DE FICHIERS ---
+    function handleFiles(files) {
+        Array.from(files).forEach(file => uploadFile(file));
     }
 
     function uploadFile(file) {
+        const progress = document.getElementById('uploadProgress');
+        const id = 'up_' + Date.now();
+        progress.insertAdjacentHTML('beforeend',
+            `<div id="${id}" class="alert alert-info py-1 px-2 mt-1" style="font-size:0.85rem;">
+                <i class="fa fa-spinner fa-spin"></i> <strong>${file.name}</strong> — Téléchargement en cours...
+            </div>`
+        );
         const formData = new FormData();
         formData.append('file', file);
 
-        fetch('?upload_bibliotheque', {
-            method: 'POST',
-            body: formData
-        })
-            .then(response => response.json())
+        fetch('?upload_bibliotheque', { method: 'POST', body: formData })
+            .then(r => r.json())
             .then(data => {
+                const el = document.getElementById(id);
                 if (data.success) {
-                    loadFiles();
+                    el.className = 'alert alert-success py-1 px-2 mt-1';
+                    el.innerHTML = `<i class="fa fa-check"></i> <strong>${file.name}</strong> — Ajouté.`;
+                    loadLibrary(1);
                 } else {
-                    showAppModal({ message: '<?php _ejs('common.error'); ?> upload: ' + data.error, type: 'danger' });
+                    el.className = 'alert alert-danger py-1 px-2 mt-1';
+                    el.innerHTML = `<i class="fa fa-times"></i> <strong>${file.name}</strong> — Erreur : ${data.error || 'Inconnue'}`;
                 }
+                setTimeout(() => el.remove(), 5000);
             })
-            .catch(error => console.error('Error:', error));
-    }
-
-    // Variable pour annuler les requêtes en cours
-    let currentSearchAbortController = null;
-
-    function loadFiles(search = null) {
-        // Si search n'est pas fourni, utiliser la valeur actuelle de la barre de recherche
-        if (search === null || search === undefined) {
-            const searchInput = document.getElementById('searchInput');
-            search = searchInput ? searchInput.value : '';
-        }
-
-        // Annuler la requête précédente si elle est encore en cours
-        if (currentSearchAbortController) {
-            currentSearchAbortController.abort();
-        }
-
-        // Créer un nouveau AbortController pour cette requête
-        currentSearchAbortController = new AbortController();
-
-        // Afficher l'indicateur de progression
-        const grid = document.getElementById('fileGrid');
-        grid.innerHTML = `
-        <div class="col-12">
-            <div class="text-center" style="padding: 50px;">
-                <i class="fa fa-spinner fa-spin fa-3x" style="color: #0d6efd; margin-bottom: 15px;"></i>
-                <p style="color: #6c757d; font-size: 1.1em;"><?php _ejs('library.searching'); ?></p>
-            </div>
-        </div>
-    `;
-
-        fetch('?search_bibliotheque&q=' + encodeURIComponent(search), {
-            signal: currentSearchAbortController.signal
-        })
-            .then(response => {
-                // Vérifier si la réponse est vide
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    throw new Error('Réponse non-JSON reçue du serveur (Content-Type: ' + contentType + ')');
-                }
-
-                // Lire le texte de la réponse
-                return response.text().then(text => {
-                    if (!text || text.trim() === '') {
-                        throw new Error('Réponse vide du serveur');
-                    }
-                    try {
-                        return JSON.parse(text);
-                    } catch (e) {
-                        console.error('Texte reçu du serveur:', text);
-                        throw new Error('Réponse JSON invalide: ' + e.message);
-                    }
-                });
-            })
-            .then(data => {
-                // Vérifier que cette réponse correspond bien à la recherche actuelle
-                const currentSearchInput = document.getElementById('searchInput');
-                const currentSearchValue = currentSearchInput ? currentSearchInput.value : '';
-
-                // Ignorer les réponses qui ne correspondent pas à la recherche actuelle
-                if (search !== currentSearchValue) {
-                    return; // Ignorer cette réponse obsolète
-                }
-
-                if (data.success) {
-                    renderGrid(data.files);
-                } else {
-                    console.error('Erreur serveur:', data.error);
-                    const grid = document.getElementById('fileGrid');
-                    grid.innerHTML = '<div class="col-12"><div class="alert alert-danger text-center"><i class="fa fa-exclamation-triangle"></i> <?php echo __js('admin_printers.error_loading'); ?> : ' + (data.error || '<?php echo __js('admin_printers.unknown_error'); ?>') + '</div></div>';
-                }
-            })
-            .catch(error => {
-                // Ignorer les erreurs d'annulation (AbortError)
-                if (error.name === 'AbortError') {
-                    return; // Ignorer silencieusement les annulations
-                }
-
-                console.error('Erreur lors du chargement des fichiers:', error);
-                const grid = document.getElementById('fileGrid');
-                grid.innerHTML = '<div class="col-12"><div class="alert alert-danger text-center"><i class="fa fa-exclamation-triangle"></i> <?php echo __js('tirage_multimachines.communication_error'); ?> : ' + error.message + '</div></div>';
+            .catch(err => {
+                const el = document.getElementById(id);
+                el.className = 'alert alert-danger py-1 px-2 mt-1';
+                el.innerHTML = `<i class="fa fa-times"></i> <strong>${file.name}</strong> — Erreur réseau.`;
             });
     }
 
-    function renderGrid(files) {
-        const grid = document.getElementById('fileGrid');
-        grid.innerHTML = '';
-
-        if (files.length === 0) {
-            grid.innerHTML = '<div class="col-12"><div class="alert alert-info text-center"><i class="fa fa-info-circle"></i> <?php _ejs('library.no_files'); ?></div></div>';
-            return;
+    async function triggerAiSearch(query) {
+        if (!query) {
+            query = document.getElementById('search_query').value;
         }
+        if (!query) return;
 
-        files.forEach(file => {
-            const col = document.createElement('div');
-            col.className = 'col-lg-3 col-md-4 col-sm-6 mb-4';
+        // On lance AUSSI la recherche normale dans la liste en bas
+        loadLibrary(1);
 
-            let thumbUrl = '';
-            if (file.thumbnail_path) {
-                thumbUrl = '?get_bibliotheque_thumbnail&file=' + encodeURIComponent(file.thumbnail_path);
-            } else if (file.file_type.toLowerCase() === 'png' || file.file_type.toLowerCase() === 'jpg' || file.file_type.toLowerCase() === 'jpeg') {
-                thumbUrl = '?get_bibliotheque_file&id=' + file.id;
-            } else {
-                thumbUrl = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-family=%22Arial%22 font-size=%2214%22%3E' + file.file_type.toUpperCase() + '%3C/text%3E%3C/svg%3E';
-            }
-            const isExternal = file.is_external == 1;
-            
-            col.innerHTML = `
-            <div class="card file-card ${isExternal ? 'border-start-primary' : ''}">
-                <button class="btn-delete-card" onclick="deleteFile(${file.id})" title="<?php echo __js('common.delete'); ?>">
-                    &times;
-                </button>
-                <div class="position-relative file-thumb-wrapper">
-                    <img src="${thumbUrl}" class="file-thumb" alt="${file.filename}" onclick="openPdfViewer(${file.id}, '${file.file_type}')" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22 font-family=%22Arial%22 font-size=%2214%22%3E${file.file_type.toUpperCase()}%3C/text%3E%3C/svg%3E'">
-                </div>
-                <div class="card-body">
-                    <h6 class="card-title" title="${file.filename}">${file.filename}</h6>
-                    <div class="file-meta d-flex align-items-center">
-                        ${formatBytes(file.file_size)} • ${file.file_type.toUpperCase()}
+        if (query.length < 3) return;
+        
+        const modelSelect = document.getElementById('ai_model');
+        const container = document.getElementById('aiOverviewContainer');
+        
+        // Si l'IA n'est pas activée, ces éléments n'existent pas
+        if (!modelSelect || !container) return;
+
+        const model = modelSelect.value;
+        container.style.display = 'block';
+        container.innerHTML = `
+            <div class="ai-overview-header d-flex justify-content-between align-items-center">
+                <div class="ai-overview-title"><i class="fa fa-magic"></i> Analyse de la Bibliothèque</div>
+                <div id="aiOverviewStatus" style="font-size: 0.8rem; color: #64748b;"></div>
+            </div>
+            <div class="row">
+                <div class="col-md-7">
+                    <div class="mb-3" style="font-size: 1.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+                        <strong>QUESTION :</strong> <span style="color: #1e293b;">${query}</span>
                     </div>
-                    ${file.match_contexts && file.match_contexts.length > 0 ? `
-                    <div class="file-match-contexts" style="font-size: 0.8rem; color: #6c757d; margin-top: 8px; margin-bottom: 8px; padding-top: 8px; border-top: 1px solid #e9ecef;">
-                        <div style="font-weight: 600; margin-bottom: 4px; color: #495057;"><?php _ejs('library.results_found_in'); ?></div>
-                        ${file.match_contexts.map(ctx => `<div style="margin-bottom: 4px; line-height: 1.4;">${ctx}</div>`).join('')}
-                    </div>
-                    ` : ''}
-                    <div class="file-actions">
-                        <div class="file-actions-row">
-                            <button class="btn btn-primary btn-sm" onclick="openFile(${file.id})" title="<?php echo __js('library.open'); ?>">
-                                <i class="fa fa-external-link"></i> <?php _ejs('library.open'); ?>
-                            </button>
-                            <button class="btn btn-info btn-sm" onclick="printFile(${file.id})" title="<?php echo __js('library.print'); ?>">
-                                <i class="fa fa-print"></i> <?php _ejs('library.print'); ?>
-                            </button>
-                        </div>
-                        <div class="file-actions-row">
-                            <div class="btn-group btn-group-sm file-actions-menu-trigger" role="group" data-file-id="${file.id}" data-file-type="${file.file_type}">
-                                <button type="button" class="btn btn-success" onclick="showActionsMenu(event, ${file.id}, '${file.file_type}')">
-                                    <i class="fa fa-print"></i> <?php _ejs('library.impose'); ?> <i class="fa fa-caret-down"></i>
-                                </button>
-                            </div>
-                            ${file.file_type === 'pdf' || file.file_type === 'png' ? `
-                            <div class="btn-group btn-group-sm file-actions-menu-trigger" role="group" data-file-id="${file.id}" data-file-type="${file.file_type}">
-                                <button type="button" class="btn btn-warning" onclick="showModifyMenu(event, ${file.id}, '${file.file_type}')">
-                                    <i class="fa fa-edit"></i> <?php _ejs('library.modify'); ?> <i class="fa fa-caret-down"></i>
-                                </button>
-                            </div>
-                            ` : '<div style="flex: 1;"></div>'}
-                        </div>
+                    <div id="aiOverviewThought" class="ai-thought-box" style="display:none;"></div>
+                    <div id="aiOverviewResponse" style="font-size: 1.6rem !important; line-height: 1.5; background: #f0f7ff; padding: 20px; border-radius: 12px; border-left: 5px solid #007bff; color: #1e293b; display:none;">
+                        <strong>RÉPONSE :</strong> <span id="aiStreamingContent"></span>
                     </div>
                 </div>
+                <div class="col-md-5">
+                    <div id="aiOverviewSources" class="p-3 bg-white border rounded shadow-sm" style="max-height: 600px; overflow-y: auto;">
+                        <div class="text-muted italic"><i class="fa fa-circle-notch fa-spin"></i> Recherche des sources...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3 text-right">
+                <span id="aiOverviewLoading" class="spinner-border spinner-border-sm text-primary" role="status"></span>
             </div>
         `;
-            grid.appendChild(col);
-        });
-    }
 
-    function downloadFile(id) {
-        const fileUrl = '?get_bibliotheque_file&id=' + encodeURIComponent(id);
-        const link = document.createElement('a');
-        link.href = fileUrl;
-        link.download = ''; // Le nom du fichier sera déterminé par le serveur
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    function printFile(id) {
-        // Obtenir les infos du fichier
-        // On doit trouver le filename et le type à partir de l'ID si possible, ou faire un fetch
-        // Pour l'instant, simplifions en passant l'URL. 
-        // L'idéal serait d'avoir le filename passé en paramètre de printFile,
-        // mais cela demanderait de changer tous les appels onclick.
-
-        // On va essayer de récupérer le nom du fichier depuis le DOM si possible
-        // (Hack: on cherche l'image qui a cet ID dans son onclick)
-        let filename = 'Document';
-        let fileType = 'pdf';
-
-        // Essayer de trouver l'élément dans la grille (si affiché)
-        const fileCardContainer = document.querySelector(`button[onclick="printFile(${id})"]`);
-        if (fileCardContainer) {
-            // Remonter au container
-            const cardBody = fileCardContainer.closest('.card-body');
-            if (cardBody) {
-                const titleEl = cardBody.querySelector('.card-title');
-                if (titleEl) filename = titleEl.innerText;
-
-                const metaEl = cardBody.querySelector('.file-meta');
-                if (metaEl && metaEl.innerText.toLowerCase().includes('png')) fileType = 'png';
-            }
-        }
-
-        // Construire l'URL complète
-        const fileUrl = window.location.origin + '/?get_bibliotheque_file&id=' + encodeURIComponent(id);
-
-        // Utiliser la modale globale
-        if (window.openPrintModal) {
-            window.openPrintModal(fileUrl, id, fileType, filename);
-        } else {
-            // Fallback (ne devrait pas arriver si footer inclus)
-            downloadFile(id);
-        }
-    }
-
-    function openFile(id) {
-        // Construire l'URL complète du fichier
-        const fileUrl = window.location.origin + '/?get_bibliotheque_file&id=' + encodeURIComponent(id);
-
-        // Vérifier si l'API Electron est disponible
-        if (window.electronAPI && window.electronAPI.openExternalFile) {
-            // Dans Electron : ouvrir avec l'application système
-            console.log('Ouverture externe pour:', fileUrl);
-            window.electronAPI.openExternalFile(fileUrl)
-                .then(result => {
-                    if (result.success) {
-                        console.log('Fichier ouvert avec succès');
-                    } else {
-                        console.error('Erreur lors de l\'ouverture:', result.error);
-                        showAppModal({ message: 'Erreur lors de l\'ouverture du fichier: ' + (result.error || 'Erreur inconnue'), type: 'danger' });
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur ouverture:', error);
-                    showAppModal({ message: 'Erreur lors de l\'ouverture du fichier: ' + error.message, type: 'danger' });
-                });
-        } else {
-            // Dans un navigateur web : ouvrir dans un nouvel onglet
-            console.log('Ouverture dans un nouvel onglet:', fileUrl);
-            window.open(fileUrl, '_blank');
-        }
-    }
-
-    function renameFile(id) {
-        // Trouver le nom actuel dans le DOM en cherchant la carte qui a cet ID
-        let currentName = "";
-        const trigger = document.querySelector(`.file-actions-menu-trigger[data-file-id="${id}"]`);
-        
-        if (trigger) {
-            const card = trigger.closest('.card');
-            if (card) {
-                const titleEl = card.querySelector('.card-title');
-                if (titleEl) currentName = titleEl.innerText;
-            }
-        }
-
-        showAppModal({
-            title: '<?php echo __js('library.rename_file'); ?>',
-            message: '<?php echo __js('library.enter_new_name'); ?>',
-            prompt: true,
-            defaultValue: currentName,
-            okText: '<?php echo __js('library.rename'); ?>'
-        }, function(newName) {
-            if (newName === null || newName.trim() === "" || newName === currentName) return;
-
-            fetch('?rename_bibliotheque_file', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: id, newName: newName.trim() })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        loadFiles();
-                    } else {
-                        showAppModal({ message: '<?php _ejs('common.error'); ?> renommage: ' + data.error, type: 'danger' });
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    showAppModal({ message: '<?php _ejs('common.error'); ?> lors du renommage', type: 'danger' });
-                });
-        });
-    }
-
-    function deleteFile(id) {
-        showAppModal({
-            message: "<?php echo addslashes(__('library.delete_confirm')); ?>",
-            confirm: true,
-            type: 'danger'
-        }, (confirmed) => {
-            if (!confirmed) return;
-
-            fetch('?delete_bibliotheque_file', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: id })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        loadFiles();
-                    } else {
-                        showAppModal({ message: '<?php _ejs('common.error'); ?> suppression: ' + data.error, type: 'danger' });
-                    }
-                });
-        });
-    }
-
-    // Indexation Folder logic
-    function openIndexModal() {
-        const modalElement = document.getElementById('indexModal');
-        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-            const modal = new bootstrap.Modal(modalElement);
-            modal.show();
-        } else {
-            // Fallback pour jQuery Bootstrap
-            $(modalElement).modal('show');
-        }
-    }
-
-    async function browseFolder() {
-        // Tauri
-        if (window.__TAURI__) {
-            try {
-                const selected = await window.__TAURI__.dialog.open({
-                    directory: true,
-                    multiple: false,
-                });
-                if (selected) {
-                    document.getElementById('folderPath').value = selected;
-                }
-            } catch (e) {
-                console.error(e);
-            }
-            return;
-        }
-
-        // Electron
-        if (window.electronAPI) {
-            try {
-                // Utiliser l'API Electron pour ouvrir un dialogue de sélection de dossier
-                const result = await window.electronAPI.showOpenDialog({
-                    properties: ['openDirectory']
-                });
-                if (result && !result.canceled && result.filePaths && result.filePaths.length > 0) {
-                    document.getElementById('folderPath').value = result.filePaths[0];
-                }
-            } catch (e) {
-                console.error('Erreur lors de la sélection du dossier Electron:', e);
-            }
-            return;
-        }
-    }
-
-    function previewDirectory() {
-        const path = document.getElementById('folderPath').value;
-        const recursive = document.getElementById('recursiveCheck').checked;
-
-        if (!path) return showAppModal({ message: "<?php echo addslashes(__('library.path_help_msg')); ?>", type: 'warning' });
-
-        document.getElementById('previewArea').style.display = 'block';
-        document.getElementById('previewList').innerHTML = '<tr><td colspan="3" class="text-center"><i class="fa fa-spinner fa-spin"></i> <?php _ejs('library.searching'); ?></td></tr>';
-
-        fetch('?preview_directory', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ path, recursive })
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    filesToIndex = data.files;
-                    document.getElementById('foundCount').textContent = filesToIndex.length;
-                    document.getElementById('indexBtn').disabled = filesToIndex.length === 0;
-
-                    const tbody = document.getElementById('previewList');
-                    tbody.innerHTML = '';
-
-                    // Limiter l'affichage à 100 fichiers pour la perf
-                    const displayFiles = filesToIndex.slice(0, 100);
-                    displayFiles.forEach(f => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                    <td><small class="text-truncate d-block" style="max-width: 300px;" title="${f.path}">${f.filename}</small></td>
-                    <td>${f.type}</td>
-                    <td>${formatBytes(f.size)}</td>
-                `;
-                        tbody.appendChild(tr);
-                    });
-
-                    if (filesToIndex.length > 100) {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `<td colspan="3" class="text-center text-muted"><?php echo __js('library.and_others'); ?>`.replace(':count', filesToIndex.length - 100);
-                        tbody.appendChild(tr);
-                    }
-                } else {
-                    document.getElementById('previewList').innerHTML = `<tr><td colspan="3" class="text-danger"><?php _ejs('common.error'); ?>: ${data.error}</td></tr>`;
-                }
-            });
-    }
-
-    async function startIndexing() {
-        const btn = document.getElementById('indexBtn');
-        const path = document.getElementById('folderPath').value;
-        const recursive = document.getElementById('recursiveCheck').checked;
-
-        if (!path) return;
-
-        btn.disabled = true;
+        if (aiAbortController) aiAbortController.abort();
+        aiAbortController = new AbortController();
 
         try {
-            // 1. Démarrer le job en arrière-plan
-            const response = await fetch('?start_indexing', {
+            const response = await fetch('?chat_rag', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ path, recursive })
+                body: JSON.stringify({ 
+                    question: query, 
+                    mode: model,
+                    tags: activeTags.join(',')
+                }),
+                signal: aiAbortController.signal
             });
 
-            const result = await response.json();
-            
-            if (!result.success) {
-                throw new Error(result.error || 'Erreur inconnue au démarrage');
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let fullContent = "";
+            let buffer = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                
+                let chunk = "";
+                if (value) {
+                    chunk = decoder.decode(value, { stream: true });
+                }
+                
+                const combined = buffer + chunk;
+                const lines = combined.split("\n");
+                buffer = lines.pop();
+                
+                for (const line of lines) {
+                    if (line.trim().startsWith("data: ")) {
+                        try {
+                            const jsonStr = line.trim().substring(6);
+                            if (!jsonStr) continue;
+                            const data = JSON.parse(jsonStr);
+                            
+                            // On cherche les éléments à chaque itération s'ils ne sont pas encore là
+                            const sDiv = document.getElementById('aiOverviewSources');
+                            const stDiv = document.getElementById('aiOverviewStatus');
+                            const tDiv = document.getElementById('aiOverviewThought');
+                            const rDiv = document.getElementById('aiOverviewResponse');
+                            const scSpan = document.getElementById('aiStreamingContent');
+
+                            if (data.type === 'status') {
+                                if (stDiv) stDiv.textContent = data.message;
+                                if (data.sources && data.sources.length > 0 && sDiv) {
+                                    let html = '<div class="mb-3 font-weight-bold text-success" style="font-size:1.1rem;"><i class="fa fa-database"></i> Sources identifiées :</div>';
+                                    data.sources.forEach((src) => {
+                                        const extractsHtml = (src.contents && src.contents.length > 0) 
+                                            ? src.contents.map(c => `<div class="p-2 mb-2 bg-light rounded shadow-sm" style="font-size:1.1rem; border-left:4px solid #6366f1; line-height:1.4;">${c}</div>`).join('')
+                                            : `<div class="p-2 mb-1 bg-light rounded small italic text-muted" style="font-size:0.9rem;">Extrait non disponible</div>`;
+
+                                        html += `
+                                            <div class="mb-4 pb-2 border-bottom">
+                                                <a href="javascript:void(0)" onclick="openPdfViewer(${src.id}, '${src.title.replace(/'/g, "\\'")}')" class="font-weight-bold text-primary d-block mb-2" style="font-size: 1.2rem;">
+                                                    <i class="fa fa-file-pdf-o"></i> ${src.title}
+                                                </a>
+                                                ${extractsHtml}
+                                            </div>
+                                        `;
+                                    });
+                                    sDiv.innerHTML = html;
+                                }
+                            }
+                            
+                            if (data.type === 'content') {
+                                fullContent += data.content;
+                                
+                                let displayContent = fullContent;
+                                if (fullContent.includes('<think>')) {
+                                    let parts = fullContent.split('</think>');
+                                    if (parts.length > 1) {
+                                        let thoughtText = parts[0].replace('<think>', '').trim();
+                                        if (tDiv) {
+                                            tDiv.innerHTML = thoughtText.replace(/\n/g, '<br>');
+                                            tDiv.style.display = 'block';
+                                        }
+                                        displayContent = parts[1].trim();
+                                    } else {
+                                        let thoughtText = fullContent.replace('<think>', '').trim();
+                                        if (tDiv) {
+                                            tDiv.innerHTML = thoughtText.replace(/\n/g, '<br>');
+                                            tDiv.style.display = 'block';
+                                        }
+                                        displayContent = "";
+                                    }
+                                }
+                                
+                                if (displayContent && scSpan) {
+                                    if (rDiv) rDiv.style.display = 'block';
+                                    scSpan.innerHTML = displayContent.replace(/\n/g, '<br>');
+                                }
+                            }
+                            
+                            if (data.type === 'done') {
+                                const lSpan = document.getElementById('aiOverviewLoading');
+                                if (lSpan) lSpan.style.display = 'none';
+                            }
+                            if (data.type === 'error') {
+                                if (stDiv) stDiv.innerHTML = `<span class="text-danger"><i class="fa fa-exclamation-triangle"></i> ${data.message}</span>`;
+                                const lSpan = document.getElementById('aiOverviewLoading');
+                                if (lSpan) lSpan.style.display = 'none';
+                                break;
+                            }
+                        } catch (e) { console.error("Parse error", e, line); }
+                    }
+                }
+
+                if (done) break;
             }
-
-            const jobId = result.job_id;
-            
-            // 2. Démarrer le monitoring
-            monitorIndexing(jobId);
-
-        } catch (e) {
-            console.error(e);
-            showAppModal({ message: 'Erreur: ' + e.message, type: 'danger' });
-            btn.disabled = false;
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                const scSpan = document.getElementById('aiStreamingContent');
+                const lSpan = document.getElementById('aiOverviewLoading');
+                if (scSpan) scSpan.innerHTML = '<span class="text-danger">Erreur lors de la génération.</span>';
+                if (lSpan) lSpan.style.display = 'none';
+            }
         }
     }
-    
-    function checkActiveJob() {
-        fetch('?get_indexing_status&job_id=latest')
-            .then(response => response.json())
-            .then(data => {
-                if (data && (data.status === 'indexing' || data.status === 'scanning')) {
-                    // Restaurer l'UI d'indexation
-                    // On doit peut-être ouvrir la modale ou juste afficher une notif ?
-                    // Pour l'instant on rouvre la modale d'indexation pour montrer la progression
-                    // C'est un peu intrusif, mais le user veut voir que ça avance.
-                    
-                    // On ne connait pas le path d'origine ici, mais on peut afficher le status
-                    const modalElement = document.getElementById('indexModal');
-                    
-                    // Si on veut être discret, on pourrait juste mettre une barre globale.
-                    // Mais la demande est "l'ui ne le voit pas".
-                    // On va réactiver la modale si elle n'est pas ouverte
-                    
-                    // Mettre à jour les éléments de la modale sans l'ouvrir forcément ?
-                    // Si on veut que l'utilisateur le voie, autant l'ouvrir ou mettre un encart visible.
-                    // Option : Bouton clignotant "Indexation en cours..." ?
-                    // Pour faire simple et efficace selon la demande : on relance le monitoring sur la modale
-                    // et on l'ouvre si l'utilisateur est sur la page.
-                    
-                    // Pré-remplir la modale avec "Indexation en cours..."
-                    document.getElementById('folderPath').value = "<?php echo addslashes(__('library.indexation_in_progress')); ?>";
-                    document.getElementById('indexBtn').disabled = true;
-                    
-                    openIndexModal();
-                    monitorIndexing(data.job_id);
-                }
-            })
-            .catch(e => console.error("Erreur checkActiveJob:", e));
-    }
-    
-    function monitorIndexing(jobId) {
-        const btn = document.getElementById('indexBtn');
-        const progress = document.getElementById('indexProgress');
-        const progressBar = progress.querySelector('.progress-bar');
+
+    function printLibraryFile(id) {
+        const url = '?get_bibliotheque_file&id=' + id;
         
-        progress.style.display = 'flex';
-        progressBar.classList.add('progress-bar-animated', 'progress-bar-striped');
+        // Créer une iframe invisible
+        let iframe = document.getElementById('printIframe');
+        if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.id = 'printIframe';
+            iframe.style.position = 'fixed';
+            iframe.style.right = '0';
+            iframe.style.bottom = '0';
+            iframe.style.width = '0';
+            iframe.style.height = '0';
+            iframe.style.border = '0';
+            document.body.appendChild(iframe);
+        }
         
-        // Poller le statut
-        const pollInterval = setInterval(async () => {
+        iframe.src = url;
+        iframe.onload = function() {
             try {
-                const statusRes = await fetch('?get_indexing_status&job_id=' + jobId);
-                const statusData = await statusRes.json();
-                
-                if (statusData.percent) {
-                    progressBar.style.width = statusData.percent + '%';
-                    progressBar.textContent = statusData.percent + '%';
-                }
-                
-                // Mettre à jour le texte d'état si disponible
-                if (statusData.status === 'scanning') {
-                        progressBar.textContent = '<?php _ejs('library.scanning'); ?> (' + (statusData.scanned_count || 0) + ')';
-                } else if (statusData.status === 'indexing') {
-                    progressBar.textContent = statusData.percent + '%';
-                    if (statusData.current_file) {
-                         // On pourrait afficher le fichier en cours quelque part
-                    }
-                }
-
-                if (statusData.status === 'completed') {
-                    clearInterval(pollInterval);
-                    progressBar.classList.remove('progress-bar-animated', 'progress-bar-striped');
-                    progressBar.classList.add('bg-success');
-                    
-                    showAppModal({ 
-                        message: "<?php echo addslashes(__('library.indexation_completed', ['count' => ':count', 'errors' => ':errors'])); ?>".replace(':count', statusData.indexed_count || 0).replace(':errors', statusData.error_count || 0), 
-                        type: 'success' 
-                    });
-                    
-                    // Fermer la modale et recharger
-                    const modalElement = document.getElementById('indexModal');
-                    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                        const modal = bootstrap.Modal.getInstance(modalElement);
-                        if (modal) modal.hide();
-                    } else {
-                        $(modalElement).modal('hide');
-                    }
-                    
-                    loadFiles();
-                    
-                    // Reset UI
-                    btn.disabled = false;
-                    progress.style.display = 'none';
-                    progressBar.style.width = '0%';
-                    progressBar.classList.remove('bg-success');
-                    filesToIndex = [];
-                } else if (statusData.status === 'error' || statusData.status === 'fatal_error') {
-                    clearInterval(pollInterval);
-                    showAppModal({ message: "<?php echo addslashes(__('library.path_help_msg')); ?>" + (statusData.error_msg || 'Inconnue'), type: 'danger' });
-                    btn.disabled = false;
-                } else if (statusData.status === 'none' || statusData.status === 'unknown') {
-                    // Job disparu ?
-                    clearInterval(pollInterval);
-                    btn.disabled = false;
-                }
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
             } catch (e) {
-                console.error("Erreur polling:", e);
-                // On ne coupe pas forcément l'intervalle sur une erreur réseau passagère
+                console.error("Erreur lors de l'impression système:", e);
+                // Si l'iframe échoue (ex: blocage navigateur), on ouvre dans un nouvel onglet
+                window.open(url + '&print=1', '_blank');
             }
-        }, 1000);
+        };
     }
+</script>
+</div>
 
-    function formatBytes(bytes, decimals = 2) {
-        if (!+bytes) return '0 Bytes';
-        const k = 1024;
-        const dm = decimals < 0 ? 0 : decimals;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
-    }
-
-    // Menu flottant pour les actions
-    let currentFloatingMenu = null;
-
-    function showActionsMenu(event, fileId, fileType) {
-        event.stopPropagation();
-        closeFloatingMenu();
-
-        const button = event.target.closest('button');
-        const rect = button.getBoundingClientRect();
-
-        const menu = document.createElement('div');
-        menu.className = 'floating-menu';
-        menu.style.position = 'fixed';
-        menu.style.left = rect.left + 'px';
-
-        // Calculer la position pour que le menu reste dans la fenêtre
-        const menuHeight = 200; // Estimation de la hauteur du menu
-        const windowHeight = window.innerHeight;
-        const spaceBelow = windowHeight - rect.bottom;
-        const spaceAbove = rect.top;
-
-        // Si pas assez d'espace en bas, afficher au-dessus
-        if (spaceBelow < menuHeight && spaceAbove > menuHeight) {
-            menu.style.top = (rect.top - menuHeight - 5) + 'px';
-        } else {
-            menu.style.top = (rect.bottom + 5) + 'px';
-        }
-
-        menu.style.zIndex = '10000';
-        menu.style.minWidth = '200px';
-        menu.style.backgroundColor = 'white';
-        menu.style.border = '1px solid #ddd';
-        menu.style.borderRadius = '4px';
-        menu.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-        menu.style.padding = '5px 0';
-        menu.style.maxHeight = (windowHeight - 20) + 'px';
-        menu.style.overflowY = 'auto';
-
-        menu.innerHTML = `
-        <a class="dropdown-item" href="?imposition_brochure&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-book" style="color: #28a745; margin-right: 8px;"></i> <?php echo __js('header.imposition_brochure'); ?>
-        </a>
-        <a class="dropdown-item" href="?imposition_livre&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-book" style="color: #007bff; margin-right: 8px;"></i> <?php echo __js('header.imposition_book'); ?>
-        </a>
-        <a class="dropdown-item" href="?imposition_tracts&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-copy" style="color: #ffd93d; margin-right: 8px;"></i> <?php echo __js('header.impose_tracts'); ?>
-        </a>
-    `;
-
-        document.body.appendChild(menu);
-        currentFloatingMenu = menu;
-
-        // Fermer au clic ailleurs
-        setTimeout(() => {
-            document.addEventListener('click', closeFloatingMenu, { once: true });
-        }, 10);
-    }
-
-    function showModifyMenu(event, fileId, fileType) {
-        event.stopPropagation();
-        closeFloatingMenu();
-
-        const button = event.target.closest('button');
-        const rect = button.getBoundingClientRect();
-
-        const menu = document.createElement('div');
-        menu.className = 'floating-menu';
-        menu.style.position = 'fixed';
-        menu.style.left = rect.left + 'px';
-
-        // Calculer la position pour que le menu reste dans la fenêtre
-        const menuHeight = 200; // Estimation de la hauteur du menu
-        const windowHeight = window.innerHeight;
-        const spaceBelow = windowHeight - rect.bottom;
-        const spaceAbove = rect.top;
-
-        // Si pas assez d'espace en bas, afficher au-dessus
-        if (spaceBelow < menuHeight && spaceAbove > menuHeight) {
-            menu.style.top = (rect.top - menuHeight - 5) + 'px';
-        } else {
-            menu.style.top = (rect.bottom + 5) + 'px';
-        }
-
-        menu.style.zIndex = '10000';
-        menu.style.minWidth = '200px';
-        menu.style.backgroundColor = 'white';
-        menu.style.border = '1px solid #ddd';
-        menu.style.borderRadius = '4px';
-        menu.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-        menu.style.padding = '5px 0';
-        menu.style.maxHeight = (windowHeight - 20) + 'px';
-        menu.style.overflowY = 'auto';
-
-        let items = '';
-        if (fileType === 'pdf') {
-            items += `<a class="dropdown-item" href="?pdf_to_png&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-file-image-o" style="margin-right: 8px;"></i> <?php echo __js('header.pdf_to_images'); ?>
-        </a>`;
-        }
-        if (fileType === 'png') {
-            items += `<a class="dropdown-item" href="?png_to_pdf&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-file-pdf-o" style="margin-right: 8px;"></i> <?php echo __js('header.images_to_pdf'); ?>
-        </a>`;
-        }
-        if (fileType === 'pdf' || fileType === 'png') {
-            items += `<a class="dropdown-item" href="?image_processor&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-sliders" style="margin-right: 8px;"></i> <?php echo __js('header.image_processor'); ?>
-        </a>`;
-            items += `<a class="dropdown-item" href="javascript:void(0)" onclick="renameFile(${fileId})" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-font" style="margin-right: 8px;"></i> <?php echo __js('library.rename'); ?>
-        </a>`;
-        }
-        if (fileType === 'png') {
-            items += `<a class="dropdown-item" href="?riso_separator&from_lib=${fileId}" style="display: block; padding: 8px 15px; color: #333; text-decoration: none;">
-            <i class="fa fa-palette" style="margin-right: 8px;"></i> <?php echo __js('header.riso_separator'); ?>
-        </a>`;
-        }
-
-        menu.innerHTML = items;
-
-        document.body.appendChild(menu);
-        currentFloatingMenu = menu;
-
-        // Fermer au clic ailleurs
-        setTimeout(() => {
-            document.addEventListener('click', closeFloatingMenu, { once: true });
-        }, 10);
-    }
-
-    function closeFloatingMenu() {
-        if (currentFloatingMenu) {
-            currentFloatingMenu.remove();
-            currentFloatingMenu = null;
-        }
-    }
-
-    // Fermer le menu au scroll
-    window.addEventListener('scroll', closeFloatingMenu, true);
-
-    // PDF Viewer functions
-    function openPdfViewer(fileId, fileType) {
-        // Réinitialiser l'affichage
-        document.getElementById('pdfCanvas').style.display = 'none';
-        document.getElementById('pdfImageView').style.display = 'none';
-        document.getElementById('pdfLoadingIndicator').style.display = 'none';
-        document.getElementById('modalActions').style.display = 'none';
-
-        // Stocker les infos du fichier pour les actions
-        window.currentViewerFileId = fileId;
-        window.currentViewerFileType = fileType;
-
-        if (fileType !== 'pdf') {
-            // Pour les PNG, on peut afficher directement dans une modal simple
-            const fileUrl = '?get_bibliotheque_file&id=' + encodeURIComponent(fileId);
-            document.getElementById('pdfViewerTitle').textContent = '<?php echo __js('library.visualisation_image'); ?>';
-            document.getElementById('pdfImageElement').src = fileUrl;
-            document.getElementById('pdfImageView').style.display = 'block';
-
-            // Ajouter les boutons d'action pour PNG
-            const actionsHtml = `
-            <button type="button" class="btn btn-sm btn-primary" onclick="openFile(${fileId})" title="<?php echo __js('library.open'); ?>" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
-                <i class="fa fa-external-link"></i> <?php _ejs('library.open'); ?>
-            </button>
-            <button type="button" class="btn btn-sm btn-info" onclick="printFile(${fileId})" title="<?php echo __js('library.print'); ?>" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
-                <i class="fa fa-print"></i> <?php _ejs('library.print'); ?>
-            </button>
-            <div class="btn-group btn-group-sm" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 8px;">
-                <button type="button" class="btn btn-sm btn-success" onclick="showActionsMenu(event, ${fileId}, '${fileType}')">
-                    <i class="fa fa-print"></i> <?php _ejs('library.impose'); ?>
-                </button>
+<!-- Sidebar de Chat IA -->
+<div id="aiChatSidebar" class="ai-chat-sidebar">
+    <div class="ai-chat-header d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-1"><i class="fa fa-robot"></i> Assistant Dupli</h5>
+            <div class="btn-group btn-group-toggle" style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 2px;">
+                <label class="btn btn-xs text-white px-3 active" id="modeFastLabel" onclick="setAiMode('fast')" style="font-size: 0.7rem; border: none;">Rapide</label>
+                <label class="btn btn-xs text-white px-3" id="modeProLabel" onclick="setAiMode('pro')" style="font-size: 0.7rem; border: none;">Expert</label>
             </div>
-            <div class="btn-group btn-group-sm">
-                <button type="button" class="btn btn-sm btn-warning" onclick="showModifyMenu(event, ${fileId}, '${fileType}')">
-                    <i class="fa fa-edit"></i> <?php _ejs('library.modify'); ?>
-                </button>
-            </div>
-        `;
-            document.getElementById('modalActions').innerHTML = actionsHtml;
-            document.getElementById('modalActions').style.display = 'flex';
+        </div>
+        <button type="button" class="btn text-white" onclick="toggleAiChat()" style="font-size: 1.5rem;">&times;</button>
+    </div>
+    
+    <div class="ai-chat-body" id="aiChatBody">
+        <div class="chat-message ai">
+            Bonjour ! Je suis l'intelligence de la bibliothèque. Posez-moi vos questions sur le contenu de vos brochures.
+        </div>
+    </div>
 
-            const modalElement = document.getElementById('pdfViewerModal');
-            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                const bsModal = new bootstrap.Modal(modalElement);
-                bsModal.show();
-            } else {
-                $(modalElement).modal('show');
-            }
-            return;
-        }
+    <!-- Zone de Contexte/Sources -->
+    <div id="aiContextArea" class="px-3 py-2 bg-light" style="display:none; font-size: 0.75rem;">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <b><i class="fa fa-link"></i> Sources utilisées :</b>
+            <button class="btn btn-xs btn-link p-0 text-primary" onclick="$('#aiContextDetails').toggle()">Détails</button>
+        </div>
+        <div id="aiContextDetails" style="display:none; max-height: 120px; overflow-y: auto;"></div>
+    </div>
 
-        pdfViewerFileId = fileId;
-        currentPage = 1;
-        pdfDoc = null;
+    <!-- Zone de Réflexion -->
+    <div id="aiThoughtArea" class="px-3 py-2" style="display:none; font-size: 0.8rem; color: #64748b; font-style: italic;">
+        <div class="mb-1"><b><i class="fa fa-brain fa-pulse"></i> Analyse...</b></div>
+        <div id="aiThoughtContent"></div>
+    </div>
 
-        const fileUrl = '?get_bibliotheque_file&id=' + encodeURIComponent(fileId);
-        document.getElementById('pdfViewerTitle').textContent = '<?php echo __js('library.visualisation_pdf'); ?>';
+    <div id="aiChatStatus" class="px-3 py-1 text-center" style="font-size: 0.7rem; color: #94a3b8; display: none;">
+        <i class="fa fa-circle-notch fa-spin"></i> <span id="aiStatusText">En cours...</span>
+    </div>
 
-        // Ajouter les boutons d'action pour PDF
-        const actionsHtml = `
-        <button type="button" class="btn btn-sm btn-primary" onclick="openFile(${fileId})" title="<?php echo __js('library.open'); ?>" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
-            <i class="fa fa-external-link"></i> <?php _ejs('library.open'); ?>
-        </button>
-        <button type="button" class="btn btn-sm btn-info" onclick="printFile(${fileId})" title="<?php echo __js('library.print'); ?>" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 12px;">
-            <i class="fa fa-print"></i> <?php _ejs('library.print'); ?>
-        </button>
-        <div class="btn-group btn-group-sm" style="border-right: 1px solid #dee2e6; margin-right: 8px; padding-right: 8px;">
-            <button type="button" class="btn btn-sm btn-success" onclick="showActionsMenu(event, ${fileId}, '${fileType}')">
-                <i class="fa fa-print"></i> <?php _ejs('library.impose'); ?>
+    <div class="ai-chat-footer">
+        <div class="chat-input-wrapper">
+            <input type="text" id="aiChatInput" placeholder="Posez votre question ici..." onkeypress="if(event.key === 'Enter') sendAiMessage()">
+            <button id="aiChatBtn" onclick="sendAiMessage()">
+                <i id="aiChatIcon" class="fa fa-paper-plane"></i>
             </button>
         </div>
-        <div class="btn-group btn-group-sm">
-            <button type="button" class="btn btn-sm btn-warning" onclick="showModifyMenu(event, ${fileId}, '${fileType}')">
-                <i class="fa fa-edit"></i> <?php _ejs('library.modify'); ?>
-            </button>
+    </div>
+</div>
+
+<!-- Modal d'édition des métadonnées -->
+<div class="modal fade" id="editFileModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content shadow-lg" style="border-radius: 15px; border: none;">
+            <div class="modal-header bg-primary text-white" style="border-radius: 15px 15px 0 0;">
+                <h5 class="modal-title"><i class="fa fa-edit"></i> Édition du document</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="edit_file_id">
+                
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold text-muted small uppercase">Nom du fichier</label>
+                    <input type="text" id="edit_filename" class="form-control form-control-lg shadow-sm" style="border-radius: 10px; border: 1px solid #e2e8f0;">
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold text-muted small uppercase">Pages</label>
+                            <input type="number" id="edit_page_count" class="form-control shadow-sm" style="border-radius: 10px; border: 1px solid #e2e8f0;">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold text-muted small uppercase">Couleur</label>
+                            <select id="edit_is_color" class="form-control shadow-sm" style="border-radius: 10px; border: 1px solid #e2e8f0;">
+                                <option value="1">Couleur</option>
+                                <option value="0">Noir & Blanc</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold text-muted small uppercase">Imposition</label>
+                            <select id="edit_imposition" class="form-control shadow-sm" style="border-radius: 10px; border: 1px solid #e2e8f0;">
+                                <option value="ppp">Standard (PPP)</option>
+                                <option value="brochure">Brochure</option>
+                                <option value="livre">Livre / Carnet</option>
+                                <option value="tracts">Tracts / Flyers</option>
+                                <option value="imposed">Déjà Imposé</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group mb-0">
+                    <label class="font-weight-bold text-muted small uppercase">Tags (séparés par des virgules)</label>
+                    <textarea id="edit_tags" class="form-control shadow-sm" rows="3" style="border-radius: 10px; border: 1px solid #e2e8f0;"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer bg-light" style="border-radius: 0 0 15px 15px;">
+                <button type="button" class="btn btn-secondary px-4 shadow-sm" data-dismiss="modal" style="border-radius: 10px;">Annuler</button>
+                <button type="button" id="btnSaveMetadata" onclick="saveMetadata()" class="btn btn-primary px-4 shadow-sm" style="border-radius: 10px;">
+                    <i class="fa fa-check"></i> Enregistrer
+                </button>
+            </div>
         </div>
-    `;
-        document.getElementById('modalActions').innerHTML = actionsHtml;
-        document.getElementById('modalActions').style.display = 'flex';
+    </div>
+</div>
 
-        // Ouvrir la modal d'abord
-        const modalElement = document.getElementById('pdfViewerModal');
-        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-            const bsModal = new bootstrap.Modal(modalElement);
-            bsModal.show();
-        } else {
-            $(modalElement).modal('show');
-        }
+<!-- Modal de Visualisation PDF (PDF.js) -->
+<div class="modal fade" id="pdfViewerModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content border-0 shadow-lg" style="background: #2c3e50; border-radius: 15px; overflow: hidden;">
+            <div class="modal-header border-0 text-white p-3 d-flex align-items-center justify-content-between" style="background: rgba(0,0,0,0.2);">
+                <h5 class="modal-title m-0" id="pdfViewerTitle"><i class="fa fa-eye"></i> Visualisation</h5>
+                <div class="d-flex align-items-center">
+                    <div class="pagination-controls bg-dark rounded-pill px-3 py-1 mr-3 d-flex align-items-center" style="font-size: 0.9rem;">
+                        <button id="prevPage" class="btn btn-link text-white p-0 mr-2" onclick="changePage(-1)"><i class="fa fa-chevron-left"></i></button>
+                        <span class="text-white mx-1">Page <span id="currentPage">1</span> / <span id="totalPages">?</span></span>
+                        <button id="nextPage" class="btn btn-link text-white p-0 ml-2" onclick="changePage(1)"><i class="fa fa-chevron-right"></i></button>
+                    </div>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.8; outline: none;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body p-0 position-relative" style="height: 75vh; background: #525659; overflow-y: auto; text-align: center;">
+                <div id="pdfLoading" class="position-absolute w-100 h-100 d-flex flex-column align-items-center justify-content-center text-white" style="background: #525659; z-index: 10;">
+                    <i class="fa fa-circle-notch fa-spin fa-3x mb-3"></i>
+                    <p>Chargement du document...</p>
+                </div>
+                <canvas id="pdfCanvas" class="shadow-lg my-4 mx-auto" style="max-width: 95%;"></canvas>
+            </div>
+            <div class="modal-footer border-0 p-3 d-flex justify-content-between align-items-center" id="pdfViewerFooter" style="background: rgba(0,0,0,0.2);">
+                <div class="viewer-actions d-flex" id="pdfModalActions">
+                    <!-- Les boutons seront injectés ici en JS pour garder l'ID courant -->
+                </div>
+                <button type="button" class="btn btn-outline-light px-4" data-dismiss="modal" style="border-radius: 8px;">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-        // Afficher l'indicateur de chargement
-        document.getElementById('pdfLoadingIndicator').style.display = 'block';
+<!-- Inclusion de PDF.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script>
+    var pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-        // Attendre un peu pour que la modal soit complètement rendue
-        setTimeout(() => {
-            // Charger le PDF via fetch pour créer un blob
-            fetch(fileUrl)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Erreur HTTP: ' + response.status);
-                    }
-                    return response.blob();
-                })
-                .then(blob => {
-                    if (blob.size === 0) {
-                        throw new Error('Le fichier PDF est vide');
-                    }
+    var pdfDoc = null,
+        pageNum = 1,
+        pageRendering = false,
+        pageNumPending = null,
+        scale = 1.5,
+        canvas = document.getElementById('pdfCanvas'),
+        ctx = canvas.getContext('2d');
 
-                    // Créer un blob URL pour PDF.js
-                    const blobUrl = URL.createObjectURL(blob);
-
-                    // Configurer PDF.js worker si nécessaire
-                    if (typeof pdfjsLib !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
-                        pdfjsLib.GlobalWorkerOptions.workerSrc = 'js/build/pdf.worker.js';
-                    }
-
-                    // Charger le PDF avec PDF.js depuis le blob
-                    return pdfjsLib.getDocument({ url: blobUrl }).promise;
-                })
-                .then(function (pdf) {
-                    pdfDoc = pdf;
-                    document.getElementById('totalPages').textContent = pdf.numPages;
-                    document.getElementById('pdfLoadingIndicator').style.display = 'none';
-                    document.getElementById('pdfCanvas').style.display = 'block';
-                    renderPage(1);
-                })
-                .catch(function (error) {
-                    console.error('Erreur chargement PDF:', error);
-                    document.getElementById('pdfLoadingIndicator').innerHTML = `<div style="text-align: center; padding: 50px; color: white;"><i class="fa fa-exclamation-triangle fa-3x"></i><p style="margin-top: 20px;">${ "<?php echo __js('common.error'); ?>" } lors du chargement du PDF: ${error.message}</p></div>`;
-                });
-        }, 100);
-    }
-
-    function renderPage(pageNum) {
-        if (!pdfDoc) return;
-
-        currentPage = Math.max(1, Math.min(pageNum, pdfDoc.numPages));
-
-        pdfDoc.getPage(currentPage).then(function (page) {
-            const canvas = document.getElementById('pdfCanvas');
-            if (!canvas) {
-                console.error('Canvas non trouvé');
-                return;
-            }
-            const context = canvas.getContext('2d');
-            const viewport = page.getViewport({ scale: 1.0 });
-
+    function renderPage(num) {
+        pageRendering = true;
+        pdfDoc.getPage(num).then(function(page) {
+            var viewport = page.getViewport({scale: scale});
             canvas.height = viewport.height;
             canvas.width = viewport.width;
 
-            const renderContext = {
-                canvasContext: context,
+            var renderContext = {
+                canvasContext: ctx,
                 viewport: viewport
             };
+            var renderTask = page.render(renderContext);
 
-            page.render(renderContext).promise.then(function () {
-                document.getElementById('pageInput').value = currentPage;
-                document.getElementById('totalPages').textContent = pdfDoc.numPages;
-
-                // Activer/désactiver les boutons
-                document.getElementById('prevPage').disabled = currentPage <= 1;
-                document.getElementById('nextPage').disabled = currentPage >= pdfDoc.numPages;
+            renderTask.promise.then(function() {
+                pageRendering = false;
+                if (pageNumPending !== null) {
+                    renderPage(pageNumPending);
+                    pageNumPending = null;
+                }
+                $('#pdfLoading').fadeOut();
             });
         });
+        document.getElementById('currentPage').textContent = num;
     }
 
     function changePage(delta) {
         if (!pdfDoc) return;
-        renderPage(currentPage + delta);
-    }
-
-    function goToPage(pageNum) {
-        if (!pdfDoc) return;
+        var newPage = pageNum + delta;
+        if (newPage < 1 || newPage > pdfDoc.numPages) return;
+        pageNum = newPage;
         renderPage(pageNum);
     }
 
+    function openPdfViewer(id, filename) {
+        $('#pdfViewerTitle').html('<i class="fa fa-eye"></i> ' + filename);
+        $('#pdfLoading').show();
+        $('#pdfCanvas').hide();
+        $('#pdfViewerModal').modal('show');
+        
+        // Préparer les boutons d'action sous le PDF
+        const actionsHtml = `
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="window.open('?get_bibliotheque_file&id=${id}', '_blank')"><i class="fa fa-external-link"></i> Ouvrir</button>
+                <button class="btn btn-info" onclick="printLibraryFile(${id})"><i class="fa fa-print"></i> Imprimer</button>
+                
+                <div class="btn-group dropup">
+                    <button type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown">
+                        <i class="fa fa-book"></i> Imposer
+                    </button>
+                    <div class="dropdown-menu shadow-lg">
+                        <a class="dropdown-item py-2" href="?imposition_brochure&from_lib=${id}"><i class="fa fa-book text-success mr-2"></i> Brochure</a>
+                        <a class="dropdown-item py-2" href="?imposition_livre&from_lib=${id}"><i class="fa fa-book text-primary mr-2"></i> Livre / Carnet</a>
+                        <a class="dropdown-item py-2" href="?imposition_tracts&from_lib=${id}"><i class="fa fa-copy text-warning mr-2"></i> Tracts / Flyers</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item py-2" href="?pdf_organizer&from_lib=${id}"><i class="fa fa-th text-info mr-2"></i> PDF Organizer</a>
+                    </div>
+                </div>
+
+                <div class="btn-group dropup">
+                    <button type="button" class="btn btn-warning dropdown-toggle" data-toggle="dropdown">
+                        <i class="fa fa-cog"></i> Modifier
+                    </button>
+                    <div class="dropdown-menu shadow-lg">
+                        <a class="dropdown-item py-2" href="?pdf_to_png&from_lib=${id}"><i class="fa fa-file-image-o text-danger mr-2"></i> Convertir en Images</a>
+                        <a class="dropdown-item py-2" href="?unimpose&from_lib=${id}"><i class="fa fa-undo text-info mr-2"></i> Désimposer</a>
+                        <a class="dropdown-item py-2" href="?resizer&from_lib=${id}"><i class="fa fa-expand text-primary mr-2"></i> Redimensionner</a>
+                        <a class="dropdown-item py-2" href="?pdf_merge&from_lib=${id}"><i class="fa fa-compress text-success mr-2"></i> Fusionner</a>
+                        <a class="dropdown-item py-2" href="?taux_remplissage&from_lib=${id}"><i class="fa fa-tint text-info mr-2"></i> Taux d'encrage</a>
+                        <a class="dropdown-item py-2" href="?image_processor&from_lib=${id}"><i class="fa fa-sliders text-primary mr-2"></i> Traitement d'image</a>
+                    </div>
+                </div>
+            </div>
+        `;
+        $('#pdfModalActions').html(actionsHtml);
+
+        var url = '?get_bibliotheque_file&id=' + id;
+        pdfjsLib.getDocument(url).promise.then(function(pdfDoc_) {
+            pdfDoc = pdfDoc_;
+            document.getElementById('totalPages').textContent = pdfDoc.numPages;
+            pageNum = 1;
+            $('#pdfCanvas').show();
+            renderPage(pageNum);
+        }).catch(err => {
+            $('#pdfLoading').html('<i class="fa fa-exclamation-triangle fa-2x text-warning"></i><p class="mt-2">Erreur : Impossible de charger le PDF</p>');
+        });
+    }
 </script>

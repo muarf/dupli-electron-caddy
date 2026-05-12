@@ -214,25 +214,39 @@ class PrintSessionManager {
         // NOUVEAU WORKFLOW: Juste notifier, pas d'auto-assignation
 
         const jobId = jobData.jobId || jobData.id || jobData.JobId;
+        const currentStatus = jobData.Status || jobData.status;
+        const currentPages = jobData.TotalPages || jobData.totalPages || 0;
         
-        // Anti-spam: Empêcher spam, mais programer réanalyse pour mise à jour
+        // Anti-spam intelligent: Ignorer seulement si ID, Statut et Pages sont IDENTIQUES
         if (jobId && this.processedJobIds.has(jobId)) {
-            console.log('[PrintSessionManager] Job déjà notifié, ignoré:', jobId);
-            return;
+            const lastData = this.lastJobData.get(jobId);
+            if (lastData && lastData.status === currentStatus && lastData.totalPages === currentPages) {
+                console.log('[PrintSessionManager] Job déjà notifié avec mêmes données, ignoré:', jobId);
+                return;
+            }
         }
         
-if (jobId) {
+        if (jobId) {
             this.processedJobIds.add(jobId);
+            // Stocker données pour comparaison future
+            this.lastJobData.set(jobId, {
+                status: currentStatus,
+                totalPages: currentPages
+            });
+
+            // TTL de l'anti-spam (60s)
             setTimeout(() => {
-                this.processedJobIds.delete(jobId);
-                this.lastJobData.delete(jobId);
+                const entry = this.lastJobData.get(jobId);
+                if (entry && entry.status === currentStatus) {
+                    this.processedJobIds.delete(jobId);
+                    this.lastJobData.delete(jobId);
+                }
             }, 60000);
             
-            // Stocker données pour comparaison
-            this.lastJobData.set(jobId, {...jobData});
-            
-            // Programmer réanalyse pour mise à jour
-            this.scheduleReanalysis(jobId);
+            // Programmer réanalyse (Windows seulement)
+            if (!navigator.platform.toLowerCase().includes('linux')) {
+                this.scheduleReanalysis(jobId);
+            }
         }
 
         // Envoyer à print-notification pour enregistrer en base
@@ -255,7 +269,7 @@ if (jobId) {
                     thumbnailUrl: jobData.ThumbnailUrl || jobData.thumbnailUrl || '',
                     timestamp: jobData.TimeSubmitted || jobData.timestamp || new Date().toISOString(),
                     eventType: 'job_detected',
-                    platform: 'win32'
+                    platform: navigator.platform.toLowerCase().includes('win') ? 'win32' : 'linux'
                 })
             });
             const result = await response.json();
@@ -270,7 +284,7 @@ if (jobId) {
         }
         */
 
-        this.showToast('Impression détectée', jobData, true);
+        // this.showToast('Impression détectée', jobData, true);
 
         /* ANCIEN WORKFLOW DÉSACTIVÉ - L'utilisateur assigne manuellement sur auto_tirage
         // Si session active → assigner automatiquement

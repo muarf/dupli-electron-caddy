@@ -33,6 +33,7 @@ function get_binary_platform_dir(): string
  */
 function get_binary_path(string $name, ?string $env_var = null): ?string
 {
+    $is_windows = PHP_OS_FAMILY === 'Windows';
     // 1. Vérifier la variable d'environnement (priorité haute)
     if ($env_var) {
         $env_path = getenv($env_var);
@@ -108,6 +109,29 @@ function get_binary_path(string $name, ?string $env_var = null): ?string
 }
 
 /**
+ * Exécute un binaire système de manière sécurisée
+ * 
+ * @param string $name Nom du binaire
+ * @param string $args Arguments de la commande
+ * @param string|null $env_var Variable d'environnement pour le chemin
+ * @return array ['success' => bool, 'output' => string, 'error' => string]
+ */
+function run_binary(string $name, string $args, ?string $env_var = null): array
+{
+    $path = get_binary_path($name, $env_var) ?: $name;
+    $full_command = escapeshellarg($path) . " " . $args . " 2>&1";
+    
+    exec($full_command, $output, $returnCode);
+
+    return [
+        'success' => ($returnCode === 0),
+        'output' => implode("\n", $output),
+        'error' => ($returnCode !== 0) ? "Erreur $name (code $returnCode)" : "",
+        'command' => $full_command
+    ];
+}
+
+/**
  * Retourne le chemin vers l'exécutable Ghostscript
  * 
  * @return string Chemin vers gs
@@ -165,19 +189,41 @@ function get_gxps_path(): string
  */
 function run_ghostscript(string $args): array
 {
-    $gs_path = get_ghostscript_path();
-    
-    // Sur Windows, si on utilise le binaire système et qu'il n'est pas dans le PATH, 
-    // l'exécution échouera. Mais run_endpoint l'utilise déjà.
-    
-    $full_command = escapeshellarg($gs_path) . " " . $args . " 2>&1";
-    exec($full_command, $output, $returnCode);
+    $path = get_ghostscript_path();
+    return run_binary($path, $args, 'DUPLICATOR_GS_PATH');
+}
 
-    return [
-        'success' => ($returnCode === 0),
-        'output' => implode("\n", $output),
-        'error' => ($returnCode !== 0) ? "Erreur Ghostscript (code $returnCode)" : ""
-    ];
+/**
+ * Exécute une commande ImageMagick (magick)
+ * 
+ * @param string $args Arguments
+ * @return array
+ */
+function run_imagemagick(string $args): array
+{
+    return run_binary('magick', $args, 'DUPLICATOR_MAGICK_PATH');
+}
+
+/**
+ * Exécute une commande PCL (gpcl6)
+ * 
+ * @param string $args Arguments
+ * @return array
+ */
+function run_gpcl6(string $args): array
+{
+    return run_binary('gpcl6', $args, 'DUPLICATOR_GPCL_PATH');
+}
+
+/**
+ * Exécute une commande XPS (gxps)
+ * 
+ * @param string $args Arguments
+ * @return array
+ */
+function run_gxps(string $args): array
+{
+    return run_binary('gxps', $args, 'DUPLICATOR_GXPS_PATH');
 }
 
 /**

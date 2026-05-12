@@ -76,18 +76,10 @@ function handleUpload() {
         $dest_path = $originals_dir . $file_id . '.pdf';
 
         if (move_uploaded_file($tmp_name, $dest_path)) {
-            // Extraire les vignettes via le binaire Magick (portable)
             try {
-                $magick = get_binary_path('magick');
-                // S'assurer que le dossier des binaires est dans le PATH pour que Magick trouve Ghostscript
-                $bin_dir = dirname($magick);
-                if ($bin_dir !== '.') {
-                    putenv("PATH=$bin_dir" . PATH_SEPARATOR . getenv("PATH"));
-                }
-                
                 // On utilise -scene 1 pour commencer le numérotage à _page_001.png
-                $cmd = escapeshellarg($magick) . " -density 72 " . escapeshellarg($dest_path) . " -quality 85 -scene 1 " . escapeshellarg($thumbs_dir . $file_id . "_page_%03d.png");
-                exec($cmd);
+                $magick_args = "-density 72 " . escapeshellarg($dest_path) . " -quality 85 -scene 1 " . escapeshellarg($thumbs_dir . $file_id . "_page_%03d.png");
+                run_imagemagick($magick_args);
             } catch (Exception $e) {
                 error_log("[pdf_organizer] ImageMagick CLI error: " . $e->getMessage());
             }
@@ -156,19 +148,12 @@ function handleGenerate() {
     // Default A4 at 150 DPI: 595 points = 595 * 150/72 = 1239 pixels
     $blank_width = 1240;
     $blank_height = 1754;
-    $magick = get_binary_path('magick');
-
     if ($first_pdf_path) {
         try {
-            // S'assurer que le dossier des binaires est dans le PATH
-            $bin_dir = dirname($magick);
-            putenv("PATH=$bin_dir;" . getenv("PATH"));
-            
             // Utiliser identify pour obtenir les dimensions via CLI
-            $identify = get_binary_path('identify');
-            $identify_cmd = (strpos($identify, ' ') !== false) ? $identify : escapeshellarg($identify);
-            $cmd = $identify_cmd . " -format \"%w|%h\" " . escapeshellarg($first_pdf_path . "[0]");
-            $out = shell_exec($cmd);
+            $identify_args = "-format \"%w|%h\" " . escapeshellarg($first_pdf_path . "[0]");
+            $identify_result = run_binary('identify', $identify_args);
+            $out = $identify_result['output'];
             if ($out && strpos($out, '|') !== false) {
                 list($blank_width, $blank_height) = explode('|', $out);
             }
@@ -182,8 +167,8 @@ function handleGenerate() {
         if ($item['type'] === 'blank') {
             // Page blanche with correct size
             $blank_path = $tmp_base . 'blank_' . uniqid() . '.png';
-            $cmd = escapeshellarg($magick) . " -size {$blank_width}x{$blank_height} xc:white " . escapeshellarg($blank_path);
-            exec($cmd);
+            $magick_args = "-size {$blank_width}x{$blank_height} xc:white " . escapeshellarg($blank_path);
+            run_imagemagick($magick_args);
             $images[] = $blank_path;
         } else {
             $file_path = $originals_dir . $item['file_id'] . '.pdf';
@@ -196,8 +181,8 @@ function handleGenerate() {
                 
                 // Préparer la commande d'extraction et rotation
                 $rot_cmd = $rotation != 0 ? "-rotate $rotation" : "";
-                $cmd = escapeshellarg($magick) . " -density 150 " . escapeshellarg($file_path . "[$page_idx]") . " $rot_cmd " . escapeshellarg($out_path);
-                exec($cmd);
+                $magick_args = "-density 150 " . escapeshellarg($file_path . "[$page_idx]") . " $rot_cmd " . escapeshellarg($out_path);
+                run_imagemagick($magick_args);
                 
                 if (file_exists($out_path)) {
                     $images[] = $out_path;
@@ -216,8 +201,7 @@ function handleGenerate() {
     
     // Assembler le PDF final via CLI
     $img_list = implode(' ', array_map('escapeshellarg', $images));
-    $cmd = escapeshellarg($magick) . " $img_list " . escapeshellarg($output_pdf);
-    exec($cmd);
+    run_imagemagick("$img_list " . escapeshellarg($output_pdf));
     
     // Nettoyer les images temp
     foreach ($images as $img) {

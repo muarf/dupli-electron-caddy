@@ -1,62 +1,63 @@
 #pragma once
-
 #include <napi.h>
+#include <atomic>
 #include <string>
 #include <vector>
 #include <windows.h>
 #include <winspool.h>
 
-// Structure simple pour passer les données du thread C++ vers JS
-struct JobDetails {
-  DWORD jobId;
-  std::string jobUuid;
+// ---------------------------------------------------------------------------
+// JobEvent — données brutes émises vers Node.js pour chaque changement de job
+// Pas d'analyse ici : Node.js s'occupe de tout le reste.
+// ---------------------------------------------------------------------------
+struct JobEvent {
+  uint32_t    jobId;
   std::string printerName;
   std::string documentName;
-  std::string statusStr; // "Spooling", "Printing", etc.
-  short paperSize;
-  short duplex;
-  short color;
-  short copies;    // Number of copies requested
-  DWORD icmMethod; // ICM method - might help detect grayscale
-  DWORD totalPages;
-  bool isGrayscale;         // true if EMF analysis shows grayscale content
-  float fillRate;           // 0.0 to 100.0 - ink coverage percentage
-  std::string thumbnailUrl; // URL to the generated thumbnail
-  std::string
-      timeSubmitted; // Creation time (ISO8601) to identify unique job events
+  std::string status;       // "Spooling" | "Printing" | "Printed" | "Paused" | "Error" | "Deleting" | "Processing"
+  std::string splPath;      // Chemin absolu vers le fichier .SPL (vide si inconnu)
+  std::string format;       // "EMF" | "XPS" | "PCL" | "RAW" | "unknown"
+  std::string timeSubmitted;// ISO 8601
+  uint32_t    totalPages;
+  uint32_t    copies;
+  int         paperSize;    // dmPaperSize (DMPAPER_*)
+  int         duplex;       // DMDUP_*
+  int         color;        // 1=Mono 2=Color (driver metadata, non analysé)
+  int         icmMethod;
 };
 
-// Worker asynchrone pour la surveillance
-// Utilise AsyncProgressWorker pour envoyer des événements (progress) sans
-// arrêter le thread
-class MonitorWorker : public Napi::AsyncProgressWorker<JobDetails> {
+// ---------------------------------------------------------------------------
+// MonitorWorker — AsyncProgressWorker N-API
+// Tourne dans un thread background, émet des JobEvent vers Node.js.
+// ---------------------------------------------------------------------------
+class MonitorWorker : public Napi::AsyncProgressWorker<JobEvent> {
 public:
-  MonitorWorker(Napi::Function &callback, Napi::Env env)
-      : Napi::AsyncProgressWorker<JobDetails>(callback), env_(env) {
-    stopRequested_ = false;
-  }
+  MonitorWorker(Napi::Function callback, Napi::Env env)
+    : Napi::AsyncProgressWorker<JobEvent>(callback), env_(env) {}
 
-  ~MonitorWorker() {}
+  void Execute(const ExecutionProgress& progress) override;
+  void OnProgress(const JobEvent* data, size_t count) override;
 
-  // Méthode pour demander l'arrêt propre du thread
   void Stop() { stopRequested_ = true; }
 
-protected:
-  // Le code qui tourne dans un thread séparé (BLOQUANT acceptés ici)
-  void Execute(const ExecutionProgress &progress);
-
-  // Appelé quand le thread envoie des données (via progress.Send)
-  // S'exécute sur le thread principal JS
-  void OnProgress(const JobDetails *data, size_t count);
-
-  // Appelé quand le worker a fini (ou erreur)
-  void OnOK() {}
-  void OnError(const Napi::Error &e) {}
+  // Helpers réutilisables (non dépendants du thread worker)
+  std::string DetectSplFormat(const std::string& splPath);
+  std::string FindSplPath(uint32_t jobId);
 
 private:
   Napi::Env env_;
-  bool stopRequested_;
+  // Lit les métadonnées brutes d'un job via GetJobW
+  JobEvent    GetJobEvent(void* hPrinter, uint32_t jobId);
 
-  // Helpers privés
-  JobDetails GetJobInfo(HANDLE hPrinter, DWORD jobId);
+  std::atomic<bool> stopRequested_{false};
 };
+
+// ---------------------------------------------------------------------------
+// API exportée vers Node.js
+// ---------------------------------------------------------------------------
+Napi::Value StartMonitoring(const Napi::CallbackInfo& info);
+Napi::Value StopMonitoring(const Napi::CallbackInfo& info);
+Napi::Value GetPrinters(const Napi::CallbackInfo& info);
+Napi::Value GetPrinterCapabilities(const Napi::CallbackInfo& info);
+Napi::Value PrintJob(const Napi::CallbackInfo& info);
+Napi::Value ReanalyzeJob(const Napi::CallbackInfo& info);

@@ -8,11 +8,6 @@ require_once(__DIR__ . '/../controler/functions/binary_utilities.php');
  */
 function merge_pdfs($pdf_files, $output_file) {
     try {
-        $gs_command = get_ghostscript_path();
-        if (!$gs_command) {
-            throw new Exception("Ghostscript n'a pas été trouvé sur ce système. Veuillez l'installer.");
-        }
-        
         // Vérifier que tous les fichiers existent
         foreach ($pdf_files as $file) {
             if (!file_exists($file)) {
@@ -25,18 +20,15 @@ function merge_pdfs($pdf_files, $output_file) {
         if (!is_dir($output_dir)) {
             mkdir($output_dir, 0777, true);
         }
-        
+
         // Préparer la commande Ghostscript
-        // gs -dNOPAUSE -sDEVICE=pdfwrite -sOUTPUTFILE=merged.pdf -dBATCH file1.pdf file2.pdf
         $files_escaped = array_map('escapeshellarg', $pdf_files);
-        $command = escapeshellarg($gs_command) . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($output_file) . " " . implode(' ', $files_escaped) . " 2>&1";
+        $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($output_file) . " " . implode(' ', $files_escaped);
         
-        $output = [];
-        $return_var = 0;
-        exec($command, $output, $return_var);
+        $gs_result = run_ghostscript($gs_args);
         
-        if ($return_var !== 0) {
-            throw new Exception("Erreur lors de la fusion avec Ghostscript. Code: " . $return_var . " Output: " . implode("\n", $output));
+        if (!$gs_result['success']) {
+            throw new Exception("Erreur lors de la fusion avec Ghostscript. Code: " . $gs_result['error'] . " Output: " . $gs_result['output']);
         }
         
         if (!file_exists($output_file) || filesize($output_file) === 0) {
