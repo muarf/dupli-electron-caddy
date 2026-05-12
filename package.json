@@ -1,6 +1,6 @@
 {
-  "name": "dupli-electron-beta",
-  "version": "2.0.1-beta.local",
+  "name": "dupli-electron-alpha",
+  "version": "2.0.1-alpha.local",
   "main": "main-caddy.js",
   "scripts": {
     "start": "electron . --no-sandbox --disable-gpu",
@@ -17,10 +17,9 @@
     "test:unit": "jest --testPathPattern=unit",
     "test:integration": "jest --testPathPattern=integration",
     "test:integration:simple": "jest --testPathPattern=caddy-php-simple",
-    "test:e2e": "jest --testPathPattern=e2e",
-    "test:e2e:simple": "jest --testPathPattern=electron-app-simple",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
     "rebuild:print-engine": "cd src/print-engine/windows && node-gyp rebuild"
   },
   "keywords": [],
@@ -28,20 +27,19 @@
   "license": "ISC",
   "description": "Duplicator - Application de duplication de documents",
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/jest": "^29.5.14",
     "cross-env": "^10.1.0",
-    "electron": "^22.3.27",
+    "electron": "^30.0.0",
     "electron-builder": "^26.0.12",
     "jest": "^29.7.0",
     "node-gyp": "^10.0.0",
-    "spectron": "^19.0.0",
     "supertest": "^6.3.4"
   },
   "jest": {
     "testEnvironment": "node",
     "testMatch": [
-      "**/tests/**/*.test.js",
-      "**/tests/**/*.spec.js"
+      "**/tests/**/*.test.js"
     ],
     "collectCoverageFrom": [
       "main*.js",
@@ -57,8 +55,8 @@
     ]
   },
   "build": {
-    "appId": "com.dupli.beta",
-    "productName": "Duplicator",
+    "appId": "com.dupli.alpha",
+    "productName": "Duplicator Alpha",
     "directories": {
       "output": "dist"
     },
@@ -131,7 +129,8 @@
     "node-addon-api": "^7.0.0",
     "pdfjs-dist": "^3.11.174",
     "pdfkit": "^0.17.2",
+    "sharp": "^0.33.3",
     "sqlite3": "^5.1.7"
   },
-  "productName": "Duplicator Beta"
+  "productName": "Duplicator Alpha"
 }

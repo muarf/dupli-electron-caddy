@@ -117,3 +117,12 @@ if (!function_exists('isAppImage')) {
         return false;
     }
 }
+if (!function_exists('isElectron')) {
+    /**
+     * Détecte si l'application s'exécute dans l'environnement Electron
+     * ou via un AppImage.
+     */
+    function isElectron() {
+        return getenv('ELECTRON_RUNNING') === '1' || isAppImage();
+    }
+}

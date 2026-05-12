@@ -7,6 +7,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:  # Permet de lancer manuellement
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-and-test-macos:
     runs-on: macos-latest

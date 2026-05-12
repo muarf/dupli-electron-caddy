@@ -21073,3 +21073,13 @@ STAGING: nb_f=11, price=0.18, session=86
 [2026-04-22 10:07:01] [pdf_organizer] Generate: session=test_merge_69e89dc5d3388, structure=[{"type":"page","file_id":"f1","page_num":1,"rotation":0},{"type":"blank"},{"type":"page","file_id":"f1","page_num":2,"rotation":90}]
 [2026-04-22 10:07:01] [pdf_organizer] Generate started, session: test_merge_69e89dc5d3388
 [2026-04-22 10:07:02] [pdf_organizer] PDF generated: /home/ubuntu/dupli-electron-caddy/app/tmp/duplicator_organizer/test_merge_69e89dc5d3388/output.pdf
+[2026-04-26 16:31:31] [PAYLOAD] {"printerName":"duplicopieur","pages":1,"contact":"test","document":"a5_imposed.pdf","copies":1,"total_pages":1,"duplex":false,"color_mode":"Color","paper_size":"8","fill_rate":0.14671428571429002,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/5\/page_0.png","timestamp":"2026-04-26T16:30:56.000Z","job_id":"5","internal_id":6841,"session_id":"88","simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DEBUG: pdo_connect called
+DEBUG: PDO connected OK
+DEBUG: Before beginTransaction
+DEBUG: After beginTransaction OK
+INIT: Printer='duplicopieur', Type='dupli'
+HEX: 6475706c69
+Check 'photocop': FALSE
+STAGING DUPLI: price=0.21, session=88

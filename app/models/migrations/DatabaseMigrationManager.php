@@ -36,6 +36,10 @@ class DatabaseMigrationManager
             require_once __DIR__ . '/add_staging_columns.php';
             require_once __DIR__ . '/add_document_display_fields.php';
             require_once __DIR__ . '/add_print_job_id_to_recorded_print_jobs.php';
+            require_once __DIR__ . '/add_bibliotheque_metadata_and_tags.php';
+            require_once __DIR__ . '/create_site_settings_table.php';
+            require_once __DIR__ . '/add_bibliotheque_chunks.php';
+            require_once __DIR__ . '/add_bibliotheque_vectors.php';
 
             $migrations = [
                 'tirage_global_id' => [$this, 'migrateTirageGlobalId'],
@@ -65,6 +69,18 @@ class DatabaseMigrationManager
                 },
                 'add_print_job_id_to_recorded_print_jobs' => function () {
                     migrate_add_print_job_id_to_recorded_print_jobs($this->db);
+                },
+                'add_bibliotheque_metadata_and_tags' => function () {
+                    migrate_add_bibliotheque_metadata_and_tags($this->db);
+                },
+                'create_site_settings_table' => function () {
+                    migrate_create_site_settings_table($this->db);
+                },
+                'add_bibliotheque_chunks' => function () {
+                    migrate_add_bibliotheque_chunks($this->db);
+                },
+                'add_bibliotheque_vectors' => function () {
+                    migrate_add_bibliotheque_vectors($this->db);
                 },
                 'printer_mappings_table' => [$this, 'createPrinterMappingsTable'],
                 // Ajouter d'autres migrations ici à l'avenir
