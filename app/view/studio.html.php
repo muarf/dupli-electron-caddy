@@ -1,7 +1,7 @@
-<link rel="stylesheet" href="css/studio.css">
+<link rel="stylesheet" href="css/studio.css?v=<?php echo time(); ?>">
 <script src="js/build/pdf.js" defer></script>
 <script src="js/jszip.min.js" defer></script>
-<script src="js/riso-tools.js" defer></script>
+<script src="js/riso-tools.js?v=<?php echo time(); ?>" defer></script>
 
 <div class="studio-layout" id="studioApp">
 
@@ -24,11 +24,15 @@
       <span class="file-info-badge" id="fileInfoBadge" style="display:none">
         <i class="fa fa-file"></i> <span id="fileNameDisplay"></span>
         <span id="fileDimsDisplay" style="opacity:0.7;margin-left:6px;font-size:11px"></span>
+        <span id="fileInkDisplay" style="margin-left:8px; padding:2px 8px; background:rgba(0,0,0,0.1); border-radius:10px; font-size:11px; font-weight:600; display:none" title="Taux d'encrage moyen (C+M+J+N)"></span>
       </span>
       <div class="toolbar-spacer"></div>
       <button class="toolbar-btn" id="btnNewFile" style="display:none"><i class="fa fa-upload"></i> Nouveau fichier</button>
       <button class="toolbar-btn" id="btnExportPng" style="display:none" title="Exporter le canvas (avec filtres) en PNG"><i class="fa fa-file-image-o"></i> PNG</button>
-      <button class="toolbar-btn primary" id="btnExportPdf" style="display:none" title="Exporter en PDF via serveur"><i class="fa fa-file-pdf-o"></i> PDF</button>
+      <button class="toolbar-btn primary" id="btnExportPdf" style="display:none; position: relative;" title="Exporter en PDF via serveur">
+        <i class="fa fa-file-pdf-o"></i> PDF
+        <span id="pdfReadyBadge" style="display:none; position: absolute; top: -5px; right: -5px; background: #10b981; color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--studio-surface);"><i class="fa fa-check"></i></span>
+      </button>
     </div>
 
     <!-- Canvas / Upload Area -->
@@ -45,7 +49,28 @@
       </div>
 
       <!-- Preview canvas (hidden until file loaded) -->
-      <canvas id="studioCanvas" style="display:none"></canvas>
+      <div id="studioSpinner" class="studio-spinner" style="display:none">
+        <i class="fa fa-spinner fa-spin fa-3x" style="color:var(--studio-primary); margin-bottom:16px;"></i>
+        <div id="spinnerMsg" style="font-weight:600">Traitement en cours...</div>
+      </div>
+      
+      <!-- Delete page button overlaid on canvas -->
+      <div id="mainCanvasDeleteBtn" style="display:none; position:absolute; top:10px; right:10px; background:rgba(239,68,68,0.9); color:white; width:36px; height:36px; border-radius:18px; align-items:center; justify-content:center; cursor:pointer; z-index:20; box-shadow:0 2px 5px rgba(0,0,0,0.2); transition:transform 0.2s;" title="Supprimer cette page" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        <i class="fa fa-trash"></i>
+      </div>
+
+      <!-- Lightbox (hidden) -->
+      <div id="studioLightbox" class="studio-lightbox">
+        <div class="lightbox-header">
+          <div class="lightbox-title"><i class="fa fa-eye"></i> Aperçu Taille Réelle (100%)</div>
+          <button class="btn-close-lightbox" id="btnCloseLightbox"><i class="fa fa-times"></i></button>
+        </div>
+        <div class="lightbox-content">
+          <canvas id="lightboxCanvas"></canvas>
+        </div>
+      </div>
+
+      <canvas id="studioCanvas" style="display:none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 4px; transition: transform 0.2s;"></canvas>
     </div>
 
     <!-- Thumbnails Bar -->
@@ -111,7 +136,7 @@
       <!-- == TAB BROCHURE == -->
       <div id="impTabBrochure" class="imp-tab-content" style="padding:0">
         <div class="panel-section">
-          <div class="panel-section-title">Format</div>
+          <div class="panel-section-title">Format & Poses</div>
           <div class="panel-row">
             <div class="panel-label">Sortie</div>
             <select class="panel-select" id="bro_output_format"><option value="A3">A3 (défaut)</option><option value="A4">A4</option></select>
@@ -119,66 +144,104 @@
           <div class="panel-row">
             <div class="panel-label">N-up (poses)</div>
             <select class="panel-select" id="bro_n_up">
-              <option value="2">2 pages / feuille (A5→A4, A4→A3)</option>
+              <option value="2">2 pages / feuille</option>
               <option value="4">4 pages / feuille</option>
               <option value="8">8 pages / feuille</option>
             </select>
           </div>
         </div>
+
         <div class="panel-section">
-          <div class="panel-section-title">Échelle</div>
+          <div class="panel-section-title">Redimensionnement</div>
           <div class="panel-row">
-            <div style="display:flex;gap:8px;margin-bottom:8px">
-              <label style="font-size:12px;cursor:pointer"><input type="radio" name="bro_resize" value="percent" checked> %</label>
-              <label style="font-size:12px;cursor:pointer"><input type="radio" name="bro_resize" value="mm"> mm</label>
+            <label style="font-size:11px; cursor:pointer"><input type="radio" name="bro_resize_mode" value="percent" checked> Échelle %</label>
+            <label style="font-size:11px; cursor:pointer; margin-left:10px"><input type="radio" name="bro_resize_mode" value="mm"> Taille cible</label>
+          </div>
+          <div id="bro_resize_percent_block">
+            <div class="panel-row">
+              <div class="panel-label">Échelle (%)</div>
+              <input type="number" class="panel-select" id="bro_scale" value="100" min="10" max="400">
             </div>
           </div>
-          <div id="bro_block_percent" class="panel-row">
-            <div class="panel-label">Échelle <span class="panel-value" id="bro_scale_val">100</span>%</div>
-            <input type="range" class="panel-slider" id="bro_scale" min="10" max="120" value="100">
-          </div>
-          <div id="bro_block_mm" class="panel-row" style="display:none">
-            <div style="display:flex;gap:6px">
-              <input type="number" class="panel-select" id="bro_target_w" placeholder="L (mm)" style="width:48%">
-              <input type="number" class="panel-select" id="bro_target_h" placeholder="H (mm)" style="width:48%">
+          <div id="bro_resize_mm_block" style="display:none">
+            <div class="panel-row">
+              <div class="panel-label">Largeur (mm)</div>
+              <input type="number" class="panel-select" id="bro_target_w" placeholder="ex: 105" step="0.1">
+            </div>
+            <div class="panel-row">
+              <div class="panel-label">Hauteur (mm)</div>
+              <input type="number" class="panel-select" id="bro_target_h" placeholder="ex: 148" step="0.1">
             </div>
           </div>
         </div>
+
         <div class="panel-section">
           <div class="panel-section-title">Gouttières (mm)</div>
-          <div style="display:flex;gap:6px" class="panel-row">
-            <input type="number" class="panel-select" id="bro_gutter_x" value="0" min="0" step="0.5" style="width:48%" placeholder="X (mm)">
-            <input type="number" class="panel-select" id="bro_gutter_y" value="0" min="0" step="0.5" style="width:48%" placeholder="Y (mm)">
+          <div class="panel-row">
+            <div class="panel-label">Horiz. (X)</div>
+            <input type="number" class="panel-select" id="bro_gutter_x" value="0" step="0.5">
           </div>
           <div class="panel-row">
-            <div class="panel-label">Si manque de place</div>
+            <div class="panel-label">Vert. (Y)</div>
+            <input type="number" class="panel-select" id="bro_gutter_y" value="0" step="0.5">
+          </div>
+          <div class="panel-row">
+            <div class="panel-label">Stratégie</div>
             <select class="panel-select" id="bro_gutter_strategy">
-              <option value="reduce">Réduire l'échelle</option>
-              <option value="crop">Rogner</option>
+              <option value="reduce">Réduire échelle</option>
+              <option value="crop">Rogner (Crop)</option>
             </select>
           </div>
         </div>
+
         <div class="panel-section">
-          <div class="panel-section-title">Options</div>
-          <div class="panel-row"><label class="panel-checkbox"><input type="checkbox" id="bro_crop_marks"> Traits de coupe</label></div>
-          <div id="bro_crop_opts" style="display:none;margin-top:8px">
+          <div class="panel-section-title">Repères & Folios</div>
+          <div class="panel-row">
+            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_crop_marks"> Traits de coupe</label>
+          </div>
+          <div id="bro_crop_settings" style="display:none; padding-left:10px; border-left:2px solid var(--studio-border); margin-top:5px">
             <div class="panel-row">
               <div class="panel-label">Style</div>
-              <select class="panel-select" id="bro_crop_style">
+              <select class="panel-select" id="bro_crop_style" style="font-size:10px">
                 <option value="standard">Standard</option>
-                <option value="spreads">Spreads</option>
-                <option value="booklet">Booklet</option>
+                <option value="spreads" selected>Planches (spreads)</option>
+                <option value="booklet">Livret</option>
               </select>
             </div>
+            <div class="panel-row">
+              <div class="panel-label">Long. (mm)</div>
+              <input type="number" class="panel-select" id="bro_crop_len" value="5" min="1" style="width:50px">
+            </div>
           </div>
-          <div class="panel-row"><label class="panel-checkbox"><input type="checkbox" id="bro_page_nums"> Numéros dans gouttières</label></div>
+          
+          <div class="panel-row" style="margin-top:10px">
+            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_page_nums"> Numéros de pages</label>
+          </div>
+          <div id="bro_folio_settings" style="display:none; padding-left:10px; border-left:2px solid var(--studio-border); margin-top:5px">
+             <div class="panel-row">
+               <div class="panel-label">Offset X</div>
+               <input type="number" class="panel-select" id="bro_folio_x" value="0" step="0.5" style="width:50px">
+             </div>
+             <div class="panel-row">
+               <div class="panel-label">Offset Y</div>
+               <input type="number" class="panel-select" id="bro_folio_y" value="-2" step="0.5" style="width:50px">
+             </div>
+          </div>
+
+          <div class="panel-row" style="margin-top:10px">
+            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_tumble"> Tête-bêche</label>
+          </div>
+          
+          <button class="panel-btn primary" style="width:100%; margin-top:20px" onclick="doImpose('brochure')">
+            <i class="fa fa-magic"></i> Générer Brochure
+          </button>
         </div>
       </div>
 
       <!-- == TAB LIVRE == -->
       <div id="impTabLivre" class="imp-tab-content" style="display:none;padding:0">
         <div class="panel-section">
-          <div class="panel-section-title">Format</div>
+          <div class="panel-section-title">Format & Poses</div>
           <div class="panel-row">
             <div class="panel-label">Sortie</div>
             <select class="panel-select" id="liv_output_format"><option value="A3">A3</option><option value="A4">A4</option></select>
@@ -191,23 +254,50 @@
             </select>
           </div>
         </div>
+
         <div class="panel-section">
-          <div class="panel-section-title">Échelle</div>
+          <div class="panel-section-title">Redimensionnement</div>
           <div class="panel-row">
-            <div class="panel-label">Échelle <span class="panel-value" id="liv_scale_val">100</span>%</div>
-            <input type="range" class="panel-slider" id="liv_scale" min="10" max="120" value="100">
+            <label style="font-size:11px; cursor:pointer"><input type="radio" name="liv_resize_mode" value="percent" checked> Échelle %</label>
+            <label style="font-size:11px; cursor:pointer; margin-left:10px"><input type="radio" name="liv_resize_mode" value="mm"> Taille cible</label>
           </div>
-          <div style="display:flex;gap:6px" class="panel-row">
-            <input type="number" class="panel-select" id="liv_gutter_x" value="0" min="0" step="0.5" style="width:48%" placeholder="Gouttière X">
-            <input type="number" class="panel-select" id="liv_gutter_y" value="0" min="0" step="0.5" style="width:48%" placeholder="Gouttière Y">
+          <div id="liv_resize_percent_block">
+            <div class="panel-row">
+              <div class="panel-label">Échelle (%)</div>
+              <input type="number" class="panel-select" id="liv_scale" value="100">
+            </div>
+          </div>
+          <div id="liv_resize_mm_block" style="display:none">
+            <div class="panel-row">
+              <div class="panel-label">Larg (mm)</div>
+              <input type="number" class="panel-select" id="liv_target_w" placeholder="mm">
+            </div>
+            <div class="panel-row">
+              <div class="panel-label">Haut (mm)</div>
+              <input type="number" class="panel-select" id="liv_target_h" placeholder="mm">
+            </div>
           </div>
         </div>
+
         <div class="panel-section">
-          <div class="panel-section-title">Options</div>
-          <div class="panel-row"><label class="panel-checkbox"><input type="checkbox" id="liv_duplex" checked> Recto-Verso (duplex)</label></div>
-          <div class="panel-row"><label class="panel-checkbox"><input type="checkbox" id="liv_tete_beche"> Tête-bêche</label></div>
-          <div class="panel-row"><label class="panel-checkbox"><input type="checkbox" id="liv_crop_marks"> Traits de coupe</label></div>
-          <div class="panel-row"><label class="panel-checkbox"><input type="checkbox" id="liv_page_nums"> Numéros dans gouttières</label></div>
+          <div class="panel-section-title">Options Pro</div>
+          <div class="panel-row">
+            <input type="number" class="panel-select" id="liv_gutter_x" value="0" step="0.5" style="width:48%" placeholder="Gout X">
+            <input type="number" class="panel-select" id="liv_gutter_y" value="0" step="0.5" style="width:48%" placeholder="Gout Y">
+          </div>
+          <div class="panel-row" style="margin-top:10px">
+            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_crop_marks"> Traits de coupe</label>
+          </div>
+          <div class="panel-row">
+            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_page_nums"> Numéros de pages</label>
+          </div>
+          <div class="panel-row">
+            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_tumble"> Tête-bêche</label>
+          </div>
+          
+          <button class="panel-btn primary" style="width:100%; margin-top:20px" onclick="doImpose('livre')">
+            <i class="fa fa-magic"></i> Générer Livre
+          </button>
         </div>
       </div>
 
@@ -300,19 +390,6 @@
         </div>
       </div>
 
-      <div class="panel-section">
-        <div class="panel-section-title">Fusionner des PDFs</div>
-        <div class="panel-row">
-          <input type="file" id="mergeFileInput" accept=".pdf" multiple style="display:none">
-          <button class="toolbar-btn" id="btnSelectMergeFiles" style="width:100%"><i class="fa fa-plus"></i> Ajouter des PDFs...</button>
-        </div>
-        <div id="mergeFileList" style="margin-top:8px;font-size:12px;color:#6b7280;max-height:100px;overflow-y:auto;">
-          <!-- List of files to merge -->
-        </div>
-        <div class="panel-row" style="margin-top:12px">
-          <button class="toolbar-btn primary" id="btnApplyMerge" style="width:100%" disabled><i class="fa fa-compress"></i> Fusionner</button>
-        </div>
-      </div>
 
       <div class="panel-section">
         <div class="panel-section-title">Organiser (Glisser-Déposer)</div>
@@ -320,6 +397,15 @@
         <div class="panel-row">
           <input type="file" id="orgAddPdfInput" accept=".pdf" style="display:none">
           <button class="toolbar-btn" id="btnOrgAddPdf" style="width:100%"><i class="fa fa-file-pdf-o"></i> Ajouter un PDF</button>
+        </div>
+        <div class="panel-row" style="margin-top:8px">
+          <div class="panel-label">Position d'insertion</div>
+          <select class="panel-select" id="selOrgBlankPos">
+            <option value="end">À la fin</option>
+            <option value="start">Au début</option>
+            <option value="before">Avant la page active</option>
+            <option value="after">Après la page active</option>
+          </select>
         </div>
         <div class="panel-row" style="margin-top:8px">
           <button class="toolbar-btn" id="btnOrgAddBlank" style="width:100%"><i class="fa fa-plus"></i> Insérer page blanche</button>
@@ -350,9 +436,10 @@
         <div class="panel-section-title">Mode de Séparation</div>
         <div class="panel-row">
           <select class="panel-select" id="selRisoMode">
-            <option value="RGB">RGB (3 Couleurs)</option>
-            <option value="CMYK">CMJN (4 Couleurs)</option>
-            <option value="2COLOR">2 Tambours (Clair/Foncé)</option>
+            <option value="AUTO_BICHROMIE">Bichromie Auto (Détection 2 couleurs)</option>
+            <option value="RGB">Soustraction RGB (3 couches)</option>
+            <option value="CMYK">Soustraction CMJN (4 couches)</option>
+            <option value="2COLOR">Séparation Luminosité (Sombre/Clair)</option>
             <option value="PIPETTE">Pipette (Couleur précise)</option>
           </select>
         </div>
@@ -386,8 +473,13 @@
         <div id="risoChannelsList">
           <!-- Dynamically populated via JS -->
         </div>
-        <div class="panel-row" style="margin-top:12px">
-          <button class="toolbar-btn primary" id="btnRisoExportZip" style="width:100%"><i class="fa fa-file-archive-o"></i> Exporter le ZIP</button>
+        <div class="panel-row" style="margin-top:12px; gap:8px;">
+          <button class="panel-btn" id="btnRisoExportZip" style="flex:1">
+            <i class="fa fa-file-archive"></i> Exporter le ZIP
+          </button>
+          <button class="panel-btn primary" id="btnRisoExportPdf" style="flex:1">
+            <i class="fa fa-file-pdf"></i> Exporter PDF Riso
+          </button>
         </div>
       </div>
     </div>
@@ -438,17 +530,43 @@ document.addEventListener('DOMContentLoaded', function() {
   const state = {
     file: null, isPdf: false, pdfDoc: null, currentPage: 1, totalPages: 0,
     originalImageData: null, rotation: 0, flipH: false, flipV: false,
-    dims: null  // { wPx, hPx, wMm, hMm, label }
+    dims: null,  // { wPx, hPx, wMm, hMm, label }
+    orgSelectedIndex: 0,
+    risoLevels: null,
+    risoHalftone: null,
+    risoShowOriginal: false
   };
   
   window.orgSequence = [];
   window.orgDocs = [];
   window.orgFiles = [];
+
+  function setPdfReady(url) {
+    state.lastServerResultUrl = url;
+    if ($('pdfReadyBadge')) {
+      $('pdfReadyBadge').style.display = url ? 'flex' : 'none';
+    }
+  }
+
+  // Helper pour identifier le format papier
+  function getPaperFormat(w, h) {
+    const formats = {
+      'A0': [841, 1189], 'A1': [594, 841], 'A2': [420, 594],
+      'A3': [297, 420],  'A4': [210, 297], 'A5': [148, 210],
+      'A6': [105, 148]
+    };
+    const min = Math.min(w, h), max = Math.max(w, h);
+    for (let f in formats) {
+      const [fMin, fMax] = formats[f];
+      if (Math.abs(min - fMin) <= 3 && Math.abs(max - fMax) <= 3) return f;
+    }
+    return null;
+  }
   
   // === DOM REFS ===
   const $ = id => document.getElementById(id);
   const uploadZone = $('uploadZone'), fileInput = $('studioFileInput');
-  const canvas = $('studioCanvas'), ctx = canvas.getContext('2d');
+  const canvas = $('studioCanvas'), ctx = canvas.getContext('2d', { willReadFrequently: true });
   const panel = $('studioPanel'), thumbsBar = $('thumbsBar');
   const canvasArea = $('canvasArea');
 
@@ -506,6 +624,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (state.isPdf) loadPdf(file);
     else loadImage(file);
+    
+    analyzeInk();
+  }
+
+  async function analyzeInk() {
+    if (!state.file) return;
+    const badge = $('fileInkDisplay');
+    badge.style.display = 'inline-flex';
+    badge.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+    badge.style.color = 'var(--studio-text-muted)';
+    
+    const fd = new FormData();
+    fd.append('file', state.file);
+    fd.append('action', 'analyze_ink');
+    
+    try {
+      const res = await fetch('?studio_process', { method: 'POST', body: fd });
+      const json = await res.json();
+      if (json.success && json.result) {
+        state.inkData = json.result;
+        badge.innerHTML = '<i class="fa fa-tint" style="color:var(--studio-primary)"></i> Enc: ' + json.result.fill_rate + '%';
+        badge.style.color = 'var(--studio-primary)';
+        renderThumbnails(); // Refresh thumbs to show per-page ink
+      } else {
+        badge.style.display = 'none';
+      }
+    } catch(e) {
+      console.error("Ink analysis failed", e);
+      badge.style.display = 'none';
+    }
   }
 
   function loadImage(file) {
@@ -528,7 +676,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const wMm = Math.round(img.naturalWidth * 25.4 / 96);
         const hMm = Math.round(img.naturalHeight * 25.4 / 96);
         state.dims = { wPx: img.naturalWidth, hPx: img.naturalHeight, wMm, hMm, dpi: 96 };
-        $('fileDimsDisplay').textContent = img.naturalWidth + '×' + img.naturalHeight + 'px (' + wMm + '×' + hMm + 'mm)';
+        const fmt = getPaperFormat(wMm, hMm);
+        $('fileDimsDisplay').textContent = img.naturalWidth + '×' + img.naturalHeight + 'px (' + wMm + '×' + hMm + 'mm)' + (fmt ? ' [' + fmt + ']' : '');
+        
+        // Reset organize sequence for simple images
+        window.orgSequence = [];
+        window.orgDocs = [];
+        window.orgFiles = [];
+        renderThumbnails();
       };
       img.src = e.target.result;
     };
@@ -560,8 +715,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const wMm = Math.round(vp.width * 0.352778);
         const hMm = Math.round(vp.height * 0.352778);
         state.dims = { wPx: Math.round(vp.width), hPx: Math.round(vp.height), wMm, hMm, dpi: 72 };
-        $('fileDimsDisplay').textContent = state.totalPages + 'p. — ' + wMm + '×' + hMm + 'mm';
+        const fmt = getPaperFormat(wMm, hMm);
+        $('fileDimsDisplay').textContent = state.totalPages + 'p. — ' + wMm + '×' + hMm + 'mm' + (fmt ? ' [' + fmt + ']' : '');
         renderThumbnails();
+        
+        $('uploadZone').style.display = 'none';
+        canvas.style.display = 'block';
+        if ($('mainCanvasDeleteBtn')) $('mainCanvasDeleteBtn').style.display = 'flex';
+        state.orgSelectedIndex = 0;
       } catch(err) { alert('Erreur PDF: ' + err.message); }
     };
     reader.readAsArrayBuffer(file);
@@ -575,21 +736,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const maxH = canvasArea.clientHeight - 48;
     const scale = Math.min(maxW / vp.width, maxH / vp.height, 2);
     const svp = page.getViewport({scale});
-    canvas.width = svp.width; canvas.height = svp.height;
+    
+    canvas.width = svp.width; 
+    canvas.height = svp.height;
+    
     await page.render({canvasContext: ctx, viewport: svp}).promise;
-    state.originalImageData = ctx.getImageData(0, 0, svp.width, svp.height);
+    
+    if (canvas.width > 0 && canvas.height > 0) {
+      state.originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    }
     state._dispW = svp.width; state._dispH = svp.height;
+    window.risoChannels = null; // Force re-init on next Riso tab click
     // Update page nav
     const nav = thumbsBar.querySelector('.page-nav');
-    if (nav) nav.textContent = num + ' / ' + state.totalPages;
-    // Highlight active thumb
+    if (nav) nav.textContent = window.orgSequence.length + ' page(s)';
+    // Highlight active thumb based on orgSelectedIndex
     thumbsBar.querySelectorAll('.thumb-item').forEach((t,i) => {
-      t.classList.toggle('active', i === num - 1);
+      t.classList.toggle('active', i === state.orgSelectedIndex);
     });
   }
 
   async function renderThumbnails() {
-    if (orgSequence.length === 0) {
+    if (window.orgSequence.length === 0) {
       thumbsBar.innerHTML = '';
       thumbsBar.classList.remove('visible');
       return;
@@ -600,13 +768,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add info span
     const navSpan = document.createElement('span');
     navSpan.className = 'page-nav';
-    navSpan.textContent = orgSequence.length + ' page(s)';
+    navSpan.textContent = window.orgSequence.length + ' page(s)';
     thumbsBar.appendChild(navSpan);
 
-    for (let i = 0; i < orgSequence.length; i++) {
-      const item = orgSequence[i];
+    for (let i = 0; i < window.orgSequence.length; i++) {
+      const item = window.orgSequence[i];
       const div = document.createElement('div');
-      div.className = 'thumb-item' + (i === state.currentPage - 1 ? ' active' : '');
+      div.className = 'thumb-item' + (i === state.orgSelectedIndex ? ' active' : '');
       div.draggable = true;
       div.dataset.index = i;
 
@@ -618,7 +786,7 @@ document.addEventListener('DOMContentLoaded', function() {
         div.appendChild(tc);
       } else {
         try {
-          const doc = orgDocs[item.file_idx];
+          const doc = window.orgDocs[item.file_idx];
           if (doc) {
             const page = await doc.getPage(item.page_num);
             const vp = page.getViewport({scale: 0.2});
@@ -637,6 +805,25 @@ document.addEventListener('DOMContentLoaded', function() {
       lbl.className = 'thumb-label'; lbl.textContent = i + 1;
       div.appendChild(lbl);
 
+      // Ink Badge for page
+      if (state.inkData && state.inkData.pages) {
+        const pageInfo = state.inkData.pages.find(p => p.page === item.page_num);
+        if (pageInfo) {
+          const ink = pageInfo.fill_rate;
+          const inkBadge = document.createElement('div');
+          inkBadge.style = "position:absolute; top:2px; left:2px; background:rgba(0,0,0,0.6); color:white; font-size:9px; padding:1px 3px; border-radius:3px; z-index:5;";
+          inkBadge.textContent = ink + "%";
+          div.appendChild(inkBadge);
+        }
+      } else if (state.inkData && !state.inkData.pages && i === 0) {
+        // Simple image (only one page)
+        const ink = state.inkData.fill_rate;
+        const inkBadge = document.createElement('div');
+        inkBadge.style = "position:absolute; top:2px; left:2px; background:rgba(0,0,0,0.6); color:white; font-size:9px; padding:1px 3px; border-radius:3px; z-index:5;";
+        inkBadge.textContent = ink + "%";
+        div.appendChild(inkBadge);
+      }
+
       // Actions hover overlay
       const acts = document.createElement('div');
       acts.className = 'thumb-actions';
@@ -646,10 +833,43 @@ document.addEventListener('DOMContentLoaded', function() {
       `;
       div.appendChild(acts);
 
-      // Click to view (if main file)
-      if (item.type === 'page' && item.file_idx === 0) {
-        div.addEventListener('click', () => { state.currentPage = item.page_num; renderPdfPage(item.page_num); applyFilters(); });
-      }
+      // Click to view
+      div.addEventListener('click', async () => { 
+        state.orgSelectedIndex = i; // Suivre l'index sélectionné dans l'organiseur
+        console.log('[Studio] Thumb clicked:', i, '| type:', item.type, '| file_idx:', item.file_idx);
+        if (item.type === 'page') {
+          const doc = window.orgDocs[item.file_idx];
+          if (doc) {
+            state.currentPage = item.page_num;
+            const page = await doc.getPage(item.page_num);
+            const vp = page.getViewport({scale: 1});
+            const maxW = canvasArea.clientWidth - 48;
+            const maxH = canvasArea.clientHeight - 48;
+            const scale = Math.min(maxW / vp.width, maxH / vp.height, 2);
+            const svp = page.getViewport({scale});
+            canvas.width = svp.width; canvas.height = svp.height;
+            await page.render({canvasContext: ctx, viewport: svp}).promise;
+            state.originalImageData = ctx.getImageData(0, 0, svp.width, svp.height);
+            state._dispW = svp.width; state._dispH = svp.height;
+            applyFilters();
+          }
+        } else if (item.type === 'blank') {
+          // Afficher une page blanche dans le canvas
+          const w = (state.dims && state.dims.wPx) ? state.dims.wPx : 1240;
+          const h = (state.dims && state.dims.hPx) ? state.dims.hPx : 1754;
+          canvas.width = w; canvas.height = h;
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, w, h);
+          state.originalImageData = ctx.getImageData(0, 0, w, h);
+          state._dispW = w; state._dispH = h;
+        }
+        // S'assurer que le canvas est visible
+        canvas.style.display = 'block';
+        if ($('mainCanvasDeleteBtn')) $('mainCanvasDeleteBtn').style.display = 'flex';
+        $('uploadZone').style.display = 'none';
+        // Highlight active thumb
+        thumbsBar.querySelectorAll('.thumb-item').forEach((t,idx) => t.classList.toggle('active', idx === i));
+      });
 
       // Drag and Drop
       div.addEventListener('dragstart', (e) => {
@@ -665,8 +885,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
         const toIdx = i;
         if (fromIdx !== toIdx) {
-          const moved = orgSequence.splice(fromIdx, 1)[0];
-          orgSequence.splice(toIdx, 0, moved);
+          const moved = window.orgSequence.splice(fromIdx, 1)[0];
+          window.orgSequence.splice(toIdx, 0, moved);
           renderThumbnails();
         }
       });
@@ -676,16 +896,45 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   window.orgRotate = function(idx, angle) {
-    if (orgSequence[idx]) {
-      orgSequence[idx].rotation = ((orgSequence[idx].rotation || 0) + angle) % 360;
+    if (window.orgSequence[idx]) {
+      window.orgSequence[idx].rotation = ((window.orgSequence[idx].rotation || 0) + angle) % 360;
       renderThumbnails();
     }
   };
 
   window.orgDelete = function(idx) {
-    orgSequence.splice(idx, 1);
-    renderThumbnails();
+    if (idx === undefined || idx === null || idx < 0 || idx >= window.orgSequence.length) return;
+    window.orgSequence.splice(idx, 1);
+    
+    // Mettre à jour l'index sélectionné si nécessaire
+    if (state.orgSelectedIndex === idx) {
+      // Si on supprime la page active, on sélectionne la précédente (ou la suivante si on était à 0)
+      state.orgSelectedIndex = Math.max(0, idx - 1);
+    } else if (state.orgSelectedIndex > idx) {
+      // Si on supprime une page avant la sélection, l'index de sélection recule de 1
+      state.orgSelectedIndex--;
+    }
+    
+    renderThumbnails().then(() => {
+      // Rafraîchir l'affichage du canvas
+      if (window.orgSequence.length > 0) {
+        const thumbs = thumbsBar.querySelectorAll('.thumb-item');
+        if (thumbs[state.orgSelectedIndex]) thumbs[state.orgSelectedIndex].click();
+      } else {
+        // Plus aucune page
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        canvas.style.display = 'none';
+        $('mainCanvasDeleteBtn').style.display = 'none';
+        $('uploadZone').style.display = 'flex'; // Remettre l'upload zone
+      }
+    });
   };
+
+  $('mainCanvasDeleteBtn').addEventListener('click', () => {
+    if (state.orgSelectedIndex !== undefined && state.orgSelectedIndex !== null) {
+      window.orgDelete(state.orgSelectedIndex);
+    }
+  });
 
   // === FILTERS ===
   const sliders = {
@@ -748,6 +997,12 @@ document.addEventListener('DOMContentLoaded', function() {
       px[i]=r; px[i+1]=g; px[i+2]=b;
     }
     ctx.putImageData(d, 0, 0);
+    setPdfReady(null);
+
+    // Update Riso channels if Riso panel is active
+    if (document.querySelector('.tool-btn[data-tool="riso"]').classList.contains('active')) {
+      initRisoChannels();
+    }
   }
 
   // === RESET ===
@@ -784,6 +1039,7 @@ document.addEventListener('DOMContentLoaded', function() {
     ctx.drawImage(off, -w/2, -h/2);
     ctx.restore();
     state.originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    setPdfReady(null);
   }
 
   function flipCanvas(axis) {
@@ -797,6 +1053,7 @@ document.addEventListener('DOMContentLoaded', function() {
     ctx.drawImage(off, 0, 0);
     ctx.restore();
     state.originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    setPdfReady(null);
   }
 
   // === EXPORT PNG (Canvas) ===
@@ -809,6 +1066,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // === EXPORT PDF (Canvas → Serveur) ===
   $('btnExportPdf').addEventListener('click', async () => {
+    if (state.lastServerResultUrl) {
+      // Télécharger le dernier résultat serveur (imposition, fusion, etc.)
+      const link = document.createElement('a');
+      link.href = state.lastServerResultUrl;
+      link.download = '';
+      link.click();
+      return;
+    }
+    
+    // Si on a un document multi-page, exporter le document complet via l'organiseur
+    if (window.orgSequence && window.orgSequence.length > 0) {
+      if ($('btnApplyOrg')) {
+        $('btnApplyOrg').click();
+        return;
+      }
+    }
+
+    // Sinon, exporter uniquement le canvas actuel
     showSpinner('Génération du PDF...');
     try {
       // Récupérer le canvas courant comme blob PNG
@@ -821,6 +1096,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const json = await res.json();
       hideSpinner();
       if (json.success && json.download_url) {
+        setPdfReady(json.download_url);
         showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>PDF prêt !</b> <a href="' + json.download_url + '" style="color:#4f6ef7;font-weight:600">Télécharger le PDF</a>', false);
       } else {
         showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (json.errors||[]).join(', '), true);
@@ -860,6 +1136,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const json = await res.json();
       hideSpinner();
       if (json.success && json.download_url) {
+        setPdfReady(json.download_url); // Save for contextual export
         if (json.preview_url && action === 'impose') {
           // Ouvrir le modal de preview
           openImpPreview(json.preview_url, json.download_url);
@@ -891,6 +1168,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const json = await res.json();
       hideSpinner();
       if (json.success && json.download_url) {
+        setPdfReady(json.download_url);
         showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>Fusion terminée !</b> <a href="' + json.download_url + '" style="color:#4f6ef7;font-weight:600">Télécharger</a>', false);
       } else {
         const errs = (json.errors || ['Erreur inconnue']).join('<br>');
@@ -1036,21 +1314,26 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   let mergeFilesList = [];
-  $('btnSelectMergeFiles').addEventListener('click', () => $('mergeFileInput').click());
-  $('mergeFileInput').addEventListener('change', (e) => {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-    mergeFilesList = mergeFilesList.concat(files);
-    $('mergeFileInput').value = ''; // Reset
-    renderMergeList();
-  });
+  if ($('btnSelectMergeFiles')) {
+    $('btnSelectMergeFiles').addEventListener('click', () => $('mergeFileInput').click());
+  }
+  if ($('mergeFileInput')) {
+    $('mergeFileInput').addEventListener('change', (e) => {
+      const files = Array.from(e.target.files);
+      if (!files.length) return;
+      mergeFilesList = mergeFilesList.concat(files);
+      $('mergeFileInput').value = ''; // Reset
+      renderMergeList();
+    });
+  }
 
   function renderMergeList() {
     const list = $('mergeFileList');
+    if (!list) return;
     list.innerHTML = '';
     if (mergeFilesList.length === 0) {
       list.innerHTML = '<div style="padding:4px;color:#9ca3af;font-style:italic">Aucun fichier sélectionné</div>';
-      $('btnApplyMerge').disabled = true;
+      if ($('btnApplyMerge')) $('btnApplyMerge').disabled = true;
       return;
     }
     mergeFilesList.forEach((f, i) => {
@@ -1081,13 +1364,15 @@ document.addEventListener('DOMContentLoaded', function() {
       item.appendChild(remove);
       list.appendChild(item);
     });
-    $('btnApplyMerge').disabled = false;
+    if ($('btnApplyMerge')) $('btnApplyMerge').disabled = false;
   }
 
-  $('btnApplyMerge').addEventListener('click', () => {
-    if (mergeFilesList.length === 0) return;
-    serverProcessMerge(mergeFilesList, 'Fusion des PDF en cours...');
-  });
+  if ($('btnApplyMerge')) {
+    $('btnApplyMerge').addEventListener('click', () => {
+      if (mergeFilesList.length === 0) return;
+      serverProcessMerge(mergeFilesList, 'Fusion des PDF en cours...');
+    });
+  }
 
   $('btnApplyUnimpose').addEventListener('click', () => {
     serverProcess('unimpose', { unimpose_mode: $('selUnimposeMode').value }, 'Désimposition en cours...');
@@ -1114,9 +1399,57 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  $('btnOrgAddBlank').addEventListener('click', () => {
-    window.orgSequence.push({ file_idx: null, page_num: null, type: 'blank', rotation: 0 });
-    renderThumbnails();
+  $('btnOrgAddBlank').addEventListener('click', async () => {
+    const pos = $('selOrgBlankPos').value;
+    
+    // Déterminer l'index de référence (sélectionné ou dernier)
+    let selIdx = state.orgSelectedIndex;
+    if (selIdx === undefined || selIdx === null || selIdx < 0) {
+      selIdx = Math.max(0, window.orgSequence.length - 1);
+    }
+    let targetIdx = 0;
+
+    // Créer un nouvel objet à chaque insertion (pas de référence partagée)
+    if (pos === 'start') {
+      window.orgSequence.unshift({ file_idx: null, page_num: null, type: 'blank', rotation: 0 });
+      targetIdx = 0;
+    } else if (pos === 'before') {
+      targetIdx = Math.max(0, selIdx);
+      window.orgSequence.splice(targetIdx, 0, { file_idx: null, page_num: null, type: 'blank', rotation: 0 });
+    } else if (pos === 'after') {
+      targetIdx = Math.min(window.orgSequence.length, selIdx + 1);
+      window.orgSequence.splice(targetIdx, 0, { file_idx: null, page_num: null, type: 'blank', rotation: 0 });
+    } else { // end
+      window.orgSequence.push({ file_idx: null, page_num: null, type: 'blank', rotation: 0 });
+      targetIdx = window.orgSequence.length - 1;
+    }
+
+    console.log('[Studio] Blank page inserted at index', targetIdx, '| orgSequence length:', window.orgSequence.length, '| position:', pos);
+
+    // Actualiser les vignettes
+    await renderThumbnails();
+    
+    // Forcer l'affichage du canvas et du panneau si c'était vide
+    canvas.style.display = 'block';
+    $('uploadZone').style.display = 'none';
+    panel.classList.add('visible');
+
+    // Sélectionner et afficher la nouvelle page blanche
+    state.orgSelectedIndex = targetIdx;
+    const thumbs = thumbsBar.querySelectorAll('.thumb-item');
+    console.log('[Studio] Thumbs found:', thumbs.length, '| clicking index:', targetIdx);
+    if (thumbs[targetIdx]) {
+      thumbs[targetIdx].click();
+    } else {
+      console.warn('[Studio] Thumb not found at index', targetIdx);
+      // Fallback: dessiner manuellement la page blanche
+      const w = (state.dims && state.dims.wPx) ? state.dims.wPx : 1240;
+      const h = (state.dims && state.dims.hPx) ? state.dims.hPx : 1754;
+      canvas.width = w; canvas.height = h;
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, w, h);
+      state.originalImageData = ctx.getImageData(0, 0, w, h);
+    }
   });
 
   $('btnApplyOrg').addEventListener('click', async () => {
@@ -1136,6 +1469,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const json = await res.json();
       hideSpinner();
       if (json.success && json.download_url) {
+        setPdfReady(json.download_url);
         showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>Réorganisation terminée !</b> <a href="' + json.download_url + '" style="color:#4f6ef7;font-weight:600">Télécharger</a>', false);
       } else {
         const errs = (json.errors || ['Erreur inconnue']).join('<br>');
@@ -1147,33 +1481,184 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  // === LIGHTBOX LOGIC ===
+  canvas.addEventListener('click', () => {
+    if (window.risoPipetteActive) return; // Don't trigger if pipette is active
+    openLightbox();
+  });
+
+  async function openLightbox() {
+    const lb = $('studioLightbox');
+    const lbCanvas = $('lightboxCanvas');
+    const lbCtx = lbCanvas.getContext('2d');
+    
+    showSpinner("Préparation de l'aperçu haute résolution...");
+    
+    try {
+      let renderW, renderH;
+      const targetScale = 2.0; // Render at 2x for high quality inspection
+
+      if (state.isPdf && state.pdfDoc) {
+        const page = await state.pdfDoc.getPage(state.currentPage);
+        const viewport = page.getViewport({ scale: targetScale });
+        lbCanvas.width = viewport.width;
+        lbCanvas.height = viewport.height;
+        await page.render({ canvasContext: lbCtx, viewport: viewport }).promise;
+      } else if (state._img) {
+        lbCanvas.width = state._img.naturalWidth;
+        lbCanvas.height = state._img.naturalHeight;
+        lbCtx.drawImage(state._img, 0, 0);
+      } else {
+        // Fallback to current canvas content
+        lbCanvas.width = canvas.width * 2;
+        lbCanvas.height = canvas.height * 2;
+        lbCtx.drawImage(canvas, 0, 0, lbCanvas.width, lbCanvas.height);
+      }
+
+      if (lbCanvas.width === 0 || lbCanvas.height === 0) {
+        throw new Error("Impossible de générer l'aperçu : dimensions nulles.");
+      }
+
+      hideSpinner();
+      lb.style.display = 'flex';
+      document.body.style.overflow = 'hidden'; // Block background scroll
+    } catch(e) {
+      console.error("Lightbox error", e);
+      hideSpinner();
+    }
+  }
+
+  $('btnCloseLightbox').addEventListener('click', () => {
+    $('studioLightbox').style.display = 'none';
+    document.body.style.overflow = '';
+  });
+
+  // === IMPOSITION UI ===
+  document.querySelectorAll('input[name="bro_resize_mode"]').forEach(radio => {
+    radio.addEventListener('change', e => {
+      $('bro_resize_percent_block').style.display = e.target.value === 'percent' ? '' : 'none';
+      $('bro_resize_mm_block').style.display = e.target.value === 'mm' ? '' : 'none';
+    });
+  });
+  $('bro_crop_marks').addEventListener('change', e => {
+    $('bro_crop_settings').style.display = e.target.checked ? '' : 'none';
+  });
+  $('bro_page_nums').addEventListener('change', e => {
+    $('bro_folio_settings').style.display = e.target.checked ? '' : 'none';
+  });
+
+  document.querySelectorAll('input[name="liv_resize_mode"]').forEach(radio => {
+    radio.addEventListener('change', e => {
+      $('liv_resize_percent_block').style.display = e.target.value === 'percent' ? '' : 'none';
+      $('liv_resize_mm_block').style.display = e.target.value === 'mm' ? '' : 'none';
+    });
+  });
+
+  async function doImpose(type) {
+    const prefix = (type === 'brochure') ? 'bro_' : (type === 'livre' ? 'liv_' : 'tra_');
+    const params = {
+      impose_type: type,
+      output_format: $(prefix + 'output_format').value,
+      n_up: $(prefix + 'n_up') ? $(prefix + 'n_up').value : 2,
+    };
+
+    // Resize
+    const resizeMode = document.querySelector(`input[name="${prefix}resize_mode"]:checked`)?.value || 'percent';
+    params.resize_mode = resizeMode;
+    params.scale = $(prefix + 'scale') ? $(prefix + 'scale').value : 100;
+    params.target_width = $(prefix + 'target_w') ? $(prefix + 'target_w').value : 0;
+    params.target_height = $(prefix + 'target_h') ? $(prefix + 'target_h').value : 0;
+
+    // Gutters
+    params.gutter_x = $(prefix + 'gutter_x') ? $(prefix + 'gutter_x').value : 0;
+    params.gutter_y = $(prefix + 'gutter_y') ? $(prefix + 'gutter_y').value : 0;
+    params.gutter_strategy = $(prefix + 'gutter_strategy') ? $(prefix + 'gutter_strategy').value : 'reduce';
+
+    // Options
+    params.crop_marks = $(prefix + 'crop_marks')?.checked ? '1' : '0';
+    params.crop_style = $(prefix + 'crop_style')?.value || 'spreads';
+    params.crop_mark_len = $(prefix + 'crop_mark_len')?.value || 5;
+    params.add_page_numbers_in_gutters = $(prefix + 'page_nums')?.checked ? '1' : '0';
+    params.gutter_num_offset_x = $(prefix + 'folio_x')?.value || 0;
+    params.gutter_num_offset_y = $(prefix + 'folio_y')?.value || -2;
+    params.tete_beche = $(prefix + 'tumble')?.checked ? '1' : '0';
+
+    serverProcess('impose', params, "Génération de l'imposition en cours...");
+  }
+
+  // Imposition Tab switching
+  document.querySelectorAll('.imp-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('.imp-tab').forEach(b => {
+        b.classList.toggle('active', b === btn);
+        b.style.borderBottomColor = (b === btn) ? 'var(--studio-primary)' : 'transparent';
+        b.style.color = (b === btn) ? 'var(--studio-primary)' : 'var(--studio-text-muted)';
+      });
+      document.querySelectorAll('.imp-tab-content').forEach(c => {
+        c.style.display = (c.id === 'impTab' + tab.charAt(0).toUpperCase() + tab.slice(1)) ? 'block' : 'none';
+      });
+    });
+  });
+
   // === RISO ===
   window.risoChannels = null;
   
-  function initRisoChannels() {
-    if (!state.originalImageData || typeof extractRGBChannels === 'undefined') return;
+  async function initRisoChannels() {
+    showSpinner();
+    console.log('[Studio] Initializing Riso channels (High-Res)...');
     
-    // Create an offscreen canvas to hold the current image data
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = state.originalImageData.width;
-    tempCanvas.height = state.originalImageData.height;
-    const tCtx = tempCanvas.getContext('2d');
-    tCtx.putImageData(state.originalImageData, 0, 0);
+    let hiResCanvas = document.createElement('canvas');
+    let hiResCtx = hiResCanvas.getContext('2d');
     
-    const imgObj = new Image();
-    imgObj.src = tempCanvas.toDataURL();
-    imgObj.onload = () => {
-      window.risoBaseImage = imgObj;
-      window.risoChannels = {
-        RGB: extractRGBChannels(imgObj),
-        CMYK: extractCMYKChannels(imgObj),
-        '2COLOR': splitGrayscaleInTwo(toGrayscale(state.originalImageData), 128)
-      };
-      // Map names
-      window.risoChannels['2COLOR'] = { dark: window.risoChannels['2COLOR'].dark, light: window.risoChannels['2COLOR'].light };
+    try {
+      if (state.isPdf && state.pdfDoc) {
+        // Re-render PDF page at high resolution (scale 3.0 for sharp text)
+        const page = await state.pdfDoc.getPage(state.currentPage);
+        const viewport = page.getViewport({ scale: 3.0 });
+        hiResCanvas.width = viewport.width;
+        hiResCanvas.height = viewport.height;
+        await page.render({ canvasContext: hiResCtx, viewport: viewport }).promise;
+      } else if (state._img) {
+        // Use natural image resolution
+        hiResCanvas.width = state._img.naturalWidth;
+        hiResCanvas.height = state._img.naturalHeight;
+        hiResCtx.drawImage(state._img, 0, 0);
+      } else {
+        // Fallback to display canvas
+        hiResCanvas.width = canvas.width;
+        hiResCanvas.height = canvas.height;
+        hiResCtx.drawImage(canvas, 0, 0);
+      }
+
+      if (hiResCanvas.width === 0 || hiResCanvas.height === 0) {
+        throw new Error("Dimensions source invalides (0x0). Attendez le chargement complet.");
+      }
+
+      state.filteredImageData = hiResCtx.getImageData(0, 0, hiResCanvas.width, hiResCanvas.height);
       
-      renderRisoUI();
-    };
+      // We still need an Image object for some riso-tools functions
+      const imgObj = new Image();
+      imgObj.src = hiResCanvas.toDataURL();
+      imgObj.onload = () => {
+        window.risoBaseImage = imgObj;
+        window.risoChannels = {
+          RGB: extractRGBChannels(imgObj),
+          CMYK: extractCMYKChannels(imgObj),
+          '2COLOR': splitGrayscaleInTwo(toGrayscale(state.filteredImageData), 128),
+          'AUTO_BICHROMIE': autoBichromieSeparation(state.filteredImageData)
+        };
+        window.risoChannels['2COLOR'] = { dark: window.risoChannels['2COLOR'].dark, light: window.risoChannels['2COLOR'].light };
+        
+        console.log('[Studio] Riso channels initialized at ' + hiResCanvas.width + 'x' + hiResCanvas.height);
+        renderRisoUI();
+        hideSpinner();
+      };
+    } catch (err) {
+      console.error('[Studio] Riso Init Error:', err);
+      hideSpinner();
+      showToast('Erreur initialisation Riso: ' + err.message, true);
+    }
   }
 
   function renderRisoUI() {
@@ -1181,6 +1666,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const list = $('risoChannelsList');
     list.innerHTML = '';
     if (!window.risoChannels) return;
+    if (!window.risoVisibility) window.risoVisibility = {};
+    if (!window.risoVisibility[mode]) window.risoVisibility[mode] = {};
     
     let activeChans = {};
     let defaults = {};
@@ -1193,18 +1680,22 @@ document.addEventListener('DOMContentLoaded', function() {
     } else if (mode === '2COLOR') {
       activeChans = { dark: 'Tons Foncés', light: 'Tons Clairs' };
       defaults = { dark: 'black', light: 'red' };
+    } else if (mode === 'AUTO_BICHROMIE') {
+      const data = window.risoChannels['AUTO_BICHROMIE'];
+      if (data) {
+        const c1Name = findClosestRisoColor(data.color1.rgb.r, data.color1.rgb.g, data.color1.rgb.b);
+        const c2Name = findClosestRisoColor(data.color2.rgb.r, data.color2.rgb.g, data.color2.rgb.b);
+        activeChans = { color1: 'Couleur Dominante 1', color2: 'Couleur Dominante 2' };
+        defaults = { color1: c1Name, color2: c2Name };
+      }
     } else if (mode === 'PIPETTE') {
-      // Special interface for PIPETTE
-      // 1. Controls for picking a new color
       const pipDiv = document.createElement('div');
-      pipDiv.style.marginBottom = '8px';
-      pipDiv.style.padding = '8px';
-      pipDiv.style.background = '#f9fafb';
-      pipDiv.style.borderRadius = '6px';
+      pipDiv.className = 'riso-channel-item';
+      pipDiv.style.background = 'var(--studio-primary-light)';
+      pipDiv.style.borderColor = 'var(--studio-primary)';
 
       const btn = document.createElement('button');
-      btn.className = 'toolbar-btn';
-      btn.style.width = '100%';
+      btn.className = 'panel-btn';
       btn.style.marginBottom = '12px';
       btn.id = 'btnRisoPipetteToggle';
       btn.innerHTML = '<i class="fa fa-eyedropper"></i> Activer Pipette';
@@ -1213,175 +1704,195 @@ document.addEventListener('DOMContentLoaded', function() {
       infoDiv.style.display = 'none';
       infoDiv.id = 'risoPipetteInfo';
 
-      // Picked color display
       const colorRow = document.createElement('div');
-      colorRow.style.display = 'flex';
-      colorRow.style.alignItems = 'center';
-      colorRow.style.gap = '8px';
-      colorRow.style.marginBottom = '8px';
-      const colorLbl = document.createElement('span');
-      colorLbl.style.fontSize = '12px';
-      colorLbl.textContent = 'Couleur sélectionnée :';
-      const colorBox = document.createElement('div');
-      colorBox.id = 'risoPipetteColorBox';
-      colorBox.style.width = '24px';
-      colorBox.style.height = '24px';
-      colorBox.style.border = '1px solid #ccc';
-      colorRow.appendChild(colorLbl);
-      colorRow.appendChild(colorBox);
+      colorRow.style.display = 'flex'; colorRow.style.alignItems = 'center'; colorRow.style.gap = '8px'; colorRow.style.marginBottom = '8px';
+      const colorLbl = document.createElement('span'); colorLbl.style.fontSize = '12px'; colorLbl.textContent = 'Couleur sélectionnée :';
+      const colorBox = document.createElement('div'); colorBox.id = 'risoPipetteColorBox'; colorBox.style.width = '24px'; colorBox.style.height = '24px'; colorBox.style.borderRadius = '50%'; colorBox.style.border = '1px solid #ccc';
+      colorRow.appendChild(colorLbl); colorRow.appendChild(colorBox);
       infoDiv.appendChild(colorRow);
 
-      // Tolerance slider
       const tolDiv = document.createElement('div');
-      tolDiv.style.marginBottom = '8px';
-      const tolLbl = document.createElement('div');
-      tolLbl.style.fontSize = '12px';
-      tolLbl.innerHTML = 'Tolérance: <span id="valRisoPipetteTol">30</span>';
-      const tolSlider = document.createElement('input');
-      tolSlider.type = 'range';
-      tolSlider.className = 'panel-slider';
-      tolSlider.id = 'sliderRisoPipetteTol';
-      tolSlider.min = '5'; tolSlider.max = '100'; tolSlider.value = '30';
-      tolSlider.addEventListener('input', () => {
-        $('valRisoPipetteTol').textContent = tolSlider.value;
-        if (window.risoPickedColor) window.performPipetteIsolation(true);
-      });
-      tolDiv.appendChild(tolLbl);
-      tolDiv.appendChild(tolSlider);
+      const tolLbl = document.createElement('div'); tolLbl.style.fontSize = '12px'; tolLbl.innerHTML = 'Tolérance: <span id="valRisoPipetteTol">60</span>';
+      const tolSlider = document.createElement('input'); tolSlider.type = 'range'; tolSlider.className = 'panel-slider'; tolSlider.id = 'sliderRisoPipetteTol'; tolSlider.min = '5'; tolSlider.max = '200'; tolSlider.value = '60';
+      tolSlider.addEventListener('input', () => { $('valRisoPipetteTol').textContent = tolSlider.value; if (window.risoPickedColor) window.performPipetteIsolation(true); });
+      tolDiv.appendChild(tolLbl); tolDiv.appendChild(tolSlider);
       infoDiv.appendChild(tolDiv);
 
-      // Add as layer button
+      const extraDiv = document.createElement('div');
+      extraDiv.style.margin = '8px 0';
+      extraDiv.innerHTML = `
+        <div style="font-size:11px;">Contraste: <span id="valRisoPipetteCst">0</span></div>
+        <input type="range" id="sliderRisoPipetteCst" min="-100" max="100" value="0" class="panel-slider">
+        <div style="font-size:11px;">Luminosité: <span id="valRisoPipetteBrt">0</span></div>
+        <input type="range" id="sliderRisoPipetteBrt" min="-100" max="100" value="0" class="panel-slider">
+      `;
+      infoDiv.appendChild(extraDiv);
+      extraDiv.querySelector('#sliderRisoPipetteCst').addEventListener('input', (e) => { $('valRisoPipetteCst').textContent = e.target.value; if (window.risoPickedColor) window.performPipetteIsolation(true); });
+      extraDiv.querySelector('#sliderRisoPipetteBrt').addEventListener('input', (e) => { $('valRisoPipetteBrt').textContent = e.target.value; if (window.risoPickedColor) window.performPipetteIsolation(true); });
+
       const btnAddLayer = document.createElement('button');
-      btnAddLayer.className = 'toolbar-btn primary';
-      btnAddLayer.style.width = '100%';
+      btnAddLayer.className = 'panel-btn primary';
       btnAddLayer.innerHTML = '<i class="fa fa-plus"></i> Ajouter comme couche';
-      btnAddLayer.addEventListener('click', () => {
-        window.commitPipetteLayer();
-      });
+      btnAddLayer.addEventListener('click', () => { window.commitPipetteLayer(); });
       infoDiv.appendChild(btnAddLayer);
 
       pipDiv.appendChild(btn);
       pipDiv.appendChild(infoDiv);
       list.appendChild(pipDiv);
 
-      // Pipette toggle logic
       window.risoPipetteActive = false;
       btn.addEventListener('click', () => {
         window.risoPipetteActive = !window.risoPipetteActive;
+        state.risoShowOriginal = window.risoPipetteActive;
+        applyRisoPreview();
         if (window.risoPipetteActive) {
-          btn.style.background = '#10b981';
-          btn.style.color = '#fff';
+          btn.classList.add('primary');
           btn.innerHTML = '<i class="fa fa-eyedropper"></i> Pipette Active';
           infoDiv.style.display = 'block';
           canvas.style.cursor = 'crosshair';
           canvas.addEventListener('click', window.handleRisoPipetteClick);
         } else {
-          btn.style.background = '';
-          btn.style.color = '';
+          btn.classList.remove('primary');
           btn.innerHTML = '<i class="fa fa-eyedropper"></i> Activer Pipette';
           canvas.style.cursor = '';
           canvas.removeEventListener('click', window.handleRisoPipetteClick);
         }
       });
 
-      // 2. Render committed layers
       if (!window.risoChannels['PIPETTE']) window.risoChannels['PIPETTE'] = {};
       activeChans = window.risoChannels['PIPETTE'];
-      // The rest of the function will render activeChans (the committed layers)
     }
 
     Object.keys(activeChans).forEach(key => {
-      // For PIPETTE, key is 'layer_1', 'layer_2', etc.
-      let name = activeChans[key].name || key;
-      if (mode !== 'PIPETTE') name = activeChans[key]; // Because for RGB, activeChans is {red: 'Rouge'}
+      let name = (mode === 'PIPETTE') ? (activeChans[key].name || key) : activeChans[key];
+      const isHidden = window.risoVisibility[mode][key] === false;
       
-      const div = document.createElement('div');
-      div.style.marginBottom = '8px';
-      div.style.padding = '8px';
-      div.style.background = '#f9fafb';
-      div.style.borderRadius = '6px';
+      const item = document.createElement('div');
+      item.className = 'riso-channel-item' + (isHidden ? ' is-hidden' : '');
+      item.dataset.channel = key;
+
+      const header = document.createElement('div');
+      header.className = 'riso-channel-header';
       
-      const lbl = document.createElement('div');
-      lbl.style.fontWeight = '600';
-      lbl.style.fontSize = '12px';
-      lbl.style.marginBottom = '4px';
-      lbl.textContent = name;
-      div.appendChild(lbl);
+      const title = document.createElement('div');
+      title.className = 'riso-channel-title';
+      const dot = document.createElement('div');
+      dot.className = 'riso-channel-color-dot';
       
+      const initialColor = (mode === 'PIPETTE' || mode === 'AUTO_BICHROMIE') ? activeChans[key].color : defaults[key];
+      dot.style.background = RISO_COLORS[initialColor] ? RISO_COLORS[initialColor].hex : '#ccc';
+      
+      title.appendChild(dot);
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = name;
+      title.appendChild(nameSpan);
+      header.appendChild(title);
+
+      const visBtn = document.createElement('button');
+      visBtn.className = 'riso-visibility-btn' + (isHidden ? ' is-hidden' : '');
+      visBtn.innerHTML = `<i class="fa ${isHidden ? 'fa-eye-slash' : 'fa-eye'}"></i>`;
+      visBtn.addEventListener('click', () => {
+        if (window.risoVisibility[mode][key] === undefined) window.risoVisibility[mode][key] = true;
+        window.risoVisibility[mode][key] = !window.risoVisibility[mode][key];
+        renderRisoUI();
+        applyRisoPreview();
+      });
+      header.appendChild(visBtn);
+      item.appendChild(header);
+
       const sel = document.createElement('select');
       sel.className = 'panel-select';
-      sel.style.marginBottom = '4px';
       sel.dataset.channel = key;
       Object.keys(RISO_COLORS).forEach(cKey => {
         const opt = document.createElement('option');
         opt.value = cKey;
         opt.textContent = RISO_COLORS[cKey] ? RISO_COLORS[cKey].name : 'Aucun';
         if (mode !== 'PIPETTE' && cKey === defaults[key]) opt.selected = true;
-        if (mode === 'PIPETTE' && activeChans[key] && activeChans[key].color === cKey) opt.selected = true;
+        if (mode === 'PIPETTE' && activeChans[key].color === cKey) opt.selected = true;
+        sel.appendChild(opt);
       });
       sel.addEventListener('change', (e) => {
-        if (mode === 'PIPETTE') activeChans[key].color = e.target.value;
+        if (mode === 'PIPETTE' || mode === 'AUTO_BICHROMIE') activeChans[key].color = e.target.value;
+        const colorHex = RISO_COLORS[e.target.value] ? RISO_COLORS[e.target.value].hex : '#ccc';
+        dot.style.background = colorHex;
         applyRisoPreview();
       });
-      div.appendChild(sel);
+      item.appendChild(sel);
+
+      const sliders = document.createElement('div');
+      sliders.style.display = 'flex'; sliders.style.flexDirection = 'column'; sliders.style.gap = '4px';
       
-      const opcContainer = document.createElement('div');
-      opcContainer.style.display = 'flex';
-      opcContainer.style.alignItems = 'center';
-      opcContainer.style.gap = '8px';
+      const opcBox = document.createElement('div');
+      opcBox.innerHTML = `<div style="font-size:10px;">Opacité: <span class="val">100%</span></div>`;
       const opc = document.createElement('input');
-      opc.type = 'range';
-      opc.className = 'panel-slider';
-      opc.min = '0'; opc.max = '100'; opc.value = '100';
+      opc.type = 'range'; opc.className = 'panel-slider'; opc.min = '0'; opc.max = '100'; opc.value = '100';
       opc.dataset.channel = key;
-      opc.addEventListener('input', applyRisoPreview);
-      const opcLbl = document.createElement('span');
-      opcLbl.style.fontSize = '11px';
-      opcLbl.textContent = '100%';
-      opc.addEventListener('input', () => opcLbl.textContent = opc.value + '%');
-      opcContainer.appendChild(opc);
-      opcContainer.appendChild(opcLbl);
-      div.appendChild(opcContainer);
-      
-      // Delete button for PIPETTE layers
+      opc.addEventListener('input', (e) => { opcBox.querySelector('.val').textContent = e.target.value + '%'; applyRisoPreview(); });
+      opcBox.appendChild(opc);
+      sliders.appendChild(opcBox);
+
+      const cstBox = document.createElement('div');
+      cstBox.innerHTML = `<div style="font-size:10px;">Contraste: <span class="val">${activeChans[key].contrast || 0}</span></div>`;
+      const cst = document.createElement('input');
+      cst.type = 'range'; cst.className = 'panel-slider'; cst.min = '-100'; cst.max = '100'; cst.value = activeChans[key].contrast || 0;
+      cst.addEventListener('input', (e) => { activeChans[key].contrast = parseInt(e.target.value); cstBox.querySelector('.val').textContent = e.target.value; applyRisoPreview(); });
+      cstBox.appendChild(cst);
+      sliders.appendChild(cstBox);
+
+      item.appendChild(sliders);
+
       if (mode === 'PIPETTE') {
         const delBtn = document.createElement('button');
-        delBtn.innerHTML = '<i class="fa fa-trash"></i>';
-        delBtn.style.color = '#ef4444';
-        delBtn.style.background = 'transparent';
-        delBtn.style.border = 'none';
-        delBtn.style.cursor = 'pointer';
+        delBtn.className = 'panel-btn';
         delBtn.style.marginTop = '4px';
-        delBtn.addEventListener('click', () => {
-          delete window.risoChannels['PIPETTE'][key];
-          renderRisoUI();
-        });
-        div.appendChild(delBtn);
+        delBtn.style.color = '#ef4444';
+        delBtn.innerHTML = '<i class="fa fa-trash"></i> Supprimer';
+        delBtn.addEventListener('click', () => { delete window.risoChannels['PIPETTE'][key]; renderRisoUI(); applyRisoPreview(); });
+        item.appendChild(delBtn);
       }
       
-      list.appendChild(div);
+      list.appendChild(item);
     });
 
+    const simToggle = document.createElement('div');
+    simToggle.className = 'riso-channel-item';
+    simToggle.style.background = 'var(--studio-primary-light)';
+    simToggle.innerHTML = `
+      <label style="cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; font-weight:600; font-size:13px; color:var(--studio-primary);">
+        <input type="checkbox" id="chkRisoSim" ${!state.risoShowOriginal ? 'checked' : ''} style="width:16px; height:16px;"> 
+        <i class="fa ${state.risoShowOriginal ? 'fa-eye-slash' : 'fa-eye'}"></i> Simulation Riso Active
+      </label>
+    `;
+    simToggle.querySelector('input').addEventListener('change', (e) => {
+      state.risoShowOriginal = !e.target.checked;
+      applyRisoPreview();
+      renderRisoUI();
+    });
+    list.prepend(simToggle);
     applyRisoPreview();
   }
 
-  $('selRisoMode').addEventListener('change', renderRisoUI);
+  $('selRisoMode').addEventListener('change', () => {
+    renderRisoUI();
+    applyRisoPreview();
+  });
 
   // PIPETTE Logic
   window.risoPickedColor = null;
   window.handleRisoPipetteClick = function(e) {
-    if (!window.risoPipetteActive || !state.originalImageData) return;
+    const imgData = state.filteredImageData || state.originalImageData;
+    if (!window.risoPipetteActive || !imgData) return;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+    const scaleX = imgData.width / rect.width;
+    const scaleY = imgData.height / rect.height;
     const x = Math.floor((e.clientX - rect.left) * scaleX);
     const y = Math.floor((e.clientY - rect.top) * scaleY);
 
-    const i = (y * canvas.width + x) * 4;
+    const i = (y * imgData.width + x) * 4;
     window.risoPickedColor = {
-      r: state.originalImageData.data[i],
-      g: state.originalImageData.data[i+1],
-      b: state.originalImageData.data[i+2]
+      r: imgData.data[i],
+      g: imgData.data[i+1],
+      b: imgData.data[i+2]
     };
 
     $('risoPipetteColorBox').style.background = `rgb(${window.risoPickedColor.r}, ${window.risoPickedColor.g}, ${window.risoPickedColor.b})`;
@@ -1389,50 +1900,86 @@ document.addEventListener('DOMContentLoaded', function() {
   };
 
   window.performPipetteIsolation = function(previewOnly = false) {
-    if (!window.risoPickedColor || !state.originalImageData) return null;
+    if (!window.risoPickedColor || (!state.filteredImageData && !state.originalImageData)) return null;
     const tol = parseInt($('sliderRisoPipetteTol').value);
-    // Isolate color from originalImageData
-    const isolated = isolateColor(state.originalImageData, window.risoPickedColor.r, window.risoPickedColor.g, window.risoPickedColor.b, tol);
+    const imgData = state.filteredImageData || state.originalImageData;
+    // Isolate color from filtered image
+    const isolated = isolateColor(imgData, window.risoPickedColor.r, window.risoPickedColor.g, window.risoPickedColor.b, tol);
     
     if (previewOnly) {
-      // Show preview of what is selected
+      const cst = parseInt($('sliderRisoPipetteCst').value) + 20; // Petit boost de contraste pour la lisibilité
+      const brt = parseInt($('sliderRisoPipetteBrt').value);
+      const suggestedColor = findClosestRisoColor(window.risoPickedColor.r, window.risoPickedColor.g, window.risoPickedColor.b);
+      const colorHex = RISO_COLORS[suggestedColor].hex;
+
+      let processed = isolated;
+      processed = applyContrastBrightness(isolated, cst, brt);
+      
+      const previewData = colorizeWithRiso(processed, colorHex, 1.0);
+      
       const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = state.originalImageData.width;
-      tempCanvas.height = state.originalImageData.height;
+      tempCanvas.width = imgData.width;
+      tempCanvas.height = imgData.height;
       const tCtx = tempCanvas.getContext('2d');
-      // Create a red mask to show selection
-      const mask = new ImageData(new Uint8ClampedArray(isolated.data), isolated.width, isolated.height);
-      for(let i=0; i<mask.data.length; i+=4){
-        if (mask.data[i+3] > 0) {
-          mask.data[i] = 239; mask.data[i+1] = 68; mask.data[i+2] = 68; mask.data[i+3] = 180;
-        }
-      }
-      tCtx.putImageData(state.originalImageData, 0, 0);
+      tCtx.fillStyle = 'white';
+      tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
       
       const overlay = document.createElement('canvas');
-      overlay.width = mask.width; overlay.height = mask.height;
-      overlay.getContext('2d').putImageData(mask, 0, 0);
+      overlay.width = previewData.width; overlay.height = previewData.height;
+      overlay.getContext('2d').putImageData(previewData, 0, 0);
+      tCtx.globalCompositeOperation = 'multiply';
       tCtx.drawImage(overlay, 0, 0);
       
-      ctx.putImageData(tCtx.getImageData(0,0,tempCanvas.width,tempCanvas.height), 0, 0);
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
       return null;
     }
     return isolated;
   };
+
+  function findClosestRisoColor(r, g, b) {
+    let closest = 'black';
+    let minDist = Infinity;
+    Object.keys(RISO_COLORS).forEach(key => {
+      const c = RISO_COLORS[key];
+      if (!c.hex) return;
+      const cr = parseInt(c.hex.substring(1,3), 16);
+      const cg = parseInt(c.hex.substring(3,5), 16);
+      const cb = parseInt(c.hex.substring(5,7), 16);
+      const dist = Math.sqrt(Math.pow(r-cr,2) + Math.pow(g-cg,2) + Math.pow(b-cb,2));
+      if (dist < minDist) {
+        minDist = dist;
+        closest = key;
+      }
+    });
+    return closest;
+  }
 
   window.commitPipetteLayer = function() {
     if (!window.risoPickedColor) return;
     const isolated = window.performPipetteIsolation(false);
     if (!isolated) return;
     
+    // Hide original after commit
+    state.risoShowOriginal = false;
+    window.risoPipetteActive = false;
+    canvas.removeEventListener('click', window.handleRisoPipetteClick);
+
     if (!window.risoChannels) window.risoChannels = {};
     if (!window.risoChannels['PIPETTE']) window.risoChannels['PIPETTE'] = {};
     
     const layerId = 'layer_' + Date.now();
+    const suggestedColor = findClosestRisoColor(window.risoPickedColor.r, window.risoPickedColor.g, window.risoPickedColor.b);
+    
+    const cst = parseInt($('sliderRisoPipetteCst').value);
+    const brt = parseInt($('sliderRisoPipetteBrt').value);
+    
     window.risoChannels['PIPETTE'][layerId] = {
       imageData: isolated,
-      color: 'red',
-      name: 'Couleur R=' + window.risoPickedColor.r + ' G=' + window.risoPickedColor.g + ' B=' + window.risoPickedColor.b
+      color: suggestedColor,
+      name: 'Couleur R=' + window.risoPickedColor.r + ' G=' + window.risoPickedColor.g + ' B=' + window.risoPickedColor.b,
+      contrast: cst,
+      brightness: brt
     };
     
     // Reset picker
@@ -1443,79 +1990,116 @@ document.addEventListener('DOMContentLoaded', function() {
   };
 
   function applyRisoPreview() {
+    console.log('[Studio] applyRisoPreview called');
     if (!window.risoChannels) return;
     const mode = $('selRisoMode').value;
     const layersData = window.risoChannels[mode];
     if (!layersData) {
-      if (state.originalImageData) ctx.putImageData(state.originalImageData, 0, 0);
+      const imgData = state.filteredImageData || state.originalImageData;
+      if (imgData) ctx.putImageData(imgData, 0, 0);
       return;
     }
 
     let layersToBlend = [];
-    $('risoChannelsList').querySelectorAll('select').forEach(sel => {
+    const list = $('risoChannelsList');
+    list.querySelectorAll('select').forEach(sel => {
       const key = sel.dataset.channel;
+      
+      // Respect visibility
+      if (window.risoVisibility && window.risoVisibility[mode] && window.risoVisibility[mode][key] === false) {
+        return;
+      }
+
       const colorKey = sel.value;
-      const opcInput = $('risoChannelsList').querySelector(`input[type="range"][data-channel="${key}"]`);
-      const opacity = parseInt(opcInput.value) / 100;
+      const opcInput = list.querySelector(`input[type="range"][data-channel="${key}"]`);
+      const opacity = parseInt(opcInput ? opcInput.value : 100) / 100;
       
       if (colorKey !== 'none' && RISO_COLORS[colorKey]) {
         const colorHex = RISO_COLORS[colorKey].hex;
-        const imgData = mode === 'PIPETTE' ? layersData[key].imageData : layersData[key];
+        const chanData = layersData[key];
+        const imgData = (mode === 'PIPETTE' || mode === 'AUTO_BICHROMIE') ? chanData.imageData : chanData;
+        
         if (imgData) {
-          const colorized = colorizeWithRiso(imgData, colorHex, 1.0);
+          let processed = imgData;
+
+          // Per-layer adjustments
+          if ((mode === 'PIPETTE' || mode === 'AUTO_BICHROMIE') && chanData) {
+            if (chanData.contrast || chanData.brightness) {
+              processed = applyContrastBrightness(processed, chanData.contrast || 0, chanData.brightness || 0);
+            }
+          }
+
+          if (state.risoLevels) {
+            processed = posterizeImage(processed, state.risoLevels);
+          }
+          if (state.risoHalftone) {
+            processed = applyHalftone(processed, state.risoHalftone);
+          }
+          const colorized = colorizeWithRiso(processed, colorHex, 1.0);
           layersToBlend.push({ imageData: colorized, opacity: opacity });
         }
       }
     });
 
-    if (layersToBlend.length > 0) {
-      const blended = blendLayers(layersToBlend, state.originalImageData.width, state.originalImageData.height);
-      ctx.putImageData(blended, 0, 0);
-    } else {
-      ctx.putImageData(state.originalImageData, 0, 0);
+    if (window.risoPipetteActive && window.risoPickedColor) {
+      window.performPipetteIsolation(true);
+      return;
     }
+
+    if (state.risoShowOriginal) {
+      const base = state.filteredImageData || state.originalImageData;
+      if (base) {
+        // Create a temporary canvas to use drawImage (scaling)
+        const temp = document.createElement('canvas');
+        temp.width = base.width; temp.height = base.height;
+        temp.getContext('2d').putImageData(base, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(temp, 0, 0, canvas.width, canvas.height);
+      }
+      return;
+    }
+
+    if (layersToBlend.length > 0) {
+      const blended = blendLayers(layersToBlend, window.risoBaseImage.width, window.risoBaseImage.height);
+      // Scaled display
+      const temp = document.createElement('canvas');
+      temp.width = blended.width; temp.height = blended.height;
+      temp.getContext('2d').putImageData(blended, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(temp, 0, 0, canvas.width, canvas.height);
+    } else {
+      const base = state.filteredImageData || state.originalImageData;
+      if (base) {
+        const temp = document.createElement('canvas');
+        temp.width = base.width; temp.height = base.height;
+        temp.getContext('2d').putImageData(base, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(temp, 0, 0, canvas.width, canvas.height);
+      }
+    }
+    setPdfReady(null);
   }
 
   $('btnRisoPosterize').addEventListener('click', () => {
-    if (!window.risoChannels) return;
-    const levels = parseInt($('sliderRisoLevels').value);
-    const mode = $('selRisoMode').value;
-    const layersData = window.risoChannels[mode];
-    if (!layersData) return;
-    Object.keys(layersData).forEach(key => {
-      const imgData = mode === 'PIPETTE' ? layersData[key].imageData : layersData[key];
-      if (imgData) {
-        const processed = posterizeImage(imgData, levels);
-        if (mode === 'PIPETTE') layersData[key].imageData = processed;
-        else layersData[key] = processed;
-      }
-    });
+    console.log('[Studio] Posterize clicked');
+    state.risoLevels = parseInt($('sliderRisoLevels').value);
     applyRisoPreview();
   });
 
   $('sliderRisoLevels').addEventListener('input', () => $('valRisoLevels').textContent = $('sliderRisoLevels').value);
 
   $('btnRisoHalftone').addEventListener('click', () => {
-    if (!window.risoChannels) return;
-    const size = parseInt($('sliderRisoHalftone').value);
-    const mode = $('selRisoMode').value;
-    const layersData = window.risoChannels[mode];
-    if (!layersData) return;
-    Object.keys(layersData).forEach(key => {
-      const imgData = mode === 'PIPETTE' ? layersData[key].imageData : layersData[key];
-      if (imgData) {
-        const processed = applyHalftone(imgData, size);
-        if (mode === 'PIPETTE') layersData[key].imageData = processed;
-        else layersData[key] = processed;
-      }
-    });
+    console.log('[Studio] Halftone clicked');
+    state.risoHalftone = parseInt($('sliderRisoHalftone').value);
     applyRisoPreview();
   });
 
   $('sliderRisoHalftone').addEventListener('input', () => $('valRisoHalftone').textContent = $('sliderRisoHalftone').value);
 
   $('btnRisoReset').addEventListener('click', () => {
-    initRisoChannels();
+    state.risoLevels = null;
+    state.risoHalftone = null;
+    applyFilters();
   });
 
   $('btnRisoExportZip').addEventListener('click', () => {
@@ -1529,7 +2113,10 @@ document.addEventListener('DOMContentLoaded', function() {
       const key = sel.dataset.channel;
       const colorKey = sel.value;
       if (colorKey !== 'none') {
-        const imgData = mode === 'PIPETTE' ? layersData[key].imageData : layersData[key];
+        let imgData = layersData[key];
+        if (mode === 'PIPETTE' || mode === 'AUTO_BICHROMIE') {
+          imgData = layersData[key].imageData;
+        }
         if (imgData) {
           toExport.push({
             name: key + '_' + colorKey,
@@ -1544,10 +2131,86 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  $('btnRisoExportPdf').addEventListener('click', async () => {
+    const mode = $('selRisoMode').value;
+    const layersData = window.risoChannels[mode];
+    if (!layersData) {
+      showToast('Aucune donnée Riso à exporter. Veuillez d\'abord choisir un mode de séparation.', true);
+      return;
+    }
+    
+    showSpinner('Génération du PDF Riso...');
+    const fd = new FormData();
+    fd.append('action', 'riso_pdf');
+    
+    // Utiliser le DPI réel du Master Riso (pour les PDF scale 3.0 = 216 DPI, pour les images = original DPI)
+    let exportDpi = 96;
+    if (state.isPdf) {
+        exportDpi = 216; // 72 * 3.0 scale
+    } else if (state.dims && state.dims.dpi) {
+        exportDpi = state.dims.dpi;
+    }
+    fd.append('dpi', exportDpi);
+    
+    const chanList = $('risoChannelsList').querySelectorAll('select');
+    let count = 0;
+    
+    try {
+      for (const sel of chanList) {
+        const key = sel.dataset.channel;
+        const colorKey = sel.value;
+        if (colorKey !== 'none') {
+          let imgData = layersData[key];
+          if (mode === 'PIPETTE' || mode === 'AUTO_BICHROMIE') imgData = layersData[key].imageData;
+          
+          if (imgData) {
+            if (imgData.width === 0 || imgData.height === 0) {
+              console.warn("Calque vide ignoré:", key);
+              continue;
+            }
+            // Créer un canvas temporaire pour exporter le calque en PNG
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = imgData.width;
+            tempCanvas.height = imgData.height;
+            tempCanvas.getContext('2d').putImageData(imgData, 0, 0);
+            
+            const blob = await new Promise(resolve => tempCanvas.toBlob(resolve, 'image/png'));
+            fd.append('layers[]', blob, `${key}_${colorKey}.png`);
+            fd.append('colors[]', colorKey);
+            count++;
+          }
+        }
+      }
+      
+      if (count === 0) {
+        hideSpinner();
+        showToast('Aucun calque actif à exporter.', true);
+        return;
+      }
+      
+      const res = await fetch('?studio_process', { method: 'POST', body: fd });
+      const json = await res.json();
+      hideSpinner();
+      
+      if (json.success && json.download_url) {
+        const link = document.createElement('a');
+        link.href = json.download_url;
+        link.download = '';
+        link.click();
+        showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>PDF Riso prêt !</b> Le téléchargement a commencé.', false);
+      } else {
+        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (json.errors||[]).join(', '), true);
+      }
+    } catch(e) {
+      hideSpinner();
+      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
+    }
+  });
+
   // === RESET STUDIO ===
   function resetStudio() {
     state.file = null; state.pdfDoc = null; state.originalImageData = null;
-    state.totalPages = 0; state.currentPage = 1;
+    state.totalPages = 0; state.currentPage = 1; state.orgSelectedIndex = 0;
     uploadZone.style.display = ''; canvas.style.display = 'none';
     panel.classList.remove('visible'); thumbsBar.classList.remove('visible');
     thumbsBar.innerHTML = '';

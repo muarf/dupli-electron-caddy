@@ -177,7 +177,7 @@ class ImpositionLeaflet
             $rotated = $rowData['rotated'];
 
             foreach ($pages as $cIndex => $pageNo) {
-                if ($pageNo > $this->pageCount) continue; // Blank page
+                // We no longer skip blank pages so that crop marks and numbers are drawn.
 
                 $this->placePage($pageNo, $cIndex, $rIndex, $cols, $rows, $sheetWidth, $sheetHeight, $rotated);
             }
@@ -293,17 +293,29 @@ class ImpositionLeaflet
 
     private function placePage($pageNo, $colIndex, $rowIndex, $totalCols, $totalRows, $sheetWidth, $sheetHeight, $rotated)
     {
-        try {
-            $tplIdx = $this->pdf->importPage($pageNo);
-            $previewTplIdx = null;
-            if ($this->previewPdf) {
-                $previewTplIdx = $this->previewPdf->importPage($pageNo);
+        $isBlank = ($pageNo > $this->pageCount);
+        $tplIdx = null;
+        $previewTplIdx = null;
+
+        if (!$isBlank) {
+            try {
+                $tplIdx = $this->pdf->importPage($pageNo);
+                if ($this->previewPdf) {
+                    $previewTplIdx = $this->previewPdf->importPage($pageNo);
+                }
+            } catch (\Exception $e) {
+                return;
             }
-        } catch (\Exception $e) {
-            return;
+            $size = $this->pdf->getTemplateSize($tplIdx);
+        } else {
+            // It's a blank page, use the dimensions of the first page as reference
+            try {
+                $refTplIdx = $this->pdf->importPage(1);
+                $size = $this->pdf->getTemplateSize($refTplIdx);
+            } catch (\Exception $e) {
+                $size = ['width' => 210, 'height' => 297]; // Fallback to A4
+            }
         }
-        
-        $size = $this->pdf->getTemplateSize($tplIdx);
         
         // --- CALCUL DES MÉTRIQUES ---
         $scaleFactor = 1;
@@ -394,33 +406,37 @@ class ImpositionLeaflet
         $rotation = $rotated ? 180 : 0;
 
         // Place page in final PDF
-        if ($rotated) {
-            $centerX = $x + ($finalW / 2);
-            $centerY = $y + ($finalH / 2);
-            
-            $this->pdf->StartTransform();
-            $this->pdf->Rotate(180, $centerX, $centerY);
-            $this->pdf->useTemplate($tplIdx, $x, $y, $finalW, $finalH);
-            $this->pdf->StopTransform();
-        } else {
-            $this->pdf->useTemplate($tplIdx, $x, $y, $finalW, $finalH);
-        }
-
-        // Place page in preview PDF
-        if ($this->previewPdf && $previewTplIdx) {
+        if (!$isBlank) {
             if ($rotated) {
                 $centerX = $x + ($finalW / 2);
                 $centerY = $y + ($finalH / 2);
                 
-                $this->previewPdf->StartTransform();
-                $this->previewPdf->Rotate(180, $centerX, $centerY);
-                $this->previewPdf->useTemplate($previewTplIdx, $x, $y, $finalW, $finalH);
-                $this->previewPdf->StopTransform();
+                $this->pdf->StartTransform();
+                $this->pdf->Rotate(180, $centerX, $centerY);
+                $this->pdf->useTemplate($tplIdx, $x, $y, $finalW, $finalH);
+                $this->pdf->StopTransform();
             } else {
-                $this->previewPdf->useTemplate($previewTplIdx, $x, $y, $finalW, $finalH);
+                $this->pdf->useTemplate($tplIdx, $x, $y, $finalW, $finalH);
+            }
+        }
+
+        // Place page in preview PDF
+        if ($this->previewPdf) {
+            if (!$isBlank && $previewTplIdx) {
+                if ($rotated) {
+                    $centerX = $x + ($finalW / 2);
+                    $centerY = $y + ($finalH / 2);
+                    
+                    $this->previewPdf->StartTransform();
+                    $this->previewPdf->Rotate(180, $centerX, $centerY);
+                    $this->previewPdf->useTemplate($previewTplIdx, $x, $y, $finalW, $finalH);
+                    $this->previewPdf->StopTransform();
+                } else {
+                    $this->previewPdf->useTemplate($previewTplIdx, $x, $y, $finalW, $finalH);
+                }
             }
 
-            // Add page number to preview if callback is provided
+            // Add page number to preview if callback is provided (even for blank pages)
             if ($this->settings['addPageNumberCallback'] && is_callable($this->settings['addPageNumberCallback'])) {
                 call_user_func($this->settings['addPageNumberCallback'], $this->previewPdf, $pageNo, $x, $y, $finalW, $finalH, $rotation);
             }
