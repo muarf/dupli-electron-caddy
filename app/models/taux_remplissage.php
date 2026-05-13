@@ -137,18 +137,26 @@ function analyze_pdf_ink_coverage_gs($pdf_file) {
         $lines = explode("\n", $output);
         $totalC = 0; $totalM = 0; $totalY = 0; $totalK = 0;
         $pageCount = 0;
+        $pages = [];
 
         foreach ($lines as $line) {
             $line = trim($line);
-            // Le format ink_cov est : C M Y K CMYK OK
-            // Exemple : 0.07498  0.07050  0.06968  0.09209 CMYK OK
             if (preg_match('/^\s*(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)/', $line, $matches)) {
-                $totalC += (float)$matches[1];
-                $totalM += (float)$matches[2];
-                $totalY += (float)$matches[3];
-                $totalK += (float)$matches[4];
+                $c = (float)$matches[1];
+                $m = (float)$matches[2];
+                $y = (float)$matches[3];
+                $k = (float)$matches[4];
+                $totalC += $c;
+                $totalM += $m;
+                $totalY += $y;
+                $totalK += $k;
                 $pageCount++;
-                error_log("Page $pageCount détectée: C=" . $matches[1] . " M=" . $matches[2] . " Y=" . $matches[3] . " K=" . $matches[4]);
+                
+                $pages[] = [
+                    'page' => $pageCount,
+                    'fill_rate' => round($c + $m + $y + $k, 2),
+                    'c' => $c, 'm' => $m, 'y' => $y, 'k' => $k
+                ];
             }
         }
 
@@ -157,31 +165,25 @@ function analyze_pdf_ink_coverage_gs($pdf_file) {
             throw new Exception("Ghostscript n'a détecté aucune donnée de couverture.");
         }
 
-        // Calculer les moyennes par page
         $avgC = $totalC / $pageCount;
         $avgM = $totalM / $pageCount;
         $avgY = $totalY / $pageCount;
         $avgK = $totalK / $pageCount;
 
-        // Formule demandée par l'utilisateur : Somme des canaux (C+M+J+N)
-        // Les valeurs renvoyées par ink_cov sont déjà en pourcentages (0-100).
         $fillRate = ($avgC + $avgM + $avgY + $avgK);
-        
-        // Détection couleur heuristique
         $maxDiff = max(abs($avgC - $avgM), abs($avgM - $avgY), abs($avgC - $avgY));
         $isColor = ($avgC + $avgM + $avgY > 0.01) && ($maxDiff > 0.005);
-
-        error_log("Analyse PDF terminée: $pageCount pages, Taux moyen=" . round($fillRate, 2) . "%");
 
         return array(
             'fill_rate' => round($fillRate, 2),
             'empty_rate' => round(max(0, 100 - $fillRate), 2),
             'page_count' => $pageCount,
             'is_color' => $isColor,
-            'avg_c' => $avgC,
-            'avg_m' => $avgM,
-            'avg_y' => $avgY,
-            'avg_k' => $avgK,
+            'pages' => $pages,
+            'avg_c' => round($avgC, 2),
+            'avg_m' => round($avgM, 2),
+            'avg_y' => round($avgY, 2),
+            'avg_k' => round($avgK, 2),
             'success' => true
         );
 

@@ -62,6 +62,7 @@
     "directories": {
       "output": "dist"
     },
+    "asar": false,
     "files": [
       "main-caddy.js",
       "main.js",
@@ -76,9 +77,12 @@
       "!app/vendor/phpunit/**/*",
       "!app/vendor/pestphp/**/*",
       "!app/vendor/sebastian/**/*",
-      "!app/vendor/**/tests/**/*",
-      "!app/vendor/**/test/**/*",
-      "!app/vendor/**/docs/**/*"
+      "!app/brain/**/*",
+      "!app/tmp/**/*",
+      "!app/logs/**/*",
+      "!app/uploads/**/*",
+      "!app/bibliotheque/**/*",
+      "!app/duplinew.sqlite*"
     ],
     "asarUnpack": [
       "php/**/*",

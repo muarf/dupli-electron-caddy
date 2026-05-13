@@ -26,15 +26,28 @@ $action = $_POST['action'] ?? '';
 $errors = [];
 $result = [];
 
-// --- Récupérer le fichier uploadé ---
-if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
-    echo json_encode(['success' => false, 'errors' => ['Aucun fichier valide reçu.']]);
-    exit;
+$uploadedFile = null;
+$originalName = null;
+$safeName = 'studio_doc';
+
+// --- Récupérer le fichier uploadé (sauf pour certaines actions) ---
+if (!in_array($action, ['organize_pages', 'merge', 'riso_pdf'])) {
+    if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+        echo json_encode(['success' => false, 'errors' => ['Aucun fichier valide reçu.']]);
+        exit;
+    }
+    $uploadedFile  = $_FILES['file']['tmp_name'];
+    $originalName  = $_FILES['file']['name'];
+    $safeName      = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
+} else {
+    // S'il y a quand même un fichier 'file' (ex: merge avec fichier principal), on le récupère
+    if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
+        $uploadedFile  = $_FILES['file']['tmp_name'];
+        $originalName  = $_FILES['file']['name'];
+        $safeName      = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
+    }
 }
 
-$uploadedFile  = $_FILES['file']['tmp_name'];
-$originalName  = $_FILES['file']['name'];
-$safeName      = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
 $tmpBase       = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR;
 if (!is_dir($tmpBase)) mkdir($tmpBase, 0777, true);
 
@@ -189,12 +202,13 @@ if ($action === 'impose') {
                 'gutter_y'                    => floatval($_POST['gutter_y']       ?? 0),
                 'gutter_strategy'             => $_POST['gutter_strategy']          ?? 'reduce',
                 'crop_marks'                  => ($_POST['crop_marks'] ?? '0') === '1',
+                'crop_style'                  => $_POST['crop_style']               ?? 'spreads',
                 'crop_mark_len'               => floatval($_POST['crop_mark_len']  ?? 2),
                 'crop_mark_width'             => floatval($_POST['crop_mark_width'] ?? 0.1),
                 'preview_mode'                => false,
                 'add_page_numbers_in_gutters' => ($_POST['add_page_numbers_in_gutters'] ?? '0') === '1',
-                'gutter_num_offset_x'         => 0.0,
-                'gutter_num_offset_y'         => -2.0,
+                'gutter_num_offset_x'         => floatval($_POST['gutter_num_offset_x'] ?? 0.0),
+                'gutter_num_offset_y'         => floatval($_POST['gutter_num_offset_y'] ?? -2.0),
                 'output_format'               => $_POST['output_format'] ?? 'A3',
                 'addPageNumberCallback'        => null,
             ];
@@ -438,6 +452,81 @@ if ($action === 'to_pdf') {
         ]);
         exit;
 
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'errors' => [$e->getMessage()]]);
+        exit;
+    }
+}
+
+// === ACTION : RISO_PDF (Multiple layers → Multi-page PDF) ===
+if ($action === "riso_pdf") {
+    try {
+        $layers = $_FILES["layers"] ?? null;
+        $colors = $_POST["colors"] ?? [];
+        if (!$layers || !is_array($layers["tmp_name"])) {
+            throw new Exception("Aucun calque reçu.");
+        }
+
+        $pdf = new TCPDI();
+        $pdf->SetCreator("Dupli Studio");
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->SetAutoPageBreak(false, 0);
+        $pdf->SetMargins(0, 0, 0);
+
+        foreach ($layers["tmp_name"] as $i => $tmpPath) {
+            if ($layers["error"][$i] !== UPLOAD_ERR_OK) continue;
+            $sz = getimagesize($tmpPath);
+            if (!$sz) continue;
+            $dpi = floatval($_POST["dpi"] ?? 96);
+            $w_mm = round($sz[0] * 25.4 / $dpi, 2);
+            $h_mm = round($sz[1] * 25.4 / $dpi, 2);
+            $orientation = ($w_mm > $h_mm) ? "L" : "P";
+            $pdf->AddPage($orientation, [$w_mm, $h_mm]);
+            $pdf->Image($tmpPath, 0, 0, $w_mm, $h_mm);
+            $colorName = $colors[$i] ?? "Inconnu";
+            $pdf->SetFont("helvetica", "B", 10);
+            $pdf->SetTextColor(150, 150, 150);
+            $pdf->Text(10, 10, "TAMBOUR RISO : " . strtoupper($colorName));
+        }
+
+        $outFilename = $safeName . "_riso_planches.pdf";
+        $outPath     = $tmpBase . $outFilename;
+        $pdf->Output($outPath, "F");
+        echo json_encode([
+            "success"      => true,
+            "download_url" => "?download_studio&file=" . urlencode($outFilename),
+            "filename"     => $outFilename,
+            "errors"       => []
+        ]);
+        exit;
+    } catch (Exception $e) {
+        echo json_encode(["success" => false, "errors" => [$e->getMessage()]]);
+        exit;
+    }
+}
+
+// === ACTION : ANALYZE_INK (Calculate fill rate) ===
+if ($action === 'analyze_ink') {
+    try {
+        require_once __DIR__ . '/../models/taux_remplissage.php';
+        
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime  = finfo_file($finfo, $uploadedFile);
+        finfo_close($finfo);
+
+        if ($mime === 'application/pdf') {
+            $result = analyze_pdf_ink_coverage_gs($uploadedFile);
+        } else {
+            // For images, use the simple fill rate calculation
+            $result = calculate_fill_rate($uploadedFile);
+        }
+
+        echo json_encode([
+            'success' => true,
+            'result'  => $result
+        ]);
+        exit;
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'errors' => [$e->getMessage()]]);
         exit;

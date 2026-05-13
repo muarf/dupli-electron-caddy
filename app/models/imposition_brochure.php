@@ -32,50 +32,12 @@ function padPdfToMultiple($pdfFilePath, $multiple) {
         ];
     }
 
-    $pagesToAdd = $multiple - ($pageCount % $multiple);
-
-    $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR;
-
-    $outputPath = $tmp_dir . 'padded_' . date('YmdHis') . '_' . uniqid() . '.pdf';
-
-    $pdfPadded = new TCPDI();
-    $pdfPadded->setPrintHeader(false);
-    $pdfPadded->setPrintFooter(false);
-    $pdfPadded->setSourceFile($pdfFilePath);
-
-    $defaultWidth = 210;
-    $defaultHeight = 297;
-    $defaultOrientation = 'P';
-
-    for ($pageNum = 1; $pageNum <= $pageCount; $pageNum++) {
-        $templateId = $pdfPadded->importPage($pageNum);
-        $size = $pdfPadded->getTemplateSize($templateId);
-        if ($size && isset($size['width']) && isset($size['height'])) {
-            $width = $size['width'];
-            $height = $size['height'];
-            $defaultWidth = $width;
-            $defaultHeight = $height;
-            $defaultOrientation = ($width > $height) ? 'L' : 'P';
-        } else {
-            $width = $defaultWidth;
-            $height = $defaultHeight;
-        }
-
-        $orientation = ($width > $height) ? 'L' : 'P';
-        $pdfPadded->AddPage($orientation, [$width, $height]);
-        $pdfPadded->useTemplate($templateId, 0, 0, $width, $height);
-    }
-
-    for ($i = 0; $i < $pagesToAdd; $i++) {
-        $pdfPadded->AddPage($defaultOrientation, [$defaultWidth, $defaultHeight]);
-    }
-
-    $pdfPadded->Output($outputPath, 'F');
+    $pagesToAdd = ($pageCount % $multiple === 0) ? 0 : $multiple - ($pageCount % $multiple);
 
     return [
-        'file' => $outputPath,
+        'file' => $pdfFilePath,
         'page_count' => $pageCount + $pagesToAdd,
-        'temp_file' => $outputPath
+        'temp_file' => null
     ];
 }
 }
