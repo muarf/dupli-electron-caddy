@@ -1911,13 +1911,20 @@ function startPrinterMonitor() {
                 }
             }
 
+            // Normaliser la taille de papier si elle est sous forme de code numérique (spécifique à Windows)
+            let paperSizeNormalized = jobData.PaperSize || jobData.paperSize;
+            if (process.platform === 'win32' && paperSizeNormalized !== undefined && !isNaN(Number(paperSizeNormalized))) {
+                const paperMap = { 9: 'A4', 8: 'A3', 11: 'A5', 1: 'Letter', 5: 'Legal' };
+                paperSizeNormalized = paperMap[Number(paperSizeNormalized)] || 'A4';
+            }
+
             const enrichedPrintData = {
                 JobId:        jobData.JobId || jobData.jobId,
                 Document:     docName,
                 PrinterName:  jobData.PrinterName || jobData.printerName,
                 Status:       jobData.Status || jobData.status,
                 TotalPages:   jobData.TotalPages || jobData.totalPages,
-                PaperSize:    jobData.PaperSize || jobData.paperSize,
+                PaperSize:    paperSizeNormalized,
                 IsDuplex:     jobData.IsDuplex || jobData.duplex > 1,
                 ColorMode:    jobData.ColorMode || (jobData.isGrayscale ? 'Monochrome' : 'Color'),
                 Copies:       jobData.Copies || jobData.copies || 1,
