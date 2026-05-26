@@ -62,6 +62,12 @@ coverage/
 .env
 .env.local
 
+# Generated thumbnails
+app/bibliotheque/thumbnails/
+
+# Test artifacts
+tests/output_xps/
+
 # Cache
 .cache/
 .npm/
