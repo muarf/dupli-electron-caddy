@@ -67,18 +67,52 @@ try {
     $jobId = strval($data['jobId']);
     $platform = $data['platform'] ?? 'windows';
 
+    // Extraire le nom de fichier au début pour l'utiliser dans les requêtes de vérification
+    $documentFull = $data['document'] ?? 'Sans Nom';
+    $documentDisplay = basename($documentFull);
+
+    // Vérifier si la colonne print_job_id existe dans recorded_print_jobs pour éviter les erreurs SQL si la migration n'a pas encore été jouée
+    $hasPrintJobId = false;
+    try {
+        $columns = $db->select("PRAGMA table_info(recorded_print_jobs)");
+        foreach ($columns as $col) {
+            if ($col['name'] === 'print_job_id') {
+                $hasPrintJobId = true;
+                break;
+            }
+        }
+    } catch (Exception $e) {}
+
     // 0. Vérifier si le job a déjà été enregistré définitivement RECEMMENT
-    $checkSql = "SELECT 1 FROM recorded_print_jobs WHERE ";
+    $checkSql = "";
     $checkParams = [];
     if ($jobUuid) {
-        $checkSql .= "job_uuid = ?";
+        $checkSql = "SELECT 1 FROM recorded_print_jobs WHERE job_uuid = ?";
         $checkParams[] = $jobUuid;
     } else {
-        $checkSql .= "job_id = ? AND recorded_at > datetime('now', '-2 hours')";
-        $checkParams[] = $jobId;
-        if ($platform !== 'linux') {
-            $checkSql .= " AND printer_name = ?";
-            $checkParams[] = $data['printerName'];
+        if ($hasPrintJobId) {
+            // Jointure pour s'assurer que le job d'ID identique (recyclé) correspond bien au même document
+            $checkSql = "
+                SELECT 1 FROM recorded_print_jobs rpj
+                LEFT JOIN print_jobs pj ON rpj.print_job_id = pj.id
+                WHERE rpj.job_id = ? AND rpj.recorded_at > datetime('now', '-2 hours')
+                  AND (rpj.print_job_id IS NULL OR pj.document = ? OR pj.document_display_name = ?)
+            ";
+            $checkParams[] = $jobId;
+            $checkParams[] = $documentDisplay;
+            $checkParams[] = $documentDisplay;
+            if ($platform !== 'linux') {
+                $checkSql .= " AND rpj.printer_name = ?";
+                $checkParams[] = $data['printerName'];
+            }
+        } else {
+            // Fallback si la colonne print_job_id n'existe pas encore dans recorded_print_jobs
+            $checkSql = "SELECT 1 FROM recorded_print_jobs WHERE job_id = ? AND recorded_at > datetime('now', '-2 hours')";
+            $checkParams[] = $jobId;
+            if ($platform !== 'linux') {
+                $checkSql .= " AND printer_name = ?";
+                $checkParams[] = $data['printerName'];
+            }
         }
     }
 
@@ -90,14 +124,17 @@ try {
     }
 
     // 0b. Vérifier si le job est déjà dans print_jobs (non validé)
+    // On s'assure d'identifier le même job en vérifiant le nom du document
     $checkPendingSql = "SELECT id, fill_rate, thumbnail_url, total_pages, status FROM print_jobs WHERE ";
     $checkPendingParams = [];
     if ($jobUuid) {
         $checkPendingSql .= "job_uuid = ?";
         $checkPendingParams[] = $jobUuid;
     } else {
-        $checkPendingSql .= "job_id = ? AND created_at > datetime('now', '-10 minutes')";
+        $checkPendingSql .= "job_id = ? AND created_at > datetime('now', '-10 minutes') AND (document = ? OR document_display_name = ?)";
         $checkPendingParams[] = $jobId;
+        $checkPendingParams[] = $documentDisplay;
+        $checkPendingParams[] = $documentDisplay;
         if ($platform !== 'linux') {
             $checkPendingSql .= " AND printer_name = ?";
             $checkPendingParams[] = $data['printerName'];
@@ -138,18 +175,18 @@ try {
         }
     }
 
-    // Extraire le nom de fichier
-    $documentFull = $data['document'] ?? 'Sans Nom';
-    $documentDisplay = basename($documentFull);
-    
-    // Vérifier si job existe déjà (pour UPDATE au lieu de INSERT)
+    // Vérifier si le job existe déjà pour UPDATE (uniquement si même document ou s'il est très récent)
+    // pour éviter les fausses associations dues au recyclage des job_id Windows.
     $existingJobId = $db->selectOne(
-        "SELECT id FROM print_jobs WHERE job_id = ? AND printer_name = ?",
-        [strval($data['jobId']), $data['printerName']]
+        "SELECT id FROM print_jobs 
+         WHERE job_id = ? AND printer_name = ? 
+           AND (document = ? OR document_display_name = ? OR created_at > datetime('now', '-10 minutes'))
+         ORDER BY created_at DESC LIMIT 1",
+        [strval($data['jobId']), $data['printerName'], $documentDisplay, $documentDisplay]
     );
     
     if ($existingJobId) {
-        // UPDATE si job existe déjà (préserve le timestamp original)
+        // UPDATE si le job existe déjà (met à jour le timestamp pour le maintenir actif dans le polling)
         $db->execute("
             UPDATE print_jobs SET
                 document = ?,
@@ -165,7 +202,9 @@ try {
                 thumbnail_url = COALESCE(NULLIF(?, ''), thumbnail_url),
                 paper_size = ?,
                 copies = ?,
-                job_uuid = ?
+                job_uuid = ?,
+                timestamp = ?,
+                created_at = datetime('now', 'localtime')
             WHERE id = ?
         ", [
             $documentDisplay,
@@ -184,6 +223,7 @@ try {
             $data['paperSize'] ?? '',
             $data['copies'] ?? 1,
             $jobUuid,
+            $data['timestamp'] ?? date('c'),
             $existingJobId['id']
         ]);
     } else {
