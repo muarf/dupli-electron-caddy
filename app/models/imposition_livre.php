@@ -31,12 +31,44 @@ function padPdfToMultiple($pdfFilePath, $multiple) {
         ];
     }
 
-    $pagesToAdd = ($pageCount % $multiple === 0) ? 0 : $multiple - ($pageCount % $multiple);
+    $pagesToAdd = $multiple - ($pageCount % $multiple);
+
+    $paddedPdf = new TCPDI();
+    $paddedPdf->setPrintHeader(false);
+    $paddedPdf->setPrintFooter(false);
+    $paddedPdf->setSourceFile($pdfFilePath);
+
+    $lastSize = null;
+    for ($i = 1; $i <= $pageCount; $i++) {
+        $templateId = $paddedPdf->importPage($i);
+        $size = $paddedPdf->getTemplateSize($templateId);
+        if ($size) {
+            $lastSize = $size;
+            $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+            $paddedPdf->AddPage($orientation, [$size['width'], $size['height']]);
+            $paddedPdf->useTemplate($templateId);
+        } else {
+            $paddedPdf->AddPage();
+        }
+    }
+
+    for ($j = 0; $j < $pagesToAdd; $j++) {
+        if ($lastSize) {
+            $orientation = ($lastSize['width'] > $lastSize['height']) ? 'L' : 'P';
+            $paddedPdf->AddPage($orientation, [$lastSize['width'], $lastSize['height']]);
+        } else {
+            $paddedPdf->AddPage();
+        }
+    }
+
+    $tempDir = resolveTempDir() . DIRECTORY_SEPARATOR;
+    $tempFile = $tempDir . 'padded_' . uniqid() . '_' . basename($pdfFilePath);
+    $paddedPdf->Output($tempFile, 'F');
 
     return [
-        'file' => $pdfFilePath,
+        'file' => $tempFile,
         'page_count' => $pageCount + $pagesToAdd,
-        'temp_file' => null
+        'temp_file' => $tempFile
     ];
 }
 }

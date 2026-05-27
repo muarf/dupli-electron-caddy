@@ -23,8 +23,10 @@ function convert_pdf_to_png($pdf_file, $output_dir, $dpi = 150, $base_filename =
         $prefix = $base_filename . '_page_%03d.png';
         $output_pattern = $output_dir . $prefix;
 
+        $escaped_output_pattern = (PHP_OS_FAMILY === 'Windows') ? '"' . str_replace('"', '""', $output_pattern) . '"' : escapeshellarg($output_pattern);
+
         // Utiliser Ghostscript pour convertir le PDF en PNG
-        $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=png16m -r" . intval($dpi) . " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($output_pattern) . " " . escapeshellarg($pdf_file);
+        $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=png16m -r" . intval($dpi) . " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . $escaped_output_pattern . " " . escapeshellarg($pdf_file);
         
         $gs_result = run_ghostscript($gs_args);
         

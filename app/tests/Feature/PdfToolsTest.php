@@ -169,21 +169,34 @@ function runPdfTool(string $module, string $function, array $args = [], array $o
         $payload['conf'] = $options['conf'];
     }
 
+    $tempFile = tempnam(sys_get_temp_dir(), 'pdf_tool_payload_') . '.json';
+    file_put_contents($tempFile, json_encode($payload));
+
     $command = escapeshellarg(PHP_BINARY) . ' ' .
         escapeshellarg(__DIR__ . '/../helpers/run_pdf_tool.php') . ' ' .
-        escapeshellarg(json_encode($payload));
+        escapeshellarg($tempFile) . ' 2>&1';
 
     $output = [];
     $exitCode = 0;
     exec($command, $output, $exitCode);
 
+    if (file_exists($tempFile)) {
+        @unlink($tempFile);
+    }
+
     if ($exitCode !== 0) {
         throw new RuntimeException('run_pdf_tool a échoué: ' . implode("\n", $output));
     }
 
-    $response = json_decode(implode("\n", $output), true);
+    $outputStr = implode("\n", $output);
+    $response = json_decode($outputStr, true);
+    if (!is_array($response)) {
+        if (preg_match('/\{.*\}/s', $outputStr, $matches)) {
+            $response = json_decode($matches[0], true);
+        }
+    }
     if (!is_array($response) || ($response['status'] ?? '') !== 'ok') {
-        throw new RuntimeException('Erreur helper: ' . ($response['message'] ?? 'réponse invalide'));
+        throw new RuntimeException('Erreur helper: ' . ($response['message'] ?? 'réponse invalide') . ' | Raw Output: ' . $outputStr);
     }
 
     return $response['result'];

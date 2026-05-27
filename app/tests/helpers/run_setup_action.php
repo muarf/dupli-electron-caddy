@@ -2,19 +2,20 @@
 
 // Usage: php run_setup_action.php '{"dbPath":"/tmp/foo.sqlite","post":{...}}'
 
-$payload = $argv[1] ?? '{}';
-$config = json_decode($payload, true);
-if (!is_array($config)) {
-    $config = [];
-}
+if (isset($argv[0]) && realpath($argv[0]) === realpath(__FILE__)) {
+    $payload = $argv[1] ?? '{}';
+    $config = json_decode($payload, true);
+    if (!is_array($config)) {
+        $config = [];
+    }
 
-$dbPath = $config['dbPath'] ?? null;
-$post = $config['post'] ?? [];
+    $dbPath = $config['dbPath'] ?? null;
+    $post = $config['post'] ?? [];
 
-if (!$dbPath) {
-    fwrite(STDERR, "dbPath manquant\n");
-    exit(2);
-}
+    if (!$dbPath) {
+        fwrite(STDERR, "dbPath manquant\n");
+        exit(2);
+    }
 
 // Définir la variable d'environnement AVANT tous les includes pour que conf.php l'utilise
 putenv('DUPLICATOR_DB_PATH=' . $dbPath);
@@ -71,5 +72,6 @@ echo json_encode([
     'status' => $status,
     'db_used' => $dbPath,
 ]) . PHP_EOL;
+}
 
 
