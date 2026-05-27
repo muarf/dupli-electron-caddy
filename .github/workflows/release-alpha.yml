@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - 'unified-printer-monitoring'
+      - 'alpha'
 
 permissions:
   contents: write
@@ -178,7 +178,7 @@ jobs:
                   repo: context.repo.repo,
                   tag_name: tag,
                   name: `Duplicator Alpha v${version}`,
-                  body: `## 🚀 Version Alpha v${version}\n\n⚠️ **Ceci est une version ALPHA (Unified Monitoring)**\n\nCommit: \`${shortSha}\`\nBranch: \`${context.ref}\``,
+                  body: `## 🚀 Version Alpha v${version}\n\n⚠️ **Ceci est une version ALPHA (Studio Integration)**\n\nCommit: \`${shortSha}\`\nBranch: \`${context.ref}\``,
                   draft: false,
                   prerelease: true
                 });
