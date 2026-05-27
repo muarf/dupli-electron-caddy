@@ -29,9 +29,9 @@ describe('download-caddy.js Unit Tests', () => {
 
     describe('CADDY_VERSIONS', () => {
         test('should have configurations for main platforms', () => {
-            expect(CADDY_VERSIONS).toHaveProperty('linux-x64');
-            expect(CADDY_VERSIONS).toHaveProperty('linux-arm64');
-            expect(CADDY_VERSIONS).toHaveProperty('windows-x64');
+            expect(CADDY_VERSIONS).toHaveProperty('linux');
+            expect(CADDY_VERSIONS).toHaveProperty('windows');
+            expect(CADDY_VERSIONS).toHaveProperty('darwin');
         });
     });
 
