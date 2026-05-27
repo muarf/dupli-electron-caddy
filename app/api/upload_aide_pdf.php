@@ -69,64 +69,23 @@ function sanitizeFileName($filename) {
 }
 
 // Fonction pour résoudre le répertoire de stockage des PDFs d'aide
+if (!function_exists('resolveAidePdfDir')) {
 function resolveAidePdfDir() {
-    // Priorité 1 : Variable d'environnement
-    $envDir = getenv('DUPLI_AIDE_PDF_DIR');
-    if (!empty($envDir)) {
-        return normalizePath($envDir);
+    if (function_exists('getAidePdfDir')) {
+        return getAidePdfDir();
     }
     
-    // Priorité 2 : Variable d'environnement Electron (comme pour la DB)
-    $electronDbPath = getenv('DUPLICATOR_DB_PATH');
-    if (!empty($electronDbPath)) {
-        $dbDir = dirname($electronDbPath);
-        return normalizePath($dbDir . DIRECTORY_SEPARATOR . 'aide_pdfs');
-    }
-    
-    // Priorité 3 : Détection AppImage
-    $current_dir = getcwd();
-    if (strpos($current_dir, '.mount') !== false || strpos($current_dir, 'AppDir') !== false) {
-        // AppImage : utiliser le répertoire home de l'utilisateur
-        $home_dir = $_SERVER['HOME'] ?? getenv('HOME');
-        
-        if (!empty($home_dir) && is_dir($home_dir) && is_writable($home_dir)) {
-            return normalizePath($home_dir . '/.config/Duplicator/aide_pdfs');
-        }
-        
-        // Fallback si HOME n'est pas accessible : dossier temporaire système
-        return normalizePath(sys_get_temp_dir() . '/duplicator_aide_pdfs');
-    }
-    
-    // Priorité 4 : Linux/Unix avec XDG_CONFIG_HOME
-    if (stripos(PHP_OS_FAMILY, 'Windows') === false) {
-        $xdg = getenv('XDG_CONFIG_HOME');
-        if (!empty($xdg)) {
-            return normalizePath($xdg . DIRECTORY_SEPARATOR . 'Duplicator' . DIRECTORY_SEPARATOR . 'aide_pdfs');
-        }
-        $home = getenv('HOME');
-        if (!empty($home) && is_dir($home)) {
-            return normalizePath($home . DIRECTORY_SEPARATOR . '.config' . DIRECTORY_SEPARATOR . 'Duplicator' . DIRECTORY_SEPARATOR . 'aide_pdfs');
-        }
-        
-        // Pour les utilisateurs système (www-data, etc.) sur Linux, utiliser /tmp ou /var/tmp
-        $tmpDir = getenv('TMPDIR');
-        if (empty($tmpDir)) {
-            $tmpDir = '/tmp';
-        }
-        if (is_dir($tmpDir) && is_writable($tmpDir)) {
-            return normalizePath($tmpDir . DIRECTORY_SEPARATOR . 'duplicator-aide-pdfs');
-        }
-    }
-    
-    // Dernier recours : répertoire public/uploads/aide_pdfs (pour développement/web)
+    // Fallback si paths.php n'est pas chargé (ne devrait pas arriver)
     return normalizePath(__DIR__ . '/../public/uploads/aide_pdfs');
 }
+}
 
-// Fonction pour normaliser un chemin
+if (!function_exists('normalizePath')) {
 function normalizePath($path) {
     $path = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $path);
     $path = trim($path);
     return rtrim($path, DIRECTORY_SEPARATOR);
+}
 }
 
 // Fonction pour récupérer la liste des PDFs
@@ -206,7 +165,7 @@ try {
             
             echo json_encode([
                 'success' => true,
-                'message' => _e('admin_aide.upload_success'),
+                'message' => __('admin_aide.upload_success'),
                 'filename' => $uniqueFilename,
                 'url' => '?view_aide_pdf&file=' . urlencode($uniqueFilename)
             ]);

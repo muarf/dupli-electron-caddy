@@ -213,131 +213,168 @@ class I18nManager {
 /**
  * Fonction de traduction courte
  */
-function __($key, $params = []) {
-    return I18nManager::getInstance()->translate($key, $params);
+if (!function_exists('__')) {
+    function __($key, $params = []) {
+        return I18nManager::getInstance()->translate($key, $params);
+    }
 }
 
 /**
  * Fonction de traduction avec echo
  */
-function _e($key, $params = [], $editable = null) {
-    $translation = __($key, $params);
-    
-    // Si l'utilisateur est admin
-    if (isset($_SESSION['admin']) && $_SESSION['admin'] === true) {
-        // Par défaut, tout est éditable sauf si explicitement désactivé
-        if ($editable !== false) {
-            $currentLang = getCurrentLanguage();
-            echo '<span class="translation-editable" data-key="' . htmlspecialchars($key) . '" data-lang="' . htmlspecialchars($currentLang) . '" title="Cliquer pour éditer" style="cursor: pointer;">' . htmlspecialchars($translation) . ' <i class="fa fa-edit edit-icon"></i></span>';
+if (!function_exists('_e')) {
+    function _e($key, $params = [], $editable = null) {
+        $translation = __($key, $params);
+        
+        // Si l'utilisateur est admin
+        if (isset($_SESSION['admin']) && $_SESSION['admin'] === true) {
+            // Par défaut, tout est éditable sauf si explicitement désactivé
+            if ($editable !== false) {
+                $currentLang = getCurrentLanguage();
+                echo '<span class="translation-editable" data-key="' . htmlspecialchars($key) . '" data-lang="' . htmlspecialchars($currentLang) . '" title="Cliquer pour éditer" style="cursor: pointer;">' . htmlspecialchars($translation) . ' <i class="fa fa-edit edit-icon"></i></span>';
+            } else {
+                echo htmlspecialchars($translation);
+            }
         } else {
             echo htmlspecialchars($translation);
         }
-    } else {
-        echo htmlspecialchars($translation);
     }
 }
 
 /**
  * Fonction pour les traductions HTML
  */
-function _h($key, $params = [], $editable = null) {
-    $translation = __($key, $params);
-    
-    // Si l'utilisateur est admin
-    if (isset($_SESSION['admin']) && $_SESSION['admin'] === true) {
-        // Par défaut, tout est éditable sauf si explicitement désactivé
-        if ($editable !== false) {
-            $currentLang = getCurrentLanguage();
-            return '<span class="translation-editable" data-key="' . htmlspecialchars($key) . '" data-lang="' . htmlspecialchars($currentLang) . '" title="Cliquer pour éditer">' . htmlspecialchars($translation) . ' <i class="fa fa-edit edit-icon"></i></span>';
+if (!function_exists('_h')) {
+    function _h($key, $params = [], $editable = null) {
+        $translation = __($key, $params);
+        
+        // Si l'utilisateur est admin
+        if (isset($_SESSION['admin']) && $_SESSION['admin'] === true) {
+            // Par défaut, tout est éditable sauf si explicitement désactivé
+            if ($editable !== false) {
+                $currentLang = getCurrentLanguage();
+                return '<span class="translation-editable" data-key="' . htmlspecialchars($key) . '" data-lang="' . htmlspecialchars($currentLang) . '" title="Cliquer pour éditer">' . htmlspecialchars($translation) . ' <i class="fa fa-edit edit-icon"></i></span>';
+            } else {
+                return htmlspecialchars($translation);
+            }
         } else {
             return htmlspecialchars($translation);
         }
-    } else {
-        return htmlspecialchars($translation);
     }
 }
 
 /**
  * Fonction pour les traductions HTML avec echo
  */
-function _he($key, $params = [], $editable = null) {
-    echo _h($key, $params, $editable);
+if (!function_exists('_he')) {
+    function _he($key, $params = [], $editable = null) {
+        echo _h($key, $params, $editable);
+    }
+}
+
+/**
+ * Fonction de traduction sécurisée pour contexte JavaScript
+ * Échappe les apostrophes, guillemets et backslashes pour éviter les SyntaxError JS
+ */
+if (!function_exists('__js')) {
+    function __js($key, $params = []) {
+        return addslashes(__($key, $params));
+    }
+}
+
+/**
+ * Fonction de traduction JS avec echo
+ */
+if (!function_exists('_ejs')) {
+    function _ejs($key, $params = []) {
+        echo __js($key, $params);
+    }
 }
 
 /**
  * Obtenir la langue courante
  */
-function getCurrentLanguage() {
-    return I18nManager::getInstance()->getCurrentLanguage();
+if (!function_exists('getCurrentLanguage')) {
+    function getCurrentLanguage() {
+        return I18nManager::getInstance()->getCurrentLanguage();
+    }
 }
 
 /**
  * Changer la langue
  */
-function setLanguage($language) {
-    return I18nManager::getInstance()->setLanguage($language);
+if (!function_exists('setLanguage')) {
+    function setLanguage($language) {
+        return I18nManager::getInstance()->setLanguage($language);
+    }
 }
 
 /**
  * Obtenir les langues disponibles
  */
-function getAvailableLanguages() {
-    return I18nManager::getInstance()->getAvailableLanguages();
+if (!function_exists('getAvailableLanguages')) {
+    function getAvailableLanguages() {
+        return I18nManager::getInstance()->getAvailableLanguages();
+    }
 }
 
 /**
  * Obtenir le nom de la langue
  */
-function getLanguageName($code) {
-    return I18nManager::getInstance()->getLanguageName($code);
+if (!function_exists('getLanguageName')) {
+    function getLanguageName($code) {
+        return I18nManager::getInstance()->getLanguageName($code);
+    }
 }
 
 /**
  * Générer le sélecteur de langue
  */
-function generateLanguageSelector() {
-    $currentLang = getCurrentLanguage();
-    $availableLangs = getAvailableLanguages();
-    
-    $html = '<div class="dropdown language-selector">';
-    $html .= '<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown">';
-    $html .= '<i class="fa fa-globe"></i> ' . getLanguageName($currentLang) . ' <span class="caret"></span>';
-    $html .= '</button>';
-    $html .= '<ul class="dropdown-menu">';
-    
-    foreach ($availableLangs as $lang) {
-        $active = ($lang === $currentLang) ? ' class="active"' : '';
-        $html .= '<li' . $active . '>';
+if (!function_exists('generateLanguageSelector')) {
+    function generateLanguageSelector() {
+        $currentLang = getCurrentLanguage();
+        $availableLangs = getAvailableLanguages();
         
-        // Construire l'URL en préservant la page actuelle
-        $currentUrl = $_SERVER['REQUEST_URI'];
-        $parsedUrl = parse_url($currentUrl);
-        $queryParams = [];
+        $html = '<div class="dropdown language-selector">';
+        $html .= '<button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown">';
+        $html .= '<i class="fa fa-globe"></i> ' . getLanguageName($currentLang) . ' <span class="caret"></span>';
+        $html .= '</button>';
+        $html .= '<ul class="dropdown-menu">';
         
-        // Récupérer les paramètres existants
-        if (isset($parsedUrl['query'])) {
-            parse_str($parsedUrl['query'], $queryParams);
+        foreach ($availableLangs as $lang) {
+            $active = ($lang === $currentLang) ? ' class="active"' : '';
+            $html .= '<li' . $active . '>';
+            
+            // Construire l'URL en préservant la page actuelle
+            $currentUrl = $_SERVER['REQUEST_URI'] ?? '';
+            $parsedUrl = parse_url($currentUrl);
+            $queryParams = [];
+            
+            // Récupérer les paramètres existants
+            if (isset($parsedUrl['query'])) {
+                parse_str($parsedUrl['query'], $queryParams);
+            }
+            
+            // Modifier ou ajouter le paramètre lang
+            $queryParams['lang'] = $lang;
+            
+            // Reconstruire l'URL
+            $newQuery = http_build_query($queryParams);
+            $newUrl = ($parsedUrl['path'] ?? '') . '?' . $newQuery;
+            
+            $html .= '<a href="' . htmlspecialchars($newUrl) . '">';
+            $html .= getLanguageName($lang);
+            if ($lang === $currentLang) {
+                $html .= ' <i class="fa fa-check"></i>';
+            }
+            $html .= '</a>';
+            $html .= '</li>';
         }
         
-        // Modifier ou ajouter le paramètre lang
-        $queryParams['lang'] = $lang;
+        $html .= '</ul>';
+        $html .= '</div>';
         
-        // Reconstruire l'URL
-        $newQuery = http_build_query($queryParams);
-        $newUrl = $parsedUrl['path'] . '?' . $newQuery;
-        
-        $html .= '<a href="' . htmlspecialchars($newUrl) . '">';
-        $html .= getLanguageName($lang);
-        if ($lang === $currentLang) {
-            $html .= ' <i class="fa fa-check"></i>';
-        }
-        $html .= '</a>';
-        $html .= '</li>';
+        return $html;
     }
-    
-    $html .= '</ul>';
-    $html .= '</div>';
-    
-    return $html;
 }
 ?>

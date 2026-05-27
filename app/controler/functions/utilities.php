@@ -11,8 +11,7 @@
  */
 function delete_mail($email = null)
 {
-    $con = pdo_connect();
-    $db  = pdo_connect();
+    $db = pdo_connect();
     
     if ($email) {
         // Supprimer un email spécifique
@@ -29,9 +28,8 @@ function delete_mail($email = null)
  */
 function count_emails()
 {
-    $emails =array();
-    $con    = pdo_connect();
-    $db     = pdo_connect();
+    $emails = array();
+    $db = pdo_connect();
     $query  = $db->query('SELECT count(*) as nbr from email');
     $result = $query->fetch(PDO::FETCH_OBJ);
     if (!empty($result->nbr)) {
@@ -49,51 +47,54 @@ function count_emails()
  */
 function get_mots()
 {
-      $con = pdo_connect();
       $db = pdo_connect();
+      $mots = array();
+      
       $query = $db->query('SELECT * FROM photocop WHERE mot != "" order by id DESC');
       $i = 0;
-      if(empty($query)){ goto two;}
-      while($result =$query->fetch(PDO::FETCH_OBJ))
-      {
-
-         $timest =  $result->date;
-         $mots['photocop'][$i]['date'] = date('d.m.y',$timest);
-         $mots['photocop'][$i]['mot'] = $result->mot;
-         $mots['photocop'][$i]['id'] = $result->id;
-         if(strlen($result->contact)> 13) { $mots['photocop'][$i]['contact']= substr($result->contact, 0, 10).'...'; }
-         else { $mots['photocop'][$i]['contact'] = $result->contact;}
-         $i++;
+      if(!empty($query)){
+          while($result =$query->fetch(PDO::FETCH_OBJ))
+          {
+             $timest =  $result->date;
+             $mots['photocop'][$i]['date'] = date('d.m.y',$timest);
+             $mots['photocop'][$i]['mot'] = $result->mot;
+             $mots['photocop'][$i]['id'] = $result->id;
+             if(strlen($result->contact)> 13) { $mots['photocop'][$i]['contact']= substr($result->contact, 0, 10).'...'; }
+             else { $mots['photocop'][$i]['contact'] = $result->contact;}
+             $i++;
+          }
       }
-      two:
+      
       $query = $db->query('SELECT * FROM a4 WHERE mot != "" order by id DESC');
       $i = 0;
-      if(empty($query)){ goto three;}
-      while($result =$query->fetch(PDO::FETCH_OBJ))
-      {
-         $timest =  $result->date;
-         $mots['A4'][$i]['date'] = date('d.m.y',$timest);
-         $mots['A4'][$i]['mot'] = $result->mot;
-         $mots['A4'][$i]['id'] = $result->id;
-         if(strlen($result->contact)> 13) { $mots['A4'][$i]['contact']= substr($result->contact, 0, 10).'...'; }
-         else { $mots['A4'][$i]['contact'] = $result->contact;}
-         $i++;
+      if(!empty($query)){
+          while($result =$query->fetch(PDO::FETCH_OBJ))
+          {
+             $timest =  $result->date;
+             $mots['A4'][$i]['date'] = date('d.m.y',$timest);
+             $mots['A4'][$i]['mot'] = $result->mot;
+             $mots['A4'][$i]['id'] = $result->id;
+             if(strlen($result->contact)> 13) { $mots['A4'][$i]['contact']= substr($result->contact, 0, 10).'...'; }
+             else { $mots['A4'][$i]['contact'] = $result->contact;}
+             $i++;
+          }
       }
-    		three:
-    	          $query = $db->query('SELECT * FROM dupli WHERE mot != "" order by id DESC');
-    		$i=0;
-    		if(empty($query)){ goto four;}
+      
+      $query = $db->query('SELECT * FROM dupli WHERE mot != "" order by id DESC');
+      $i=0;
+      if(!empty($query)){
         while($result =$query->fetch(PDO::FETCH_OBJ))
-      {
-          $timest =  $result->date;
-         $mots['A3'][$i]['date'] = date('d.m.y',$timest);
-         $mots['A3'][$i]['mot'] = $result->mot;
-         $mots['A3'][$i]['id'] = $result->id;
-         if(strlen($result->contact)> 13) { $mots['A3'][$i]['contact']= substr($result->contact, 0, 10).'...'; }
-         else { $mots['A3'][$i]['contact'] = $result->contact;}
-         $i++;
+        {
+            $timest =  $result->date;
+            $mots['A3'][$i]['date'] = date('d.m.y',$timest);
+            $mots['A3'][$i]['mot'] = $result->mot;
+            $mots['A3'][$i]['id'] = $result->id;
+            if(strlen($result->contact)> 13) { $mots['A3'][$i]['contact']= substr($result->contact, 0, 10).'...'; }
+            else { $mots['A3'][$i]['contact'] = $result->contact;}
+            $i++;
+        }
       }
-      four:
+      
    	return $mots;
 }
 
@@ -102,11 +103,11 @@ function get_mots()
  */
 function update_news($titre,$texte,$id)
 {
-	$con = pdo_connect();
     $db = pdo_connect();
-    $query = $db->prepare('UPDATE news SET titre = :titre, news =:texte WHERE id ='.$_POST['id2'].' ');
+    $query = $db->prepare('UPDATE news SET titre = :titre, news =:texte WHERE id = :id');
     $query->bindParam(':titre', $titre);
     $query->bindParam(':texte', $texte);
+    $query->bindParam(':id', $id);
     $query->execute() or die ('<div class="alert alert-danger"><strong>Danger!</strong> Une erreur s\'est produite.<a href="javascript:" onclick="history.go(-1); return false"></div>');
 }
 
@@ -115,7 +116,6 @@ function update_news($titre,$texte,$id)
  */
 function insert_news($titre,$texte)
 {
- $con = pdo_connect();
  $db = pdo_connect();
  $temps = time();
  $query = $db->prepare('INSERT into news (time, titre, news) VALUES (:temps,:titre,:news)');
@@ -129,17 +129,16 @@ function insert_news($titre,$texte)
  * Supprimer une news
  */
 function delete_news($id){
-	$con = pdo_connect();
     $db = pdo_connect();
-      $db->query('DELETE from news where id = '.$_POST['id'].'') or die ('<div class="alert alert-danger">  <strong>Danger!</strong> Une erreur s\'est produite.<a href="javascript:" onclick="history.go(-1); return false"></div>');
-    }
+    $query = $db->prepare('DELETE from news where id = ?');
+    $query->execute([$id]) or die ('<div class="alert alert-danger">  <strong>Danger!</strong> Une erreur s\'est produite.<a href="javascript:" onclick="history.go(-1); return false"></div>');
+}
 
 /**
  * Récupérer une ou toutes les news
  */
-function get_news($id)
+function get_news($id = null)
 {
-	$con = pdo_connect();
    		$db = pdo_connect();
         
         // Vérifier si $id est vide ou non numérique
@@ -159,33 +158,20 @@ function get_news($id)
         }
         
         $id = ceil($id);
-    	if(!empty($id))
-    	{
-    		$query = $db->query('SELECT * from news WHERE id = '.$id.'');
-    		$result = $query->fetch(PDO::FETCH_OBJ);
-    		if ($result) {
-    		    $array['titre'] = $result->titre;
-     		    $array['temps'] = date('d.m.y',$result->time);
-     		    $array['news'] = $result->news;
-     		    $array['id'] = $result->id;
-    		}
-        	
-        	}
-        	else
-        	{
-        		$query = $db->query('SELECT * from news ');
-        		$i = 0 ;
-        		while($result = $query->fetch(PDO::FETCH_OBJ)){
-        			$array[$i]['titre'] = $result->titre;
-        			$array[$i]['temps'] = date('d.m.y',$result->time);
-        			$array[$i]['news'] = $result->news;
-        			$array[$i]['id'] = $result->id;
-        	
-        			$i++;
-        		}
-        		$result = $array;
-        	}
-        	return $result;
+    	$query = $db->prepare('SELECT * from news WHERE id = ?');
+        $query->execute([$id]);
+        $result = $query->fetch(PDO::FETCH_OBJ);
+        
+        if ($result) {
+            $array = array();
+            $array['titre'] = $result->titre;
+            $array['temps'] = date('d.m.y',$result->time);
+            $array['news'] = $result->news;
+            $array['id'] = $result->id;
+            return $array;
+        }
+        
+        return null;
 }
 
 /**
@@ -194,7 +180,6 @@ function get_news($id)
 function secure_post($POST){
     $key = array_keys($_POST);
     foreach ($key as $value){
-    	
       $_POST[$value]= htmlentities($_POST[$value]);
     }
   }
@@ -204,7 +189,6 @@ function secure_post($POST){
  */
 function get_site_setting($setting_name, $default_value = null)
 {
-    $con = pdo_connect();
     $db = pdo_connect();
     
     $query = $db->prepare('SELECT setting_value FROM site_settings WHERE setting_name = ?');
@@ -223,7 +207,6 @@ function get_site_setting($setting_name, $default_value = null)
  */
 function update_site_setting($setting_name, $setting_value)
 {
-    $con = pdo_connect();
     $db = pdo_connect();
     
     try {
@@ -262,12 +245,13 @@ function template($template_file, $variables = array())
     if (file_exists($template_file)) {
         include $template_file;
     } else {
-        // Essayer avec un chemin relatif depuis le répertoire courant
-        $relative_path = __DIR__ . '/../../' . $template_file;
-        if (file_exists($relative_path)) {
-            include $relative_path;
+        // Essayer avec un chemin relatif depuis le répertoire de l'application
+        $app_root = dirname(dirname(__DIR__)); // Remonte de functions/functions à app/
+        $absolute_path = $app_root . '/' . ltrim($template_file, './');
+        if (file_exists($absolute_path)) {
+            include $absolute_path;
         } else {
-            throw new Exception("Template file not found: " . $template_file);
+            throw new Exception("Template file not found: " . $template_file . " (tried " . $absolute_path . ")");
         }
     }
     
@@ -298,9 +282,10 @@ function resolveTempDir() {
     if (!empty($envDir)) {
         $dir = normalizePath($envDir);
         if (!is_dir($dir)) {
-            @mkdir($dir, 0755, true);
+            @mkdir($dir, 0777, true);
+            @chmod($dir, 0777);
         }
-        return $dir;
+        if (is_dir($dir) && is_writable($dir)) return $dir;
     }
     
     // Priorité 2 : Variable d'environnement Electron (comme pour la DB)
@@ -309,21 +294,25 @@ function resolveTempDir() {
         $dbDir = dirname($electronDbPath);
         $tempDir = normalizePath($dbDir . DIRECTORY_SEPARATOR . 'temp');
         if (!is_dir($tempDir)) {
-            @mkdir($tempDir, 0755, true);
+            @mkdir($tempDir, 0777, true);
+            @chmod($tempDir, 0777);
         }
-        return $tempDir;
+        if (is_dir($tempDir) && is_writable($tempDir)) return $tempDir;
     }
     
     // Priorité 3 : Détection AppImage
     $current_dir = getcwd();
     if (strpos($current_dir, '.mount') !== false || strpos($current_dir, 'AppDir') !== false) {
         // AppImage : utiliser le répertoire home de l'utilisateur
-        $home_dir = $_SERVER['HOME'] ?? getenv('HOME') ?? '/tmp';
-        $tempDir = normalizePath($home_dir . '/.config/Duplicator/temp');
-        if (!is_dir($tempDir)) {
-            @mkdir($tempDir, 0755, true);
+        $home_dir = $_SERVER['HOME'] ?? getenv('HOME');
+        if ($home_dir) {
+            $tempDir = normalizePath($home_dir . '/.config/Duplicator/temp');
+            if (!is_dir($tempDir)) {
+                @mkdir($tempDir, 0777, true);
+                @chmod($tempDir, 0777);
+            }
+            if (is_dir($tempDir) && is_writable($tempDir)) return $tempDir;
         }
-        return $tempDir;
     }
     
     // Priorité 4 : Windows
@@ -331,56 +320,25 @@ function resolveTempDir() {
         $tempBase = getenv('TEMP') ?: getenv('TMP') ?: sys_get_temp_dir();
         $tempDir = normalizePath($tempBase . DIRECTORY_SEPARATOR . 'Duplicator' . DIRECTORY_SEPARATOR . 'temp');
         if (!is_dir($tempDir)) {
-            @mkdir($tempDir, 0755, true);
+            @mkdir($tempDir, 0777, true);
+            @chmod($tempDir, 0777);
         }
+        if (is_dir($tempDir) && is_writable($tempDir)) return $tempDir;
+    }
+    
+    // Priorité 5 : Linux/Unix - Utiliser sys_get_temp_dir()
+    $tmpDir = sys_get_temp_dir();
+    $tempDir = normalizePath($tmpDir . DIRECTORY_SEPARATOR . 'duplicator');
+    if (!is_dir($tempDir)) {
+        @mkdir($tempDir, 0777, true);
+        @chmod($tempDir, 0777);
+    }
+    
+    if (is_dir($tempDir) && is_writable($tempDir)) {
         return $tempDir;
     }
-    
-    // Priorité 5 : Linux/Unix - Utiliser sys_get_temp_dir() comme avant
-    // C'est ce qui fonctionnait dans imposition.php
-    if (stripos(PHP_OS_FAMILY, 'Windows') === false) {
-        $tmpDir = sys_get_temp_dir();
-        if (is_dir($tmpDir) && is_writable($tmpDir)) {
-            $tempDir = normalizePath($tmpDir . DIRECTORY_SEPARATOR . 'duplicator');
-            if (!is_dir($tempDir)) {
-                @mkdir($tempDir, 0755, true);
-            }
-            if (is_dir($tempDir) && is_writable($tempDir)) {
-                return $tempDir;
-            }
-        }
-    }
-    
-    // Dernier recours : sys_get_temp_dir() avec normalisation et résolution du chemin réel
-    $fallbackDir = sys_get_temp_dir();
-    
-    // Pour les systèmes Unix/Linux, forcer /tmp en minuscules si sys_get_temp_dir() retourne /TMP/
-    // TCPDF est sensible à la casse et ne peut pas utiliser /TMP/ en majuscules
-    if (stripos(PHP_OS_FAMILY, 'Windows') === false) {
-        // Normaliser les répertoires système communs en minuscules
-        $fallbackDir = preg_replace_callback('#^/(TMP|VAR|USR|HOME|ROOT)(/|$)#i', function($matches) {
-            return '/' . strtolower($matches[1]) . (isset($matches[2]) ? $matches[2] : '');
-        }, $fallbackDir);
-    }
-    
-    // Utiliser realpath() pour obtenir le chemin réel (résout les liens symboliques)
-    $realPath = realpath($fallbackDir);
-    if ($realPath !== false) {
-        $fallbackDir = $realPath;
-    }
-    
-    $tempDir = normalizePath($fallbackDir . DIRECTORY_SEPARATOR . 'duplicator');
-    if (!is_dir($tempDir)) {
-        @mkdir($tempDir, 0755, true);
-    }
-    
-    // Utiliser realpath() sur le répertoire créé pour obtenir le chemin réel
-    // Cela résout les problèmes de casse (ex: /TMP/ -> /tmp/)
-    $realTempDir = realpath($tempDir);
-    if ($realTempDir !== false) {
-        return $realTempDir;
-    }
-    
-    return $tempDir;
+
+    // Dernier recours : sys_get_temp_dir() pur
+    return $tmpDir;
 }
 ?>

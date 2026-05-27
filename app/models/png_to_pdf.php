@@ -68,6 +68,7 @@ function convert_png_to_pdf($image_files, $output_file, $format = 'A4', $orienta
     }
 }
 
+if (!function_exists('Action')) {
 function Action($conf) {
     $errors = array();
     $success = false;
@@ -102,15 +103,17 @@ function Action($conf) {
         if (isset($_SERVER["REQUEST_METHOD"]) && $_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["images"]) && !empty($_FILES["images"]["name"][0])) {
             
             // Récupérer le format choisi
-            $format = isset($_POST['format']) && $_POST['format'] === 'A3' ? 'A3' : 'A4';
+            $allowed_formats = ['A4', 'A5', 'A3'];
+            $format = in_array($_POST['format'] ?? '', $allowed_formats) ? $_POST['format'] : 'A4';
             $orientation = isset($_POST['orientation']) && $_POST['orientation'] === 'L' ? 'L' : 'P';
             
-            // Utiliser sys_get_temp_dir() pour être compatible AppImage
-            $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_png_to_pdf' . DIRECTORY_SEPARATOR;
+            // Utiliser resolveTempDir() pour plus de compatibilité (centralisé)
+            $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_png_to_pdf' . DIRECTORY_SEPARATOR;
             if (!is_dir($tmpDir)) {
                 if (!mkdir($tmpDir, 0777, true)) {
                     throw new Exception("Impossible de créer le répertoire temporaire : " . $tmpDir);
                 }
+                @chmod($tmpDir, 0777);
             }
             
             $uploadedFiles = [];
@@ -186,7 +189,8 @@ function Action($conf) {
         // Traitement du fichier bibliothèque
         if ($from_lib_file) {
             // Récupérer le format choisi
-            $format = isset($_POST['format']) && $_POST['format'] === 'A3' ? 'A3' : 'A4';
+            $allowed_formats = ['A4', 'A5', 'A3'];
+            $format = in_array($_POST['format'] ?? '', $allowed_formats) ? $_POST['format'] : 'A4';
             $orientation = isset($_POST['orientation']) && $_POST['orientation'] === 'L' ? 'L' : 'P';
             
             // Utiliser sys_get_temp_dir() pour être compatible AppImage
@@ -229,6 +233,7 @@ function Action($conf) {
         'download_url' => $download_url,
         'from_lib_file' => $from_lib_file
     ));
+}
 }
 
 ?>

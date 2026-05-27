@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../controler/functions/database.php';
 require_once __DIR__ . '/../controler/functions/i18n.php';
 
+if (!function_exists('Action')) {
 function Action()
 {
     $array = array();
@@ -189,6 +190,7 @@ function Action()
     $array['aide_dynamique'] = getAideMachineChangement($db);
     
     return template("../view/changement.html.php", $array);
+}
 }
 
 /**

@@ -1,0 +1,323 @@
+name: Build and Release Beta
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'feature/cross-platform-unification'
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  get-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      tag: ${{ steps.get-version.outputs.tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: get-version
+        run: |
+          git fetch --tags
+          LAST_TAG=$(git tag -l "v2.0.*-beta*" | sort -V | tail -n 1)
+          if [ -z "$LAST_TAG" ]; then
+            NEXT_PATCH=1
+          else
+            LAST_PATCH=$(echo $LAST_TAG | sed -nE 's/v2\.0\.([0-9]+)-beta.*/\1/p')
+            NEXT_PATCH=$((LAST_PATCH + 1))
+          fi
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          BUILD_NUM=$(date +%Y%m%d%H%M%S)
+          VERSION="2.0.${NEXT_PATCH}-beta.${BUILD_NUM}+${SHORT_SHA}"
+          TAG="v2.0.${NEXT_PATCH}-beta.${BUILD_NUM}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+  test-linux-beta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: sqlite3, pdo_sqlite, dom, curl, libxml, mbstring, zip
+          tools: composer
+          coverage: none
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev ghostscript imagemagick libpixman-1-dev xvfb
+
+      - name: Install dependencies
+        run: |
+          npm install
+          cd app
+          composer install --optimize-autoloader --ignore-platform-reqs
+          cd ..
+
+      - name: Install Playwright system dependencies
+        run: npx playwright install-deps
+
+      - name: Run PHP Tests (Pest)
+        run: |
+          chmod +x app/tests/helpers/mock_binary.sh
+          cd app
+          ./vendor/bin/pest --display-deprecations --display-errors --display-notices
+          cd ..
+
+      - name: Download Caddy
+        run: |
+          wget -q https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_linux_amd64.tar.gz
+          tar -xzf caddy_2.7.6_linux_amd64.tar.gz -C caddy/
+          rm caddy_2.7.6_linux_amd64.tar.gz
+          chmod +x caddy/caddy
+
+      - name: Run JS Tests (Jest)
+        run: xvfb-run npm test -- --runInBand --forceExit
+
+      - name: Run E2E Tests (Playwright)
+        run: xvfb-run npm run test:e2e
+
+  test-windows-beta:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: sqlite3, pdo_sqlite, dom, curl, libxml, mbstring, zip
+          tools: composer
+          coverage: none
+
+      - name: Install system dependencies (Choco)
+        run: |
+          choco install ghostscript -y
+          choco install imagemagick -y
+
+      - name: Install dependencies
+        run: |
+          npm install
+          cd app
+          composer install --optimize-autoloader --ignore-platform-reqs
+          cd ..
+
+      - name: Run PHP Tests (Pest)
+        working-directory: app
+        run: |
+          $phpPath = (Get-Command php).Source
+          $pestPath = "vendor\bin\pest.bat"
+          & $phpPath $pestPath --group=unit --display-deprecations --display-errors
+
+      - name: Run JS Tests (Jest)
+        run: npm test -- --runInBand --forceExit
+
+      - name: Run E2E Tests (Playwright)
+        run: npm run test:e2e
+
+  create-beta-release:
+    needs: [get-version, test-linux-beta, test-windows-beta]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Create or Update Beta Release
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const tag = '${{ needs.get-version.outputs.tag }}';
+            const version = '${{ needs.get-version.outputs.version }}';
+            const shortSha = context.sha.substring(0, 7);
+            
+            try {
+              await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: tag
+              });
+              console.log(`Release beta ${tag} existe déjà`);
+            } catch (error) {
+              if (error.status === 404) {
+                await github.rest.repos.createRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  tag_name: tag,
+                  name: `Duplicator Beta v${version}`,
+                  body: `## 🧪 Version Beta v${version}\n\n⚠️ **Ceci est une version BETA (Unified Monitoring)**\n\nCommit: \`${shortSha}\`\nBranch: \`${context.ref}\``,
+                  draft: false,
+                  prerelease: true
+                });
+                console.log(`✅ Release beta ${tag} créée`);
+              } else {
+                throw error;
+              }
+            }
+
+  build-linux-beta:
+    needs: [get-version, create-beta-release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Composer and PHP dependencies
+        run: |
+          curl -sS https://getcomposer.org/installer | php
+          cd app
+          php ../composer.phar install --no-dev --optimize-autoloader --ignore-platform-reqs
+          cd ..
+
+      - name: Download Caddy
+        run: |
+          wget -q https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_linux_amd64.tar.gz
+          tar -xzf caddy_2.7.6_linux_amd64.tar.gz -C caddy/
+          rm caddy_2.7.6_linux_amd64.tar.gz
+          chmod +x caddy/caddy
+
+      - name: Update package.json for Beta
+        run: |
+          VERSION="${{ needs.get-version.outputs.version }}"
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '$VERSION';
+            pkg.name = 'dupli-electron-beta';
+            pkg.productName = 'Duplicator Beta';
+            if (!pkg.build) pkg.build = {};
+            pkg.build.appId = 'com.dupli.beta';
+            pkg.build.publish = {
+              provider: 'github',
+              owner: 'muarf',
+              repo: 'dupli-electron-caddy',
+              channel: 'beta'
+            };
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      - name: Build Linux Beta
+        run: npx electron-builder --config electron-builder-beta.yml -l deb AppImage
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Linux Beta artifacts
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.get-version.outputs.tag }}
+          files: |
+            dist/Duplicator-Beta-*
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-windows-beta:
+    needs: [get-version, create-beta-release]
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Update package.json for Beta
+        run: |
+          $VERSION = '${{ needs.get-version.outputs.version }}'
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '$VERSION';
+            pkg.name = 'dupli-electron-beta';
+            pkg.productName = 'Duplicator Beta';
+            if (!pkg.build) pkg.build = {};
+            pkg.build.appId = 'com.dupli.beta';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Rebuild Native Modules
+        run: npm run rebuild:print-engine
+
+      - name: Install Composer and PHP dependencies
+        run: |
+          Invoke-WebRequest -Uri "https://getcomposer.org/download/latest-stable/composer.phar" -OutFile "composer.phar"
+          cd app
+          php ../composer.phar install --no-dev --optimize-autoloader --ignore-platform-reqs
+          cd ..
+
+      - name: Download Caddy
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_windows_amd64.zip" -OutFile "caddy_windows.zip"
+          Expand-Archive -Path "caddy_windows.zip" -DestinationPath "caddy" -Force
+          Remove-Item "caddy_windows.zip"
+
+      - name: Build Windows Beta
+        run: npx electron-builder --config electron-builder-beta.yml --win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows Beta artifacts
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.get-version.outputs.tag }}
+          files: |
+            dist/Duplicator-Beta-*.exe
+            dist/Duplicator-Beta-*.zip
+            dist/beta.yml
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

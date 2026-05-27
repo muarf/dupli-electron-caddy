@@ -529,6 +529,14 @@ class SQLiteDatabaseManager {
                 mot TEXT NOT NULL,
                 date TEXT NOT NULL,
                 tirage_global_id TEXT DEFAULT NULL
+            )",
+            
+            'printer_mappings' => "CREATE TABLE IF NOT EXISTS printer_mappings (
+                system_printer_name TEXT PRIMARY KEY,
+                machine_type TEXT NOT NULL,
+                machine_id INTEGER NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )"
         );
         

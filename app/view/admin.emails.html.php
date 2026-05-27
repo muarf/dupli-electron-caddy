@@ -4,9 +4,9 @@
       <div class="col-md-10 col-md-offset-1">
         <h1 class="text-center"><?php _e('admin.email_management'); ?></h1>
         <hr>
-        
+
         <!-- Messages de statut -->
-        <?php if(isset($message)): ?>
+        <?php if (isset($message)): ?>
           <div class="alert alert-<?= $message['type'] ?> alert-dismissible" role="alert">
             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
               <span aria-hidden="true">&times;</span>
@@ -14,7 +14,7 @@
             <?= $message['text'] ?>
           </div>
         <?php endif; ?>
-        
+
         <!-- Section Paramètres -->
         <div class="row">
           <div class="col-md-12">
@@ -32,7 +32,7 @@
                       </label>
                     </div>
                   </div>
-                  
+
                   <button type="submit" name="update_site_settings" class="btn btn-info">
                     <i class="fa fa-save"></i> Sauvegarder les paramètres
                   </button>
@@ -41,7 +41,7 @@
             </div>
           </div>
         </div>
-        
+
         <!-- Section Liste des emails -->
         <div class="row">
           <div class="col-md-12">
@@ -52,7 +52,7 @@
                 </h3>
               </div>
               <div class="panel-body">
-                <?php if(empty($emails)): ?>
+                <?php if (empty($emails)): ?>
                   <div class="alert alert-info">
                     <i class="fa fa-info-circle"></i> Aucun email enregistré pour le moment.
                   </div>
@@ -67,17 +67,18 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <?php foreach($emails as $index => $email): ?>
+                        <?php foreach ($emails as $index => $email): ?>
                           <tr>
                             <td><?= $index + 1 ?></td>
                             <td>
-                              <i class="fa fa-envelope"></i> 
+                              <i class="fa fa-envelope"></i>
                               <a href="mailto:<?= htmlspecialchars($email) ?>"><?= htmlspecialchars($email) ?></a>
                             </td>
                             <td>
-                              <form method="post" style="display: inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet email ?');">
+                              <form method="post" style="display: inline;">
                                 <input type="hidden" name="delmail" value="<?= htmlspecialchars($email) ?>">
-                                <button type="submit" class="btn btn-danger btn-sm">
+                                <button type="button" class="btn btn-danger btn-sm"
+                                  onclick="confirmEmailAction(this, 'Êtes-vous sûr de vouloir supprimer cet email ?')">
                                   <i class="fa fa-trash"></i> Supprimer
                                 </button>
                               </form>
@@ -87,14 +88,15 @@
                       </tbody>
                     </table>
                   </div>
-                  
+
                   <!-- Actions en masse -->
                   <div class="row">
                     <div class="col-md-12">
                       <div class="alert alert-warning">
-                        <strong>Attention :</strong> 
-                        <form method="post" style="display: inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer TOUS les emails ? Cette action est irréversible !');">
-                          <button type="submit" name="delete_all_emails" class="btn btn-warning btn-sm">
+                        <strong>Attention :</strong>
+                        <form method="post" style="display: inline;">
+                          <button type="button" name="delete_all_emails" class="btn btn-warning btn-sm"
+                            onclick="confirmEmailAction(this, 'Êtes-vous sûr de vouloir supprimer TOUS les emails ? Cette action est irréversible !')">
                             <i class="fa fa-trash"></i> Supprimer tous les emails
                           </button>
                         </form>
@@ -106,7 +108,7 @@
             </div>
           </div>
         </div>
-        
+
         <!-- Section Navigation -->
         <div class="row">
           <div class="col-md-12">
@@ -129,3 +131,26 @@
     </div>
   </div>
 </div>
+
+<script>
+  function confirmEmailAction(btn, message) {
+    showAppModal({
+      type: 'warning',
+      title: 'Confirmation',
+      message: message,
+      confirm: true,
+      onConfirm: function () {
+        var $btn = $(btn);
+        var $form = $btn.closest('form');
+        if ($btn.attr('name')) {
+          $form.append($('<input>').attr({
+            type: 'hidden',
+            name: $btn.attr('name'),
+            value: $btn.val() || ''
+          }));
+        }
+        $form.submit();
+      }
+    });
+  }
+</script>

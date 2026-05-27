@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../models/admin/ChangesManager.php';
 beforeEach(function () {
     [$this->dbPath, $this->pdo] = create_test_sqlite_database();
     configure_sqlite_conf($this->dbPath);
-    $this->pdo->exec('CREATE TABLE cons (
+    $this->pdo->exec('CREATE TABLE IF NOT EXISTS cons (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         machine TEXT,
         type TEXT,

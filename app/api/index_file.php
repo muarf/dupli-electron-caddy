@@ -1,11 +1,23 @@
 <?php
 // Désactiver l'affichage des erreurs pour éviter la pollution JSON
-ini_set('display_errors', 0);
+// ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
 // Nettoyer tout buffer de sortie
 while (ob_get_level()) {
     ob_end_clean();
+}
+
+$autoload = __DIR__ . '/../vendor/autoload.php';
+if (!file_exists($autoload)) {
+    // Attempt to find it in the alternate location
+    $autoload = __DIR__ . '/../../vendor/autoload.php';
+}
+
+if (file_exists($autoload)) {
+    require_once $autoload;
+} else {
+    error_log("CRITICAL: Composer autoload.php not found for index_file.php");
 }
 
 require_once __DIR__ . '/../controler/conf.php';
@@ -16,22 +28,26 @@ header('Content-Type: application/json; charset=utf-8');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['error' => 'Method Not Allowed']);
+    echo json_encode(['success' => false, 'error' => 'Method Not Allowed']);
     exit;
 }
 
-$data = json_decode(file_get_contents('php://input'), true);
+$jsonInput = file_get_contents('php://input');
+if (empty($jsonInput) && PHP_SAPI === 'cli') {
+    $jsonInput = file_get_contents('php://stdin');
+}
+$data = json_decode($jsonInput, true);
 $path = $data['path'] ?? '';
 
 if (empty($path)) {
     http_response_code(400);
-    echo json_encode(['error' => 'Path is required']);
+    echo json_encode(['success' => false, 'error' => 'Path is required']);
     exit;
 }
 
 // Augmenter la limite de mémoire pour l'indexation (1 GB pour gérer les gros PDFs)
 $originalMemoryLimit = ini_get('memory_limit');
-ini_set('memory_limit', '1024M');
+ini_set('memory_limit', '512M');
 
 try {
     $manager = new BibliothequeManager();

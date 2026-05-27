@@ -236,6 +236,58 @@ class BackupManager {
     }
     
     /**
+     * Supprimer les anciens backups automatiques de migration
+     * Conserve au maximum 1 backup automatique par semaine calendaire
+     * Ne touche pas aux backups manuels (ceux qui ne commencent pas par 'before_' ou 'pre_migration_')
+     */
+    public function pruneOldAutoBackups() {
+        if (!is_dir($this->backup_dir)) {
+            return;
+        }
+
+        $files = glob($this->backup_dir . '*.sqlite');
+        if (empty($files)) {
+            return;
+        }
+
+        // Sélectionner uniquement les backups automatiques de migration
+        $autoBackups = [];
+        foreach ($files as $file) {
+            $basename = basename($file);
+            if (strpos($basename, 'before_') === 0 || strpos($basename, 'pre_migration_') === 0) {
+                $autoBackups[] = $file;
+            }
+        }
+
+        if (empty($autoBackups)) {
+            return;
+        }
+
+        // Regrouper par semaine calendaire (format Y-W) selon la date de modification
+        $byWeek = [];
+        foreach ($autoBackups as $file) {
+            $mtime   = filemtime($file);
+            $weekKey = date('Y-W', $mtime); // ex: 2026-09
+            $byWeek[$weekKey][] = ['file' => $file, 'mtime' => $mtime];
+        }
+
+        // Pour chaque semaine, garder le plus récent et supprimer les autres
+        foreach ($byWeek as $week => $group) {
+            if (count($group) <= 1) {
+                continue;
+            }
+            // Trier du plus récent au plus ancien
+            usort($group, function($a, $b) { return $b['mtime'] - $a['mtime']; });
+            // Conserver le premier (plus récent), supprimer le reste
+            array_shift($group);
+            foreach ($group as $old) {
+                @unlink($old['file']);
+                error_log('[BACKUP] Ancien backup automatique supprimé (rotation hebdo): ' . basename($old['file']));
+            }
+        }
+    }
+
+    /**
      * Formater la taille d'un fichier
      */
     private function formatFileSize($size) {

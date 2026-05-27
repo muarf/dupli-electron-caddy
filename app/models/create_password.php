@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../controler/functions/database.php';
 require_once __DIR__ . '/../controler/functions/utilities.php';
 
+if (!function_exists('Action')) {
 function Action($conf = null) {
     // Initialiser la configuration si elle n'est pas fournie
     if ($conf === null) {
@@ -59,12 +60,21 @@ function Action($conf = null) {
         $errors[] = "Erreur : " . $e->getMessage();
     }
     
+    // Detecter si mode standalone
+    $is_standalone = !isset($_SERVER['ELECTRON_RUNNING']) && php_sapi_name() === 'cli-server';
+    $base_path = $is_standalone ? '' : 'public/';
+    
     // Préparer les variables pour la vue
     $array = [
         'errors' => $errors,
         'success' => $success,
+        'base_path' => $base_path
     ];
     
-    return template(__DIR__ . "/../view/create_password.html.php", $array);
+    // Rendu direct sans template() pour create_password (même logique que setup)
+    extract($array);
+    include(__DIR__ . '/../view/create_password.html.php');
+    return '';
+}
 }
 

@@ -71,15 +71,15 @@ it('gère la suppression d emails', function () {
 
 function seed_site_manager_schema(PDO $pdo): void
 {
-    $pdo->exec('CREATE TABLE site_settings (
+    $pdo->exec('CREATE TABLE IF NOT EXISTS site_settings (
         setting_name TEXT PRIMARY KEY,
         setting_value TEXT
     )');
 
-    $pdo->exec('CREATE TABLE a3 (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT)');
-    $pdo->exec('CREATE TABLE a4 (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT)');
-    $pdo->exec('CREATE TABLE photocop (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT)');
-    $pdo->exec('CREATE TABLE news (id INTEGER PRIMARY KEY AUTOINCREMENT, time INTEGER, titre TEXT, news TEXT)');
-    $pdo->exec('CREATE TABLE email (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS a3 (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS a4 (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS photocop (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS news (id INTEGER PRIMARY KEY AUTOINCREMENT, time INTEGER, titre TEXT, news TEXT)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS email (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT)');
 }
 

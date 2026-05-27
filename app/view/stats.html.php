@@ -11,10 +11,10 @@
         $stats_text = str_replace('{nb_t_par_mois}', '<strong>' . ($stats['nb_t_par_mois'] ?? 0) . ' ' . __('stats.printings') . '</strong>', $stats_text);
         $stats_text = str_replace('{nbf_par_mois}', '<strong>' . ceil($stats['nbf_par_mois'] ?? 0) . ' ' . __('stats.sheets') . '</strong>', $stats_text);
         $stats_text = str_replace('{nb_moy_par_mois}', '<strong>' . ($stats['nb_moy_par_mois'] ?? 0) . ' ' . __('stats.copies') . '</strong>', $stats_text);
-        $stats_text = str_replace('{ca}', round($stats['ca'] ?? 0) . ' euros', $stats_text);
+        $stats_text = str_replace('{ca}', round($stats['ca'] ?? 0) . ' ' . __('stats.euros'), $stats_text);
         $stats_text = str_replace('{doit}', '<strong><font style="color:red;">' . round($stats['doit'] ?? 0) . ' ' . __('stats.euros') . '</font></strong>', $stats_text);
-        $stats_text = str_replace('{ca2}', round($stats['ca2'] ?? 0) . ' euros', $stats_text);
-        $stats_text = str_replace('{ca1}', round($stats['ca1'] ?? 0) . ' euros', $stats_text);
+        $stats_text = str_replace('{ca2}', round($stats['ca2'] ?? 0) . ' ' . __('stats.euros'), $stats_text);
+        $stats_text = str_replace('{ca1}', round($stats['ca1'] ?? 0) . ' ' . __('stats.euros'), $stats_text);
         $stats_text = str_replace('{benf}', ($stats['benf'] ?? 0) . '€', $stats_text);
         
         echo $stats_text;
@@ -44,10 +44,10 @@
             <th><i class="fa fa-calendar"></i> <?php _e('stats.date'); ?></th>
             <th><i class="fa fa-file-o"></i> <?php _e('stats.sheets_column'); ?></th>
             <th><i class="fa fa-print"></i> <?php _e('stats.printings_column'); ?></th>
-            <th><i class="fa fa-calculator"></i> Moyenne</th>
-            <th><i class="fa fa-euro"></i> Prix</th>
-            <th><i class="fa fa-money"></i> Prix payé</th>
-            <th><i class="fa fa-chart-line"></i> Différence</th>
+            <th><i class="fa fa-calculator"></i> <?php _e('stats.average'); ?></th>
+            <th><i class="fa fa-euro"></i> <?php _e('stats.price'); ?></th>
+            <th><i class="fa fa-money"></i> <?php _e('stats.price_paid'); ?></th>
+            <th><i class="fa fa-chart-line"></i> <?php _e('stats.difference'); ?></th>
           </tr>
         </thead>
         <tbody>
@@ -61,17 +61,17 @@
                <tr class="<?= $class ?>">
                         <td><?=$date?></td>
                         
-                        <td rel="tooltip" title="nombre de feuilles"><?=ceil($stat['duplicopieurs'][$machine_name]['stat'][$i]['nbf'] ?? 0)?></td>
-                        <td rel="tooltip" title="nombre de tirages"><?=$stat['duplicopieurs'][$machine_name]['stat'][$i]['nbt'] ?? 0?></td>
-                        <td rel="tooltip" title="nombre de feuilles par tirage"><?=ceil($stat['duplicopieurs'][$machine_name]['stat'][$i]['moy'] ?? 0)?></td>
-                        <td rel="tooltip" title="Prix coutant"><?=ceil($stat['duplicopieurs'][$machine_name]['stat'][$i]['prix'] ?? 0)?>€</td>
-                        <td rel="tooltip" title="Combien l'utilisateur a payé"><?=ceil($stat['duplicopieurs'][$machine_name]['stat'][$i]['prixpaye'] ?? 0)?>€</td>
-                        <td rel="tooltip" title="Gain pour ce mois"><?=ceil($stat['duplicopieurs'][$machine_name]['stat'][$i]['benef'] ?? 0)?>€</td>
+                        <td rel="tooltip" title="<?php echo __('stats.pages'); ?>"><?=ceil($stat['duplicopieurs'][$machine_name]['stat'][$i]['nbf'] ?? 0)?></td>
+                        <td rel="tooltip" title="<?php echo __('stats.printings'); ?>"><?=$stat['duplicopieurs'][$machine_name]['stat'][$i]['nbt'] ?? 0?></td>
+                        <td rel="tooltip" title="<?php echo __('stats.average'); ?>"><?=ceil($stat['duplicopieurs'][$machine_name]['stat'][$i]['moy'] ?? 0)?></td>
+                        <td rel="tooltip" title="<?php echo __('stats.cost_price'); ?>"><?=ceil($stat['duplicopieurs'][$machine_name]['stat'][$i]['prix'] ?? 0)?>€</td>
+                        <td rel="tooltip" title="<?php echo __('stats.user_paid'); ?>"><?=ceil($stat['duplicopieurs'][$machine_name]['stat'][$i]['prixpaye'] ?? 0)?>€</td>
+                        <td rel="tooltip" title="<?php echo __('stats.gain_for_month'); ?>"><?=ceil($stat['duplicopieurs'][$machine_name]['stat'][$i]['benef'] ?? 0)?>€</td>
                      </tr>
             <?php
             }
           else:
-            echo '<tr><td colspan="7" class="text-center">Aucune donnée disponible</td></tr>';
+            echo '<tr><td colspan="7" class="text-center">' . __('stats.no_data') . '</td></tr>';
           endif;
           $iii = 1; ?>
             <ul class="pagination">
@@ -82,7 +82,7 @@
             </tbody>
           </table>
           <?php $iii = 1;?>
-          <nav aria-label="Navigation des pages">
+          <nav aria-label="<?php echo __('common.navigation'); ?>">
             <ul class="pagination pagination-sm">
             <?php while($iii < ($stat['duplicopieurs'][$machine_name]['nb_page'] ?? 0)) { ?>
               <li><a href="?stats&<?=$page_param?>=<?= $iii?>"><?= $iii?></a></li>
@@ -98,24 +98,24 @@
     <div class="panel panel-warning">
       <div class="panel-heading">
         <h3 class="panel-title text-center">
-          <i class="fa fa-exclamation-triangle"></i> Statistiques par mois Duplicopieur
+          <i class="fa fa-exclamation-triangle"></i> <?php _e('stats.monthly_stats'); ?> <?php _e('tirage_multimachines.duplicopieur'); ?>
         </h3>
       </div>
       <div class="panel-body">
         <table class="table table-striped table-bordered">
           <thead class="thead-dark">
             <tr>
-              <th><i class="fa fa-calendar"></i> Date</th>
-              <th><i class="fa fa-file-o"></i> Feuilles</th>
-              <th><i class="fa fa-print"></i> Tirages</th>
-              <th><i class="fa fa-calculator"></i> Moyenne</th>
-              <th><i class="fa fa-euro"></i> Prix</th>
-              <th><i class="fa fa-money"></i> Prix payé</th>
-              <th><i class="fa fa-chart-line"></i> Différence</th>
+              <th><i class="fa fa-calendar"></i> <?php _e('stats.date'); ?></th>
+              <th><i class="fa fa-file-o"></i> <?php _e('stats.sheets_column'); ?></th>
+              <th><i class="fa fa-print"></i> <?php _e('stats.printings_column'); ?></th>
+              <th><i class="fa fa-calculator"></i> <?php _e('stats.average'); ?></th>
+              <th><i class="fa fa-euro"></i> <?php _e('stats.price'); ?></th>
+              <th><i class="fa fa-money"></i> <?php _e('stats.price_paid'); ?></th>
+              <th><i class="fa fa-chart-line"></i> <?php _e('stats.difference'); ?></th>
             </tr>
           </thead>
           <tbody>
-            <tr class="warning"><td colspan="7" class="text-center"><i class="fa fa-info-circle"></i> Aucun duplicopieur installé</td></tr>
+            <tr class="warning"><td colspan="7" class="text-center"><i class="fa fa-info-circle"></i> <?php _e('stats.no_duplicator_installed'); ?></td></tr>
           </tbody>
         </table>
       </div>
@@ -129,7 +129,7 @@
       <div class="panel panel-success">
         <div class="panel-heading">
           <h3 class="panel-title text-center">
-            <i class="fa fa-print"></i> Statistiques par mois <?= htmlspecialchars($photocop_name) ?>
+            <i class="fa fa-print"></i> <?php _e('stats.monthly_stats'); ?> <?= htmlspecialchars($photocop_name) ?>
           </h3>
         </div>
         <div class="panel-body">
@@ -139,10 +139,10 @@
             <th><i class="fa fa-calendar"></i> <?php _e('stats.date'); ?></th>
             <th><i class="fa fa-file-o"></i> <?php _e('stats.sheets_column'); ?></th>
             <th><i class="fa fa-print"></i> <?php _e('stats.printings_column'); ?></th>
-            <th><i class="fa fa-calculator"></i> Moyenne</th>
-            <th><i class="fa fa-euro"></i> Prix</th>
-            <th><i class="fa fa-money"></i> Prix payé</th>
-            <th><i class="fa fa-chart-line"></i> Différence</th>
+            <th><i class="fa fa-calculator"></i> <?php _e('stats.average'); ?></th>
+            <th><i class="fa fa-euro"></i> <?php _e('stats.price'); ?></th>
+            <th><i class="fa fa-money"></i> <?php _e('stats.price_paid'); ?></th>
+            <th><i class="fa fa-chart-line"></i> <?php _e('stats.difference'); ?></th>
           </tr>
         </thead>
         <tbody>
@@ -156,17 +156,17 @@
                <tr class="<?= $class ?>">
                         <td><?=$date?></td>
                         
-                        <td rel="tooltip" title="nombre de feuilles"><?=ceil($stat['photocopiers'][$photocop_name]['stat'][$i]['nbf'] ?? 0)?></td>
-                        <td rel="tooltip" title="nombre de tirages"><?=$stat['photocopiers'][$photocop_name]['stat'][$i]['nbt'] ?? 0?></td>
-                        <td rel="tooltip" title="nombre de feuilles par tirage"><?=ceil($stat['photocopiers'][$photocop_name]['stat'][$i]['moy'] ?? 0)?></td>
-                        <td rel="tooltip" title="Prix coutant"><?=ceil($stat['photocopiers'][$photocop_name]['stat'][$i]['prix'] ?? 0)?>€</td>
-                        <td rel="tooltip" title="Combien l'utilisateur a payé"><?=ceil($stat['photocopiers'][$photocop_name]['stat'][$i]['prixpaye'] ?? 0)?>€</td>
-                        <td rel="tooltip" title="Gain pour ce mois"><?=ceil($stat['photocopiers'][$photocop_name]['stat'][$i]['benef'] ?? 0)?>€</td>
+                        <td rel="tooltip" title="<?php echo __('stats.pages'); ?>"><?=ceil($stat['photocopiers'][$photocop_name]['stat'][$i]['nbf'] ?? 0)?></td>
+                        <td rel="tooltip" title="<?php echo __('stats.printings'); ?>"><?=$stat['photocopiers'][$photocop_name]['stat'][$i]['nbt'] ?? 0?></td>
+                        <td rel="tooltip" title="<?php echo __('stats.average'); ?>"><?=ceil($stat['photocopiers'][$photocop_name]['stat'][$i]['moy'] ?? 0)?></td>
+                        <td rel="tooltip" title="<?php echo __('stats.cost_price'); ?>"><?=ceil($stat['photocopiers'][$photocop_name]['stat'][$i]['prix'] ?? 0)?>€</td>
+                        <td rel="tooltip" title="<?php echo __('stats.user_paid'); ?>"><?=ceil($stat['photocopiers'][$photocop_name]['stat'][$i]['prixpaye'] ?? 0)?>€</td>
+                        <td rel="tooltip" title="<?php echo __('stats.gain_for_month'); ?>"><?=ceil($stat['photocopiers'][$photocop_name]['stat'][$i]['benef'] ?? 0)?>€</td>
                      </tr>
             <?php
             }
           else:
-            echo '<tr><td colspan="7" class="text-center">Aucune donnée disponible</td></tr>';
+            echo '<tr><td colspan="7" class="text-center">' . __('stats.no_data') . '</td></tr>';
           endif;
           $iii = 1; ?>
             <ul class="pagination">
@@ -177,7 +177,7 @@
             </tbody>
           </table>
           <?php $iii = 1;?>
-          <nav aria-label="Navigation des pages">
+          <nav aria-label="<?php echo __('common.navigation'); ?>">
             <ul class="pagination pagination-sm">
             <?php while($iii < ($stat['photocopiers'][$photocop_name]['nb_page'] ?? 0)) { ?>
               <li><a href="?stats&<?=$page_param?>=<?= $iii?>"><?= $iii?></a></li>

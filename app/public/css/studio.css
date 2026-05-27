@@ -1,0 +1,247 @@
+/* Dupli Studio - Unified Editor CSS */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --studio-bg: #f0f2f5;
+  --studio-surface: #ffffff;
+  --studio-border: #e2e5ea;
+  --studio-text: #1a1d23;
+  --studio-text-muted: #6b7280;
+  --studio-primary: #4f6ef7;
+  --studio-primary-light: #eef0ff;
+  --studio-accent: #7c3aed;
+  --studio-success: #10b981;
+  --studio-warning: #f59e0b;
+  --studio-radius: 12px;
+  --studio-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+  --studio-shadow-lg: 0 4px 20px rgba(0,0,0,0.1);
+  --sidebar-width: 72px;
+  --panel-width: 300px;
+}
+
+.studio-layout {
+  display: flex; height: calc(100vh - 60px);
+  background: var(--studio-bg); font-family: 'Inter', sans-serif;
+  overflow: hidden; margin: -15px;
+}
+
+/* === SIDEBAR === */
+.studio-sidebar {
+  width: var(--sidebar-width); background: var(--studio-surface);
+  border-right: 1px solid var(--studio-border);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 16px 0; gap: 4px; z-index: 10;
+}
+.studio-sidebar .tool-btn {
+  width: 52px; height: 52px; border: none; background: transparent;
+  border-radius: 12px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px;
+  cursor: pointer; transition: all 0.2s; color: var(--studio-text-muted);
+  font-size: 9px; font-weight: 500;
+}
+.studio-sidebar .tool-btn i { font-size: 18px; }
+.studio-sidebar .tool-btn:hover { background: var(--studio-primary-light); color: var(--studio-primary); }
+.studio-sidebar .tool-btn.active { background: var(--studio-primary); color: #fff; }
+.sidebar-divider { width: 36px; height: 1px; background: var(--studio-border); margin: 8px 0; }
+
+/* === MAIN WORKSPACE === */
+.studio-workspace {
+  flex: 1; display: flex; flex-direction: column;
+  min-width: 0; position: relative;
+}
+.studio-toolbar {
+  height: 52px; background: var(--studio-surface);
+  border-bottom: 1px solid var(--studio-border);
+  display: flex; align-items: center; padding: 0 20px;
+  gap: 12px; flex-shrink: 0;
+}
+.studio-toolbar .toolbar-title {
+  font-weight: 600; font-size: 14px; color: var(--studio-text);
+  display: flex; align-items: center; gap: 8px;
+}
+.studio-toolbar .toolbar-title i { color: var(--studio-primary); }
+.toolbar-spacer { flex: 1; }
+.toolbar-btn {
+  padding: 8px 16px; border: 1px solid var(--studio-border);
+  background: var(--studio-surface); border-radius: 8px;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: all 0.2s; color: var(--studio-text); font-family: 'Inter', sans-serif;
+}
+.toolbar-btn:hover { border-color: var(--studio-primary); color: var(--studio-primary); }
+.toolbar-btn.primary {
+  background: var(--studio-primary); color: #fff;
+  border-color: var(--studio-primary);
+}
+.toolbar-btn.primary:hover { background: #3b5de7; }
+
+/* === CANVAS AREA === */
+.studio-canvas-area {
+  flex: 1; background: var(--studio-bg); position: relative;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; padding: 24px;
+}
+.studio-spinner {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(255,255,255,0.85); backdrop-filter: blur(4px);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 100;
+}
+.studio-canvas-area canvas, .studio-canvas-area iframe {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  box-shadow: var(--studio-shadow-lg); background: #fff;
+}
+
+/* === UPLOAD ZONE === */
+.studio-upload-zone {
+  width: 560px; padding: 60px 40px; text-align: center;
+  border: 2px dashed var(--studio-border); border-radius: 20px;
+  background: var(--studio-surface); transition: all 0.3s;
+  cursor: pointer;
+}
+.studio-upload-zone:hover { border-color: var(--studio-primary); background: var(--studio-primary-light); transform: translateY(-2px); }
+.studio-upload-zone.dragover { border-color: var(--studio-primary); background: var(--studio-primary-light); transform: scale(1.02); }
+.upload-icon { font-size: 56px; color: var(--studio-primary); margin-bottom: 20px; opacity: 0.8; }
+.upload-title { font-size: 20px; font-weight: 600; color: var(--studio-text); margin-bottom: 8px; }
+.upload-subtitle { font-size: 14px; color: var(--studio-text-muted); margin-bottom: 24px; }
+.upload-formats { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.upload-formats span {
+  padding: 4px 12px; background: var(--studio-primary-light);
+  border-radius: 20px; font-size: 12px; font-weight: 500; color: var(--studio-primary);
+}
+
+/* === RIGHT PANEL === */
+.studio-panel {
+  width: var(--panel-width); background: var(--studio-surface);
+  border-left: 1px solid var(--studio-border);
+  overflow-y: auto; flex-shrink: 0; display: none;
+}
+.studio-panel.visible { display: block; }
+.panel-section {
+  padding: 20px; border-bottom: 1px solid var(--studio-border);
+}
+.panel-section-title {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--studio-text-muted); margin-bottom: 16px;
+}
+.panel-row { margin-bottom: 14px; }
+.panel-label { font-size: 13px; font-weight: 500; color: var(--studio-text); margin-bottom: 6px; }
+.panel-slider { width: 100%; accent-color: var(--studio-primary); }
+.panel-value { font-size: 12px; font-weight: 600; color: var(--studio-primary); float: right; }
+.panel-select {
+  width: 100%; padding: 8px 12px; border: 1px solid var(--studio-border);
+  border-radius: 8px; font-size: 13px; font-family: 'Inter', sans-serif;
+  background: var(--studio-surface); color: var(--studio-text);
+}
+.panel-checkbox { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+.panel-checkbox input { accent-color: var(--studio-primary); }
+
+/* === THUMBNAILS BAR === */
+.studio-thumbs {
+  height: 100px; background: var(--studio-surface);
+  border-top: 1px solid var(--studio-border);
+  display: none; align-items: center; padding: 0 20px;
+  gap: 12px; overflow-x: auto; flex-shrink: 0;
+}
+.studio-thumbs.visible { display: flex; }
+.thumb-item {
+  width: 60px; height: 76px; border: 2px solid var(--studio-border);
+  border-radius: 6px; overflow: hidden; cursor: pointer;
+  flex-shrink: 0; transition: all 0.2s; position: relative;
+  background: #fff;
+}
+.thumb-item:hover { border-color: var(--studio-primary); }
+.thumb-item.active { border-color: var(--studio-primary); box-shadow: 0 0 0 2px var(--studio-primary-light); }
+.thumb-item canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
+.thumb-label {
+  position: absolute; bottom: 2px; left: 0; right: 0;
+  text-align: center; font-size: 9px; font-weight: 600;
+  color: var(--studio-text-muted); background: rgba(255,255,255,0.85);
+}
+.thumb-actions {
+  position: absolute; top: 0; right: 0; left: 0;
+  display: flex; justify-content: space-between; padding: 2px 4px;
+  background: rgba(255,255,255,0.9); opacity: 0; transition: opacity 0.2s;
+  z-index: 10;
+}
+.thumb-item:hover .thumb-actions { opacity: 1; }
+.thumb-actions i { font-size: 11px; color: var(--studio-text); padding: 2px; }
+.thumb-actions i:hover { color: var(--studio-primary); transform: scale(1.1); }
+.page-nav { font-size: 13px; color: var(--studio-text-muted); font-weight: 500; white-space: nowrap; }
+
+/* === FILE INFO BADGE === */
+.file-info-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 14px; background: var(--studio-primary-light);
+  border-radius: 20px; font-size: 13px; font-weight: 500; color: var(--studio-primary);
+}
+
+/* === PANEL BUTTONS === */
+.panel-btn {
+  width: 100%; padding: 10px; border: 1px solid var(--studio-border);
+  background: var(--studio-surface); border-radius: 8px;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: all 0.2s; color: var(--studio-text); font-family: 'Inter', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.panel-btn:hover { border-color: var(--studio-primary); color: var(--studio-primary); background: var(--studio-primary-light); }
+.panel-btn.primary {
+  background: var(--studio-primary); color: #fff; border-color: var(--studio-primary);
+}
+.panel-btn.primary:hover { background: #3b5de7; box-shadow: 0 4px 12px rgba(79, 110, 247, 0.3); }
+
+/* === RISO CHANNEL LIST === */
+.riso-channel-item {
+  background: #f8fafc; border: 1px solid var(--studio-border);
+  border-radius: 10px; padding: 12px; margin-bottom: 12px;
+  display: flex; flex-direction: column; gap: 10px;
+  transition: all 0.2s;
+}
+.riso-channel-item:hover { border-color: var(--studio-primary); box-shadow: var(--studio-shadow); }
+.riso-channel-header {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.riso-channel-title {
+  font-size: 13px; font-weight: 600; color: var(--studio-text);
+  display: flex; align-items: center; gap: 6px;
+}
+.riso-channel-color-dot {
+  width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1);
+}
+.riso-visibility-btn {
+  background: none; border: none; cursor: pointer; color: var(--studio-text-muted);
+  font-size: 14px; transition: color 0.2s;
+}
+.riso-visibility-btn:hover { color: var(--studio-primary); }
+.riso-channel-item.is-hidden { opacity: 0.6; filter: grayscale(1); }
+.riso-visibility-btn.is-hidden { color: #d1d5db; }
+
+/* === LIGHTBOX (TAILLE REELLE) === */
+.studio-lightbox {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.9); z-index: 2000;
+  display: none; flex-direction: column;
+  overflow: auto;
+}
+.lightbox-header {
+  padding: 15px 20px; display: flex; align-items: center; justify-content: space-between;
+  background: rgba(0,0,0,0.5); color: white; position: sticky; top: 0; z-index: 10;
+}
+.lightbox-content {
+  flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px;
+}
+.lightbox-content canvas {
+  box-shadow: 0 10px 50px rgba(0,0,0,0.5); background: white;
+  max-width: none !important; max-height: none !important;
+}
+.btn-close-lightbox {
+  background: transparent; border: none; color: white; font-size: 24px; cursor: pointer;
+}
+.lightbox-title { font-weight: 600; font-size: 16px; }
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+  .studio-sidebar { width: 56px; }
+  .studio-sidebar .tool-btn { width: 44px; height: 44px; font-size: 0; }
+  .studio-sidebar .tool-btn i { font-size: 16px; }
+  .studio-panel { width: 260px; }
+}

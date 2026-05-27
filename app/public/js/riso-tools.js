@@ -470,8 +470,6 @@ function applyDithering(imageData, algorithm = 'floydsteinberg') {
     return result;
 }
 
-// ===== COLORISATION =====
-
 /**
  * Coloriser une image en niveaux de gris avec une couleur Riso
  */
@@ -485,13 +483,41 @@ function colorizeWithRiso(imageData, risoColorHex, opacity = 1.0) {
     const rgb = hexToRgb(risoColorHex);
     
     for (let i = 0; i < result.data.length; i += 4) {
-        const intensity = result.data[i] / 255; // Utiliser le niveau de gris comme intensité
-        result.data[i] = rgb.r * intensity;
-        result.data[i+1] = rgb.g * intensity;
-        result.data[i+2] = rgb.b * intensity;
+        const intensity = result.data[i] / 255; 
+        // Formule Riso : l'encre est là où l'intensité est faible (0)
+        // Résultat = CouleurTambour + (255 - CouleurTambour) * intensité
+        result.data[i]   = rgb.r + (255 - rgb.r) * intensity;
+        result.data[i+1] = rgb.g + (255 - rgb.g) * intensity;
+        result.data[i+2] = rgb.b + (255 - rgb.b) * intensity;
         result.data[i+3] = 255 * opacity;
     }
     
+    return result;
+}
+
+/**
+ * Applique contraste et luminosité à un ImageData
+ */
+function applyContrastBrightness(imageData, contrast = 0, brightness = 0) {
+    const result = new ImageData(
+        new Uint8ClampedArray(imageData.data),
+        imageData.width,
+        imageData.height
+    );
+    const data = result.data;
+    const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+    
+    for (let i = 0; i < data.length; i += 4) {
+        // Luminosité
+        data[i]   += brightness;
+        data[i+1] += brightness;
+        data[i+2] += brightness;
+        
+        // Contraste
+        data[i]   = factor * (data[i] - 128) + 128;
+        data[i+1] = factor * (data[i+1] - 128) + 128;
+        data[i+2] = factor * (data[i+2] - 128) + 128;
+    }
     return result;
 }
 
@@ -615,8 +641,6 @@ function toGrayscale(imageData) {
     return result;
 }
 
-// ===== AJUSTEMENTS =====
-
 /**
  * Ajuster le contraste d'une image
  */
@@ -671,6 +695,7 @@ if (typeof module !== 'undefined' && module.exports) {
         applyHalftone,
         applyDithering,
         colorizeWithRiso,
+        applyContrastBrightness,
         blendLayers,
         exportImageData,
         exportLayersAsZip,
@@ -679,5 +704,107 @@ if (typeof module !== 'undefined' && module.exports) {
         adjustBrightness,
         hexToRgb,
         rgbToCmyk
+    };
+}
+/**
+ * Analyse une image pour trouver les 2 couleurs dominantes (hors blanc)
+ * et les sépare en deux masques de niveaux de gris.
+ */
+/**
+ * Analyse une image pour trouver les 2 couleurs dominantes (hors blanc)
+ * et les sépare en deux masques de niveaux de gris.
+ */
+function autoBichromieSeparation(imgData) {
+    const data = imgData.data;
+    const colors = {};
+    
+    for (let i = 0; i < data.length; i += 40) {
+        const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+        if (a < 128 || (r > 240 && g > 240 && b > 240)) continue;
+        const sr = Math.floor(r / 16) * 16, sg = Math.floor(g / 16) * 16, sb = Math.floor(b / 16) * 16;
+        const key = `${sr},${sg},${sb}`;
+        colors[key] = (colors[key] || 0) + 1;
+    }
+    
+    let sorted = Object.keys(colors).sort((a, b) => colors[b] - colors[a]);
+    if (sorted.length < 1) return null;
+    
+    const c1Parts = sorted[0].split(',').map(Number);
+    const color1 = { r: c1Parts[0], g: c1Parts[1], b: c1Parts[2] };
+    
+    let color2 = null;
+    for (let i = 1; i < sorted.length; i++) {
+        const c2Parts = sorted[i].split(',').map(Number);
+        const dist = Math.sqrt(Math.pow(color1.r - c2Parts[0], 2) + Math.pow(color1.g - c2Parts[1], 2) + Math.pow(color1.b - c2Parts[2], 2));
+        if (dist > 100) { // Distance plus stricte
+            color2 = { r: c2Parts[0], g: c2Parts[1], b: c2Parts[2] };
+            break;
+        }
+    }
+    if (!color2 && sorted.length > 1) {
+        const c2Parts = sorted[1].split(',').map(Number);
+        color2 = { r: c2Parts[0], g: c2Parts[1], b: c2Parts[2] };
+    }
+    if (!color2) color2 = { r: 128, g: 128, b: 128 };
+
+    // Déterminer laquelle est la plus "noire/neutre" pour la priorité
+    const sat1 = Math.max(color1.r, color1.g, color1.b) - Math.min(color1.r, color1.g, color1.b);
+    const sat2 = Math.max(color2.r, color2.g, color2.b) - Math.min(color2.r, color2.g, color2.b);
+    
+    let blackRef = color1, otherRef = color2;
+    if (sat2 < sat1 && (color2.r + color2.g + color2.b) < (color1.r + color1.g + color1.b)) {
+        blackRef = color2; otherRef = color1;
+    }
+
+    const res1 = new ImageData(imgData.width, imgData.height);
+    const res2 = new ImageData(imgData.width, imgData.height);
+    let min1 = 255, min2 = 255;
+    const assignments = new Int8Array(data.length / 4);
+
+    for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+        const idx = i/4;
+        if (a < 10 || (r > 245 && g > 245 && b > 245)) {
+            assignments[idx] = 0;
+            continue;
+        }
+
+        const gray = Math.round((r + g + b) / 3);
+        const sat = Math.max(r, g, b) - Math.min(r, g, b);
+
+        // REGLE DE PRIORITE AU NOIR : Si c'est sombre et peu saturé (neutre), c'est du noir
+        if (gray < 80 && sat < 30) {
+            assignments[idx] = (blackRef === color1) ? 1 : 2;
+        } else {
+            const d1 = Math.sqrt(Math.pow(r - color1.r, 2) + Math.pow(g - color1.g, 2) + Math.pow(b - color1.b, 2));
+            const d2 = Math.sqrt(Math.pow(r - color2.r, 2) + Math.pow(g - color2.g, 2) + Math.pow(b - color2.b, 2));
+            if (d1 < d2) assignments[idx] = 1;
+            else assignments[idx] = 2;
+        }
+
+        if (assignments[idx] === 1 && gray < min1) min1 = gray;
+        if (assignments[idx] === 2 && gray < min2) min2 = gray;
+    }
+    
+    for (let i = 0; i < data.length; i += 4) {
+        const idx = i/4;
+        const gray = Math.round((data[i] + data[i+1] + data[i+2]) / 3);
+        res1.data[i] = res1.data[i+1] = res1.data[i+2] = 255; res1.data[i+3] = 255;
+        res2.data[i] = res2.data[i+1] = res2.data[i+2] = 255; res2.data[i+3] = 255;
+
+        if (assignments[idx] === 1) {
+            let val = Math.max(0, Math.min(255, (gray - min1) * (255 / (255 - min1))));
+            val = Math.pow(val / 255, 1.8) * 255; 
+            res1.data[i] = res1.data[i+1] = res1.data[i+2] = val;
+        } else if (assignments[idx] === 2) {
+            let val = Math.max(0, Math.min(255, (gray - min2) * (255 / (255 - min2))));
+            val = Math.pow(val / 255, 1.8) * 255;
+            res2.data[i] = res2.data[i+1] = res2.data[i+2] = val;
+        }
+    }
+    
+    return {
+        color1: { rgb: color1, imageData: res1, contrast: 30, brightness: 0 },
+        color2: { rgb: color2, imageData: res2, contrast: 30, brightness: 0 }
     };
 }

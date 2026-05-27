@@ -1,0 +1,1415 @@
+build-and-test-linux	UNKNOWN STEP	﻿2026-04-18T17:23:47.7652336Z Current runner version: '2.333.1'
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7685472Z ##[group]Runner Image Provisioner
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7686838Z Hosted Compute Agent
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7687713Z Version: 20260213.493
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7688702Z Commit: 5c115507f6dd24b8de37d8bbe0bb4509d0cc0fa3
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7689946Z Build Date: 2026-02-13T00:28:41Z
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7691014Z Worker ID: {78f96006-5fa8-4cb2-a160-8c7e207b51d6}
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7692321Z Azure Region: northcentralus
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7693432Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7696379Z ##[group]Operating System
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7697355Z Ubuntu
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7698506Z 24.04.4
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7699433Z LTS
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7700303Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7701133Z ##[group]Runner Image
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7702207Z Image: ubuntu-24.04
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7703085Z Version: 20260413.86.1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7705432Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260413.86/images/ubuntu/Ubuntu2404-Readme.md
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7708189Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260413.86
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7709985Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7711923Z ##[group]GITHUB_TOKEN Permissions
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7715254Z Contents: read
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7716421Z Metadata: read
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7717305Z Packages: read
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7718118Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7721186Z Secret source: Actions
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.7722394Z Prepare workflow directory
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.8499787Z Prepare all required actions
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:47.8556007Z Getting action download info
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.1978227Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.3002731Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.3873763Z Download action repository 'shivammathur/setup-php@v2' (SHA:accd6127cb78bee3e8082180cb391013d204ef9f)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.6950452Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.8998569Z Complete job name: build-and-test-linux
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9654810Z ##[group]Run echo "=== Espace disque AVANT nettoyage ==="
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9655708Z [36;1mecho "=== Espace disque AVANT nettoyage ==="[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9656310Z [36;1mdf -h /[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9656713Z [36;1mecho ""[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9657371Z [36;1mecho "Nettoyage des répertoires temporaires d'electron-builder..."[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9658143Z [36;1msudo rm -rf /tmp/t-* || true[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9658749Z [36;1mecho "✅ Répertoires temporaires nettoyés"[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9659333Z [36;1mecho ""[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9659948Z [36;1mecho "Suppression de fichiers inutiles du runner GitHub Actions..."[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9660706Z [36;1msudo rm -rf /usr/share/dotnet[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9661271Z [36;1msudo rm -rf /usr/local/lib/android[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9661857Z [36;1msudo rm -rf /opt/ghc[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9662394Z [36;1msudo rm -rf /opt/hostedtoolcache/CodeQL[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9663049Z [36;1msudo docker image prune -af || true[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9663613Z [36;1msudo apt-get clean || true[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9664386Z [36;1mecho ""[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9664974Z [36;1mecho "=== Espace disque APRÈS nettoyage ==="[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9665562Z [36;1mdf -h /[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9690692Z shell: /usr/bin/bash -e {0}
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9691485Z env:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9692090Z   GH_TOKEN: ***
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9692502Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9809266Z === Espace disque AVANT nettoyage ===
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9813688Z Filesystem      Size  Used Avail Use% Mounted on
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9814839Z /dev/root       145G   55G   90G  38% /
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9815571Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9816390Z Nettoyage des répertoires temporaires d'electron-builder...
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9889190Z ✅ Répertoires temporaires nettoyés
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9890252Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:23:48.9890689Z Suppression de fichiers inutiles du runner GitHub Actions...
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3832009Z Deleted Images:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3832778Z untagged: ghcr.io/github/gh-aw-firewall/agent:latest
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3833987Z untagged: ghcr.io/github/gh-aw-firewall/agent@sha256:9161f2415a3306a344aca34dd671ee69f122317e0a512e66dc64c94b9c508682
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3835833Z deleted: sha256:1e3e582066a85dc1d0dbd55719422eba244289d4c7dab9375a7b2023eaa9454e
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3836980Z deleted: sha256:1909b649a65290ec0bd80d5a66065e3ebbf45039831f13340600db30e928f9cc
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3838071Z deleted: sha256:28a8147a9c74e9882546df9acc0d82a128ebe3421db37283ff14f9e84ada98d8
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3839212Z deleted: sha256:145ea58feb7c8de9307b3417570e2598557cf911e85c359f590505381174c80f
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3840331Z deleted: sha256:1fc8d18c57b1db900aab30a8ccc62dcb91e307bad8c43d14f921ead35633cca6
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3841222Z deleted: sha256:4c424900ac0423fbfec72f02416b6499cab9ed9aa41421d726563f163b33db2b
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3841905Z deleted: sha256:ac9ddab2f1b6f9079bb8d91faeb2867eff78c8c3a73e24773bbd917925db0064
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3842527Z deleted: sha256:ff360a4102775e140385b783d7af7d78f2513fbd6deef39d7bac18a53c4ce48f
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3843097Z deleted: sha256:e342018be1129d51752860af8cd60d33749bd7a36385a5344dd7841714a7a6f2
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3843971Z deleted: sha256:69be8e56e1bb5c8489a4b78c196cab58a2ef606189e199568807a4a2274f475d
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3845563Z deleted: sha256:c409fbaee8a7bf480a00ba33a669128fc876e3dc5749cefa50d588df91f7392e
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3846729Z deleted: sha256:2f521dd731867586a754566a4df7bdb5eda185a1068dc5d12b325eff84099a51
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3848023Z deleted: sha256:e4bffdd053135a552b40ebec96556ba3249a454cb600d949988316ac1480d485
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3848996Z deleted: sha256:2cd84d7b826f8b6eccf8e6e6424cd502902a0bb6b4d431db75bdf31af2776ea2
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3849670Z deleted: sha256:d3a1508d9f9dadd961ebacf3e6b39096d63a29e37f5996064d8bd4b920bb4241
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3850306Z deleted: sha256:e7b073608c61976757b3a3ad13466ab2f8e271c4cbf9cc884317aba8303f5023
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3851207Z deleted: sha256:71c90ef31fd340400b499db05579082b995ba0bf227bb290578430f67fc117d2
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3851824Z deleted: sha256:351d919b2c06105efcb263b77e23bff2f166d23bcb487f5185d884bfada142f3
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3852291Z untagged: ghcr.io/github/gh-aw-mcpg:latest
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3852915Z untagged: ghcr.io/github/gh-aw-mcpg@sha256:44d4d8de7e6c37aaea484eba489940c52df6a0b54078ddcbc9327592d5b3c3dd
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3853755Z deleted: sha256:4f3a2fdcf4211bc96925f6f664d8c69f2384ccd1038a223f30afc4289ad7332a
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3854726Z deleted: sha256:081fbbab84acbcfd9e996b3212fb8765a721b2ecd5beeb0efa9426c6c49eb339
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3855346Z deleted: sha256:1b8d11a58653d75861ee150ff7150c429af82ec6d831d9b020e95436c2c4ffc3
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3856058Z deleted: sha256:14cdee12388578a7f712e8c2a5a95915540a840704e42daef84cad06d1e78630
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3856767Z deleted: sha256:6538199b8cbae3b9c39ec677f379a5f8d1cad6058c99ccc622d28f68e0f8b753
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3857363Z deleted: sha256:f951e18dd3f38b813b2fbff5f91f407f22d4d9c736293551c05956e0e4dccab9
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3857986Z deleted: sha256:353d7bf12b2cbf38077480084210b0e65fc633d387acb793c6febae74dd22230
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3858603Z deleted: sha256:84e5e31e54e04f72948b352568654cc1fa0b9aecb1cfc352adc2b8402f38302d
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3859099Z untagged: ghcr.io/github/gh-aw-firewall/squid:latest
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3859741Z untagged: ghcr.io/github/gh-aw-firewall/squid@sha256:5411d903f73ee597e6a084971c2adef3eb0bd405910df3ed7bf5e3d6bd58a236
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3860528Z deleted: sha256:53e4356ca7b15cfe5f0440928bf80fa4104a6f4558daf81fd3690f820599cf3f
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3861149Z deleted: sha256:ccd8ab195661cbe8c9c0ceea97b4fa94821ee3309838bd94827f6a12ddd3b962
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3861752Z deleted: sha256:0b03b76941bb1f0bdd20c527cfbf4ddae28def00abded3da6abb0630ced4b236
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3862338Z deleted: sha256:f75e0b2c478a926c6de2439e148f47cd8d4662f32a538dea81bd40da3fd168ee
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3863133Z deleted: sha256:01a0aa32ba968c9ea31b1504ae9ba7e9b449b6b06f0a1793c5c58f3c4dd07380
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3863739Z deleted: sha256:0f7aceedbeef2527fd8b8cb81c5e0ebbb3032d42cbd0847080e679dfa6deb274
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3865125Z deleted: sha256:7b26b80c1cff713367db892365d8d1227498773be6690e7a39165099060acef2
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3865717Z deleted: sha256:e8bce0aabd687e9ee90e0bada33884f40b277196f72aac9934357472863a80ae
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3866202Z untagged: ghcr.io/github/github-mcp-server:latest
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3866807Z untagged: ghcr.io/github/github-mcp-server@sha256:a9dd39eec67f09ded51631c79641dd72acb4945c6391df47824fa2d508b5431b
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3867514Z deleted: sha256:5b7da589d1109592cda422730f4c7df372bbc22fbaf889f95f495765b0808e82
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3868091Z deleted: sha256:0f9ae5e0fe8973b13e82dfba98abdfda56d7062b88709cab1f8f254baf2f3649
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3868659Z deleted: sha256:3844b00e5d867b3b3810bfeb53b81e36d4ecc46847a0d8cbb20577f0ae62af40
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3869247Z deleted: sha256:8621c8b1fc5e2a8bd8db5ad518bb3d4dd069f3be3a961aa0fceae4d619557539
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3869827Z deleted: sha256:44d0cb736798a30817877c6c37ceb891f91d581279d51d962c38d0b7d3cefb1f
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3870391Z deleted: sha256:3e005f61e911be389b7090ab5e7dac5c293012172a91dceec6ec3cb008877589
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3870946Z deleted: sha256:447769e80022d633258a358a32ec185c08acf39d52ff7992a62465580862727b
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3871497Z deleted: sha256:7d2cd16d5223db171e85e78e005304348a2972c71f63003a0b491ed077558d11
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3872063Z deleted: sha256:52c4df99df6b16bf709a7d57852c4baa88cca6daddf8e1380b1cb965b246a531
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3872649Z deleted: sha256:d4bd505626ba298bdb5a4d594c55bbd659d6e7e53569dc80083d82a5775526b8
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3873267Z deleted: sha256:7c60cb27043e7c7917a896b67c0653fa29fedc90f2dce187dce8e22e9bb1d560
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3873887Z deleted: sha256:b8997b2eca37711a7ca830639978654ebc5a0e1f13f7e3af8f992b895f1550d3
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3874758Z deleted: sha256:0020b32e5a73ed88fe2de1c7889a43bdfc9541a7145fbb48ec6147dcc01da62f
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3875548Z deleted: sha256:bd59e7e428c9e76bc724f38578c163243152a507a5da6e0f63c0d61da952ba5b
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3876184Z deleted: sha256:34165fb0807042c1f8ed197fd1ea5a031ca3e27e6e3fba9fbcf49a20052d19b7
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3876815Z deleted: sha256:3bd325ec8c2d0894ea95758a6b235d7e2da1cb28f1cc2b76aeede98d5f8f425a
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3877430Z deleted: sha256:a33ba213ad26a605d904a741f67154f3904c74a43182c872c35f36b10fa005e0
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3877987Z untagged: ghcr.io/dependabot/dependabot-updater-core:latest
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3878768Z untagged: ghcr.io/dependabot/dependabot-updater-core@sha256:1a26dc3fcaf95045892f4a311ffb55f1855f9a28cd07853f27322e09f9e33272
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3879561Z deleted: sha256:bc43b78d01f2e33da745508f52e38080dc9f08653e7d570a7fcdacfdb0704dc4
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3880197Z deleted: sha256:7ad5ec90f0acc9db6b873cc18964f9c0533ba5fce69630ceaafb19d034f12e84
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3880835Z deleted: sha256:5d6b8bf8afc3cc2421ac4d2e0ac9ad63491266556f0ac6f616dce3172ecd7a19
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3881465Z deleted: sha256:9e7d927a8524af85caa0d9f9afefaf1393a60aa79c39d4d36497fa239c612568
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3882104Z deleted: sha256:9e073c80d803c83cd181e3fc4402faad389de5cd56c71a92d760455bbc07d73a
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3882717Z deleted: sha256:b6f825277dedac884511186e873563a9415f2fee0ba6bc7b113d95fe7a4e1b6e
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3883354Z deleted: sha256:8c2dd56b2feca282cea74effd5e55bccd55ca16d5fa06dcb519d69ec36642635
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3883990Z deleted: sha256:98cf59850ec411c1b834c794a764a9899ab1b668655db39809cbcab4ff060c1a
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3884983Z deleted: sha256:2cb76996475700db654b1e5bbea4136506184b86dd48c91b189f85190509bfb0
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3885612Z deleted: sha256:c6086b0e61ca9ccea3d7be0ba0359f838c6c6d46e09e7171fcfd8b4b0ac16352
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3886244Z deleted: sha256:a9dcbdeab4860a4becf5d2d625d167811576a38a48fd889989e7b1f826f3308a
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3886866Z deleted: sha256:de467cabfa72392c12f9187b41b810d7f865498a25c50e476a0e715615b85be7
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3887665Z deleted: sha256:5e732af9e7c568c9b41ecabc76ac93a58471934d5155070dfd64a9567667fd9d
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3888220Z untagged: ghcr.io/github/gh-aw-firewall/api-proxy:latest
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3888950Z untagged: ghcr.io/github/gh-aw-firewall/api-proxy@sha256:6971639e381e82e45134bcd333181f456df3a52cd6f818a3e3d6de068ff91519
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3889724Z deleted: sha256:da031122e2876e9e28601b4ffda24a5981d2706c10ee7fe1c2058f9bb1f8e831
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3890365Z deleted: sha256:ce57debdd79714346fbe32d030dd452d4125ccb37f0cbc09943fba1767764ad6
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3891009Z deleted: sha256:10cd931928d0f31620a53dc4e1428147edef1fc442cc9b012b2d6f8883aae8d1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3891664Z deleted: sha256:ad1364113cef73e08e0e2b20ea5e5c639f808b4ee9b0be50aca7c263b1b8b599
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3892307Z deleted: sha256:c7f6d287544a653933414840ce61d2fab4c9bed87b2f18e659fc664fecc614f0
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3892949Z deleted: sha256:93e4975102cbaba194dfaa6de5dc9019499f3ff808a406abf2e6e181aeadb02c
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3893642Z deleted: sha256:604f8c2ddf10784ba6a8cdc66dd01827060b596afea26aedb967197e94f5b51d
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3894951Z deleted: sha256:398f3f21252333bf78edeba1f3e2cbc9014010ecb1c31cf961b0491ba90f75c9
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3895614Z deleted: sha256:d3f0c87df185d2939ac76464c04318137c33a57604ed21eaa7617ffdf24fe6ff
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3896249Z deleted: sha256:47631d4f2fbe81ac434e2e02fd5ec3a9a97060c24f0ddb02b0456060f96c2b42
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3896868Z deleted: sha256:989e799e634906e94dc9a5ee2ee26fc92ad260522990f26e707861a5f52bf64e
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3897209Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.3897350Z Total reclaimed space: 1.803GB
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4021659Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4022306Z === Espace disque APRÈS nettoyage ===
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4032240Z Filesystem      Size  Used Avail Use% Mounted on
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4032659Z /dev/root       145G   37G  109G  26% /
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4280021Z ##[group]Run actions/checkout@v4
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4280355Z with:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4280590Z   fetch-depth: 0
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4280850Z   repository: muarf/dupli-electron-caddy
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4281379Z   token: ***
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4281617Z   ssh-strict: true
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4281846Z   ssh-user: git
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4282071Z   persist-credentials: true
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4282322Z   clean: true
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4282558Z   sparse-checkout-cone-mode: true
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4282834Z   fetch-tags: false
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4283057Z   show-progress: true
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4283281Z   lfs: false
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4283480Z   submodules: false
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4283703Z   set-safe-directory: true
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4283941Z env:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4284442Z   GH_TOKEN: ***
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.4284677Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5310088Z Syncing repository: muarf/dupli-electron-caddy
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5311477Z ##[group]Getting Git version info
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5312100Z Working directory is '/home/runner/work/dupli-electron-caddy/dupli-electron-caddy'
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5312839Z [command]/usr/bin/git version
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5358774Z git version 2.53.0
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5384528Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5404928Z Temporarily overriding HOME='/home/runner/work/_temp/377faf1f-55d3-41e4-a6af-75174a0bcc93' before making global git config changes
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5405890Z Adding repository directory to the temporary git global config as a safe directory
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5410256Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/dupli-electron-caddy/dupli-electron-caddy
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5440405Z Deleting the contents of '/home/runner/work/dupli-electron-caddy/dupli-electron-caddy'
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5443353Z ##[group]Initializing the repository
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5447787Z [command]/usr/bin/git init /home/runner/work/dupli-electron-caddy/dupli-electron-caddy
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5528844Z hint: Using 'master' as the name for the initial branch. This default branch name
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5529996Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5531490Z hint: to use in all of your new repositories, which will suppress this warning,
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5532362Z hint: call:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5532809Z hint:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5533389Z hint: 	git config --global init.defaultBranch <name>
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5534356Z hint:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5535085Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5536226Z hint: 'development'. The just-created branch can be renamed via this command:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5537072Z hint:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5537557Z hint: 	git branch -m <name>
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5538092Z hint:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5538844Z hint: Disable this message with "git config set advice.defaultBranchName false"
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5540314Z Initialized empty Git repository in /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/.git/
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5543530Z [command]/usr/bin/git remote add origin https://github.com/muarf/dupli-electron-caddy
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5573043Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5573796Z ##[group]Disabling automatic garbage collection
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5578390Z [command]/usr/bin/git config --local gc.auto 0
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5606456Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5607218Z ##[group]Setting up auth
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5613785Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5642960Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5914848Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.5942749Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.6155644Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.6186174Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.6404029Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.6436445Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.6437095Z ##[group]Fetching the repository
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:17.6444728Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.3981217Z From https://github.com/muarf/dupli-electron-caddy
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.3981975Z  * [new branch]      console-wrapper             -> origin/console-wrapper
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.3982689Z  * [new branch]      dev                         -> origin/dev
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.3986431Z  * [new branch]      feat/icon-gnome-deb-fixes   -> origin/feat/icon-gnome-deb-fixes
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.3987787Z  * [new branch]      feature/bibliotheque-improvements -> origin/feature/bibliotheque-improvements
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.3989094Z  * [new branch]      feature/cmyk-and-color-fix  -> origin/feature/cmyk-and-color-fix
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.3990289Z  * [new branch]      feature/cross-platform-unification -> origin/feature/cross-platform-unification
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.3991653Z  * [new branch]      feature/image-processor-improvements -> origin/feature/image-processor-improvements
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.3992921Z  * [new branch]      feature/impression-complete -> origin/feature/impression-complete
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.3994473Z  * [new branch]      feature/impression-ouverture-systeme -> origin/feature/impression-ouverture-systeme
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.3995890Z  * [new branch]      feature/linux-spool-analyzer -> origin/feature/linux-spool-analyzer
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.3997181Z  * [new branch]      feature/multi-session-management -> origin/feature/multi-session-management
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.3998436Z  * [new branch]      feature/multi-session-sync  -> origin/feature/multi-session-sync
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.3999328Z  * [new branch]      feature/php-error-handling  -> origin/feature/php-error-handling
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4000285Z  * [new branch]      feature/php-fatal-monitoring -> origin/feature/php-fatal-monitoring
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4001184Z  * [new branch]      feature/print-engine        -> origin/feature/print-engine
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4002193Z  * [new branch]      feature/printer-monitor-integration -> origin/feature/printer-monitor-integration
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4003197Z  * [new branch]      fix-linux-appimage          -> origin/fix-linux-appimage
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4004048Z  * [new branch]      fix-workflow-build          -> origin/fix-workflow-build
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4005176Z  * [new branch]      fix-xps-ps-pcl              -> origin/fix-xps-ps-pcl
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4005985Z  * [new branch]      fix/auto-tirage-logic       -> origin/fix/auto-tirage-logic
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4006859Z  * [new branch]      fix/backup-dir-userdata     -> origin/fix/backup-dir-userdata
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4007911Z  * [new branch]      fix/backup-readonly-filesystem-linux -> origin/fix/backup-readonly-filesystem-linux
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4008957Z  * [new branch]      fix/getjobw-windows         -> origin/fix/getjobw-windows
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4009733Z  * [new branch]      fix/macos-build             -> origin/fix/macos-build
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4010675Z  * [new branch]      fix/macos-workflow          -> origin/fix/macos-workflow
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4011555Z  * [new branch]      fix/windows-8.1-compatibility -> origin/fix/windows-8.1-compatibility
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4012408Z  * [new branch]      main                        -> origin/main
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4013061Z  * [new branch]      pr-15                       -> origin/pr-15
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4014407Z  * [new branch]      update-from-php-dev         -> origin/update-from-php-dev
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4015217Z  * [new tag]         android-v4                  -> android-v4
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4015860Z  * [new tag]         android-v5                  -> android-v5
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4016465Z  * [new tag]         v1.0.0                      -> v1.0.0
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4017019Z  * [new tag]         v1.0.1                      -> v1.0.1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4017575Z  * [new tag]         v1.0.10                     -> v1.0.10
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4018134Z  * [new tag]         v1.0.11                     -> v1.0.11
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4018688Z  * [new tag]         v1.0.12                     -> v1.0.12
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4019234Z  * [new tag]         v1.0.13                     -> v1.0.13
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4019781Z  * [new tag]         v1.0.14                     -> v1.0.14
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4020325Z  * [new tag]         v1.0.15                     -> v1.0.15
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4020903Z  * [new tag]         v1.0.16                     -> v1.0.16
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4021438Z  * [new tag]         v1.0.17                     -> v1.0.17
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4022045Z  * [new tag]         v1.0.18                     -> v1.0.18
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4022600Z  * [new tag]         v1.0.19                     -> v1.0.19
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4023168Z  * [new tag]         v1.0.2                      -> v1.0.2
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4023728Z  * [new tag]         v1.0.3                      -> v1.0.3
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4024665Z  * [new tag]         v1.0.56                     -> v1.0.56
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4025249Z  * [new tag]         v1.0.57                     -> v1.0.57
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4025797Z  * [new tag]         v1.0.58                     -> v1.0.58
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4026341Z  * [new tag]         v1.0.59                     -> v1.0.59
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4026959Z  * [new tag]         v1.0.60                     -> v1.0.60
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4027537Z  * [new tag]         v1.0.61                     -> v1.0.61
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4028116Z  * [new tag]         v1.0.62                     -> v1.0.62
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4028701Z  * [new tag]         v1.0.63                     -> v1.0.63
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4029539Z  * [new tag]         v1.0.64                     -> v1.0.64
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4030109Z  * [new tag]         v1.0.65                     -> v1.0.65
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4030665Z  * [new tag]         v1.0.66                     -> v1.0.66
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4031204Z  * [new tag]         v1.0.67                     -> v1.0.67
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4031748Z  * [new tag]         v1.0.68                     -> v1.0.68
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4032295Z  * [new tag]         v1.0.69                     -> v1.0.69
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4032853Z  * [new tag]         v1.0.70                     -> v1.0.70
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4033430Z  * [new tag]         v1.0.71                     -> v1.0.71
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4033987Z  * [new tag]         v1.0.72                     -> v1.0.72
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4035053Z  * [new tag]         v1.0.73                     -> v1.0.73
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4035632Z  * [new tag]         v1.0.74                     -> v1.0.74
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4036198Z  * [new tag]         v1.0.75                     -> v1.0.75
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4036767Z  * [new tag]         v1.0.76                     -> v1.0.76
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4037321Z  * [new tag]         v1.0.77                     -> v1.0.77
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4037873Z  * [new tag]         v1.0.8                      -> v1.0.8
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4038443Z  * [new tag]         v1.0.9                      -> v1.0.9
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4038994Z  * [new tag]         v1.1.0                      -> v1.1.0
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4039538Z  * [new tag]         v1.1.1                      -> v1.1.1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4040086Z  * [new tag]         v1.1.10                     -> v1.1.10
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4040631Z  * [new tag]         v1.1.11                     -> v1.1.11
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4041148Z  * [new tag]         v1.1.12                     -> v1.1.12
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4041931Z  * [new tag]         v1.1.13                     -> v1.1.13
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4042531Z  * [new tag]         v1.1.14                     -> v1.1.14
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4043099Z  * [new tag]         v1.1.15                     -> v1.1.15
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4043653Z  * [new tag]         v1.1.16                     -> v1.1.16
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4044513Z  * [new tag]         v1.1.17                     -> v1.1.17
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4045079Z  * [new tag]         v1.1.18                     -> v1.1.18
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4045627Z  * [new tag]         v1.1.19                     -> v1.1.19
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4046183Z  * [new tag]         v1.1.2                      -> v1.1.2
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4046752Z  * [new tag]         v1.1.20                     -> v1.1.20
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4047316Z  * [new tag]         v1.1.21                     -> v1.1.21
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4047865Z  * [new tag]         v1.1.22                     -> v1.1.22
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4048426Z  * [new tag]         v1.1.23                     -> v1.1.23
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4048967Z  * [new tag]         v1.1.24                     -> v1.1.24
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4049518Z  * [new tag]         v1.1.25                     -> v1.1.25
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4050081Z  * [new tag]         v1.1.26                     -> v1.1.26
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4050639Z  * [new tag]         v1.1.27                     -> v1.1.27
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4051208Z  * [new tag]         v1.1.3                      -> v1.1.3
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4051762Z  * [new tag]         v1.1.4                      -> v1.1.4
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4052332Z  * [new tag]         v1.1.5                      -> v1.1.5
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4052916Z  * [new tag]         v1.1.6                      -> v1.1.6
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4053475Z  * [new tag]         v1.1.7                      -> v1.1.7
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4054028Z  * [new tag]         v1.1.8                      -> v1.1.8
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4055201Z  * [new tag]         v1.1.9                      -> v1.1.9
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4055757Z  * [new tag]         v1.3.0                      -> v1.3.0
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4056303Z  * [new tag]         v1.3.1                      -> v1.3.1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4057113Z  * [new tag]         v1.3.10                     -> v1.3.10
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4057680Z  * [new tag]         v1.3.100                    -> v1.3.100
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4058268Z  * [new tag]         v1.3.101                    -> v1.3.101
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4058835Z  * [new tag]         v1.3.102                    -> v1.3.102
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4059400Z  * [new tag]         v1.3.103                    -> v1.3.103
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4059960Z  * [new tag]         v1.3.11                     -> v1.3.11
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4060495Z  * [new tag]         v1.3.12                     -> v1.3.12
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4061042Z  * [new tag]         v1.3.13                     -> v1.3.13
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4061600Z  * [new tag]         v1.3.14                     -> v1.3.14
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4062143Z  * [new tag]         v1.3.15                     -> v1.3.15
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4062683Z  * [new tag]         v1.3.16                     -> v1.3.16
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4063234Z  * [new tag]         v1.3.17                     -> v1.3.17
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4063756Z  * [new tag]         v1.3.18                     -> v1.3.18
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4064595Z  * [new tag]         v1.3.19                     -> v1.3.19
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4065132Z  * [new tag]         v1.3.2                      -> v1.3.2
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4065665Z  * [new tag]         v1.3.20                     -> v1.3.20
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4066197Z  * [new tag]         v1.3.21                     -> v1.3.21
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4066727Z  * [new tag]         v1.3.22                     -> v1.3.22
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4067278Z  * [new tag]         v1.3.23                     -> v1.3.23
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4067806Z  * [new tag]         v1.3.24                     -> v1.3.24
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4068319Z  * [new tag]         v1.3.25                     -> v1.3.25
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4069095Z  * [new tag]         v1.3.26                     -> v1.3.26
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4069663Z  * [new tag]         v1.3.27                     -> v1.3.27
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4070204Z  * [new tag]         v1.3.28                     -> v1.3.28
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4070757Z  * [new tag]         v1.3.29                     -> v1.3.29
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4071332Z  * [new tag]         v1.3.3                      -> v1.3.3
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4071886Z  * [new tag]         v1.3.30                     -> v1.3.30
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4072402Z  * [new tag]         v1.3.31                     -> v1.3.31
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4073023Z  * [new tag]         v1.3.31-windows8.1-fix      -> v1.3.31-windows8.1-fix
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4073655Z  * [new tag]         v1.3.32                     -> v1.3.32
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4074511Z  * [new tag]         v1.3.32-test                -> v1.3.32-test
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4075125Z  * [new tag]         v1.3.37                     -> v1.3.37
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4075699Z  * [new tag]         v1.3.38                     -> v1.3.38
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4076263Z  * [new tag]         v1.3.4                      -> v1.3.4
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4076836Z  * [new tag]         v1.3.5                      -> v1.3.5
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4077390Z  * [new tag]         v1.3.57                     -> v1.3.57
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4077954Z  * [new tag]         v1.3.58                     -> v1.3.58
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4078515Z  * [new tag]         v1.3.59                     -> v1.3.59
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4079084Z  * [new tag]         v1.3.6                      -> v1.3.6
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4079644Z  * [new tag]         v1.3.60                     -> v1.3.60
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4080198Z  * [new tag]         v1.3.61                     -> v1.3.61
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4080760Z  * [new tag]         v1.3.62                     -> v1.3.62
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4081321Z  * [new tag]         v1.3.63                     -> v1.3.63
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4081895Z  * [new tag]         v1.3.64                     -> v1.3.64
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4082460Z  * [new tag]         v1.3.65                     -> v1.3.65
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4083007Z  * [new tag]         v1.3.66                     -> v1.3.66
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4083846Z  * [new tag]         v1.3.67                     -> v1.3.67
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4084673Z  * [new tag]         v1.3.68                     -> v1.3.68
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4085203Z  * [new tag]         v1.3.69                     -> v1.3.69
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4085743Z  * [new tag]         v1.3.7                      -> v1.3.7
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4086278Z  * [new tag]         v1.3.70                     -> v1.3.70
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4086816Z  * [new tag]         v1.3.71                     -> v1.3.71
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4087364Z  * [new tag]         v1.3.72                     -> v1.3.72
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4087906Z  * [new tag]         v1.3.73                     -> v1.3.73
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4088422Z  * [new tag]         v1.3.74                     -> v1.3.74
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4088969Z  * [new tag]         v1.3.75                     -> v1.3.75
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4089499Z  * [new tag]         v1.3.76                     -> v1.3.76
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4090047Z  * [new tag]         v1.3.77                     -> v1.3.77
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4090580Z  * [new tag]         v1.3.78                     -> v1.3.78
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4091122Z  * [new tag]         v1.3.79                     -> v1.3.79
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4091664Z  * [new tag]         v1.3.8                      -> v1.3.8
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4092204Z  * [new tag]         v1.3.80                     -> v1.3.80
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4092719Z  * [new tag]         v1.3.81                     -> v1.3.81
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4093236Z  * [new tag]         v1.3.82                     -> v1.3.82
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4093772Z  * [new tag]         v1.3.83                     -> v1.3.83
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4094573Z  * [new tag]         v1.3.84                     -> v1.3.84
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4095112Z  * [new tag]         v1.3.85                     -> v1.3.85
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4095951Z  * [new tag]         v1.3.86                     -> v1.3.86
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4096515Z  * [new tag]         v1.3.87                     -> v1.3.87
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4097075Z  * [new tag]         v1.3.88                     -> v1.3.88
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4097611Z  * [new tag]         v1.3.89                     -> v1.3.89
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4098146Z  * [new tag]         v1.3.9                      -> v1.3.9
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4098682Z  * [new tag]         v1.3.90                     -> v1.3.90
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4099216Z  * [new tag]         v1.3.91                     -> v1.3.91
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4099904Z  * [new tag]         v1.3.92                     -> v1.3.92
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4100430Z  * [new tag]         v1.3.93                     -> v1.3.93
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4100952Z  * [new tag]         v1.3.94                     -> v1.3.94
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4101482Z  * [new tag]         v1.3.95                     -> v1.3.95
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4102042Z  * [new tag]         v1.3.96                     -> v1.3.96
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4102588Z  * [new tag]         v1.3.97                     -> v1.3.97
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4103129Z  * [new tag]         v1.3.98                     -> v1.3.98
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4103639Z  * [new tag]         v1.3.99                     -> v1.3.99
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4104421Z  * [new tag]         v1.4.0                      -> v1.4.0
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4105084Z  * [new tag]         v1.4.1                      -> v1.4.1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4105654Z  * [new tag]         v1.4.10                     -> v1.4.10
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4106199Z  * [new tag]         v1.4.11                     -> v1.4.11
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4106728Z  * [new tag]         v1.4.12                     -> v1.4.12
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4107273Z  * [new tag]         v1.4.13                     -> v1.4.13
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4107801Z  * [new tag]         v1.4.14                     -> v1.4.14
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4108340Z  * [new tag]         v1.4.15                     -> v1.4.15
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4108892Z  * [new tag]         v1.4.16                     -> v1.4.16
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4109423Z  * [new tag]         v1.4.17                     -> v1.4.17
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4110275Z  * [new tag]         v1.4.18                     -> v1.4.18
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4110831Z  * [new tag]         v1.4.19                     -> v1.4.19
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4111397Z  * [new tag]         v1.4.2                      -> v1.4.2
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4111966Z  * [new tag]         v1.4.20                     -> v1.4.20
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4112510Z  * [new tag]         v1.4.21                     -> v1.4.21
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4113067Z  * [new tag]         v1.4.22                     -> v1.4.22
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4113634Z  * [new tag]         v1.4.23                     -> v1.4.23
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4114430Z  * [new tag]         v1.4.24                     -> v1.4.24
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4115003Z  * [new tag]         v1.4.25                     -> v1.4.25
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4115568Z  * [new tag]         v1.4.26                     -> v1.4.26
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4116127Z  * [new tag]         v1.4.27                     -> v1.4.27
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4116683Z  * [new tag]         v1.4.28                     -> v1.4.28
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4117230Z  * [new tag]         v1.4.29                     -> v1.4.29
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4117788Z  * [new tag]         v1.4.3                      -> v1.4.3
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4118346Z  * [new tag]         v1.4.30                     -> v1.4.30
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4118892Z  * [new tag]         v1.4.31                     -> v1.4.31
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4119431Z  * [new tag]         v1.4.32                     -> v1.4.32
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4119972Z  * [new tag]         v1.4.33                     -> v1.4.33
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4120526Z  * [new tag]         v1.4.34                     -> v1.4.34
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4121081Z  * [new tag]         v1.4.35                     -> v1.4.35
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4121625Z  * [new tag]         v1.4.36                     -> v1.4.36
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4122384Z  * [new tag]         v1.4.37                     -> v1.4.37
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4122939Z  * [new tag]         v1.4.38                     -> v1.4.38
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4123489Z  * [new tag]         v1.4.39                     -> v1.4.39
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4124014Z  * [new tag]         v1.4.4                      -> v1.4.4
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4124829Z  * [new tag]         v1.4.40                     -> v1.4.40
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4125356Z  * [new tag]         v1.4.41                     -> v1.4.41
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4125907Z  * [new tag]         v1.4.42                     -> v1.4.42
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4126448Z  * [new tag]         v1.4.43                     -> v1.4.43
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4127012Z  * [new tag]         v1.4.44                     -> v1.4.44
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4127551Z  * [new tag]         v1.4.45                     -> v1.4.45
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4128155Z  * [new tag]         v1.4.46                     -> v1.4.46
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4128733Z  * [new tag]         v1.4.47                     -> v1.4.47
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4129301Z  * [new tag]         v1.4.48                     -> v1.4.48
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4129871Z  * [new tag]         v1.4.49                     -> v1.4.49
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4130444Z  * [new tag]         v1.4.5                      -> v1.4.5
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4130999Z  * [new tag]         v1.4.50                     -> v1.4.50
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4131530Z  * [new tag]         v1.4.51                     -> v1.4.51
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4132081Z  * [new tag]         v1.4.52                     -> v1.4.52
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4132604Z  * [new tag]         v1.4.53                     -> v1.4.53
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4133142Z  * [new tag]         v1.4.54                     -> v1.4.54
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4133685Z  * [new tag]         v1.4.55                     -> v1.4.55
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4134485Z  * [new tag]         v1.4.56                     -> v1.4.56
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4135051Z  * [new tag]         v1.4.57                     -> v1.4.57
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4135624Z  * [new tag]         v1.4.58                     -> v1.4.58
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4136179Z  * [new tag]         v1.4.59                     -> v1.4.59
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4137007Z  * [new tag]         v1.4.6                      -> v1.4.6
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4137561Z  * [new tag]         v1.4.60                     -> v1.4.60
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4138111Z  * [new tag]         v1.4.61                     -> v1.4.61
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4138669Z  * [new tag]         v1.4.62                     -> v1.4.62
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4139215Z  * [new tag]         v1.4.63                     -> v1.4.63
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4139760Z  * [new tag]         v1.4.64                     -> v1.4.64
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4140306Z  * [new tag]         v1.4.65                     -> v1.4.65
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4140835Z  * [new tag]         v1.4.66                     -> v1.4.66
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4141385Z  * [new tag]         v1.4.67                     -> v1.4.67
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4141925Z  * [new tag]         v1.4.68                     -> v1.4.68
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4142459Z  * [new tag]         v1.4.69                     -> v1.4.69
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4143015Z  * [new tag]         v1.4.7                      -> v1.4.7
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4143557Z  * [new tag]         v1.4.70                     -> v1.4.70
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4144112Z  * [new tag]         v1.4.71                     -> v1.4.71
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4145032Z  * [new tag]         v1.4.72                     -> v1.4.72
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4145586Z  * [new tag]         v1.4.73                     -> v1.4.73
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4146153Z  * [new tag]         v1.4.74                     -> v1.4.74
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4146702Z  * [new tag]         v1.4.75                     -> v1.4.75
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4147242Z  * [new tag]         v1.4.76                     -> v1.4.76
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4147774Z  * [new tag]         v1.4.77                     -> v1.4.77
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4148309Z  * [new tag]         v1.4.78                     -> v1.4.78
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4149054Z  * [new tag]         v1.4.79                     -> v1.4.79
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4149634Z  * [new tag]         v1.4.8                      -> v1.4.8
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4150184Z  * [new tag]         v1.4.80                     -> v1.4.80
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4150721Z  * [new tag]         v1.4.81                     -> v1.4.81
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4151259Z  * [new tag]         v1.4.82                     -> v1.4.82
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4151799Z  * [new tag]         v1.4.83                     -> v1.4.83
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4152343Z  * [new tag]         v1.4.84                     -> v1.4.84
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4152885Z  * [new tag]         v1.4.85                     -> v1.4.85
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4153420Z  * [new tag]         v1.4.86                     -> v1.4.86
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4153948Z  * [new tag]         v1.4.87                     -> v1.4.87
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4154760Z  * [new tag]         v1.4.88                     -> v1.4.88
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4155304Z  * [new tag]         v1.4.89                     -> v1.4.89
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4155844Z  * [new tag]         v1.4.9                      -> v1.4.9
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4156400Z  * [new tag]         v1.4.90                     -> v1.4.90
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4156945Z  * [new tag]         v1.4.91                     -> v1.4.91
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4157488Z  * [new tag]         v1.4.92                     -> v1.4.92
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4158035Z  * [new tag]         v1.4.93                     -> v1.4.93
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4158588Z  * [new tag]         v1.4.94                     -> v1.4.94
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4159142Z  * [new tag]         v1.4.95                     -> v1.4.95
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4159674Z  * [new tag]         v1.4.96                     -> v1.4.96
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4160230Z  * [new tag]         v1.4.97                     -> v1.4.97
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4160761Z  * [new tag]         v1.4.98                     -> v1.4.98
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4161308Z  * [new tag]         v1.4.99                     -> v1.4.99
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4161866Z  * [new tag]         v1.5.0                      -> v1.5.0
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4162382Z  * [new tag]         v1.5.1                      -> v1.5.1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4163170Z  * [new tag]         v1.5.10                     -> v1.5.10
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4163712Z  * [new tag]         v1.5.11                     -> v1.5.11
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4164510Z  * [new tag]         v1.5.12                     -> v1.5.12
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4165086Z  * [new tag]         v1.5.13                     -> v1.5.13
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4165616Z  * [new tag]         v1.5.14                     -> v1.5.14
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4166166Z  * [new tag]         v1.5.15                     -> v1.5.15
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4166698Z  * [new tag]         v1.5.16                     -> v1.5.16
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4167252Z  * [new tag]         v1.5.17                     -> v1.5.17
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4167829Z  * [new tag]         v1.5.18                     -> v1.5.18
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4168404Z  * [new tag]         v1.5.19                     -> v1.5.19
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4168959Z  * [new tag]         v1.5.2                      -> v1.5.2
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4169393Z  * [new tag]         v1.5.20                     -> v1.5.20
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4169693Z  * [new tag]         v1.5.21                     -> v1.5.21
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4169980Z  * [new tag]         v1.5.22                     -> v1.5.22
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4170299Z  * [new tag]         v1.5.23                     -> v1.5.23
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4170591Z  * [new tag]         v1.5.24                     -> v1.5.24
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4170882Z  * [new tag]         v1.5.25                     -> v1.5.25
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4171172Z  * [new tag]         v1.5.26                     -> v1.5.26
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4171457Z  * [new tag]         v1.5.27                     -> v1.5.27
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4171748Z  * [new tag]         v1.5.28                     -> v1.5.28
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4172038Z  * [new tag]         v1.5.29                     -> v1.5.29
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4172500Z  * [new tag]         v1.5.3                      -> v1.5.3
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4172806Z  * [new tag]         v1.5.30                     -> v1.5.30
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4173097Z  * [new tag]         v1.5.31                     -> v1.5.31
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4173388Z  * [new tag]         v1.5.32                     -> v1.5.32
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4173676Z  * [new tag]         v1.5.33                     -> v1.5.33
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4173957Z  * [new tag]         v1.5.34                     -> v1.5.34
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4174575Z  * [new tag]         v1.5.35                     -> v1.5.35
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4174877Z  * [new tag]         v1.5.36                     -> v1.5.36
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4175168Z  * [new tag]         v1.5.37                     -> v1.5.37
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4175456Z  * [new tag]         v1.5.38                     -> v1.5.38
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4175741Z  * [new tag]         v1.5.39                     -> v1.5.39
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4176033Z  * [new tag]         v1.5.4                      -> v1.5.4
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4176322Z  * [new tag]         v1.5.40                     -> v1.5.40
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4176611Z  * [new tag]         v1.5.41                     -> v1.5.41
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4176898Z  * [new tag]         v1.5.42                     -> v1.5.42
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4177185Z  * [new tag]         v1.5.43                     -> v1.5.43
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4177466Z  * [new tag]         v1.5.44                     -> v1.5.44
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4177754Z  * [new tag]         v1.5.45                     -> v1.5.45
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4178041Z  * [new tag]         v1.5.46                     -> v1.5.46
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4178324Z  * [new tag]         v1.5.47                     -> v1.5.47
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4178612Z  * [new tag]         v1.5.48                     -> v1.5.48
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4178899Z  * [new tag]         v1.5.49                     -> v1.5.49
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4179184Z  * [new tag]         v1.5.5                      -> v1.5.5
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4179476Z  * [new tag]         v1.5.50                     -> v1.5.50
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4179760Z  * [new tag]         v1.5.51                     -> v1.5.51
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4180183Z  * [new tag]         v1.5.52                     -> v1.5.52
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4180467Z  * [new tag]         v1.5.53                     -> v1.5.53
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4180749Z  * [new tag]         v1.5.54                     -> v1.5.54
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4181037Z  * [new tag]         v1.5.55                     -> v1.5.55
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4181322Z  * [new tag]         v1.5.56                     -> v1.5.56
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4181603Z  * [new tag]         v1.5.57                     -> v1.5.57
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4181894Z  * [new tag]         v1.5.6                      -> v1.5.6
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4182174Z  * [new tag]         v1.5.7                      -> v1.5.7
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4182462Z  * [new tag]         v1.5.8                      -> v1.5.8
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4182753Z  * [new tag]         v1.5.9                      -> v1.5.9
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4183099Z  * [new tag]         v2.0.0-beta.20260220192158  -> v2.0.0-beta.20260220192158
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4183516Z  * [new tag]         v2.0.0-beta.20260220193220  -> v2.0.0-beta.20260220193220
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4183915Z  * [new tag]         v2.0.0-beta.20260220194254  -> v2.0.0-beta.20260220194254
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4184447Z  * [new tag]         v2.0.0-beta.20260225094609  -> v2.0.0-beta.20260225094609
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4184831Z  * [new tag]         v2.0.0-beta.20260225112556  -> v2.0.0-beta.20260225112556
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4185233Z  * [new tag]         v2.0.1-beta.20260227100957  -> v2.0.1-beta.20260227100957
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4185631Z  * [new tag]         v2.0.10-beta.20260301125813 -> v2.0.10-beta.20260301125813
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4186028Z  * [new tag]         v2.0.11-beta.20260301134630 -> v2.0.11-beta.20260301134630
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4186420Z  * [new tag]         v2.0.12-beta.20260301140656 -> v2.0.12-beta.20260301140656
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4186923Z  * [new tag]         v2.0.13-beta.20260301143815 -> v2.0.13-beta.20260301143815
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4187343Z  * [new tag]         v2.0.14-beta.20260301144204 -> v2.0.14-beta.20260301144204
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4187738Z  * [new tag]         v2.0.15-beta.20260301231534 -> v2.0.15-beta.20260301231534
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4188126Z  * [new tag]         v2.0.16-beta.20260302085233 -> v2.0.16-beta.20260302085233
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4188516Z  * [new tag]         v2.0.17-beta.20260302094046 -> v2.0.17-beta.20260302094046
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4188895Z  * [new tag]         v2.0.18-beta.20260302094416 -> v2.0.18-beta.20260302094416
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4189280Z  * [new tag]         v2.0.19-beta.20260302103235 -> v2.0.19-beta.20260302103235
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4189670Z  * [new tag]         v2.0.2-beta.20260227113626  -> v2.0.2-beta.20260227113626
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4190055Z  * [new tag]         v2.0.20-beta.20260302114019 -> v2.0.20-beta.20260302114019
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4190447Z  * [new tag]         v2.0.21-beta.20260302114922 -> v2.0.21-beta.20260302114922
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4190833Z  * [new tag]         v2.0.22-beta.20260302223117 -> v2.0.22-beta.20260302223117
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4191213Z  * [new tag]         v2.0.23-beta.20260302234210 -> v2.0.23-beta.20260302234210
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4191597Z  * [new tag]         v2.0.24-beta.20260303001849 -> v2.0.24-beta.20260303001849
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4191988Z  * [new tag]         v2.0.25-beta.20260303014135 -> v2.0.25-beta.20260303014135
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4192372Z  * [new tag]         v2.0.26-beta.20260317103724 -> v2.0.26-beta.20260317103724
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4192756Z  * [new tag]         v2.0.27-beta.20260411081811 -> v2.0.27-beta.20260411081811
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4193136Z  * [new tag]         v2.0.28-beta.20260417170432 -> v2.0.28-beta.20260417170432
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4193513Z  * [new tag]         v2.0.29-beta.20260417192136 -> v2.0.29-beta.20260417192136
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4193897Z  * [new tag]         v2.0.3-beta.20260227120650  -> v2.0.3-beta.20260227120650
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4194417Z  * [new tag]         v2.0.30-beta.20260417192355 -> v2.0.30-beta.20260417192355
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4194799Z  * [new tag]         v2.0.31-beta.20260417192459 -> v2.0.31-beta.20260417192459
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4195312Z  * [new tag]         v2.0.32-beta.20260417192700 -> v2.0.32-beta.20260417192700
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4195688Z  * [new tag]         v2.0.33-beta.20260417192744 -> v2.0.33-beta.20260417192744
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4196070Z  * [new tag]         v2.0.34-beta.20260417194215 -> v2.0.34-beta.20260417194215
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4196454Z  * [new tag]         v2.0.35-beta.20260417202329 -> v2.0.35-beta.20260417202329
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4196829Z  * [new tag]         v2.0.36-beta.20260417214120 -> v2.0.36-beta.20260417214120
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4197214Z  * [new tag]         v2.0.37-beta.20260417214319 -> v2.0.37-beta.20260417214319
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4197597Z  * [new tag]         v2.0.38-beta.20260417214842 -> v2.0.38-beta.20260417214842
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4197979Z  * [new tag]         v2.0.39-beta.20260417220135 -> v2.0.39-beta.20260417220135
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4198367Z  * [new tag]         v2.0.4-beta.20260227121316  -> v2.0.4-beta.20260227121316
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4198761Z  * [new tag]         v2.0.40-beta.20260417221239 -> v2.0.40-beta.20260417221239
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4199143Z  * [new tag]         v2.0.41-beta.20260417221550 -> v2.0.41-beta.20260417221550
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4199530Z  * [new tag]         v2.0.42-beta.20260418072838 -> v2.0.42-beta.20260418072838
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4199915Z  * [new tag]         v2.0.43-beta.20260418073220 -> v2.0.43-beta.20260418073220
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4200295Z  * [new tag]         v2.0.44-beta.20260418073827 -> v2.0.44-beta.20260418073827
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4200678Z  * [new tag]         v2.0.45-beta.20260418074350 -> v2.0.45-beta.20260418074350
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4201088Z  * [new tag]         v2.0.46-beta.20260418172401 -> v2.0.46-beta.20260418172401
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4201478Z  * [new tag]         v2.0.5-beta.20260227122617  -> v2.0.5-beta.20260227122617
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4201981Z  * [new tag]         v2.0.6-beta.20260228150535  -> v2.0.6-beta.20260228150535
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4202374Z  * [new tag]         v2.0.7-beta.20260301120930  -> v2.0.7-beta.20260301120930
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4202760Z  * [new tag]         v2.0.8-beta.20260301122545  -> v2.0.8-beta.20260301122545
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4203149Z  * [new tag]         v2.0.9-beta.20260301125359  -> v2.0.9-beta.20260301125359
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4372030Z [command]/usr/bin/git branch --list --remote origin/feature/cross-platform-unification
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4428668Z   origin/feature/cross-platform-unification
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4438469Z [command]/usr/bin/git rev-parse refs/remotes/origin/feature/cross-platform-unification
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4458718Z 3e8a394acbb83c1e0580b9fb1b0303b1f426316d
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4463442Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4464031Z ##[group]Determining the checkout info
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4466428Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4470719Z [command]/usr/bin/git sparse-checkout disable
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4505406Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4534088Z ##[group]Checking out the ref
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:28.4541624Z [command]/usr/bin/git checkout --progress --force -B feature/cross-platform-unification refs/remotes/origin/feature/cross-platform-unification
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.6760335Z Updating files:  67% (771/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.7405316Z Updating files:  68% (775/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.7437619Z Updating files:  69% (786/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.8003697Z Updating files:  70% (798/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.8541294Z Updating files:  71% (809/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.8607976Z Updating files:  72% (821/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.8628436Z Updating files:  73% (832/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.8649133Z Updating files:  74% (843/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.8664601Z Updating files:  75% (855/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.8681881Z Updating files:  76% (866/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.8707983Z Updating files:  77% (878/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.8729271Z Updating files:  78% (889/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.8749286Z Updating files:  79% (900/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.8776745Z Updating files:  80% (912/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.8790692Z Updating files:  81% (923/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.8814136Z Updating files:  82% (934/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.8827357Z Updating files:  83% (946/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.8892335Z Updating files:  84% (957/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.9543826Z Updating files:  85% (969/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.9723441Z Updating files:  86% (980/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:29.9830513Z Updating files:  87% (991/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.1330688Z Updating files:  88% (1003/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.1752981Z Updating files:  89% (1014/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.2269846Z Updating files:  90% (1026/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.2359602Z Updating files:  91% (1037/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.2373732Z Updating files:  92% (1048/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.2555672Z Updating files:  93% (1060/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.3030933Z Updating files:  94% (1071/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.3063169Z Updating files:  95% (1083/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.3791434Z Updating files:  96% (1094/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.3840850Z Updating files:  97% (1105/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.3934949Z Updating files:  98% (1117/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.3943749Z Updating files:  99% (1128/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.3944031Z Updating files: 100% (1139/1139)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.3944294Z Updating files: 100% (1139/1139), done.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.3968536Z Switched to a new branch 'feature/cross-platform-unification'
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.3971986Z branch 'feature/cross-platform-unification' set up to track 'origin/feature/cross-platform-unification'.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.4045719Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.4087098Z [command]/usr/bin/git log -1 --format=%H
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.4108543Z 3e8a394acbb83c1e0580b9fb1b0303b1f426316d
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.4268678Z ##[group]Run actions/setup-node@v4
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.4268950Z with:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.4269119Z   node-version: 18
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.4269310Z   cache: npm
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.4269480Z   always-auth: false
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.4269672Z   check-latest: false
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.4270009Z   token: ***
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.4270174Z env:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.4270417Z   GH_TOKEN: ***
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.4270594Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:30.5987541Z Attempting to download 18...
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:31.0818642Z Acquiring 18.20.8 - x64 from https://github.com/actions/node-versions/releases/download/18.20.8-14110393767/node-18.20.8-linux-x64.tar.gz
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:31.4950339Z Extracting ...
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:31.5048069Z [command]/usr/bin/tar xz --strip 1 --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/ec7eb6d9-8dcb-41a8-b78a-7ce7afcef5a7 -f /home/runner/work/_temp/c043b94f-7a02-48cb-9378-bc5ca4752597
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:32.4274774Z Adding to the cache ...
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:34.2201712Z ##[group]Environment details
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:34.4464897Z node: v18.20.8
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:34.4465207Z npm: 10.8.2
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:34.4465445Z yarn: 1.22.22
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:34.4465897Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:34.4486375Z [command]/opt/hostedtoolcache/node/18.20.8/x64/bin/npm config get cache
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:34.5611400Z /home/runner/.npm
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:34.6691283Z Cache hit for: node-cache-Linux-x64-npm-e9c420e41d56bc66458eff994735626f380e195e2a869ffc645d28b8838916a4
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:35.7937022Z Received 121634816 of 135932575 (89.5%), 116.0 MBs/sec
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.0090327Z Received 135932575 of 135932575 (100.0%), 106.7 MBs/sec
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.0091111Z Cache Size: ~130 MB (135932575 B)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.0128833Z [command]/usr/bin/tar -xf /home/runner/work/_temp/dc508ebf-ecb8-43fc-ae36-6f69acf16b0b/cache.tzst -P -C /home/runner/work/dupli-electron-caddy/dupli-electron-caddy --use-compress-program unzstd
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.3401235Z Cache restored successfully
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.3467610Z Cache restored from key: node-cache-Linux-x64-npm-e9c420e41d56bc66458eff994735626f380e195e2a869ffc645d28b8838916a4
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.3645776Z ##[group]Run shivammathur/setup-php@v2
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.3646069Z with:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.3646244Z   php-version: 8.2
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.3646701Z   extensions: mbstring, xml, ctype, iconv, gd, sqlite3, pdo_sqlite
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.3647032Z   coverage: none
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.3647348Z   ini-values: display_errors=On, display_startup_errors=On, error_reporting=E_ALL
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.3647742Z   ini-file: production
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.3648094Z   github-token: ***
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.3648288Z env:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.3648528Z   GH_TOKEN: ***
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.3648715Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.4011981Z [command]/usr/bin/bash /home/runner/work/_actions/shivammathur/setup-php/v2/src/scripts/run.sh
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.4420158Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:36.4420835Z [90;1m==> [0m[37;1mSetup PHP[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:39.9715769Z [32;1m✓ [0m[34;1mPHP [0m[90;1mInstalled PHP 8.2.30[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:39.9716404Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:39.9716873Z [90;1m==> [0m[37;1mSetup Extensions[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.0177426Z [32;1m✓ [0m[34;1mmbstring [0m[90;1mEnabled[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.0206396Z [32;1m✓ [0m[34;1mxml [0m[90;1mEnabled[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.0237064Z [32;1m✓ [0m[34;1mctype [0m[90;1mEnabled[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.0266736Z [32;1m✓ [0m[34;1miconv [0m[90;1mEnabled[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.0296632Z [32;1m✓ [0m[34;1mgd [0m[90;1mEnabled[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.0326437Z [32;1m✓ [0m[34;1msqlite3 [0m[90;1mEnabled[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.0342577Z [32;1m✓ [0m[34;1mpdo_sqlite [0m[90;1mEnabled[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.0342969Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.0343298Z [90;1m==> [0m[37;1mSetup Tools[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.3017741Z [32;1m✓ [0m[34;1mcomposer [0m[90;1mAdded composer 2.9.7[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.3018184Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.3018527Z [90;1m==> [0m[37;1mSetup Coverage[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5070712Z [32;1m✓ [0m[34;1mnone [0m[90;1mDisabled Xdebug and PCOV[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5071714Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5072542Z [90;1m==> [0m[37;1mAdd php.ini values[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5147390Z [32;1m✓ [0m[34;1mdisplay_errors=On [0m[90;1mAdded to php.ini[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5149267Z [32;1m✓ [0m[34;1mdisplay_startup_errors=On [0m[90;1mAdded to php.ini[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5150430Z [32;1m✓ [0m[34;1merror_reporting=E_ALL [0m[90;1mAdded to php.ini[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5150909Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5151254Z [90;1m==> [0m[37;1mSponsor setup-php[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5152369Z [32;1m✓ [0m[34;1msetup-php [0m[90;1mhttps://setup-php.com/sponsor[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5306383Z ##[group]Run sudo apt-get update
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5306698Z [36;1msudo apt-get update[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5306943Z [36;1msudo apt-get install -y \[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5307191Z [36;1m  libgtk-3-0 \[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5307397Z [36;1m  libnotify4 \[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5307597Z [36;1m  libnss3 \[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5307784Z [36;1m  libxss1 \[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5307969Z [36;1m  libxtst6 \[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5308152Z [36;1m  xvfb \[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5308342Z [36;1m  libatspi2.0-0 \[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5308561Z [36;1m  libdrm2 \[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5308767Z [36;1m  libgbm1 \[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5308953Z [36;1m  libxcb-dri3-0[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5332597Z shell: /usr/bin/bash -e {0}
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5332825Z env:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5333156Z   GH_TOKEN: ***
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5333364Z   COMPOSER_PROCESS_TIMEOUT: 0
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5333601Z   COMPOSER_NO_INTERACTION: 1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5333845Z   COMPOSER_NO_AUDIT: 1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.5334051Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.6075774Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.6456547Z Hit:6 https://packages.microsoft.com/repos/azure-cli noble InRelease
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.6461715Z Hit:2 http://azure.archive.ubuntu.com/ubuntu noble InRelease
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.6462979Z Get:7 https://packages.microsoft.com/ubuntu/24.04/prod noble InRelease [3600 B]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.6469067Z Get:3 http://azure.archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.6523253Z Get:4 http://azure.archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.6564508Z Get:5 http://azure.archive.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.6667111Z Get:8 https://dl.google.com/linux/chrome-stable/deb stable InRelease [1825 B]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.8122942Z Get:9 https://packages.microsoft.com/ubuntu/24.04/prod noble/main arm64 Packages [96.5 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.8228968Z Get:10 https://packages.microsoft.com/ubuntu/24.04/prod noble/main amd64 Packages [120 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.8267344Z Get:11 https://packages.microsoft.com/ubuntu/24.04/prod noble/main armhf Packages [11.6 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.8590840Z Get:12 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1901 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.8692634Z Get:13 http://azure.archive.ubuntu.com/ubuntu noble-updates/main Translation-en [345 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.8719223Z Get:14 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Components [177 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.8737597Z Get:15 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 c-n-f Metadata [16.9 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.8750423Z Get:16 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [1666 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.8834491Z Get:17 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe Translation-en [323 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.8863046Z Get:18 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Components [386 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.8890002Z Get:19 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 c-n-f Metadata [34.3 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.8901503Z Get:20 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [2957 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.9043544Z Get:21 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted Translation-en [689 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.9528635Z Get:22 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Components [212 B]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.9546834Z Get:23 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages [32.5 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.9560813Z Get:24 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse Translation-en [8208 B]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.9569644Z Get:25 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Components [940 B]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.9582022Z Get:26 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 c-n-f Metadata [512 B]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.9596449Z Get:27 http://azure.archive.ubuntu.com/ubuntu noble-backports/main amd64 Components [7364 B]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.9611660Z Get:28 http://azure.archive.ubuntu.com/ubuntu noble-backports/universe amd64 Components [10.5 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.9628611Z Get:29 http://azure.archive.ubuntu.com/ubuntu noble-backports/universe amd64 c-n-f Metadata [1484 B]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.9672370Z Get:30 http://azure.archive.ubuntu.com/ubuntu noble-backports/restricted amd64 Components [216 B]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.9674424Z Get:31 http://azure.archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Components [212 B]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.9699718Z Get:32 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Packages [1608 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.9771856Z Get:33 http://azure.archive.ubuntu.com/ubuntu noble-security/main Translation-en [257 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.9793926Z Get:34 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 Components [21.5 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:40.9809889Z Get:35 http://azure.archive.ubuntu.com/ubuntu noble-security/main amd64 c-n-f Metadata [10.8 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:41.0285484Z Get:36 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1169 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:41.0346356Z Get:37 http://azure.archive.ubuntu.com/ubuntu noble-security/universe Translation-en [225 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:41.0367098Z Get:38 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 Components [74.2 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:41.0382220Z Get:39 http://azure.archive.ubuntu.com/ubuntu noble-security/universe amd64 c-n-f Metadata [22.9 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:41.0388633Z Get:45 https://dl.google.com/linux/chrome-stable/deb stable/main amd64 Packages [1215 B]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:41.0396352Z Get:40 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [2822 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:41.0527148Z Get:41 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted Translation-en [658 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:41.0563883Z Get:42 http://azure.archive.ubuntu.com/ubuntu noble-security/restricted amd64 Components [212 B]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:41.0577169Z Get:43 http://azure.archive.ubuntu.com/ubuntu noble-security/multiverse Translation-en [7204 B]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:41.0587567Z Get:44 http://azure.archive.ubuntu.com/ubuntu noble-security/multiverse amd64 Components [212 B]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:41.2251470Z Get:46 https://ppa.launchpadcontent.net/ondrej/php/ubuntu noble InRelease [24.3 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:41.4018809Z Get:47 https://ppa.launchpadcontent.net/ondrej/php/ubuntu noble/main amd64 Packages [142 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:41.7064560Z Get:48 https://ppa.launchpadcontent.net/ondrej/php/ubuntu noble/main Translation-en [43.7 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:41.8168082Z Get:49 https://ppa.launchpadcontent.net/ondrej/php/ubuntu noble/main/debug amd64 Packages [155 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:49.5403462Z Fetched 16.4 MB in 2s (8875 kB/s)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.2805209Z Reading package lists...
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.3112832Z Reading package lists...
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.4739634Z Building dependency tree...
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.4742846Z Reading state information...
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.6316823Z libgtk-3-0t64 is already the newest version (3.24.41-4ubuntu1.3).
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.6317452Z libnss3 is already the newest version (2:3.98-1ubuntu0.1).
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.6317967Z libxss1 is already the newest version (1:1.2.3-1build3).
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.6318469Z libxtst6 is already the newest version (2:1.2.3-1.1build1).
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.6318975Z xvfb is already the newest version (2:21.1.12-1ubuntu1.5).
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.6319514Z libatspi2.0-0t64 is already the newest version (2.52.0-1build1).
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.6320114Z libdrm2 is already the newest version (2.4.125-1ubuntu0.1~24.04.1).
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.6320670Z libgbm1 is already the newest version (25.2.8-0ubuntu0.24.04.1).
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.6321200Z libxcb-dri3-0 is already the newest version (1.15-1ubuntu2).
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.6321580Z Suggested packages:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.6321813Z   notification-daemon
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.6473626Z The following NEW packages will be installed:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.6478596Z   libnotify4
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.6656737Z 0 upgraded, 1 newly installed, 0 to remove and 102 not upgraded.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.6657391Z Need to get 25.6 kB of archives.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.6657833Z After this operation, 80.9 kB of additional disk space will be used.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.6658316Z Get:1 file:/etc/apt/apt-mirrors.txt Mirrorlist [144 B]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.7295633Z Get:2 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libnotify4 amd64 0.8.3-1build2 [25.6 kB]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:50.9835799Z Fetched 25.6 kB in 0s (341 kB/s)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.0054087Z Selecting previously unselected package libnotify4:amd64.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.0200216Z (Reading database ... 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.0201367Z dpkg: warning: files list file for package 'libltdl-dev:amd64' missing; assuming package has no files currently installed
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.0202317Z (Reading database ... 5%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.0202960Z (Reading database ... 10%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.0203369Z (Reading database ... 15%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.0203726Z (Reading database ... 20%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.0204078Z (Reading database ... 25%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.0204604Z (Reading database ... 30%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.0204924Z (Reading database ... 35%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.0205244Z (Reading database ... 40%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.0205566Z (Reading database ... 45%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.0205887Z (Reading database ... 50%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.0314354Z (Reading database ... 55%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.1442504Z (Reading database ... 60%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.3756396Z (Reading database ... 65%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.5809469Z (Reading database ... 70%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.7320947Z (Reading database ... 75%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:51.9259722Z (Reading database ... 80%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:52.0883777Z (Reading database ... 85%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:52.1398497Z (Reading database ... 90%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:52.1911422Z (Reading database ... 95%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:52.1912000Z (Reading database ... 100%
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:52.1912658Z (Reading database ... 224230 files and directories currently installed.)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:52.1955027Z Preparing to unpack .../libnotify4_0.8.3-1build2_amd64.deb ...
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:52.1990022Z Unpacking libnotify4:amd64 (0.8.3-1build2) ...
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:52.2375394Z Setting up libnotify4:amd64 (0.8.3-1build2) ...
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:52.2403301Z Processing triggers for libc-bin (2.39-0ubuntu8.7) ...
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:55.7336810Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:55.7337423Z Running kernel seems to be up-to-date.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:55.7337888Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:55.7338118Z Restarting services...
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:55.8020790Z  /etc/needrestart/restart.d/systemd-manager
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:56.1177238Z  systemctl restart cron.service multipathd.service php8.3-fpm.service polkit.service systemd-journald.service systemd-networkd.service systemd-resolved.service systemd-udevd.service udisks2.service
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:56.3976372Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:56.3980591Z Service restarts being deferred:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:56.3981236Z  systemctl restart ModemManager.service
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:56.3982079Z  /etc/needrestart/restart.d/dbus.service
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:56.3982680Z  systemctl restart networkd-dispatcher.service
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:56.3983461Z  systemctl restart systemd-logind.service
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:56.3988697Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:56.3989210Z No containers need to be restarted.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:56.3989915Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:56.3992798Z User sessions running outdated binaries:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:56.3993575Z  runner @ user manager service: systemd[1101]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:56.4061425Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:56.4062321Z No VM guests are running outdated hypervisor (qemu) binaries on this host.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:57.3091963Z ##[group]Run npm install
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:57.3092242Z [36;1mnpm install[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:57.3114061Z shell: /usr/bin/bash -e {0}
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:57.3114592Z env:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:57.3114958Z   GH_TOKEN: ***
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:57.3115166Z   COMPOSER_PROCESS_TIMEOUT: 0
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:57.3115399Z   COMPOSER_NO_INTERACTION: 1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:57.3115625Z   COMPOSER_NO_AUDIT: 1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:57.3115823Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0650848Z npm warn EBADENGINE Unsupported engine {
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0651814Z npm warn EBADENGINE   package: '@isaacs/balanced-match@4.0.1',
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0652736Z npm warn EBADENGINE   required: { node: '20 || >=22' },
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0653654Z npm warn EBADENGINE   current: { node: 'v18.20.8', npm: '10.8.2' }
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0654757Z npm warn EBADENGINE }
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0657899Z npm warn EBADENGINE Unsupported engine {
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0658757Z npm warn EBADENGINE   package: '@isaacs/brace-expansion@5.0.0',
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0659720Z npm warn EBADENGINE   required: { node: '20 || >=22' },
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0660588Z npm warn EBADENGINE   current: { node: 'v18.20.8', npm: '10.8.2' }
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0661234Z npm warn EBADENGINE }
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0679448Z npm warn EBADENGINE Unsupported engine {
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0680196Z npm warn EBADENGINE   package: 'cross-env@10.1.0',
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0680929Z npm warn EBADENGINE   required: { node: '>=20' },
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0681752Z npm warn EBADENGINE   current: { node: 'v18.20.8', npm: '10.8.2' }
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0682425Z npm warn EBADENGINE }
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0702266Z npm warn EBADENGINE Unsupported engine {
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0703004Z npm warn EBADENGINE   package: 'minimatch@10.0.3',
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0703802Z npm warn EBADENGINE   required: { node: '20 || >=22' },
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0704924Z npm warn EBADENGINE   current: { node: 'v18.20.8', npm: '10.8.2' }
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.0705582Z npm warn EBADENGINE }
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:24:58.2963170Z npm warn skipping integrity check for git dependency ssh://git@github.com/electron/node-gyp.git
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:00.8779198Z npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:00.8998643Z npm warn deprecated @npmcli/move-file@1.1.2: This functionality has been moved to @npmcli/fs
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:00.9390028Z npm warn deprecated @npmcli/move-file@2.0.1: This functionality has been moved to @npmcli/fs
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:00.9524878Z npm warn deprecated npmlog@5.0.1: This package is no longer supported.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:00.9669257Z npm warn deprecated npmlog@6.0.2: This package is no longer supported.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:00.9898064Z npm warn deprecated rimraf@2.6.3: Rimraf versions prior to v4 are no longer supported
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:01.0003558Z npm warn deprecated supertest@6.3.4: Please upgrade to supertest v7.1.3+, see release notes at https://github.com/forwardemail/supertest/releases/tag/v7.1.3 - maintenance is supported by Forward Email @ https://forwardemail.net
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:01.0118255Z npm warn deprecated lodash.isequal@4.5.0: This package is deprecated. Use require('node:util').isDeepStrictEqual instead.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:01.0508830Z npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:01.1444039Z npm warn deprecated are-we-there-yet@3.0.1: This package is no longer supported.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:01.1531682Z npm warn deprecated are-we-there-yet@2.0.0: This package is no longer supported.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:01.1636979Z npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:01.1780312Z npm warn deprecated glob@8.1.0: Glob versions prior to v9 are no longer supported
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:01.1800531Z npm warn deprecated glob@8.1.0: Glob versions prior to v9 are no longer supported
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:01.5229047Z npm warn deprecated gauge@3.0.2: This package is no longer supported.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:01.5407409Z npm warn deprecated boolean@3.2.0: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:01.5606661Z npm warn deprecated gauge@4.0.4: This package is no longer supported.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:02.0954708Z npm warn deprecated superagent@8.1.2: Please upgrade to superagent v10.2.2+, see release notes at https://github.com/forwardemail/superagent/releases/tag/v10.2.2 - maintenance is supported by Forward Email @ https://forwardemail.net
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.5148647Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.5149521Z added 843 packages, and audited 844 packages in 26s
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.5150002Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.5150273Z 108 packages are looking for funding
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.5150766Z   run `npm fund` for details
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6365998Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6366629Z 36 vulnerabilities (2 low, 7 moderate, 27 high)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6366966Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6367259Z To address issues that do not require attention, run:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6367681Z   npm audit fix
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6367830Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6368105Z To address all issues (including breaking changes), run:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6368516Z   npm audit fix --force
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6368685Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6368829Z Run `npm audit` for details.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6887403Z ##[group]Run echo "Installation de Composer..."
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6887804Z [36;1mecho "Installation de Composer..."[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6888188Z [36;1mcurl -sS https://getcomposer.org/installer | php[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6888547Z [36;1mphp composer.phar --version[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6888812Z [36;1m[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6889069Z [36;1mecho "Installation des dépendances PHP..."[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6889373Z [36;1mcd app[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6889722Z [36;1mphp ../composer.phar install --optimize-autoloader --ignore-platform-reqs[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6890132Z [36;1mcd ..[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6890312Z [36;1m[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6890511Z [36;1mecho "Vérification de vendor/..."[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6891010Z [36;1mif [ -f "app/vendor/autoload.php" ]; then[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6891358Z [36;1m  echo "✅ vendor/autoload.php créé avec succès"[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6891651Z [36;1melse[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6891927Z [36;1m  echo "❌ ERREUR: vendor/autoload.php introuvable"[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6892247Z [36;1m  exit 1[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6892429Z [36;1mfi[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6916408Z shell: /usr/bin/bash -e {0}
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6916745Z env:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6917160Z   GH_TOKEN: ***
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6917546Z   COMPOSER_PROCESS_TIMEOUT: 0
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6917887Z   COMPOSER_NO_INTERACTION: 1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6918191Z   COMPOSER_NO_AUDIT: 1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6918546Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.6978034Z Installation de Composer...
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.8543559Z All settings correct for using Composer
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:23.8552209Z Downloading...
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.5145285Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.5146468Z Composer (version 2.9.7) successfully installed to: /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/composer.phar
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.5147563Z Use it: php composer.phar
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.5147811Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.5941621Z Composer version 2.9.7 2026-04-14 13:31:52
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.5943140Z PHP version 8.2.30 (/usr/bin/php8.2)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.5943797Z Run the "diagnose" command to get more detailed diagnostics output.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.6052832Z Installation des dépendances PHP...
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7479978Z Installing dependencies from lock file (including require-dev)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7504841Z Verifying lock file contents can be installed on current platform.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7665792Z Package operations: 62 installs, 0 updates, 0 removals
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7674633Z   - Downloading pestphp/pest-plugin (v3.0.0)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7681165Z   - Downloading fidry/cpu-core-counter (1.3.0)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7684601Z   - Downloading psr/log (3.0.2)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7687673Z   - Downloading filp/whoops (2.18.4)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7690709Z   - Downloading jean85/pretty-package-versions (2.1.1)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7693658Z   - Downloading myclabs/deep-copy (1.13.4)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7697067Z   - Downloading staabm/side-effects-detector (1.0.5)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7699927Z   - Downloading sebastian/version (5.0.2)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7702502Z   - Downloading sebastian/type (5.1.3)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7705347Z   - Downloading sebastian/recursion-context (6.0.3)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7707900Z   - Downloading sebastian/object-reflector (4.0.1)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7710404Z   - Downloading sebastian/object-enumerator (6.0.1)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7712879Z   - Downloading sebastian/global-state (7.0.2)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7715130Z   - Downloading symfony/polyfill-mbstring (v1.36.0)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7716883Z   - Downloading sebastian/exporter (6.3.2)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7718582Z   - Downloading sebastian/environment (7.2.1)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7720289Z   - Downloading sebastian/diff (6.0.2)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7722050Z   - Downloading sebastian/comparator (6.3.3)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7723882Z   - Downloading sebastian/code-unit (3.0.3)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7725845Z   - Downloading sebastian/cli-parser (3.0.2)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7728065Z   - Downloading phpunit/php-timer (7.0.1)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7730097Z   - Downloading phpunit/php-text-template (4.0.1)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7731578Z   - Downloading phpunit/php-invoker (5.0.1)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7733173Z   - Downloading phpunit/php-file-iterator (5.1.1)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7735648Z   - Downloading theseer/tokenizer (1.3.1)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7737808Z   - Downloading symfony/polyfill-ctype (v1.36.0)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7740178Z   - Downloading nikic/php-parser (v5.7.0)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7741788Z   - Downloading sebastian/lines-of-code (3.0.1)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7745279Z   - Downloading sebastian/complexity (4.0.1)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7746890Z   - Downloading sebastian/code-unit-reverse-lookup (4.0.1)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7748535Z   - Downloading phpunit/php-code-coverage (11.0.12)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7751119Z   - Downloading phar-io/version (3.2.1)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7752878Z   - Downloading phar-io/manifest (2.0.4)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7754922Z   - Downloading phpunit/phpunit (11.5.50)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7757210Z   - Downloading psr/simple-cache (3.0.0)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7758839Z   - Downloading pestphp/pest-plugin-mutate (v3.0.5)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7760447Z   - Downloading symfony/finder (v8.0.8)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7763001Z   - Downloading webmozart/assert (2.3.0)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7765730Z   - Downloading phpstan/phpdoc-parser (2.3.2)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7768154Z   - Downloading phpdocumentor/reflection-common (2.2.0)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7770577Z   - Downloading doctrine/deprecations (1.1.6)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7772091Z   - Downloading phpdocumentor/type-resolver (2.0.0)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7773820Z   - Downloading phpdocumentor/reflection-docblock (6.0.3)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7776764Z   - Downloading ta-tikoma/phpunit-architecture-test (0.8.7)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7778197Z   - Downloading pestphp/pest-plugin-arch (v3.1.1)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7780353Z   - Downloading symfony/polyfill-intl-normalizer (v1.36.0)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7781845Z   - Downloading symfony/polyfill-intl-grapheme (v1.36.0)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7783525Z   - Downloading symfony/string (v8.0.8)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7785796Z   - Downloading symfony/deprecation-contracts (v3.6.0)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7787335Z   - Downloading psr/container (2.0.2)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7789334Z   - Downloading symfony/service-contracts (v3.6.1)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7790878Z   - Downloading symfony/console (v8.0.8)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7793533Z   - Downloading nunomaduro/termwind (v2.4.0)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7795246Z   - Downloading nunomaduro/collision (v8.9.3)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7797231Z   - Downloading symfony/process (v8.0.8)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7799674Z   - Downloading brianium/paratest (v7.8.5)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7801120Z   - Downloading pestphp/pest (v3.8.6)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7803738Z   - Downloading setasign/fpdf (1.8.6)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7806424Z   - Downloading tecnickcom/tcpdf (6.11.2)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7807903Z   - Downloading setasign/fpdi (v2.6.6)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7809881Z   - Downloading setasign/fpdi-tcpdf (v2.3.0)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:24.7812475Z   - Downloading smalot/pdfparser (v2.12.4)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.0878524Z   - Installing pestphp/pest-plugin (v3.0.0): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1245016Z   - Installing fidry/cpu-core-counter (1.3.0): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1271426Z   - Installing psr/log (3.0.2): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1305698Z   - Installing filp/whoops (2.18.4): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1347444Z   - Installing jean85/pretty-package-versions (2.1.1): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1381348Z   - Installing myclabs/deep-copy (1.13.4): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1429684Z   - Installing staabm/side-effects-detector (1.0.5): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1459431Z   - Installing sebastian/version (5.0.2): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1498041Z   - Installing sebastian/type (5.1.3): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1535420Z   - Installing sebastian/recursion-context (6.0.3): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1572061Z   - Installing sebastian/object-reflector (4.0.1): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1613105Z   - Installing sebastian/object-enumerator (6.0.1): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1616663Z   - Installing sebastian/global-state (7.0.2): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1620065Z   - Installing symfony/polyfill-mbstring (v1.36.0): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1623301Z   - Installing sebastian/exporter (6.3.2): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1625716Z   - Installing sebastian/environment (7.2.1): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1628826Z   - Installing sebastian/diff (6.0.2): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1631825Z   - Installing sebastian/comparator (6.3.3): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1634803Z   - Installing sebastian/code-unit (3.0.3): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1637969Z   - Installing sebastian/cli-parser (3.0.2): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1640796Z   - Installing phpunit/php-timer (7.0.1): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1643960Z   - Installing phpunit/php-text-template (4.0.1): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1647081Z   - Installing phpunit/php-invoker (5.0.1): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1649408Z   - Installing phpunit/php-file-iterator (5.1.1): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1651866Z   - Installing theseer/tokenizer (1.3.1): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1655443Z   - Installing symfony/polyfill-ctype (v1.36.0): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1657552Z   - Installing nikic/php-parser (v5.7.0): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1660066Z   - Installing sebastian/lines-of-code (3.0.1): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1662519Z   - Installing sebastian/complexity (4.0.1): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1665352Z   - Installing sebastian/code-unit-reverse-lookup (4.0.1): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1667818Z   - Installing phpunit/php-code-coverage (11.0.12): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1670229Z   - Installing phar-io/version (3.2.1): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1672941Z   - Installing phar-io/manifest (2.0.4): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1675665Z   - Installing phpunit/phpunit (11.5.50): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1678075Z   - Installing psr/simple-cache (3.0.0): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1680501Z   - Installing pestphp/pest-plugin-mutate (v3.0.5): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1682867Z   - Installing symfony/finder (v8.0.8): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1685602Z   - Installing webmozart/assert (2.3.0): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1688047Z   - Installing phpstan/phpdoc-parser (2.3.2): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1690500Z   - Installing phpdocumentor/reflection-common (2.2.0): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1692933Z   - Installing doctrine/deprecations (1.1.6): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1695751Z   - Installing phpdocumentor/type-resolver (2.0.0): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1698167Z   - Installing phpdocumentor/reflection-docblock (6.0.3): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1700602Z   - Installing ta-tikoma/phpunit-architecture-test (0.8.7): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1703044Z   - Installing pestphp/pest-plugin-arch (v3.1.1): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1706103Z   - Installing symfony/polyfill-intl-normalizer (v1.36.0): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1708521Z   - Installing symfony/polyfill-intl-grapheme (v1.36.0): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1710809Z   - Installing symfony/string (v8.0.8): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1713275Z   - Installing symfony/deprecation-contracts (v3.6.0): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1715938Z   - Installing psr/container (2.0.2): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1718354Z   - Installing symfony/service-contracts (v3.6.1): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1720699Z   - Installing symfony/console (v8.0.8): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1723081Z   - Installing nunomaduro/termwind (v2.4.0): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1726029Z   - Installing nunomaduro/collision (v8.9.3): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1728205Z   - Installing symfony/process (v8.0.8): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1730504Z   - Installing brianium/paratest (v7.8.5): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1732914Z   - Installing pestphp/pest (v3.8.6): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1735578Z   - Installing setasign/fpdf (1.8.6): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1738042Z   - Installing tecnickcom/tcpdf (6.11.2): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1740494Z   - Installing setasign/fpdi (v2.6.6): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1742839Z   - Installing setasign/fpdi-tcpdf (v2.3.0): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:26.1745687Z   - Installing smalot/pdfparser (v2.12.4): Extracting archive
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.0612076Z Package setasign/fpdi-tcpdf is abandoned, you should avoid using it. No replacement was suggested.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.0613149Z Generating optimized autoload files
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.8971774Z 46 packages you are using are looking for funding.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.8972598Z Use the `composer fund` command to find out more!
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.9299099Z Vérification de vendor/...
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.9299957Z ✅ vendor/autoload.php créé avec succès
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.9327248Z ##[group]Run php -v
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.9327507Z [36;1mphp -v[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.9327693Z [36;1mphp -m[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.9349816Z shell: /usr/bin/bash -e {0}
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.9350047Z env:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.9350385Z   GH_TOKEN: ***
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.9350592Z   COMPOSER_PROCESS_TIMEOUT: 0
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.9350832Z   COMPOSER_NO_INTERACTION: 1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.9351045Z   COMPOSER_NO_AUDIT: 1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.9351240Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.9759737Z PHP 8.2.30 (cli) (built: Jan 14 2026 06:29:24) (NTS)
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.9760555Z Copyright (c) The PHP Group
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.9761339Z Zend Engine v4.2.30, Copyright (c) Zend Technologies
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:27.9762461Z     with Zend OPcache v8.2.30, Copyright (c), by Zend Technologies
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0191666Z [PHP Modules]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0192162Z amqp
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0192489Z apcu
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0192804Z ast
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0193157Z bcmath
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0193411Z bz2
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0193764Z calendar
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0194412Z Core
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0194747Z ctype
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0195054Z curl
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0195351Z date
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0195714Z dba
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0196027Z dom
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0196340Z ds
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0196673Z enchant
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0197006Z exif
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0197328Z FFI
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0197655Z fileinfo
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0197987Z filter
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0198318Z ftp
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0198647Z gd
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0198971Z gettext
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0199332Z gmp
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0199648Z hash
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0199970Z iconv
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0200304Z igbinary
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0200654Z imagick
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0200867Z imap
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0201067Z intl
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0201273Z json
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0201478Z ldap
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0201686Z libxml
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0201901Z mbstring
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0202128Z memcache
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0202363Z memcached
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0202606Z mongodb
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0202791Z msgpack
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0202971Z mysqli
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0203149Z mysqlnd
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0203329Z odbc
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0203513Z openssl
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0203703Z pcntl
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0203888Z pcre
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0204063Z PDO
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0204605Z pdo_dblib
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0204809Z PDO_Firebird
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0205019Z pdo_mysql
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0205215Z PDO_ODBC
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0205403Z pdo_pgsql
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0205597Z pdo_sqlite
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0205799Z pdo_sqlsrv
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0205990Z pgsql
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0206173Z Phar
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0206348Z posix
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0206532Z pspell
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0206716Z random
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0206898Z readline
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0207085Z redis
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0207267Z Reflection
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0207461Z session
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0207644Z shmop
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0207831Z SimpleXML
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0208020Z snmp
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0208199Z soap
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0208379Z sockets
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0208560Z sodium
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0208739Z SPL
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0208919Z sqlite3
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0209095Z sqlsrv
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0209278Z standard
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0209463Z sysvmsg
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0209648Z sysvsem
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0209829Z sysvshm
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0210004Z tidy
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0210187Z tokenizer
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0210373Z xml
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0210556Z xmlreader
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0210765Z xmlwriter
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0211278Z xsl
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0211458Z yaml
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0211648Z Zend OPcache
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0211848Z zip
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0212028Z zlib
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0212207Z zmq
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0212322Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0212413Z [Zend Modules]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0212619Z Zend OPcache
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0212751Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0292529Z ##[group]Run cd app
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0292788Z [36;1mcd app[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0292996Z [36;1mecho "--- ExampleTest ---"[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0293316Z [36;1m./vendor/bin/pest tests/ExampleTest.php || true[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0293642Z [36;1mecho "--- ConversionApiTest ---"[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0293998Z [36;1m./vendor/bin/pest tests/Feature/ConversionApiTest.php || true[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0294727Z [36;1mecho "--- BibliothequeApiTest ---"[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0295100Z [36;1m./vendor/bin/pest tests/Feature/BibliothequeApiTest.php || true[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0295472Z [36;1mecho "--- SessionManagerTest ---"[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0295827Z [36;1m./vendor/bin/pest tests/Feature/SessionManagerTest.php || true[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0296191Z [36;1mecho "--- SecurePurgeApiTest ---"[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0296535Z [36;1m./vendor/bin/pest tests/Feature/SecurePurgeApiTest.php || true[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0296916Z [36;1mecho "--- AutoTirageTest ---"[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0297240Z [36;1m./vendor/bin/pest tests/Feature/AutoTirageTest.php || true[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0297582Z [36;1mecho "--- FULL SUITE ---"[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0297821Z [36;1m./vendor/bin/pest[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0298028Z [36;1mcd ..[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0319736Z shell: /usr/bin/bash -e {0}
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0319970Z env:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0320320Z   GH_TOKEN: ***
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0320519Z   COMPOSER_PROCESS_TIMEOUT: 0
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0320756Z   COMPOSER_NO_INTERACTION: 1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0320975Z   COMPOSER_NO_AUDIT: 1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0321176Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0368414Z --- ExampleTest ---
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0936982Z PHP Warning:  require_once(/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php): Failed to open stream: No such file or directory in /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/Pest.php on line 34
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0938645Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0940391Z Warning: require_once(/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php): Failed to open stream: No such file or directory in /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/Pest.php on line 34
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0947054Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0948132Z   [41;1m Error [49;22m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0948429Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0950278Z [39;1m  Failed opening required '/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php' (include_path='.:/usr/share/php')[39;22m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0951975Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0952651Z   at [32mtests/Pest.php[39m:[32m34[39m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0977818Z      30▕ expect()->extend('toBeOne', function () {
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0978651Z      31▕     return $this->toBe(1);
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0979179Z      32▕ });
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0979557Z      33▕ 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0980212Z   ➜  34▕ require_once __DIR__ . '/helpers/test_helpers.php';
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0980898Z      35▕ 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0981261Z      36▕ /*
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0981928Z      37▕ |--------------------------------------------------------------------------
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0982440Z      38▕ | Helpers globaux
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0982627Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0982639Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.0982645Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1078943Z --- ConversionApiTest ---
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1683945Z PHP Warning:  require_once(/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php): Failed to open stream: No such file or directory in /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/Pest.php on line 34
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1687005Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1688750Z Warning: require_once(/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php): Failed to open stream: No such file or directory in /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/Pest.php on line 34
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1693454Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1694963Z   [41;1m Error [49;22m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1695197Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1696215Z [39;1m  Failed opening required '/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php' (include_path='.:/usr/share/php')[39;22m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1699614Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1700107Z   at [32mtests/Pest.php[39m:[32m34[39m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1726311Z      30▕ expect()->extend('toBeOne', function () {
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1727097Z      31▕     return $this->toBe(1);
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1727561Z      32▕ });
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1727803Z      33▕ 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1728232Z   ➜  34▕ require_once __DIR__ . '/helpers/test_helpers.php';
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1728652Z      35▕ 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1728876Z      36▕ /*
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1729337Z      37▕ |--------------------------------------------------------------------------
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1729814Z      38▕ | Helpers globaux
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1729993Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1730007Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1730028Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.1826017Z --- BibliothequeApiTest ---
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2389155Z PHP Warning:  require_once(/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php): Failed to open stream: No such file or directory in /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/Pest.php on line 34
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2390674Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2392195Z Warning: require_once(/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php): Failed to open stream: No such file or directory in /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/Pest.php on line 34
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2398354Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2399887Z   [41;1m Error [49;22m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2400189Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2402059Z [39;1m  Failed opening required '/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php' (include_path='.:/usr/share/php')[39;22m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2403525Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2404596Z   at [32mtests/Pest.php[39m:[32m34[39m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2430138Z      30▕ expect()->extend('toBeOne', function () {
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2430970Z      31▕     return $this->toBe(1);
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2431539Z      32▕ });
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2431946Z      33▕ 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2432667Z   ➜  34▕ require_once __DIR__ . '/helpers/test_helpers.php';
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2433383Z      35▕ 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2433780Z      36▕ /*
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2434909Z      37▕ |--------------------------------------------------------------------------
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2435778Z      38▕ | Helpers globaux
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2436092Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2436132Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2436143Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.2530389Z --- SessionManagerTest ---
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3100859Z PHP Warning:  require_once(/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php): Failed to open stream: No such file or directory in /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/Pest.php on line 34
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3102405Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3104414Z Warning: require_once(/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php): Failed to open stream: No such file or directory in /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/Pest.php on line 34
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3110516Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3111712Z   [41;1m Error [49;22m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3112000Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3113369Z [39;1m  Failed opening required '/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php' (include_path='.:/usr/share/php')[39;22m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3115995Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3116474Z   at [32mtests/Pest.php[39m:[32m34[39m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3141910Z      30▕ expect()->extend('toBeOne', function () {
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3142712Z      31▕     return $this->toBe(1);
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3143189Z      32▕ });
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3143454Z      33▕ 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3144637Z   ➜  34▕ require_once __DIR__ . '/helpers/test_helpers.php';
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3145199Z      35▕ 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3145451Z      36▕ /*
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3145981Z      37▕ |--------------------------------------------------------------------------
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3146537Z      38▕ | Helpers globaux
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3146743Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3146752Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3146758Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3238975Z --- SecurePurgeApiTest ---
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3816618Z PHP Warning:  require_once(/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php): Failed to open stream: No such file or directory in /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/Pest.php on line 34
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3817723Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3818891Z Warning: require_once(/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php): Failed to open stream: No such file or directory in /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/Pest.php on line 34
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3827138Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3828341Z   [41;1m Error [49;22m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3828599Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3829738Z [39;1m  Failed opening required '/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php' (include_path='.:/usr/share/php')[39;22m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3832264Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3832625Z   at [32mtests/Pest.php[39m:[32m34[39m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3858025Z      30▕ expect()->extend('toBeOne', function () {
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3858671Z      31▕     return $this->toBe(1);
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3859086Z      32▕ });
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3859303Z      33▕ 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3859671Z   ➜  34▕ require_once __DIR__ . '/helpers/test_helpers.php';
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3860012Z      35▕ 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3860206Z      36▕ /*
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3860600Z      37▕ |--------------------------------------------------------------------------
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3861021Z      38▕ | Helpers globaux
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3861171Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3861178Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3861183Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.3956789Z --- AutoTirageTest ---
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4519843Z PHP Warning:  require_once(/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php): Failed to open stream: No such file or directory in /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/Pest.php on line 34
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4521379Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4522954Z Warning: require_once(/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php): Failed to open stream: No such file or directory in /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/Pest.php on line 34
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4529350Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4530433Z   [41;1m Error [49;22m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4535313Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4536764Z [39;1m  Failed opening required '/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php' (include_path='.:/usr/share/php')[39;22m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4537484Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4537682Z   at [32mtests/Pest.php[39m:[32m34[39m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4560056Z      30▕ expect()->extend('toBeOne', function () {
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4560744Z      31▕     return $this->toBe(1);
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4561226Z      32▕ });
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4561473Z      33▕ 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4561928Z   ➜  34▕ require_once __DIR__ . '/helpers/test_helpers.php';
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4562349Z      35▕ 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4562579Z      36▕ /*
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4563050Z      37▕ |--------------------------------------------------------------------------
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4563944Z      38▕ | Helpers globaux
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4564397Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4564404Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4564410Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.4656536Z --- FULL SUITE ---
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5219709Z PHP Warning:  require_once(/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php): Failed to open stream: No such file or directory in /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/Pest.php on line 34
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5221629Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5223760Z Warning: require_once(/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php): Failed to open stream: No such file or directory in /home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/Pest.php on line 34
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5230715Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5231797Z   [41;1m Error [49;22m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5232039Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5233223Z [39;1m  Failed opening required '/home/runner/work/dupli-electron-caddy/dupli-electron-caddy/app/tests/helpers/test_helpers.php' (include_path='.:/usr/share/php')[39;22m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5236074Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5236457Z   at [32mtests/Pest.php[39m:[32m34[39m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5261362Z      30▕ expect()->extend('toBeOne', function () {
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5261977Z      31▕     return $this->toBe(1);
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5262388Z      32▕ });
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5262645Z      33▕ 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5263071Z   ➜  34▕ require_once __DIR__ . '/helpers/test_helpers.php';
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5263476Z      35▕ 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5263698Z      36▕ /*
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5264559Z      37▕ |--------------------------------------------------------------------------
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5265247Z      38▕ | Helpers globaux
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5265439Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5265447Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5265453Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5369216Z ##[error]Process completed with exit code 1.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5446640Z ##[group]Run echo ""
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5446910Z [36;1mecho ""[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5447183Z [36;1mecho "════════════════════════════════════════"[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5447500Z [36;1mecho "✅ TEST LINUX TERMINÉ"[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5447783Z [36;1mecho "════════════════════════════════════════"[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5448058Z [36;1mecho ""[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5448316Z [36;1mecho "L'AppImage est disponible dans les artifacts"[0m
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5469810Z shell: /usr/bin/bash -e {0}
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5470049Z env:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5470409Z   GH_TOKEN: ***
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5470622Z   COMPOSER_PROCESS_TIMEOUT: 0
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5470862Z   COMPOSER_NO_INTERACTION: 1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5471087Z   COMPOSER_NO_AUDIT: 1
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5471291Z ##[endgroup]
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5514706Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5515600Z ════════════════════════════════════════
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5516130Z ✅ TEST LINUX TERMINÉ
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5516528Z ════════════════════════════════════════
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5516784Z 
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5517286Z L'AppImage est disponible dans les artifacts
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.5592662Z Post job cleanup.
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.6559489Z [command]/usr/bin/git version
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.6595891Z git version 2.53.0
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.6639715Z Temporarily overriding HOME='/home/runner/work/_temp/d422b96c-c517-45ec-996d-19c9e944f707' before making global git config changes
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.6641138Z Adding repository directory to the temporary git global config as a safe directory
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.6652881Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/dupli-electron-caddy/dupli-electron-caddy
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.6685639Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.6717070Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.6941234Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.6961357Z http.https://github.com/.extraheader
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.6973549Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.7004767Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.7227396Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.7257450Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.7592913Z Cleaning up orphan processes
+build-and-test-linux	UNKNOWN STEP	2026-04-18T17:25:28.7993112Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-node@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

@@ -13,28 +13,25 @@ function unimpose_split_double_pages($input_file, $output_file) {
     }
     
     // Utiliser le même dossier temporaire que pour l'upload
-    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_unimpose' . DIRECTORY_SEPARATOR;
+    $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_unimpose' . DIRECTORY_SEPARATOR;
     
     if (!file_exists($tmp_dir)) {
-        mkdir($tmp_dir, 0755, true);
+        mkdir($tmp_dir, 0777, true);
+        @chmod($tmp_dir, 0777);
     }
     
     $timestamp = date('YmdHis');
     $cleanedPdfFile = $tmp_dir . 'cleaned_unimpose_split_' . $timestamp . '.pdf';
     
-    // Nettoyer le PDF avec Ghostscript - détection automatique de la plateforme
-    if (PHP_OS_FAMILY === 'Windows') {
-        // Chemin complet vers Ghostscript Windows
-        $gs_command = __DIR__ . '/../../ghostscript/gswin64c.exe';
-        if (!file_exists($gs_command)) {
-            throw new Exception("Ghostscript Windows non trouvé : " . $gs_command);
-        }
-    } else {
-        $gs_command = 'gs';
+    $gs_command = get_ghostscript_path();
+    if (!$gs_command) {
+        throw new Exception("Ghostscript n'a pas été trouvé sur ce système. Veuillez l'installer.");
     }
     
-    $command = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($input_file) . " 2>&1";
-    $output = shell_exec($command);
+    $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($input_file);
+    $gs_result = run_ghostscript($gs_args);
+    $output = $gs_result['output'];
+    $returnCode = $gs_result['success'] ? 0 : 1;
     
     if (!file_exists($cleanedPdfFile) || filesize($cleanedPdfFile) == 0) {
         throw new Exception("Échec du nettoyage Ghostscript. Sortie: " . $output);
@@ -84,27 +81,24 @@ function unimpose_booklet($input_file, $output_file) {
     
     // FORCER le nettoyage Ghostscript dans tous les cas
     $timestamp = date('YmdHis');
-    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_unimpose' . DIRECTORY_SEPARATOR;
+    $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_unimpose' . DIRECTORY_SEPARATOR;
     
     if (!file_exists($tmp_dir)) {
-        mkdir($tmp_dir, 0755, true);
+        mkdir($tmp_dir, 0777, true);
+        @chmod($tmp_dir, 0777);
     }
     
     $cleanedPdfFile = $tmp_dir . 'cleaned_unimpose_' . $timestamp . '.pdf';
     
-    // Nettoyer le PDF avec Ghostscript - détection automatique de la plateforme
-    if (PHP_OS_FAMILY === 'Windows') {
-        // Chemin complet vers Ghostscript Windows
-        $gs_command = __DIR__ . '/../../ghostscript/gswin64c.exe';
-        if (!file_exists($gs_command)) {
-            throw new Exception("Ghostscript Windows non trouvé : " . $gs_command);
-        }
-    } else {
-        $gs_command = 'gs';
+    $gs_command = get_ghostscript_path();
+    if (!$gs_command) {
+        throw new Exception("Ghostscript n'a pas été trouvé sur ce système. Veuillez l'installer.");
     }
     
-    $command = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($input_file) . " 2>&1";
-    $output = shell_exec($command);
+    $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($input_file);
+    $gs_result = run_ghostscript($gs_args);
+    $output = $gs_result['output'];
+    $returnCode = $gs_result['success'] ? 0 : 1;
     
     if (!file_exists($cleanedPdfFile) || filesize($cleanedPdfFile) == 0) {
         throw new Exception("Échec du nettoyage Ghostscript. Sortie: " . $output);
@@ -144,6 +138,7 @@ function unimpose_booklet($input_file, $output_file) {
         }
 }
 
+if (!function_exists('Action')) {
 function Action($conf) {
     // Initialiser le système de traduction
     I18nManager::getInstance();
@@ -152,63 +147,86 @@ function Action($conf) {
     $success = false;
     $result = '';
     $download_url = '';
+    $from_lib_file = null;
     
+    // Gestion de la pré-sélection bibliothèque (GET)
+    if (isset($_GET['from_lib']) && !empty($_GET['from_lib'])) {
+        require_once __DIR__ . '/BibliothequeManager.php';
+        $libManager = new BibliothequeManager();
+        $from_lib_file = $libManager->getFile($_GET['from_lib']);
+    }
+
     try {
-        if (isset($_SERVER["REQUEST_METHOD"]) && $_SERVER["REQUEST_METHOD"] == "POST" && isset($_FILES["pdf"]) && $_FILES["pdf"]["error"] == UPLOAD_ERR_OK) {
-            // Vérifier le type MIME
-            $finfo = finfo_open(FILEINFO_MIME_TYPE);
-            $mimeType = finfo_file($finfo, $_FILES["pdf"]["tmp_name"]);
-            finfo_close($finfo);
-            
-            if ($mimeType !== 'application/pdf') {
-                $errors[] = "Le fichier doit être un PDF.";
-            } elseif ($_FILES["pdf"]["size"] == 0) {
-                $errors[] = "Le fichier est vide.";
-            } elseif ($_FILES["pdf"]["size"] > 50 * 1024 * 1024) { // 50MB max
-                $errors[] = "Le fichier est trop volumineux (maximum 50MB).";
-            } else {
-                // Utiliser le répertoire temporaire système pour être compatible AppImage (ReadOnly FS)
-                $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_unimpose' . DIRECTORY_SEPARATOR;
-                if (!is_dir($tmpDir)) {
-                    if (!mkdir($tmpDir, 0777, true)) {
-                        throw new Exception("Impossible de créer le répertoire temporaire : " . $tmpDir);
+        if (isset($_SERVER["REQUEST_METHOD"]) && $_SERVER["REQUEST_METHOD"] == "POST") {
+            $pdfFile = null;
+            $originalName = null;
+            $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_unimpose' . DIRECTORY_SEPARATOR;
+
+            if (!is_dir($tmpDir)) {
+                mkdir($tmpDir, 0777, true);
+                @chmod($tmpDir, 0777);
+            }
+
+            // Cas 1 : Fichier bibliothèque
+            if (isset($_POST['lib_file_id']) && !empty($_POST['lib_file_id'])) {
+                require_once __DIR__ . '/BibliothequeManager.php';
+                $libManager = new BibliothequeManager();
+                $file = $libManager->getFile($_POST['lib_file_id']);
+                if ($file && file_exists($file['filepath'])) {
+                    $pdfFile = $file['filepath'];
+                    $originalName = pathinfo($file['filename'], PATHINFO_FILENAME);
+                } else {
+                    $errors[] = "Fichier de bibliothèque introuvable.";
+                }
+            } 
+            // Cas 2 : Fichier uploadé
+            elseif (isset($_FILES["pdf"]) && $_FILES["pdf"]["error"] == UPLOAD_ERR_OK) {
+                // Vérifier le type MIME
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mimeType = finfo_file($finfo, $_FILES["pdf"]["tmp_name"]);
+                finfo_close($finfo);
+                
+                if ($mimeType !== 'application/pdf') {
+                    $errors[] = "Le fichier doit être un PDF.";
+                } elseif ($_FILES["pdf"]["size"] == 0) {
+                    $errors[] = "Le fichier est vide.";
+                } elseif ($_FILES["pdf"]["size"] > 50 * 1024 * 1024) { // 50MB max
+                    $errors[] = "Le fichier est trop volumineux (maximum 50MB).";
+                } else {
+                    $timestamp = date('YmdHis');
+                    $uploadFile = $tmpDir . "unimpose_upload_" . $timestamp . ".pdf";
+                    if (move_uploaded_file($_FILES["pdf"]["tmp_name"], $uploadFile)) {
+                        $pdfFile = $uploadFile;
+                        $originalName = pathinfo($_FILES["pdf"]["name"], PATHINFO_FILENAME);
+                    } else {
+                        $errors[] = "Erreur lors de l'upload du fichier.";
                     }
                 }
+            }
+
+            if ($pdfFile && empty($errors)) {
+                // Déterminer le mode de désimposition
+                $unimposeMode = isset($_POST['unimpose_mode']) ? $_POST['unimpose_mode'] : 'booklet';
                 
-                // Sauvegarder le fichier uploadé
-                $timestamp = date('YmdHis');
-                $uploadFile = $tmpDir . "unimpose_upload_" . $timestamp . ".pdf";
+                if ($unimposeMode === 'split_double_pages') {
+                    $outputFile = $tmpDir . $originalName . '_split.pdf';
+                    $resultFile = unimpose_split_double_pages($pdfFile, $outputFile);
+                } else {
+                    $outputFile = $tmpDir . $originalName . '_unimposed.pdf';
+                    $resultFile = unimpose_booklet($pdfFile, $outputFile);
+                }
                 
-                if (move_uploaded_file($_FILES["pdf"]["tmp_name"], $uploadFile)) {
-                    // Générer le fichier de sortie avec le nom original + _unimposed
-                    $originalName = pathinfo($_FILES["pdf"]["name"], PATHINFO_FILENAME);
+                if (file_exists($resultFile)) {
+                    $success = true;
+                    $result = basename($resultFile);
+                    $download_url = "?download_unimposed&file=" . urlencode(basename($resultFile));
                     
-                    // Déterminer le mode de désimposition
-                    $unimposeMode = isset($_POST['unimpose_mode']) ? $_POST['unimpose_mode'] : 'booklet';
-                    
-                    if ($unimposeMode === 'split_double_pages') {
-                        // Mode : couverture + doubles pages
-                        $outputFile = $tmpDir . $originalName . '_split.pdf';
-                        $resultFile = unimpose_split_double_pages($uploadFile, $outputFile);
-                    } else {
-                        // Mode : livret classique (par défaut)
-                        $outputFile = $tmpDir . $originalName . '_unimposed.pdf';
-                        $resultFile = unimpose_booklet($uploadFile, $outputFile);
-                    }
-                    
-                    if (file_exists($resultFile)) {
-                        $success = true;
-                        $result = basename($resultFile);
-                        // URL spéciale pour télécharger depuis le dossier temporaire système
-                        $download_url = "?download_unimposed&file=" . urlencode(basename($resultFile));
-                        
-                        // Nettoyer le fichier d'upload temporaire
+                    // Si c'était un upload temporaire, on le supprime
+                    if (isset($uploadFile) && file_exists($uploadFile)) {
                         unlink($uploadFile);
-                    } else {
-                        $errors[] = "Erreur lors de la génération du PDF désimposé.";
                     }
                 } else {
-                    $errors[] = "Erreur lors de l'upload du fichier vers : " . $uploadFile;
+                    $errors[] = "Erreur lors de la génération du PDF désimposé.";
                 }
             }
         }
@@ -225,7 +243,9 @@ function Action($conf) {
         'errors' => $errors,
         'success' => $success,
         'result' => $result,
-        'download_url' => $download_url
+        'download_url' => $download_url,
+        'from_lib_file' => $from_lib_file
     ]);
+}
 }
 ?>

@@ -1,210 +1,265 @@
-
 <!-- CSS pour l'édition inline des traductions -->
-<link rel="stylesheet" href="css/inline-translation.css">
+<?php $base_path = $base_path ?? ''; ?>
+<link rel="stylesheet" href="<?= $base_path ?>css/inline-translation.css">
 
 <style>
-.navbar-brand {
+  .navbar-brand {
     white-space: nowrap !important;
     overflow: visible !important;
     font-size: 14px !important;
-}
-.navbar-nav {
+  }
+
+  .navbar-nav {
     white-space: nowrap !important;
     display: flex !important;
     flex-wrap: nowrap !important;
-}
-.navbar-nav > li {
+  }
+
+  .navbar-nav>li {
     white-space: nowrap !important;
     flex-shrink: 0 !important;
-}
-.navbar-nav > li > a {
+  }
+
+  .navbar-nav>li>a {
     white-space: nowrap !important;
     padding: 8px 4px !important;
     font-size: 12px !important;
-}
-.navbar {
+  }
+
+  .navbar {
     min-height: 32px !important;
-}
-.navbar-header {
+  }
+
+  .navbar-header {
     float: left !important;
-}
-.navbar-collapse {
+  }
+
+  .navbar-collapse {
     overflow: visible !important;
     max-height: none !important;
-}
-.navbar-nav {
+  }
+
+  .navbar-nav {
     margin-top: 0 !important;
     margin-bottom: 0 !important;
-}
-.btn-sm {
+  }
+
+  .btn-sm {
     padding: 4px 8px !important;
     font-size: 11px !important;
-}
-.navbar-brand big {
+  }
+
+  .navbar-brand big {
     font-size: 16px !important;
-}
-.dropdown-menu {
+  }
+
+  .dropdown-menu {
     font-size: 12px !important;
-}
-.language-selector .btn {
+  }
+
+  .language-selector .btn {
     padding: 2px 4px !important;
     font-size: 9px !important;
     vertical-align: middle !important;
     margin-top: 0px !important;
     line-height: 1.2 !important;
-}
-.language-selector .btn i {
+  }
+
+  .language-selector .btn i {
     font-size: 8px !important;
-}
-.language-selector {
+  }
+
+  .language-selector {
     vertical-align: middle !important;
     margin-top: -2px !important;
-}
+  }
 </style>
 
-    <div class="navbar navbar-default navbar-static-top">
-      <div class="container">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-ex-collapse">
-            <span class="sr-only"><?php _e('common.toggle_navigation'); ?></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="?accueil" style="white-space: nowrap;">
-            <span><big><?php _e('header.brand'); ?></big></span>
+<div class="navbar navbar-default navbar-static-top">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-ex-collapse">
+        <span class="sr-only"><?php _e('common.toggle_navigation'); ?></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="?accueil" style="white-space: nowrap;">
+        <span><big><?php _e('header.brand'); ?></big></span>
+      </a>
+    </div>
+    <div class="collapse navbar-collapse" id="navbar-ex-collapse">
+      <ul class="nav navbar-nav navbar-right">
+        <!-- Dupli Studio -->
+        <li>
+          <a href="?studio" style="color: #4f6ef7;">
+            <i class="fa fa-magic" style="margin-right: 5px;"></i>
+            <strong>Studio</strong>
           </a>
-        </div>
-        <div class="collapse navbar-collapse" id="navbar-ex-collapse">
-          <ul class="nav navbar-nav navbar-right">
-            <!-- Bibliothèque en haut -->
+        </li>
+        <!-- Bibliothèque en haut -->
+        <li>
+          <a href="?bibliotheque">
+            <i class="fa fa-book" style="margin-right: 5px;"></i>
+            <strong><?php _e('header.library'); ?></strong>
+          </a>
+        </li>
+        <!-- Menu Impositions -->
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+            aria-expanded="false">
+            <i class="fa fa-book" style="margin-right: 5px;"></i>
+            <?php _e('header.impositions'); ?> <span class="caret"></span>
+          </a>
+          <ul class="dropdown-menu">
             <li>
-              <a href="?bibliotheque">
-                <i class="fa fa-book" style="margin-right: 5px;"></i>
-                <strong>Bibliothèque</strong>
-              </a>
-            </li>
-            <!-- Menu Impositions -->
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
-                <i class="fa fa-book" style="margin-right: 5px;"></i>
-                Impositions <span class="caret"></span>
-              </a>
-              <ul class="dropdown-menu">
-                <li>
-                  <a href="?imposition_brochure">
-                    <i class="fa fa-book" style="color: #28a745; margin-right: 8px;"></i>
-                    <strong>Imposition Brochure</strong>
-                    <small class="text-muted d-block">Livrets pour impression recto-verso</small>
-                  </a>
-                </li>
-                <li>
-                  <a href="?imposition_livre">
-                    <i class="fa fa-book" style="color: #007bff; margin-right: 8px;"></i>
-                    <strong>Imposition Livre</strong>
-                    <small class="text-muted d-block">Cut & Stack pour découpe</small>
-                  </a>
-                </li>
-                <li>
-                  <a href="?imposition_tracts">
-                    <i class="fa fa-copy" style="color: #ffd93d; margin-right: 8px;"></i>
-                    <strong><?php _e('header.impose_tracts'); ?></strong>
-                    <small class="text-muted d-block"><?php _e('header.impose_tracts_desc'); ?></small>
-                  </a>
-                </li>
-                <li role="separator" class="divider"></li>
-                <li>
-                  <a href="?unimpose">
-                    <i class="fa fa-undo" style="color: #ffb3ba; margin-right: 8px;"></i>
-                    <strong><?php _e('header.unimpose'); ?></strong>
-                    <small class="text-muted d-block"><?php _e('header.unimpose_desc'); ?></small>
-                  </a>
-                </li>
-              </ul>
-            </li>
-            <!-- Menu PDF Tools (les 5 derniers) -->
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
-                <span class="glyphicon glyphicon-file" aria-hidden="true"></span>
-                <?php _e('header.pdf_tools'); ?> <span class="caret"></span>
-              </a>
-              <ul class="dropdown-menu">
-                <li>
-                  <a href="?png_to_pdf">
-                    <i class="fa fa-file-image-o" style="color: #a8e6cf; margin-right: 8px;"></i>
-                    <strong><?php _e('header.images_to_pdf'); ?></strong>
-                    <small class="text-muted d-block"><?php _e('header.images_to_pdf_desc'); ?></small>
-                  </a>
-                </li>
-                <li>
-                  <a href="?pdf_to_png">
-                    <i class="fa fa-picture-o" style="color: #c3aed6; margin-right: 8px;"></i>
-                    <strong><?php _e('header.pdf_to_images'); ?></strong>
-                    <small class="text-muted d-block"><?php _e('header.pdf_to_images_desc'); ?></small>
-                  </a>
-                </li>
-                <li role="separator" class="divider"></li>
-                <li>
-                  <a href="?riso_separator">
-                    <i class="fa fa-adjust" style="color: #ff6b9d; margin-right: 8px;"></i>
-                    <strong><?php _e('header.riso_separator'); ?></strong>
-                    <small class="text-muted d-block"><?php _e('header.riso_separator_desc'); ?></small>
-                  </a>
-                </li>
-                <li>
-                  <a href="?image_processor">
-                    <i class="fa fa-sliders" style="color: #667eea; margin-right: 8px;"></i>
-                    <strong>Contraste / Luminosité / Bitmap</strong>
-                    <small class="text-muted d-block">Traitement d'image</small>
-                  </a>
-                </li>
-                <li role="separator" class="divider"></li>
-                <li>
-                  <a href="?taux_remplissage">
-                    <i class="fa fa-bar-chart" style="color: #84fab0; margin-right: 8px;"></i>
-                    <strong><?php _e('header.fill_rate'); ?></strong>
-                    <small class="text-muted d-block"><?php _e('header.fill_rate_desc'); ?></small>
-                  </a>
-                </li>
-              </ul>
-            </li>
-            <li>
-              <a href="?tirage_multimachines">
-                <span class="glyphicon glyphicon-print" aria-hidden="true"></span>
-                <?php _e('header.new_print'); ?>
+              <a href="?imposition_brochure">
+                <i class="fa fa-book" style="color: #28a745; margin-right: 8px;"></i>
+                <strong><?php _e('header.imposition_brochure'); ?></strong>
+                <small class="text-muted d-block"><?php _e('header.imposition_brochure_desc'); ?></small>
               </a>
             </li>
             <li>
-              <a href="?changement">
-                <span class="glyphicon glyphicon-tint" aria-hidden="true"></span>
-                <?php _e('header.change_report'); ?>
+              <a href="?imposition_livre">
+                <i class="fa fa-book" style="color: #007bff; margin-right: 8px;"></i>
+                <strong><?php _e('header.imposition_book'); ?></strong>
+                <small class="text-muted d-block"><?php _e('header.imposition_book_desc'); ?></small>
               </a>
             </li>
             <li>
-              <a href="?aide_machines">
-                <span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span>
-                <?php _e('header.help_tutorials'); ?>
+              <a href="?imposition_tracts">
+                <i class="fa fa-copy" style="color: #ffd93d; margin-right: 8px;"></i>
+                <strong><?php _e('header.impose_tracts'); ?></strong>
+                <small class="text-muted d-block"><?php _e('header.impose_tracts_desc'); ?></small>
               </a>
             </li>
+            <li role="separator" class="divider"></li>
             <li>
-              <a href="?stats">
-                <span class="glyphicon glyphicon-stats" aria-hidden="true"></span>
-                <?php _e('header.statistics'); ?>
+              <a href="?unimpose">
+                <i class="fa fa-undo" style="color: #ffb3ba; margin-right: 8px;"></i>
+                <strong><?php _e('header.unimpose'); ?></strong>
+                <small class="text-muted d-block"><?php _e('header.unimpose_desc'); ?></small>
               </a>
-            </li>
-            <li>
-              <a href="?admin"><?php _e('header.administration'); ?></a>
-            </li>
-            <li>
-              <?php echo generateLanguageSelector(); ?>
             </li>
           </ul>
-        </div>
-      </div>
+        </li>
+        <!-- Menu PDF Tools (les 5 derniers) -->
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+            aria-expanded="false">
+            <span class="glyphicon glyphicon-file" aria-hidden="true"></span>
+            <?php _e('header.pdf_tools'); ?> <span class="caret"></span>
+          </a>
+          <ul class="dropdown-menu">
+            <li>
+              <a href="?png_to_pdf">
+                <i class="fa fa-file-image-o" style="color: #a8e6cf; margin-right: 8px;"></i>
+                <strong><?php _e('header.images_to_pdf'); ?></strong>
+                <small class="text-muted d-block"><?php _e('header.images_to_pdf_desc'); ?></small>
+              </a>
+            </li>
+            <li>
+              <a href="?pdf_to_png">
+                <i class="fa fa-picture-o" style="color: #c3aed6; margin-right: 8px;"></i>
+                <strong><?php _e('header.pdf_to_images'); ?></strong>
+                <small class="text-muted d-block"><?php _e('header.pdf_to_images_desc'); ?></small>
+              </a>
+            </li>
+            <li>
+              <a href="?pdf_merge">
+                <i class="fa fa-compress" style="color: #f8b195; margin-right: 8px;"></i>
+                <strong><?php _e('header.pdf_merge'); ?></strong>
+                <small class="text-muted d-block"><?php _e('header.pdf_merge_desc'); ?></small>
+              </a>
+            </li>
+            <li>
+              <a href="?resizer">
+                <i class="fa fa-expand" style="color: #f8b195; margin-right: 8px;"></i>
+                <strong><?php _e('header.resizer'); ?></strong>
+                <small class="text-muted d-block"><?php _e('header.resizer_desc'); ?></small>
+              </a>
+            </li>
+            <li>
+              <a href="?pdf_organizer">
+                <i class="fa fa-th-large" style="color: #764ba2; margin-right: 8px;"></i>
+                <strong><?php _e('header.pdf_organizer'); ?></strong>
+                <small class="text-muted d-block"><?php _e('header.pdf_organizer_desc'); ?></small>
+              </a>
+            </li>
+            <li role="separator" class="divider"></li>
+            <li>
+              <a href="?riso_separator">
+                <i class="fa fa-adjust" style="color: #ff6b9d; margin-right: 8px;"></i>
+                <strong><?php _e('header.riso_separator'); ?></strong>
+                <small class="text-muted d-block"><?php _e('header.riso_separator_desc'); ?></small>
+              </a>
+            </li>
+            <li>
+              <a href="?image_processor">
+                <i class="fa fa-sliders" style="color: #667eea; margin-right: 8px;"></i>
+                <strong><?php _e('header.image_processor'); ?></strong>
+                <small class="text-muted d-block"><?php _e('header.image_processor_desc'); ?></small>
+              </a>
+            </li>
+            <li role="separator" class="divider"></li>
+            <li>
+              <a href="?taux_remplissage">
+                <i class="fa fa-bar-chart" style="color: #84fab0; margin-right: 8px;"></i>
+                <strong><?php _e('header.fill_rate'); ?></strong>
+                <small class="text-muted d-block"><?php _e('header.fill_rate_desc'); ?></small>
+              </a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="?tirage_multimachines">
+            <span class="glyphicon glyphicon-print" aria-hidden="true"></span>
+            <?php _e('header.new_print'); ?>
+          </a>
+        </li>
+        <li>
+          <a href="?auto_tirage">
+            <i class="fa fa-magic" style="margin-right: 5px;"></i>
+            <?php _e('header.auto_tirage'); ?>
+          </a>
+        </li>
+        <li>
+          <a href="?changement">
+            <span class="glyphicon glyphicon-tint" aria-hidden="true"></span>
+            <?php _e('header.change_report'); ?>
+          </a>
+        </li>
+        <li>
+          <a href="?aide_machines">
+            <span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span>
+            <?php _e('header.help_tutorials'); ?>
+          </a>
+        </li>
+        <li>
+          <a href="?stats">
+            <span class="glyphicon glyphicon-stats" aria-hidden="true"></span>
+            <?php _e('header.statistics'); ?>
+          </a>
+        </li>
+        <li>
+          <a href="?admin"><?php _e('header.administration'); ?></a>
+        </li>
+        <li>
+          <?php echo generateLanguageSelector(); ?>
+        </li>
+      </ul>
     </div>
+  </div>
+</div>
 
 <!-- Auto-updater UI (Electron uniquement - ne s'active pas en mode PHP standalone) -->
-<script src="js/updater-ui.js"></script>
+<script src="<?= $base_path ?>js/updater-ui.js"></script>
 
 <!-- JavaScript pour l'édition inline des traductions -->
-<script src="js/inline-translation.js"></script>
+<script src="<?= $base_path ?>js/inline-translation.js"></script>
+
+<script>
+// Lancer la maintenance en arrière-plan (indexation texte, etc.)
+// Le script API gère lui-même un verrou de 5 minutes pour ne pas se lancer à chaque clic
+fetch('?run_background_maintenance').catch(e => console.warn("Background maintenance error", e));
+</script>

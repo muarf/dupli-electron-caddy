@@ -3,6 +3,7 @@ require_once(__DIR__ . '/../vendor/autoload.php');
 require_once(__DIR__ . '/../controler/functions/utilities.php');
 require_once(__DIR__ . '/../controler/functions/i18n.php');
 require_once(__DIR__ . '/ImpositionLeaflet.php');
+require_once(__DIR__ . '/../controler/functions/binary_utilities.php');
 use setasign\Fpdi\TcpdfFpdi as TCPDI;
 
 /**
@@ -14,6 +15,7 @@ use setasign\Fpdi\TcpdfFpdi as TCPDI;
  * @return array{file:string,page_count:int,temp_file:?string}
  * @throws Exception
  */
+if (!function_exists('padPdfToMultiple')) {
 function padPdfToMultiple($pdfFilePath, $multiple) {
     $pdf = new TCPDI();
     $pageCount = $pdf->setSourceFile($pdfFilePath);
@@ -30,53 +32,16 @@ function padPdfToMultiple($pdfFilePath, $multiple) {
         ];
     }
 
-    $pagesToAdd = $multiple - ($pageCount % $multiple);
-
-    $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR;
-
-    $outputPath = $tmp_dir . 'padded_' . date('YmdHis') . '_' . uniqid() . '.pdf';
-
-    $pdfPadded = new TCPDI();
-    $pdfPadded->setPrintHeader(false);
-    $pdfPadded->setPrintFooter(false);
-    $pdfPadded->setSourceFile($pdfFilePath);
-
-    $defaultWidth = 210;
-    $defaultHeight = 297;
-    $defaultOrientation = 'P';
-
-    for ($pageNum = 1; $pageNum <= $pageCount; $pageNum++) {
-        $templateId = $pdfPadded->importPage($pageNum);
-        $size = $pdfPadded->getTemplateSize($templateId);
-        if ($size && isset($size['width']) && isset($size['height'])) {
-            $width = $size['width'];
-            $height = $size['height'];
-            $defaultWidth = $width;
-            $defaultHeight = $height;
-            $defaultOrientation = ($width > $height) ? 'L' : 'P';
-        } else {
-            $width = $defaultWidth;
-            $height = $defaultHeight;
-        }
-
-        $orientation = ($width > $height) ? 'L' : 'P';
-        $pdfPadded->AddPage($orientation, [$width, $height]);
-        $pdfPadded->useTemplate($templateId, 0, 0, $width, $height);
-    }
-
-    for ($i = 0; $i < $pagesToAdd; $i++) {
-        $pdfPadded->AddPage($defaultOrientation, [$defaultWidth, $defaultHeight]);
-    }
-
-    $pdfPadded->Output($outputPath, 'F');
+    $pagesToAdd = ($pageCount % $multiple === 0) ? 0 : $multiple - ($pageCount % $multiple);
 
     return [
-        'file' => $outputPath,
+        'file' => $pdfFilePath,
         'page_count' => $pageCount + $pagesToAdd,
-        'temp_file' => $outputPath
+        'temp_file' => null
     ];
 }
-
+}
+if (!function_exists('addPageNumber')) {
 function addPageNumber($pdf, $page_num, $x, $y, $new_width, $new_height, $rotation) {
     // Désactiver l'ajout automatique de pages
     $pdf->setAutoPageBreak(false);
@@ -102,7 +67,9 @@ function addPageNumber($pdf, $page_num, $x, $y, $new_width, $new_height, $rotati
         $pdf->StopTransform();
     }
 }
+}
 
+if (!function_exists('Action')) {
 function Action($conf)
 {
     $array = array();
@@ -315,19 +282,11 @@ function Action($conf)
                 $cleanedPdfFile = $tmp_dir . 'cleaned_' . $timestamp . '.pdf';
                 
                 // Nettoyer le PDF avec Ghostscript
-                if (PHP_OS_FAMILY === 'Windows') {
-                    $gs_command = __DIR__ . '/../../ghostscript/gswin64c.exe';
-                    if (!file_exists($gs_command)) {
-                        throw new Exception("Ghostscript Windows non trouvé : " . $gs_command);
-                    }
-                } else {
-                    $gs_command = 'gs';
-                }
-                $command = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($pdfFile) . " 2>&1";
-                $output = shell_exec($command);
+                $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/printer -sOutputFile=" . escapeshellarg($cleanedPdfFile) . " " . escapeshellarg($pdfFile);
+                $gs_result = run_ghostscript($gs_args);
                 
-                if (!file_exists($cleanedPdfFile) || filesize($cleanedPdfFile) == 0) {
-                    throw new Exception("Échec du nettoyage Ghostscript. Sortie: " . $output);
+                if (!$gs_result['success'] || !file_exists($cleanedPdfFile) || filesize($cleanedPdfFile) == 0) {
+                    throw new Exception("Échec du nettoyage Ghostscript. Sortie: " . $gs_result['output']);
                 }
                 
                 // Réessayer avec le PDF nettoyé
@@ -459,6 +418,7 @@ function Action($conf)
     }
     
     return template(__DIR__ . "/../view/imposition_brochure.html.php", $array);
+}
 }
 
 ?>

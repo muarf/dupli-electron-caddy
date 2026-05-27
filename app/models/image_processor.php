@@ -40,16 +40,6 @@ function convert_pdf_to_images_preserve_size($pdf_file, $output_dir, $base_filen
         // Utiliser 300 DPI pour préserver la qualité/résolution du PDF original
         // Le DPI détermine la résolution des images générées, pas la taille finale
         $dpi = 300;
-        
-        // Vérifier que Ghostscript est disponible
-        $gs_command = 'gs';
-        if (PHP_OS_FAMILY === 'Windows') {
-            $gs_command = __DIR__ . '/../ghostscript/gswin64c.exe';
-            if (!file_exists($gs_command)) {
-                throw new Exception("Ghostscript Windows non trouvé : " . $gs_command);
-            }
-        }
-        
         // Vérifier que le fichier PDF existe
         if (!file_exists($pdf_file)) {
             throw new Exception("Le fichier PDF n'existe pas : " . $pdf_file);
@@ -63,18 +53,16 @@ function convert_pdf_to_images_preserve_size($pdf_file, $output_dir, $base_filen
         // Générer un préfixe avec le nom du fichier original
         $prefix = $base_filename . '_page_%03d.png';
         $output_pattern = $output_dir . $prefix;
-        
+
         // Utiliser Ghostscript pour convertir le PDF en PNG à haute résolution
         // IMPORTANT: Utiliser -dUseCropBox=true pour que les images générées correspondent
         // exactement aux dimensions détectées par FPDI (qui lit aussi la CropBox)
-        $command = $gs_command . " -dNOPAUSE -dBATCH -dUseCropBox=true -sDEVICE=png16m -r" . intval($dpi) . " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($output_pattern) . " " . escapeshellarg($pdf_file) . " 2>&1";
+        $gs_args = "-dNOPAUSE -dBATCH -dUseCropBox=true -sDEVICE=png16m -r" . intval($dpi) . " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($output_pattern) . " " . escapeshellarg($pdf_file);
         
-        $output = [];
-        $return_var = 0;
-        exec($command, $output, $return_var);
+        $gs_result = run_ghostscript($gs_args);
         
-        if ($return_var !== 0) {
-            throw new Exception("Erreur lors de la conversion avec Ghostscript. Code: " . $return_var . " Output: " . implode("\n", $output));
+        if (!$gs_result['success']) {
+            throw new Exception("Erreur lors de la conversion avec Ghostscript. Code: " . $gs_result['error'] . " Output: " . $gs_result['output']);
         }
         
         // Lister les fichiers PNG créés
@@ -414,7 +402,27 @@ function convert_to_bitmap_dithering($image) {
     $width = imagesx($image);
     $height = imagesy($image);
     
-    // 1. Essayer d'utiliser Imagick (Extension PHP) - Recommandé pour perf
+        try {
+            $tmp_in = resolveTempDir() . DIRECTORY_SEPARATOR . 'dither_in_' . uniqid() . '.png';
+            $tmp_out = resolveTempDir() . DIRECTORY_SEPARATOR . 'dither_out_' . uniqid() . '.png';
+            imagepng($image, $tmp_in);
+            
+            // Floyd-Steinberg dithering via CLI
+            $magick_args = escapeshellarg($tmp_in) . " -colorspace gray -dither FloydSteinberg -colors 2 " . escapeshellarg($tmp_out);
+            run_imagemagick($magick_args);
+            
+            if (file_exists($tmp_out)) {
+                $new_image = imagecreatefrompng($tmp_out);
+                @unlink($tmp_in);
+                @unlink($tmp_out);
+                if ($new_image !== false) return $new_image;
+            }
+            @unlink($tmp_in);
+        } catch (Exception $e) {
+            error_log("Erreur Magick CLI dithering: " . $e->getMessage());
+        }
+
+    // 2. Essayer d'utiliser Imagick (Extension PHP)
     if (extension_loaded('imagick')) {
         try {
             // Sauvegarder l'image GD dans un buffer pour la passer à Imagick
@@ -575,6 +583,7 @@ function process_image($image_path, $output_path, $params) {
 /**
  * Fonction principale Action
  */
+if (!function_exists('Action')) {
 function Action($conf) {
     $errors = array();
     $success = false;
@@ -602,7 +611,7 @@ function Action($conf) {
         }
         
         $progress_key = $_GET['progress_key'];
-        $progress_file = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor_progress_' . $progress_key . '.json';
+        $progress_file = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor_progress_' . $progress_key . '.json';
         
         // Cette requête doit être rapide, pas de timeout
         set_time_limit(5); // Maximum 5 secondes pour lire un fichier
@@ -652,11 +661,12 @@ function Action($conf) {
                         $errors[] = "Le fichier est trop volumineux (maximum 50MB).";
                     } else {
                         // Créer le dossier temporaire
-                        $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
+                        $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
                         if (!is_dir($tmpDir)) {
                             if (!mkdir($tmpDir, 0777, true)) {
                                 throw new Exception("Impossible de créer le dossier temporaire.");
                             }
+                            @chmod($tmpDir, 0777);
                         }
                         
                         $timestamp = date('YmdHis');
@@ -738,11 +748,12 @@ function Action($conf) {
                 // Si on a un fichier bibliothèque, créer un $_FILES simulé
                 if ($from_lib_file) {
                     // Créer un fichier temporaire copié depuis la bibliothèque
-                    $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
+                    $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
                     if (!is_dir($tmpDir)) {
                         if (!mkdir($tmpDir, 0777, true)) {
                             throw new Exception("Impossible de créer le dossier temporaire.");
                         }
+                        @chmod($tmpDir, 0777);
                     }
                     
                     $timestamp = date('YmdHis');
@@ -798,11 +809,12 @@ function Action($conf) {
                         $errors[] = "Le fichier est trop volumineux (maximum 50MB).";
                     } else {
                     // Créer le dossier temporaire
-                    $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
+                    $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
                     if (!is_dir($tmpDir)) {
                         if (!mkdir($tmpDir, 0777, true)) {
                             throw new Exception("Impossible de créer le dossier temporaire.");
                         }
+                        @chmod($tmpDir, 0777);
                     }
                     
                     $timestamp = date('YmdHis');
@@ -812,7 +824,7 @@ function Action($conf) {
                     
                     // Créer une clé de progression
                     $progress_key = uniqid('proc_', true);
-                    $progress_file = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor_progress_' . $progress_key . '.json';
+                    $progress_file = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor_progress_' . $progress_key . '.json';
                     
                     // Initialiser la progression
                     file_put_contents($progress_file, json_encode(array(
@@ -1068,6 +1080,7 @@ function Action($conf) {
         'result' => $result,
         'from_lib_file' => $from_lib_file
     ));
+}
 }
 
 ?>

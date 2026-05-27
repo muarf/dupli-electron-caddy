@@ -38,18 +38,14 @@
 .translation-editable.editing-enabled {
     opacity: 1 !important;
     cursor: pointer !important;
-    border: 2px dashed rgba(0, 123, 255, 0.3);
-    background: rgba(0, 123, 255, 0.05);
+    border: 2px dashed rgba(0, 123, 255, 0.4);
+    background: rgba(0, 123, 255, 0.08);
+    min-height: 1.2em;
+    min-width: 20px;
 }
 
-.translation-editable.editing-enabled:hover {
-    border-color: #007bff;
-    background: rgba(0, 123, 255, 0.1);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
-}
-
-.translation-editable.editing-enabled:hover .edit-icon {
+.translation-editable.editing-enabled .edit-icon {
+    display: inline-block !important;
     opacity: 1;
     color: #007bff;
 }
@@ -60,8 +56,7 @@
     opacity: 0.6;
     transition: all 0.3s ease;
     color: #6c757d;
-    /* Masquer par défaut pour éviter le flash */
-    display: none;
+    display: inline-block;
 }
 
 /* Mode édition */

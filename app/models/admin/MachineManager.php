@@ -42,16 +42,21 @@ class AdminMachineManager {
             error_log("DEBUG addMachine - machine_type: $machine_type, machine_name: $machine_name, master_counter: $master_counter, passage_counter: $passage_counter");
             error_log("DEBUG addMachine - prix_master_unite: $prix_master_unite, prix_master_pack: $prix_master_pack");
             
+            $machine_id = null;
             if ($machine_type === 'duplicopieur') {
-                $this->insertDuplicopieur($db, $machine_name, $master_counter, $passage_counter, $prix_master_unite, $prix_master_pack, $tambours, $prix_tambour_unite, $prix_tambour_pack);
+                $machine_id = $this->insertDuplicopieur($db, $machine_name, $master_counter, $passage_counter, $prix_master_unite, $prix_master_pack, $tambours, $prix_tambour_unite, $prix_tambour_pack);
             } else {
-                $this->insertPhotocopieur($db, $machine_type, $machine_name, $passage_counter, $data);
+                $machine_id = $this->insertPhotocopieur($db, $machine_type, $machine_name, $passage_counter, $data);
             }
             
             // Créer automatiquement une aide pour la nouvelle machine
             $this->createDefaultAide($db, $machine_name);
             
-            return ['success' => "Machine $machine_name ajoutée avec succès"];
+            return [
+                'success' => "Machine $machine_name ajoutée avec succès",
+                'machine_id' => $machine_id,
+                'machine_type' => ($machine_type === 'duplicopieur' ? 'dupli' : 'photocop')
+            ];
             
         } catch (Exception $e) {
             return ['error' => "Erreur lors de l'ajout de la machine : " . $e->getMessage()];
@@ -131,7 +136,7 @@ class AdminMachineManager {
             }
         }
         
-        return true;
+        return $duplicopieur_id;
     }
     
     /**
@@ -185,6 +190,9 @@ class AdminMachineManager {
         $query = $db->prepare('INSERT INTO photocopieurs (marque, modele, type_encre, actif) VALUES (?, ?, ?, 1)');
         $query->execute([$name, $name, $type_encre]);
         
+        // Capturer l'ID immédiatement avant tout autre INSERT
+        $machine_id = $db->lastInsertId();
+        
         // Toujours créer une entrée dans cons
         $query = $db->prepare('INSERT INTO cons (date, machine, type, nb_p, nb_m) VALUES (?, ?, "passage", ?, 0)');
         $query->execute([$date, $name, $passage_counter]);
@@ -197,6 +205,8 @@ class AdminMachineManager {
         } else if ($type === 'photocop_toner') {
             $this->insertPhotocopieurTonerPrix($db, $name, $data);
         }
+        
+        return $machine_id;
     }
     
     /**

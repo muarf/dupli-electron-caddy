@@ -84,11 +84,11 @@ it('supprime un photocopieur et supprime les consommations associées', function
 
 function seed_admin_machine_schema(PDO $pdo): void
 {
-    $pdo->exec('CREATE TABLE duplicopieurs (id INTEGER PRIMARY KEY AUTOINCREMENT, marque TEXT, modele TEXT, supporte_a3 INTEGER, supporte_a4 INTEGER, actif INTEGER, tambours TEXT, created_at TEXT, updated_at TEXT)');
-    $pdo->exec('CREATE TABLE prix (id INTEGER PRIMARY KEY AUTOINCREMENT, machine_type TEXT, machine_id INTEGER, type TEXT, unite REAL, pack REAL)');
-    $pdo->exec('CREATE TABLE dupli (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT, contact TEXT, master_av REAL, master_ap REAL, passage_av REAL, passage_ap REAL, rv TEXT, prix REAL, paye TEXT, cb REAL, mot TEXT, date INTEGER, nom_machine TEXT, duplicopieur_id INTEGER)');
-    $pdo->exec('CREATE TABLE cons (id INTEGER PRIMARY KEY AUTOINCREMENT, date INTEGER, machine TEXT, type TEXT, nb_p REAL, nb_m REAL, tambour TEXT)');
-    $pdo->exec('CREATE TABLE aide_machines (id INTEGER PRIMARY KEY AUTOINCREMENT, machine TEXT, contenu_aide TEXT)');
-    $pdo->exec('CREATE TABLE photocopieurs (id INTEGER PRIMARY KEY AUTOINCREMENT, marque TEXT, modele TEXT, type_encre TEXT, actif INTEGER)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS duplicopieurs (id INTEGER PRIMARY KEY AUTOINCREMENT, marque TEXT, modele TEXT, supporte_a3 INTEGER, supporte_a4 INTEGER, actif INTEGER, tambours TEXT, created_at TEXT, updated_at TEXT)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS prix (id INTEGER PRIMARY KEY AUTOINCREMENT, machine_type TEXT, machine_id INTEGER, type TEXT, unite REAL, pack REAL)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS dupli (id INTEGER PRIMARY KEY AUTOINCREMENT, type TEXT, contact TEXT, master_av REAL, master_ap REAL, passage_av REAL, passage_ap REAL, rv TEXT, prix REAL, paye TEXT, cb REAL, mot TEXT, date INTEGER, nom_machine TEXT, duplicopieur_id INTEGER)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS cons (id INTEGER PRIMARY KEY AUTOINCREMENT, date INTEGER, machine TEXT, type TEXT, nb_p REAL, nb_m REAL, tambour TEXT)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS aide_machines (id INTEGER PRIMARY KEY AUTOINCREMENT, machine TEXT, contenu_aide TEXT)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS photocopieurs (id INTEGER PRIMARY KEY AUTOINCREMENT, marque TEXT, modele TEXT, type_encre TEXT, actif INTEGER)');
 }
 

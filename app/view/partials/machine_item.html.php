@@ -336,7 +336,7 @@ $photocopieur_checked = 'checked';
                 <!-- Taux de remplissage couleur - sous la case couleur -->
                 <div class="form-group" id="fill-rate-group-<?= $index ?>" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px; display: none; border-left: 3px solid #e83e8c;">
                     <label class="col-md-3 control-label">
-                        <i class="fa fa-percent" style="margin-right: 5px;"></i> Taux de remplissage couleur
+                        <i class="fa fa-percent" style="margin-right: 5px;"></i> <?php _e('tirage_multimachines.fill_rate_color'); ?>
                     </label>
                     <div class="col-md-9">
                         <div class="row">
@@ -350,9 +350,9 @@ $photocopieur_checked = 'checked';
                         </div>
                         <input type="hidden" id="fill_rate_photocop_<?= $index ?>" name="machines[<?= $index ?>][fill_rate]" value="0.5">
                         <span class="help-block">
-                            Ajustez le taux de remplissage des couleurs (0% = très léger, 100% = très rempli). 
-                            <a href="/index.php?taux_remplissage" target="_blank" title="Calculez le taux de remplissage">
-                                <i class="fa fa-info-circle"></i> Calculez le taux de remplissage
+                            <?php _e('tirage_multimachines.adjust_fill_rate'); ?> 
+                            <a href="/index.php?taux_remplissage" target="_blank" title="<?php echo __('tirage_multimachines.calculate_fill_rate'); ?>">
+                                <i class="fa fa-info-circle"></i> <?php _e('tirage_multimachines.calculate_fill_rate'); ?>
                             </a>
                         </span>
                     </div>
