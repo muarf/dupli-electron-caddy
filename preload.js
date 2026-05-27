@@ -42,7 +42,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.on('php-process-status', (event, payload) => callback(payload));
     },
     restartPhp: () => ipcRenderer.invoke('restart-php'),
-    restartApp: () => ipcRenderer.invoke('restart-app')
+    restartApp: () => ipcRenderer.invoke('restart-app'),
+    deletePrintJob: (printerName, jobId) => ipcRenderer.invoke('delete-print-job', printerName, jobId)
 });
 
 
