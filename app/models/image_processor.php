@@ -54,10 +54,12 @@ function convert_pdf_to_images_preserve_size($pdf_file, $output_dir, $base_filen
         $prefix = $base_filename . '_page_%03d.png';
         $output_pattern = $output_dir . $prefix;
 
+        $escaped_output_pattern = (PHP_OS_FAMILY === 'Windows') ? '"' . str_replace('"', '""', $output_pattern) . '"' : escapeshellarg($output_pattern);
+
         // Utiliser Ghostscript pour convertir le PDF en PNG à haute résolution
         // IMPORTANT: Utiliser -dUseCropBox=true pour que les images générées correspondent
         // exactement aux dimensions détectées par FPDI (qui lit aussi la CropBox)
-        $gs_args = "-dNOPAUSE -dBATCH -dUseCropBox=true -sDEVICE=png16m -r" . intval($dpi) . " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($output_pattern) . " " . escapeshellarg($pdf_file);
+        $gs_args = "-dNOPAUSE -dBATCH -dUseCropBox=true -sDEVICE=png16m -r" . intval($dpi) . " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . $escaped_output_pattern . " " . escapeshellarg($pdf_file);
         
         $gs_result = run_ghostscript($gs_args);
         
