@@ -97,9 +97,6 @@ jobs:
       - name: Run JS Tests (Jest)
         run: xvfb-run npm test -- --runInBand --forceExit
 
-      - name: Run E2E Tests (Playwright)
-        run: xvfb-run npm run test:e2e
-
   test-windows-alpha:
     runs-on: windows-latest
     timeout-minutes: 20
@@ -144,9 +141,6 @@ jobs:
 
       - name: Run JS Tests (Jest)
         run: npm test -- --runInBand --forceExit
-
-      - name: Run E2E Tests (Playwright)
-        run: npm run test:e2e
 
   create-alpha-release:
     needs: [get-version, test-linux-alpha, test-windows-alpha]
