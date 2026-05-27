@@ -16,6 +16,8 @@ describe('download-caddy.js Unit Tests', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         process.exit = jest.fn();
+        jest.spyOn(console, 'error').mockImplementation(() => {});
+        jest.spyOn(console, 'log').mockImplementation(() => {});
         Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
         
         // Mock fs.existsSync by default
