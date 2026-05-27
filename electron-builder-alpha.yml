@@ -162,3 +162,4 @@ nsis:
   shortcutName: Duplicator Alpha
   deleteAppDataOnUninstall: false
   artifactName: Duplicator-Alpha-Setup-${version}.exe
+

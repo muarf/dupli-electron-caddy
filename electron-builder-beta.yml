@@ -170,3 +170,4 @@ nsis:
   # Dossier d'installation différent
   # Par défaut: %LOCALAPPDATA%\dupli-electron-beta
   # C'est automatique grâce à appId différent
+
