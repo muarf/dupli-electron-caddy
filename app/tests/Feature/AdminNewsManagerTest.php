@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../models/admin/NewsManager.php';
 require_once __DIR__ . '/../../controler/functions/utilities.php';
 
 beforeEach(function () {
+    require_pricing_dependencies();
     [$this->dbPath, $this->pdo] = create_test_sqlite_database();
     configure_sqlite_conf($this->dbPath);
     seed_news_schema($this->pdo);
@@ -48,6 +49,6 @@ it('met a jour puis supprime une news', function () {
 
 function seed_news_schema(PDO $pdo): void
 {
-    $pdo->exec('CREATE TABLE news (id INTEGER PRIMARY KEY AUTOINCREMENT, time INTEGER, titre TEXT, news TEXT)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS news (id INTEGER PRIMARY KEY AUTOINCREMENT, time INTEGER, titre TEXT, news TEXT)');
 }
 

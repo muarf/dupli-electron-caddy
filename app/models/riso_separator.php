@@ -5,6 +5,7 @@
  */
 require_once __DIR__ . '/../controler/functions/i18n.php';
 
+if (!function_exists('Action')) {
 function Action($conf) {
     $from_lib_file = null;
     
@@ -65,6 +66,7 @@ function Action($conf) {
         'tambours' => $tambours,
         'from_lib_file' => $from_lib_file
     ));
+}
 }
 
 ?>

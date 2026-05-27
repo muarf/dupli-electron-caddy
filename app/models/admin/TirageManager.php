@@ -36,7 +36,7 @@ class TirageManager {
     /**
      * Obtenir les derniers tirages pour une machine
      */
-    public function getLastTirages($machine, $sql, $page = 1, $limit = 20) {
+    public function getLastTirages($machine, $sql, $page = 1, $limit = 20, $params = []) {
         // Debug: log l'appel
         if ($machine == 'comcolor' && $page == 4) {
             error_log("DEBUG getLastTirages: machine=$machine, page=$page, limit=$limit");
@@ -45,14 +45,14 @@ class TirageManager {
         // Déterminer si c'est un duplicopieur ou un photocopieur
         if ($this->isDuplicopieur($machine)) {
             // Pour les duplicopieurs, utiliser la table dupli avec le nom spécifique de la machine
-            $result = last($machine, $sql, $page, $limit);
+            $result = last($machine, $sql, $page, $limit, $params);
             if ($machine == 'comcolor' && $page == 4) {
                 error_log("DEBUG getLastTirages: après last(), count=" . count($result));
             }
             return $result;
         } else {
             // Pour les photocopieurs, utiliser la table photocop avec filtre par marque
-            $result = last($machine, $sql, $page, $limit);
+            $result = last($machine, $sql, $page, $limit, $params);
             if ($machine == 'comcolor' && $page == 4) {
                 error_log("DEBUG getLastTirages: après last(), count=" . count($result));
             }
@@ -226,24 +226,47 @@ class TirageManager {
      * Construire la clause SQL selon les paramètres
      */
     public function buildSqlClause() {
-        if(!isset($_GET['order']) && !isset($_GET['paye'])){ 
-            $phrase = 'Voir seulement les <a href="?admin&tirages&paye">nons-payés</a> ou les classer par <a href="?admin&tirages&order">ordre de prix</a>'; 
-            $sql = "ORDER By date DESC, id DESC";
-        }
-        if(!isset($_GET['order']) && isset($_GET['paye'])) {  
-            $phrase = 'Voir tous les <a href="?admin&tirages">derniers tirages</a> ou classer les nons payés par <a href="?admin&tirages&paye&order">ordre de prix</a>'; 
-            $sql = ' WHERE paye = "non" ORDER By date DESC, id DESC';
-        }
-        if(isset($_GET['order']) && !isset($_GET['paye'])){ 
-            $phrase = 'Voir seulement les <a href="?admin&tirages&paye">nons-payés</a>'; 
-            $sql = ' ORDER by prix * 1 DESC, date DESC'; 
-        }
-        if(isset($_GET['order']) && isset($_GET['paye'])){ 
-            $phrase = 'Voir tous les <a href="?admin&tirages">derniers tirages</a>';  
-            $sql = ' WHERE paye = "non" ORDER by prix * 1 DESC, date DESC';
+        $where = [];
+        $params = [];
+        $phrase_parts = [];
+        
+        // Filtrage par statut de paiement
+        $paye_status = $_GET['paye'] ?? 'non';
+        if ($paye_status === 'deja_paye') {
+            $where[] = 'paye = "oui"';
+            $phrase_parts[] = __('admin_tirage.status_paid');
+        } elseif ($paye_status === 'tous') {
+            // Tous les tirages
+            $phrase_parts[] = __('admin_tirage.status_all');
+        } else {
+            // Par défaut ou explicitement "non"
+            $where[] = 'paye = "non"';
+            $phrase_parts[] = __('admin_tirage.status_unpaid');
         }
         
-        return array('sql' => $sql, 'phrase' => $phrase);
+        // Recherche par contact (Fuzzy simple avec LIKE pour l'instant)
+        if (!empty($_GET['search'])) {
+            $search = $_GET['search'];
+            $where[] = 'contact LIKE ?';
+            $params[] = '%' . $search . '%';
+            $phrase_parts[] = __('admin_tirage.search_prefix') . '"' . htmlspecialchars($search) . '"';
+        }
+        
+        $sql_where = !empty($where) ? ' WHERE ' . implode(' AND ', $where) : '';
+        
+        // Ordre
+        if (isset($_GET['order'])) {
+            $sql_order = ' ORDER BY prix * 1 DESC, date DESC';
+            $phrase_parts[] = __('admin_tirage.sorted_by_price');
+        } else {
+            $sql_order = ' ORDER BY date DESC, id DESC';
+            $phrase_parts[] = __('admin_tirage.most_recent');
+        }
+        
+        $sql = $sql_where . $sql_order;
+        $phrase = __('admin_tirage.display_prefix') . implode(', ', $phrase_parts);
+        
+        return array('sql' => $sql, 'params' => $params, 'phrase' => $phrase);
     }
     
     /**
@@ -266,7 +289,7 @@ class TirageManager {
             $page_param = 'page_' . strtolower(str_replace(' ', '_', $machine));
             $current_page = isset($_GET[$page_param]) ? intval($_GET[$page_param]) : 1;
             
-            $tirages = $this->getLastTirages($machine, $sqlData['sql'], $current_page, 20);
+            $tirages = $this->getLastTirages($machine, $sqlData['sql'], $current_page, 20, $sqlData['params']);
             
             // Debug: log avant regroupement
             if ($machine == 'comcolor' && $current_page == 4) {
@@ -295,21 +318,21 @@ class TirageManager {
      */
     private function groupTiragesByGlobalId($tirages) {
         // Debug: log l'entrée de la fonction
-        file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - DEBUG groupTiragesByGlobalId: ENTRY, count(tirages)=' . count($tirages) . "\n", FILE_APPEND);
+        error_log(date('Y-m-d H:i:s') . ' - DEBUG groupTiragesByGlobalId: ENTRY, count(tirages)=' . count($tirages) . "\n");
         
         // Extraire la pagination si elle existe
         $pagination = null;
         if (isset($tirages['pagination'])) {
             $pagination = $tirages['pagination'];
-            file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - DEBUG: pagination found: ' . json_encode($pagination) . "\n", FILE_APPEND);
+            error_log(date('Y-m-d H:i:s') . ' - DEBUG: pagination found: ' . json_encode($pagination) . "\n");
             unset($tirages['pagination']);
         } else {
-            file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - DEBUG: no pagination in tirages' . "\n", FILE_APPEND);
+            error_log(date('Y-m-d H:i:s') . ' - DEBUG: no pagination in tirages' . "\n");
         }
         
         // Réindexer le tableau pour s'assurer que les indices sont numériques et séquentiels
         $tirages = array_values($tirages);
-        file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - DEBUG: after array_values, count(tirages)=' . count($tirages) . "\n", FILE_APPEND);
+        error_log(date('Y-m-d H:i:s') . ' - DEBUG: after array_values, count(tirages)=' . count($tirages) . "\n");
         
         $grouped = array();
         $groups = array();
@@ -418,7 +441,7 @@ class TirageManager {
         // Debug: log pour comprendre le problème
         $pagination_total = isset($pagination['total_entries']) ? $pagination['total_entries'] : 'N/A';
         $debug_msg = "DEBUG groupTiragesByGlobalId: total_groups=$total_groups (real), pagination_total_entries=$pagination_total (from BDD), requested_page=$requested_page, current_page=$current_page, per_page=$per_page, offset=$offset, total_pages=$total_pages\n";
-        file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - ' . $debug_msg, FILE_APPEND);
+        error_log(date('Y-m-d H:i:s') . ' - ' . $debug_msg);
         
         // Si pas de groupes, retourner un tableau vide
         if ($total_groups == 0) {
@@ -438,14 +461,14 @@ class TirageManager {
         
         // Debug: vérifier la structure avant array_slice
         $debug_msg = "DEBUG before array_slice: grouped count=" . count($grouped) . ", offset=$offset, per_page=$per_page, current_page=$current_page\n";
-        file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - ' . $debug_msg, FILE_APPEND);
+        error_log(date('Y-m-d H:i:s') . ' - ' . $debug_msg);
         
         // Limiter les groupes selon la pagination
         $grouped_limited = array_slice($grouped, $offset, $per_page);
         
         // Debug: vérifier le résultat
         $debug_msg = "DEBUG after array_slice: grouped_limited count=" . count($grouped_limited) . " for page $current_page\n";
-        file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . ' - ' . $debug_msg, FILE_APPEND);
+        error_log(date('Y-m-d H:i:s') . ' - ' . $debug_msg);
         
         // Réindexer pour s'assurer que les indices commencent à 0
         $grouped_limited = array_values($grouped_limited);
@@ -460,7 +483,7 @@ class TirageManager {
         }
         
         // Debug final
-        file_put_contents('/tmp/pagination_debug.log', date('Y-m-d H:i:s') . " - DEBUG FINAL: returning " . count($grouped_limited) . " groups for page $current_page\n", FILE_APPEND);
+        error_log(date('Y-m-d H:i:s') . " - DEBUG FINAL: returning " . count($grouped_limited) . " groups for page $current_page\n");
         
         return $grouped_limited;
     }

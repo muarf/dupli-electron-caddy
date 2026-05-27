@@ -3,44 +3,8 @@
  * Fonctions utilitaires pour la bibliothèque de documents
  */
 
-/**
- * Résout le dossier de stockage de la bibliothèque
- * Doit être aligné sur l'emplacement de la base de données pour AppImage/Windows
- */
-function getBibliothequeDir() {
-    // Priorité 1 : Variable d'environnement spécifique
-    $envDir = getenv('DUPLI_BIBLIOTHEQUE_DIR');
-    if (!empty($envDir)) {
-        return normalizePath($envDir);
-    }
-    
-    // Récupérer le chemin de la base de données configuré
-    // On inclut conf.php pour avoir $conf['db_path'] si disponible, ou on réplique la logique
-    global $conf;
-    
-    // Si $conf est défini et contient db_path
-    if (isset($conf['db_path']) && !empty($conf['db_path'])) {
-        $dbDir = dirname($conf['db_path']);
-        return normalizePath($dbDir . DIRECTORY_SEPARATOR . 'bibliotheque');
-    }
-    
-    // Fallback : Logique dupliquée de conf.php pour être sûr
-    if (getenv('DUPLICATOR_DB_PATH')) {
-        $dbPath = getenv('DUPLICATOR_DB_PATH');
-        $dbDir = dirname($dbPath);
-        return normalizePath($dbDir . DIRECTORY_SEPARATOR . 'bibliotheque');
-    }
-    
-    // Détection AppImage
-    $current_dir = getcwd();
-    if (strpos($current_dir, '.mount') !== false || strpos($current_dir, 'AppDir') !== false) {
-        $home_dir = $_SERVER['HOME'] ?? getenv('HOME') ?? '/tmp';
-        return normalizePath($home_dir . '/.config/Duplicator/bibliotheque');
-    }
-    
-    // Développement local (à côté de duplinew.sqlite qui est dans ../)
-    return normalizePath(__DIR__ . '/../../bibliotheque');
-}
+// La fonction getBibliothequeDir() est désormais centralisée dans paths.php
+// Elle est chargée via func.php -> paths.php
 
 /**
  * Normalise un chemin
@@ -75,12 +39,17 @@ function scanDirectoryForLibrary($dir, $recursive = false) {
         $path = $dir . DIRECTORY_SEPARATOR . $item;
         
         if (is_dir($path)) {
+            // Exclure les dossiers de miniatures (système)
+            if (strpos(strtolower($item), 'thumbnail') !== false) {
+                continue;
+            }
             if ($recursive) {
                 $files = array_merge($files, scanDirectoryForLibrary($path, true));
             }
         } else {
             $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-            if ($ext === 'pdf' || $ext === 'png') {
+            // On ne scanne que les PDF pour la bibliothèque principale
+            if ($ext === 'pdf') {
                 $files[] = [
                     'path' => $path,
                     'filename' => $item,

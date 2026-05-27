@@ -7,6 +7,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:  # Permet de lancer manuellement
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-and-test-macos:
     runs-on: macos-latest
@@ -50,8 +53,8 @@ jobs:
         
       - name: Install Caddy and PHP via Homebrew
         run: |
-          echo "Installation de Caddy et PHP via Homebrew..."
-          brew install caddy php
+          echo "Installation de Caddy, PHP et Ghostscript via Homebrew..."
+          brew install caddy php ghostscript
           echo "Caddy et PHP installés via Homebrew"
           
           # Copier le binaire Caddy vers le dossier caddy/

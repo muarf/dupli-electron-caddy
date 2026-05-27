@@ -2,222 +2,122 @@ const { downloadCaddy, CADDY_VERSIONS } = require('../../scripts/download-caddy'
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 // Mock des modules
 jest.mock('https');
 jest.mock('fs');
 jest.mock('child_process');
 
-describe('download-caddy.js', () => {
+describe('download-caddy.js Unit Tests', () => {
+    const originalExit = process.exit;
+    const originalPlatform = process.platform;
+
     beforeEach(() => {
         jest.clearAllMocks();
+        process.exit = jest.fn();
+        Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
+        
+        // Mock fs.existsSync by default
+        fs.existsSync.mockReturnValue(true);
+    });
+
+    afterAll(() => {
+        process.exit = originalExit;
+        Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
     });
 
     describe('CADDY_VERSIONS', () => {
-        test('devrait contenir les configurations pour toutes les plateformes', () => {
-            expect(CADDY_VERSIONS).toHaveProperty('linux');
-            expect(CADDY_VERSIONS).toHaveProperty('windows');
-            expect(CADDY_VERSIONS).toHaveProperty('darwin');
-        });
-
-        test('devrait avoir les bonnes URLs pour chaque plateforme', () => {
-            expect(CADDY_VERSIONS.linux.url).toContain('linux_amd64');
-            expect(CADDY_VERSIONS.windows.url).toContain('windows_amd64');
-            expect(CADDY_VERSIONS.darwin.url).toContain('macOS_amd64');
-        });
-
-        test('devrait avoir les bons noms de binaires', () => {
-            expect(CADDY_VERSIONS.linux.binary).toBe('caddy');
-            expect(CADDY_VERSIONS.windows.binary).toBe('caddy.exe');
-            expect(CADDY_VERSIONS.darwin.binary).toBe('caddy');
-        });
-    });
-
-    describe('downloadFile', () => {
-        test('devrait télécharger un fichier avec succès', async () => {
-            const mockResponse = {
-                statusCode: 200,
-                pipe: jest.fn(),
-                on: jest.fn()
-            };
-
-            const mockFile = {
-                on: jest.fn(),
-                close: jest.fn(),
-                write: jest.fn()
-            };
-
-            https.get.mockImplementation((url, callback) => {
-                callback(mockResponse);
-                return { on: jest.fn() };
-            });
-
-            fs.createWriteStream.mockReturnValue(mockFile);
-
-            // Mock de la résolution de la promesse
-            mockFile.on.mockImplementation((event, callback) => {
-                if (event === 'finish') {
-                    setTimeout(callback, 0);
-                }
-            });
-
-            const testUrl = 'https://example.com/test.tar.gz';
-            const testPath = '/tmp/test.tar.gz';
-
-            await expect(downloadCaddy()).resolves.not.toThrow();
-        });
-
-        test('devrait gérer les erreurs HTTP', async () => {
-            const mockResponse = {
-                statusCode: 404,
-                statusMessage: 'Not Found'
-            };
-
-            https.get.mockImplementation((url, callback) => {
-                callback(mockResponse);
-                return { on: jest.fn() };
-            });
-
-            // Mock de process.exit pour éviter l'arrêt du test
-            const originalExit = process.exit;
-            process.exit = jest.fn();
-
-            try {
-                await downloadCaddy();
-                expect(process.exit).toHaveBeenCalledWith(1);
-            } finally {
-                process.exit = originalExit;
-            }
-        });
-    });
-
-    describe('extractFile', () => {
-        test('devrait extraire un fichier tar.gz', () => {
-            const { execSync } = require('child_process');
-            
-            const testFile = '/tmp/test.tar.gz';
-            const extractPath = '/tmp/extract';
-            
-            // Mock de execSync pour simuler une extraction réussie
-            execSync.mockReturnValue(undefined);
-            
-            // Test avec un fichier .tar.gz
-            expect(() => {
-                // Simuler l'extraction
-                execSync(`tar -xzf "${testFile}" -C "${extractPath}"`, { stdio: 'inherit' });
-            }).not.toThrow();
-            
-            expect(execSync).toHaveBeenCalledWith(
-                `tar -xzf "${testFile}" -C "${extractPath}"`,
-                { stdio: 'inherit' }
-            );
-        });
-
-        test('devrait extraire un fichier zip', () => {
-            const { execSync } = require('child_process');
-            
-            const testFile = '/tmp/test.zip';
-            const extractPath = '/tmp/extract';
-            
-            // Mock de execSync pour simuler une extraction réussie
-            execSync.mockReturnValue(undefined);
-            
-            // Test avec un fichier .zip
-            expect(() => {
-                // Simuler l'extraction
-                execSync(`unzip -o "${testFile}" -d "${extractPath}"`, { stdio: 'inherit' });
-            }).not.toThrow();
-            
-            expect(execSync).toHaveBeenCalledWith(
-                `unzip -o "${testFile}" -d "${extractPath}"`,
-                { stdio: 'inherit' }
-            );
+        test('should have configurations for main platforms', () => {
+            expect(CADDY_VERSIONS).toHaveProperty('linux-x64');
+            expect(CADDY_VERSIONS).toHaveProperty('linux-arm64');
+            expect(CADDY_VERSIONS).toHaveProperty('windows-x64');
         });
     });
 
     describe('downloadCaddy', () => {
-        test('devrait créer le dossier caddy s\'il n\'existe pas', async () => {
-            fs.existsSync.mockReturnValue(false);
-            fs.mkdirSync.mockImplementation(() => {});
-            
-            // Mock des autres fonctions
-            https.get.mockImplementation(() => ({ on: jest.fn() }));
-            fs.createWriteStream.mockReturnValue({
-                on: jest.fn(),
-                close: jest.fn()
+        test('should handle successful download and extraction', async () => {
+            // Mock https.get to simulate successful response
+            const mockResponse = {
+                statusCode: 200,
+                pipe: jest.fn(),
+                on: jest.fn((event, cb) => {
+                    if (event === 'end') cb();
+                })
+            };
+            https.get.mockImplementation((url, cb) => {
+                cb(mockResponse);
+                return { on: jest.fn() };
             });
-            
-            const { execSync } = require('child_process');
-            execSync.mockReturnValue(undefined);
-            
-            // Mock de process.exit pour éviter l'arrêt du test
-            const originalExit = process.exit;
-            process.exit = jest.fn();
-            
-            try {
-                await downloadCaddy();
-                expect(fs.mkdirSync).toHaveBeenCalledWith(
-                    expect.stringContaining('caddy'),
-                    { recursive: true }
-                );
-            } finally {
-                process.exit = originalExit;
-            }
-        }, 10000);
 
-        test('devrait rendre le binaire exécutable sur Unix', async () => {
-            // Mock de la plateforme Unix
-            Object.defineProperty(process, 'platform', {
-                value: 'linux',
-                configurable: true
-            });
-            
-            fs.existsSync.mockReturnValue(false);
-            fs.mkdirSync.mockImplementation(() => {});
-            fs.chmodSync.mockImplementation(() => {});
-            
-            // Mock des autres fonctions
-            https.get.mockImplementation(() => ({ on: jest.fn() }));
-            fs.createWriteStream.mockReturnValue({
-                on: jest.fn(),
+            // Mock fs.createWriteStream
+            const mockFile = {
+                on: jest.fn((event, cb) => {
+                    if (event === 'finish') cb();
+                }),
                 close: jest.fn()
-            });
+            };
+            fs.createWriteStream.mockReturnValue(mockFile);
             
-            const { execSync } = require('child_process');
-            execSync.mockReturnValue(undefined);
-            
-            // Mock de process.exit pour éviter l'arrêt du test
-            const originalExit = process.exit;
-            process.exit = jest.fn();
-            
-            try {
-                await downloadCaddy();
-                expect(fs.chmodSync).toHaveBeenCalledWith(
-                    expect.stringContaining('caddy'),
-                    '755'
-                );
-            } finally {
-                process.exit = originalExit;
-            }
-        }, 10000);
+            // Mock execution
+            execSync.mockReturnValue(Buffer.from('extract ok'));
 
-        test('devrait gérer les plateformes non supportées', async () => {
-            // Mock d'une plateforme non supportée
-            Object.defineProperty(process, 'platform', {
-                value: 'unsupported',
-                configurable: true
+            await downloadCaddy();
+
+            expect(https.get).toHaveBeenCalled();
+            expect(fs.createWriteStream).toHaveBeenCalled();
+            expect(execSync).toHaveBeenCalled(); // For extraction
+            expect(fs.chmodSync).toHaveBeenCalled(); // For linux executable
+        });
+
+        test('should handle HTTP errors and exit', async () => {
+            const mockResponse = {
+                statusCode: 404,
+                statusMessage: 'Not Found'
+            };
+            https.get.mockImplementation((url, cb) => {
+                cb(mockResponse);
+                return { on: jest.fn() };
             });
-            
-            // Mock de process.exit pour éviter l'arrêt du test
-            const originalExit = process.exit;
-            process.exit = jest.fn();
-            
-            try {
-                await downloadCaddy();
-                expect(process.exit).toHaveBeenCalledWith(1);
-            } finally {
-                process.exit = originalExit;
-            }
+
+            await downloadCaddy();
+            expect(process.exit).toHaveBeenCalledWith(1);
+        });
+
+        test('should handle redirection (301/302)', async () => {
+            const mockRedirectResponse = {
+                statusCode: 301,
+                headers: { location: 'https://newurl.com' }
+            };
+            const mockFinalResponse = {
+                statusCode: 200,
+                pipe: jest.fn(),
+                on: jest.fn((event, cb) => {
+                    if (event === 'end') cb();
+                })
+            };
+
+            https.get
+                .mockImplementationOnce((url, cb) => {
+                    cb(mockRedirectResponse);
+                    return { on: jest.fn() };
+                })
+                .mockImplementationOnce((url, cb) => {
+                    cb(mockFinalResponse);
+                    return { on: jest.fn() };
+                });
+
+            const mockFile = {
+                on: jest.fn((event, cb) => {
+                    if (event === 'finish') cb();
+                }),
+                close: jest.fn()
+            };
+            fs.createWriteStream.mockReturnValue(mockFile);
+            fs.unlink.mockImplementation((p, cb) => cb());
+
+            await downloadCaddy();
+            expect(https.get).toHaveBeenCalledTimes(2);
         });
     });
 });

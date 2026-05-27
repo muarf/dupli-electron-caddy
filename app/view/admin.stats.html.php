@@ -20,40 +20,40 @@
               <div class="panel-body">
                 <?php if(isset($array['stats_text_updated'])): ?>
                   <div class="alert alert-success">
-                    <strong>Succès!</strong> Le texte d'introduction des statistiques a été mis à jour.
+                    <strong><?php _e('common.success'); ?>!</strong> <?php _e('admin_stats.text_updated'); ?>
                   </div>
                 <?php endif; ?>
                 
-                <p>Modifiez le texte d'introduction qui apparaît sur la page des statistiques. Vous pouvez utiliser les variables suivantes :</p>
+                <p><?php _e('admin_stats.modify_text_desc'); ?></p>
                 
                 <div class="alert alert-info">
-                  <strong>Variables disponibles :</strong><br>
-                  <code>{nb_f}</code> - Nombre total de feuilles<br>
-                  <code>{nb_t}</code> - Nombre total de tirages<br>
-                  <code>{nb_t_par_mois}</code> - Nombre de tirages par mois<br>
-                  <code>{nbf_par_mois}</code> - Nombre de feuilles par mois<br>
-                  <code>{nb_moy_par_mois}</code> - Nombre moyen de copies par tirage<br>
-                  <code>{ca}</code> - Chiffre d'affaire total<br>
-                  <code>{ca2}</code> - Chiffre d'affaire déclaré payé<br>
-                  <code>{ca1}</code> - Chiffre d'affaire CB payé<br>
-                  <code>{doit}</code> - Montant dû<br>
-                  <code>{benf}</code> - Bénéfice
+                  <strong><?php _e('admin_stats.available_variables'); ?></strong><br>
+                  <code>{nb_f}</code> - <?php _e('admin_stats.var_total_sheets'); ?><br>
+                  <code>{nb_t}</code> - <?php _e('admin_stats.var_total_prints'); ?><br>
+                  <code>{nb_t_par_mois}</code> - <?php _e('admin_stats.var_prints_per_month'); ?><br>
+                  <code>{nbf_par_mois}</code> - <?php _e('admin_stats.var_sheets_per_month'); ?><br>
+                  <code>{nb_moy_par_mois}</code> - <?php _e('admin_stats.var_avg_copies'); ?><br>
+                  <code>{ca}</code> - <?php _e('admin_stats.var_total_ca'); ?><br>
+                  <code>{ca2}</code> - <?php _e('admin_stats.var_paid_ca'); ?><br>
+                  <code>{ca1}</code> - <?php _e('admin_stats.var_cb_ca'); ?><br>
+                  <code>{doit}</code> - <?php _e('admin_stats.var_due_amount'); ?><br>
+                  <code>{benf}</code> - <?php _e('admin_stats.var_profit'); ?>
                 </div>
                 
                 <?php 
-                $default_text = 'Depuis le debut de l\'aventure dupli en 2011, nous avons tire un total de {nb_f} pages en plus de {nb_t} fois. Si l\'on regarde de plus pret ca nous fait une moyenne de {nb_t_par_mois} tirages par mois, avec environ {nbf_par_mois} feuilles en moyenne. Vous tirez {nb_moy_par_mois} copies par tirage. Je ne vous epargne pas le chiffre d\'affaire : {ca} euros depuis le debut, si l\'on enleve les {doit} euros que l\'on nous doit : {ca2} euros. Vous nous avez donne {ca1} euros. Nous sommes donc {benf} euros, mais c\'est sans compter le prix du loyer des condos qui a raison de 50 euros par mois nous ferai... ! Le big data est la, je vous laisse regarder :) ps : et c\'est aussi 1800 lignes de code !';
+                $default_text = __('admin_stats.placeholder');
                 $current_text = isset($stats_intro_text) ? $stats_intro_text : $default_text;
                 ?>
                 
                 <form method="post" id="stats-form">
                   <input type="hidden" name="stats_intro_text" id="stats_intro_text_hidden" value="">
                   <div class="form-group">
-                    <label for="stats_editor">Texte d'introduction des statistiques :</label>
+                    <label for="stats_editor"><?php _e('admin_stats.intro_text_label'); ?></label>
                     <div id="stats_editor" style="height: 300px; margin-bottom: 10px;"><?= $current_text ?></div>
                   </div>
                   
                   <button type="submit" name="update_stats_text" class="btn btn-info btn-block">
-                    <i class="fa fa-save"></i> Sauvegarder le texte des statistiques
+                    <i class="fa fa-save"></i> <?php _e('admin_stats.save_btn'); ?>
                   </button>
                 </form>
               </div>
@@ -66,14 +66,14 @@
           <div class="col-md-12">
             <div class="panel panel-default">
               <div class="panel-heading">
-                <h3 class="panel-title"><i class="fa fa-arrow-left"></i> Navigation</h3>
+                <h3 class="panel-title"><i class="fa fa-arrow-left"></i> <?php _e('admin_machines.back_to_admin'); ?></h3>
               </div>
               <div class="panel-body">
                 <a href="?admin" class="btn btn-primary">
-                  <i class="fa fa-arrow-left"></i> Retour à l'administration
+                  <i class="fa fa-arrow-left"></i> <?php _e('admin_machines.back_to_admin'); ?>
                 </a>
                 <a href="?stats" class="btn btn-info" target="_blank">
-                  <i class="fa fa-external-link"></i> Voir la page des statistiques
+                  <i class="fa fa-external-link"></i> <?php _e('admin_stats.view_page'); ?>
                 </a>
               </div>
             </div>
@@ -98,7 +98,7 @@
               ['clean']
           ]
       },
-      placeholder: 'Entrez le texte d\'introduction des statistiques...'
+      placeholder:  "<?php echo __js('admin_stats.placeholder'); ?>" 
   });
   
   // Mettre à jour le champ caché avant soumission

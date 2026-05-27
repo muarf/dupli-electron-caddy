@@ -42,11 +42,11 @@ it('calcule les consommations pour un photocopieur', function () {
 
 function seed_consommation_schema(PDO $pdo): void
 {
-    $pdo->exec('CREATE TABLE duplicopieurs (id INTEGER PRIMARY KEY AUTOINCREMENT, marque TEXT, modele TEXT, actif INTEGER)');
-    $pdo->exec('CREATE TABLE prix (id INTEGER PRIMARY KEY AUTOINCREMENT, machine_type TEXT, machine_id INTEGER, type TEXT, unite REAL, pack REAL)');
-    $pdo->exec('CREATE TABLE cons (id TEXT, date INTEGER, machine TEXT, type TEXT, nb_p REAL, nb_m REAL)');
-    $pdo->exec('CREATE TABLE dupli (id INTEGER PRIMARY KEY AUTOINCREMENT, master_ap REAL, passage_ap REAL)');
-    $pdo->exec('CREATE TABLE photocop (id INTEGER PRIMARY KEY AUTOINCREMENT, date INTEGER, nb_f REAL)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS duplicopieurs (id INTEGER PRIMARY KEY AUTOINCREMENT, marque TEXT, modele TEXT, actif INTEGER)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS prix (id INTEGER PRIMARY KEY AUTOINCREMENT, machine_type TEXT, machine_id INTEGER, type TEXT, unite REAL, pack REAL)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS cons (id TEXT, date INTEGER, machine TEXT, type TEXT, nb_p REAL, nb_m REAL)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS dupli (id INTEGER PRIMARY KEY AUTOINCREMENT, master_ap REAL, passage_ap REAL)');
+    $pdo->exec('CREATE TABLE IF NOT EXISTS photocop (id INTEGER PRIMARY KEY AUTOINCREMENT, date INTEGER, nb_f REAL)');
 }
 
 function seed_consommation_fixtures(PDO $pdo): void

@@ -1,43 +1,47 @@
 {
-  "name": "dupli-electron",
-  "version": "1.5.57",
+  "name": "dupli-electron-alpha",
+  "version": "2.0.1-alpha.local",
   "main": "main-caddy.js",
   "scripts": {
     "start": "electron . --no-sandbox --disable-gpu",
     "start:php": "electron main.js --no-sandbox --disable-gpu",
     "start:caddy": "electron main-caddy.js --no-sandbox --disable-gpu",
-    "dev": "NODE_ENV=development electron . --no-sandbox --disable-gpu",
+    "dev": "cross-env NODE_ENV=development electron . --no-sandbox --disable-gpu",
     "build": "electron-builder",
     "build:caddy": "electron-builder --config electron-builder-caddy.yml",
     "download-caddy": "node scripts/download-caddy.js",
+    "download-binaries": "node scripts/download-binaries.js",
     "download-php": "node -e \"require('./scripts/download-caddy.js').downloadPhp()\"",
-    "download-all": "node -e \"require('./scripts/download-caddy.js').downloadAll()\"",
+    "download-all": "npm run download-caddy && npm run download-binaries && npm run download-php",
     "test": "jest",
     "test:unit": "jest --testPathPattern=unit",
     "test:integration": "jest --testPathPattern=integration",
     "test:integration:simple": "jest --testPathPattern=caddy-php-simple",
-    "test:e2e": "jest --testPathPattern=e2e",
-    "test:e2e:simple": "jest --testPathPattern=electron-app-simple",
+    "test:e2e": "xvfb-run -a playwright test",
+    "test:e2e:smoke": "xvfb-run -a playwright test tests/e2e/smoke.test.js",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "rebuild:print-engine": "cd src/print-engine/windows && node-gyp rebuild"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "Duplicator - Application de duplication de documents",
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/jest": "^29.5.14",
-    "electron": "^22.3.27",
+    "cross-env": "^10.1.0",
+    "electron": "^30.0.0",
     "electron-builder": "^26.0.12",
     "jest": "^29.7.0",
-    "spectron": "^19.0.0",
+    "node-gyp": "^10.0.0",
     "supertest": "^6.3.4"
   },
   "jest": {
     "testEnvironment": "node",
     "testMatch": [
-      "**/tests/**/*.test.js",
-      "**/tests/**/*.spec.js"
+      "**/tests/**/*.test.js"
     ],
     "collectCoverageFrom": [
       "main*.js",
@@ -53,27 +57,40 @@
     ]
   },
   "build": {
-    "appId": "com.dupli.app",
-    "productName": "Duplicator",
+    "appId": "com.dupli.alpha",
+    "productName": "Duplicator Alpha",
     "directories": {
       "output": "dist"
     },
+    "asar": false,
     "files": [
       "main-caddy.js",
       "main.js",
       "preload.js",
       "Caddyfile",
-      "php-fpm.conf",
       "app/**/*",
       "php/**/*",
-      "ghostscript/**/*",
-      "caddy/**/*"
+      "bin/**/*",
+      "caddy/**/*",
+      "src/**/*",
+      "utils/**/*",
+      "!app/vendor/phpunit/**/*",
+      "!app/vendor/pestphp/**/*",
+      "!app/vendor/sebastian/**/*",
+      "!app/brain/**/*",
+      "!app/tmp/**/*",
+      "!app/logs/**/*",
+      "!app/uploads/**/*",
+      "!app/bibliotheque/**/*",
+      "!app/duplinew.sqlite*"
     ],
     "asarUnpack": [
       "php/**/*",
       "app/**/*",
-      "ghostscript/**/*",
-      "caddy/**/*"
+      "bin/**/*",
+      "caddy/**/*",
+      "src/**/*",
+      "utils/**/*"
     ],
     "linux": {
       "target": "AppImage",
@@ -98,9 +115,11 @@
           ]
         }
       ],
-      "forceCodeSigning": false
+      "forceCodeSigning": false,
+      "requestedExecutionLevel": "requireAdministrator"
     },
     "nsis": {
+      "include": "build/installer.nsh",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
@@ -111,6 +130,13 @@
     }
   },
   "dependencies": {
-    "electron-updater": "^6.6.2"
-  }
+    "bcryptjs": "^3.0.3",
+    "electron-updater": "^6.6.2",
+    "node-addon-api": "^7.0.0",
+    "pdfjs-dist": "^3.11.174",
+    "pdfkit": "^0.17.2",
+    "sharp": "^0.33.3",
+    "sqlite3": "^5.1.7"
+  },
+  "productName": "Duplicator Beta"
 }

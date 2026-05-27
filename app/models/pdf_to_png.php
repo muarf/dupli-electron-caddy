@@ -9,15 +9,6 @@ use setasign\Fpdi\Tcpdf\Fpdi;
  */
 function convert_pdf_to_png($pdf_file, $output_dir, $dpi = 150, $base_filename = 'page') {
     try {
-        // Vérifier que Ghostscript est disponible
-        $gs_command = 'gs';
-        if (PHP_OS_FAMILY === 'Windows') {
-            $gs_command = __DIR__ . '/../ghostscript/gswin64c.exe';
-            if (!file_exists($gs_command)) {
-                throw new Exception("Ghostscript Windows non trouvé : " . $gs_command);
-            }
-        }
-        
         // Vérifier que le fichier PDF existe
         if (!file_exists($pdf_file)) {
             throw new Exception("Le fichier PDF n'existe pas : " . $pdf_file);
@@ -31,16 +22,14 @@ function convert_pdf_to_png($pdf_file, $output_dir, $dpi = 150, $base_filename =
         // Générer un préfixe avec le nom du fichier original
         $prefix = $base_filename . '_page_%03d.png';
         $output_pattern = $output_dir . $prefix;
-        
+
         // Utiliser Ghostscript pour convertir le PDF en PNG
-        $command = $gs_command . " -dNOPAUSE -dBATCH -sDEVICE=png16m -r" . intval($dpi) . " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($output_pattern) . " " . escapeshellarg($pdf_file) . " 2>&1";
+        $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=png16m -r" . intval($dpi) . " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($output_pattern) . " " . escapeshellarg($pdf_file);
         
-        $output = [];
-        $return_var = 0;
-        exec($command, $output, $return_var);
+        $gs_result = run_ghostscript($gs_args);
         
-        if ($return_var !== 0) {
-            throw new Exception("Erreur lors de la conversion avec Ghostscript. Code: " . $return_var . " Output: " . implode("\n", $output));
+        if (!$gs_result['success']) {
+            throw new Exception("Erreur lors de la conversion avec Ghostscript. Code: " . $gs_result['error'] . " Output: " . $gs_result['output']);
         }
         
         // Lister les fichiers PNG créés
@@ -61,6 +50,7 @@ function convert_pdf_to_png($pdf_file, $output_dir, $dpi = 150, $base_filename =
     }
 }
 
+if (!function_exists('Action')) {
 function Action($conf) {
     $errors = array();
     $success = false;
@@ -111,12 +101,13 @@ function Action($conf) {
             } elseif ($_FILES["pdf"]["size"] > 50 * 1024 * 1024) {
                 $errors[] = "Le fichier est trop volumineux (maximum 50MB).";
             } else {
-                // Utiliser sys_get_temp_dir() pour être compatible AppImage
-                $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_pdf_to_png' . DIRECTORY_SEPARATOR;
+                // Utiliser resolveTempDir() pour plus de compatibilité (centralisé)
+                $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_pdf_to_png' . DIRECTORY_SEPARATOR;
                 if (!is_dir($tmpDir)) {
                     if (!mkdir($tmpDir, 0777, true)) {
                         throw new Exception("Impossible de créer le répertoire temporaire : " . $tmpDir);
                     }
+                    @chmod($tmpDir, 0777);
                 }
                 
                 $timestamp = date('YmdHis');
@@ -248,6 +239,7 @@ function Action($conf) {
         'zip_url' => isset($zip_url) ? $zip_url : '',
         'from_lib_file' => $from_lib_file
     ));
+}
 }
 
 ?>

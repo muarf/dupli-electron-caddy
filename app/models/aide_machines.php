@@ -7,6 +7,7 @@
 require_once __DIR__ . '/admin/AideManager.php';
 require_once __DIR__ . '/../controler/functions/i18n.php';
 
+if (!function_exists('Action')) {
 function Action($conf) {
     // Créer l'instance du gestionnaire d'aides
     $aideManager = new AideManager($conf);
@@ -26,5 +27,6 @@ function Action($conf) {
     
     // Retourner le template avec les données
     return template("../view/aide_machines.html.php", $data);
+}
 }
 ?>

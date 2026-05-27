@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Création du mot de passe administrateur - Dupli</title>
-    <link href="css/bootstrap.css" rel="stylesheet" type="text/css">
+    <link href="<?= $base_path ?>css/bootstrap.css" rel="stylesheet" type="text/css">
+    <link href="<?= $base_path ?>css/font-awesome.min.css" rel="stylesheet" type="text/css">
+    <script src="<?= $base_path ?>js/jquery.min.js"></script>
+    <script src="<?= $base_path ?>js/bootstrap.min.js"></script>
     <style>
         .password-container {
             max-width: 600px;
@@ -84,14 +87,17 @@
 </head>
 <body style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh;">
     <div class="password-container">
+        <div class="pull-right">
+            <?php echo generateLanguageSelector(); ?>
+        </div>
         <div class="password-header">
-            <h1>🔐 Création du mot de passe administrateur</h1>
-            <p>Veuillez définir un mot de passe pour accéder à l'administration</p>
+            <h1>🔐 <?php _e('create_password.title'); ?></h1>
+            <p><?php _e('create_password.subtitle'); ?></p>
         </div>
 
         <?php if (isset($errors) && !empty($errors)): ?>
             <div class="alert alert-danger">
-                <h5><i class="fa fa-exclamation-triangle"></i> Erreurs détectées :</h5>
+                <h5><i class="fa fa-exclamation-triangle"></i> <?php _e('setup.errors_detected'); ?></h5>
                 <ul class="mb-0">
                     <?php foreach ($errors as $error): ?>
                         <li><?= htmlspecialchars($error) ?></li>
@@ -101,13 +107,13 @@
         <?php endif; ?>
 
         <div class="info-box">
-            <p><i class="fa fa-info-circle"></i> <strong>Important :</strong> Ce mot de passe vous permettra d'accéder à toutes les fonctionnalités d'administration de l'application.</p>
+            <p><i class="fa fa-info-circle"></i> <strong><?php _e('create_password.important'); ?></strong> <?php _e('create_password.important_desc'); ?></p>
         </div>
 
         <form method="POST" action="?create_password">
             <div class="form-group">
                 <label for="admin_password">
-                    <i class="fa fa-lock"></i> Mot de passe administrateur
+                    <i class="fa fa-lock"></i> <?php _e('create_password.password_label'); ?>
                 </label>
                 <input 
                     type="password" 
@@ -116,14 +122,14 @@
                     class="form-control" 
                     required 
                     minlength="6"
-                    placeholder="Minimum 6 caractères"
+                    placeholder="<?php echo __('create_password.min_chars'); ?>"
                     autocomplete="new-password"
                 >
             </div>
 
             <div class="form-group">
                 <label for="admin_password_confirm">
-                    <i class="fa fa-lock"></i> Confirmer le mot de passe
+                    <i class="fa fa-lock"></i> <?php _e('create_password.confirm_label'); ?>
                 </label>
                 <input 
                     type="password" 
@@ -132,18 +138,85 @@
                     class="form-control" 
                     required 
                     minlength="6"
-                    placeholder="Répétez le mot de passe"
+                    placeholder="<?php echo __('create_password.repeat_password'); ?>"
                     autocomplete="new-password"
                 >
             </div>
 
             <button type="submit" class="btn-submit">
-                <i class="fa fa-check"></i> Créer le mot de passe
+                <i class="fa fa-check"></i> <?php _e('create_password.submit_btn'); ?>
             </button>
         </form>
     </div>
 
+    <?php include __DIR__ . '/components/app-modal.html.php'; ?>
+
     <script>
+        /**
+         * Affiche une modale d'information ou de confirmation
+         * Version autonome pour create_password.html.php
+         */
+        function showAppModal(options) {
+            if (typeof options === 'string') {
+                options = { message: options };
+            }
+
+            const modal = $('#app-global-modal');
+            const title = options.title ||  "<?php echo __js('common.info'); ?>" ;
+            const message = options.message || '';
+            const type = options.type || 'info'; // info, success, warning, danger
+            const confirm = options.confirm || false;
+            const okText = options.okText || 'OK';
+            const cancelText = options.cancelText ||  "<?php echo __js('common.cancel'); ?>" ;
+
+            // Configurer le titre et le message
+            $('#app-global-modal-title-text').text(title);
+            $('#app-global-modal-body').html(message);
+
+            // Gérer les couleurs selon le type
+            const header = modal.find('.modal-header');
+            const okBtn = $('#app-global-modal-ok');
+            const icon = $('#app-global-modal-icon');
+
+            // Reset classes
+            icon.removeClass('text-primary text-success text-warning text-danger');
+            okBtn.removeClass('btn-primary btn-success btn-warning btn-danger');
+
+            // Appliquer le type
+            let color = '#007bff';
+            let iconClass = 'fa-info-circle';
+
+            switch (type) {
+                case 'success': color = '#28a745'; iconClass = 'fa-check-circle'; break;
+                case 'warning': color = '#ffc107'; iconClass = 'fa-exclamation-triangle'; break;
+                case 'danger': color = '#dc3545'; iconClass = 'fa-exclamation-circle'; break;
+            }
+
+            icon.addClass('text-' + (type === 'info' ? 'primary' : type)).addClass(iconClass);
+            okBtn.addClass('btn-' + (type === 'info' ? 'primary' : type));
+            okBtn.text(okText);
+
+            // Gérer le bouton Annuler et Confirmation
+            if (confirm) {
+                $('#app-global-modal-cancel').show().text(cancelText);
+            } else {
+                $('#app-global-modal-cancel').hide();
+            }
+
+            // Callbacks
+            okBtn.off('click').on('click', function() {
+                if (options.onConfirm) options.onConfirm();
+                if (options.onClose) options.onClose();
+            });
+
+            $('#app-global-modal-cancel, .close').off('click').on('click', function() {
+                if (options.onCancel) options.onCancel();
+                if (options.onClose) options.onClose();
+            });
+
+            modal.modal('show');
+        }
+
         // Vérification côté client que les mots de passe correspondent
         document.querySelector('form').addEventListener('submit', function(e) {
             const password = document.getElementById('admin_password').value;
@@ -151,13 +224,13 @@
             
             if (password !== confirm) {
                 e.preventDefault();
-                alert('Les mots de passe ne correspondent pas.');
+                showAppModal( "<?php echo __js('create_password.passwords_dont_match'); ?>" );
                 return false;
             }
             
             if (password.length < 6) {
                 e.preventDefault();
-                alert('Le mot de passe doit contenir au moins 6 caractères.');
+                showAppModal( "<?php echo __js('create_password.password_too_short'); ?>" );
                 return false;
             }
         });

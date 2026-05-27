@@ -283,9 +283,9 @@ function pdo_connect()
     }
     
     // Vérifier si la base de données existe pour SQLite
-    if ($conf['db_type'] === 'sqlite' && !file_exists($conf['db_path'])) {
-        throw new PDOException("Base de données non trouvée: " . $conf['db_path']);
-    }
+    // if ($conf['db_type'] === 'sqlite' && !file_exists($conf['db_path'])) {
+    //     throw new PDOException("Base de données non trouvée: " . $conf['db_path']);
+    // }
     
     try {
         $db = new PDO($conf['dsn'], $conf['login'], $conf['pass']);
@@ -299,6 +299,7 @@ function pdo_connect()
             $db->exec("PRAGMA synchronous=NORMAL");
             $db->exec("PRAGMA temp_store=MEMORY"); // Optimisation mémoire
             $db->exec("PRAGMA cache_size=10000"); // Cache plus important
+            $db->exec("PRAGMA foreign_keys = ON;"); // Activer les contraintes de clés étrangères
         }
         
         return $db;

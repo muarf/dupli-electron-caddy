@@ -11,14 +11,15 @@ require_once(__DIR__ . '/../controler/functions/utilities.php');
 $filename = basename($_GET['file']);
 $dir = $_GET['dir'] ?? '';
 
-// Déterminer le répertoire temporaire selon le contexte
+// Déterminer le répertoire temporaire selon le contexte (utiliser resolveTempDir pour la cohérence)
+$base_tmp = resolveTempDir();
 if ($dir === 'png_to_pdf') {
-    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_png_to_pdf' . DIRECTORY_SEPARATOR;
+    $tmp_dir = $base_tmp . DIRECTORY_SEPARATOR . 'duplicator_png_to_pdf' . DIRECTORY_SEPARATOR;
 } elseif ($dir === 'unimpose') {
-    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_unimpose' . DIRECTORY_SEPARATOR;
+    $tmp_dir = $base_tmp . DIRECTORY_SEPARATOR . 'duplicator_unimpose' . DIRECTORY_SEPARATOR;
 } elseif (strpos($dir, 'image_processor_') === 0) {
     // PDFs traités par image_processor
-    $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR;
+    $tmp_dir = $base_tmp . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR;
 } else {
     // Par défaut, utiliser resolveTempDir() pour les impositions (brochure, livre, tracts, imposition)
     // Cela garantit la cohérence avec le répertoire utilisé pour créer les fichiers
@@ -45,9 +46,16 @@ if (substr(strtolower($filename), -4) !== '.pdf') {
 header('Content-Type: application/pdf');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
 header('Content-Length: ' . filesize($filepath));
-header('Cache-Control: no-cache, must-revalidate');
+header('Cache-Control: private, max-age=0, must-revalidate');
+header('Pragma: public');
 header('Expires: 0');
+
+// Nettoyer le buffer de sortie pour éviter toute pollution du flux PDF
+if (ob_get_level()) {
+    ob_end_clean();
+}
 
 // Lire et envoyer le fichier
 readfile($filepath);
+exit;
 ?>

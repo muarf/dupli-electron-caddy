@@ -1,0 +1,63 @@
+name: Test Windows
+
+on:
+  push:
+    branches:
+      - feature/cross-platform-unification
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  test-windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: sqlite3, pdo_sqlite, dom, curl, libxml, mbstring, zip
+          tools: composer
+          coverage: none
+
+      - name: Install Node dependencies
+        run: npm install
+
+      - name: Install PHP dependencies (Composer)
+        working-directory: app
+        run: composer install --optimize-autoloader --ignore-platform-reqs
+
+      - name: Install system dependencies (Choco)
+        run: |
+          choco install ghostscript -y
+          choco install imagemagick -y
+
+      - name: Download Caddy
+        run: |
+          Invoke-WebRequest -Uri https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_windows_amd64.zip -OutFile caddy.zip
+          Expand-Archive caddy.zip -DestinationPath caddy -Force
+          del caddy.zip
+
+      - name: Run PHP Tests (Pest)
+        working-directory: app
+        run: |
+          $phpPath = (Get-Command php).Source
+          $pestPath = "vendor\bin\pest.bat"
+          & $phpPath $pestPath --group=unit --display-deprecations --display-errors
+
+      - name: Run JS Tests (Jest)
+        run: npm test -- --runInBand --forceExit

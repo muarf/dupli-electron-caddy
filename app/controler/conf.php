@@ -3,37 +3,18 @@
 //     session_start();
 // }
 
+// Inclure les fonctions de chemins si elles ne sont pas chargées
+require_once __DIR__ . '/functions/paths.php';
+
 // Configuration SQLite
 // Priorité 1 : Variable d'environnement d'Electron (garantit persistence userData)
 // Priorité 2 : Détection AppImage
 // Priorité 3 : Développement local
 
-if (getenv('DUPLICATOR_DB_PATH')) {
-    // Chemin fourni par Electron - Utiliser celui-ci en priorité
-    $sqlite_db_path = getenv('DUPLICATOR_DB_PATH');
-    
-    // Créer le répertoire s'il n'existe pas (seulement si on est en dehors de l'AppImage)
-    $db_dir = dirname($sqlite_db_path);
-    if (!is_dir($db_dir) && is_writable(dirname($db_dir))) {
-        mkdir($db_dir, 0755, true);
-    }
-} else {
-    // Fallback sur la détection automatique
-    $current_dir = getcwd();
-    if (strpos($current_dir, '.mount') !== false || strpos($current_dir, 'AppDir') !== false) {
-        // AppImage : utiliser le répertoire home de l'utilisateur
-        $home_dir = $_SERVER['HOME'] ?? getenv('HOME') ?? '/tmp';
-        $sqlite_db_path = $home_dir . '/.config/Duplicator/duplinew.sqlite';
-        
-        // Créer le répertoire s'il n'existe pas
-        $db_dir = dirname($sqlite_db_path);
-        if (!is_dir($db_dir)) {
-            mkdir($db_dir, 0755, true);
-        }
-    } else {
-        // Développement : utiliser le répertoire de l'app
-        $sqlite_db_path = __DIR__ . '/../duplinew.sqlite';
-    }
+$sqlite_db_path = getenv('DUPLICATOR_DB_PATH') ?: (getDataDir() . DIRECTORY_SEPARATOR . 'duplinew.sqlite');
+$db_dir = dirname($sqlite_db_path);
+if (!is_dir($db_dir)) {
+    @mkdir($db_dir, 0755, true);
 }
 
 // Ne pas créer automatiquement la base de données
@@ -43,7 +24,7 @@ if (getenv('DUPLICATOR_DB_PATH')) {
 $conf['dsn'] = 'sqlite:' . $sqlite_db_path;
 $conf['login'] = ''; // Pas de login pour SQLite
 $conf['pass'] = '';  // Pas de mot de passe pour SQLite
-$conf['uploaddir'] = __DIR__ . '/../public/tmp/';
+$conf['uploaddir'] = getTmpDir() . DIRECTORY_SEPARATOR;
 
 
 // Stocker le type de base de données

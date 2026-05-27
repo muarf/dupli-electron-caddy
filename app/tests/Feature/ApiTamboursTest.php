@@ -79,25 +79,10 @@ function run_ajax_edit_tambours(array $post, array $conf): string
     ]);
 }
 
-function execute_routed_endpoint(string $endpoint, array $config): string
-{
-    $runner = realpath(__DIR__ . '/../helpers/run_routed_endpoint.php');
-
-    $command = escapeshellarg(PHP_BINARY) . ' ' .
-        escapeshellarg($runner) . ' ' .
-        escapeshellarg($endpoint) . ' ' .
-        escapeshellarg(json_encode($config));
-
-    $output = [];
-    $exitCode = 0;
-    exec($command, $output, $exitCode);
-
-    return implode("\n", $output);
-}
 
 function seed_tambours_schema(PDO $pdo): void
 {
-    $pdo->exec('CREATE TABLE duplicopieurs (
+    $pdo->exec('CREATE TABLE IF NOT EXISTS duplicopieurs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         marque TEXT,
         modele TEXT,
@@ -106,7 +91,7 @@ function seed_tambours_schema(PDO $pdo): void
         updated_at TEXT
     )');
 
-    $pdo->exec('CREATE TABLE prix (
+    $pdo->exec('CREATE TABLE IF NOT EXISTS prix (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         machine_type TEXT,
         machine_id INTEGER,
