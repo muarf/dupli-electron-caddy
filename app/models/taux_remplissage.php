@@ -137,26 +137,18 @@ function analyze_pdf_ink_coverage_gs($pdf_file) {
         $lines = explode("\n", $output);
         $totalC = 0; $totalM = 0; $totalY = 0; $totalK = 0;
         $pageCount = 0;
-        $pages = [];
 
         foreach ($lines as $line) {
             $line = trim($line);
+            // Le format ink_cov est : C M Y K CMYK OK
+            // Exemple : 0.07498  0.07050  0.06968  0.09209 CMYK OK
             if (preg_match('/^\s*(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)/', $line, $matches)) {
-                $c = (float)$matches[1];
-                $m = (float)$matches[2];
-                $y = (float)$matches[3];
-                $k = (float)$matches[4];
-                $totalC += $c;
-                $totalM += $m;
-                $totalY += $y;
-                $totalK += $k;
+                $totalC += (float)$matches[1];
+                $totalM += (float)$matches[2];
+                $totalY += (float)$matches[3];
+                $totalK += (float)$matches[4];
                 $pageCount++;
-                
-                $pages[] = [
-                    'page' => $pageCount,
-                    'fill_rate' => round($c + $m + $y + $k, 2),
-                    'c' => $c, 'm' => $m, 'y' => $y, 'k' => $k
-                ];
+                error_log("Page $pageCount détectée: C=" . $matches[1] . " M=" . $matches[2] . " Y=" . $matches[3] . " K=" . $matches[4]);
             }
         }
 
@@ -165,25 +157,31 @@ function analyze_pdf_ink_coverage_gs($pdf_file) {
             throw new Exception("Ghostscript n'a détecté aucune donnée de couverture.");
         }
 
+        // Calculer les moyennes par page
         $avgC = $totalC / $pageCount;
         $avgM = $totalM / $pageCount;
         $avgY = $totalY / $pageCount;
         $avgK = $totalK / $pageCount;
 
+        // Formule demandée par l'utilisateur : Somme des canaux (C+M+J+N)
+        // Les valeurs renvoyées par ink_cov sont déjà en pourcentages (0-100).
         $fillRate = ($avgC + $avgM + $avgY + $avgK);
+        
+        // Détection couleur heuristique
         $maxDiff = max(abs($avgC - $avgM), abs($avgM - $avgY), abs($avgC - $avgY));
         $isColor = ($avgC + $avgM + $avgY > 0.01) && ($maxDiff > 0.005);
+
+        error_log("Analyse PDF terminée: $pageCount pages, Taux moyen=" . round($fillRate, 2) . "%");
 
         return array(
             'fill_rate' => round($fillRate, 2),
             'empty_rate' => round(max(0, 100 - $fillRate), 2),
             'page_count' => $pageCount,
             'is_color' => $isColor,
-            'pages' => $pages,
-            'avg_c' => round($avgC, 2),
-            'avg_m' => round($avgM, 2),
-            'avg_y' => round($avgY, 2),
-            'avg_k' => round($avgK, 2),
+            'avg_c' => $avgC,
+            'avg_m' => $avgM,
+            'avg_y' => $avgY,
+            'avg_k' => $avgK,
             'success' => true
         );
 
@@ -226,18 +224,9 @@ function Action($conf) {
     $errors = array();
     $success = false;
     $result = array();
-    $from_lib_file = null;
     
-    // Gestion de la pré-sélection bibliothèque (GET)
-    if (isset($_GET['from_lib']) && !empty($_GET['from_lib'])) {
-        require_once __DIR__ . '/BibliothequeManager.php';
-        $libManager = new BibliothequeManager();
-        $from_lib_file = $libManager->getFile($_GET['from_lib']);
-    }
-
     try {
         error_log("=== TAUX_REMPLISSAGE - Début Action() ===");
-        error_log("REQUEST_METHOD: " . ($_SERVER["REQUEST_METHOD"] ?? 'N/A'));
         
         if (isset($_SERVER["REQUEST_METHOD"]) && $_SERVER["REQUEST_METHOD"] == "POST") {
             
@@ -246,101 +235,56 @@ function Action($conf) {
             if ($tolerance < 0) $tolerance = 0;
             if ($tolerance > 255) $tolerance = 255;
             
-            $pdfFile = null;
-            $originalName = null;
-            $mimeType = null;
-            $fileSize = 0;
-            $is_lib = false;
-
-            // Cas 1 : Fichier bibliothèque
-            if (isset($_POST['lib_file_id']) && !empty($_POST['lib_file_id'])) {
-                require_once __DIR__ . '/BibliothequeManager.php';
-                $libManager = new BibliothequeManager();
-                $file = $libManager->getFile($_POST['lib_file_id']);
-                if ($file && file_exists($file['filepath'])) {
-                    $pdfFile = $file['filepath'];
-                    $originalName = $file['filename'];
-                    $fileSize = filesize($pdfFile);
-                    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                    $mimeType = finfo_file($finfo, $pdfFile);
-                    finfo_close($finfo);
-                    $is_lib = true;
-                } else {
-                    $errors[] = "Fichier de bibliothèque introuvable.";
-                }
-            } 
-            // Cas 2 : Fichier uploadé
-            elseif (isset($_FILES["file"])) {
-                if ($_FILES["file"]["error"] != UPLOAD_ERR_OK) {
-                    $error_messages = array(
-                        UPLOAD_ERR_INI_SIZE => 'Le fichier dépasse la limite upload_max_filesize du php.ini.',
-                        UPLOAD_ERR_FORM_SIZE => 'Le fichier dépasse la limite MAX_FILE_SIZE du formulaire.',
-                        UPLOAD_ERR_PARTIAL => 'Le fichier n\'a été que partiellement uploadé.',
-                        UPLOAD_ERR_NO_FILE => 'Aucun fichier n\'a été uploadé.',
-                        UPLOAD_ERR_NO_TMP_DIR => 'Dossier temporaire manquant.',
-                        UPLOAD_ERR_CANT_WRITE => 'Échec de l\'écriture du fichier sur le disque.',
-                        UPLOAD_ERR_EXTENSION => 'Une extension PHP a arrêté l\'upload du fichier.'
-                    );
-                    $error_code = $_FILES["file"]["error"];
-                    if ($error_code !== UPLOAD_ERR_NO_FILE) {
-                        $errors[] = "Erreur d'upload : " . ($error_messages[$error_code] ?? "Erreur inconnue ($error_code)");
-                    } else {
-                        $errors[] = "Aucun fichier n'a été sélectionné.";
-                    }
-                } else {
-                    $pdfFile = $_FILES["file"]["tmp_name"];
-                    $originalName = $_FILES["file"]["name"];
-                    $fileSize = $_FILES["file"]["size"];
-                    
-                    // Vérifier le type MIME
-                    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                    $mimeType = finfo_file($finfo, $pdfFile);
-                    finfo_close($finfo);
-                    
-                    error_log("Fichier uploadé: " . $originalName . " (MIME: $mimeType, Taille: " . $fileSize . ")");
-                }
+            // Vérifier si un fichier a été uploadé
+            if (!isset($_FILES["file"])) {
+                $errors[] = "Aucun fichier n'a été uploadé.";
+            } elseif ($_FILES["file"]["error"] != UPLOAD_ERR_OK) {
+                $error_messages = array(
+                    UPLOAD_ERR_INI_SIZE => 'Le fichier dépasse la limite upload_max_filesize du php.ini.',
+                    UPLOAD_ERR_FORM_SIZE => 'Le fichier dépasse la limite MAX_FILE_SIZE du formulaire.',
+                    UPLOAD_ERR_PARTIAL => 'Le fichier n\'a été que partiellement uploadé.',
+                    UPLOAD_ERR_NO_FILE => 'Aucun fichier n\'a été uploadé.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Dossier temporaire manquant.',
+                    UPLOAD_ERR_CANT_WRITE => 'Échec de l\'écriture du fichier sur le disque.',
+                    UPLOAD_ERR_EXTENSION => 'Une extension PHP a arrêté l\'upload du fichier.'
+                );
+                $error_code = $_FILES["file"]["error"];
+                $errors[] = "Erreur d'upload : " . ($error_messages[$error_code] ?? "Erreur inconnue ($error_code)");
             } else {
-                $errors[] = "Aucun fichier n'a été sélectionné.";
-            }
-
-            if (empty($errors)) {
+                // Vérifier le type MIME
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mimeType = finfo_file($finfo, $_FILES["file"]["tmp_name"]);
+                finfo_close($finfo);
+                
+                error_log("Fichier: " . $_FILES["file"]["name"] . " (MIME: $mimeType, Taille: " . $_FILES["file"]["size"] . ")");
+                
                 $allowed_types = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'];
                 
                 if (!in_array($mimeType, $allowed_types)) {
                     $errors[] = "Le fichier doit être un PDF ou une image (JPEG, PNG, GIF).";
-                } elseif ($fileSize == 0) {
+                } elseif ($_FILES["file"]["size"] == 0) {
                     $errors[] = "Le fichier est vide.";
-                } elseif ($fileSize > 100 * 1024 * 1024) {
+                } elseif ($_FILES["file"]["size"] > 100 * 1024 * 1024) { // Augmenté à 100MB pour les gros PDF
                     $errors[] = "Le fichier est trop volumineux (maximum 100MB).";
                 } else {
                     // Créer le dossier tmp
-                    $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'dupli_fillrate' . DIRECTORY_SEPARATOR;
+                    $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dupli_fillrate' . DIRECTORY_SEPARATOR;
                     if (!is_dir($tmpDir)) {
                         @mkdir($tmpDir, 0777, true);
                     }
                     
-                    $extension = pathinfo($originalName, PATHINFO_EXTENSION);
-                    $workingFile = $is_lib ? $pdfFile : $tmpDir . "anal_" . time() . "_" . uniqid() . "." . $extension;
+                    $extension = pathinfo($_FILES["file"]["name"], PATHINFO_EXTENSION);
+                    $uploadFile = $tmpDir . "anal_" . time() . "_" . uniqid() . "." . $extension;
                     
-                    $file_ready = false;
-                    if ($is_lib) {
-                        $file_ready = true;
-                    } else {
-                        if (move_uploaded_file($pdfFile, $workingFile)) {
-                            $file_ready = true;
-                        } else {
-                            $errors[] = "Erreur interne lors du déplacement du fichier temporaire.";
-                        }
-                    }
-
-                    if ($file_ready) {
+                    if (move_uploaded_file($_FILES["file"]["tmp_name"], $uploadFile)) {
+                        
                         if ($mimeType === 'application/pdf') {
                             // ANALYSE PDF VIA GHOSTSCRIPT (Rapide et Multi-pages)
-                            $result = analyze_pdf_ink_coverage_gs($workingFile);
+                            $result = analyze_pdf_ink_coverage_gs($uploadFile);
                             
                             // Générer une miniature
                             $outputDir = $tmpDir . 'thumb_' . time();
-                            $thumbPath = convert_pdf_to_thumbnail($workingFile, $outputDir);
+                            $thumbPath = convert_pdf_to_thumbnail($uploadFile, $outputDir);
                             
                             if ($thumbPath) {
                                 $thumbInfo = getimagesize($thumbPath);
@@ -367,20 +311,20 @@ function Action($conf) {
                             }
                         } else {
                             // ANALYSE IMAGE PIXEL PAR PIXEL (Ancien mode)
-                            $result = calculate_fill_rate($workingFile, $tolerance);
-                            $imageData = base64_encode(file_get_contents($workingFile));
+                            $result = calculate_fill_rate($uploadFile, $tolerance);
+                            $imageData = base64_encode(file_get_contents($uploadFile));
                             $result['preview_url'] = 'data:' . $mimeType . ';base64,' . $imageData;
                             $result['page_count'] = 1;
                         }
                         
-                        $result['filename'] = $originalName;
+                        $result['filename'] = $_FILES["file"]["name"];
                         $result['tolerance'] = $tolerance;
                         $success = true;
                         
                         // Nettoyage du fichier uploadé
-                        if (!$is_lib) {
-                            @unlink($workingFile);
-                        }
+                        @unlink($uploadFile);
+                    } else {
+                        $errors[] = "Erreur interne lors du déplacement du fichier temporaire.";
                     }
                 }
             }
@@ -393,27 +337,11 @@ function Action($conf) {
         $errors[] = "Erreur système : " . $e->getMessage();
     }
     
-    error_log("=== Fin Action() - Erreurs: " . count($errors) . ", Succès: " . ($success ? 'OUI' : 'NON') . " ===");
-    
-    try {
-        $template_result = template("../view/taux_remplissage.html.php", array(
-            'errors' => $errors,
-            'success' => $success,
-            'result' => $result,
-            'from_lib_file' => $from_lib_file
-        ));
-        error_log("Template généré avec succès");
-        return $template_result;
-    } catch (Exception $e) {
-        error_log("=== ERREUR LORS DU TEMPLATE ===");
-        error_log("Message: " . $e->getMessage());
-        error_log("Trace: " . $e->getTraceAsString());
-        
-        // En cas d'erreur de template, afficher quelque chose
-        return '<div class="container"><div class="alert alert-danger"><h1>Erreur</h1><p>' . 
-               htmlspecialchars($e->getMessage()) . '</p><pre>' . 
-               htmlspecialchars($e->getTraceAsString()) . '</pre></div></div>';
-    }
+    return template("../view/taux_remplissage.html.php", array(
+        'errors' => $errors,
+        'success' => $success,
+        'result' => $result
+    ));
 }
 }
 

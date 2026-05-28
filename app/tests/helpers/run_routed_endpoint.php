@@ -3,14 +3,13 @@ define('DEVELOPMENT_MODE', true);
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-if (isset($argv[0]) && realpath($argv[0]) === realpath(__FILE__)) {
-    $payload = $argv[1] ?? '{}';
+$payload = $argv[1] ?? '{}';
 
-    $data = json_decode($payload, true);
-    if (!is_array($data)) {
-        fwrite(STDERR, "Payload invalide\n");
-        exit(1);
-    }
+$data = json_decode($payload, true);
+if (!is_array($data)) {
+    fwrite(STDERR, "Payload invalide\n");
+    exit(1);
+}
 
 $endpoint = $data['endpoint'] ?? null;
 $config = $data['config'] ?? [];
@@ -91,5 +90,4 @@ require __DIR__ . '/../../public/index.php';
 
 $output = ob_get_clean();
 echo $output;
-}
 

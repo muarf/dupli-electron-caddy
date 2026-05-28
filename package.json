@@ -17,8 +17,11 @@
     "test:unit": "jest --testPathPattern=unit",
     "test:integration": "jest --testPathPattern=integration",
     "test:integration:simple": "jest --testPathPattern=caddy-php-simple",
+<<<<<<< HEAD
     "test:e2e": "xvfb-run -a playwright test",
     "test:e2e:smoke": "xvfb-run -a playwright test tests/e2e/smoke.test.js",
+=======
+>>>>>>> beta
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
@@ -81,6 +84,9 @@
       "!app/vendor/phpunit/**/*",
       "!app/vendor/pestphp/**/*",
       "!app/vendor/sebastian/**/*",
+      "!app/vendor/**/tests/**/*",
+      "!app/vendor/**/test/**/*",
+      "!app/vendor/**/docs/**/*",
       "!app/brain/**/*",
       "!app/tmp/**/*",
       "!app/logs/**/*",
@@ -142,5 +148,5 @@
     "sharp": "^0.33.3",
     "sqlite3": "^5.1.7"
   },
-  "productName": "Duplicator Beta"
+  "productName": "Duplicator Alpha"
 }

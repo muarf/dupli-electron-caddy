@@ -54,12 +54,10 @@ function convert_pdf_to_images_preserve_size($pdf_file, $output_dir, $base_filen
         $prefix = $base_filename . '_page_%03d.png';
         $output_pattern = $output_dir . $prefix;
 
-        $escaped_output_pattern = (PHP_OS_FAMILY === 'Windows') ? '"' . str_replace('"', '""', $output_pattern) . '"' : escapeshellarg($output_pattern);
-
         // Utiliser Ghostscript pour convertir le PDF en PNG à haute résolution
         // IMPORTANT: Utiliser -dUseCropBox=true pour que les images générées correspondent
         // exactement aux dimensions détectées par FPDI (qui lit aussi la CropBox)
-        $gs_args = "-dNOPAUSE -dBATCH -dUseCropBox=true -sDEVICE=png16m -r" . intval($dpi) . " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . $escaped_output_pattern . " " . escapeshellarg($pdf_file);
+        $gs_args = "-dNOPAUSE -dBATCH -dUseCropBox=true -sDEVICE=png16m -r" . intval($dpi) . " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($output_pattern) . " " . escapeshellarg($pdf_file);
         
         $gs_result = run_ghostscript($gs_args);
         
@@ -405,8 +403,8 @@ function convert_to_bitmap_dithering($image) {
     $height = imagesy($image);
     
         try {
-            $tmp_in = resolveTempDir() . DIRECTORY_SEPARATOR . 'dither_in_' . uniqid() . '.png';
-            $tmp_out = resolveTempDir() . DIRECTORY_SEPARATOR . 'dither_out_' . uniqid() . '.png';
+            $tmp_in = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dither_in_' . uniqid() . '.png';
+            $tmp_out = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dither_out_' . uniqid() . '.png';
             imagepng($image, $tmp_in);
             
             // Floyd-Steinberg dithering via CLI
@@ -613,7 +611,7 @@ function Action($conf) {
         }
         
         $progress_key = $_GET['progress_key'];
-        $progress_file = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor_progress_' . $progress_key . '.json';
+        $progress_file = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor_progress_' . $progress_key . '.json';
         
         // Cette requête doit être rapide, pas de timeout
         set_time_limit(5); // Maximum 5 secondes pour lire un fichier
@@ -663,12 +661,11 @@ function Action($conf) {
                         $errors[] = "Le fichier est trop volumineux (maximum 50MB).";
                     } else {
                         // Créer le dossier temporaire
-                        $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
+                        $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
                         if (!is_dir($tmpDir)) {
                             if (!mkdir($tmpDir, 0777, true)) {
                                 throw new Exception("Impossible de créer le dossier temporaire.");
                             }
-                            @chmod($tmpDir, 0777);
                         }
                         
                         $timestamp = date('YmdHis');
@@ -750,12 +747,11 @@ function Action($conf) {
                 // Si on a un fichier bibliothèque, créer un $_FILES simulé
                 if ($from_lib_file) {
                     // Créer un fichier temporaire copié depuis la bibliothèque
-                    $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
+                    $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
                     if (!is_dir($tmpDir)) {
                         if (!mkdir($tmpDir, 0777, true)) {
                             throw new Exception("Impossible de créer le dossier temporaire.");
                         }
-                        @chmod($tmpDir, 0777);
                     }
                     
                     $timestamp = date('YmdHis');
@@ -811,12 +807,11 @@ function Action($conf) {
                         $errors[] = "Le fichier est trop volumineux (maximum 50MB).";
                     } else {
                     // Créer le dossier temporaire
-                    $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
+                    $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor' . DIRECTORY_SEPARATOR;
                     if (!is_dir($tmpDir)) {
                         if (!mkdir($tmpDir, 0777, true)) {
                             throw new Exception("Impossible de créer le dossier temporaire.");
                         }
-                        @chmod($tmpDir, 0777);
                     }
                     
                     $timestamp = date('YmdHis');
@@ -826,7 +821,7 @@ function Action($conf) {
                     
                     // Créer une clé de progression
                     $progress_key = uniqid('proc_', true);
-                    $progress_file = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor_progress_' . $progress_key . '.json';
+                    $progress_file = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_image_processor_progress_' . $progress_key . '.json';
                     
                     // Initialiser la progression
                     file_put_contents($progress_file, json_encode(array(

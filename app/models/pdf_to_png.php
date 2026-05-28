@@ -23,10 +23,8 @@ function convert_pdf_to_png($pdf_file, $output_dir, $dpi = 150, $base_filename =
         $prefix = $base_filename . '_page_%03d.png';
         $output_pattern = $output_dir . $prefix;
 
-        $escaped_output_pattern = (PHP_OS_FAMILY === 'Windows') ? '"' . str_replace('"', '""', $output_pattern) . '"' : escapeshellarg($output_pattern);
-
         // Utiliser Ghostscript pour convertir le PDF en PNG
-        $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=png16m -r" . intval($dpi) . " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . $escaped_output_pattern . " " . escapeshellarg($pdf_file);
+        $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=png16m -r" . intval($dpi) . " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($output_pattern) . " " . escapeshellarg($pdf_file);
         
         $gs_result = run_ghostscript($gs_args);
         
@@ -103,13 +101,12 @@ function Action($conf) {
             } elseif ($_FILES["pdf"]["size"] > 50 * 1024 * 1024) {
                 $errors[] = "Le fichier est trop volumineux (maximum 50MB).";
             } else {
-                // Utiliser resolveTempDir() pour plus de compatibilité (centralisé)
-                $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_pdf_to_png' . DIRECTORY_SEPARATOR;
+                // Utiliser sys_get_temp_dir() pour être compatible AppImage
+                $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_pdf_to_png' . DIRECTORY_SEPARATOR;
                 if (!is_dir($tmpDir)) {
                     if (!mkdir($tmpDir, 0777, true)) {
                         throw new Exception("Impossible de créer le répertoire temporaire : " . $tmpDir);
                     }
-                    @chmod($tmpDir, 0777);
                 }
                 
                 $timestamp = date('YmdHis');

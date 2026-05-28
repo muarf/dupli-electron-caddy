@@ -219,15 +219,15 @@
                             <div style="font-size: 48px; color: #84fab0; margin-bottom: 20px;">
                                 <i class="fa fa-file-image-o"></i>
                             </div>
-                            <div id="uploadText" style="<?= $from_lib_file ? 'display:none;' : '' ?>">
+                            <div id="uploadText">
                                 <h3 style="color: #333; margin-bottom: 10px;"><?php _e('taux_remplissage.drag_drop'); ?>
                                 </h3>
                                 <p style="color: #666; margin-bottom: 20px;">
                                     <?php _e('taux_remplissage.click_select'); ?></p>
                                 <input type="file" name="file" id="file"
                                     accept="application/pdf,.pdf,image/jpeg,image/jpg,image/png,image/gif"
-                                    style="display: none;" <?= $from_lib_file ? '' : 'required' ?>>
-                                <button type="button" class="btn btn-lg" id="selectFileButton"
+                                    style="display: none;" required>
+                                <button type="button" class="btn btn-lg"
                                     style="background: #84fab0; border: none; color: white; padding: 12px 30px; border-radius: 25px;">
                                     <i class="fa fa-upload"></i> <?php _e('taux_remplissage.select_file'); ?>
                                 </button>
@@ -235,17 +235,12 @@
                                     <i class="fa fa-info-circle"></i> <?php _e('taux_remplissage.file_info'); ?>
                                 </p>
                             </div>
-                            <div id="fileInfo" style="<?= $from_lib_file ? 'display:block;' : 'display:none;' ?>">
+                            <div id="fileInfo" style="display: none;">
                                 <h4 style="color: #333; margin-bottom: 10px;">
                                     <i class="fa fa-check-circle" style="color: #28a745; margin-right: 10px;"></i>
                                     <?php _e('taux_remplissage.file_selected'); ?>
                                 </h4>
-                                <p id="fileName" style="color: #666; margin-bottom: 15px;">
-                                    <?= $from_lib_file ? htmlspecialchars($from_lib_file['filename']) : '' ?>
-                                </p>
-                                <?php if ($from_lib_file): ?>
-                                    <input type="hidden" name="lib_file_id" id="lib_file_id" value="<?= $from_lib_file['id'] ?>">
-                                <?php endif; ?>
+                                <p id="fileName" style="color: #666; margin-bottom: 15px;"></p>
                                 <button type="submit" class="btn btn-success btn-lg">
                                     <i class="fa fa-calculator"></i> <?php _e('taux_remplissage.calculate_btn'); ?>
                                 </button>
@@ -321,7 +316,7 @@
         });
 
         // Gestion du clic sur le bouton
-        const selectBtn = document.getElementById('selectFileButton');
+        const selectBtn = document.querySelector('#uploadText button');
         if (selectBtn) {
             selectBtn.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -373,12 +368,9 @@
         function handleFileSelect(file) {
             const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'];
             if (!validTypes.includes(file.type)) {
-                showAppModal({ message:  'Veuillez sélectionner un fichier valide.' , type: 'warning' });
+                showAppModal({ message:  'FIXME_EMPTY_KEY' , type: 'warning' });
                 return;
             }
-            // Supprimer lib_file_id si présent car on a sélectionné un nouveau fichier
-            const libInput = document.getElementById('lib_file_id');
-            if (libInput) libInput.remove();
             fileName.textContent = file.name + ' (' + (file.size / 1024 / 1024).toFixed(2) + ' MB)';
             uploadText.style.display = 'none';
             fileInfo.style.display = 'block';

@@ -7,7 +7,6 @@ class Imposition
     private $pdf;
     private $previewPdf;
     private $sourceFile;
-    private $pageCount;
     private $settings;
     
     // Propriétés explicites pour l'IDE/cache
@@ -88,8 +87,7 @@ class Imposition
     public function process($outputFile, $previewOutputFile = null)
     {
         // 1. Initialisation et import
-        $this->pageCount = $this->pdf->setSourceFile($this->sourceFile);
-        $pageCount = $this->pageCount;
+        $pageCount = $this->pdf->setSourceFile($this->sourceFile);
         if ($this->previewPdf) {
             $this->previewPdf->setSourceFile($this->sourceFile);
         }
@@ -177,10 +175,12 @@ class Imposition
                     $pageNo = $i + ($pos * $stackDepth);
                 }
 
-                $currentRow = floor($pos / $cols);
-                $currentCol = $pos % $cols;
+                if ($pageNo <= $pageCount) {
+                    $currentRow = floor($pos / $cols);
+                    $currentCol = $pos % $cols;
 
-                $this->placePage($pageNo, $currentCol, $currentRow, $cols, $rows, $sheetWidth, $sheetHeight);
+                    $this->placePage($pageNo, $currentCol, $currentRow, $cols, $rows, $sheetWidth, $sheetHeight);
+                }
             }
 
             // --- VERSO (Seulement si Duplex) ---
@@ -194,19 +194,21 @@ class Imposition
                     // Page Verso correspondant à la même position "logique" dans la pile
                     $pageNo = ($pos * $stackDepth * 2) + ($i * 2);
 
-                    // Logique Miroir pour le Verso
-                    // On prend la position 'pos' (qui correspond à une case de la grille)
-                    // et on cherche où l'imprimer physiquement pour qu'elle soit au dos.
-                    
-                    $origRow = floor($pos / $cols);
-                    $origCol = $pos % $cols;
-                    
-                    // Inversion des colonnes (Miroir axe vertical)
-                    // Col 0 devient Col Max, Col 1 devient Col Max-1...
-                    $mirrorCol = ($cols - 1) - $origCol;
-                    $mirrorRow = $origRow; // La ligne ne change pas si on tourne la page comme un livre
+                    if ($pageNo <= $pageCount) {
+                        // Logique Miroir pour le Verso
+                        // On prend la position 'pos' (qui correspond à une case de la grille)
+                        // et on cherche où l'imprimer physiquement pour qu'elle soit au dos.
+                        
+                        $origRow = floor($pos / $cols);
+                        $origCol = $pos % $cols;
+                        
+                        // Inversion des colonnes (Miroir axe vertical)
+                        // Col 0 devient Col Max, Col 1 devient Col Max-1...
+                        $mirrorCol = ($cols - 1) - $origCol;
+                        $mirrorRow = $origRow; // La ligne ne change pas si on tourne la page comme un livre
 
-                    $this->placePage($pageNo, $mirrorCol, $mirrorRow, $cols, $rows, $sheetWidth, $sheetHeight);
+                        $this->placePage($pageNo, $mirrorCol, $mirrorRow, $cols, $rows, $sheetWidth, $sheetHeight);
+                    }
                 }
             }
         }
@@ -243,30 +245,18 @@ class Imposition
 
     private function placePage($pageNo, $colIndex, $rowIndex, $totalCols, $totalRows, $sheetWidth, $sheetHeight)
     {
-        $isBlank = ($pageNo > $this->pageCount);
-        $tplIdx = null;
-        $previewTplIdx = null;
-
-        if (!$isBlank) {
-            // Import de la page
-            try {
-                $tplIdx = $this->pdf->importPage($pageNo);
-                if ($this->previewPdf) {
-                    $previewTplIdx = $this->previewPdf->importPage($pageNo);
-                }
-            } catch (\Exception $e) {
-                return; // Page invalide ou erreur
+        // Import de la page
+        try {
+            $tplIdx = $this->pdf->importPage($pageNo);
+            $previewTplIdx = null;
+            if ($this->previewPdf) {
+                $previewTplIdx = $this->previewPdf->importPage($pageNo);
             }
-            $size = $this->pdf->getTemplateSize($tplIdx);
-        } else {
-            // It's a blank page, use the dimensions of the first page as reference
-            try {
-                $refTplIdx = $this->pdf->importPage(1);
-                $size = $this->pdf->getTemplateSize($refTplIdx);
-            } catch (\Exception $e) {
-                $size = ['width' => 210, 'height' => 297]; // Fallback to A4
-            }
+        } catch (\Exception $e) {
+            return; // Page invalide ou erreur
         }
+        
+        $size = $this->pdf->getTemplateSize($tplIdx);
 
         // --- CALCUL DES MÉTRIQUES ---
         // 1. Déterminer l'échelle de base
@@ -362,31 +352,27 @@ class Imposition
         }
 
         // Ajout de la page dans le PDF final
-        if (!$isBlank) {
-            if ($applyRotation) {
-                $this->pdf->StartTransform();
-                $this->pdf->Rotate(180, $x + ($finalW / 2), $y + ($finalH / 2));
-            }
-            $this->pdf->useTemplate($tplIdx, $x, $y, $finalW, $finalH);
-            if ($applyRotation) {
-                $this->pdf->StopTransform();
-            }
+        if ($applyRotation) {
+            $this->pdf->StartTransform();
+            $this->pdf->Rotate(180, $x + ($finalW / 2), $y + ($finalH / 2));
+        }
+        $this->pdf->useTemplate($tplIdx, $x, $y, $finalW, $finalH);
+        if ($applyRotation) {
+            $this->pdf->StopTransform();
         }
 
         // Ajout de la page dans le PDF preview
-        if ($this->previewPdf) {
-            if (!$isBlank && $previewTplIdx) {
-                if ($applyRotation) {
-                    $this->previewPdf->StartTransform();
-                    $this->previewPdf->Rotate(180, $x + ($finalW / 2), $y + ($finalH / 2));
-                }
-                $this->previewPdf->useTemplate($previewTplIdx, $x, $y, $finalW, $finalH);
-                if ($applyRotation) {
-                    $this->previewPdf->StopTransform();
-                }
+        if ($this->previewPdf && $previewTplIdx) {
+            if ($applyRotation) {
+                $this->previewPdf->StartTransform();
+                $this->previewPdf->Rotate(180, $x + ($finalW / 2), $y + ($finalH / 2));
+            }
+            $this->previewPdf->useTemplate($previewTplIdx, $x, $y, $finalW, $finalH);
+            if ($applyRotation) {
+                $this->previewPdf->StopTransform();
             }
 
-            // Add page number to preview if callback is provided (even for blank pages)
+            // Add page number to preview if callback is provided
             if ($this->settings['addPageNumberCallback'] && is_callable($this->settings['addPageNumberCallback'])) {
                 $previewRotation = $applyRotation ? 180 : 0;
                 call_user_func($this->settings['addPageNumberCallback'], $this->previewPdf, $pageNo, $x, $y, $finalW, $finalH, $previewRotation);
