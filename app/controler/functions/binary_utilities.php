@@ -140,8 +140,18 @@ function get_ghostscript_path(): string
 {
     $gs = get_binary_path('gs', 'DUPLICATOR_GS_PATH');
     
-    // Sur Windows, si 'gs' n'est pas trouvé, essayer 'gswin64c'
+    // Sur Windows, si 'gs' n'est pas trouvé dans bin/, chercher dans le dossier ghostscript/ local (spécifique Alpha/Beta packagé)
     if (PHP_OS_FAMILY === 'Windows' && $gs === 'gs') {
+        $local_gs_paths = [
+            __DIR__ . "/../../../ghostscript/gswin64c.exe", // Mode dev / racine dépôt
+            __DIR__ . "/../../ghostscript/gswin64c.exe"    // Mode packagé
+        ];
+        foreach ($local_gs_paths as $path) {
+            if (file_exists($path)) {
+                return realpath($path) ?: $path;
+            }
+        }
+        
         $gswin64c = get_binary_path('gswin64c');
         if ($gswin64c !== 'gswin64c') {
             return $gswin64c;
