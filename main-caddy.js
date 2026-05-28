@@ -2504,6 +2504,16 @@ function setupAutoUpdater() {
             }
         }
 
+        if (isAlpha) {
+            const semver = require('semver');
+            const preComponents = semver.prerelease(info.version);
+            const isAlphaVersion = preComponents && preComponents.some(c => String(c).toLowerCase() === 'alpha');
+            if (!isAlphaVersion) {
+                console.log('[AutoUpdater] Version non-alpha (beta ou stable) ignorée sur channel alpha:', info.version);
+                return; // Ne pas notifier l'UI
+            }
+        }
+
         // Vérifier si on est en AppImage et si la mise à jour pointe vers un .deb
         const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
         if (isAppImage) {
