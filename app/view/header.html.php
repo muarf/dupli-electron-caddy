@@ -90,6 +90,13 @@
     </div>
     <div class="collapse navbar-collapse" id="navbar-ex-collapse">
       <ul class="nav navbar-nav navbar-right">
+        <!-- Dupli Studio -->
+        <li>
+          <a href="?studio" style="color: #4f6ef7;">
+            <i class="fa fa-magic" style="margin-right: 5px;"></i>
+            <strong>Studio</strong>
+          </a>
+        </li>
         <!-- Bibliothèque en haut -->
         <li>
           <a href="?bibliotheque">
