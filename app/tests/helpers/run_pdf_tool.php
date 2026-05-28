@@ -5,7 +5,11 @@ if ($argc < 2) {
     exit(1);
 }
 
-$payload = json_decode($argv[1], true);
+$json = $argv[1];
+if (file_exists($json)) {
+    $json = file_get_contents($json);
+}
+$payload = json_decode($json, true);
 
 if (!is_array($payload)) {
     fwrite(STDERR, "Payload invalide\n");
