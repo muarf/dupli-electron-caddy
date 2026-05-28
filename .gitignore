@@ -6,15 +6,21 @@ dist/
 *.AppImage
 *.dmg
 *.snap
+build/config.gypi
 # Note: php.exe and caddy.exe are needed for Windows builds, so not ignored
 
 # Binaries
-caddy/*.tar.gz
-caddy/*.zip
-php/php
-php/*.tar.gz
-php/*.zip
-php_linux.zip
+bin/*
+!bin/win-x64/
+!bin/linux-x64/
+!bin/linux-arm64/
+caddy/caddy*
+php/php*
+ghostscript/gs*
+ghostscript/*.dll
+ghostscript/*.exe
+imagemagick/*.exe
+imagemagick/*.dll
 
 # Logs
 *.log
@@ -42,7 +48,10 @@ app/duplinew.sqlite
 app/sessions/
 app/public/tmp/*
 app/public/sauvegarde/*
-app/vendor/  # PHP dependencies (installed via Composer in CI/CD)
+app/public/thumbnails/
+app/public/uploads/
+app/uploads/
+app/vendor/
 squashfs-root/
 
 # Test coverage
@@ -53,8 +62,16 @@ coverage/
 .env
 .env.local
 
+# Generated thumbnails
+app/bibliotheque/thumbnails/
+
+# Test artifacts
+tests/output_xps/
+
 # Cache
 .cache/
 .npm/
 .electron/
+app/.phpunit.cache/
+app/brain/
 

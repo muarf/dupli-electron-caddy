@@ -14,15 +14,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Security: En mode serveur, on autorise quand même la maintenance pour le scan profond
-// (Normalement bridé à Electron, mais activé ici pour ton usage sur VPS)
-/*
+// Security: Bloquer tout accès non-Electron en mode serveur pour les opérations de maintenance
 if (!isElectron()) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Action interdite en mode serveur']);
     exit;
 }
-*/
 
 $data = json_decode(file_get_contents('php://input'), true);
 $action = $data['action'] ?? '';

@@ -70,7 +70,7 @@ class DatabaseMigrationManager
                 'add_print_job_id_to_recorded_print_jobs' => function () {
                     migrate_add_print_job_id_to_recorded_print_jobs($this->db);
                 },
-                'bibliotheque_metadata_tags' => function () {
+                'add_bibliotheque_metadata_and_tags' => function () {
                     migrate_add_bibliotheque_metadata_and_tags($this->db);
                 },
                 'create_site_settings_table' => function () {

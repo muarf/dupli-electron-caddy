@@ -2,27 +2,48 @@
 
 Application de gestion de comptabilité pour collectifs de reproduction (duplicopieurs/photocopieurs) avec calcul des prix de revient, packagée en application Electron cross-platform avec serveur Caddy intégré.
 
-## 📥 Télécharger la dernière version
+## 📥 Téléchargement
 
-[![Latest Release](https://img.shields.io/github/v/release/muarf/dupli-electron-caddy?label=Dernière%20version&style=for-the-badge)](https://github.com/muarf/dupli-electron-caddy/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/muarf/dupli-electron-caddy/total?label=Téléchargements&style=for-the-badge)](https://github.com/muarf/dupli-electron-caddy/releases)
+Choisissez la version qui vous convient :
 
-Téléchargez la dernière release directement depuis GitHub :
+### 🟢 Version Stable (Recommandée)
+Dernière version stable testée et approuvée.
+[![Stable Release](https://img.shields.io/github/v/release/muarf/dupli-electron-caddy?label=Stable&style=for-the-badge&color=green)](https://github.com/muarf/dupli-electron-caddy/releases/latest)
+- **Windows** : [Duplicator-Setup-1.5.57.exe](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.57/Duplicator-Setup-1.5.57.exe)
+- **Linux** : [Duplicator-1.5.57-x86_64.AppImage](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.57/Duplicator-1.5.57-x86_64.AppImage)
+- **macOS** : [Duplicator-1.5.57.dmg](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.57/Duplicator-1.5.57.dmg)
 
-- **Windows** : [![Windows Download](https://img.shields.io/badge/Windows-Download-blue?style=flat-square&logo=windows)](https://github.com/muarf/dupli-electron-caddy/releases/latest) - Fichier `Duplicator-Caddy-Setup-*.exe`
-- **Linux** : [![Linux Download](https://img.shields.io/badge/Linux-Download-orange?style=flat-square&logo=linux)](https://github.com/muarf/dupli-electron-caddy/releases/latest) - Fichier `Duplicator-*-x86_64.AppImage`
-- **macOS** : [![macOS Download](https://img.shields.io/badge/macOS-Download-gray?style=flat-square&logo=apple)](https://github.com/muarf/dupli-electron-caddy/releases/latest) - Fichier `Duplicator-*.dmg`
+---
 
-👉 **[Voir toutes les releases et télécharger](https://github.com/muarf/dupli-electron-caddy/releases)**
+### 🧪 Version Beta (Dernières nouveautés)
+Contient les dernières fonctionnalités en cours de test (peut être instable).
+[![Beta Release](https://img.shields.io/github/v/release/muarf/dupli-electron-caddy?include_prereleases&label=Beta&style=for-the-badge&color=orange)](https://github.com/muarf/dupli-electron-caddy/releases)
+- **Windows/Linux** : [Voir les dernières releases Beta](https://github.com/muarf/dupli-electron-caddy/releases)
+
+---
+
+### ✨ Nouveautés de la v2.0 (Beta)
+La version 2.0 introduit le nouveau moteur d'automatisation et l'unification système :
+- **🚀 Nouveau Module d'Auto-Tirage** : Automatisation complète du flux d'impression, ré-analyse intelligente des formats et persistance des sessions (ne perd plus les données en cas de coupure).
+- **🖥️ Unification Cross-Platform** : Support complet de Linux (AppImage/Deb) et intégration d'ImageMagick pour un traitement d'image identique sur Windows et Linux.
+- **🛡️ Fiabilité & Santé** : Isolation du canal Beta (`com.dupli.beta`) et nouveau système de diagnostic (Health Check) pour le serveur intégré.
+
+---
+
+👉 **[Voir toutes les releases](https://github.com/muarf/dupli-electron-caddy/releases)**
 
 ## 🚀 Fonctionnalités
 
+### 🖨️ Production & Impression (Beta)
+- **Imposition automatique** : Transformation de PDF A4 en planches A3 prêtes à l'impression.
+- **Traitement d'images** : Optimisation des densités pour la reproduction.
+- **Multimachines** : Gestion centralisée pour les collectifs équipés de plusieurs parcs.
+
 ### 📊 Gestion Comptable
-- Calcul des prix de revient pour les différentes machines
-- Gestion des coûts d'impression (papier, encre, masters, tambours, devellopeurs)
-- Suivi des volumes d'impression 
-- Statistiques d'utilisation, prévision des temps de changement de consommables
-- Rapports de rentabilité
+- Calcul des prix de revient temps réel.
+- Suivi précis des consommables (encre, masters, tambours, développeurs).
+- Statistiques d'utilisation et rapports de rentabilité par machine.
+- Historique des volumes d'impression.
 
 ### 📄 Traitement de Documents
 - **Bibliothèque PDF/PNG**
@@ -64,11 +85,38 @@ Téléchargez la dernière release directement depuis GitHub :
 
 - Node.js 18+ 
 - npm ou yarn
+- **Composer** (pour les dépendances PHP)
+
+### Installation de Composer
+
+**Windows (avec Chocolatey) :**
+```powershell
+# Ouvrir PowerShell en tant qu'administrateur
+choco install composer -y
+```
+
+**Windows (manuel) :**
+Téléchargez et installez Composer depuis https://getcomposer.org/download/
+
+**Linux/macOS :**
+```bash
+# Installation globale
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
+```
 
 ### Installation des dépendances
 
+**1. Dépendances Node.js :**
 ```bash
 npm install
+```
+
+**2. Dépendances PHP (dans le dossier app/) :**
+```bash
+cd app
+composer install
+cd ..
 ```
 
 ### Téléchargement des binaires

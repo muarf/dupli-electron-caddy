@@ -6,14 +6,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     openFile: (filePath) => ipcRenderer.invoke('open-file', filePath),
     cleanupTmpFiles: () => ipcRenderer.invoke('cleanup-tmp-files'),
     showOpenDialog: (options) => ipcRenderer.invoke('show-open-dialog', options),
-    
+
     // Fonctions de mise à jour
     checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
     downloadUpdate: () => ipcRenderer.invoke('download-update'),
     installUpdate: () => ipcRenderer.invoke('install-update'),
     getDatabasePath: () => ipcRenderer.invoke('get-database-path'),
     getAppVersion: () => ipcRenderer.invoke('get-app-version'),
-    
+
     // Écouteurs d'événements de mise à jour
     onUpdateAvailable: (callback) => {
         ipcRenderer.on('update-available', (event, info) => callback(info));
@@ -30,7 +30,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onUpdateError: (callback) => {
         ipcRenderer.on('update-error', (event, error) => callback(error));
     },
-    
+
     // Supervision du backend PHP
     onPhpLog: (callback) => {
         ipcRenderer.on('php-log', (event, payload) => callback(payload));
@@ -43,7 +43,40 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     restartPhp: () => ipcRenderer.invoke('restart-php'),
     restartApp: () => ipcRenderer.invoke('restart-app'),
-    deletePrintJob: (printerName, jobId) => ipcRenderer.invoke('delete-print-job', printerName, jobId)
+
+    // Moniteur d'imprimantes Windows
+    getPrinters: () => ipcRenderer.invoke('get-printers'),
+    togglePrinterMonitor: (start) => ipcRenderer.invoke('toggle-printer-monitor', start),
+    getPrinterMonitorStatus: () => ipcRenderer.invoke('get-printer-monitor-status'),
+    deletePrinter: (printerName) => ipcRenderer.invoke('delete-printer', printerName),
+    deletePrintJob: (printerName, jobId) => ipcRenderer.invoke('delete-print-job', printerName, jobId),
+    reanalyzePrintJob: (jobId) => ipcRenderer.invoke('reanalyze-print-job', jobId),
+    onPrintJobDetected: (callback) => {
+        ipcRenderer.on('print-job-detected', (event, payload) => callback(payload));
+    },
+    onPrintMonitorError: (callback) => {
+        ipcRenderer.on('print-monitor-error', (event, payload) => callback(payload));
+    },
+    onPrintMonitorStarted: (callback) => {
+        ipcRenderer.on('print-monitor-started', (event, payload) => callback(payload));
+    },
+    onConsoleLog: (callback) => {
+        ipcRenderer.on('console-log', (event, payload) => callback(payload));
+    },
+
+    // Module d'impression (cross-platform)
+    getPrinterCapabilities: (printerName) => ipcRenderer.invoke('get-printer-capabilities', printerName),
+    printJob: (pdfPath, options) => ipcRenderer.invoke('print-job', pdfPath, options),
+
+    // Impression de fichiers
+    printFile: (fileUrl, options) => ipcRenderer.invoke('print-file', fileUrl, options),
+
+    // Ouvrir un fichier avec l'application système
+    openExternalFile: (fileUrl) => ipcRenderer.invoke('open-external-file', fileUrl),
+
+    // Droits administrateur
+    checkAdminStatus: () => ipcRenderer.invoke('check-admin-status'),
+    restartAsAdmin: () => ipcRenderer.invoke('restart-as-admin')
 });
 
 

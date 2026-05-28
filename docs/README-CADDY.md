@@ -78,7 +78,6 @@ dupli-electron-caddy/
 ├── main-caddy.js          # Point d'entrée avec Caddy
 ├── main.js                # Point d'entrée avec PHP intégré
 ├── Caddyfile              # Configuration Caddy
-├── php-fpm.conf           # Configuration PHP-FPM
 ├── scripts/
 │   └── download-caddy.js  # Script de téléchargement Caddy
 ├── tests/
@@ -117,10 +116,6 @@ Le serveur PHP intégré est configuré via :
 2. Vérifier les permissions : `chmod +x caddy/caddy`
 3. Vérifier la configuration : `caddy validate --config Caddyfile`
 
-### PHP-FPM ne démarre pas
-1. Vérifier que PHP-FPM est installé : `php-fpm --version`
-2. Vérifier la configuration : `php-fpm -t --fpm-config php-fpm.conf`
-3. Vérifier les permissions du socket
 
 ### Tests qui échouent
 1. Vérifier que les dépendances de test sont installées

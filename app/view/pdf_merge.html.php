@@ -141,19 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnClear = document.getElementById('btn-clear');
     const fileOrderInput = document.getElementById('file_order');
     
-    let selectedFiles = []; // Array of {type: 'upload'|'lib', file: File|Object}
-
-    // Gestion du pré-chargement
-    const preloadedData = <?php echo isset($preloaded_data) ? json_encode($preloaded_data) : 'null'; ?>;
-    if (preloadedData) {
-        selectedFiles.push({
-            type: 'lib',
-            id: preloadedData.id,
-            name: preloadedData.filename,
-            size: 0 // On ne connaît pas la taille exacte ici
-        });
-        updateUI();
-    }
+    let selectedFiles = [];
 
     if (!fileInput) return; // Exit if in success state
 
@@ -171,12 +159,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         newFiles.forEach(file => {
             if (file.type === 'application/pdf') {
-                selectedFiles.push({
-                    type: 'upload',
-                    file: file,
-                    name: file.name,
-                    size: file.size
-                });
+                selectedFiles.push(file);
             }
         });
         
@@ -197,8 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 item.dataset.index = index;
                 
                 // Formater la taille
-                const sizeStr = file.type === 'upload' ? (file.size / (1024 * 1024)).toFixed(2) + ' MB' : 'Bibliothèque';
-                const icon = file.type === 'upload' ? 'fa-file-pdf-o' : 'fa-book';
+                const size = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
                 
                 item.innerHTML = `
                     <div class="row" style="display: flex; align-items: center; width: 100%;">
@@ -206,11 +188,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             <i class="fa fa-bars sort-handle"></i>
                         </div>
                         <div class="col-xs-1 text-center" style="font-size: 20px; color: #764ba2;">
-                            <i class="fa ${icon}"></i>
+                            <i class="fa fa-file-pdf-o"></i>
                         </div>
                         <div class="col-xs-7">
                             <div style="font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${file.name}</div>
-                            <small class="text-muted">${sizeStr}</small>
+                            <small class="text-muted">${size}</small>
                         </div>
                         <div class="col-xs-3 text-right">
                             <button type="button" class="btn btn-link btn-remove" data-index="${index}">
@@ -322,20 +304,9 @@ document.addEventListener('DOMContentLoaded', function() {
         btnMerge.innerHTML = '<i class="fa fa-spinner fa-spin"></i> <?php _e('pdf_merge.merging'); ?>';
         
         const formData = new FormData();
-        const structure = [];
-        let uploadIdx = 0;
-        
-        selectedFiles.forEach((item, index) => {
-            if (item.type === 'upload') {
-                formData.append('pdfs[]', item.file);
-                structure.push({ type: 'upload', upload_index: uploadIdx });
-                uploadIdx++;
-            } else {
-                structure.push({ type: 'lib', id: item.id });
-            }
+        selectedFiles.forEach((file, index) => {
+            formData.append('pdfs[]', file);
         });
-        
-        formData.append('file_structure', JSON.stringify(structure));
         
         // Add current page as base URL
         const url = window.location.href.split('#')[0];

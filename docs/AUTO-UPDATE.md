@@ -218,7 +218,7 @@ Utilisez le format **Semantic Versioning** : `MAJOR.MINOR.PATCH`
 
 ### Modifier l'interface des notifications
 
-Éditez `app/js/updater-ui.js` pour personnaliser :
+Éditez `app/public/js/updater-ui.js` pour personnaliser :
 - Les couleurs
 - Le texte
 - La position des notifications
