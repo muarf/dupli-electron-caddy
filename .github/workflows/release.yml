@@ -52,8 +52,8 @@ jobs:
             # Récupérer à nouveau les tags
             git fetch --tags --force
             
-            # Essayer de récupérer le dernier tag standard (format vX.Y.Z uniquement, ignore -alpha et -beta)
-            TAG=$(git describe --tags --abbrev=0 --match "v[0-9]*.[0-9]*.[0-9]*" --exclude "*-*" 2>/dev/null || echo "")
+            # Essayer de récupérer le plus grand tag standard existant (format vX.Y.Z uniquement, ignore -alpha/-beta et non-ancêtres)
+            TAG=$(git tag --list "v[0-9]*.[0-9]*.[0-9]*" --sort=-v:refname | grep -v "-" | head -n1)
             
             if [ -z "$TAG" ]; then
               echo "❌ ERREUR: Aucun tag trouvé dans le repository"
