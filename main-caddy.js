@@ -647,10 +647,17 @@ async function restartPhpProcess(reason = 'manual') {
     }
 }
 
-// Obtenir le chemin de la base de données (dans userData pour la persistance lors des mises à jour)
+// Obtenir le chemin de la base de données (dans le dossier commun de l'application principale pour toutes les variantes)
 function getDatabasePath() {
-    const userDataPath = app.getPath('userData');
-    const dbPath = path.join(userDataPath, 'duplinew.sqlite');
+    const appDataPath = app.getPath('appData');
+    const sharedDataPath = path.join(appDataPath, 'Duplicator');
+    
+    // S'assurer que le dossier partagé existe
+    if (!fs.existsSync(sharedDataPath)) {
+        fs.mkdirSync(sharedDataPath, { recursive: true });
+    }
+    
+    const dbPath = path.join(sharedDataPath, 'duplinew.sqlite');
     
     // Si la base de données n'existe pas encore, copier le template depuis l'application
     if (!fs.existsSync(dbPath)) {
