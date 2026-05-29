@@ -232,9 +232,7 @@
             <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_tumble"> Tête-bêche</label>
           </div>
           
-          <button class="panel-btn primary" style="width:100%; margin-top:20px" onclick="doImpose('brochure')">
-            <i class="fa fa-magic"></i> Générer Brochure
-          </button>
+
         </div>
       </div>
 
@@ -251,6 +249,7 @@
             <select class="panel-select" id="liv_n_up">
               <option value="2">2 poses</option>
               <option value="4">4 poses</option>
+              <option value="8">8 poses</option>
             </select>
           </div>
         </div>
@@ -280,24 +279,65 @@
         </div>
 
         <div class="panel-section">
-          <div class="panel-section-title">Options Pro</div>
+        <div class="panel-section">
+          <div class="panel-section-title">Gouttières (mm)</div>
           <div class="panel-row">
-            <input type="number" class="panel-select" id="liv_gutter_x" value="0" step="0.5" style="width:48%" placeholder="Gout X">
-            <input type="number" class="panel-select" id="liv_gutter_y" value="0" step="0.5" style="width:48%" placeholder="Gout Y">
+            <div style="width:48%">
+              <div class="panel-label" style="font-size:10px; margin-bottom:2px">Horizontale X</div>
+              <input type="number" class="panel-select" id="liv_gutter_x" value="0" step="0.5" style="width:100%" placeholder="0">
+            </div>
+            <div style="width:48%">
+              <div class="panel-label" style="font-size:10px; margin-bottom:2px">Verticale Y</div>
+              <input type="number" class="panel-select" id="liv_gutter_y" value="0" step="0.5" style="width:100%" placeholder="0">
+            </div>
           </div>
-          <div class="panel-row" style="margin-top:10px">
+        </div>
+
+        <div class="panel-section">
+          <div class="panel-section-title">Options de repères & Folio</div>
+          <div class="panel-row">
             <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_crop_marks"> Traits de coupe</label>
           </div>
+          <div id="liv_crop_settings" style="display:none; padding-left:10px; border-left:2px solid var(--studio-border); margin-top:5px; margin-bottom:10px">
+            <div class="panel-row">
+              <div class="panel-label">Style de repères</div>
+              <select class="panel-select" id="liv_crop_style" style="font-size:10px">
+                <option value="standard">Standard (Autour de chaque pose)</option>
+                <option value="spreads" selected>Planches (Autour de chaque paire)</option>
+                <option value="booklet">Livret (Coins extérieurs)</option>
+              </select>
+            </div>
+            <div class="panel-row">
+              <div class="panel-label">Longueur (mm)</div>
+              <input type="number" class="panel-select" id="liv_crop_len" value="5" min="1" style="width:60px">
+            </div>
+          </div>
+          
           <div class="panel-row">
             <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_page_nums"> Numéros de pages</label>
           </div>
-          <div class="panel-row">
-            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_tumble"> Tête-bêche</label>
+          <div id="liv_folio_settings" style="display:none; padding-left:10px; border-left:2px solid var(--studio-border); margin-top:5px; margin-bottom:10px">
+             <div class="panel-row">
+               <div class="panel-label">Décalage X (mm)</div>
+               <input type="number" class="panel-select" id="liv_folio_x" value="0" step="0.5" style="width:60px">
+             </div>
+             <div style="font-size:9px; color:var(--studio-text-muted); margin-bottom:6px; margin-top:-2px">
+               Positif = vers la droite, Négatif = vers la gauche
+             </div>
+             <div class="panel-row">
+               <div class="panel-label">Décalage Y (mm)</div>
+               <input type="number" class="panel-select" id="liv_folio_y" value="-2" step="0.5" style="width:60px">
+             </div>
+             <div style="font-size:9px; color:var(--studio-text-muted); margin-bottom:6px; margin-top:-2px">
+               Pour remonter au dessus du trait, mettre négatif (ex: -2)
+             </div>
           </div>
           
-          <button class="panel-btn primary" style="width:100%; margin-top:20px" onclick="doImpose('livre')">
-            <i class="fa fa-magic"></i> Générer Livre
-          </button>
+          <div class="panel-row" style="margin-top:10px">
+            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_tete_beche"> Tête-bêche</label>
+          </div>
+          
+
         </div>
       </div>
 
@@ -1240,17 +1280,25 @@ document.addEventListener('DOMContentLoaded', function() {
         add_page_numbers_in_gutters: $('bro_page_nums').checked ? '1' : '0',
       };
     } else if (activeTab === 'livre') {
+      const resizeMode = document.querySelector('input[name="liv_resize_mode"]:checked')?.value || 'percent';
       fields = { ...fields,
         impose_type:    'livre',
         output_format:  $('liv_output_format').value,
         n_up:           $('liv_n_up').value,
+        resize_mode:    resizeMode,
         scale:          $('liv_scale').value,
+        target_width:   $('liv_target_w').value || '0',
+        target_height:  $('liv_target_h').value || '0',
         gutter_x:       $('liv_gutter_x').value,
         gutter_y:       $('liv_gutter_y').value,
-        duplex:         $('liv_duplex').checked ? '1' : '0',
+        duplex:         '1',
         tete_beche:     $('liv_tete_beche').checked ? '1' : '0',
         crop_marks:     $('liv_crop_marks').checked ? '1' : '0',
+        crop_style:     $('liv_crop_style').value,
+        crop_mark_len:  $('liv_crop_len').value,
         add_page_numbers_in_gutters: $('liv_page_nums').checked ? '1' : '0',
+        gutter_num_offset_x: $('liv_folio_x').value,
+        gutter_num_offset_y: $('liv_folio_y').value,
       };
     } else { // tracts
       fields = { ...fields,
@@ -1553,38 +1601,14 @@ document.addEventListener('DOMContentLoaded', function() {
       $('liv_resize_mm_block').style.display = e.target.value === 'mm' ? '' : 'none';
     });
   });
+  $('liv_crop_marks').addEventListener('change', e => {
+    $('liv_crop_settings').style.display = e.target.checked ? '' : 'none';
+  });
+  $('liv_page_nums').addEventListener('change', e => {
+    $('liv_folio_settings').style.display = e.target.checked ? '' : 'none';
+  });
 
-  async function doImpose(type) {
-    const prefix = (type === 'brochure') ? 'bro_' : (type === 'livre' ? 'liv_' : 'tra_');
-    const params = {
-      impose_type: type,
-      output_format: $(prefix + 'output_format').value,
-      n_up: $(prefix + 'n_up') ? $(prefix + 'n_up').value : 2,
-    };
 
-    // Resize
-    const resizeMode = document.querySelector(`input[name="${prefix}resize_mode"]:checked`)?.value || 'percent';
-    params.resize_mode = resizeMode;
-    params.scale = $(prefix + 'scale') ? $(prefix + 'scale').value : 100;
-    params.target_width = $(prefix + 'target_w') ? $(prefix + 'target_w').value : 0;
-    params.target_height = $(prefix + 'target_h') ? $(prefix + 'target_h').value : 0;
-
-    // Gutters
-    params.gutter_x = $(prefix + 'gutter_x') ? $(prefix + 'gutter_x').value : 0;
-    params.gutter_y = $(prefix + 'gutter_y') ? $(prefix + 'gutter_y').value : 0;
-    params.gutter_strategy = $(prefix + 'gutter_strategy') ? $(prefix + 'gutter_strategy').value : 'reduce';
-
-    // Options
-    params.crop_marks = $(prefix + 'crop_marks')?.checked ? '1' : '0';
-    params.crop_style = $(prefix + 'crop_style')?.value || 'spreads';
-    params.crop_mark_len = $(prefix + 'crop_mark_len')?.value || 5;
-    params.add_page_numbers_in_gutters = $(prefix + 'page_nums')?.checked ? '1' : '0';
-    params.gutter_num_offset_x = $(prefix + 'folio_x')?.value || 0;
-    params.gutter_num_offset_y = $(prefix + 'folio_y')?.value || -2;
-    params.tete_beche = $(prefix + 'tumble')?.checked ? '1' : '0';
-
-    serverProcess('impose', params, "Génération de l'imposition en cours...");
-  }
 
   // Imposition Tab switching
   document.querySelectorAll('.imp-tab').forEach(btn => {
