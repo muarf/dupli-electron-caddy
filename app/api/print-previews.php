@@ -67,7 +67,7 @@ if (isset($_GET['get_preview'])) {
     header('Content-Type: image/png');
  header('Content-Disposition: inline; filename="' . $filename . '"');
     header('Content-Length: ' . filesize($filePath));
-    header('Cache-Control: public, max-age=86400'); // Cache 24h
+    header('Cache-Control: no-cache, no-store, must-revalidate'); // Pas de cache pour éviter le recyclage d'anciennes miniatures
     readfile($filePath);
     exit;
 }
