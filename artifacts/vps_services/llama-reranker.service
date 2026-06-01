@@ -1,0 +1,14 @@
+[Unit]
+Description=Llama.cpp Server - Reranker
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu
+ExecStart=/home/ubuntu/llama.cpp/build/bin/llama-server -m /home/ubuntu/models/bge-reranker-v2-m3-Q8_0.gguf -c 8192 -b 2048 --ubatch-size 2048 --port 11437 -t 4 --host 0.0.0.0 --rerank
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

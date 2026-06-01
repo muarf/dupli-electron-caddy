@@ -1,0 +1,14 @@
+[Unit]
+Description=Llama.cpp Server - Gemma (Pro)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu
+ExecStart=/home/ubuntu/llama.cpp/build/bin/llama-server -m /home/ubuntu/models/google_gemma-4-E2B-it-IQ4_XS.gguf -c 8192 --port 11435 -t 4 --host 0.0.0.0
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

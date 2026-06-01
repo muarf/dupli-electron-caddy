@@ -264,13 +264,13 @@ function processImpositionTracts($is_from_lib = false)
         error_log("[IMPOSITION_TRACTS] Fichier temporaire lisible: " . (is_readable($tempFile) ? 'OUI' : 'NON'));
     }
 
-    // Utiliser resolveTempDir() pour être compatible AppImage
-    $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR;
+    // Utiliser resolveTempDir() pour plus de compatibilité (centralisé)
+    $tmp_dir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_tracts' . DIRECTORY_SEPARATOR;
     error_log("[IMPOSITION_TRACTS] Répertoire temporaire: " . $tmp_dir);
     if (!file_exists($tmp_dir)) {
         error_log("[IMPOSITION_TRACTS] Création répertoire temporaire");
-        $mkdirResult = mkdir($tmp_dir, 0755, true);
-        error_log("[IMPOSITION_TRACTS] Résultat mkdir: " . ($mkdirResult ? 'SUCCÈS' : 'ÉCHEC'));
+        mkdir($tmp_dir, 0777, true);
+        @chmod($tmp_dir, 0777);
     }
     error_log("[IMPOSITION_TRACTS] Répertoire existe: " . (file_exists($tmp_dir) ? 'OUI' : 'NON'));
     error_log("[IMPOSITION_TRACTS] Répertoire accessible en écriture: " . (is_writable($tmp_dir) ? 'OUI' : 'NON'));
@@ -279,32 +279,29 @@ function processImpositionTracts($is_from_lib = false)
     error_log("[IMPOSITION_TRACTS] Fichier destination: " . $inputFile);
 
     // Déplacer le fichier uploadé
-    // Pour les fichiers de la bibliothèque, utiliser rename() au lieu de move_uploaded_file()
-    // car move_uploaded_file() ne fonctionne que pour les fichiers uploadés via HTTP POST
     error_log("[IMPOSITION_TRACTS] Tentative déplacement de " . $tempFile . " vers " . $inputFile . " (from_lib: " . ($is_from_lib ? 'OUI' : 'NON') . ")");
 
     $moveResult = false;
     if ($is_from_lib) {
-        // Fichier de la bibliothèque : utiliser rename()
+        // Fichier de la bibliothèque : utiliser rename() ou copy()
         if (file_exists($tempFile)) {
             $moveResult = rename($tempFile, $inputFile);
-        } else {
-            $moveResult = false;
+            if (!$moveResult) {
+                // Fallback si rename échoue entre différents systèmes de fichiers
+                $moveResult = copy($tempFile, $inputFile);
+                if ($moveResult) @unlink($tempFile);
+            }
         }
     } else {
         // Fichier uploadé normalement : utiliser move_uploaded_file()
         $moveResult = move_uploaded_file($tempFile, $inputFile);
     }
 
-    error_log("[IMPOSITION_TRACTS] Résultat déplacement: " . ($moveResult ? 'SUCCÈS' : 'ÉCHEC'));
-
     if (!$moveResult) {
-        error_log("[IMPOSITION_TRACTS] ERREUR: déplacement a échoué");
-        error_log("[IMPOSITION_TRACTS] tempFile existe: " . (file_exists($tempFile) ? 'OUI' : 'NON'));
-        error_log("[IMPOSITION_TRACTS] inputFile existe après move: " . (file_exists($inputFile) ? 'OUI' : 'NON'));
         $lastError = error_get_last();
-        error_log("[IMPOSITION_TRACTS] Dernière erreur PHP: " . ($lastError ? $lastError['message'] : 'N/A'));
-        throw new Exception("Impossible de déplacer le fichier uploadé.");
+        $errorDetail = $lastError ? " : " . $lastError['message'] : "";
+        error_log("[IMPOSITION_TRACTS] ERREUR: déplacement a échoué" . $errorDetail);
+        throw new Exception("Impossible de déplacer le fichier vers le répertoire temporaire (" . $tmp_dir . "). Vérifiez les permissions." . $errorDetail);
     }
 
     // Vérifier les permissions du fichier déplacé
@@ -374,6 +371,7 @@ function processImpositionTracts($is_from_lib = false)
                 'width' => $widthMm,
                 'height' => $heightMm
             ],
+            'is_portrait' => $heightMm > $widthMm,
             'ghostscript_used' => true
         ];
         $array['pdf_info'] = $pdfInfo;
@@ -413,6 +411,9 @@ function processImpositionTracts($is_from_lib = false)
         $impositionParams['orientation'] = $orientation;
         $impositionParams['output_format'] = $outputFormat;
         $impositionParams['duplex_mode'] = $duplexMode;
+        $impositionParams['source_width'] = $pdfInfo['dimensions']['width'];
+        $impositionParams['source_height'] = $pdfInfo['dimensions']['height'];
+        $impositionParams['source_is_portrait'] = $pdfInfo['is_portrait'];
 
         // Traiter l'imposition
         $resultFile = performImposition($inputFile, $impositionParams, $cutMargin);
@@ -523,6 +524,9 @@ function performImposition($inputFile, $params, $cutMargin = 2)
         $format = $params['format'];
         $orientation = $params['orientation'] ?? 'auto';
         $outputFormat = $params['output_format'] ?? 'A3';
+        $sourceWidth = $params['source_width'] ?? null;
+        $sourceHeight = $params['source_height'] ?? null;
+        $sourceIsPortrait = $params['source_is_portrait'] ?? true;
 
         // Paramètres supplémentaires
         $forceResize = $params['force_resize'] ?? false;
@@ -533,72 +537,67 @@ function performImposition($inputFile, $params, $cutMargin = 2)
 
         // Dimensions selon le format de sortie et l'orientation choisie ou automatique
         if ($outputFormat === 'A4') {
-            // Format de sortie A4
             if ($orientation === 'portrait') {
-                // Orientation portrait forcée
-                $sheet_width = 210;  // Largeur A4 en portrait (mm)
-                $sheet_height = 297; // Hauteur A4 en portrait (mm)
-                $sheet_orientation = 'P'; // Portrait
+                $sheet_width = 210;
+                $sheet_height = 297;
+                $sheet_orientation = 'P';
             } elseif ($orientation === 'landscape') {
-                // Orientation paysage forcée
-                $sheet_width = 297;  // Largeur A4 en paysage (mm)
-                $sheet_height = 210; // Hauteur A4 en paysage (mm)
-                $sheet_orientation = 'L'; // Paysage
+                $sheet_width = 297;
+                $sheet_height = 210;
+                $sheet_orientation = 'L';
             } else {
-                // Orientation automatique selon le format
-                if ($format === 'A5') {
-                    // A5 : A4 en portrait pour optimiser l'espace
-                    $sheet_width = 210;  // Largeur A4 en portrait (mm)
-                    $sheet_height = 297; // Hauteur A4 en portrait (mm)
-                    $sheet_orientation = 'P'; // Portrait
+                // Auto : choisir l'orientation selon l'orientation réelle de la source
+                if ($copiesPerSheet <= 1) {
+                    $sheet_width = $sourceIsPortrait ? 210 : 297;
+                    $sheet_height = $sourceIsPortrait ? 297 : 210;
+                    $sheet_orientation = $sourceIsPortrait ? 'P' : 'L';
                 } else {
-                    // A4 et A6 : A4 en paysage
-                    $sheet_width = 297;  // Largeur A4 en paysage (mm)
-                    $sheet_height = 210; // Hauteur A4 en paysage (mm)
-                    $sheet_orientation = 'L'; // Paysage
+                    $sheet_width = $sourceIsPortrait ? 297 : 210;
+                    $sheet_height = $sourceIsPortrait ? 210 : 297;
+                    $sheet_orientation = $sourceIsPortrait ? 'L' : 'P';
                 }
             }
         } else {
             // Format de sortie A3 (par défaut)
             if ($orientation === 'portrait') {
-                // Orientation portrait forcée
-                $sheet_width = 297;  // Largeur A3 en portrait (mm)
-                $sheet_height = 420; // Hauteur A3 en portrait (mm)
-                $sheet_orientation = 'P'; // Portrait
+                $sheet_width = 297;
+                $sheet_height = 420;
+                $sheet_orientation = 'P';
             } elseif ($orientation === 'landscape') {
-                // Orientation paysage forcée
-                $sheet_width = 420;  // Largeur A3 en paysage (mm)
-                $sheet_height = 297; // Hauteur A3 en paysage (mm)
-                $sheet_orientation = 'L'; // Paysage
+                $sheet_width = 420;
+                $sheet_height = 297;
+                $sheet_orientation = 'L';
             } else {
-                // Orientation automatique selon le format
-                if ($format === 'A5') {
-                    // A5 : A3 en portrait pour optimiser l'espace
-                    $sheet_width = 297;  // Largeur A3 en portrait (mm)
-                    $sheet_height = 420; // Hauteur A3 en portrait (mm)
-                    $sheet_orientation = 'P'; // Portrait
+                // Auto : choisir l'orientation selon l'orientation réelle de la source
+                if ($copiesPerSheet <= 1) {
+                    $sheet_width = $sourceIsPortrait ? 297 : 420;
+                    $sheet_height = $sourceIsPortrait ? 420 : 297;
+                    $sheet_orientation = $sourceIsPortrait ? 'P' : 'L';
                 } else {
-                    // A4 et A6 : A3 en paysage
-                    $sheet_width = 420;  // Largeur A3 en paysage (mm)
-                    $sheet_height = 297; // Hauteur A3 en paysage (mm)
-                    $sheet_orientation = 'L'; // Paysage
+                    $sheet_width = $sourceIsPortrait ? 420 : 297;
+                    $sheet_height = $sourceIsPortrait ? 297 : 420;
+                    $sheet_orientation = $sourceIsPortrait ? 'L' : 'P';
                 }
             }
         }
 
-        // Dimensions des zones d'imposition (target slots)
-        $slot_width = 210;  // A4 défaut
-        $slot_height = 297;
-
-        switch ($format) {
-            case 'A5':
-                $slot_width = 148;
-                $slot_height = 210;
-                break;
-            case 'A6':
-                $slot_width = 105;
-                $slot_height = 148;
-                break;
+        // Dimensions des zones d'imposition (target slots) basées sur les dimensions réelles de la source
+        if ($sourceWidth && $sourceHeight) {
+            $slot_width = $sourceWidth;
+            $slot_height = $sourceHeight;
+        } else {
+            $slot_width = 210;
+            $slot_height = 297;
+            switch ($format) {
+                case 'A5':
+                    $slot_width = 148;
+                    $slot_height = 210;
+                    break;
+                case 'A6':
+                    $slot_width = 105;
+                    $slot_height = 148;
+                    break;
+            }
         }
 
         // Calculer la disposition selon l'orientation et le nombre de copies
