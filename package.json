@@ -17,6 +17,8 @@
     "test:unit": "jest --testPathPattern=unit",
     "test:integration": "jest --testPathPattern=integration",
     "test:integration:simple": "jest --testPathPattern=caddy-php-simple",
+    "test:e2e": "xvfb-run -a playwright test",
+    "test:e2e:smoke": "xvfb-run -a playwright test tests/e2e/smoke.test.js",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
@@ -143,5 +145,5 @@
     "sharp": "^0.33.3",
     "sqlite3": "^5.1.7"
   },
-  "productName": "Duplicator Alpha"
+  "productName": "Duplicator Beta"
 }
