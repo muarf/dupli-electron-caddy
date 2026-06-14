@@ -30,7 +30,10 @@ jobs:
           cache: 'npm'
       
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm config set msvs_version 2022
+          $env:GYP_MSVS_VERSION="2022"
+          npm install
         
       - name: Install Composer and PHP dependencies
         run: |

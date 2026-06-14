@@ -35,7 +35,10 @@ jobs:
           coverage: none
 
       - name: Install Node dependencies
-        run: npm install
+        run: |
+          npm config set msvs_version 2022
+          $env:GYP_MSVS_VERSION="2022"
+          npm install
 
       - name: Install PHP dependencies (Composer)
         working-directory: app
@@ -43,7 +46,7 @@ jobs:
 
       - name: Install system dependencies (Choco)
         run: |
-          choco install ghostscript -y
+          choco install ghostscript --version 10.6.0 -y --no-progress
           choco install imagemagick -y
 
       - name: Download Caddy

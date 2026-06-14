@@ -122,7 +122,7 @@ jobs:
 
       - name: Install system dependencies (Choco)
         run: |
-          choco install ghostscript -y
+          choco install ghostscript --version 10.6.0 -y --no-progress
           choco install imagemagick -y
 
       - name: Install dependencies
@@ -287,10 +287,14 @@ jobs:
           "
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm config set msvs_version 2022
+          npm install
 
       - name: Rebuild Native Modules
-        run: npm run rebuild:print-engine
+        run: |
+          $env:GYP_MSVS_VERSION="2022"
+          npm run rebuild:print-engine
 
       - name: Install Composer and PHP dependencies
         run: |
