@@ -308,7 +308,7 @@ jobs:
   
   build-windows:
     needs: [get-tag, create-release, build-linux]
-    runs-on: windows-latest
+    runs-on: windows-2022
     timeout-minutes: 30
 
     steps:
