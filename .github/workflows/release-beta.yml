@@ -122,7 +122,7 @@ jobs:
 
       - name: Install system dependencies (Choco)
         run: |
-          choco install ghostscript -y
+          choco install ghostscript --version 10.6.0 -y --no-progress
           choco install imagemagick -y
 
       - name: Install dependencies
