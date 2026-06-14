@@ -187,7 +187,7 @@ $ai_system_prompt  = $_ai['ai_system_prompt'] ?? '';
         <!-- Section 7 : Maintenance -->
         <div class="panel panel-danger">
           <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-cog fa-spin-hover"></i> Maintenance — Vectorisation</h3>
+            <h3 class="panel-title"><i class="fa fa-cog fa-spin-hover"></i> Maintenance de la Bibliothèque</h3>
           </div>
           <div class="panel-body">
             <div class="alert alert-danger">
@@ -207,6 +207,18 @@ $ai_system_prompt  = $_ai['ai_system_prompt'] ?? '';
                 </div>
               </div>
               <p class="text-muted text-center" id="vectorize-msg"></p>
+            </div>
+
+            <hr>
+            <h4><i class="fa fa-search"></i> Scanner les nouveaux fichiers</h4>
+            <p>Utilisez ce bouton pour forcer un scan complet de la bibliothèque (y compris les dossiers externes s'il y en a) et indexer les nouveaux fichiers.</p>
+            <button class="btn btn-warning btn-lg" id="btn-rescan" onclick="rescanLibrary('all')">
+              <i class="fa fa-refresh"></i> Lancer un scan complet
+            </button>
+            <div id="rescan-status" style="display:none; margin-top:15px;">
+              <div class="progress">
+                <div class="progress-bar progress-bar-striped active progress-bar-warning" id="rescan-progress-bar" style="width:0%">0%</div>
+              </div>
             </div>
           </div>
         </div>
@@ -341,4 +353,94 @@ function triggerVectorization() {
             btn.innerHTML = '<i class="fa fa-refresh"></i> Relancer la vectorisation totale';
         });
 }
+
+function rescanLibrary(mode) {
+    if (!confirm('⚠️ Lancer un scan complet de la bibliothèque ?')) return;
+
+    const btn = document.getElementById('btn-rescan');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Démarrage...';
+
+    fetch('?bibliotheque_maintenance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'rescan', params: { mode: mode } })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success && data.job_id) {
+            monitorRescan(data.job_id);
+        } else {
+            alert('Erreur : ' + (data.error || 'Inconnue'));
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa fa-refresh"></i> Lancer un scan complet';
+        }
+    })
+    .catch(() => {
+        alert('Erreur réseau lors du lancement du scan.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa fa-refresh"></i> Lancer un scan complet';
+    });
+}
+
+function monitorRescan(jobId) {
+    const btn = document.getElementById('btn-rescan');
+    const statusDiv = document.getElementById('rescan-status');
+    const progressBar = document.getElementById('rescan-progress-bar');
+    
+    if (statusDiv) statusDiv.style.display = 'block';
+    if (progressBar) {
+        progressBar.classList.add('active');
+        progressBar.classList.remove('progress-bar-success');
+    }
+    
+    const pollInterval = setInterval(async () => {
+        try {
+            const statusRes = await fetch('?get_indexing_status&job_id=' + jobId);
+            const statusData = await statusRes.json();
+            
+            if (statusData.percent && progressBar) {
+                progressBar.style.width = statusData.percent + '%';
+                progressBar.textContent = statusData.percent + '%';
+            }
+            if (statusData.status === 'scanning' && progressBar) {
+                progressBar.textContent = 'Scan... (' + (statusData.scanned_count || 0) + ')';
+            }
+
+            if (statusData.status === 'completed') {
+                clearInterval(pollInterval);
+                if (progressBar) {
+                    progressBar.classList.remove('active');
+                    progressBar.classList.add('progress-bar-success');
+                    progressBar.textContent = 'Terminé !';
+                }
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa fa-refresh"></i> Lancer un scan complet';
+                }
+            } else if (statusData.status === 'error' || statusData.status === 'fatal_error') {
+                clearInterval(pollInterval);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa fa-refresh"></i> Lancer un scan complet';
+                }
+                alert('Erreur lors du scan: ' + (statusData.error_msg || 'Inconnue'));
+            }
+        } catch (e) {
+            console.error("Erreur polling:", e);
+        }
+    }, 1000);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    fetch('?get_indexing_status&job_id=latest')
+        .then(res => res.json())
+        .then(data => {
+            if (data && (data.status === 'indexing' || data.status === 'scanning')) {
+                const btn = document.getElementById('btn-rescan');
+                if(btn) btn.disabled = true;
+                monitorRescan(data.job_id);
+            }
+        }).catch(e => {});
+});
 </script>

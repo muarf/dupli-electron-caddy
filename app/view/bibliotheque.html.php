@@ -456,6 +456,10 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                 <option value="pro">🧠 Mode Expert (Gemma)</option>
             </select>
             <?php endif; ?>
+            
+            <button id="btnRescanLibrary" class="btn btn-outline-secondary ml-2" onclick="rescanLibrary('internal')" title="Rafraîchir la bibliothèque" style="border-radius: 10px; height: 45px;">
+                <i class="fa fa-refresh"></i>
+            </button>
         </div>
 
         <?php if ($ai_enabled): ?>
@@ -463,6 +467,11 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
             <i class="fa fa-magic mr-2"></i> Assistant IA
         </button>
         <?php endif; ?>
+    </div>
+
+    <!-- Progress Bar Indexation -->
+    <div id="indexProgress" class="progress mb-3 shadow-sm" style="height: 25px; border-radius: 12px; display: none;">
+        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%; font-weight: bold; line-height: 25px;">0%</div>
     </div>
 
     <!-- Zone d'upload -->
@@ -653,6 +662,96 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
 
 
 <script>
+    function rescanLibrary(mode) {
+        const btn = document.getElementById('btnRescanLibrary');
+        if(btn) btn.disabled = true;
+        
+        fetch('?bibliotheque_maintenance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'rescan', params: { mode: mode } })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success && data.job_id) {
+                monitorIndexing(data.job_id);
+            } else {
+                alert('Erreur: ' + (data.error || 'Erreur inconnue'));
+                if(btn) btn.disabled = false;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            if(btn) btn.disabled = false;
+        });
+    }
+
+    function checkActiveJob() {
+        fetch('?get_indexing_status&job_id=latest')
+            .then(res => res.json())
+            .then(data => {
+                if (data && (data.status === 'indexing' || data.status === 'scanning')) {
+                    const btn = document.getElementById('btnRescanLibrary');
+                    if(btn) btn.disabled = true;
+                    monitorIndexing(data.job_id);
+                }
+            })
+            .catch(e => console.error("Erreur checkActiveJob:", e));
+    }
+
+    function monitorIndexing(jobId) {
+        const btn = document.getElementById('btnRescanLibrary');
+        const progress = document.getElementById('indexProgress');
+        const progressBar = progress ? progress.querySelector('.progress-bar') : null;
+        
+        if (progress) progress.style.display = 'flex';
+        if (progressBar) {
+            progressBar.classList.add('progress-bar-animated', 'progress-bar-striped');
+            progressBar.classList.remove('bg-success');
+        }
+        
+        const pollInterval = setInterval(async () => {
+            try {
+                const statusRes = await fetch('?get_indexing_status&job_id=' + jobId);
+                const statusData = await statusRes.json();
+                
+                if (statusData.percent && progressBar) {
+                    progressBar.style.width = statusData.percent + '%';
+                    progressBar.textContent = statusData.percent + '%';
+                }
+                
+                if (statusData.status === 'scanning' && progressBar) {
+                    progressBar.textContent = 'Scan... (' + (statusData.scanned_count || 0) + ')';
+                }
+
+                if (statusData.status === 'completed') {
+                    clearInterval(pollInterval);
+                    if (progressBar) {
+                        progressBar.classList.remove('progress-bar-animated', 'progress-bar-striped');
+                        progressBar.classList.add('bg-success');
+                        progressBar.textContent = 'Terminé !';
+                    }
+                    if(btn) btn.disabled = false;
+                    setTimeout(() => { if (progress) progress.style.display = 'none'; }, 3000);
+                    if (typeof loadLibrary === 'function') loadLibrary(1);
+                } else if (statusData.status === 'error' || statusData.status === 'fatal_error') {
+                    clearInterval(pollInterval);
+                    if(btn) btn.disabled = false;
+                    alert('Erreur lors du scan: ' + (statusData.error_msg || 'Inconnue'));
+                    if (progress) progress.style.display = 'none';
+                } else if (statusData.status === 'none' || statusData.status === 'unknown') {
+                    clearInterval(pollInterval);
+                    if(btn) btn.disabled = false;
+                    if (progress) progress.style.display = 'none';
+                }
+            } catch (e) {
+                console.error("Erreur polling:", e);
+            }
+        }, 1000);
+    }
+
+    document.addEventListener('DOMContentLoaded', checkActiveJob);
+
     function toggleAiChat() {
         document.getElementById('aiChatSidebar').classList.toggle('active');
     }
