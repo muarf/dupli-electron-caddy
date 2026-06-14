@@ -801,14 +801,13 @@ document.addEventListener('DOMContentLoaded', function() {
       thumbsBar.classList.remove('visible');
       return;
     }
-    thumbsBar.innerHTML = '';
-    thumbsBar.classList.add('visible');
+    const fragment = document.createDocumentFragment();
 
     // Add info span
     const navSpan = document.createElement('span');
     navSpan.className = 'page-nav';
     navSpan.textContent = window.orgSequence.length + ' page(s)';
-    thumbsBar.appendChild(navSpan);
+    fragment.appendChild(navSpan);
 
     for (let i = 0; i < window.orgSequence.length; i++) {
       const item = window.orgSequence[i];
@@ -930,8 +929,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
 
-      thumbsBar.appendChild(div);
+      fragment.appendChild(div);
     }
+
+    // Appliquer le fragment d'un coup pour éviter les duplications (race condition)
+    thumbsBar.innerHTML = '';
+    thumbsBar.classList.add('visible');
+    thumbsBar.appendChild(fragment);
   }
 
   window.orgRotate = function(idx, angle) {
