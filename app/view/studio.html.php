@@ -279,7 +279,6 @@
         </div>
 
         <div class="panel-section">
-        <div class="panel-section">
           <div class="panel-section-title">Gouttières (mm)</div>
           <div class="panel-row">
             <div style="width:48%">
