@@ -288,9 +288,11 @@ jobs:
             const tauriPath = 'src-tauri/tauri.conf.json';
             if (fs.existsSync(tauriPath)) {
               const tauriConf = JSON.parse(fs.readFileSync(tauriPath, 'utf8'));
-              tauriConf.version = '$VERSION';
+              // MSI target requires strict numeric version X.Y.Z. Clean up version by removing suffixes.
+              const cleanVersion = '$VERSION'.split('-')[0];
+              tauriConf.version = cleanVersion;
               fs.writeFileSync(tauriPath, JSON.stringify(tauriConf, null, 2) + '\n');
-              console.log('Updated tauri.conf.json version to', '$VERSION');
+              console.log('Updated tauri.conf.json version to', cleanVersion);
             }
           "
 
