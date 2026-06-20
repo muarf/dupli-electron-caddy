@@ -1,0 +1,80 @@
+[package]
+name = "duplicator"
+version = "1.0.0"
+description = "Application Duplicateur - Gestion d'impression cross-platform"
+authors = ["Duplicator Team"]
+edition = "2021"
+
+# Voir https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field
+rust-version = "1.77.2"
+
+# Ce profil est utilisé par `cargo tauri build` pour la production
+[profile.release]
+panic = "abort"   # Réduit la taille binaire
+codegen-units = 1 # Maximise les optimisations
+lto = true        # Link-Time Optimization
+opt-level = "s"   # Optimise pour la taille
+strip = true      # Supprime les symboles de debug
+
+[[bin]]
+name = "duplicator"
+path = "src/main.rs"
+
+[[bin]]
+name = "download_sidecars"
+path = "src/bin/download_sidecars.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# Core Tauri v2
+tauri = { version = "2", features = [
+  "tray-icon",        # Pour l'icône dans la barre des tâches
+  "webview-data-url", # Pour charger la page HTML de chargement initiale en data: URL
+] }
+
+# Plugins Tauri officiels
+tauri-plugin-shell = "2"   # Pour lancer les Sidecars (Caddy, PHP)
+tauri-plugin-dialog = "2"  # Boîtes de dialogue natives (open/save)
+tauri-plugin-fs = "2"      # Accès au système de fichiers
+tauri-plugin-process = "2" # Redémarrage de l'application
+
+# Sérialisation / Désérialisation
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Gestion asynchrone
+tokio = { version = "1", features = ["full"] }
+
+# Crate libc pour Unix (UID check)
+[target.'cfg(not(target_os = "windows"))'.dependencies]
+libc = "0.2"
+
+# Dépendances pour le script autonome de téléchargement en Rust
+ureq = "2.9"
+zip = "0.6"
+tar = "0.4"
+flate2 = "1.0"
+
+# Logging
+log = "0.4"
+tauri-plugin-log = "2"
+
+# SQLite (pour accéder à duplinew.sqlite)
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+# Dépendances Windows uniquement (Spouleur d'impression natif)
+[target.'cfg(target_os = "windows")'.dependencies]
+# windows-sys est plus légère et moderne que winapi
+windows-sys = { version = "0.59", features = [
+  "Win32_Foundation",
+  "Win32_System_Threading",      # Pour CreateProcess, GetCurrentProcess
+  "Win32_Security",              # Pour IsUserAnAdmin, GetTokenInformation
+  "Win32_UI_Shell",              # Pour ShellExecuteW (élévation de privilèges)
+  "Win32_Graphics_Printing",     # Pour EnumPrinters, OpenPrinter, GetJob, etc.
+] }
+
+# Dépendances Linux uniquement (CUPS)
+[target.'cfg(target_os = "linux")'.dependencies]
+# cups-sys = "0.1"  # Décommenter si une crate CUPS Rust est disponible et validée

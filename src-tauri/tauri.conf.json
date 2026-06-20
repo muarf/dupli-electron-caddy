@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Duplicator",
+  "version": "1.0.0",
+  "identifier": "fr.duplicator.app",
+  "build": {
+    "devUrl": "http://localhost:8000",
+    "frontendDist": "../app/public"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "security": {
+      "csp": "default-src 'self' http://localhost:8000 http://127.0.0.1:8000; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 http://localhost:8080 http://127.0.0.1:8080; img-src 'self' data: asset: https://asset.localhost blob:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "../icons/icon.png"
+    ],
+    "resources": [
+      "../Caddyfile",
+      "../app"
+    ],
+    "externalBin": [
+      "binaries/caddy",
+      "binaries/php"
+    ]
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    }
+  }
+}
