@@ -213,6 +213,31 @@ async fn spawn_sidecar(
         command = command.arg(*arg);
     }
 
+    if sidecar_name == "php" {
+        // Obtenir le chemin de la base de données SQLite (partagée avec Electron dans Roaming/Duplicator)
+        #[cfg(target_os = "windows")]
+        let db_path = std::env::var("APPDATA")
+            .map(|p| std::path::PathBuf::from(p).join("Duplicator").join("duplinew.sqlite").to_string_lossy().to_string())
+            .unwrap_or_else(|_| {
+                app.path()
+                    .app_data_dir()
+                    .map(|p| p.join("duplinew.sqlite").to_string_lossy().to_string())
+                    .unwrap_or_default()
+            });
+
+        #[cfg(not(target_os = "windows"))]
+        let db_path = app.path()
+            .app_data_dir()
+            .map(|p| p.join("duplinew.sqlite").to_string_lossy().to_string())
+            .unwrap_or_default();
+
+        if !db_path.is_empty() {
+            command = command.env("DUPLICATOR_DB_PATH", &db_path);
+            log::info!("[server_manager] PHP sidecar env DUPLICATOR_DB_PATH={}", db_path);
+        }
+        command = command.env("ELECTRON_RUNNING", "1");
+    }
+
     let (rx, child) = command
         .spawn()
         .map_err(|e| format!("Échec du spawn du sidecar '{sidecar_name}': {e}"))?;
@@ -356,25 +381,93 @@ fn build_php_args(app: &AppHandle) -> Vec<String> {
     let app_base_str = app_base.to_string_lossy();
     let vendor_str = app_base.join("vendor").to_string_lossy().to_string();
     let session_str = session_dir.to_string_lossy();
+    let php_ini_path = app_base.join("php.ini");
+    let php_ini_str = php_ini_path.to_string_lossy();
 
     #[cfg(target_os = "windows")]
     let include_sep = ";";
     #[cfg(not(target_os = "windows"))]
     let include_sep = ":";
 
-    vec![
-        "-S".to_string(),
-        "127.0.0.1:8001".to_string(),
-        "-t".to_string(),
-        docroot_str.to_string(),
-        "-d".to_string(),
-        format!("include_path={}{}{}{}{}", app_base_str, include_sep, vendor_str, include_sep, "."),
-        "-d".to_string(), "display_errors=1".to_string(),
-        "-d".to_string(), "log_errors=1".to_string(),
-        "-d".to_string(), "upload_max_filesize=50M".to_string(),
-        "-d".to_string(), "post_max_size=50M".to_string(),
-        "-d".to_string(), "max_input_vars=10000".to_string(),
-        "-d".to_string(), "max_input_nesting_level=256".to_string(),
-        "-d".to_string(), format!("session.save_path={}", session_str),
-    ]
+    let mut args = Vec::new();
+
+    // 1. Charger php.ini si disponible
+    if php_ini_path.exists() {
+        args.push("-c".to_string());
+        args.push(php_ini_str.to_string());
+    }
+
+    // 2. Arguments standards
+    args.push("-S".to_string());
+    args.push("127.0.0.1:8001".to_string());
+    args.push("-t".to_string());
+    args.push(docroot_str.to_string());
+
+    // 3. Arguments d'extensions spécifiques à Windows
+    #[cfg(target_os = "windows")]
+    {
+        let ext_dir = get_php_ext_dir(app);
+        let ext_dir_str = ext_dir.to_string_lossy().replace('\\', "/");
+        args.push("-d".to_string());
+        args.push(format!("extension_dir={}", ext_dir_str));
+        args.push("-d".to_string());
+        args.push("extension=php_sqlite3.dll".to_string());
+        args.push("-d".to_string());
+        args.push("extension=php_pdo_sqlite.dll".to_string());
+    }
+
+    // 4. Autres arguments INI
+    args.push("-d".to_string());
+    args.push(format!("include_path={}{}{}{}{}", app_base_str, include_sep, vendor_str, include_sep, "."));
+    args.push("-d".to_string());
+    args.push("display_errors=1".to_string());
+    args.push("-d".to_string());
+    args.push("log_errors=1".to_string());
+    args.push("-d".to_string());
+    args.push("upload_max_filesize=50M".to_string());
+    args.push("-d".to_string());
+    args.push("post_max_size=50M".to_string());
+    args.push("-d".to_string());
+    args.push("max_input_vars=10000".to_string());
+    args.push("-d".to_string());
+    args.push("max_input_nesting_level=256".to_string());
+    args.push("-d".to_string());
+    args.push(format!("session.save_path={}", session_str));
+
+    args
+}
+
+/// Retourne le chemin absolu vers le dossier d'extensions PHP (ext).
+/// Gère la différence entre le mode développement (src-tauri/binaries/ext) et bundle de production.
+fn get_php_ext_dir(app: &AppHandle) -> std::path::PathBuf {
+    // 1. En mode bundle : les extensions sont copiées dans le répertoire de ressources de l'application
+    if let Ok(res) = app.path().resource_dir() {
+        let candidate = res.join("ext");
+        if candidate.exists() {
+            return candidate;
+        }
+        let candidate2 = res.join("src-tauri").join("binaries").join("ext");
+        if candidate2.exists() {
+            return candidate2;
+        }
+    }
+    // 2. En mode développement : relatif au projet (src-tauri/binaries/ext)
+    if let Ok(exe) = std::env::current_exe() {
+        let dev_path = exe
+            .ancestors()
+            .nth(4)
+            .map(|p| p.join("src-tauri").join("binaries").join("ext"));
+        if let Some(p) = dev_path {
+            if p.exists() {
+                return p;
+            }
+        }
+    }
+    // 3. Fallback : dossier ext à côté de l'exécutable
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            return parent.join("ext");
+        }
+    }
+    std::path::PathBuf::from("ext")
 }

@@ -85,6 +85,25 @@ try {
     // Ici on va juste truncate si trop gros pour l'exemple, ou supprimer les vieux fichiers de log si on en avait.
     // Pour l'instant on se concentre sur les données utilisateurs (jobs).
     
+    // --- D. Nettoyage automatique des dossiers de miniatures obsolètes (> 7 jours) ---
+    $thumbnailsBaseDir = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'thumbnails';
+    if (is_dir($thumbnailsBaseDir)) {
+        $dirs = scandir($thumbnailsBaseDir);
+        $oneWeekAgo = time() - (7 * 24 * 60 * 60);
+        foreach ($dirs as $dir) {
+            if ($dir === '.' || $dir === '..') continue;
+            $dirPath = $thumbnailsBaseDir . DIRECTORY_SEPARATOR . $dir;
+            if (is_dir($dirPath)) {
+                $mtime = filemtime($dirPath);
+                if ($mtime < $oneWeekAgo) {
+                    // Supprimer récursivement le répertoire de miniatures obsolète
+                    rrmdir_secure($dirPath);
+                    $stats['jobs_deleted']++; // Comptabiliser dans les stats globales de nettoyage
+                }
+            }
+        }
+    }
+
     // Loguer l'exécution de la purge
     if ($stats['jobs_deleted'] > 0) {
         error_log("[SECURE PURGE] Purge automatique effectuée : " . json_encode($stats));
@@ -129,4 +148,24 @@ function resolve_local_path($urlOrPath) {
     $fullPath = str_replace('/', DIRECTORY_SEPARATOR, $fullPath);
 
     return $fullPath;
+}
+
+/**
+ * Supprime récursivement un répertoire et tous ses fichiers
+ */
+function rrmdir_secure($dir) {
+    if (is_dir($dir)) {
+        $objects = scandir($dir);
+        foreach ($objects as $object) {
+            if ($object != "." && $object != "..") {
+                $filePath = $dir . DIRECTORY_SEPARATOR . $object;
+                if (is_dir($filePath) && !is_link($filePath)) {
+                    rrmdir_secure($filePath);
+                } else {
+                    @unlink($filePath);
+                }
+            }
+        }
+        @rmdir($dir);
+    }
 }

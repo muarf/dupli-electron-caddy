@@ -143,6 +143,11 @@ if (file_exists($cacheFile) && file_exists($splFile) && filemtime($cacheFile) >=
     debugLog("Using cached EMF positions from $cacheFile");
     $emfPositions = json_decode(file_get_contents($cacheFile), true);
 } else {
+    // Nettoyer le dossier de sortie s'il existe pour éviter de réutiliser les miniatures d'un précédent job ayant le même ID
+    if (is_dir($outputDir)) {
+        debugLog("Clearing existing output dir for new/updated SPL file: $outputDir");
+        rrmdir($outputDir);
+    }
     // Attendre que le fichier soit stable (sa taille ne change plus)
     // Optimisation : Si le fichier est déjà très gros, on réduit l'attente
     $maxWait = (filesize($splFile) > 10 * 1024 * 1024) ? 1 : 3;

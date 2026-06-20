@@ -76,18 +76,21 @@ class PrintSessionManager {
                         const printerName = jobData.PrinterName || jobData.printerName || '';
                         
                         // Mettre à jour la DB avec les valeurs analysées
+                        const postBody = {
+                            action: 'update_job_analysis',
+                            job_id: numericJobId,
+                            printer_name: printerName,
+                            thumbnail_url: result.thumbnailUrl || '',
+                            fill_rate: result.fillRate || 0,
+                            is_grayscale: result.isGrayscale,
+                            total_pages: result.totalPages || 0,
+                            is_duplex: result.isDuplex,
+                            paper_size: result.paperSize || ''
+                        };
                         await fetch('?check_print_jobs', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                action: 'update_job_analysis',
-                                job_id: numericJobId,
-                                printer_name: printerName,
-                                thumbnail_url: result.thumbnailUrl || '',
-                                fill_rate: result.fillRate || 0,
-                                is_grayscale: result.isGrayscale,
-                                total_pages: result.totalPages || 0
-                            })
+                            body: JSON.stringify(postBody)
                         });
                         
                         console.log('[PrintSessionManager] DB mise à jour pour job:', numericJobId, result.totalPages, 'pages');
@@ -231,7 +234,8 @@ class PrintSessionManager {
             // Stocker données pour comparaison future
             this.lastJobData.set(jobId, {
                 status: currentStatus,
-                totalPages: currentPages
+                totalPages: currentPages,
+                PrinterName: jobData.PrinterName || jobData.printerName || ''
             });
 
             // TTL de l'anti-spam (60s)

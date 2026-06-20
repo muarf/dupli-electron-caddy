@@ -53,6 +53,9 @@ pub struct PrintJobDto {
     pub total_pages: u32,
     pub size_bytes: u32,
     pub priority: u32,
+    pub is_duplex: bool,
+    pub paper_size: String,
+    pub is_color: bool,
 }
 
 // =============================================================================
@@ -131,6 +134,9 @@ pub fn get_print_jobs(printer_name: String) -> Result<Vec<PrintJobDto>, String> 
                     total_pages: j.total_pages,
                     size_bytes: j.size_bytes,
                     priority: j.priority,
+                    is_duplex: j.is_duplex,
+                    paper_size: j.paper_size.clone(),
+                    is_color: j.is_color,
                 }).collect()
             })
             .map_err(|e| {
@@ -157,17 +163,39 @@ pub fn delete_print_job(printer_name: String, job_id: u32) -> Result<(), String>
         printer_name, job_id
     );
 
-    if printer_name.trim().is_empty() {
-        return Err("Le nom de l'imprimante ne peut pas être vide.".to_string());
-    }
-
     #[cfg(target_os = "windows")]
     {
-        crate::windows_native::delete_print_job(&printer_name, job_id)
+        let mut resolved_printer_name = printer_name.trim().to_string();
+
+        if resolved_printer_name.is_empty() {
+            log::info!("[printer_commands] delete_print_job : printer_name vide, recherche du job {} dans toutes les imprimantes...", job_id);
+            if let Ok(printers) = crate::windows_native::enum_printers() {
+                for printer in &printers {
+                    if printer.jobs_count == 0 { continue; }
+                    if let Ok(jobs) = crate::windows_native::get_print_jobs(&printer.name) {
+                        if jobs.into_iter().any(|j| j.job_id == job_id) {
+                            resolved_printer_name = printer.name.clone();
+                            log::info!(
+                                "[printer_commands] delete_print_job : job {} trouvé sur l'imprimante '{}'",
+                                job_id, resolved_printer_name
+                            );
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if resolved_printer_name.is_empty() {
+            log::warn!("[printer_commands] delete_print_job : job {} non trouvé sur aucune imprimante, il a probablement déjà été supprimé ou imprimé", job_id);
+            return Ok(());
+        }
+
+        crate::windows_native::delete_print_job(&resolved_printer_name, job_id)
             .map_err(|e| {
                 log::error!(
                     "[printer_commands] delete_print_job('{}', {}) : erreur Win32 — {e}",
-                    printer_name, job_id
+                    resolved_printer_name, job_id
                 );
                 // Message d'erreur orienté utilisateur final (pas de jargon technique Win32)
                 if e.code == 5 {
@@ -261,7 +289,7 @@ pub fn get_printer_capabilities(printer_name: String) -> Result<PrinterCapabilit
 /// Thread-safe : `Arc<Mutex<...>>` pour accès depuis plusieurs commandes async.
 pub struct PrintMonitorState {
     /// Handle de la tâche de surveillance (Some = actif, None = arrêté)
-    handle: Arc<Mutex<Option<tokio::task::JoinHandle<()>>>>,
+    handle: Arc<Mutex<Option<tauri::async_runtime::JoinHandle<()>>>>,
 }
 
 impl PrintMonitorState {
@@ -292,7 +320,7 @@ impl PrintMonitorState {
             return;
         }
 
-        let handle = tokio::task::spawn(async move {
+        let handle = tauri::async_runtime::spawn(async move {
             log::info!("[PrintMonitorState] Moniteur démarré — polling toutes les 2 secondes");
             let _ = app_handle.emit("print-monitor-started", ());
 
@@ -329,6 +357,9 @@ impl PrintMonitorState {
                                                     "statusLabel": job.status_label,
                                                     "totalPages": job.total_pages,
                                                     "sizeBytes": job.size_bytes,
+                                                    "isDuplex": job.is_duplex,
+                                                    "paperSize": job.paper_size,
+                                                    "isGrayscale": !job.is_color,
                                                 });
                                                 let _ = app_handle.emit("print-job-detected", payload);
                                             }
@@ -451,6 +482,7 @@ pub fn delete_printer(printer_name: String) -> Result<(), String> {
 ///
 /// Côté frontend :
 /// `await invoke('reanalyze_print_job', { jobId, documentName, format, splPath, driverColor })`
+/// Résultat de la réanalyse d'un job
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ReanalyzeResult {
@@ -461,6 +493,9 @@ pub struct ReanalyzeResult {
     pub status_label: String,
     pub total_pages: u32,
     pub size_bytes: u32,
+    pub is_grayscale: bool,
+    pub is_duplex: bool,
+    pub paper_size: String,
 }
 
 #[command]
@@ -502,6 +537,9 @@ pub fn reanalyze_print_job(
                         status_label: job.status_label,
                         total_pages: job.total_pages,
                         size_bytes: job.size_bytes,
+                        is_grayscale: !job.is_color,
+                        is_duplex: job.is_duplex,
+                        paper_size: job.paper_size.clone(),
                     });
                 }
             }
@@ -517,6 +555,9 @@ pub fn reanalyze_print_job(
             status_label: "Job introuvable dans le spouleur".to_string(),
             total_pages: 0,
             size_bytes: 0,
+            is_grayscale: false,
+            is_duplex: false,
+            paper_size: "A4".to_string(),
         })
     }
 

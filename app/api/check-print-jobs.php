@@ -301,7 +301,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             } elseif ($action === 'update_job_analysis') {
                 // === MISE À JOUR COMPLÈTE APRÈS RÉANALYSE C++ ===
-                // Met à jour thumbnail, fill_rate, color_mode et total_pages
+                // Met à jour thumbnail, fill_rate, color_mode, total_pages, duplex, paper_size
                 
                 $targetId = null;
                 
@@ -310,14 +310,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $jobIdWindows = strval($input['job_id']);
                     $printerName = $input['printer_name'] ?? '';
                     
-                    // Chercher par job_id Windows
-                    $existingJob = $db->selectOne(
-                        "SELECT id FROM print_jobs WHERE job_id = ? AND printer_name = ? ORDER BY created_at DESC LIMIT 1",
-                        [$jobIdWindows, $printerName]
-                    );
+                    // Chercher par job_id Windows + printer_name
+                    if ($printerName !== '') {
+                        $existingJob = $db->selectOne(
+                            "SELECT id FROM print_jobs WHERE job_id = ? AND printer_name = ? ORDER BY created_at DESC LIMIT 1",
+                            [$jobIdWindows, $printerName]
+                        );
+                        if ($existingJob) {
+                            $targetId = $existingJob['id'];
+                        }
+                    }
                     
-                    if ($existingJob) {
-                        $targetId = $existingJob['id'];
+                    // Fallback : chercher uniquement par job_id si printer_name vide ou non trouvé
+                    if (!$targetId) {
+                        $existingJob = $db->selectOne(
+                            "SELECT id FROM print_jobs WHERE job_id = ? ORDER BY created_at DESC LIMIT 1",
+                            [$jobIdWindows]
+                        );
+                        if ($existingJob) {
+                            $targetId = $existingJob['id'];
+                        }
                     }
                 }
                 
@@ -357,6 +369,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (isset($input['total_pages'])) {
                     $updates[] = "total_pages = ?";
                     $params[] = intval($input['total_pages']);
+                }
+                if (isset($input['is_duplex'])) {
+                    $updates[] = "duplex = ?";
+                    $params[] = ($input['is_duplex'] ? 1 : 0);
+                }
+                if (!empty($input['paper_size'])) {
+                    $updates[] = "paper_size = ?";
+                    $params[] = strval($input['paper_size']);
                 }
                 
                 if (!empty($updates)) {
@@ -431,7 +451,8 @@ try {
     if ($show_history) {
         $where_clause = "";
     } else {
-        $where_clause = "WHERE rpj.print_job_id IS NULL AND (pj.session_id IS NULL";
+        // Exclure les jobs de plus de 12 heures pour éviter les conflits d'ID recyclés par Windows
+        $where_clause = "WHERE rpj.print_job_id IS NULL AND pj.created_at > datetime('now', '-12 hours') AND (pj.session_id IS NULL";
         if ($sessionId) {
             $where_clause .= " OR pj.session_id = $sessionId";
         }

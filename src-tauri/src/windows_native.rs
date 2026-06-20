@@ -14,7 +14,7 @@ use std::ffi::OsString;
 use std::os::windows::ffi::OsStringExt;
 use windows_sys::Win32::Foundation::{FALSE, GetLastError, HANDLE, TRUE};
 use windows_sys::Win32::Graphics::Printing::{
-    ClosePrinter, DeletePrinterW, EnumJobsW, EnumPrintersW, OpenPrinterW, SetJobW,
+    ClosePrinter, DeletePrinter, EnumJobsW, EnumPrintersW, OpenPrinterW, SetJobW,
     JOB_INFO_2W, PRINTER_ENUM_CONNECTIONS, PRINTER_ENUM_LOCAL, PRINTER_INFO_2W,
 };
 
@@ -52,6 +52,12 @@ pub struct PrintJob {
     pub total_pages: u32,
     pub size_bytes: u32,
     pub priority: u32,
+    /// Issu de DEVMODE.dmDuplex > 1 (2=recto-verso grand côté, 3=petit côté)
+    pub is_duplex: bool,
+    /// Issu de DEVMODE.dmPaperSize (9=A4, 8=A3, 11=A5, 1=Letter, 5=Legal)
+    pub paper_size: String,
+    /// Issu de DEVMODE.dmColor (2=Color, 1=Monochrome)
+    pub is_color: bool,
 }
 
 /// Erreur Win32 avec code et message lisible
@@ -188,7 +194,7 @@ pub fn get_print_jobs(printer_name: &str) -> Win32Result<Vec<PrintJob>> {
     let printer_name_wide: Vec<u16> = to_wide_null(printer_name);
 
     // --- Ouverture du handle de l'imprimante ---
-    let mut handle: HANDLE = 0;
+    let mut handle: HANDLE = std::ptr::null_mut();
     let success = unsafe {
         OpenPrinterW(
             printer_name_wide.as_ptr() as *mut u16,
@@ -214,7 +220,7 @@ pub fn get_print_jobs(printer_name: &str) -> Win32Result<Vec<PrintJob>> {
 
     // INVARIANT : à partir d'ici, `handle` DOIT être fermé via ClosePrinter.
     // On utilise un scope + fermeture explicite pour garantir cela.
-    let result = get_jobs_from_handle(handle, printer_name);
+    let result = unsafe { get_jobs_from_handle(handle, printer_name) };
 
     // Fermeture du handle — toujours exécutée même si get_jobs_from_handle échoue
     unsafe { ClosePrinter(handle); }
@@ -233,7 +239,7 @@ pub fn delete_print_job(printer_name: &str, job_id: u32) -> Win32Result<()> {
 
     let printer_name_wide: Vec<u16> = to_wide_null(printer_name);
 
-    let mut handle: HANDLE = 0;
+    let mut handle: HANDLE = std::ptr::null_mut();
     let success = unsafe {
         OpenPrinterW(
             printer_name_wide.as_ptr() as *mut u16,
@@ -307,7 +313,7 @@ pub fn delete_printer(printer_name: &str) -> Win32Result<()> {
     let printer_name_wide: Vec<u16> = to_wide_null(printer_name);
 
     // Ouverture du handle avec les droits de gestion (PRINTER_ALL_ACCESS = 0x000F000C)
-    let mut handle: HANDLE = 0;
+    let mut handle: HANDLE = std::ptr::null_mut();
     let success = unsafe {
         OpenPrinterW(
             printer_name_wide.as_ptr() as *mut u16,
@@ -331,8 +337,8 @@ pub fn delete_printer(printer_name: &str) -> Win32Result<()> {
         });
     }
 
-    // DeletePrinterW prend le handle ouvert et supprime l'imprimante
-    let delete_success = unsafe { DeletePrinterW(handle) };
+    // DeletePrinter prend le handle ouvert et supprime l'imprimante
+    let delete_success = unsafe { DeletePrinter(handle) };
 
     // ClosePrinter même si la suppression échoue
     unsafe { ClosePrinter(handle); }
@@ -432,6 +438,37 @@ unsafe fn get_jobs_from_handle(handle: HANDLE, printer_name: &str) -> Win32Resul
                 job.JobId, document, user, status, job.PagesPrinted, job.TotalPages
             );
 
+            // Lire les champs DEVMODE (duplex, taille papier, couleur)
+            // DEVMODEW offsets (Win32 ABI stable, WCHAR[32] + 4 WORDs + 1 DWORD + union) :
+            //   offset 68 : dmSize    (u16) — taille de la struct, garde de sécurité
+            //   offset 78 : dmPaperSize (i16) — code papier Windows
+            //   offset 92 : dmColor     (i16) — 1=Mono, 2=Color
+            //   offset 94 : dmDuplex    (i16) — 1=Simplex, 2=DuplexLong, 3=DuplexShort
+            let (is_duplex, paper_size, is_color) = unsafe {
+                if !job.pDevMode.is_null() {
+                    let ptr = job.pDevMode as *const u8;
+                    let dm_size = u16::from_le_bytes([*ptr.add(68), *ptr.add(69)]);
+                    if dm_size >= 96 {
+                        let dm_paper_size = i16::from_le_bytes([*ptr.add(78), *ptr.add(79)]);
+                        let dm_color      = i16::from_le_bytes([*ptr.add(92), *ptr.add(93)]);
+                        let dm_duplex     = i16::from_le_bytes([*ptr.add(94), *ptr.add(95)]);
+                        let paper = match dm_paper_size {
+                            9  => "A4",
+                            8  => "A3",
+                            11 => "A5",
+                            1  => "Letter",
+                            5  => "Legal",
+                            _  => "A4",
+                        };
+                        (dm_duplex > 1, paper.to_string(), dm_color == 2)
+                    } else {
+                        (false, "A4".to_string(), false)
+                    }
+                } else {
+                    (false, "A4".to_string(), false)
+                }
+            };
+
             PrintJob {
                 job_id: job.JobId,
                 document,
@@ -444,6 +481,9 @@ unsafe fn get_jobs_from_handle(handle: HANDLE, printer_name: &str) -> Win32Resul
                 total_pages: job.TotalPages,
                 size_bytes: job.Size,
                 priority: job.Priority,
+                is_duplex,
+                paper_size,
+                is_color,
             }
         })
         .collect();

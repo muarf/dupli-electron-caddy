@@ -55,7 +55,7 @@ const CADDY_URLS = {
 // Configuration de PHP par architecture
 const PHP_CONFIG = {
     'x86_64-pc-windows-msvc': {
-        url: 'https://windows.php.net/downloads/releases/php-8.4.13-nts-Win32-vs17-x64.zip',
+        url: 'https://windows.php.net/downloads/releases/archives/php-8.4.13-nts-Win32-vs17-x64.zip',
         archiveType: 'zip',
         binName: 'php.exe'
     },
@@ -211,6 +211,22 @@ async function setupPhp(triple, binariesDir) {
 
             const extractedBin = path.join(tmpDir, config.binName);
             fs.copyFileSync(extractedBin, outputPath);
+
+            // Copier toutes les DLLs de support de PHP
+            const files = fs.readdirSync(tmpDir);
+            for (const file of files) {
+                if (file.toLowerCase().endsWith('.dll')) {
+                    fs.copyFileSync(path.join(tmpDir, file), path.join(binariesDir, file));
+                    console.log(`[PHP] Dépendance copiée : ${file}`);
+                }
+            }
+
+            // Copier également le dossier ext entier s'il existe
+            const extSrc = path.join(tmpDir, 'ext');
+            if (fs.existsSync(extSrc)) {
+                fs.cpSync(extSrc, path.join(binariesDir, 'ext'), { recursive: true });
+                console.log(`[PHP] Dossier des extensions 'ext' copié.`);
+            }
 
             console.log(`[PHP] Installé avec succès sous : ${outputName}`);
         } catch (e) {
