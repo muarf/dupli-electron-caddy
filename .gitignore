@@ -76,5 +76,6 @@ tests/output_xps/
 app/.phpunit.cache/
 app/brain/
 
-# Tauri build targets
+# Tauri downloader sidecars
+src-tauri/binaries/
 src-tauri/target/
