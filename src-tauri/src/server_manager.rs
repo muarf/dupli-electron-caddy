@@ -236,6 +236,15 @@ async fn spawn_sidecar(
             log::info!("[server_manager] PHP sidecar env DUPLICATOR_DB_PATH={}", db_path);
         }
         command = command.env("ELECTRON_RUNNING", "1");
+
+        // Set working directory so PHP can find php8.dll and other DLLs on Windows
+        if let Ok(res) = app.path().resource_dir() {
+            let php_bin_dir = res.join("binaries");
+            if php_bin_dir.exists() {
+                log::info!("[server_manager] PHP current_dir: {:?}", php_bin_dir);
+                command = command.current_dir(&php_bin_dir);
+            }
+        }
     }
 
     let (rx, child) = command
@@ -442,13 +451,17 @@ fn build_php_args(app: &AppHandle) -> Vec<String> {
 fn get_php_ext_dir(app: &AppHandle) -> std::path::PathBuf {
     // 1. En mode bundle : les extensions sont copiées dans le répertoire de ressources de l'application
     if let Ok(res) = app.path().resource_dir() {
-        let candidate = res.join("ext");
+        let candidate = res.join("binaries").join("ext");
         if candidate.exists() {
             return candidate;
         }
-        let candidate2 = res.join("src-tauri").join("binaries").join("ext");
+        let candidate2 = res.join("ext");
         if candidate2.exists() {
             return candidate2;
+        }
+        let candidate3 = res.join("src-tauri").join("binaries").join("ext");
+        if candidate3.exists() {
+            return candidate3;
         }
     }
     // 2. En mode développement : relatif au projet (src-tauri/binaries/ext)

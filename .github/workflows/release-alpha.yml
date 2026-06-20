@@ -209,35 +209,39 @@ jobs:
           php ../composer.phar install --no-dev --optimize-autoloader --ignore-platform-reqs
           cd ..
 
-      - name: Download Caddy
-        run: |
-          wget -q https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_linux_amd64.tar.gz
-          tar -xzf caddy_2.7.6_linux_amd64.tar.gz -C caddy/
-          rm caddy_2.7.6_linux_amd64.tar.gz
-          chmod +x caddy/caddy
-
-      - name: Update package.json for Alpha
+      - name: Update tauri.conf.json for Alpha
         run: |
           VERSION="${{ needs.get-version.outputs.version }}"
           node -e "
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
             pkg.version = '$VERSION';
-            pkg.name = 'dupli-electron-alpha';
+            pkg.name = 'dupli-tauri-alpha';
             pkg.productName = 'Duplicator Alpha';
-            if (!pkg.build) pkg.build = {};
-            pkg.build.appId = 'com.dupli.alpha';
-            pkg.build.publish = {
-              provider: 'github',
-              owner: 'muarf',
-              repo: 'dupli-electron-caddy',
-              channel: 'alpha'
-            };
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+
+            const tauriPath = 'src-tauri/tauri.conf.json';
+            const tauriConf = JSON.parse(fs.readFileSync(tauriPath, 'utf8'));
+            const cleanVersion = '$VERSION'.split('-')[0];
+            tauriConf.version = cleanVersion;
+            tauriConf.productName = 'Duplicator Alpha';
+            fs.writeFileSync(tauriPath, JSON.stringify(tauriConf, null, 2) + '\n');
+            console.log('Updated tauri.conf.json version to', cleanVersion);
           "
 
-      - name: Build Linux Alpha
-        run: npx electron-builder --config electron-builder-alpha.yml -l deb AppImage
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Download Tauri Sidecars
+        run: node scripts/download-tauri-sidecars.js
+
+      - name: Build Tauri Linux Alpha
+        run: npx @tauri-apps/cli build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -246,7 +250,8 @@ jobs:
         with:
           tag_name: ${{ needs.get-version.outputs.tag }}
           files: |
-            dist/Duplicator-Alpha-*
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/appimage/*.AppImage
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -282,19 +287,17 @@ jobs:
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
             pkg.version = '$VERSION';
-            pkg.name = 'dupli-electron-alpha';
+            pkg.name = 'dupli-tauri-alpha';
             pkg.productName = 'Duplicator Alpha';
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
 
             const tauriPath = 'src-tauri/tauri.conf.json';
-            if (fs.existsSync(tauriPath)) {
-              const tauriConf = JSON.parse(fs.readFileSync(tauriPath, 'utf8'));
-              // MSI target requires strict numeric version X.Y.Z. Clean up version by removing suffixes.
-              const cleanVersion = '$VERSION'.split('-')[0];
-              tauriConf.version = cleanVersion;
-              fs.writeFileSync(tauriPath, JSON.stringify(tauriConf, null, 2) + '\n');
-              console.log('Updated tauri.conf.json version to', cleanVersion);
-            }
+            const tauriConf = JSON.parse(fs.readFileSync(tauriPath, 'utf8'));
+            const cleanVersion = '$VERSION'.split('-')[0];
+            tauriConf.version = cleanVersion;
+            tauriConf.productName = 'Duplicator Alpha';
+            fs.writeFileSync(tauriPath, JSON.stringify(tauriConf, null, 2) + '\n');
+            console.log('Updated tauri.conf.json version to', cleanVersion);
           "
 
       - name: Install dependencies
