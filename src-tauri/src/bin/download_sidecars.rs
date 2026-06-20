@@ -65,7 +65,7 @@ fn get_caddy_config(triple: &str) -> Option<DownloadConfig> {
 
 fn get_php_windows_config() -> DownloadConfig {
     DownloadConfig {
-        url: "https://windows.php.net/downloads/releases/php-8.4.13-nts-Win32-vs17-x64.zip",
+        url: "https://windows.php.net/downloads/releases/archives/php-8.4.13-nts-Win32-vs17-x64.zip",
         is_zip: true,
         bin_in_archive: "php.exe",
     }
@@ -182,6 +182,29 @@ fn setup_php(triple: &str, binaries_dir: &Path) -> Result<(), Box<dyn std::error
         let extracted_bin = tmp_extract_dir.join(config.bin_in_archive);
         fs::copy(&extracted_bin, &output_path)?;
 
+        // Copie de toutes les DLL de support pour PHP Windows
+        for entry in fs::read_dir(&tmp_extract_dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_file() {
+                if let Some(ext) = path.extension() {
+                    if ext.to_string_lossy().to_lowercase() == "dll" {
+                        let dest = binaries_dir.join(path.file_name().unwrap());
+                        fs::copy(&path, &dest)?;
+                        println!("[PHP] Dépendance copiée : {:?}", path.file_name().unwrap());
+                    }
+                }
+            }
+        }
+
+        // Copier également le dossier ext entier s'il existe
+        let ext_src = tmp_extract_dir.join("ext");
+        if ext_src.exists() {
+            let ext_dst = binaries_dir.join("ext");
+            let _ = copy_dir_all(&ext_src, &ext_dst);
+            println!("[PHP] Dossier des extensions 'ext' copié.");
+        }
+
         let _ = fs::remove_file(&tmp_archive);
         let _ = fs::remove_dir_all(&tmp_extract_dir);
 
@@ -269,6 +292,20 @@ fn extract_archive(archive: &Path, dest: &Path, is_zip: bool) -> Result<(), Box<
         let tar = flate2::read::GzDecoder::new(file);
         let mut archive = tar::Archive::new(tar);
         archive.unpack(dest)?;
+    }
+    Ok(())
+}
+
+fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> std::io::Result<()> {
+    fs::create_dir_all(&dst)?;
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        if ty.is_dir() {
+            copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        } else {
+            fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        }
     }
     Ok(())
 }

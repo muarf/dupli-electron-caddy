@@ -88,7 +88,9 @@ fn main() {
             app.manage(server_manager::AppState::new());
 
             // 2. Enregistrement de l'état du moniteur d'impression
-            app.manage(printer_commands::PrintMonitorState::new());
+            let monitor_state = printer_commands::PrintMonitorState::new();
+            monitor_state.start(app.handle().clone());
+            app.manage(monitor_state);
 
             // 3. Création de la fenêtre principale avec une page d'attente.
             //    L'URL Caddy sera chargée une fois les serveurs prêts.
@@ -134,14 +136,15 @@ fn main() {
                     Ok(()) => log::info!("Sidecars lancés, attente que Caddy réponde..."),
                 }
 
-                // Attendre que Caddy réponde (polling HTTP)
-                let caddy_ready = wait_for_caddy(CADDY_PORT, CADDY_READY_TIMEOUT_SECS).await;
+                // Attendre que Caddy et PHP répondent tous les deux (polling HTTP/TCP)
+                let caddy_ready = wait_for_port(CADDY_PORT, CADDY_READY_TIMEOUT_SECS).await;
+                let php_ready = wait_for_port(8001, CADDY_READY_TIMEOUT_SECS).await;
 
-                let target_url = if caddy_ready {
-                    log::info!("Caddy prêt ! Navigation vers {APP_URL}");
+                let target_url = if caddy_ready && php_ready {
+                    log::info!("Serveurs prêts (Caddy & PHP) ! Navigation vers {APP_URL}");
                     APP_URL
                 } else {
-                    log::warn!("Caddy timeout — fallback vers PHP direct : {FALLBACK_URL}");
+                    log::warn!("Timeout d'un serveur (caddy_ready={caddy_ready}, php_ready={php_ready}) — fallback vers PHP direct : {FALLBACK_URL}");
                     FALLBACK_URL
                 };
 
@@ -154,6 +157,35 @@ fn main() {
                     let _ = app_handle.emit("servers-ready", ());
                 } else {
                     log::error!("Fenêtre 'main' introuvable après le démarrage des serveurs");
+                }
+
+                // Démarrer la purge automatique planifiée (startup + toutes les heures)
+                if php_ready {
+                    tauri::async_runtime::spawn(async move {
+                        // 1. Attendre 10 secondes après le lancement (comme Electron)
+                        tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+                        loop {
+                            log::info!("[SECURE PURGE] Lancement de la purge automatique...");
+                            let res = tauri::async_runtime::spawn_blocking(|| {
+                                ureq::get("http://127.0.0.1:8001/?secure_purge").call()
+                            }).await;
+
+                            match res {
+                                Ok(Ok(response)) => {
+                                    log::info!("[SECURE PURGE] Réponse reçue de secure_purge: {}", response.status());
+                                }
+                                Ok(Err(e)) => {
+                                    log::error!("[SECURE PURGE] Échec de l'appel secure_purge: {e}");
+                                }
+                                Err(e) => {
+                                    log::error!("[SECURE PURGE] Erreur de thread pour secure_purge: {e}");
+                                }
+                            }
+
+                            // 2. Attendre 1 heure (3600 secondes)
+                            tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
+                        }
+                    });
                 }
             });
 
@@ -174,13 +206,12 @@ fn main() {
 }
 
 // =============================================================================
-// Fonction utilitaire : attendre que Caddy réponde sur son port HTTP
+// Fonction utilitaire : attendre qu'un port réponde en TCP
 // =============================================================================
 
-/// Tente de se connecter en TCP sur le port de Caddy toutes les 500ms.
+/// Tente de se connecter en TCP sur le port spécifié toutes les 500ms.
 /// Retourne `true` si le serveur répond dans le délai, `false` sinon.
-/// On utilise une connexion TCP (pas HTTP) pour être léger et rapide.
-async fn wait_for_caddy(port: u16, timeout_secs: u64) -> bool {
+async fn wait_for_port(port: u16, timeout_secs: u64) -> bool {
     use tokio::net::TcpStream;
     use tokio::time::{sleep, timeout, Duration};
 
@@ -188,13 +219,13 @@ async fn wait_for_caddy(port: u16, timeout_secs: u64) -> bool {
     let poll_interval = Duration::from_millis(500);
     let addr = format!("127.0.0.1:{port}");
 
-    log::debug!("[wait_for_caddy] Polling {addr} (timeout: {timeout_secs}s)");
+    log::debug!("[wait_for_port] Polling {addr} (timeout: {timeout_secs}s)");
 
     let result = timeout(deadline, async {
         loop {
             match TcpStream::connect(&addr).await {
                 Ok(_) => {
-                    log::info!("[wait_for_caddy] Caddy répond sur {addr}");
+                    log::info!("[wait_for_port] Le port {port} répond");
                     return true;
                 }
                 Err(_) => {

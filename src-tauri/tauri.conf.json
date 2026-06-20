@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Duplicator",
+  "productName": "Duplicator Alpha",
   "version": "1.0.0",
-  "identifier": "fr.duplicator.app",
+  "identifier": "fr.duplicator.alpha",
   "build": {
     "devUrl": "http://localhost:8000",
     "frontendDist": "../app/public"

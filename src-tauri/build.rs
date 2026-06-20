@@ -46,7 +46,54 @@ fn main() {
                 let _ = fs::write(path, b"\0");
             }
         }
+
+        // Copier les DLLs de binaries/ vers le répertoire cible (target/debug ou target/release)
+        if target_os == "windows" {
+            if let Ok(out_dir) = env::var("OUT_DIR") {
+                let out_path = std::path::Path::new(&out_dir);
+                if let Some(target_dir) = out_path.parent().and_then(|p| p.parent()).and_then(|p| p.parent()) {
+                    let current_dir = env::current_dir().unwrap();
+                    let binaries_dir = current_dir.join("binaries");
+                    if binaries_dir.exists() {
+                        if let Ok(entries) = fs::read_dir(&binaries_dir) {
+                            for entry in entries.flatten() {
+                                let path = entry.path();
+                                if path.is_file() {
+                                    if let Some(ext) = path.extension() {
+                                        if ext.to_string_lossy().to_lowercase() == "dll" {
+                                            let dest = target_dir.join(path.file_name().unwrap());
+                                            let _ = fs::copy(&path, &dest);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Copier également le dossier des extensions 'ext' entier vers target/
+                    let ext_src = binaries_dir.join("ext");
+                    if ext_src.exists() {
+                        let ext_dst = target_dir.join("ext");
+                        let _ = copy_dir_all(&ext_src, &ext_dst);
+                    }
+                }
+            }
+        }
     }
 
     tauri_build::build();
+}
+
+fn copy_dir_all(src: impl AsRef<std::path::Path>, dst: impl AsRef<std::path::Path>) -> std::io::Result<()> {
+    fs::create_dir_all(&dst)?;
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        if ty.is_dir() {
+            copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        } else {
+            fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+        }
+    }
+    Ok(())
 }

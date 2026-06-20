@@ -209,11 +209,141 @@
 
     /** Supprime un job d'impression en attente */
     deletePrintJob: (printerName, jobId) =>
-      invoke('delete_print_job', { printerName, jobId }),
+      invoke('delete_print_job', { printerName: printerName || '', jobId: Number(jobId) }),
 
     /** Réanalyse un job d'impression existant */
-    reanalyzePrintJob: (jobId, documentName, format, splPath, driverColor) =>
-      invoke('reanalyze_print_job', { jobId, documentName, format, splPath, driverColor }),
+    reanalyzePrintJob: async (jobId, documentName, format, splPath, driverColor) => {
+      const numericJobId = Number(jobId);
+
+      // 1. Récupérer les infos du spouleur Windows via Rust (total_pages, is_grayscale, is_duplex, paper_size)
+      const res = await invoke('reanalyze_print_job', {
+        jobId: numericJobId,
+        documentName: documentName || '',
+        format: format || '',
+        splPath: splPath || '',
+        driverColor: !!driverColor
+      });
+
+      // 2. Déclencher la conversion SPL → PNG (miniatures) via les API PHP locales
+      //    On essaie EMF d'abord (plus fidèle), puis PCL en fallback.
+      let thumbnailUrl = null;
+      let totalPages = res.totalPages || 0;
+      let pages = [];
+
+      try {
+        const endpoints = [
+          `/?convert_emf_to_png&job_id=${numericJobId}`,
+          `/?convert_pcl_to_png&job_id=${numericJobId}`,
+        ];
+
+        for (const endpoint of endpoints) {
+          try {
+            const resp = await fetch(endpoint);
+            if (resp.ok) {
+              const data = await resp.json();
+              if (data && data.success) {
+                // PHP retourne base_url avec le port hardcodé 8001 — on construit l'URL relative à la place
+                thumbnailUrl = `/thumbnails/${numericJobId}/page_0.png?t=${Date.now()}`;
+                if (data.page_count) totalPages = data.page_count;
+                pages = data.pages || [];
+                break; // succes, pas besoin du fallback
+              }
+            }
+          } catch (_) { /* tentative suivante */ }
+        }
+      } catch (e) {
+        console.warn('[tauri-bridge] Erreur conversion PHP:', e);
+      }
+
+      // Fonction pour analyser une image via Canvas et récupérer son taux de remplissage / couleur
+      const analyzeImagePage = (url) => {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              canvas.width = 200;
+              canvas.height = 200;
+              ctx.drawImage(img, 0, 0, 200, 200);
+              
+              const imgData = ctx.getImageData(0, 0, 200, 200);
+              const data = imgData.data;
+              const totalPixels = 200 * 200;
+              let totalDensity = 0;
+              let coloredPixels = 0;
+
+              for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i+1];
+                const b = data[i+2];
+                
+                const rP = r / 255;
+                const gP = g / 255;
+                const bP = b / 255;
+                
+                // Simulation CMYK à partir de RGB pour correspondre à Ghostscript
+                const k = 1 - Math.max(rP, gP, bP);
+                const c = k === 1 ? 0 : (1 - rP - k) / (1 - k);
+                const m = k === 1 ? 0 : (1 - gP - k) / (1 - k);
+                const y = k === 1 ? 0 : (1 - bP - k) / (1 - k);
+                
+                totalDensity += (c + m + y + k);
+                
+                // Seuil de couleur pour détection isColor
+                if (Math.abs(r - g) > 25 || Math.abs(g - b) > 25 || Math.abs(r - b) > 25) {
+                  coloredPixels++;
+                }
+              }
+
+              const fillRate = (totalDensity / totalPixels) * 100;
+              const isColor = (coloredPixels / totalPixels) > 0.005;
+              resolve({ fillRate, isColor });
+            } catch (e) {
+              console.warn('[tauri-bridge] Erreur analyse canvas:', e);
+              resolve({ fillRate: 0, isColor: false });
+            }
+          };
+          img.onerror = () => {
+            resolve({ fillRate: 0, isColor: false });
+          };
+          img.src = url;
+        });
+      };
+
+      // Analyser toutes les pages pour calculer la moyenne de remplissage et détection couleur
+      let totalFillRate = 0;
+      let foundRealColor = false;
+      let pageCount = pages.length || totalPages;
+      let analyzedCount = 0;
+
+      if (pageCount > 0) {
+        for (let i = 0; i < pageCount; i++) {
+          const relativeUrl = `/thumbnails/${numericJobId}/page_${i}.png?t=${Date.now()}`;
+          const analysis = await analyzeImagePage(relativeUrl);
+          totalFillRate += analysis.fillRate;
+          if (analysis.isColor) {
+            foundRealColor = true;
+          }
+          analyzedCount++;
+        }
+      }
+
+      const calculatedFillRate = analyzedCount > 0 ? (totalFillRate / analyzedCount) : 0;
+      const finalIsGrayscale = res.isGrayscale || !foundRealColor;
+
+      // 3. Retourner le format attendu par print-session-manager.js
+      return {
+        success:      res.found,
+        isGrayscale:  finalIsGrayscale,     // depuis DEVMODE.dmColor + analyse pixels
+        isDuplex:     res.isDuplex,          // depuis DEVMODE.dmDuplex
+        paperSize:    res.paperSize,         // depuis DEVMODE.dmPaperSize
+        fillRate:     calculatedFillRate,    // moyenne calculée pixel-by-pixel via canvas
+        thumbnailUrl: thumbnailUrl,          // null si aucune conversion n'a réussi
+        totalPages:   totalPages,
+      };
+    },
 
     /** Retourne les capacités d'une imprimante (couleur, duplex, etc.) */
     getPrinterCapabilities: (printerName) =>
@@ -228,7 +358,25 @@
       invoke('print_file', { filePath: fileUrl, printerName: printOptions?.printerName || '' }),
 
     // Événements du moniteur d'impression
-    onPrintJobDetected:   (cb) => _registerEvent('print-job-detected',   cb),
+    onPrintJobDetected:   (cb) => _registerEvent('print-job-detected', (payload) => {
+      if (payload) {
+        cb({
+          JobId:         payload.jobId,
+          Document:      payload.document,
+          PrinterName:   payload.printerName,
+          Status:        payload.status,
+          StatusLabel:   payload.statusLabel,
+          TotalPages:    payload.totalPages,
+          SizeBytes:     payload.sizeBytes,
+          TimeSubmitted: payload.timeSubmitted || new Date().toISOString(),
+          IsDuplex:      payload.isDuplex    || false,
+          PaperSize:     payload.paperSize   || 'A4',
+          IsGrayscale:   payload.isGrayscale || false,
+        });
+      } else {
+        cb(payload);
+      }
+    }),
     onPrintMonitorError:  (cb) => _registerEvent('print-monitor-error',  cb),
     onPrintMonitorStarted:(cb) => _registerEvent('print-monitor-started', cb),
 

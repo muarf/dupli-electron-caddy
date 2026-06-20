@@ -1,0 +1,31 @@
+[[permission]]
+identifier = "allow-all-commands"
+description = "Allows all custom commands of the main app"
+commands.allow = [
+  "open_file",
+  "open_external_file",
+  "cleanup_tmp_files",
+  "show_open_dialog",
+  "get_database_path",
+  "get_app_version",
+  "restart_app",
+  "check_for_updates",
+  "download_update",
+  "install_update",
+  "start_servers",
+  "stop_servers",
+  "get_server_status",
+  "restart_php",
+  "get_printers",
+  "get_print_jobs",
+  "delete_print_job",
+  "print_file",
+  "get_printer_capabilities",
+  "toggle_printer_monitor",
+  "get_printer_monitor_status",
+  "delete_printer",
+  "reanalyze_print_job",
+  "print_job",
+  "check_admin_status",
+  "restart_as_admin"
+]

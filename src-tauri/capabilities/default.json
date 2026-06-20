@@ -5,6 +5,12 @@
   "windows": [
     "main"
   ],
+  "remote": {
+    "urls": [
+      "http://localhost:*",
+      "http://127.0.0.1:*"
+    ]
+  },
   "permissions": [
     "core:path:default",
     "core:event:default",
@@ -32,6 +38,7 @@
     "dialog:allow-open",
     "dialog:allow-save",
     "fs:allow-read",
-    "fs:allow-write"
+    "fs:allow-write",
+    "allow-all-commands"
   ]
 }
