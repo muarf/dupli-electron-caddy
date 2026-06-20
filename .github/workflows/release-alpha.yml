@@ -171,6 +171,7 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   tag_name: tag,
+                  target_commitish: context.sha,
                   name: `Duplicator Alpha v${version}`,
                   body: `## 🚀 Version Alpha v${version}\n\n⚠️ **Ceci est une version ALPHA (Studio Integration)**\n\nCommit: \`${shortSha}\`\nBranch: \`${context.ref}\``,
                   draft: false,
@@ -321,8 +322,8 @@ jobs:
         with:
           tag_name: ${{ needs.get-version.outputs.tag }}
           files: |
-            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
-            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/msi/*.msi
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
