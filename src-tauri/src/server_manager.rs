@@ -237,8 +237,8 @@ async fn spawn_sidecar(
         }
         command = command.env("ELECTRON_RUNNING", "1");
 
-        // Note: DLLs (php8.dll etc.) are bundled via tauri.conf.json resources at {resource_dir}/binaries/,
-        // same directory where the sidecar binary resolves, so they are found automatically.
+        // Ensure DLLs (php8.dll etc.) are present alongside the child process
+        copy_php_dlls(app);
     }
 
     let (rx, child) = command
@@ -477,4 +477,47 @@ fn get_php_ext_dir(app: &AppHandle) -> std::path::PathBuf {
         }
     }
     std::path::PathBuf::from("ext")
+}
+
+/// Walk resource directory recursively and copy any .dll files next to the app executable,
+/// so PHP sidecar can find them at runtime.
+fn copy_php_dlls(app: &AppHandle) {
+    let exe_dir = std::env::current_exe().ok().and_then(|p| p.parent().map(|p| p.to_path_buf()));
+    let Some(dst) = exe_dir else { return };
+
+    let res_dir = match app.path().resource_dir() {
+        Ok(d) => d,
+        Err(_) => return,
+    };
+
+    log::info!("[server_manager] DIAG: resource_dir = {:?}", res_dir);
+    log::info!("[server_manager] DIAG: exe_dir = {:?}", dst);
+
+    // Walk resource dir recursively looking for .dll files and log all dirs
+    let mut dirs = vec![res_dir.clone()];
+    let mut visited = std::collections::HashSet::new();
+    visited.insert(res_dir.clone());
+    while let Some(dir) = dirs.pop() {
+        if let Ok(entries) = std::fs::read_dir(&dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() && visited.insert(path.clone()) {
+                    log::info!("[server_manager] DIAG: dir: {:?}", path);
+                    dirs.push(path);
+                } else if path.extension().map_or(false, |e| e == "dll") {
+                    let name = path.file_name().unwrap();
+                    let target = dst.join(name);
+                    if !target.exists() {
+                        if let Err(e) = std::fs::copy(&path, &target) {
+                            log::warn!("[server_manager] Failed to copy DLL {:?} -> {:?}: {}", path, target, e);
+                        } else {
+                            log::info!("[server_manager] Copied DLL {:?} -> {:?}", path, target);
+                        }
+                    } else {
+                        log::debug!("[server_manager] DLL already at {:?}", target);
+                    }
+                }
+            }
+        }
+    }
 }
