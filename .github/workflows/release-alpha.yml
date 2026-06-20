@@ -310,7 +310,7 @@ jobs:
           node scripts/download-tauri-sidecars.js
 
       - name: Build Tauri Windows Alpha
-        run: npx tauri build
+        run: npx @tauri-apps/cli build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
