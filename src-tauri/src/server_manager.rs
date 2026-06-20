@@ -237,12 +237,15 @@ async fn spawn_sidecar(
         }
         command = command.env("ELECTRON_RUNNING", "1");
 
-        // Set working directory so PHP can find php8.dll and other DLLs on Windows
+        // On Windows, add the resource binaries dir to PATH so PHP can find php8.dll and other DLLs
+        #[cfg(target_os = "windows")]
         if let Ok(res) = app.path().resource_dir() {
             let php_bin_dir = res.join("binaries");
             if php_bin_dir.exists() {
-                log::info!("[server_manager] PHP current_dir: {:?}", php_bin_dir);
-                command = command.current_dir(&php_bin_dir);
+                let current_path = std::env::var("PATH").unwrap_or_default();
+                let new_path = format!("{};{}", php_bin_dir.to_string_lossy(), current_path);
+                command = command.env("PATH", &new_path);
+                log::info!("[server_manager] Added to PHP PATH: {:?}", php_bin_dir);
             }
         }
     }
