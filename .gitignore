@@ -26,6 +26,7 @@ imagemagick/*.dll
 *.log
 appimage.log
 error
+app/logs/
 
 # Temp files
 temp/
@@ -71,7 +72,7 @@ tests/output_xps/
 # Cache
 .cache/
 .npm/
-.electron/
+
 app/.phpunit.cache/
 app/brain/
 

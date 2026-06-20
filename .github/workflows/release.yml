@@ -140,7 +140,7 @@ jobs:
         run: |
           echo "🧹 Nettoyage du cache et préparation..."
           npm cache clean --force
-          rm -rf node_modules/.cache ~/.electron* ~/.cache/electron* dist/
+          rm -rf node_modules/.cache dist/
 
       - name: Verify critical files
         run: |
@@ -206,105 +206,32 @@ jobs:
             exit 1
           fi
       
-      - name: Download Caddy for Linux
-        run: |
-          echo "Téléchargement de Caddy pour Linux..."
-          wget -q https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_linux_amd64.tar.gz
-          tar -xzf caddy_2.7.6_linux_amd64.tar.gz -C caddy/
-          rm caddy_2.7.6_linux_amd64.tar.gz
-          chmod +x caddy/caddy
-          echo "✅ Caddy téléchargé"
-      
-      - name: Build Linux (deb + AppImage)
-        run: |
-          echo "🛠️ Build deb..."
-          npx --yes electron-builder --config electron-builder-caddy.yml -l deb --publish=never
-          echo "🛠️ Sauvegarder latest-linux.yml pour deb..."
-          if [ -f dist/latest-linux.yml ]; then
-            cp dist/latest-linux.yml dist/latest-linux-deb.yml
-            echo "✅ latest-linux-deb.yml créé"
-            # Vérifier le contenu pour confirmer qu'il pointe vers .deb
-            if grep -q "\.deb" dist/latest-linux-deb.yml; then
-              echo "✅ latest-linux-deb.yml pointe bien vers .deb"
-            fi
-          fi
-          echo "🛠️ Build AppImage..."
-          npm run build:caddy -- --linux AppImage --publish=never
-          echo "🛠️ latest-linux.yml final pointe vers AppImage (dernier build)"
-          echo "✅ latest-linux.yml pointe vers AppImage (pour auto-update AppImage)"
-          echo "✅ latest-linux-deb.yml pointe vers .deb (pour référence)"
+      - name: Download Tauri Sidecars
+        run: node scripts/download-tauri-sidecars.js
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Build Tauri Linux
+        run: npx @tauri-apps/cli build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REF: refs/tags/${{ needs.get-tag.outputs.tag }}
       
       - name: Upload Linux artifacts to release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.get-tag.outputs.tag }}
           files: |
-            dist/*.AppImage
-            dist/*.deb
-            dist/latest-linux.yml
-            dist/latest-linux-deb.yml
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/appimage/*.AppImage
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Verify build output
-        run: |
-          echo "Vérification des fichiers générés..."
-          ls -lh dist/ || true
-          if [ -f dist/*.AppImage ]; then
-            echo "✅ AppImage créée"
-          fi
-          if ls dist/*.deb >/dev/null 2>&1; then
-            echo "✅ Paquet .deb créé"
-          fi
-          if [ -f dist/latest-linux.yml ]; then
-            echo "✅ latest-linux.yml créé"
-          fi
-
-      - name: Verify ASAR content
-        run: |
-          echo "🔍 Vérification du contenu ASAR..."
-          APPIMAGE_FILE=$(ls dist/*.AppImage | head -1)
-          if [ -z "$APPIMAGE_FILE" ]; then
-            echo "❌ Aucune AppImage trouvée"
-            exit 1
-          fi
-          echo "Extraction de $APPIMAGE_FILE..."
-          $APPIMAGE_FILE --appimage-extract >/dev/null 2>&1
-          
-          # Déterminer le chemin correct selon si ASAR est activé ou non
-          # Chercher le fichier dans les différents emplacements possibles
-          if [ -f "squashfs-root/resources/app/app/view/partials/machine_item.html.php" ]; then
-            # ASAR désactivé - fichiers dans resources/app/app/ (structure avec double app/)
-            FILE_PATH="squashfs-root/resources/app/app/view/partials/machine_item.html.php"
-            echo "✅ Fichier trouvé dans resources/app/app/ (ASAR désactivé)"
-          elif [ -f "squashfs-root/resources/app/view/partials/machine_item.html.php" ]; then
-            # ASAR désactivé - fichiers directement dans resources/app/
-            FILE_PATH="squashfs-root/resources/app/view/partials/machine_item.html.php"
-            echo "✅ Fichier trouvé dans resources/app/ (ASAR désactivé)"
-          elif [ -f "squashfs-root/resources/app.asar.unpacked/app/view/partials/machine_item.html.php" ]; then
-            # ASAR activé - fichiers dans app.asar.unpacked
-            FILE_PATH="squashfs-root/resources/app.asar.unpacked/app/view/partials/machine_item.html.php"
-            echo "✅ Fichier trouvé dans app.asar.unpacked (ASAR activé)"
-          else
-            echo "❌ ERREUR: Fichier machine_item.html.php introuvable"
-            echo "Recherche dans squashfs-root/resources/..."
-            find squashfs-root/resources -name "machine_item.html.php" 2>/dev/null || echo "Aucun fichier trouvé"
-            exit 1
-          fi
-          
-          if grep -q 'photocopieur_active.*active' "$FILE_PATH"; then
-            echo "✅ ASAR contient les bonnes valeurs PHP"
-          else
-            echo "❌ ASAR contient les mauvaises valeurs PHP"
-            echo "Contenu trouvé dans machine_item.html.php:"
-            grep -A2 -B2 "photocopieur_active\|duplicopieur_active" "$FILE_PATH" || echo "Variables non trouvées"
-            exit 1
-          fi
-          echo "✅ Vérification ASAR terminée avec succès"
   
   build-windows:
     needs: [get-tag, create-release, build-linux]
@@ -367,39 +294,29 @@ jobs:
             exit 1
           }
       
-      - name: Download Caddy for Windows
-        run: |
-          echo "Téléchargement de Caddy pour Windows..."
-          Invoke-WebRequest -Uri "https://github.com/caddyserver/caddy/releases/download/v2.7.6/caddy_2.7.6_windows_amd64.zip" -OutFile "caddy_windows.zip"
-          Expand-Archive -Path "caddy_windows.zip" -DestinationPath "caddy" -Force
-          Remove-Item "caddy_windows.zip"
-          echo "✅ Caddy téléchargé"
-      
-      - name: Build Windows
-        run: npm run build:caddy -- --win --publish=never
+      - name: Download Tauri Sidecars
+        run: node scripts/download-tauri-sidecars.js
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Build Tauri Windows
+        run: npx @tauri-apps/cli build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REF: refs/tags/${{ needs.get-tag.outputs.tag }}
       
       - name: Upload Windows artifacts to release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.get-tag.outputs.tag }}
           files: |
-            dist/*.exe
-            dist/*.zip
-            dist/latest.yml
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/msi/*.msi
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Verify build output
-        run: |
-          echo "Vérification des fichiers générés..."
-          Get-ChildItem dist/ | Format-Table Name, Length
-          if (Test-Path "dist/*.exe") {
-            echo "✅ Exécutable Windows créé"
-          }
-          if (Test-Path "dist/latest.yml") {
-            echo "✅ latest.yml créé"
-          }
