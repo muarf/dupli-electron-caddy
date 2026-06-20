@@ -25,7 +25,7 @@
     "resources": [
       "../Caddyfile",
       "../app",
-      "../src-tauri/binaries"
+      "binaries"
     ],
     "externalBin": [
       "binaries/caddy",

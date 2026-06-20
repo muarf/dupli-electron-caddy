@@ -237,32 +237,8 @@ async fn spawn_sidecar(
         }
         command = command.env("ELECTRON_RUNNING", "1");
 
-        // On Windows, copy required DLLs from resources to the sidecar directory
-        #[cfg(target_os = "windows")]
-        if let Ok(res) = app.path().resource_dir() {
-            let dll_src = res.join("binaries");
-            if dll_src.exists() {
-                if let Ok(exe) = std::env::current_exe() {
-                    if let Some(dll_dst) = exe.parent() {
-                        for entry in std::fs::read_dir(&dll_src).ok().into_iter().flatten() {
-                            if let Ok(e) = entry {
-                                let name = e.file_name();
-                                if name.to_string_lossy().ends_with(".dll") {
-                                    let target = dll_dst.join(&name);
-                                    if !target.exists() {
-                                        if let Err(err) = std::fs::copy(e.path(), &target) {
-                                            log::warn!("[server_manager] Failed to copy DLL {}: {}", name.to_string_lossy(), err);
-                                        } else {
-                                            log::info!("[server_manager] Copied DLL {} to sidecar dir", name.to_string_lossy());
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // Note: DLLs (php8.dll etc.) are bundled via tauri.conf.json resources at {resource_dir}/binaries/,
+        // same directory where the sidecar binary resolves, so they are found automatically.
     }
 
     let (rx, child) = command
