@@ -460,6 +460,118 @@
     },
   };
 
+  // Intercepter les clics de téléchargement sous Tauri
+  document.addEventListener('click', async function (event) {
+    const link = event.target.closest('a');
+    if (!link) return;
+
+    const href = link.getAttribute('href');
+    if (!href) return;
+
+    // Intercepter uniquement les pages de téléchargement (?download_ ou &download_)
+    if (/[?&]download_/i.test(href)) {
+      event.preventDefault();
+
+      const showBridgeToast = (html, isError) => {
+        const t = document.getElementById('studioToast');
+        if (t) {
+          t.innerHTML = html;
+          t.style.borderLeftColor = isError ? '#ef4444' : '#10b981';
+          t.style.borderLeftWidth = '4px';
+          t.style.display = 'block';
+          clearTimeout(t._tid);
+          t._tid = setTimeout(() => t.style.display = 'none', isError ? 8000 : 5000);
+        } else {
+          let toastContainer = document.getElementById('tauriBridgeToast');
+          if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'tauriBridgeToast';
+            toastContainer.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:10000;background:#fff;border:1px solid #e2e5ea;border-radius:12px;padding:16px 20px;box-shadow:0 4px 20px rgba(0,0,0,0.12);font-family:Inter,sans-serif;font-size:13px;max-width:340px;display:none;';
+            document.body.appendChild(toastContainer);
+          }
+          toastContainer.innerHTML = html;
+          toastContainer.style.borderLeftColor = isError ? '#ef4444' : '#10b981';
+          toastContainer.style.borderLeftWidth = '4px';
+          toastContainer.style.display = 'block';
+          clearTimeout(toastContainer._tid);
+          toastContainer._tid = setTimeout(() => toastContainer.style.display = 'none', isError ? 8000 : 5000);
+        }
+      };
+
+      try {
+        if (!window.__TAURI__ || !window.__TAURI__.dialog || !window.__TAURI__.fs) {
+          throw new Error('Les APIs de dialogue et de système de fichiers Tauri ne sont pas disponibles.');
+        }
+
+        const { save } = window.__TAURI__.dialog;
+        const { writeFile } = window.__TAURI__.fs;
+
+        // Obtenir l'URL absolue du fichier
+        const absoluteUrl = new URL(href, window.location.href).href;
+
+        // Extraire le nom de fichier par défaut
+        let defaultFilename = 'document.pdf';
+        const urlObj = new URL(absoluteUrl);
+        const fileParam = urlObj.searchParams.get('file') || urlObj.searchParams.get('filename');
+        if (fileParam) {
+          defaultFilename = decodeURIComponent(fileParam).split(/[/\\]/).pop();
+        } else {
+          const pathSegments = urlObj.pathname.split('/');
+          const lastSegment = pathSegments[pathSegments.length - 1];
+          if (lastSegment && lastSegment.includes('.')) {
+            defaultFilename = lastSegment;
+          }
+        }
+
+        // Configurer les filtres selon l'extension
+        const ext = defaultFilename.split('.').pop().toLowerCase();
+        const filters = [];
+        if (ext === 'pdf') {
+          filters.push({ name: 'Document PDF', extensions: ['pdf'] });
+        } else if (ext === 'zip') {
+          filters.push({ name: 'Archive ZIP', extensions: ['zip'] });
+        } else if (ext === 'png') {
+          filters.push({ name: 'Image PNG', extensions: ['png'] });
+        } else if (ext === 'jpg' || ext === 'jpeg') {
+          filters.push({ name: 'Image JPEG', extensions: ['jpg', 'jpeg'] });
+        }
+        filters.push({ name: 'Tous les fichiers', extensions: ['*'] });
+
+        // Demander l'emplacement de sauvegarde à l'utilisateur
+        const filePath = await save({
+          title: 'Enregistrer le fichier',
+          defaultPath: defaultFilename,
+          filters: filters
+        });
+
+        if (!filePath) {
+          return; // Annulé par l'utilisateur
+        }
+
+        showBridgeToast('<i class="fa fa-info-circle" style="color:#4f6ef7"></i> <b>Téléchargement en cours...</b>', false);
+
+        // Fetch le fichier sous forme binaire
+        const response = await fetch(absoluteUrl);
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP : ${response.status} ${response.statusText}`);
+        }
+
+        const blob = await response.blob();
+        const arrayBuffer = await blob.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+
+        // Écrire le fichier
+        await writeFile(filePath, uint8Array);
+
+        showBridgeToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>Fichier enregistré avec succès !</b>', false);
+      } catch (err) {
+        console.error('[tauri-bridge] Échec du téléchargement ou de la sauvegarde :', err);
+        const errMsg = err.message || String(err);
+        showBridgeToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Échec de l\'enregistrement :</b> ' + errMsg, true);
+      }
+    }
+  }, true);
+
   console.info('[tauri-bridge] window.electronAPI initialisé avec les commandes Tauri v2.');
 
 })();
