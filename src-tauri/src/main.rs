@@ -39,7 +39,7 @@ const TAURI_BRIDGE_JS: &str = include_str!("../tauri-bridge.js");
 // Point d'entrée
 // =============================================================================
 fn main() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         // --- Plugins officiels ---
         .plugin(tauri_plugin_log::Builder::default().build())
         .plugin(tauri_plugin_shell::init())
