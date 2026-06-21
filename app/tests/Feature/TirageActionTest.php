@@ -213,7 +213,7 @@ function run_action_request(array $config): array
     $runner = realpath(__DIR__ . '/../helpers/run_action.php');
     $command = escapeshellarg(PHP_BINARY) . ' ' .
         escapeshellarg($runner) . ' ' .
-        escapeshellarg(json_encode($config));
+        escapeshellarg(base64_encode(json_encode($config)));
 
     $descriptorspec = [
         0 => ["pipe", "r"],  // stdin

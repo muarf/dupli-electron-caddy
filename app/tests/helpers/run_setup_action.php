@@ -4,6 +4,10 @@
 
 if (isset($argv[0]) && realpath($argv[0]) === realpath(__FILE__)) {
     $payload = $argv[1] ?? '{}';
+    $decoded = base64_decode($payload, true);
+    if ($decoded !== false && json_decode($decoded) !== null) {
+        $payload = $decoded;
+    }
     $config = json_decode($payload, true);
     if (!is_array($config)) {
         $config = [];

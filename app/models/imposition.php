@@ -268,6 +268,10 @@ class Imposition
             }
         }
 
+        if (!$size) {
+            $size = ['width' => 210, 'height' => 297]; // Fallback to A4
+        }
+
         // --- CALCUL DES MÉTRIQUES ---
         // 1. Déterminer l'échelle de base
         $scaleFactor = 1;

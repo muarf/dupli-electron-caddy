@@ -103,8 +103,8 @@ include '" . addslashes($abs_path) . "';
 ";
     file_put_contents($wrapper, $wrapper_code);
 
-    $php_binary = (PHP_OS_FAMILY === 'Windows') ? 'php' : 'php'; // Standard 'php' command
-    $command = "php " . escapeshellarg($wrapper);
+    $php_binary = PHP_BINARY;
+    $command = escapeshellarg($php_binary) . " " . escapeshellarg($wrapper);
     
     $descriptorspec = [
         0 => ["pipe", "r"],  // stdin

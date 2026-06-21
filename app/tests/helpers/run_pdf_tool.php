@@ -1,5 +1,9 @@
 <?php
 
+if (!isset($argc) || php_sapi_name() !== 'cli' || realpath($_SERVER['SCRIPT_FILENAME'] ?? '') !== realpath(__FILE__)) {
+    return;
+}
+
 if ($argc < 2) {
     fwrite(STDERR, "Payload manquant\n");
     exit(1);

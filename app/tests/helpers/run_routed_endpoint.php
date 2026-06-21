@@ -3,7 +3,16 @@ define('DEVELOPMENT_MODE', true);
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
+if (!isset($argc) || php_sapi_name() !== 'cli' || realpath($_SERVER['SCRIPT_FILENAME'] ?? '') !== realpath(__FILE__)) {
+    return;
+}
+
 $payload = $argv[1] ?? '{}';
+
+$decoded = base64_decode($payload, true);
+if ($decoded !== false && json_decode($decoded) !== null) {
+    $payload = $decoded;
+}
 
 $data = json_decode($payload, true);
 if (!is_array($data)) {

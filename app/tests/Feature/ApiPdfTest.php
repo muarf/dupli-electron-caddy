@@ -1,10 +1,13 @@
 <?php
 
+require_once __DIR__ . '/../../controler/functions/paths.php';
+require_once __DIR__ . '/../../controler/functions/utilities.php';
+
 beforeEach(function () {
     $this->downloadScript = realpath(__DIR__ . '/../../api/download_pdf.php');
     $this->viewScript = realpath(__DIR__ . '/../../api/view_pdf.php');
 
-    $this->tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator' . DIRECTORY_SEPARATOR;
+    $this->tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR;
     if (!is_dir($this->tmpDir)) {
         mkdir($this->tmpDir, 0777, true);
     }
@@ -57,7 +60,7 @@ function run_pdf_script(string $scriptPath, array $getParams): string
     $command = escapeshellarg(PHP_BINARY) . ' ' .
         escapeshellarg($runner) . ' ' .
         escapeshellarg($scriptPath) . ' ' .
-        escapeshellarg(json_encode($config));
+        escapeshellarg(base64_encode(json_encode($config)));
 
     $output = [];
     $exitCode = 0;

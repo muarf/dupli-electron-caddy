@@ -295,7 +295,7 @@ foreach ($oldPngs as $oldPng) {
 $outputImage = $outputDir . 'page_%d.png';
 
 // Construire la commande GhostXPS
-$command = escapeshellarg($gsPath) . " -dNOPAUSE -dBATCH -dSAFER -dQUIET -sDEVICE=png16m -r72 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($outputImage) . " " . escapeshellarg($tempFile) . " 2>&1";
+$command = escapeshellarg($gsPath) . " -dNOPAUSE -dBATCH -dSAFER -dQUIET -sDEVICE=png16m -r72 -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escape_shell_arg_with_percent($outputImage) . " " . escapeshellarg($tempFile) . " 2>&1";
 
 debugLog("Command: $command");
 

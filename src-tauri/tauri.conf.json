@@ -25,6 +25,7 @@
     "resources": [
       "../Caddyfile",
       "../app",
+      "../bin",
       "binaries"
     ],
     "externalBin": [
