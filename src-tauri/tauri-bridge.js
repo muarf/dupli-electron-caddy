@@ -17,6 +17,27 @@
 (function () {
   'use strict';
 
+  // Enregistrer les écouteurs d'erreurs globaux pour logger les exceptions JS du webview vers PHP
+  window.addEventListener('error', function (event) {
+    const errorMsg = event.message + ' at ' + event.filename + ':' + event.lineno + ':' + event.colno;
+    const stack = event.error ? event.error.stack : '';
+    fetch('/?log_js_error', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: errorMsg + '\nStack:\n' + stack })
+    }).catch(function() {});
+  });
+
+  window.addEventListener('unhandledrejection', function (event) {
+    const errorMsg = 'Unhandled promise rejection: ' + event.reason;
+    const stack = event.reason && event.reason.stack ? event.reason.stack : '';
+    fetch('/?log_js_error', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: errorMsg + '\nStack:\n' + stack })
+    }).catch(function() {});
+  });
+
   // Guard : n'exécuter que sous Tauri
   if (typeof window.__TAURI__ === 'undefined') return;
 
