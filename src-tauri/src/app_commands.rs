@@ -9,6 +9,9 @@
 use tauri::command;
 use serde::Serialize;
 
+#[cfg(not(target_os = "windows"))]
+use tauri::Manager;
+
 // =============================================================================
 // Commandes Fichiers & Dialogue
 // =============================================================================

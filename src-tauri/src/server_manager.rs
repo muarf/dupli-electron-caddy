@@ -386,6 +386,16 @@ fn get_caddyfile_path(app: &AppHandle) -> String {
     "Caddyfile".to_string()
 }
 
+/// Nettoie les chemins Windows en retirant le préfixe UNC (\\?\) que PHP ne sait pas lire.
+fn clean_path(path: &std::path::Path) -> String {
+    let s = path.to_string_lossy().to_string();
+    if s.starts_with(r"\\?\") {
+        s[4..].to_string()
+    } else {
+        s
+    }
+}
+
 /// Construit les arguments pour lancer le serveur PHP built-in.
 /// Identique à ce que fait Electron : `php -S 127.0.0.1:8001 -t app/public`
 fn build_php_args(app: &AppHandle) -> Vec<String> {
@@ -396,12 +406,12 @@ fn build_php_args(app: &AppHandle) -> Vec<String> {
     // Créer le répertoire de sessions s'il n'existe pas
     let _ = std::fs::create_dir_all(&session_dir);
 
-    let docroot_str = docroot.to_string_lossy();
-    let app_base_str = app_base.to_string_lossy();
-    let vendor_str = app_base.join("vendor").to_string_lossy().to_string();
-    let session_str = session_dir.to_string_lossy();
+    let docroot_str = clean_path(&docroot);
+    let app_base_str = clean_path(&app_base);
+    let vendor_str = clean_path(&app_base.join("vendor"));
+    let session_str = clean_path(&session_dir);
     let php_ini_path = app_base.join("php.ini");
-    let php_ini_str = php_ini_path.to_string_lossy();
+    let php_ini_str = clean_path(&php_ini_path);
 
     #[cfg(target_os = "windows")]
     let include_sep = ";";
@@ -413,20 +423,20 @@ fn build_php_args(app: &AppHandle) -> Vec<String> {
     // 1. Charger php.ini si disponible
     if php_ini_path.exists() {
         args.push("-c".to_string());
-        args.push(php_ini_str.to_string());
+        args.push(php_ini_str);
     }
 
     // 2. Arguments standards
     args.push("-S".to_string());
     args.push("127.0.0.1:8001".to_string());
     args.push("-t".to_string());
-    args.push(docroot_str.to_string());
+    args.push(docroot_str);
 
     // 3. Arguments d'extensions spécifiques à Windows
     #[cfg(target_os = "windows")]
     {
         let ext_dir = get_php_ext_dir(app);
-        let ext_dir_str = ext_dir.to_string_lossy().replace('\\', "/");
+        let ext_dir_str = clean_path(&ext_dir).replace('\\', "/");
         args.push("-d".to_string());
         args.push(format!("extension_dir={}", ext_dir_str));
         args.push("-d".to_string());
