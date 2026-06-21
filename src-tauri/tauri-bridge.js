@@ -213,24 +213,58 @@
     // ─────────────────────────────────────────────────────────────────
 
     /** Retourne la liste des imprimantes disponibles */
-    getPrinters: () =>
-      invoke('get_printers'),
+    getPrinters: async () => {
+      try {
+        const printers = await invoke('get_printers');
+        return { success: true, printers: printers };
+      } catch (err) {
+        return { success: false, error: String(err), printers: [] };
+      }
+    },
 
     /** Active ou désactive la supervision du spouleur */
-    togglePrinterMonitor: (start) =>
-      invoke('toggle_printer_monitor', { start }),
+    togglePrinterMonitor: async (start) => {
+      try {
+        await invoke('toggle_printer_monitor', { start });
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: String(err) };
+      }
+    },
 
     /** Retourne le statut actuel de la supervision */
-    getPrinterMonitorStatus: () =>
-      invoke('get_printer_monitor_status'),
+    getPrinterMonitorStatus: async () => {
+      try {
+        const res = await invoke('get_printer_monitor_status');
+        const isWindows = navigator.userAgent.includes('Windows');
+        return {
+          available: isWindows,
+          status: res.isRunning ? 'active' : 'inactive'
+        };
+      } catch (err) {
+        return { available: false, status: 'inactive' };
+      }
+    },
 
     /** Supprime une imprimante de la liste */
-    deletePrinter: (printerName) =>
-      invoke('delete_printer', { printerName }),
+    deletePrinter: async (printerName) => {
+      try {
+        await invoke('delete_printer', { printerName });
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: String(err) };
+      }
+    },
 
     /** Supprime un job d'impression en attente */
-    deletePrintJob: (printerName, jobId) =>
-      invoke('delete_print_job', { printerName: printerName || '', jobId: Number(jobId) }),
+    deletePrintJob: async (printerName, jobId) => {
+      try {
+        await invoke('delete_print_job', { printerName: printerName || '', jobId: Number(jobId) });
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: String(err) };
+      }
+    },
 
     /** Réanalyse un job d'impression existant */
     reanalyzePrintJob: async (jobId, documentName, format, splPath, driverColor) => {
@@ -406,12 +440,24 @@
     // ─────────────────────────────────────────────────────────────────
 
     /** Vérifie si l'application tourne en tant qu'administrateur */
-    checkAdminStatus: () =>
-      invoke('check_admin_status'),
+    checkAdminStatus: async () => {
+      try {
+        const isAdmin = await invoke('check_admin_status');
+        return { success: true, isAdmin: isAdmin };
+      } catch (err) {
+        return { success: false, error: String(err), isAdmin: false };
+      }
+    },
 
     /** Relance l'application avec une invite d'élévation UAC */
-    restartAsAdmin: () =>
-      invoke('restart_as_admin'),
+    restartAsAdmin: async () => {
+      try {
+        await invoke('restart_as_admin');
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: String(err) };
+      }
+    },
   };
 
   console.info('[tauri-bridge] window.electronAPI initialisé avec les commandes Tauri v2.');
