@@ -12,7 +12,7 @@
 
 use std::ffi::OsString;
 use std::os::windows::ffi::OsStringExt;
-use windows_sys::Win32::Foundation::{FALSE, GetLastError, HANDLE, TRUE};
+use windows_sys::Win32::Foundation::{FALSE, GetLastError, HANDLE};
 use windows_sys::Win32::Graphics::Printing::{
     ClosePrinter, DeletePrinter, EnumJobsW, EnumPrintersW, OpenPrinterW, SetJobW,
     JOB_INFO_2W, PRINTER_ENUM_CONNECTIONS, PRINTER_ENUM_LOCAL, PRINTER_INFO_2W,

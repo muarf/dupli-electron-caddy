@@ -209,6 +209,11 @@ async fn spawn_sidecar(
         .sidecar(sidecar_name)
         .map_err(|e| format!("Sidecar '{sidecar_name}' introuvable dans la config Tauri: {e}"))?;
 
+    // Hériter des variables d'environnement système pour éviter les crashs de DLL sous Windows
+    for (key, value) in std::env::vars() {
+        command = command.env(key, value);
+    }
+
     for arg in args {
         command = command.arg(*arg);
     }

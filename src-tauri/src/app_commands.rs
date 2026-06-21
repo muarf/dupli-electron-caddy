@@ -7,7 +7,6 @@
 // =============================================================================
 
 use tauri::command;
-use tauri::Manager;
 use serde::Serialize;
 
 // =============================================================================
@@ -119,7 +118,7 @@ pub async fn show_open_dialog(options: serde_json::Value) -> Result<DialogResult
 
 /// Retourne le chemin de la base de données SQLite principale (partagée avec Electron)
 #[command]
-pub fn get_database_path(app: tauri::AppHandle) -> Result<String, String> {
+pub fn get_database_path(_app: tauri::AppHandle) -> Result<String, String> {
     log::info!("[app_commands] get_database_path()");
 
     #[cfg(target_os = "windows")]
@@ -128,7 +127,7 @@ pub fn get_database_path(app: tauri::AppHandle) -> Result<String, String> {
         .map_err(|e| format!("Impossible de localiser le répertoire APPDATA : {e}"));
 
     #[cfg(not(target_os = "windows"))]
-    let db_path = app.path()
+    let db_path = _app.path()
         .app_data_dir()
         .map(|p| p.join("duplinew.sqlite").to_string_lossy().to_string())
         .map_err(|e| format!("Impossible de localiser le répertoire de données : {e}"));
