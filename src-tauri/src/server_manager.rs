@@ -307,6 +307,11 @@ fn kill_child(child_ref: &Arc<Mutex<Option<CommandChild>>>, name: &str) {
 fn get_php_docroot(app: &AppHandle) -> std::path::PathBuf {
     // En mode bundle : les ressources sont dans resource_dir()
     if let Ok(res) = app.path().resource_dir() {
+        // Fallback avec le préfixe _up_ généré par Tauri pour les chemins avec '..'
+        let candidate_up = res.join("_up_").join("app").join("public");
+        if candidate_up.exists() {
+            return candidate_up;
+        }
         let candidate = res.join("app").join("public");
         if candidate.exists() {
             return candidate;
@@ -332,6 +337,8 @@ fn get_php_docroot(app: &AppHandle) -> std::path::PathBuf {
 fn get_php_app_base(app: &AppHandle) -> std::path::PathBuf {
     // En mode bundle
     if let Ok(res) = app.path().resource_dir() {
+        let candidate_up = res.join("_up_").join("app");
+        if candidate_up.exists() { return candidate_up; }
         let candidate = res.join("app");
         if candidate.exists() { return candidate; }
     }
@@ -352,6 +359,10 @@ fn get_php_app_base(app: &AppHandle) -> std::path::PathBuf {
 fn get_caddyfile_path(app: &AppHandle) -> String {
     // En mode bundle : ressource bundlée
     if let Ok(res) = app.path().resource_dir() {
+        let candidate_up = res.join("_up_").join("Caddyfile");
+        if candidate_up.exists() {
+            return candidate_up.to_string_lossy().to_string();
+        }
         let candidate = res.join("Caddyfile");
         if candidate.exists() {
             return candidate.to_string_lossy().to_string();
