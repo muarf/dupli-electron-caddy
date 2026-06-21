@@ -245,3 +245,16 @@ function debugLog(string $msg): void
     $timestamp = date('H:i:s');
     @file_put_contents($logFile, "[$timestamp] $msg\n", FILE_APPEND);
 }
+
+/**
+ * Version de escapeshellarg qui préserve le caractère '%' sous Windows.
+ * Utile pour les patterns d'output Ghostscript (ex: %d, %03d).
+ */
+function escape_shell_arg_with_percent(string $arg): string
+{
+    if (PHP_OS_FAMILY === 'Windows') {
+        // Entourer de guillemets doubles et doubler les guillemets doubles internes
+        return '"' . str_replace('"', '""', $arg) . '"';
+    }
+    return escapeshellarg($arg);
+}

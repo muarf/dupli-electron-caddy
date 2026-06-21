@@ -11,7 +11,7 @@ function run_setup_and_get_db_used(string $dbPath, array $post): array
     ];
     $cmd = escapeshellarg(PHP_BINARY) . ' ' .
         escapeshellarg($runner) . ' ' .
-        escapeshellarg(json_encode($payload));
+        escapeshellarg(base64_encode(json_encode($payload)));
     $output = [];
     $exitCode = 0;
     exec($cmd, $output, $exitCode);

@@ -54,7 +54,7 @@ function run_get_machine_template(string $dbPath, array $params): array
     $command = escapeshellarg(PHP_BINARY) . ' ' .
         escapeshellarg($runner) . ' ' .
         escapeshellarg($script) . ' ' .
-        escapeshellarg(json_encode($config));
+        escapeshellarg(base64_encode(json_encode($config)));
 
     $output = [];
     $exitCode = 0;

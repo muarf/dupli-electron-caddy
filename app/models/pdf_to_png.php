@@ -24,7 +24,7 @@ function convert_pdf_to_png($pdf_file, $output_dir, $dpi = 150, $base_filename =
         $output_pattern = $output_dir . $prefix;
 
         // Utiliser Ghostscript pour convertir le PDF en PNG
-        $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=png16m -r" . intval($dpi) . " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escapeshellarg($output_pattern) . " " . escapeshellarg($pdf_file);
+        $gs_args = "-dNOPAUSE -dBATCH -sDEVICE=png16m -r" . intval($dpi) . " -dTextAlphaBits=4 -dGraphicsAlphaBits=4 -sOutputFile=" . escape_shell_arg_with_percent($output_pattern) . " " . escapeshellarg($pdf_file);
         
         $gs_result = run_ghostscript($gs_args);
         

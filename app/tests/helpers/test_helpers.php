@@ -15,7 +15,7 @@ if (!function_exists('execute_routed_endpoint')) {
         // On utilise le helper run_routed_endpoint.php qui initialise l'environnement
         $command = escapeshellarg(PHP_BINARY) . ' ' .
             escapeshellarg(__DIR__ . '/run_routed_endpoint.php') . ' ' .
-            escapeshellarg(json_encode($payload));
+            escapeshellarg(base64_encode(json_encode($payload)));
 
         $output = [];
         $exitCode = 0;

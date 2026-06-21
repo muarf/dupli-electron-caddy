@@ -63,7 +63,7 @@ function get_package_install_help(string $type, string $pkg_key, string $distro)
         'unknown' => ['pref' => 'sudo apt-get install -y ']
     ];
 
-    if (PHP_OS_FAMILY === 'Windows') {
+    if ($distro === 'unknown' && PHP_OS_FAMILY === 'Windows') {
         $distro = 'windows';
     }
 

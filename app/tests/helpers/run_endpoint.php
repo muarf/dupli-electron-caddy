@@ -3,6 +3,10 @@
 if (isset($argv[0]) && realpath($argv[0]) === realpath(__FILE__)) {
     $scriptPath = $argv[1] ?? null;
     $payload = $argv[2] ?? '{}';
+    $decoded = base64_decode($payload, true);
+    if ($decoded !== false && json_decode($decoded) !== null) {
+        $payload = $decoded;
+    }
 
     if ($scriptPath === null || !file_exists($scriptPath)) {
         fwrite(STDERR, "Script introuvable\n");

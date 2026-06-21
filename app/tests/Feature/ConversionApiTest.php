@@ -4,7 +4,8 @@
 
 beforeEach(function () {
     $this->spoolDir = realpath(__DIR__ . '/fixtures/spool') . DIRECTORY_SEPARATOR;
-    $this->mockBinary = realpath(__DIR__ . '/../helpers/mock_binary.sh');
+    $ext = (PHP_OS_FAMILY === 'Windows') ? '.bat' : '.sh';
+    $this->mockBinary = realpath(__DIR__ . '/../helpers/mock_binary' . $ext);
     
     // Create thumbnails dir if not exists
     $this->thumbDir = dirname(__DIR__, 2) . '/public/thumbnails';

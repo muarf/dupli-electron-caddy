@@ -3,6 +3,10 @@
 // Empêcher l'exécution si le fichier est inclus par un autre script (ex: scan Pest)
 if (php_sapi_name() === 'cli' && isset($argv[0]) && basename(__FILE__) === basename($argv[0])) {
     $payload = $argv[1] ?? '{}';
+    $decoded = base64_decode($payload, true);
+    if ($decoded !== false && json_decode($decoded) !== null) {
+        $payload = $decoded;
+    }
     $config = json_decode($payload, true);
     if (!is_array($config)) {
         $config = [];
