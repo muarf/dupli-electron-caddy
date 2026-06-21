@@ -191,18 +191,31 @@ fn main() {
 
             Ok(())
         })
-        // --- Arrêt propre des sidecars à la fermeture ---
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::Destroyed = event {
-                log::info!("Fermeture de la fenêtre — arrêt des serveurs...");
-                let app_handle = window.app_handle().clone();
-                tauri::async_runtime::spawn(async move {
-                    server_manager::stop_all_sidecars(&app_handle).await;
-                });
+        .build(tauri::generate_context!())
+        .expect("Erreur lors de la construction de l'application Tauri");
+
+    app.run(|app_handle, event| {
+        if let tauri::RunEvent::Exit = event {
+            log::info!("Fermeture de l'application — arrêt des serveurs sidecar...");
+            let state = app_handle.state::<server_manager::AppState>();
+
+            let mut caddy_guard = state.caddy_child.lock().unwrap();
+            if let Some(child) = caddy_guard.take() {
+                match child.kill() {
+                    Ok(_) => log::info!("Processus 'caddy' arrêté."),
+                    Err(e) => log::warn!("Impossible d'arrêter 'caddy': {e}"),
+                }
             }
-        })
-        .run(tauri::generate_context!())
-        .expect("Erreur fatale lors du démarrage de l'application Tauri");
+
+            let mut php_guard = state.php_child.lock().unwrap();
+            if let Some(child) = php_guard.take() {
+                match child.kill() {
+                    Ok(_) => log::info!("Processus 'php' arrêté."),
+                    Err(e) => log::warn!("Impossible d'arrêter 'php': {e}"),
+                }
+            }
+        }
+    });
 }
 
 // =============================================================================

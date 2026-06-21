@@ -24,6 +24,15 @@ if ($page_check === 'download_backup') {
     }
 }
 
+if ($page_check === 'log_js_error') {
+    header('Content-Type: application/json');
+    $input = json_decode(file_get_contents('php://input'), true);
+    $error = $input['error'] ?? 'Unknown JS error';
+    error_log("[JS_ERROR] " . $error);
+    echo json_encode(['success' => true]);
+    exit;
+}
+
 // Configuration normale du script
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -50,6 +59,19 @@ session_start();
 include(__DIR__ . '/../controler/func.php');
 require_once __DIR__ . '/../controler/functions/i18n.php';
 require_once __DIR__ . '/../controler/functions/machines.php';
+
+// Charger la configuration de la base de données et lancer les migrations immédiatement
+include(__DIR__ . '/../controler/conf.php');
+if (!isset($_SESSION['_migrations_checked'])) {
+    try {
+        require_once __DIR__ . '/../models/migrations/DatabaseMigrationManager.php';
+        $migrationManager = new DatabaseMigrationManager($conf);
+        $migrationManager->runMigrations();
+        $_SESSION['_migrations_checked'] = true;
+    } catch (Exception $e) {
+        error_log("[MIGRATION] Erreur lors de l'exécution initiale des migrations: " . $e->getMessage());
+    }
+}
 
 // Gestionnaire d'erreur global pour éviter les pages blanches
 set_error_handler(function ($severity, $message, $file, $line) {
@@ -1243,22 +1265,7 @@ if (in_array($page, $page_secure, true)) {
                 error_log("[PASSWORD_CHECK] Page exclue de la vérification: " . $page);
             }
 
-            // Exécuter les migrations de base de données (après vérification password)
-            // Sauf pour les pages d'installation/setup
-            // Cache de session pour éviter de vérifier les migrations à chaque requête
-            if ($page != 'installation' && $page != 'setup' && $page != 'setup_save' && $page != 'setup_upload' && $page != 'create_password') {
-                if (!isset($_SESSION['_migrations_checked'])) {
-                    try {
-                        require_once __DIR__ . '/../models/migrations/DatabaseMigrationManager.php';
-                        $migrationManager = new DatabaseMigrationManager($conf);
-                        $migrationManager->runMigrations();
-                        $_SESSION['_migrations_checked'] = true;
-                    } catch (Exception $e) {
-                        error_log("[MIGRATION] Erreur lors de l'exécution des migrations: " . $e->getMessage());
-                        // Ne pas bloquer l'application si les migrations échouent
-                    }
-                }
-            }
+            // Les migrations ont été exécutées au tout début du script
 
         } catch (PDOException $e) {
             error_log("[PASSWORD_CHECK] Exception connexion DB: " . $e->getMessage());
