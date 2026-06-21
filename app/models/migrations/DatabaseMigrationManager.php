@@ -111,9 +111,21 @@ class DatabaseMigrationManager
             foreach ($pendingMigrations as $migrationName => $migrationFunction) {
                 try {
                     error_log("[MIGRATION] Début migration: $migrationName");
+                    
+                    // Capturer tout echo/output provenant des scripts de migration pour éviter de polluer stdout (notamment dans les tests d'API)
+                    ob_start();
                     $this->applyMigration($migrationName, $migrationFunction);
+                    $migrationOutput = ob_get_clean();
+                    
+                    if (!empty($migrationOutput)) {
+                        error_log("[MIGRATION OUTPUT] " . trim($migrationOutput));
+                    }
+                    
                     error_log("[MIGRATION] Migration $migrationName terminée");
                 } catch (Exception $e) {
+                    if (ob_get_level() > 0) {
+                        ob_end_clean();
+                    }
                     error_log("[MIGRATION] ERREUR migration $migrationName: " . $e->getMessage());
                     error_log("[MIGRATION] Continuer avec les migrations suivantes...");
                     // Ne pas bloquer les autres migrations
