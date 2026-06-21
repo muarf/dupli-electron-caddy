@@ -440,37 +440,49 @@ fn build_php_args(app: &AppHandle) -> Vec<String> {
     args
 }
 
-/// Retourne le chemin absolu vers le dossier d'extensions PHP (ext).
-/// Gère la différence entre le mode développement (src-tauri/binaries/ext) et bundle de production.
-fn get_php_ext_dir(app: &AppHandle) -> std::path::PathBuf {
-    // 1. En mode bundle : les extensions sont copiées dans le répertoire de ressources de l'application
+/// Retourne le chemin vers le dossier `binaries` contenant les DLLs et les exécutables.
+fn get_binaries_dir(app: &AppHandle) -> Option<std::path::PathBuf> {
+    // 1. En mode bundle : binaries/ est dans le répertoire de ressources de l'application
     if let Ok(res) = app.path().resource_dir() {
-        let candidate = res.join("binaries").join("ext");
+        let candidate = res.join("binaries");
         if candidate.exists() {
-            return candidate;
+            return Some(candidate);
         }
-        let candidate2 = res.join("ext");
-        if candidate2.exists() {
-            return candidate2;
-        }
-        let candidate3 = res.join("src-tauri").join("binaries").join("ext");
-        if candidate3.exists() {
-            return candidate3;
+        // Fallback : si les ressources sont directement à côté de l'exécutable (sans dossier "resources")
+        if let Ok(exe) = std::env::current_exe() {
+            if let Some(parent) = exe.parent() {
+                let candidate = parent.join("binaries");
+                if candidate.exists() {
+                    return Some(candidate);
+                }
+            }
         }
     }
-    // 2. En mode développement : relatif au projet (src-tauri/binaries/ext)
+    // 2. En mode développement : relatif au projet (src-tauri/binaries)
     if let Ok(exe) = std::env::current_exe() {
         let dev_path = exe
             .ancestors()
             .nth(4)
-            .map(|p| p.join("src-tauri").join("binaries").join("ext"));
+            .map(|p| p.join("src-tauri").join("binaries"));
         if let Some(p) = dev_path {
             if p.exists() {
-                return p;
+                return Some(p);
             }
         }
     }
-    // 3. Fallback : dossier ext à côté de l'exécutable
+    None
+}
+
+/// Retourne le chemin absolu vers le dossier d'extensions PHP (ext).
+/// Gère la différence entre le mode développement (src-tauri/binaries/ext) et bundle de production.
+fn get_php_ext_dir(app: &AppHandle) -> std::path::PathBuf {
+    if let Some(bin_dir) = get_binaries_dir(app) {
+        let ext_dir = bin_dir.join("ext");
+        if ext_dir.exists() {
+            return ext_dir;
+        }
+    }
+    // Fallback : dossier ext à côté de l'exécutable
     if let Ok(exe) = std::env::current_exe() {
         if let Some(parent) = exe.parent() {
             return parent.join("ext");
@@ -479,24 +491,26 @@ fn get_php_ext_dir(app: &AppHandle) -> std::path::PathBuf {
     std::path::PathBuf::from("ext")
 }
 
-/// Walk resource directory recursively and copy any .dll files next to the app executable,
+/// Walk binaries directory recursively and copy any .dll files next to the app executable,
 /// so PHP sidecar can find them at runtime.
 fn copy_php_dlls(app: &AppHandle) {
     let exe_dir = std::env::current_exe().ok().and_then(|p| p.parent().map(|p| p.to_path_buf()));
     let Some(dst) = exe_dir else { return };
 
-    let res_dir = match app.path().resource_dir() {
-        Ok(d) => d,
-        Err(_) => return,
+    let src_dir = match get_binaries_dir(app) {
+        Some(d) => d,
+        None => {
+            log::warn!("[server_manager] Impossible de localiser le dossier des binaires pour copier les DLL");
+            return;
+        }
     };
 
-    log::info!("[server_manager] DIAG: resource_dir = {:?}", res_dir);
-    log::info!("[server_manager] DIAG: exe_dir = {:?}", dst);
+    log::info!("[server_manager] Copie des DLLs depuis {:?} vers {:?}", src_dir, dst);
 
-    // Walk resource dir recursively looking for .dll files and log all dirs
-    let mut dirs = vec![res_dir.clone()];
+    // Walk binaries dir recursively looking for .dll files and log all dirs
+    let mut dirs = vec![src_dir.clone()];
     let mut visited = std::collections::HashSet::new();
-    visited.insert(res_dir.clone());
+    visited.insert(src_dir.clone());
     while let Some(dir) = dirs.pop() {
         if let Ok(entries) = std::fs::read_dir(&dir) {
             for entry in entries.flatten() {
