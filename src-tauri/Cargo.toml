@@ -60,6 +60,7 @@ tauri-plugin-log = "2"
 
 # SQLite (pour accéder à duplinew.sqlite)
 rusqlite = { version = "0.31", features = ["bundled"] }
+url = "2.5.8"
 
 # Crate libc pour Unix (UID check)
 [target.'cfg(not(target_os = "windows"))'.dependencies]

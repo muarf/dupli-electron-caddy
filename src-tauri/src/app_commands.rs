@@ -180,7 +180,12 @@ pub async fn check_for_updates(
     state: tauri::State<'_, UpdateState>,
 ) -> Result<UpdateCheckResult, String> {
     log::info!("[app_commands] check_for_updates()");
-    let updater = app.updater().map_err(|e| e.to_string())?;
+    let updater = app.updater_builder()
+        .pubkey("dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUwRDQxOEYwNDFDQTMzNEEKUldSS004cEI4QmpVVUJJV3lWeDlBWVF0VWp3b05CTFBNUXFETnRFa0FPcTlwZ3dYTjdQakxQZmUK")
+        .endpoints(vec![url::Url::parse("https://raw.githubusercontent.com/muarf/dupli-electron-caddy/alpha/updater/latest.json").unwrap()])
+        .map_err(|e| e.to_string())?
+        .build()
+        .map_err(|e| e.to_string())?;
 
     match updater.check().await {
         Ok(Some(update)) => {

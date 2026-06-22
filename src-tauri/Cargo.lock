@@ -900,6 +900,7 @@ dependencies = [
  "tauri-plugin-updater",
  "tokio",
  "ureq",
+ "url",
  "windows-sys 0.59.0",
  "zip 0.6.6",
 ]
