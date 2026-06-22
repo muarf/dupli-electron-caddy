@@ -268,8 +268,12 @@ jobs:
         with:
           tag_name: ${{ needs.get-version.outputs.tag }}
           files: |
-            src-tauri/target/release/bundle/deb/*
-            src-tauri/target/release/bundle/appimage/*
+            src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/release/bundle/appimage/*.AppImage.sig
+            src-tauri/target/release/bundle/appimage/*.tar.gz
+            src-tauri/target/release/bundle/appimage/*.tar.gz.sig
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/deb/*.deb.sig
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -372,11 +376,11 @@ jobs:
           sleep 15
           ASSETS=$(gh release view "$TAG" --json assets -q '.assets')
           
-          LINUX_URL=$(echo "$ASSETS" | jq -r '.[] | select(.name | endswith(".AppImage.tar.gz")) | .url')
-          LINUX_SIG_URL=$(echo "$ASSETS" | jq -r '.[] | select(.name | endswith(".AppImage.tar.gz.sig")) | .url')
+          LINUX_URL=$(echo "$ASSETS" | jq -r '.[] | select(.name | endswith(".AppImage")) | .url')
+          LINUX_SIG_URL=$(echo "$ASSETS" | jq -r '.[] | select(.name | endswith(".AppImage.sig")) | .url')
           
-          WIN_URL=$(echo "$ASSETS" | jq -r '.[] | select(.name | endswith("setup.exe.zip")) | .url')
-          WIN_SIG_URL=$(echo "$ASSETS" | jq -r '.[] | select(.name | endswith("setup.exe.zip.sig")) | .url')
+          WIN_URL=$(echo "$ASSETS" | jq -r '.[] | select(.name | endswith("-setup.exe")) | .url')
+          WIN_SIG_URL=$(echo "$ASSETS" | jq -r '.[] | select(.name | endswith("-setup.exe.sig")) | .url')
           
           LINUX_SIG=""
           WIN_SIG=""
