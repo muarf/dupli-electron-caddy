@@ -79,3 +79,4 @@ app/brain/
 # Tauri downloader sidecars
 src-tauri/binaries/
 src-tauri/target/
+tauri-private.key
