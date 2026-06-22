@@ -396,7 +396,7 @@ jobs:
           mkdir -p updater
           cat <<EOF > updater/latest.json
           {
-            "version": "v$VERSION",
+            "version": "$VERSION",
             "notes": "Alpha release version $VERSION",
             "pub_date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
             "platforms": {
