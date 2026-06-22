@@ -209,23 +209,7 @@ fn main() {
     app.run(|app_handle, event| {
         if let tauri::RunEvent::Exit = event {
             log::info!("Fermeture de l'application — arrêt des serveurs sidecar...");
-            let state = app_handle.state::<server_manager::AppState>();
-
-            let mut caddy_guard = state.caddy_child.lock().unwrap();
-            if let Some(child) = caddy_guard.take() {
-                match child.kill() {
-                    Ok(_) => log::info!("Processus 'caddy' arrêté."),
-                    Err(e) => log::warn!("Impossible d'arrêter 'caddy': {e}"),
-                }
-            }
-
-            let mut php_guard = state.php_child.lock().unwrap();
-            if let Some(child) = php_guard.take() {
-                match child.kill() {
-                    Ok(_) => log::info!("Processus 'php' arrêté."),
-                    Err(e) => log::warn!("Impossible d'arrêter 'php': {e}"),
-                }
-            }
+            server_manager::stop_all_sidecars(app_handle);
         }
     });
 }

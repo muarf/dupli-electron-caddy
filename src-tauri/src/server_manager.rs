@@ -118,7 +118,7 @@ pub async fn launch_all_sidecars(app: &AppHandle) -> Result<(), String> {
 
 /// Arrête tous les processus sidecar proprement.
 /// Appelée depuis le hook `on_window_event` lors de la fermeture.
-pub async fn stop_all_sidecars(app: &AppHandle) {
+pub fn stop_all_sidecars(app: &AppHandle) {
     let state = app.state::<AppState>();
     kill_child(&state.caddy_child, "caddy");
     kill_child(&state.php_child, "php");
@@ -186,7 +186,7 @@ pub async fn restart_php(app: AppHandle) -> Result<String, String> {
 /// Arrête tous les serveurs (commande frontend)
 #[tauri::command]
 pub async fn stop_servers(app: AppHandle) -> Result<(), String> {
-    stop_all_sidecars(&app).await;
+    stop_all_sidecars(&app);
     Ok(())
 }
 
