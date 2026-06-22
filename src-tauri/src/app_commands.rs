@@ -155,8 +155,15 @@ pub fn restart_app() {
 }
 
 // =============================================================================
-// Mises à jour (Stubs — À implémenter avec tauri-plugin-updater)
+// Mises à jour (Mise en œuvre réelle avec tauri-plugin-updater)
 // =============================================================================
+
+use tauri_plugin_updater::UpdaterExt;
+use tauri::Emitter;
+
+pub struct UpdateState {
+    pub pending_update: std::sync::Mutex<Option<tauri_plugin_updater::Update>>,
+}
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -168,26 +175,113 @@ pub struct UpdateCheckResult {
 
 /// Vérifie si une mise à jour est disponible
 #[command]
-pub async fn check_for_updates() -> Result<UpdateCheckResult, String> {
+pub async fn check_for_updates(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UpdateState>,
+) -> Result<UpdateCheckResult, String> {
     log::info!("[app_commands] check_for_updates()");
-    // TODO : Intégrer tauri-plugin-updater quand l'endpoint de mise à jour sera configuré
-    Ok(UpdateCheckResult {
-        update_available: false,
-        version: None,
-        notes: None,
-    })
+    let updater = app.updater().map_err(|e| e.to_string())?;
+
+    match updater.check().await {
+        Ok(Some(update)) => {
+            let version = update.version.clone();
+            let body = update.body.clone();
+            log::info!("[app_commands] Update available: {}", version);
+
+            // Stocker la mise à jour disponible dans l'état global
+            *state.pending_update.lock().unwrap() = Some(update);
+
+            // Émettre l'événement vers le frontend
+            let _ = app.emit("update-available", serde_json::json!({
+                "version": version,
+                "notes": body
+            }));
+
+            Ok(UpdateCheckResult {
+                update_available: true,
+                version: Some(version),
+                notes: body,
+            })
+        }
+        Ok(None) => {
+            log::info!("[app_commands] No update available");
+            *state.pending_update.lock().unwrap() = None;
+            let _ = app.emit("update-not-available", ());
+            Ok(UpdateCheckResult {
+                update_available: false,
+                version: None,
+                notes: None,
+            })
+        }
+        Err(e) => {
+            let err_msg = format!("Failed to check for updates: {e}");
+            log::error!("[app_commands] {}", err_msg);
+            let _ = app.emit("update-error", serde_json::json!({ "message": err_msg }));
+            Err(err_msg)
+        }
+    }
 }
 
 /// Lance le téléchargement de la mise à jour
 #[command]
-pub async fn download_update() -> Result<(), String> {
-    log::warn!("[app_commands] download_update() : non encore implémenté (tauri-plugin-updater requis)");
-    Err("La mise à jour automatique n'est pas encore configurée dans cette version Tauri.".to_string())
+pub async fn download_update(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UpdateState>,
+) -> Result<(), String> {
+    log::info!("[app_commands] download_update()");
+    let mut pending_guard = state.pending_update.lock().unwrap();
+    let update = pending_guard.take().ok_or_else(|| "Aucune mise à jour disponible en attente de téléchargement.".to_string())?;
+
+    let app_clone = app.clone();
+    let version = update.version.clone();
+
+    // Variable partagée pour suivre le total transféré
+    let transferred = std::sync::Arc::new(std::sync::Mutex::new(0));
+
+    tauri::async_runtime::spawn(async move {
+        let transferred_clone = transferred.clone();
+        let app_emit_progress = app_clone.clone();
+
+        let res = update.download_and_install(
+            move |chunk_length, content_length| {
+                let mut t = transferred_clone.lock().unwrap();
+                *t += chunk_length;
+                let total = content_length.unwrap_or(*t as u64);
+                let percent = if total > 0 {
+                    (*t as f64 / total as f64) * 100.0
+                } else {
+                    0.0
+                };
+                let _ = app_emit_progress.emit("download-progress", serde_json::json!({
+                    "percent": percent,
+                    "transferred": *t,
+                    "total": total
+                }));
+            },
+            move || {
+                log::info!("[app_commands] Download finished.");
+            }
+        ).await;
+
+        match res {
+            Ok(_) => {
+                log::info!("[app_commands] Update downloaded and installed successfully.");
+                let _ = app_clone.emit("update-downloaded", serde_json::json!({ "version": version }));
+            }
+            Err(e) => {
+                let err_msg = format!("Failed to download and install update: {e}");
+                log::error!("[app_commands] {}", err_msg);
+                let _ = app_clone.emit("update-error", serde_json::json!({ "message": err_msg }));
+            }
+        }
+    });
+
+    Ok(())
 }
 
-/// Installe la mise à jour téléchargée
+/// Installe la mise à jour téléchargée (redémarre l'app)
 #[command]
-pub async fn install_update() -> Result<(), String> {
-    log::warn!("[app_commands] install_update() : non encore implémenté (tauri-plugin-updater requis)");
-    Err("L'installation de la mise à jour n'est pas encore configurée.".to_string())
+pub fn install_update() {
+    log::info!("[app_commands] install_update() : redémarrage pour appliquer la mise à jour");
+    tauri::process::restart(&tauri::Env::default());
 }

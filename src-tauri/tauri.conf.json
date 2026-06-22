@@ -31,11 +31,18 @@
     "externalBin": [
       "binaries/caddy",
       "binaries/php"
-    ]
+    ],
+    "createUpdaterArtifacts": true
   },
   "plugins": {
     "shell": {
       "open": true
+    },
+    "updater": {
+      "pubkey": "YOUR_PUBLIC_KEY_PLACEHOLDER",
+      "endpoints": [
+        "https://raw.githubusercontent.com/muarf/dupli-electron-caddy/alpha/updater/latest.json"
+      ]
     }
   }
 }
