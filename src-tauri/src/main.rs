@@ -13,6 +13,7 @@
 // Modules internes
 mod admin_checker;
 mod app_commands;
+mod menu;
 mod printer_commands;
 mod server_manager;
 mod windows_native;
@@ -85,6 +86,11 @@ fn main() {
         ])
         // --- Hook de démarrage ---
         .setup(|app| {
+            // Configuration du menu natif
+            let app_menu = menu::build_menu(app.handle())?;
+            app.set_menu(app_menu)?;
+            app.on_menu_event(menu::handle_menu_event);
+
             // 1. Enregistrement de l'état global des processus enfants
             app.manage(server_manager::AppState::new());
 
