@@ -1,7 +1,7 @@
 {
-  "version": "v2.0.85-alpha.20260622162950+4893d09",
-  "notes": "Alpha release version 2.0.85-alpha.20260622162950+4893d09",
-  "pub_date": "2026-06-22T16:44:41Z",
+  "version": "v2.0.86-alpha.20260622165703+dba6a78",
+  "notes": "Alpha release version 2.0.86-alpha.20260622165703+dba6a78",
+  "pub_date": "2026-06-22T17:12:15Z",
   "platforms": {
     "linux-x86_64": {
       "signature": "",
