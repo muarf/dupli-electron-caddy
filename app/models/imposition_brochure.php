@@ -228,6 +228,9 @@ function Action($conf)
             $crop_mark_width = floatval($_POST['crop_mark_width'] ?? 0.1);
             $resize_mode = $_POST['resize_mode'] ?? 'percent';
             $add_page_numbers_in_gutters = isset($_POST['add_page_numbers_in_gutters']);
+            $gutterNumOffsetX = isset($_POST['gutter_num_offset_x']) ? floatval($_POST['gutter_num_offset_x']) : 0.0;
+            $gutterNumOffsetY = isset($_POST['gutter_num_offset_y']) ? floatval($_POST['gutter_num_offset_y']) : -2.0;
+            $tete_beche = isset($_POST['tete_beche']);
             $outputFormat = $_POST['output_format'] ?? 'A3'; // Format de sortie (A3 ou A4)
 
             // Si on est en mode dimension cible, on ignore l'échelle %
@@ -253,6 +256,9 @@ function Action($conf)
                 'crop_mark_width' => $crop_mark_width,
                 'preview_mode' => $previewMode,
                 'add_page_numbers_in_gutters' => $add_page_numbers_in_gutters,
+                'gutter_num_offset_x' => $gutterNumOffsetX,
+                'gutter_num_offset_y' => $gutterNumOffsetY,
+                'tete_beche' => $tete_beche,
                 'output_format' => $outputFormat,
                 'addPageNumberCallback' => $previewMode ? function($pdf, $pageNo, $x, $y, $w, $h, $rotation) {
                     return addPageNumber($pdf, $pageNo, $x, $y, $w, $h, $rotation);

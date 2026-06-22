@@ -378,7 +378,10 @@ class ImpositionLeaflet
             if ($totalCols > 1) {
                 $availW = $sheetWidth - ($totalCols * $finalW);
                 $posGx = $availW / ($totalCols - 1);
-                if ($posGx > $cutGx) $posGx = $cutGx;
+                // En mode crop, on ne veut pas écarter les pages physiquement si on a de la place,
+                // car cela diminuerait le bleed (la coupe dans la page).
+                // On force max 0 pour que le bleed soit TOUJOURS de cutGx / 2.
+                if ($posGx > 0) $posGx = 0;
             } else {
                 $posGx = 0;
             }
@@ -387,7 +390,7 @@ class ImpositionLeaflet
             if ($totalRows > 1) {
                 $availH = $sheetHeight - ($totalRows * $finalH);
                 $posGy = $availH / ($totalRows - 1);
-                if ($posGy > $cutGy) $posGy = $cutGy;
+                if ($posGy > 0) $posGy = 0;
             } else {
                 $posGy = 0;
             }
@@ -618,45 +621,18 @@ class ImpositionLeaflet
         // Dimensions de la cellule de texte
         $cellWidth = 10; // mm
         $cellHeight = 4; // mm
+        $offsetX = isset($this->settings['gutter_num_offset_x']) ? (float)$this->settings['gutter_num_offset_x'] : 0;
+        $offsetY = isset($this->settings['gutter_num_offset_y']) ? (float)$this->settings['gutter_num_offset_y'] : -2;
+
+        $posX = $x + $offsetX;
+        $posY = $y + $offsetY;
         
-        // Distance depuis le bord de la gouttière : 1mm (à l'intérieur de la gouttière)
-        $offsetFromGutterEdge = 1; // mm
-        
-        // Calculer la position par rapport à la page individuelle et à la gouttière adjacente
-        // La gouttière est entre les pages, donc :
-        // - Pour une page de gauche : la gouttière est à droite, à x + w
-        // - Pour une page de droite : la gouttière est à gauche, à x
-        // - Pour une ligne du haut : la gouttière est en dessous, à y + h
-        // - Pour une ligne du bas : la gouttière est au-dessus, à y
-        
-        // Position X : par rapport à la gouttière verticale
-        if ($colIndex < $totalCols / 2) {
-            // Page de gauche : numéro dans la gouttière à droite de la page
-            // La gouttière commence à x + w, on place le numéro à 1mm à l'intérieur
-            $posX = $x + $w + $offsetFromGutterEdge - ($cellWidth / 2);
-        } else {
-            // Page de droite : numéro dans la gouttière à gauche de la page
-            // La gouttière se termine à x, on place le numéro à 1mm à l'intérieur (donc à x - 1mm)
-            $posX = $x - $offsetFromGutterEdge - ($cellWidth / 2);
-        }
-        
-        // Position Y : par rapport à la gouttière horizontale
-        if ($rowIndex == 0) {
-            // Ligne du haut : numéro dans la gouttière en dessous de la page
-            // La gouttière commence à y + h, on place le numéro à 1mm à l'intérieur
-            $posY = $y + $h + $offsetFromGutterEdge - ($cellHeight / 2);
-        } else {
-            // Ligne du bas : numéro dans la gouttière au-dessus de la page
-            // La gouttière se termine à y, on place le numéro à 1mm à l'intérieur (donc à y - 1mm)
-            $posY = $y - $offsetFromGutterEdge - ($cellHeight / 2);
-        }
-        
-        // Alignement centré
-        $align = 'C';
+        // Alignement par défaut à gauche (comme sur imposition_livre)
+        $align = 'L';
         
         // Pour les pages tournées (ligne 2), tourner le numéro à 180° (tête-bêche)
         if ($rotated) {
-            // Calculer le centre de rotation (centre géométrique de la cellule de texte)
+            // Calculer le centre de rotation
             $rotCenterX = $posX + ($cellWidth / 2);
             $rotCenterY = $posY + ($cellHeight / 2);
             

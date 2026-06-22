@@ -210,7 +210,7 @@
             </div>
             <div class="panel-row">
               <div class="panel-label">Long. (mm)</div>
-              <input type="number" class="panel-select" id="bro_crop_len" value="5" min="1" style="width:50px">
+              <input type="number" class="panel-select" id="bro_crop_len" value="5" min="1" style="width:100px">
             </div>
           </div>
           
@@ -281,13 +281,20 @@
         <div class="panel-section">
           <div class="panel-section-title">Gouttières (mm)</div>
           <div class="panel-row">
-            <div style="width:48%">
+            <div style="width:30%">
               <div class="panel-label" style="font-size:10px; margin-bottom:2px">Horizontale X</div>
               <input type="number" class="panel-select" id="liv_gutter_x" value="0" step="0.5" style="width:100%" placeholder="0">
             </div>
-            <div style="width:48%">
+            <div style="width:30%">
               <div class="panel-label" style="font-size:10px; margin-bottom:2px">Verticale Y</div>
               <input type="number" class="panel-select" id="liv_gutter_y" value="0" step="0.5" style="width:100%" placeholder="0">
+            </div>
+            <div style="width:35%">
+              <div class="panel-label" style="font-size:10px; margin-bottom:2px">Stratégie</div>
+              <select class="panel-select" id="liv_gutter_strategy" style="width:100%">
+                <option value="reduce">Réduire échelle</option>
+                <option value="crop">Rogner (Crop)</option>
+              </select>
             </div>
           </div>
         </div>
@@ -308,7 +315,7 @@
             </div>
             <div class="panel-row">
               <div class="panel-label">Longueur (mm)</div>
-              <input type="number" class="panel-select" id="liv_crop_len" value="5" min="1" style="width:60px">
+              <input type="number" class="panel-select" id="liv_crop_len" value="5" min="1" style="width:100px">
             </div>
           </div>
           
@@ -1280,7 +1287,11 @@ document.addEventListener('DOMContentLoaded', function() {
         gutter_strategy:$('bro_gutter_strategy').value,
         crop_marks:     $('bro_crop_marks').checked ? '1' : '0',
         crop_style:     $('bro_crop_style').value,
+        crop_mark_len:  $('bro_crop_len').value,
         add_page_numbers_in_gutters: $('bro_page_nums').checked ? '1' : '0',
+        gutter_num_offset_x: $('bro_folio_x').value,
+        gutter_num_offset_y: $('bro_folio_y').value,
+        tete_beche:     $('bro_tumble').checked ? '1' : '0',
       };
     } else if (activeTab === 'livre') {
       const resizeMode = document.querySelector('input[name="liv_resize_mode"]:checked')?.value || 'percent';
@@ -1294,6 +1305,7 @@ document.addEventListener('DOMContentLoaded', function() {
         target_height:  $('liv_target_h').value || '0',
         gutter_x:       $('liv_gutter_x').value,
         gutter_y:       $('liv_gutter_y').value,
+        gutter_strategy:$('liv_gutter_strategy').value,
         duplex:         '1',
         tete_beche:     $('liv_tete_beche').checked ? '1' : '0',
         crop_marks:     $('liv_crop_marks').checked ? '1' : '0',
