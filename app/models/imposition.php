@@ -330,8 +330,10 @@ class Imposition
                 $availW = $sheetWidth - ($totalCols * $finalW);
                 // Répartir l'espace disponible (qui peut être négatif)
                 $posGx = $availW / ($totalCols - 1);
-                // Ne pas écarter plus que demandé (si on a de la place)
-                if ($posGx > $cutGx) $posGx = $cutGx;
+                // En mode crop, on ne veut pas écarter les pages physiquement si on a de la place,
+                // car cela diminuerait le bleed (la coupe dans la page).
+                // On force max 0 pour que le bleed soit TOUJOURS de cutGx / 2.
+                if ($posGx > 0) $posGx = 0;
             } else {
                 $posGx = 0;
             }
@@ -340,7 +342,7 @@ class Imposition
             if ($totalRows > 1) {
                 $availH = $sheetHeight - ($totalRows * $finalH);
                 $posGy = $availH / ($totalRows - 1);
-                if ($posGy > $cutGy) $posGy = $cutGy;
+                if ($posGy > 0) $posGy = 0;
             } else {
                 $posGy = 0;
             }
