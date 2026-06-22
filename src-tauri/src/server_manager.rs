@@ -307,10 +307,22 @@ fn kill_child(child_ref: &Arc<Mutex<Option<CommandChild>>>, name: &str) {
         {
             let pid = child.pid();
             log::info!("Arrêt forcé du processus '{name}' (PID: {pid}) via taskkill...");
-            let _ = std::process::Command::new("taskkill")
+            let output = std::process::Command::new("taskkill")
                 .args(["/F", "/T", "/PID", &pid.to_string()])
                 .creation_flags(0x08000000) // CREATE_NO_WINDOW
                 .output();
+                
+            if let Ok(o) = output {
+                let stdout = String::from_utf8_lossy(&o.stdout);
+                let stderr = String::from_utf8_lossy(&o.stderr);
+                if o.status.success() {
+                    log::info!("taskkill réussi: {stdout}");
+                } else {
+                    log::warn!("taskkill a échoué: {stderr}");
+                }
+            } else if let Err(e) = output {
+                log::error!("Impossible d'exécuter taskkill: {e}");
+            }
         }
         
         match child.kill() {

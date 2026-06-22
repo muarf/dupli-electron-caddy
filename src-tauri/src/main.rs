@@ -207,9 +207,12 @@ fn main() {
         .expect("Erreur lors de la construction de l'application Tauri");
 
     app.run(|app_handle, event| {
-        if let tauri::RunEvent::Exit = event {
-            log::info!("Fermeture de l'application — arrêt des serveurs sidecar...");
-            server_manager::stop_all_sidecars(app_handle);
+        match event {
+            tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit => {
+                log::info!("Fermeture de l'application — arrêt des serveurs sidecar...");
+                server_manager::stop_all_sidecars(app_handle);
+            }
+            _ => {}
         }
     });
 }
