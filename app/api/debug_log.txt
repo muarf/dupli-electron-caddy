@@ -21083,3 +21083,140 @@ INIT: Printer='duplicopieur', Type='dupli'
 HEX: 6475706c69
 Check 'photocop': FALSE
 STAGING DUPLI: price=0.21, session=88
+[2026-05-14 09:34:53] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":251,"contact":"manu","document":"SCAN-0587_biff\u00e9.pdf","copies":1,"total_pages":251,"duplex":true,"color_mode":"Monochrome","paper_size":"9","fill_rate":0.08314718898371501,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/3\/page_0.png","timestamp":"2026-05-14T09:31:59.000Z","job_id":"3","internal_id":6950,"session_id":"95","simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DEBUG: pdo_connect called
+DEBUG: PDO connected OK
+DEBUG: Before beginTransaction
+DEBUG: After beginTransaction OK
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=126, price=1.89, session=95
+[2026-05-14 10:19:14] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":251,"contact":"manu","document":"SCAN-0587_biff\u00e9.pdf","copies":2,"total_pages":502,"duplex":true,"color_mode":"Color","paper_size":"9","fill_rate":0,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/5\/page_0.png","timestamp":"2026-05-14T09:57:05.000Z","job_id":"5","internal_id":6952,"session_id":"96","simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DEBUG: pdo_connect called
+DEBUG: PDO connected OK
+DEBUG: Before beginTransaction
+DEBUG: After beginTransaction OK
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=252, price=3.77, session=96
+[2026-06-14 14:50:48] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":70,"contact":"incontrol\u00e9s","document":"les_incontrol__s_de_la_colonne_de_fer_13_juin_bis_studio_livre.pdf","copies":1,"total_pages":70,"duplex":true,"color_mode":"Color","paper_size":"A3","fill_rate":0.036218857248647,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/2\/page_0.png","timestamp":"2026-06-14T10:08:04.000Z","job_id":"2","internal_id":7021,"session_id":"115","simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DEBUG: pdo_connect called
+DEBUG: PDO connected OK
+DEBUG: Before beginTransaction
+DEBUG: After beginTransaction OK
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=35, price=1.14, session=115
+[2026-06-14 14:50:52] [PAYLOAD] {"printerName":"duplicopieur","pages":35,"contact":"incontrol\u00e9s","document":"les_incontrol__s_de_la_colonne_de_fer_14_juin_IMPRESSION_studio_livre.pdf","copies":330,"total_pages":11550,"duplex":false,"color_mode":"Monochrome","paper_size":"A3","fill_rate":0.056824014134755,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/3\/page_0.png","timestamp":"2026-06-14T12:52:01.000Z","job_id":"3","internal_id":7022,"session_id":"115","simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DEBUG: pdo_connect called
+DEBUG: PDO connected OK
+DEBUG: Before beginTransaction
+DEBUG: After beginTransaction OK
+INIT: Printer='duplicopieur', Type='dupli'
+HEX: 6475706c69
+Check 'photocop': FALSE
+STAGING DUPLI: price=152.6, session=115
+[2026-06-14 16:01:56] [PAYLOAD] {"printerName":"duplicopieur","pages":36,"contact":"incontrol\u00e9s","document":"les_incontrol__s_de_la_colonne_de_fer_14_juin_IMPRESSION_studio_livre.pdf","copies":330,"total_pages":11880,"duplex":false,"color_mode":"Monochrome","paper_size":"A3","fill_rate":0.053864547031825,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/4\/page_0.png","timestamp":"2026-06-14T15:27:03.000Z","job_id":"4","internal_id":7023,"session_id":115,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DEBUG: pdo_connect called
+DEBUG: PDO connected OK
+DEBUG: Before beginTransaction
+DEBUG: After beginTransaction OK
+INIT: Printer='duplicopieur', Type='dupli'
+HEX: 6475706c69
+Check 'photocop': FALSE
+STAGING DUPLI: price=156.96, session=115
+[2026-06-20 15:41:39] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":40,"contact":"manu","document":"digest_2026_week_23.pdf","copies":1,"total_pages":40,"duplex":false,"color_mode":"Color","paper_size":"","fill_rate":0.05,"thumbnail_url":"\/thumbnails\/6\/page_0.png","timestamp":"2026-06-20T15:36:45.559Z","job_id":"6","internal_id":9,"session_id":1,"simulate":false}
+[2026-06-20 15:41:42] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":40,"contact":"manu","document":"digest_2026_week_23.pdf","copies":1,"total_pages":40,"duplex":false,"color_mode":"Color","paper_size":"","fill_rate":0.05,"thumbnail_url":"\/thumbnails\/5\/page_0.png","timestamp":"2026-06-20T15:27:23.145Z","job_id":"5","internal_id":8,"session_id":1,"simulate":false}
+[2026-06-20 15:42:19] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":40,"contact":"manu","document":"digest_2026_week_23.pdf","copies":1,"total_pages":40,"duplex":false,"color_mode":"Color","paper_size":"","fill_rate":0.05,"thumbnail_url":"\/thumbnails\/5\/page_0.png","timestamp":"2026-06-20T15:27:23.145Z","job_id":"5","internal_id":8,"session_id":1,"simulate":false}
+[2026-06-20 15:51:48] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":40,"contact":"manu","document":"digest_2026_week_23.pdf","copies":1,"total_pages":40,"duplex":false,"color_mode":"Color","paper_size":"","fill_rate":0.05,"thumbnail_url":"\/thumbnails\/5\/page_0.png","timestamp":"2026-06-20T15:27:23.145Z","job_id":"5","internal_id":8,"session_id":1,"simulate":false}
+[2026-06-20 15:52:33] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":40,"contact":"manu","document":"digest_2026_week_23.pdf","copies":1,"total_pages":40,"duplex":false,"color_mode":"Color","paper_size":"","fill_rate":0.05,"thumbnail_url":"\/thumbnails\/5\/page_0.png","timestamp":"2026-06-20T15:27:23.145Z","job_id":"5","internal_id":8,"session_id":1,"simulate":false}
+[ERROR] Session ID 1 FERMÉE.
+[2026-06-20 15:59:51] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":38,"contact":"manu","document":"digest_2026_week_22.pdf","copies":1,"total_pages":38,"duplex":true,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0.063099557717821,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/2\/page_0.png","timestamp":"2026-06-20T09:53:32.000Z","job_id":"2","internal_id":7041,"session_id":"116","simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DEBUG: pdo_connect called
+DEBUG: PDO connected OK
+DEBUG: Before beginTransaction
+DEBUG: After beginTransaction OK
+[INFO] Ancien job (145.15083333333 h) supprimé pour ID recyclé
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=19, price=0.29, session=116
+[2026-06-20 15:59:53] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":38,"contact":"manu","document":"digest_2026_week_22.pdf","copies":1,"total_pages":38,"duplex":true,"color_mode":"Color","paper_size":"A3","fill_rate":0.036218857248647,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/2\/page_0.png","timestamp":"2026-06-14T10:08:04.000Z","job_id":"2","internal_id":7021,"session_id":"116","simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DEBUG: pdo_connect called
+DEBUG: PDO connected OK
+DEBUG: Before beginTransaction
+DEBUG: After beginTransaction OK
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=19, price=0.62, session=116
+[2026-06-20 15:59:56] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":38,"contact":"manu","document":"digest_2026_week_22.pdf","copies":1,"total_pages":38,"duplex":true,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0.063099557717821,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/2\/page_0.png","timestamp":"2026-06-20T09:53:32.000Z","job_id":"2","internal_id":7041,"session_id":"116","simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DEBUG: pdo_connect called
+DEBUG: PDO connected OK
+DEBUG: Before beginTransaction
+DEBUG: After beginTransaction OK
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=19, price=0.29, session=116
+[2026-06-20 16:08:09] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":70,"contact":"manu","document":"les_incontrol__s_de_la_colonne_de_fer_14_juin_IMPRESSION_studio_livre.pdf","copies":1,"total_pages":70,"duplex":true,"color_mode":"Color","paper_size":"A3","fill_rate":0,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/7\/page_0.png","timestamp":"2026-06-15T08:17:34.000Z","job_id":"7","internal_id":7035,"session_id":116,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DEBUG: pdo_connect called
+DEBUG: PDO connected OK
+DEBUG: Before beginTransaction
+DEBUG: After beginTransaction OK
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=35, price=1.05, session=116
+[2026-06-20 16:08:11] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":70,"contact":"manu","document":"les_incontrol__s_de_la_colonne_de_fer_14_juin_IMPRESSION_studio_livre.pdf","copies":1,"total_pages":70,"duplex":false,"color_mode":"Color","paper_size":"","fill_rate":0.05,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/7\/page_0.png","timestamp":"2026-06-20T16:01:14.020Z","job_id":"7","internal_id":7042,"session_id":116,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DEBUG: pdo_connect called
+DEBUG: PDO connected OK
+DEBUG: Before beginTransaction
+DEBUG: After beginTransaction OK
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=70, price=0.76, session=116
+[2026-06-20 16:08:14] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":70,"contact":"manu","document":"les_incontrol__s_de_la_colonne_de_fer_14_juin_IMPRESSION_studio_livre.pdf","copies":1,"total_pages":70,"duplex":true,"color_mode":"Color","paper_size":"A3","fill_rate":0,"thumbnail_url":"http:\/\/127.0.0.1:8001\/thumbnails\/7\/page_0.png","timestamp":"2026-06-15T08:17:34.000Z","job_id":"7","internal_id":7035,"session_id":116,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DEBUG: pdo_connect called
+DEBUG: PDO connected OK
+DEBUG: Before beginTransaction
+DEBUG: After beginTransaction OK
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=35, price=1.05, session=116
+[2026-06-20 16:51:31] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":16,"contact":"manu","document":"digest_2026_week_24.pdf","copies":1,"total_pages":16,"duplex":true,"color_mode":"Color","paper_size":"A4","fill_rate":0.05,"thumbnail_url":"","timestamp":"2026-06-20T16:50:21.454Z","job_id":"11","internal_id":7046,"session_id":116,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DEBUG: pdo_connect called
+DEBUG: PDO connected OK
+DEBUG: Before beginTransaction
+DEBUG: After beginTransaction OK
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=8, price=0.13, session=116
+[2026-06-20 17:06:38] [PAYLOAD] {"printerName":"RISO ComColor FW5230","pages":16,"contact":"manu","document":"digest_2026_week_24.pdf","copies":1,"total_pages":16,"duplex":true,"color_mode":"Monochrome","paper_size":"A4","fill_rate":0.058558033088232,"thumbnail_url":"\/thumbnails\/12\/page_0.png?t=1781975173236","timestamp":"2026-06-20T17:00:18.367Z","job_id":"12","internal_id":7047,"session_id":116,"simulate":false}
+KEYS FOUND: system_printer_name, machine_type, machine_id, created_at, updated_at
+DEBUG: pdo_connect called
+DEBUG: PDO connected OK
+DEBUG: Before beginTransaction
+DEBUG: After beginTransaction OK
+INIT: Printer='RISO ComColor FW5230', Type='photocop'
+HEX: 70686f746f636f70
+Check 'photocop': TRUE
+STAGING: nb_f=8, price=0.12, session=116
