@@ -218,6 +218,13 @@
             <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_page_nums"> Numéros de pages</label>
           </div>
           <div id="bro_folio_settings" style="display:none; padding-left:10px; border-left:2px solid var(--studio-border); margin-top:5px; margin-bottom:10px">
+             <div class="panel-row" id="bro_folio_position_row" style="margin-top:5px; margin-bottom:5px;">
+               <div class="panel-label">Position auto</div>
+               <select class="panel-select" id="bro_folio_position" style="font-size:10px">
+                 <option value="margins" selected>Marges (Extérieur)</option>
+                 <option value="gutters">Tranches (Intérieur)</option>
+               </select>
+             </div>
              <div class="panel-row" style="margin-top:5px; margin-bottom:5px;">
                <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_page_nums_manual"> Décalage manuel</label>
              </div>
@@ -334,6 +341,13 @@
             <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_page_nums"> Numéros de pages</label>
           </div>
           <div id="liv_folio_settings" style="display:none; padding-left:10px; border-left:2px solid var(--studio-border); margin-top:5px; margin-bottom:10px">
+             <div class="panel-row" id="liv_folio_position_row" style="margin-top:5px; margin-bottom:5px;">
+               <div class="panel-label">Position auto</div>
+               <select class="panel-select" id="liv_folio_position" style="font-size:10px">
+                 <option value="margins" selected>Marges (Extérieur)</option>
+                 <option value="gutters">Tranches (Intérieur)</option>
+               </select>
+             </div>
              <div class="panel-row" style="margin-top:5px; margin-bottom:5px;">
                <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_page_nums_manual"> Décalage manuel</label>
              </div>
@@ -1305,6 +1319,7 @@ document.addEventListener('DOMContentLoaded', function() {
         crop_style:     $('bro_crop_style').value,
         crop_mark_len:  $('bro_crop_len').value,
         add_page_numbers_in_gutters: $('bro_page_nums').checked ? '1' : '0',
+        add_page_numbers_position: $('bro_folio_position').value,
         add_page_numbers_manual_offset: $('bro_page_nums_manual').checked ? '1' : '0',
         gutter_num_offset_x: $('bro_folio_x').value,
         gutter_num_offset_y: $('bro_folio_y').value,
@@ -1329,6 +1344,7 @@ document.addEventListener('DOMContentLoaded', function() {
         crop_style:     $('liv_crop_style').value,
         crop_mark_len:  $('liv_crop_len').value,
         add_page_numbers_in_gutters: $('liv_page_nums').checked ? '1' : '0',
+        add_page_numbers_position: $('liv_folio_position').value,
         add_page_numbers_manual_offset: $('liv_page_nums_manual').checked ? '1' : '0',
         gutter_num_offset_x: $('liv_folio_x').value,
         gutter_num_offset_y: $('liv_folio_y').value,
@@ -1630,6 +1646,8 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   $('bro_page_nums_manual').addEventListener('change', e => {
     $('bro_folio_manual_settings').style.display = e.target.checked ? 'block' : 'none';
+    $('bro_folio_position_row').style.display = e.target.checked ? 'none' : '';
+    $('bro_folio_position').addEventListener('change', requestStudioPreview);
     requestStudioPreview();
   });
 
@@ -1648,6 +1666,8 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   $('liv_page_nums_manual').addEventListener('change', e => {
     $('liv_folio_manual_settings').style.display = e.target.checked ? 'block' : 'none';
+    $('liv_folio_position_row').style.display = e.target.checked ? 'none' : '';
+    $('liv_folio_position').addEventListener('change', requestStudioPreview);
     requestStudioPreview();
   });
 
