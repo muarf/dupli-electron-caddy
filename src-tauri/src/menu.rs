@@ -67,6 +67,7 @@ pub fn handle_menu_event(app_handle: &AppHandle, event: tauri::menu::MenuEvent) 
             });
         }
         "devtools" => {
+            #[cfg(debug_assertions)]
             if let Some(window) = app_handle.get_webview_window("main") {
                 if window.is_devtools_open() {
                     window.close_devtools();
