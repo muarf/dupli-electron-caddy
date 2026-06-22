@@ -288,6 +288,9 @@ if ($action === 'impose') {
             'crop_mark_width'             => floatval($_POST['crop_mark_width'] ?? 0.1),
             'preview_mode'                => false,
             'add_page_numbers_in_gutters' => ($_POST['add_page_numbers_in_gutters'] ?? '0') === '1',
+            'gutter_num_offset_x'         => floatval($_POST['gutter_num_offset_x'] ?? 0.0),
+            'gutter_num_offset_y'         => floatval($_POST['gutter_num_offset_y'] ?? -2.0),
+            'tete_beche'                  => ($_POST['tete_beche'] ?? '0') === '1',
             'output_format'               => $_POST['output_format'] ?? 'A3',
             'addPageNumberCallback'        => null,
         ];
