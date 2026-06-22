@@ -184,7 +184,7 @@ jobs:
 
   build-linux-beta:
     needs: [get-version, create-beta-release]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout code
@@ -235,7 +235,7 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
-          shared-key: ${{ runner.os }}-v2
+          shared-key: ${{ runner.os }}-v3
 
       - name: Download Tauri Sidecars
         run: node scripts/download-tauri-sidecars.js
