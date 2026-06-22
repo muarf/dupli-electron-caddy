@@ -431,22 +431,18 @@ class ImpositionLeaflet
             $this->addPageNumberInGutter($pageNo, $x, $y, $finalW, $finalH, $colIndex, $rowIndex, $totalCols, $totalRows, $cutGx, $cutGy, $globalStartX, $globalStartY, $rotated, $sheetWidth, $sheetHeight);
         }
 
-        // CORRECTION : Dessiner les crop marks individuels pour tous les styles
+        // Dessiner les crop marks individuels pour tous les styles
         // (les crop marks de style sont dessinés dans renderSheetSide)
         if ($this->settings['crop_marks']) {
             // Dessiner les traits individuels SEULEMENT pour le style standard
             // Pour les styles spreads et booklet, seuls les traits de style sont dessinés
             if ($this->settings['crop_style'] === 'standard') {
-                // Calculer le bleed selon la stratégie
-                if ($this->settings['gutter_strategy'] === 'crop') {
-                    // En mode CROP, les crop marks doivent être aux bords réels de la page
-                    $bleedX = 0;
-                    $bleedY = 0;
-                } else {
-                    // Mode REDUCE : calculer le bleed normal
-                    $bleedX = ($cutGx - $posGx) / 2;
-                    $bleedY = ($cutGy - $posGy) / 2;
-                }
+                // bleed = (gouttière demandée - gouttière physique) / 2
+                // - Mode REDUCE : posGx = cutGx -> bleed = 0 -> traits aux bords exacts
+                // - Mode CROP   : posGx < cutGx -> bleed > 0 -> traits rentrent dans la page
+                //   Exemple : cutGx=10mm, posGx=0 -> bleed=5mm -> trait à 5mm du bord intérieur
+                $bleedX = ($cutGx - $posGx) / 2;
+                $bleedY = ($cutGy - $posGy) / 2;
                 
                 // Dessiner les crop marks individuels pour chaque page
                 $this->drawIndividualCropMarks($x, $y, $finalW, $finalH, $bleedX, $bleedY);
@@ -454,25 +450,41 @@ class ImpositionLeaflet
         }
     }
     
-    private function drawIndividualCropMarks($x, $y, $w, $h)
+    /**
+     * Dessine les traits de coupe aux 4 coins d'une page individuelle.
+     *
+     * Le bleedX/bleedY représente combien on entre dans la page depuis chaque bord.
+     * Formule : bleedX = (cutGx - posGx) / 2
+     * - Mode REDUCE : posGx = cutGx -> bleedX = 0 -> traits aux bords exacts
+     * - Mode CROP   : posGx=0, cutGx=10 -> bleedX=5 -> traits à 5mm du bord intérieur
+     *
+     * Même logique que drawSmartCropMarks() dans imposition.php.
+     */
+    private function drawIndividualCropMarks($x, $y, $w, $h, $bleedX = 0, $bleedY = 0)
     {
         $len = $this->settings['crop_mark_len'];
         $this->pdf->SetLineWidth($this->settings['crop_mark_width']);
         $this->pdf->SetDrawColor(0, 0, 0);
-        $offset = 1;
+        $offset = 1; // espace entre le trait de coupe et la limite de la page
+
+        // Position des lignes de coupe : à l'intérieur de la page (dans la zone fond perdu)
+        $cutX1 = $x + $bleedX;      // ligne de coupe gauche
+        $cutX2 = $x + $w - $bleedX; // ligne de coupe droite
+        $cutY1 = $y + $bleedY;      // ligne de coupe haute
+        $cutY2 = $y + $h - $bleedY; // ligne de coupe basse
 
         // TL
-        $this->pdf->Line($x - $offset - $len, $y, $x - $offset, $y);
-        $this->pdf->Line($x, $y - $offset - $len, $x, $y - $offset);
+        $this->pdf->Line($cutX1 - $offset - $len, $cutY1, $cutX1 - $offset, $cutY1);
+        $this->pdf->Line($cutX1, $cutY1 - $offset - $len, $cutX1, $cutY1 - $offset);
         // TR
-        $this->pdf->Line($x + $w + $offset, $y, $x + $w + $offset + $len, $y);
-        $this->pdf->Line($x + $w, $y - $offset - $len, $x + $w, $y - $offset);
+        $this->pdf->Line($cutX2 + $offset, $cutY1, $cutX2 + $offset + $len, $cutY1);
+        $this->pdf->Line($cutX2, $cutY1 - $offset - $len, $cutX2, $cutY1 - $offset);
         // BL
-        $this->pdf->Line($x - $offset - $len, $y + $h, $x - $offset, $y + $h);
-        $this->pdf->Line($x, $y + $h + $offset, $x, $y + $h + $offset + $len);
+        $this->pdf->Line($cutX1 - $offset - $len, $cutY2, $cutX1 - $offset, $cutY2);
+        $this->pdf->Line($cutX1, $cutY2 + $offset, $cutX1, $cutY2 + $offset + $len);
         // BR
-        $this->pdf->Line($x + $w + $offset, $y + $h, $x + $w + $offset + $len, $y + $h);
-        $this->pdf->Line($x + $w, $y + $h + $offset, $x + $w, $y + $h + $offset + $len);
+        $this->pdf->Line($cutX2 + $offset, $cutY2, $cutX2 + $offset + $len, $cutY2);
+        $this->pdf->Line($cutX2, $cutY2 + $offset, $cutX2, $cutY2 + $offset + $len);
     }
 
     private function drawRowCropMarks($rowIndex, $cols, $rows, $sheetWidth, $sheetHeight, $metrics)
