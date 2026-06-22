@@ -258,17 +258,13 @@ class ImpositionLeaflet
             $finalH = $rawH;
             
             if ($totalCols > 1) {
-                $availW = $sheetWidth - ($totalCols * $finalW);
-                $posGx = $availW / ($totalCols - 1);
-                if ($posGx > $cutGx) $posGx = $cutGx;
+                $posGx = 0; // Les pages se touchent exactement
             } else {
                 $posGx = 0;
             }
             
             if ($totalRows > 1) {
-                $availH = $sheetHeight - ($totalRows * $finalH);
-                $posGy = $availH / ($totalRows - 1);
-                if ($posGy > $cutGy) $posGy = $cutGy;
+                $posGy = 0; // Les pages se touchent exactement
             } else {
                 $posGy = 0;
             }
@@ -376,21 +372,14 @@ class ImpositionLeaflet
             
             // Calcul espacement X
             if ($totalCols > 1) {
-                $availW = $sheetWidth - ($totalCols * $finalW);
-                $posGx = $availW / ($totalCols - 1);
-                // En mode crop, on ne veut pas écarter les pages physiquement si on a de la place,
-                // car cela diminuerait le bleed (la coupe dans la page).
-                // On force max 0 pour que le bleed soit TOUJOURS de cutGx / 2.
-                if ($posGx > 0) $posGx = 0;
+                $posGx = 0; // Les pages se touchent exactement
             } else {
                 $posGx = 0;
             }
             
             // Calcul espacement Y
             if ($totalRows > 1) {
-                $availH = $sheetHeight - ($totalRows * $finalH);
-                $posGy = $availH / ($totalRows - 1);
-                if ($posGy > 0) $posGy = 0;
+                $posGy = 0; // Les pages se touchent exactement
             } else {
                 $posGy = 0;
             }
@@ -540,10 +529,16 @@ class ImpositionLeaflet
             $this->pdf->SetLineWidth($this->settings['crop_mark_width']);
             $this->pdf->SetDrawColor(0, 0, 0);
             
-            // Trait horizontal à gauche : à l'intérieur du bord gauche (pas de marge)
-            $this->pdf->Line($blockStartX, $separatorY, $blockStartX + $len, $separatorY);
-            // Trait horizontal à droite : à l'intérieur du bord droit
-            $this->pdf->Line($blockStartX + $blockW - $len, $separatorY, $blockStartX + $blockW, $separatorY);
+            $cutGx = floatval($this->settings['gutter_x']);
+            $bleedX = ($cutGx - $posGx) / 2;
+
+            $bx = $blockStartX + $bleedX;
+            $bw = $blockW - (2 * $bleedX);
+
+            // Trait horizontal à gauche : à l'intérieur du bord gauche croppé
+            $this->pdf->Line($bx, $separatorY, $bx + $len, $separatorY);
+            // Trait horizontal à droite : à l'intérieur du bord droit croppé
+            $this->pdf->Line($bx + $bw - $len, $separatorY, $bx + $bw, $separatorY);
         }
     }
 
@@ -672,10 +667,15 @@ class ImpositionLeaflet
         $this->pdf->SetDrawColor(0, 0, 0);
         $offset = 1;
         
-        $bx = $blockStartX;
-        $by = $blockY;
-        $bw = $blockW;
-        $bh = $blockH;
+        $cutGx = floatval($this->settings['gutter_x']);
+        $cutGy = floatval($this->settings['gutter_y']);
+        $bleedX = ($cutGx - $posGx) / 2;
+        $bleedY = ($cutGy - $posGy) / 2;
+
+        $bx = $blockStartX + $bleedX;
+        $by = $blockY + $bleedY;
+        $bw = $blockW - (2 * $bleedX);
+        $bh = $blockH - (2 * $bleedY);
 
         // TL
         $this->pdf->Line($bx - $offset - $len, $by, $bx - $offset, $by);
