@@ -14,6 +14,9 @@ use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 use tauri_plugin_shell::ShellExt;
 use serde::Serialize;
 
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
 // =============================================================================
 // Types et structures
 // =============================================================================
@@ -300,9 +303,19 @@ async fn pipe_logs_to_frontend(
 fn kill_child(child_ref: &Arc<Mutex<Option<CommandChild>>>, name: &str) {
     let mut guard = child_ref.lock().unwrap();
     if let Some(child) = guard.take() {
+        #[cfg(target_os = "windows")]
+        {
+            let pid = child.pid();
+            log::info!("Arrêt forcé du processus '{name}' (PID: {pid}) via taskkill...");
+            let _ = std::process::Command::new("taskkill")
+                .args(["/F", "/T", "/PID", &pid.to_string()])
+                .creation_flags(0x08000000) // CREATE_NO_WINDOW
+                .output();
+        }
+        
         match child.kill() {
             Ok(_) => log::info!("Processus '{name}' arrêté proprement."),
-            Err(e) => log::warn!("Impossible d'arrêter '{name}': {e}"),
+            Err(e) => log::warn!("Impossible d'arrêter '{name}' via Tauri: {e}"),
         }
     }
 }
