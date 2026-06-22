@@ -46,6 +46,7 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         // --- Commandes exposées au frontend ---
         .invoke_handler(tauri::generate_handler![
             // Gestion de l'application et des fichiers
@@ -86,6 +87,11 @@ fn main() {
         .setup(|app| {
             // 1. Enregistrement de l'état global des processus enfants
             app.manage(server_manager::AppState::new());
+
+            // 1b. Enregistrement de l'état global des mises à jour
+            app.manage(app_commands::UpdateState {
+                pending_update: std::sync::Mutex::new(None),
+            });
 
             // 2. Enregistrement de l'état du moniteur d'impression
             let monitor_state = printer_commands::PrintMonitorState::new();

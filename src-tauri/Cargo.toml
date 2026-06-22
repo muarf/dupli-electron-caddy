@@ -39,6 +39,7 @@ tauri-plugin-shell = "2"   # Pour lancer les Sidecars (Caddy, PHP)
 tauri-plugin-dialog = "2"  # Boîtes de dialogue natives (open/save)
 tauri-plugin-fs = "2"      # Accès au système de fichiers
 tauri-plugin-process = "2" # Redémarrage de l'application
+tauri-plugin-updater = "2" # Pour les mises à jour automatiques
 
 # Sérialisation / Désérialisation
 serde = { version = "1", features = ["derive"] }
