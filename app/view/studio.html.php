@@ -220,11 +220,11 @@
           <div id="bro_folio_settings" style="display:none; padding-left:10px; border-left:2px solid var(--studio-border); margin-top:5px">
              <div class="panel-row">
                <div class="panel-label">Offset X</div>
-               <input type="number" class="panel-select" id="bro_folio_x" value="0" step="0.5" style="width:50px">
+                <input type="number" class="panel-select" id="bro_folio_x" value="0" step="0.5" style="width:100px">
              </div>
              <div class="panel-row">
                <div class="panel-label">Offset Y</div>
-               <input type="number" class="panel-select" id="bro_folio_y" value="-2" step="0.5" style="width:50px">
+                <input type="number" class="panel-select" id="bro_folio_y" value="-2" step="0.5" style="width:100px">
              </div>
           </div>
 
@@ -318,14 +318,14 @@
           <div id="liv_folio_settings" style="display:none; padding-left:10px; border-left:2px solid var(--studio-border); margin-top:5px; margin-bottom:10px">
              <div class="panel-row">
                <div class="panel-label">Décalage X (mm)</div>
-               <input type="number" class="panel-select" id="liv_folio_x" value="0" step="0.5" style="width:60px">
+                <input type="number" class="panel-select" id="liv_folio_x" value="0" step="0.5" style="width:100px">
              </div>
              <div style="font-size:9px; color:var(--studio-text-muted); margin-bottom:6px; margin-top:-2px">
                Positif = vers la droite, Négatif = vers la gauche
              </div>
              <div class="panel-row">
                <div class="panel-label">Décalage Y (mm)</div>
-               <input type="number" class="panel-select" id="liv_folio_y" value="-2" step="0.5" style="width:60px">
+                <input type="number" class="panel-select" id="liv_folio_y" value="-2" step="0.5" style="width:100px">
              </div>
              <div style="font-size:9px; color:var(--studio-text-muted); margin-bottom:6px; margin-top:-2px">
                Pour remonter au dessus du trait, mettre négatif (ex: -2)
