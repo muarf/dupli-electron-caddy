@@ -20,13 +20,7 @@ file_put_contents($lockFile, time());
 $jobId = 'maint_' . uniqid();
 
 // Déterminer le chemin vers PHP
-$phpPath = 'php';
-if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-    $localPhpPath = __DIR__ . '/../../php/php.exe';
-    if (file_exists($localPhpPath)) {
-        $phpPath = realpath($localPhpPath);
-    }
-}
+$phpPath = (defined('PHP_BINARY') && PHP_BINARY) ? PHP_BINARY : 'php';
 
 $scriptPath = realpath(__DIR__ . '/../maintenance/background_indexer.php');
 
