@@ -244,7 +244,7 @@ if (!is_dir($outputDir)) {
 }
 
 // URL de base pour les thumbnails
-$baseUrl = 'http://127.0.0.1:8001/thumbnails/' . $jobId . '/';
+$baseUrl = '/thumbnails/' . $jobId . '/';
 
 // Extraire chaque EMF vers un fichier temporaire et convertir
 $generatedPages = [];
