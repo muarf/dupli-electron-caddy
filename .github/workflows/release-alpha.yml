@@ -185,7 +185,7 @@ jobs:
 
   build-linux-alpha:
     needs: [get-version, create-alpha-release]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout code
@@ -240,7 +240,9 @@ jobs:
             librsvg2-dev \
             libjavascriptcoregtk-4.1-dev \
             libsoup-3.0-dev \
-            libfuse2
+            libfuse2 \
+            ghostscript \
+            libgs-dev
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -249,7 +251,7 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
-          shared-key: ${{ runner.os }}-v2
+          shared-key: ${{ runner.os }}-v3
 
       - name: Download Tauri Sidecars
         run: node scripts/download-tauri-sidecars.js

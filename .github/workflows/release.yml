@@ -124,7 +124,7 @@ jobs:
 
   build-linux:
     needs: [get-tag, create-release]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
@@ -216,7 +216,7 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
-          shared-key: ${{ runner.os }}-v2
+          shared-key: ${{ runner.os }}-v3
 
       - name: Build Tauri Linux
         run: APPIMAGE_EXTRACT_AND_RUN=1 npx @tauri-apps/cli build --verbose
