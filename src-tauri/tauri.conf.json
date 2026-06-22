@@ -39,7 +39,7 @@
       "open": true
     },
     "updater": {
-      "pubkey": "YOUR_PUBLIC_KEY_PLACEHOLDER",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUwRDQxOEYwNDFDQTMzNEEKUldSS004cEI4QmpVVUJJV3lWeDlBWVF0VWp3b05CTFBNUXFETnRFa0FPcTlwZ3dYTjdQakxQZmUK",
       "endpoints": [
         "https://raw.githubusercontent.com/muarf/dupli-electron-caddy/alpha/updater/latest.json"
       ]
