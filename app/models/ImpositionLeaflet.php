@@ -177,7 +177,7 @@ class ImpositionLeaflet
             $rotated = $rowData['rotated'];
 
             foreach ($pages as $cIndex => $pageNo) {
-                if ($pageNo > $this->pageCount) continue; // Blank page
+                // We no longer skip blank pages so that crop marks and numbers are drawn.
 
                 $this->placePage($pageNo, $cIndex, $rIndex, $cols, $rows, $sheetWidth, $sheetHeight, $rotated);
             }
@@ -258,17 +258,13 @@ class ImpositionLeaflet
             $finalH = $rawH;
             
             if ($totalCols > 1) {
-                $availW = $sheetWidth - ($totalCols * $finalW);
-                $posGx = $availW / ($totalCols - 1);
-                if ($posGx > $cutGx) $posGx = $cutGx;
+                $posGx = 0; // Les pages se touchent exactement
             } else {
                 $posGx = 0;
             }
             
             if ($totalRows > 1) {
-                $availH = $sheetHeight - ($totalRows * $finalH);
-                $posGy = $availH / ($totalRows - 1);
-                if ($posGy > $cutGy) $posGy = $cutGy;
+                $posGy = 0; // Les pages se touchent exactement
             } else {
                 $posGy = 0;
             }
@@ -293,17 +289,29 @@ class ImpositionLeaflet
 
     private function placePage($pageNo, $colIndex, $rowIndex, $totalCols, $totalRows, $sheetWidth, $sheetHeight, $rotated)
     {
-        try {
-            $tplIdx = $this->pdf->importPage($pageNo);
-            $previewTplIdx = null;
-            if ($this->previewPdf) {
-                $previewTplIdx = $this->previewPdf->importPage($pageNo);
+        $isBlank = ($pageNo > $this->pageCount);
+        $tplIdx = null;
+        $previewTplIdx = null;
+
+        if (!$isBlank) {
+            try {
+                $tplIdx = $this->pdf->importPage($pageNo);
+                if ($this->previewPdf) {
+                    $previewTplIdx = $this->previewPdf->importPage($pageNo);
+                }
+            } catch (\Exception $e) {
+                return;
             }
-        } catch (\Exception $e) {
-            return;
+            $size = $this->pdf->getTemplateSize($tplIdx);
+        } else {
+            // It's a blank page, use the dimensions of the first page as reference
+            try {
+                $refTplIdx = $this->pdf->importPage(1);
+                $size = $this->pdf->getTemplateSize($refTplIdx);
+            } catch (\Exception $e) {
+                $size = ['width' => 210, 'height' => 297]; // Fallback to A4
+            }
         }
-        
-        $size = $this->pdf->getTemplateSize($tplIdx);
         
         // --- CALCUL DES MÉTRIQUES ---
         $scaleFactor = 1;
@@ -364,18 +372,14 @@ class ImpositionLeaflet
             
             // Calcul espacement X
             if ($totalCols > 1) {
-                $availW = $sheetWidth - ($totalCols * $finalW);
-                $posGx = $availW / ($totalCols - 1);
-                if ($posGx > $cutGx) $posGx = $cutGx;
+                $posGx = 0; // Les pages se touchent exactement
             } else {
                 $posGx = 0;
             }
             
             // Calcul espacement Y
             if ($totalRows > 1) {
-                $availH = $sheetHeight - ($totalRows * $finalH);
-                $posGy = $availH / ($totalRows - 1);
-                if ($posGy > $cutGy) $posGy = $cutGy;
+                $posGy = 0; // Les pages se touchent exactement
             } else {
                 $posGy = 0;
             }
@@ -394,33 +398,37 @@ class ImpositionLeaflet
         $rotation = $rotated ? 180 : 0;
 
         // Place page in final PDF
-        if ($rotated) {
-            $centerX = $x + ($finalW / 2);
-            $centerY = $y + ($finalH / 2);
-            
-            $this->pdf->StartTransform();
-            $this->pdf->Rotate(180, $centerX, $centerY);
-            $this->pdf->useTemplate($tplIdx, $x, $y, $finalW, $finalH);
-            $this->pdf->StopTransform();
-        } else {
-            $this->pdf->useTemplate($tplIdx, $x, $y, $finalW, $finalH);
-        }
-
-        // Place page in preview PDF
-        if ($this->previewPdf && $previewTplIdx) {
+        if (!$isBlank) {
             if ($rotated) {
                 $centerX = $x + ($finalW / 2);
                 $centerY = $y + ($finalH / 2);
                 
-                $this->previewPdf->StartTransform();
-                $this->previewPdf->Rotate(180, $centerX, $centerY);
-                $this->previewPdf->useTemplate($previewTplIdx, $x, $y, $finalW, $finalH);
-                $this->previewPdf->StopTransform();
+                $this->pdf->StartTransform();
+                $this->pdf->Rotate(180, $centerX, $centerY);
+                $this->pdf->useTemplate($tplIdx, $x, $y, $finalW, $finalH);
+                $this->pdf->StopTransform();
             } else {
-                $this->previewPdf->useTemplate($previewTplIdx, $x, $y, $finalW, $finalH);
+                $this->pdf->useTemplate($tplIdx, $x, $y, $finalW, $finalH);
+            }
+        }
+
+        // Place page in preview PDF
+        if ($this->previewPdf) {
+            if (!$isBlank && $previewTplIdx) {
+                if ($rotated) {
+                    $centerX = $x + ($finalW / 2);
+                    $centerY = $y + ($finalH / 2);
+                    
+                    $this->previewPdf->StartTransform();
+                    $this->previewPdf->Rotate(180, $centerX, $centerY);
+                    $this->previewPdf->useTemplate($previewTplIdx, $x, $y, $finalW, $finalH);
+                    $this->previewPdf->StopTransform();
+                } else {
+                    $this->previewPdf->useTemplate($previewTplIdx, $x, $y, $finalW, $finalH);
+                }
             }
 
-            // Add page number to preview if callback is provided
+            // Add page number to preview if callback is provided (even for blank pages)
             if ($this->settings['addPageNumberCallback'] && is_callable($this->settings['addPageNumberCallback'])) {
                 call_user_func($this->settings['addPageNumberCallback'], $this->previewPdf, $pageNo, $x, $y, $finalW, $finalH, $rotation);
             }
@@ -521,10 +529,16 @@ class ImpositionLeaflet
             $this->pdf->SetLineWidth($this->settings['crop_mark_width']);
             $this->pdf->SetDrawColor(0, 0, 0);
             
-            // Trait horizontal à gauche : à l'intérieur du bord gauche (pas de marge)
-            $this->pdf->Line($blockStartX, $separatorY, $blockStartX + $len, $separatorY);
-            // Trait horizontal à droite : à l'intérieur du bord droit
-            $this->pdf->Line($blockStartX + $blockW - $len, $separatorY, $blockStartX + $blockW, $separatorY);
+            $cutGx = floatval($this->settings['gutter_x']);
+            $bleedX = ($cutGx - $posGx) / 2;
+
+            $bx = $blockStartX + $bleedX;
+            $bw = $blockW - (2 * $bleedX);
+
+            // Trait horizontal à gauche : à l'intérieur du bord gauche croppé
+            $this->pdf->Line($bx, $separatorY, $bx + $len, $separatorY);
+            // Trait horizontal à droite : à l'intérieur du bord droit croppé
+            $this->pdf->Line($bx + $bw - $len, $separatorY, $bx + $bw, $separatorY);
         }
     }
 
@@ -602,45 +616,18 @@ class ImpositionLeaflet
         // Dimensions de la cellule de texte
         $cellWidth = 10; // mm
         $cellHeight = 4; // mm
+        $offsetX = isset($this->settings['gutter_num_offset_x']) ? (float)$this->settings['gutter_num_offset_x'] : 0;
+        $offsetY = isset($this->settings['gutter_num_offset_y']) ? (float)$this->settings['gutter_num_offset_y'] : -2;
+
+        $posX = $x + $offsetX;
+        $posY = $y + $offsetY;
         
-        // Distance depuis le bord de la gouttière : 1mm (à l'intérieur de la gouttière)
-        $offsetFromGutterEdge = 1; // mm
-        
-        // Calculer la position par rapport à la page individuelle et à la gouttière adjacente
-        // La gouttière est entre les pages, donc :
-        // - Pour une page de gauche : la gouttière est à droite, à x + w
-        // - Pour une page de droite : la gouttière est à gauche, à x
-        // - Pour une ligne du haut : la gouttière est en dessous, à y + h
-        // - Pour une ligne du bas : la gouttière est au-dessus, à y
-        
-        // Position X : par rapport à la gouttière verticale
-        if ($colIndex < $totalCols / 2) {
-            // Page de gauche : numéro dans la gouttière à droite de la page
-            // La gouttière commence à x + w, on place le numéro à 1mm à l'intérieur
-            $posX = $x + $w + $offsetFromGutterEdge - ($cellWidth / 2);
-        } else {
-            // Page de droite : numéro dans la gouttière à gauche de la page
-            // La gouttière se termine à x, on place le numéro à 1mm à l'intérieur (donc à x - 1mm)
-            $posX = $x - $offsetFromGutterEdge - ($cellWidth / 2);
-        }
-        
-        // Position Y : par rapport à la gouttière horizontale
-        if ($rowIndex == 0) {
-            // Ligne du haut : numéro dans la gouttière en dessous de la page
-            // La gouttière commence à y + h, on place le numéro à 1mm à l'intérieur
-            $posY = $y + $h + $offsetFromGutterEdge - ($cellHeight / 2);
-        } else {
-            // Ligne du bas : numéro dans la gouttière au-dessus de la page
-            // La gouttière se termine à y, on place le numéro à 1mm à l'intérieur (donc à y - 1mm)
-            $posY = $y - $offsetFromGutterEdge - ($cellHeight / 2);
-        }
-        
-        // Alignement centré
-        $align = 'C';
+        // Alignement par défaut à gauche (comme sur imposition_livre)
+        $align = 'L';
         
         // Pour les pages tournées (ligne 2), tourner le numéro à 180° (tête-bêche)
         if ($rotated) {
-            // Calculer le centre de rotation (centre géométrique de la cellule de texte)
+            // Calculer le centre de rotation
             $rotCenterX = $posX + ($cellWidth / 2);
             $rotCenterY = $posY + ($cellHeight / 2);
             
@@ -680,10 +667,15 @@ class ImpositionLeaflet
         $this->pdf->SetDrawColor(0, 0, 0);
         $offset = 1;
         
-        $bx = $blockStartX;
-        $by = $blockY;
-        $bw = $blockW;
-        $bh = $blockH;
+        $cutGx = floatval($this->settings['gutter_x']);
+        $cutGy = floatval($this->settings['gutter_y']);
+        $bleedX = ($cutGx - $posGx) / 2;
+        $bleedY = ($cutGy - $posGy) / 2;
+
+        $bx = $blockStartX + $bleedX;
+        $by = $blockY + $bleedY;
+        $bw = $blockW - (2 * $bleedX);
+        $bh = $blockH - (2 * $bleedY);
 
         // TL
         $this->pdf->Line($bx - $offset - $len, $by, $bx - $offset, $by);
