@@ -488,6 +488,7 @@ class Imposition
             $cellHeight = 4;
             $offsetX = $this->gutterNumOffsetX;
             $offsetY = $this->gutterNumOffsetY;
+            $displayPageNo = (string)$pageNo;
 
         $useManualOffset = isset($this->settings['add_page_numbers_manual_offset']) && $this->settings['add_page_numbers_manual_offset'];
 
@@ -515,12 +516,17 @@ class Imposition
             if ($hasVerticalGutter || $hasHorizontalGutter) {
                 if ($hasVerticalGutter) {
                     $isOdd = ($pageNo % 2 != 0);
-                    $wantVisualRight = $isOdd; // Impaires -> Droite visuelle, Paires -> Gauche visuelle
+                    $position = isset($this->settings['add_page_numbers_position']) ? $this->settings['add_page_numbers_position'] : 'margins';
+                    if ($position === 'gutters') {
+                        $wantVisualRight = !$isOdd; // Tranches (Intérieur) : Impaires à gauche, Paires à droite
+                    } else {
+                        $wantVisualRight = $isOdd; // Marges (Extérieur) : Impaires à droite, Paires à gauche
+                    }
                     
                     if ($wantVisualRight) {
-                        $unrotatedSide = $rotated ? 'LEFT' : 'RIGHT';
+                        $unrotatedSide = 'RIGHT';
                     } else {
-                        $unrotatedSide = $rotated ? 'RIGHT' : 'LEFT';
+                        $unrotatedSide = 'LEFT';
                     }
                     
                     if ($unrotatedSide === 'LEFT') {
@@ -536,7 +542,7 @@ class Imposition
                 }
 
                 if ($hasHorizontalGutter) {
-                    $gutterOnLocalBottom = ($rowIndex % 2 == 0) ? !$rotated : $rotated;
+                    $gutterOnLocalBottom = ($rowIndex % 2 == 0);
                     
                     if ($gutterOnLocalBottom) {
                         $centerY = $isCrop ? ($y + $h - ($gutterY / 4)) : ($y + $h + ($gutterY / 4));

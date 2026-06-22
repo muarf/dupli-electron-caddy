@@ -228,6 +228,7 @@ function Action($conf)
             $resize_mode = $_POST['resize_mode'] ?? 'percent';
             $add_page_numbers_in_gutters = isset($_POST['add_page_numbers_in_gutters']);
             $add_page_numbers_manual_offset = isset($_POST['add_page_numbers_manual_offset']);
+            $add_page_numbers_position = $_POST['add_page_numbers_position'] ?? 'margins';
             $gutterNumOffsetX = isset($_POST['gutter_num_offset_x']) ? floatval($_POST['gutter_num_offset_x']) : 0.0;
             $gutterNumOffsetY = isset($_POST['gutter_num_offset_y']) ? floatval($_POST['gutter_num_offset_y']) : -2.0;
 
@@ -258,6 +259,7 @@ function Action($conf)
                 'preview_mode' => $previewMode,
                 'add_page_numbers_in_gutters' => $add_page_numbers_in_gutters,
                 'add_page_numbers_manual_offset' => $add_page_numbers_manual_offset,
+                'add_page_numbers_position' => $add_page_numbers_position,
                 'gutter_num_offset_x' => $gutterNumOffsetX,
                 'gutter_num_offset_y' => $gutterNumOffsetY,
                 'tete_beche' => $tete_beche,
@@ -370,6 +372,7 @@ function Action($conf)
                 $resize_mode = $_POST['resize_mode'] ?? 'percent';
                 $add_page_numbers_in_gutters = isset($_POST['add_page_numbers_in_gutters']);
                 $add_page_numbers_manual_offset = isset($_POST['add_page_numbers_manual_offset']);
+                $add_page_numbers_position = $_POST['add_page_numbers_position'] ?? 'margins';
                 $gutterNumOffsetX = isset($_POST['gutter_num_offset_x']) ? floatval($_POST['gutter_num_offset_x']) : 0.0;
                 $gutterNumOffsetY = isset($_POST['gutter_num_offset_y']) ? floatval($_POST['gutter_num_offset_y']) : -2.0;
 
@@ -399,6 +402,7 @@ function Action($conf)
                     'preview_mode' => $previewMode,
                     'add_page_numbers_in_gutters' => $add_page_numbers_in_gutters,
                     'add_page_numbers_manual_offset' => $add_page_numbers_manual_offset,
+                    'add_page_numbers_position' => $add_page_numbers_position,
                     'gutter_num_offset_x' => $gutterNumOffsetX,
                     'gutter_num_offset_y' => $gutterNumOffsetY,
                     'tete_beche' => $tete_beche,
