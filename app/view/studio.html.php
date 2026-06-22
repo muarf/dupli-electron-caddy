@@ -217,14 +217,25 @@
           <div class="panel-row" style="margin-top:10px">
             <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_page_nums"> Numéros de pages</label>
           </div>
-          <div id="bro_folio_settings" style="display:none; padding-left:10px; border-left:2px solid var(--studio-border); margin-top:5px">
-             <div class="panel-row">
-               <div class="panel-label">Offset X</div>
-                <input type="number" class="panel-select" id="bro_folio_x" value="0" step="0.5" style="width:100px">
+          <div id="bro_folio_settings" style="display:none; padding-left:10px; border-left:2px solid var(--studio-border); margin-top:5px; margin-bottom:10px">
+             <div class="panel-row" style="margin-top:5px; margin-bottom:5px;">
+               <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_page_nums_manual"> Décalage manuel</label>
              </div>
-             <div class="panel-row">
-               <div class="panel-label">Offset Y</div>
-                <input type="number" class="panel-select" id="bro_folio_y" value="-2" step="0.5" style="width:100px">
+             <div id="bro_folio_manual_settings" style="display:none;">
+                 <div class="panel-row">
+                   <div class="panel-label">Décalage X (mm)</div>
+                    <input type="number" class="panel-select" id="bro_folio_x" value="0" step="0.5" style="width:100px">
+                 </div>
+                 <div style="font-size:9px; color:var(--studio-text-muted); margin-bottom:6px; margin-top:-2px">
+                   Positif = vers la droite, Négatif = vers la gauche
+                 </div>
+                 <div class="panel-row">
+                   <div class="panel-label">Décalage Y (mm)</div>
+                    <input type="number" class="panel-select" id="bro_folio_y" value="-2" step="0.5" style="width:100px">
+                 </div>
+                 <div style="font-size:9px; color:var(--studio-text-muted); margin-bottom:6px; margin-top:-2px">
+                   Positif = vers le bas, Négatif = vers le haut
+                 </div>
              </div>
           </div>
 
@@ -323,19 +334,24 @@
             <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_page_nums"> Numéros de pages</label>
           </div>
           <div id="liv_folio_settings" style="display:none; padding-left:10px; border-left:2px solid var(--studio-border); margin-top:5px; margin-bottom:10px">
-             <div class="panel-row">
-               <div class="panel-label">Décalage X (mm)</div>
-                <input type="number" class="panel-select" id="liv_folio_x" value="0" step="0.5" style="width:100px">
+             <div class="panel-row" style="margin-top:5px; margin-bottom:5px;">
+               <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_page_nums_manual"> Décalage manuel</label>
              </div>
-             <div style="font-size:9px; color:var(--studio-text-muted); margin-bottom:6px; margin-top:-2px">
-               Positif = vers la droite, Négatif = vers la gauche
-             </div>
-             <div class="panel-row">
-               <div class="panel-label">Décalage Y (mm)</div>
-                <input type="number" class="panel-select" id="liv_folio_y" value="-2" step="0.5" style="width:100px">
-             </div>
-             <div style="font-size:9px; color:var(--studio-text-muted); margin-bottom:6px; margin-top:-2px">
-               Pour remonter au dessus du trait, mettre négatif (ex: -2)
+             <div id="liv_folio_manual_settings" style="display:none;">
+                 <div class="panel-row">
+                   <div class="panel-label">Décalage X (mm)</div>
+                    <input type="number" class="panel-select" id="liv_folio_x" value="0" step="0.5" style="width:100px">
+                 </div>
+                 <div style="font-size:9px; color:var(--studio-text-muted); margin-bottom:6px; margin-top:-2px">
+                   Positif = vers la droite, Négatif = vers la gauche
+                 </div>
+                 <div class="panel-row">
+                   <div class="panel-label">Décalage Y (mm)</div>
+                    <input type="number" class="panel-select" id="liv_folio_y" value="-2" step="0.5" style="width:100px">
+                 </div>
+                 <div style="font-size:9px; color:var(--studio-text-muted); margin-bottom:6px; margin-top:-2px">
+                   Positif = vers le bas, Négatif = vers le haut
+                 </div>
              </div>
           </div>
           
@@ -1289,6 +1305,7 @@ document.addEventListener('DOMContentLoaded', function() {
         crop_style:     $('bro_crop_style').value,
         crop_mark_len:  $('bro_crop_len').value,
         add_page_numbers_in_gutters: $('bro_page_nums').checked ? '1' : '0',
+        add_page_numbers_manual_offset: $('bro_page_nums_manual').checked ? '1' : '0',
         gutter_num_offset_x: $('bro_folio_x').value,
         gutter_num_offset_y: $('bro_folio_y').value,
         tete_beche:     $('bro_tumble').checked ? '1' : '0',
@@ -1312,6 +1329,7 @@ document.addEventListener('DOMContentLoaded', function() {
         crop_style:     $('liv_crop_style').value,
         crop_mark_len:  $('liv_crop_len').value,
         add_page_numbers_in_gutters: $('liv_page_nums').checked ? '1' : '0',
+        add_page_numbers_manual_offset: $('liv_page_nums_manual').checked ? '1' : '0',
         gutter_num_offset_x: $('liv_folio_x').value,
         gutter_num_offset_y: $('liv_folio_y').value,
       };
@@ -1607,7 +1625,12 @@ document.addEventListener('DOMContentLoaded', function() {
     $('bro_crop_settings').style.display = e.target.checked ? '' : 'none';
   });
   $('bro_page_nums').addEventListener('change', e => {
-    $('bro_folio_settings').style.display = e.target.checked ? '' : 'none';
+    $('bro_folio_settings').style.display = e.target.checked ? 'block' : 'none';
+    requestStudioPreview();
+  });
+  $('bro_page_nums_manual').addEventListener('change', e => {
+    $('bro_folio_manual_settings').style.display = e.target.checked ? 'block' : 'none';
+    requestStudioPreview();
   });
 
   document.querySelectorAll('input[name="liv_resize_mode"]').forEach(radio => {
@@ -1620,10 +1643,13 @@ document.addEventListener('DOMContentLoaded', function() {
     $('liv_crop_settings').style.display = e.target.checked ? '' : 'none';
   });
   $('liv_page_nums').addEventListener('change', e => {
-    $('liv_folio_settings').style.display = e.target.checked ? '' : 'none';
+    $('liv_folio_settings').style.display = e.target.checked ? 'block' : 'none';
+    requestStudioPreview();
   });
-
-
+  $('liv_page_nums_manual').addEventListener('change', e => {
+    $('liv_folio_manual_settings').style.display = e.target.checked ? 'block' : 'none';
+    requestStudioPreview();
+  });
 
   // Imposition Tab switching
   document.querySelectorAll('.imp-tab').forEach(btn => {

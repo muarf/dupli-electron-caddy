@@ -619,26 +619,77 @@ class ImpositionLeaflet
         $offsetX = isset($this->settings['gutter_num_offset_x']) ? (float)$this->settings['gutter_num_offset_x'] : 0;
         $offsetY = isset($this->settings['gutter_num_offset_y']) ? (float)$this->settings['gutter_num_offset_y'] : -2;
 
-        $posX = $x + $offsetX;
-        $posY = $y + $offsetY;
-        
-        // Alignement par défaut à gauche (comme sur imposition_livre)
-        $align = 'L';
-        
-        // Pour les pages tournées (ligne 2), tourner le numéro à 180° (tête-bêche)
-        if ($rotated) {
-            // Calculer le centre de rotation
-            $rotCenterX = $posX + ($cellWidth / 2);
-            $rotCenterY = $posY + ($cellHeight / 2);
-            
+        $useManualOffset = isset($this->settings['add_page_numbers_manual_offset']) && $this->settings['add_page_numbers_manual_offset'];
+
+        if ($useManualOffset) {
             $targetPdf->StartTransform();
-            $targetPdf->Rotate(180, $rotCenterX, $rotCenterY);
+            if ($rotated) {
+                $targetPdf->Rotate(180, $x + ($w / 2), $y + ($h / 2));
+            }
+            $posX = $x + $offsetX;
+            $posY = $y + $offsetY;
             $targetPdf->SetXY($posX, $posY);
-            $targetPdf->Cell($cellWidth, $cellHeight, $displayPageNo, 0, 0, $align, false);
+            $targetPdf->Cell($cellWidth, $cellHeight, $displayPageNo, 0, 0, 'L', false);
             $targetPdf->StopTransform();
         } else {
-            $targetPdf->SetXY($posX, $posY);
-            $targetPdf->Cell($cellWidth, $cellHeight, $displayPageNo, 0, 0, $align, false);
+            $hasVerticalGutter = ($gutterX > 0);
+            $hasHorizontalGutter = ($gutterY > 0);
+            $isCrop = ($this->settings['gutter_strategy'] === 'crop');
+            
+            // On tourne l'espace pour que le texte soit "dans le sens de la page"
+            $targetPdf->StartTransform();
+            if ($rotated) {
+                $targetPdf->Rotate(180, $x + ($w / 2), $y + ($h / 2));
+            }
+            
+            if ($hasVerticalGutter || $hasHorizontalGutter) {
+                if ($hasVerticalGutter) {
+                    $isOdd = ($pageNo % 2 != 0);
+                    $wantVisualRight = $isOdd; // Impaires -> Droite visuelle, Paires -> Gauche visuelle
+                    
+                    if ($wantVisualRight) {
+                        $unrotatedSide = $rotated ? 'LEFT' : 'RIGHT';
+                    } else {
+                        $unrotatedSide = $rotated ? 'RIGHT' : 'LEFT';
+                    }
+                    
+                    if ($unrotatedSide === 'LEFT') {
+                        $centerX = $isCrop ? ($x + ($gutterX / 4)) : ($x - ($gutterX / 4));
+                    } else { // 'RIGHT'
+                        $centerX = $isCrop ? ($x + $w - ($gutterX / 4)) : ($x + $w + ($gutterX / 4));
+                    }
+                    
+                    $posY = $y + ($h / 2) - ($cellHeight / 2);
+                    $posX = $centerX - ($cellWidth / 2);
+                    $targetPdf->SetXY($posX, $posY);
+                    $targetPdf->Cell($cellWidth, $cellHeight, $displayPageNo, 0, 0, 'C', false);
+                }
+
+                if ($hasHorizontalGutter) {
+                    $gutterOnLocalBottom = ($rowIndex % 2 == 0) ? !$rotated : $rotated;
+                    
+                    if ($gutterOnLocalBottom) {
+                        $centerY = $isCrop ? ($y + $h - ($gutterY / 4)) : ($y + $h + ($gutterY / 4));
+                    } else {
+                        $centerY = $isCrop ? ($y + ($gutterY / 4)) : ($y - ($gutterY / 4));
+                    }
+                    
+                    $posX = $x + ($w / 2) - ($cellWidth / 2);
+                    $posY = $centerY - ($cellHeight / 2);
+                    $targetPdf->SetXY($posX, $posY);
+                    $targetPdf->Cell($cellWidth, $cellHeight, $displayPageNo, 0, 0, 'C', false);
+                }
+            } else {
+                // Auto-center standard pour les livrets normaux sans gouttière 4-poses
+                $centerX = $x + ($w / 2);
+                $centerY = $y + $h - 5; // 5mm du bas
+                $posX = $centerX - ($cellWidth / 2);
+                $posY = $centerY - ($cellHeight / 2);
+                $targetPdf->SetXY($posX, $posY);
+                $targetPdf->Cell($cellWidth, $cellHeight, $displayPageNo, 0, 0, 'C', false);
+            }
+
+            $targetPdf->StopTransform();
         }
     }
 
