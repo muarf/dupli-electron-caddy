@@ -241,10 +241,11 @@ jobs:
         run: node scripts/download-tauri-sidecars.js
 
       - name: Build Tauri Linux Beta
-        run: npx @tauri-apps/cli build
+        run: APPIMAGE_EXTRACT_AND_RUN=1 npx @tauri-apps/cli build --verbose
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPIMAGE_EXTRACT_AND_RUN: 1
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
       - name: Upload Linux Beta artifacts
         uses: softprops/action-gh-release@v1

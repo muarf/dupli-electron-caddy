@@ -219,10 +219,11 @@ jobs:
           shared-key: ${{ runner.os }}-v2
 
       - name: Build Tauri Linux
-        run: npx @tauri-apps/cli build
+        run: APPIMAGE_EXTRACT_AND_RUN=1 npx @tauri-apps/cli build --verbose
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPIMAGE_EXTRACT_AND_RUN: 1
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
       
       - name: Upload Linux artifacts to release
         uses: softprops/action-gh-release@v1
