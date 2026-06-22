@@ -216,6 +216,7 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
+          shared-key: ${{ runner.os }}-v2
 
       - name: Build Tauri Linux
         run: npx @tauri-apps/cli build
