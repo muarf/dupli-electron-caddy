@@ -36,8 +36,23 @@ if (!file_exists($path) || !is_dir($path)) {
 // Générer un ID de job unique
 $jobId = uniqid('idx_', true);
 
-// Déterminer le chemin vers PHP
-$phpPath = (defined('PHP_BINARY') && PHP_BINARY) ? PHP_BINARY : 'php';
+$phpPath = 'php';
+if (defined('PHP_BINARY') && !empty(PHP_BINARY) && PHP_BINARY !== 'php' && file_exists(PHP_BINARY)) {
+    $phpPath = PHP_BINARY;
+} else if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+    // Mode Tauri Dev & Prod fallbacks
+    $candidates = [
+        __DIR__ . '/../../src-tauri/binaries/php-x86_64-pc-windows-msvc.exe',
+        dirname(__DIR__, 2) . '/binaries/php-x86_64-pc-windows-msvc.exe'
+    ];
+    foreach ($candidates as $candidate) {
+        $real = realpath($candidate);
+        if ($real && file_exists($real)) {
+            $phpPath = $real;
+            break;
+        }
+    }
+}
 
 // Chemin du script worker
 $scriptPath = __DIR__ . '/../maintenance/background_indexer.php';

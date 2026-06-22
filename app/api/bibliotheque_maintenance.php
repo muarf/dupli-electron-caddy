@@ -119,7 +119,22 @@ try {
  * Helper pour lancer le job en arrière-plan (copié/adapté de start_indexing.php)
  */
 function startBackgroundJob($path, $recursive, $jobId, $mode) {
-    $phpPath = (defined('PHP_BINARY') && PHP_BINARY) ? PHP_BINARY : 'php';
+    $phpPath = 'php';
+    if (defined('PHP_BINARY') && !empty(PHP_BINARY) && PHP_BINARY !== 'php' && file_exists(PHP_BINARY)) {
+        $phpPath = PHP_BINARY;
+    } else if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+        $candidates = [
+            __DIR__ . '/../../src-tauri/binaries/php-x86_64-pc-windows-msvc.exe',
+            dirname(__DIR__, 2) . '/binaries/php-x86_64-pc-windows-msvc.exe'
+        ];
+        foreach ($candidates as $candidate) {
+            $real = realpath($candidate);
+            if ($real && file_exists($real)) {
+                $phpPath = $real;
+                break;
+            }
+        }
+    }
 
     $scriptPath = realpath(__DIR__ . '/../maintenance/background_indexer.php');
     if (!$scriptPath) return false;

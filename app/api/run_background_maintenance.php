@@ -19,8 +19,23 @@ file_put_contents($lockFile, time());
 // Job ID pour le suivi (optionnel)
 $jobId = 'maint_' . uniqid();
 
-// Déterminer le chemin vers PHP
-$phpPath = (defined('PHP_BINARY') && PHP_BINARY) ? PHP_BINARY : 'php';
+$phpPath = 'php';
+if (defined('PHP_BINARY') && !empty(PHP_BINARY) && PHP_BINARY !== 'php' && file_exists(PHP_BINARY)) {
+    $phpPath = PHP_BINARY;
+} else if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+    // Mode Tauri Dev & Prod fallbacks
+    $candidates = [
+        __DIR__ . '/../../src-tauri/binaries/php-x86_64-pc-windows-msvc.exe',
+        dirname(__DIR__, 2) . '/binaries/php-x86_64-pc-windows-msvc.exe'
+    ];
+    foreach ($candidates as $candidate) {
+        $real = realpath($candidate);
+        if ($real && file_exists($real)) {
+            $phpPath = $real;
+            break;
+        }
+    }
+}
 
 $scriptPath = realpath(__DIR__ . '/../maintenance/background_indexer.php');
 
@@ -28,6 +43,9 @@ if (!$scriptPath) {
     echo json_encode(['error' => 'Worker script not found']);
     exit;
 }
+
+error_log("[DEBUG] PHP_BINARY: " . (defined('PHP_BINARY') ? PHP_BINARY : 'undefined'));
+error_log("[DEBUG] phpPath: " . $phpPath);
 
 // Commande pour le mode index_text
 $cmdArgs = [
