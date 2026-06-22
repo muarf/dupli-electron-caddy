@@ -17,6 +17,16 @@
 (function () {
   'use strict';
 
+  const remoteLog = (msg) => {
+    fetch('/?log_js_error', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: '[tauri-bridge-debug] ' + msg })
+    }).catch(function() {});
+  };
+
+  remoteLog('tauri-bridge.js initializing... window.__TAURI__ defined: ' + (typeof window.__TAURI__ !== 'undefined'));
+
   // Enregistrer les écouteurs d'erreurs globaux pour logger les exceptions JS du webview vers PHP
   window.addEventListener('error', function (event) {
     const errorMsg = event.message + ' at ' + event.filename + ':' + event.lineno + ':' + event.colno;
@@ -468,9 +478,12 @@
     const href = link.getAttribute('href');
     if (!href) return;
 
+    remoteLog('Click detected on link: href="' + href + '", text="' + link.innerText.trim() + '"');
+
     // Intercepter uniquement les pages de téléchargement (?download_ ou &download_)
     if (/[?&]download_/i.test(href)) {
       event.preventDefault();
+      remoteLog('Download intercept triggered for href: ' + href);
 
       const showBridgeToast = (html, isError) => {
         const t = document.getElementById('studioToast');
@@ -499,8 +512,19 @@
       };
 
       try {
-        if (!window.__TAURI__ || !window.__TAURI__.dialog || !window.__TAURI__.fs) {
+        if (!window.__TAURI__) {
+          remoteLog('Error: window.__TAURI__ is undefined');
           throw new Error('Les APIs de dialogue et de système de fichiers Tauri ne sont pas disponibles.');
+        }
+
+        if (!window.__TAURI__.dialog) {
+          remoteLog('Error: window.__TAURI__.dialog is undefined');
+          throw new Error('L\'API dialog de Tauri n\'est pas disponible.');
+        }
+
+        if (!window.__TAURI__.fs) {
+          remoteLog('Error: window.__TAURI__.fs is undefined');
+          throw new Error('L\'API fs de Tauri n\'est pas disponible.');
         }
 
         const { save } = window.__TAURI__.dialog;
@@ -508,6 +532,7 @@
 
         // Obtenir l'URL absolue du fichier
         const absoluteUrl = new URL(href, window.location.href).href;
+        remoteLog('Absolute download URL: ' + absoluteUrl);
 
         // Extraire le nom de fichier par défaut
         let defaultFilename = 'document.pdf';
@@ -522,6 +547,7 @@
             defaultFilename = lastSegment;
           }
         }
+        remoteLog('Default filename: ' + defaultFilename);
 
         // Configurer les filtres selon l'extension
         const ext = defaultFilename.split('.').pop().toLowerCase();
@@ -537,6 +563,7 @@
         }
         filters.push({ name: 'Tous les fichiers', extensions: ['*'] });
 
+        remoteLog('Opening save dialog...');
         // Demander l'emplacement de sauvegarde à l'utilisateur
         const filePath = await save({
           title: 'Enregistrer le fichier',
@@ -545,12 +572,15 @@
         });
 
         if (!filePath) {
+          remoteLog('Save dialog cancelled by user.');
           return; // Annulé par l'utilisateur
         }
+        remoteLog('User selected save path: ' + filePath);
 
         showBridgeToast('<i class="fa fa-info-circle" style="color:#4f6ef7"></i> <b>Téléchargement en cours...</b>', false);
 
         // Fetch le fichier sous forme binaire
+        remoteLog('Fetching binary content...');
         const response = await fetch(absoluteUrl);
         if (!response.ok) {
           throw new Error(`Erreur HTTP : ${response.status} ${response.statusText}`);
@@ -559,13 +589,16 @@
         const blob = await response.blob();
         const arrayBuffer = await blob.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
+        remoteLog('Fetch complete. Size: ' + uint8Array.length + ' bytes');
 
         // Écrire le fichier
+        remoteLog('Writing file to disk via Tauri fs...');
         await writeFile(filePath, uint8Array);
+        remoteLog('File written successfully!');
 
         showBridgeToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>Fichier enregistré avec succès !</b>', false);
       } catch (err) {
-        console.error('[tauri-bridge] Échec du téléchargement ou de la sauvegarde :', err);
+        remoteLog('Intercept error: ' + err.message + '\nStack: ' + err.stack);
         const errMsg = err.message || String(err);
         showBridgeToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Échec de l\'enregistrement :</b> ' + errMsg, true);
       }
