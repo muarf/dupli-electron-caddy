@@ -514,6 +514,7 @@ fn get_binaries_dir(app: &AppHandle) -> Option<std::path::PathBuf> {
 
 /// Retourne le chemin absolu vers le dossier d'extensions PHP (ext).
 /// Gère la différence entre le mode développement (src-tauri/binaries/ext) et bundle de production.
+#[cfg(target_os = "windows")]
 fn get_php_ext_dir(app: &AppHandle) -> std::path::PathBuf {
     if let Some(bin_dir) = get_binaries_dir(app) {
         let ext_dir = bin_dir.join("ext");
