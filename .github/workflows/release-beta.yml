@@ -235,6 +235,7 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
+          shared-key: ${{ runner.os }}-v2
 
       - name: Download Tauri Sidecars
         run: node scripts/download-tauri-sidecars.js
