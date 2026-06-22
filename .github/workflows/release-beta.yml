@@ -243,6 +243,7 @@ jobs:
         run: npx @tauri-apps/cli build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPIMAGE_EXTRACT_AND_RUN: 1
 
       - name: Upload Linux Beta artifacts
         uses: softprops/action-gh-release@v1
