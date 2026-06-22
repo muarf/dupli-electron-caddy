@@ -9,7 +9,7 @@ class Imposition
     private $sourceFile;
     private $pageCount;
     private $settings;
-    
+
     // Propriétés explicites pour l'IDE/cache
     private $scale;
     private $targetWidth;
@@ -93,10 +93,11 @@ class Imposition
         if ($this->previewPdf) {
             $this->previewPdf->setSourceFile($this->sourceFile);
         }
-        
+
         $nUp = intval($this->settings['n_up']);
-        if ($nUp < 1) $nUp = 2;
-        
+        if ($nUp < 1)
+            $nUp = 2;
+
         $duplex = !empty($this->settings['duplex']);
 
         // Orientation automatique
@@ -108,13 +109,16 @@ class Imposition
 
         // Définition de la grille (cols x rows)
         if ($nUp == 2) {
-            $cols = 2; $rows = 1;
+            $cols = 2;
+            $rows = 1;
         } elseif ($nUp == 4) {
-            $cols = 2; $rows = 2;
+            $cols = 2;
+            $rows = 2;
         } elseif ($nUp == 8) {
-            $cols = 4; $rows = 2;
+            $cols = 4;
+            $rows = 2;
         } else {
-            $cols = ceil(sqrt($nUp)); 
+            $cols = ceil(sqrt($nUp));
             $rows = ceil($nUp / $cols);
         }
 
@@ -128,7 +132,7 @@ class Imposition
 
         // Configuration format sortie selon le format choisi
         $outputFormat = $this->settings['output_format'] ?? 'A3';
-        
+
         if ($outputFormat === 'A4') {
             // Format A4
             $sheetWidth = 210;
@@ -152,13 +156,13 @@ class Imposition
 
         // Boucle sur les feuilles à générer
         for ($i = 1; $i <= $stackDepth; $i++) {
-            
+
             // --- RECTO ---
             $this->pdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
             if ($this->previewPdf) {
                 $this->previewPdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
             }
-            
+
             for ($pos = 0; $pos < $nUp; $pos++) {
                 // Calcul de la page source pour cette position
                 if ($duplex) {
@@ -169,7 +173,7 @@ class Imposition
                     // Dans la pile, on est à la feuille 'i'.
                     // Page Recto = DebutPile + (i * 2) - 1 (car page 1 est sur feuille 1)
                     // Page Verso = DebutPile + (i * 2)
-                    
+
                     // Exemple : pos=0, i=1 -> (0) + 2 - 1 = 1. Correct.
                     $pageNo = ($pos * $stackDepth * 2) + ($i * 2) - 1;
                 } else {
@@ -189,7 +193,7 @@ class Imposition
                 if ($this->previewPdf) {
                     $this->previewPdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
                 }
-                
+
                 for ($pos = 0; $pos < $nUp; $pos++) {
                     // Page Verso correspondant à la même position "logique" dans la pile
                     $pageNo = ($pos * $stackDepth * 2) + ($i * 2);
@@ -197,10 +201,10 @@ class Imposition
                     // Logique Miroir pour le Verso
                     // On prend la position 'pos' (qui correspond à une case de la grille)
                     // et on cherche où l'imprimer physiquement pour qu'elle soit au dos.
-                    
+
                     $origRow = floor($pos / $cols);
                     $origCol = $pos % $cols;
-                    
+
                     // Inversion des colonnes (Miroir axe vertical)
                     // Col 0 devient Col Max, Col 1 devient Col Max-1...
                     $mirrorCol = ($cols - 1) - $origCol;
@@ -222,7 +226,7 @@ class Imposition
             $outputFile = $realOutputDir . DIRECTORY_SEPARATOR . basename($outputFile);
         }
         $this->pdf->Output($outputFile, 'F');
-        
+
         if ($this->previewPdf && $previewOutputFile) {
             $previewDir = dirname($previewOutputFile);
             if (!is_dir($previewDir)) {
@@ -276,55 +280,55 @@ class Imposition
         // 1. Déterminer l'échelle de base
         $scaleFactor = 1;
         if (!empty($this->settings['target_width']) && $this->settings['target_width'] > 0) {
-             $scaleFactor = $this->settings['target_width'] / $size['width'];
+            $scaleFactor = $this->settings['target_width'] / $size['width'];
         } elseif (!empty($this->settings['target_height']) && $this->settings['target_height'] > 0) {
-             $scaleFactor = $this->settings['target_height'] / $size['height'];
+            $scaleFactor = $this->settings['target_height'] / $size['height'];
         } else {
             $scaleFactor = $this->settings['scale'] / 100;
         }
 
         $rawW = $size['width'] * $scaleFactor;
         $rawH = $size['height'] * $scaleFactor;
-        
+
         $cutGx = floatval($this->settings['gutter_x']);
         $cutGy = floatval($this->settings['gutter_y']);
-        
+
         // 2. Appliquer la stratégie de gouttière
         if ($this->settings['gutter_strategy'] === 'reduce') {
             // Mode RÉDUIRE : On réduit l'échelle si ça ne rentre pas
             // Espace nécessaire = (Cols * rawW) + ((Cols-1) * cutGx)
             // Doit être <= sheetWidth
-            
+
             $reqWidth = ($totalCols * $rawW) + (($totalCols - 1) * $cutGx);
             $reqHeight = ($totalRows * $rawH) + (($totalRows - 1) * $cutGy);
-            
+
             $scaleW = 1.0;
             $scaleH = 1.0;
-            
+
             if ($reqWidth > $sheetWidth) {
                 // Espace disponible pour le contenu (hors gouttières)
                 $availW = $sheetWidth - (($totalCols - 1) * $cutGx);
                 $scaleW = $availW / ($totalCols * $rawW);
             }
-            
+
             if ($reqHeight > $sheetHeight) {
                 $availH = $sheetHeight - (($totalRows - 1) * $cutGy);
                 $scaleH = $availH / ($totalRows * $rawH);
             }
-            
+
             $reductionFactor = min($scaleW, $scaleH);
-            
+
             // Appliquer la réduction
             $finalW = $rawW * $reductionFactor;
             $finalH = $rawH * $reductionFactor;
             $posGx = $cutGx; // La gouttière physique reste celle demandée
             $posGy = $cutGy;
-            
+
         } else {
             // Mode ROGNER (Crop) : On garde l'échelle, on réduit l'espacement physique
             $finalW = $rawW;
             $finalH = $rawH;
-            
+
             // Calcul espacement X
             if ($totalCols > 1) {
                 $availW = $sheetWidth - ($totalCols * $finalW);
@@ -333,16 +337,18 @@ class Imposition
                 // En mode crop, on ne veut pas écarter les pages physiquement si on a de la place,
                 // car cela diminuerait le bleed (la coupe dans la page).
                 // On force max 0 pour que le bleed soit TOUJOURS de cutGx / 2.
-                if ($posGx > 0) $posGx = 0;
+                if ($posGx > 0)
+                    $posGx = 0;
             } else {
                 $posGx = 0;
             }
-            
+
             // Calcul espacement Y
             if ($totalRows > 1) {
                 $availH = $sheetHeight - ($totalRows * $finalH);
                 $posGy = $availH / ($totalRows - 1);
-                if ($posGy > 0) $posGy = 0;
+                if ($posGy > 0)
+                    $posGy = 0;
             } else {
                 $posGy = 0;
             }
@@ -407,7 +413,7 @@ class Imposition
             // Le milieu de la gouttière est : x + finalW + posGx/2
             // La coupe théorique est à : milieu - cutGx/2
             // C'est complexe. Utilisons la position de la page pour l'instant.
-            $this->addPageNumberInGutter($pageNo, $x, $y, $finalW, $finalH, $colIndex, $rowIndex, $totalCols, $totalRows, $cutGx, $cutGy, $globalStartX, $globalStartY);
+            $this->addPageNumberInGutter($pageNo, $x, $y, $finalW, $finalH, $colIndex, $rowIndex, $totalCols, $totalRows, $cutGx, $cutGy, $globalStartX, $globalStartY, $applyRotation);
         }
 
         // Traits de coupe
@@ -416,14 +422,14 @@ class Imposition
             // Pour dessiner les traits au bon endroit
             // Le centre de la gouttière physique est : x + finalW + posGx/2
             // Le centre de la gouttière de coupe est le même (car on a centré le tout)
-            
+
             // On doit calculer le décalage (bleed effectif) pour la fonction de dessin
             // Bleed = (cutGx - posGx) / 2
             // Si posGx < cutGx (mode rogner), bleed est positif (on coupe dans la page)
-            
+
             $bleedX = ($cutGx - $posGx) / 2;
             $bleedY = ($cutGy - $posGy) / 2;
-            
+
             // On passe ces "bleeds" à une fonction de dessin adaptée
             $this->drawSmartCropMarks($x, $y, $finalW, $finalH, $bleedX, $bleedY);
         }
@@ -433,39 +439,39 @@ class Imposition
     {
         $len = $this->settings['crop_mark_len'];
         $this->pdf->SetLineWidth($this->settings['crop_mark_width']);
-        $this->pdf->SetDrawColor(0, 0, 0); 
+        $this->pdf->SetDrawColor(0, 0, 0);
 
-        $visualOffset = 1; 
+        $visualOffset = 1;
 
         // Coordonnées de coupe (en rentrant dans la page de bleedX/Y)
         // Si bleed est négatif (mode réduire avec marges), on sort de la page
         // Mais ici bleedX = (cut - pos) / 2.
         // Si cut > pos (rogner), bleed > 0 -> On coupe DANS la page.
         // Si cut == pos (réduire), bleed = 0 -> On coupe au bord.
-        
+
         $cutX1 = $x + $bleedX;
         $cutX2 = $x + $w - $bleedX;
         $cutY1 = $y + $bleedY;
         $cutY2 = $y + $h - $bleedY;
 
         // Haut-Gauche
-        $this->pdf->Line($cutX1 - $visualOffset - $len, $cutY1, $cutX1 - $visualOffset, $cutY1); 
-        $this->pdf->Line($cutX1, $cutY1 - $visualOffset - $len, $cutX1, $cutY1 - $visualOffset); 
+        $this->pdf->Line($cutX1 - $visualOffset - $len, $cutY1, $cutX1 - $visualOffset, $cutY1);
+        $this->pdf->Line($cutX1, $cutY1 - $visualOffset - $len, $cutX1, $cutY1 - $visualOffset);
 
         // Haut-Droite
-        $this->pdf->Line($cutX2 + $visualOffset, $cutY1, $cutX2 + $visualOffset + $len, $cutY1); 
-        $this->pdf->Line($cutX2, $cutY1 - $visualOffset - $len, $cutX2, $cutY1 - $visualOffset); 
+        $this->pdf->Line($cutX2 + $visualOffset, $cutY1, $cutX2 + $visualOffset + $len, $cutY1);
+        $this->pdf->Line($cutX2, $cutY1 - $visualOffset - $len, $cutX2, $cutY1 - $visualOffset);
 
         // Bas-Gauche
-        $this->pdf->Line($cutX1 - $visualOffset - $len, $cutY2, $cutX1 - $visualOffset, $cutY2); 
-        $this->pdf->Line($cutX1, $cutY2 + $visualOffset, $cutX1, $cutY2 + $visualOffset + $len); 
+        $this->pdf->Line($cutX1 - $visualOffset - $len, $cutY2, $cutX1 - $visualOffset, $cutY2);
+        $this->pdf->Line($cutX1, $cutY2 + $visualOffset, $cutX1, $cutY2 + $visualOffset + $len);
 
         // Bas-Droite
-        $this->pdf->Line($cutX2 + $visualOffset, $cutY2, $cutX2 + $visualOffset + $len, $cutY2); 
-        $this->pdf->Line($cutX2, $cutY2 + $visualOffset, $cutX2, $cutY2 + $visualOffset + $len); 
+        $this->pdf->Line($cutX2 + $visualOffset, $cutY2, $cutX2 + $visualOffset + $len, $cutY2);
+        $this->pdf->Line($cutX2, $cutY2 + $visualOffset, $cutX2, $cutY2 + $visualOffset + $len);
     }
 
-    private function addPageNumberInGutter($pageNo, $x, $y, $w, $h, $colIndex, $rowIndex, $totalCols, $totalRows, $gutterX, $gutterY, $globalStartX, $globalStartY)
+    private function addPageNumberInGutter($pageNo, $x, $y, $w, $h, $colIndex, $rowIndex, $totalCols, $totalRows, $gutterX, $gutterY, $globalStartX, $globalStartY, $rotated = false)
     {
         // On écrit sur le PDF final ET sur le PDF preview s'il existe
         $targetPdfs = [$this->pdf];
@@ -477,33 +483,84 @@ class Imposition
             $targetPdf->setAutoPageBreak(false);
             $targetPdf->SetFont('helvetica', '', 6); // Police petite (taille 6)
             $targetPdf->SetTextColor(0, 0, 0); // Noir
-            
-            // Logique : Impaire (Recto) -> Bas Droite, Paire (Verso) -> Bas Gauche
-            // Positionnement : Dans la gouttière, juste à côté du trait de coupe vertical
-            
-            $isOdd = ($pageNo % 2 != 0);
-            
-            
-            if ($isOdd) {
-                // Page Impaire (Recto)
-                // Nouvelle logique : offsets relatifs au coin haut gauche du trait de coupe ($x, $y)
-                
-                $posX = $x + $this->gutterNumOffsetX; 
-                $posY = $y + $this->gutterNumOffsetY;     
-                
-                $targetPdf->SetXY($posX, $posY);
-                // Utiliser l'alignement à Gauche (L) par défaut
-                $targetPdf->Cell(10, 4, (string)$pageNo, 0, 0, 'L', false);
-            } else {
-                // Page Paire (Verso)
-                // Meme logique pour l'instant (symétrie via offsets si nécessaire, mais l'utilisateur a demandé 1 réglage)
-                
-                $posX = $x + $this->gutterNumOffsetX; 
-                $posY = $y + $this->gutterNumOffsetY;      
-                
-                $targetPdf->SetXY($posX, $posY);
-                $targetPdf->Cell(10, 4, (string)$pageNo, 0, 0, 'L', false);
+
+            $cellWidth = 10;
+            $cellHeight = 4;
+            $offsetX = $this->gutterNumOffsetX;
+            $offsetY = $this->gutterNumOffsetY;
+
+        $useManualOffset = isset($this->settings['add_page_numbers_manual_offset']) && $this->settings['add_page_numbers_manual_offset'];
+
+        if ($useManualOffset) {
+            $targetPdf->StartTransform();
+            if ($rotated) {
+                $targetPdf->Rotate(180, $x + ($w / 2), $y + ($h / 2));
             }
+            $posX = $x + $offsetX;
+            $posY = $y + $offsetY;
+            $targetPdf->SetXY($posX, $posY);
+            $targetPdf->Cell($cellWidth, $cellHeight, $displayPageNo, 0, 0, 'L', false);
+            $targetPdf->StopTransform();
+        } else {
+            $hasVerticalGutter = ($gutterX > 0);
+            $hasHorizontalGutter = ($gutterY > 0);
+            $isCrop = ($this->settings['gutter_strategy'] === 'crop');
+            
+            // On tourne l'espace pour que le texte soit "dans le sens de la page"
+            $targetPdf->StartTransform();
+            if ($rotated) {
+                $targetPdf->Rotate(180, $x + ($w / 2), $y + ($h / 2));
+            }
+            
+            if ($hasVerticalGutter || $hasHorizontalGutter) {
+                if ($hasVerticalGutter) {
+                    $isOdd = ($pageNo % 2 != 0);
+                    $wantVisualRight = $isOdd; // Impaires -> Droite visuelle, Paires -> Gauche visuelle
+                    
+                    if ($wantVisualRight) {
+                        $unrotatedSide = $rotated ? 'LEFT' : 'RIGHT';
+                    } else {
+                        $unrotatedSide = $rotated ? 'RIGHT' : 'LEFT';
+                    }
+                    
+                    if ($unrotatedSide === 'LEFT') {
+                        $centerX = $isCrop ? ($x + ($gutterX / 4)) : ($x - ($gutterX / 4));
+                    } else { // 'RIGHT'
+                        $centerX = $isCrop ? ($x + $w - ($gutterX / 4)) : ($x + $w + ($gutterX / 4));
+                    }
+                    
+                    $posY = $y + ($h / 2) - ($cellHeight / 2);
+                    $posX = $centerX - ($cellWidth / 2);
+                    $targetPdf->SetXY($posX, $posY);
+                    $targetPdf->Cell($cellWidth, $cellHeight, $displayPageNo, 0, 0, 'C', false);
+                }
+
+                if ($hasHorizontalGutter) {
+                    $gutterOnLocalBottom = ($rowIndex % 2 == 0) ? !$rotated : $rotated;
+                    
+                    if ($gutterOnLocalBottom) {
+                        $centerY = $isCrop ? ($y + $h - ($gutterY / 4)) : ($y + $h + ($gutterY / 4));
+                    } else {
+                        $centerY = $isCrop ? ($y + ($gutterY / 4)) : ($y - ($gutterY / 4));
+                    }
+                    
+                    $posX = $x + ($w / 2) - ($cellWidth / 2);
+                    $posY = $centerY - ($cellHeight / 2);
+                    $targetPdf->SetXY($posX, $posY);
+                    $targetPdf->Cell($cellWidth, $cellHeight, $displayPageNo, 0, 0, 'C', false);
+                }
+            } else {
+                // Auto-center standard pour les livrets normaux sans gouttière 4-poses
+                $centerX = $x + ($w / 2);
+                $centerY = $y + $h - 5; // 5mm du bas
+                $posX = $centerX - ($cellWidth / 2);
+                $posY = $centerY - ($cellHeight / 2);
+                $targetPdf->SetXY($posX, $posY);
+                $targetPdf->Cell($cellWidth, $cellHeight, $displayPageNo, 0, 0, 'C', false);
+            }
+
+            $targetPdf->StopTransform();
+        }
         }
     }
 

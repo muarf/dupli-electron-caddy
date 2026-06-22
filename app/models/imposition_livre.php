@@ -227,6 +227,7 @@ function Action($conf)
             $crop_mark_width = floatval($_POST['crop_mark_width'] ?? 0.1);
             $resize_mode = $_POST['resize_mode'] ?? 'percent';
             $add_page_numbers_in_gutters = isset($_POST['add_page_numbers_in_gutters']);
+            $add_page_numbers_manual_offset = isset($_POST['add_page_numbers_manual_offset']);
             $gutterNumOffsetX = isset($_POST['gutter_num_offset_x']) ? floatval($_POST['gutter_num_offset_x']) : 0.0;
             $gutterNumOffsetY = isset($_POST['gutter_num_offset_y']) ? floatval($_POST['gutter_num_offset_y']) : -2.0;
 
@@ -256,6 +257,7 @@ function Action($conf)
                 'crop_mark_width' => $crop_mark_width,
                 'preview_mode' => $previewMode,
                 'add_page_numbers_in_gutters' => $add_page_numbers_in_gutters,
+                'add_page_numbers_manual_offset' => $add_page_numbers_manual_offset,
                 'gutter_num_offset_x' => $gutterNumOffsetX,
                 'gutter_num_offset_y' => $gutterNumOffsetY,
                 'tete_beche' => $tete_beche,
@@ -367,6 +369,7 @@ function Action($conf)
                 $crop_mark_width = floatval($_POST['crop_mark_width'] ?? 0.1);
                 $resize_mode = $_POST['resize_mode'] ?? 'percent';
                 $add_page_numbers_in_gutters = isset($_POST['add_page_numbers_in_gutters']);
+                $add_page_numbers_manual_offset = isset($_POST['add_page_numbers_manual_offset']);
                 $gutterNumOffsetX = isset($_POST['gutter_num_offset_x']) ? floatval($_POST['gutter_num_offset_x']) : 0.0;
                 $gutterNumOffsetY = isset($_POST['gutter_num_offset_y']) ? floatval($_POST['gutter_num_offset_y']) : -2.0;
 
@@ -395,6 +398,7 @@ function Action($conf)
                     'crop_mark_width' => $crop_mark_width,
                     'preview_mode' => $previewMode,
                     'add_page_numbers_in_gutters' => $add_page_numbers_in_gutters,
+                    'add_page_numbers_manual_offset' => $add_page_numbers_manual_offset,
                     'gutter_num_offset_x' => $gutterNumOffsetX,
                     'gutter_num_offset_y' => $gutterNumOffsetY,
                     'tete_beche' => $tete_beche,
