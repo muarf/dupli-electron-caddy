@@ -467,10 +467,10 @@ jobs:
           cd ..
 
       - name: Download Tauri Sidecars
-        run: node scripts/download-tauri-sidecars.js
+        run: node scripts/download-tauri-sidecars.js universal-apple-darwin
 
-      - name: Build Tauri macOS Alpha
-        run: npx @tauri-apps/cli build
+      - name: Build Tauri macOS Alpha (Universal)
+        run: npx @tauri-apps/cli build --target universal-apple-darwin
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -481,9 +481,9 @@ jobs:
         with:
           tag_name: ${{ needs.get-version.outputs.tag }}
           files: |
-            src-tauri/target/release/bundle/dmg/*.dmg
-            src-tauri/target/release/bundle/macos/*.tar.gz
-            src-tauri/target/release/bundle/macos/*.tar.gz.sig
+            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/universal-apple-darwin/release/bundle/macos/*.tar.gz
+            src-tauri/target/universal-apple-darwin/release/bundle/macos/*.tar.gz.sig
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
