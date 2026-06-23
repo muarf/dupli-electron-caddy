@@ -280,7 +280,7 @@
     reanalyzePrintJob: async (jobId, documentName, format, splPath, driverColor) => {
       const numericJobId = Number(jobId);
 
-      // 1. Récupérer les infos du spouleur Windows via Rust (total_pages, is_grayscale, is_duplex, paper_size)
+      // 1. Récupérer les infos du spouleur Windows/Linux via Rust (total_pages, is_grayscale, is_duplex, paper_size)
       const res = await invoke('reanalyze_print_job', {
         jobId: numericJobId,
         documentName: documentName || '',
@@ -288,6 +288,19 @@
         splPath: splPath || '',
         driverColor: !!driverColor
       });
+
+      // Si exécution sous Linux/macOS (on a déjà le lien vers get_linux_thumb), retourner directement
+      if (res && res.thumbnailUrl && res.thumbnailUrl.includes('get_linux_thumb')) {
+        return {
+          success:      res.found,
+          isGrayscale:  res.isGrayscale,
+          isDuplex:     res.isDuplex,
+          paperSize:    res.paperSize,
+          fillRate:     res.fillRate,
+          thumbnailUrl: res.thumbnailUrl,
+          totalPages:   res.totalPages,
+        };
+      }
 
       // 2. Déclencher la conversion SPL → PNG (miniatures) via les API PHP locales
       //    On essaie EMF d'abord (plus fidèle), puis PCL en fallback.
@@ -453,7 +466,15 @@
     checkAdminStatus: async () => {
       try {
         const isAdmin = await invoke('check_admin_status');
-        return { success: true, isAdmin: isAdmin };
+        const isLinux = navigator.userAgent.toLowerCase().includes('linux');
+        const isMac = navigator.userAgent.toLowerCase().includes('mac');
+        const platform = isLinux ? 'linux' : (isMac ? 'macos' : 'windows');
+        return { 
+          success: true, 
+          isAdmin: isAdmin, 
+          platform: platform,
+          user: isLinux ? '$(whoami)' : 'user'
+        };
       } catch (err) {
         return { success: false, error: String(err), isAdmin: false };
       }

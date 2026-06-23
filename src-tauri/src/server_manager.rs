@@ -98,7 +98,7 @@ pub async fn launch_all_sidecars(app: &AppHandle) -> Result<(), String> {
 
     let php_child = spawn_sidecar(
         &app,
-        "php",
+        "dupli-php",
         &php_args_refs,
     )
     .await
@@ -164,7 +164,7 @@ pub async fn restart_php(app: AppHandle) -> Result<String, String> {
 
     let php_child = spawn_sidecar(
         &app,
-        "php",
+        "dupli-php",
         &php_args_refs,
     )
     .await
@@ -221,7 +221,7 @@ async fn spawn_sidecar(
         command = command.arg(*arg);
     }
 
-    if sidecar_name == "php" {
+    if sidecar_name == "dupli-php" {
         // Obtenir le chemin de la base de données SQLite (partagée avec Electron dans Roaming/Duplicator)
         #[cfg(target_os = "windows")]
         let db_path = std::env::var("APPDATA")
@@ -445,7 +445,8 @@ fn build_php_args(app: &AppHandle) -> Vec<String> {
 
     let mut args = Vec::new();
 
-    // 1. Charger php.ini si disponible
+    // 1. Charger php.ini si disponible (Windows uniquement pour préserver la config système sur Unix)
+    #[cfg(target_os = "windows")]
     if php_ini_path.exists() {
         args.push("-c".to_string());
         args.push(php_ini_str);

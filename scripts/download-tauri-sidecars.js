@@ -158,42 +158,35 @@ async function setupPhp(triple, binariesDir) {
         return;
     }
 
-    const outputName = `php-${triple}${triple.includes('windows') ? '.exe' : ''}`;
+    const outputName = `dupli-php-${triple}${triple.includes('windows') ? '.exe' : ''}`;
     const outputPath = path.join(binariesDir, outputName);
 
-    if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1024) {
+    if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 10) {
         console.log(`[PHP] Binaire déjà présent : ${outputName}`);
         return;
     }
 
     if (config.useSystem) {
-        console.log(`[PHP] Utilisation du PHP système pour la cible ${triple}...`);
+        console.log(`[PHP] Génération du script wrapper PHP pour la cible ${triple}...`);
         try {
-            // 1. Localiser le binaire php local
-            const phpSystemPath = execSync('which php', { encoding: 'utf8' }).trim();
-            
-            // 2. Le copier vers le dossier de destination
-            fs.copyFileSync(phpSystemPath, outputPath);
+            // 1. Écrire le script wrapper pour php
+            const phpWrapperContent = `#!/bin/sh\nexec php "$@"\n`;
+            fs.writeFileSync(outputPath, phpWrapperContent);
             fs.chmodSync(outputPath, '755');
-            console.log(`[PHP] Copié depuis le système vers : ${outputName}`);
+            console.log(`[PHP] Wrapper PHP créé avec succès : ${outputName}`);
             
-            // 3. Essayer de trouver et copier php-fpm (nécessaire sous Linux)
+            // 2. Écrire le script wrapper pour php-fpm (nécessaire sous Linux)
             const fpmOutputName = `php-fpm-${triple}`;
             const fpmOutputPath = path.join(binariesDir, fpmOutputName);
             if (!fs.existsSync(fpmOutputPath)) {
-                try {
-                    const phpFpmSystemPath = execSync('which php-fpm || which php-fpm8.2 || which php-fpm8.1 || which php-fpm8.3', { encoding: 'utf8' }).trim();
-                    if (fs.existsSync(phpFpmSystemPath)) {
-                        fs.copyFileSync(phpFpmSystemPath, fpmOutputPath);
-                        fs.chmodSync(fpmOutputPath, '755');
-                        console.log(`[PHP-FPM] Copié depuis le système vers : ${fpmOutputName}`);
-                    }
-                } catch (e) {
-                    console.log(`[PHP-FPM] Non détecté sur le système hôte, seul le serveur PHP de base sera disponible.`);
-                }
+                console.log(`[PHP-FPM] Génération du script wrapper PHP-FPM pour la cible ${triple}...`);
+                const fpmWrapperContent = `#!/bin/sh\nexec php-fpm "$@"\n`;
+                fs.writeFileSync(fpmOutputPath, fpmWrapperContent);
+                fs.chmodSync(fpmOutputPath, '755');
+                console.log(`[PHP-FPM] Wrapper PHP-FPM créé avec succès : ${fpmOutputName}`);
             }
         } catch (e) {
-            console.error(`[PHP] Erreur de détection locale : PHP n'est pas installé sur la machine.`);
+            console.error(`[PHP] Erreur de génération des wrappers Unix :`, e.message);
         }
     } else {
         // Téléchargement Windows

@@ -247,10 +247,8 @@ class PrintSessionManager {
                 }
             }, 60000);
             
-            // Programmer réanalyse (Windows seulement)
-            if (!navigator.platform.toLowerCase().includes('linux')) {
-                this.scheduleReanalysis(jobId);
-            }
+            // Programmer réanalyse
+            this.scheduleReanalysis(jobId);
         }
 
         // Envoyer à print-notification pour enregistrer en base

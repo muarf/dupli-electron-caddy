@@ -36,7 +36,7 @@ fn main() {
         // Liste des sidecars à mocker s'ils sont absents
         let sidecars = vec![
             format!("caddy-{}{}", triple, ext),
-            format!("php-{}{}", triple, ext),
+            format!("dupli-php-{}{}", triple, ext),
         ];
 
         for sidecar in sidecars {

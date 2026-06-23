@@ -34,9 +34,20 @@ pub fn check_admin_status() -> bool {
     #[cfg(not(target_os = "windows"))]
     {
         // Unix (Linux/macOS) : On vérifie si l'utilisateur est root (UID 0)
+        // OU s'il a accès en exécution (traversée) au dossier des spools CUPS (ex: via le groupe lp)
         let uid = unsafe { libc::getuid() };
-        let status = uid == 0;
-        log::info!("[admin_checker] Statut root sous Unix : {}", status);
+        let is_root = uid == 0;
+        
+        let has_spool_access = match std::ffi::CString::new("/var/spool/cups") {
+            Ok(c_path) => unsafe { libc::access(c_path.as_ptr(), libc::X_OK) == 0 },
+            Err(_) => false,
+        };
+        
+        let status = is_root || has_spool_access;
+        log::info!(
+            "[admin_checker] Statut root ou accès spool sous Unix : {} (root={}, spool_access={})",
+            status, is_root, has_spool_access
+        );
         status
     }
 }
