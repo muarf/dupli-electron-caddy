@@ -5,6 +5,11 @@ const { execSync } = require('child_process');
 
 // Détection de la cible Rust courante pour la machine locale
 function getTargetTriple() {
+    const args = process.argv.slice(2);
+    if (args.length > 0 && args[0]) {
+        return args[0];
+    }
+    
     const platform = process.platform;
     const arch = process.arch;
 
@@ -63,7 +68,8 @@ const PHP_CONFIG = {
     'x86_64-unknown-linux-gnu': { useSystem: true, binName: 'php' },
     'aarch64-unknown-linux-gnu': { useSystem: true, binName: 'php' },
     'x86_64-apple-darwin': { useSystem: true, binName: 'php' },
-    'aarch64-apple-darwin': { useSystem: true, binName: 'php' }
+    'aarch64-apple-darwin': { useSystem: true, binName: 'php' },
+    'universal-apple-darwin': { useSystem: true, binName: 'php' }
 };
 
 // Télécharge un fichier de manière asynchrone avec support des redirections
@@ -107,6 +113,49 @@ function extractArchive(archivePath, targetDir, type) {
 }
 
 async function setupCaddy(triple, binariesDir) {
+    if (triple === 'universal-apple-darwin') {
+        const outputName = `caddy-${triple}`;
+        const outputPath = path.join(binariesDir, outputName);
+        if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1024) {
+            console.log(`[Caddy] Binaire déjà présent : ${outputName}`);
+            return;
+        }
+        
+        console.log(`[Caddy] Construction du binaire universel pour macOS...`);
+        const tmpDir = path.join(binariesDir, 'tmp_caddy_universal');
+        if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+
+        try {
+            const amd64Config = CADDY_URLS['x86_64-apple-darwin'];
+            const arm64Config = CADDY_URLS['aarch64-apple-darwin'];
+            
+            const amd64Archive = path.join(tmpDir, 'caddy_amd64.tar.gz');
+            const arm64Archive = path.join(tmpDir, 'caddy_arm64.tar.gz');
+            
+            await downloadFile(amd64Config.url, amd64Archive);
+            await downloadFile(arm64Config.url, arm64Archive);
+            
+            const tmpAmd64Dir = path.join(tmpDir, 'amd64');
+            const tmpArm64Dir = path.join(tmpDir, 'arm64');
+            
+            extractArchive(amd64Archive, tmpAmd64Dir, 'tar.gz');
+            extractArchive(arm64Archive, tmpArm64Dir, 'tar.gz');
+            
+            const caddyAmd64 = path.join(tmpAmd64Dir, 'caddy');
+            const caddyArm64 = path.join(tmpArm64Dir, 'caddy');
+            
+            console.log(`[Caddy] Fusion des binaires via lipo...`);
+            execSync(`lipo -create "${caddyAmd64}" "${caddyArm64}" -output "${outputPath}"`, { stdio: 'pipe' });
+            fs.chmodSync(outputPath, '755');
+            console.log(`[Caddy] Installé avec succès sous : ${outputName}`);
+        } catch (e) {
+            console.error(`[Caddy] Erreur lors de la création du binaire universel :`, e.message);
+        } finally {
+            if (fs.existsSync(tmpDir)) fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
+        return;
+    }
+
     const config = CADDY_URLS[triple];
     if (!config) {
         console.warn(`[Caddy] Pas d'URL de téléchargement pour le triple : ${triple}`);
