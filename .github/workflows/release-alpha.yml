@@ -456,6 +456,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Install PHP via Homebrew
+        run: brew install php
+
       - name: Install Composer and PHP dependencies
         run: |
           curl -sS https://getcomposer.org/installer | php
