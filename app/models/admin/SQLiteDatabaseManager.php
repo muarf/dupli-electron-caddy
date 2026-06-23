@@ -560,6 +560,95 @@ class SQLiteDatabaseManager {
                 machine_id INTEGER NOT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )",
+
+            'schema_migrations' => "CREATE TABLE IF NOT EXISTS schema_migrations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                migration_name TEXT UNIQUE NOT NULL,
+                applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )",
+
+            'print_sessions' => "CREATE TABLE IF NOT EXISTS print_sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                contact TEXT NOT NULL,
+                session_name TEXT,
+                opened_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                closed_at DATETIME NULL,
+                status TEXT DEFAULT 'active' CHECK(status IN ('active', 'closed')),
+                total_price REAL DEFAULT 0.0,
+                notes TEXT
+            )",
+
+            'recorded_print_jobs' => "CREATE TABLE IF NOT EXISTS recorded_print_jobs (
+                job_id TEXT NOT NULL,
+                printer_name TEXT NOT NULL,
+                recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (job_id, printer_name)
+            )",
+
+            'print_jobs' => "CREATE TABLE IF NOT EXISTS print_jobs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id TEXT NOT NULL,
+                document TEXT NOT NULL,
+                owner TEXT,
+                printer_name TEXT NOT NULL,
+                status TEXT NOT NULL,
+                pages_printed INTEGER DEFAULT 0,
+                total_pages INTEGER DEFAULT 0,
+                size INTEGER DEFAULT 0,
+                time_submitted TEXT,
+                event_type TEXT,
+                timestamp TEXT NOT NULL,
+                fill_rate REAL DEFAULT 0,
+                color_mode TEXT DEFAULT 'unknown',
+                duplex INTEGER DEFAULT 0,
+                thumbnail_url TEXT,
+                paper_size TEXT,
+                copies INTEGER DEFAULT 1,
+                document_full_path TEXT,
+                document_display_name TEXT,
+                session_id INTEGER,
+                calculated_price REAL DEFAULT 0,
+                machine_type TEXT,
+                machine_id INTEGER,
+                machine_name TEXT,
+                contact TEXT,
+                staged INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(job_id, printer_name, timestamp)
+            )",
+
+            'bibliotheque_files' => "CREATE TABLE IF NOT EXISTS bibliotheque_files (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                filename TEXT NOT NULL,
+                filepath TEXT NOT NULL,
+                file_type TEXT NOT NULL,
+                thumbnail_path TEXT,
+                file_size INTEGER,
+                page_count INTEGER DEFAULT 0,
+                extracted_text TEXT,
+                is_external INTEGER DEFAULT 0,
+                source_directory TEXT,
+                metadata_json TEXT,
+                tags TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )",
+
+            'bibliotheque_chunks' => "CREATE TABLE IF NOT EXISTS bibliotheque_chunks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                file_id INTEGER NOT NULL,
+                chunk_index INTEGER NOT NULL,
+                content TEXT NOT NULL,
+                word_count INTEGER DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (file_id) REFERENCES bibliotheque_files(id) ON DELETE CASCADE
+            )",
+
+            'bibliotheque_vectors' => "CREATE TABLE IF NOT EXISTS bibliotheque_vectors (
+                chunk_id INTEGER PRIMARY KEY,
+                vector BLOB NOT NULL,
+                FOREIGN KEY (chunk_id) REFERENCES bibliotheque_chunks(id) ON DELETE CASCADE
             )"
         );
         
@@ -570,8 +659,31 @@ class SQLiteDatabaseManager {
                 // Ignorer les erreurs si la table existe déjà
             }
         }
-        
-        // Pas d'insertion de données initiales par défaut
+
+        // Créer les index requis pour les performances et contraintes
+        try {
+            $db->exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_active_contact ON print_sessions(contact) WHERE status = 'active'");
+        } catch (Exception $e) {
+            try {
+                $db->exec("CREATE INDEX IF NOT EXISTS idx_sessions_contact ON print_sessions(contact)");
+            } catch (Exception $e2) {}
+        }
+
+        try { $db->exec("CREATE INDEX IF NOT EXISTS idx_recorded_jobs_lookup ON recorded_print_jobs(job_id, printer_name)"); } catch (Exception $e) {}
+        try { $db->exec("CREATE INDEX IF NOT EXISTS idx_print_jobs_staged ON print_jobs(staged)"); } catch (Exception $e) {}
+        try { $db->exec("CREATE INDEX IF NOT EXISTS idx_print_jobs_session ON print_jobs(session_id)"); } catch (Exception $e) {}
+        try { $db->exec("CREATE INDEX IF NOT EXISTS idx_bibliotheque_filename ON bibliotheque_files(filename)"); } catch (Exception $e) {}
+        try { $db->exec("CREATE INDEX IF NOT EXISTS idx_bibliotheque_type ON bibliotheque_files(file_type)"); } catch (Exception $e) {}
+        try { $db->exec("CREATE INDEX IF NOT EXISTS idx_chunks_file_id ON bibliotheque_chunks(file_id)"); } catch (Exception $e) {}
+
+        // FTS5 pour la recherche
+        try {
+            $db->exec("CREATE VIRTUAL TABLE IF NOT EXISTS bibliotheque_chunks_fts USING fts5(
+                content,
+                content='bibliotheque_chunks',
+                content_rowid='id'
+            )");
+        } catch (Exception $e) {}
     }
     
     /**
