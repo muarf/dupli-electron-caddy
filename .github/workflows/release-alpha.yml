@@ -142,8 +142,60 @@ jobs:
       - name: Run JS Tests (Jest)
         run: npm test -- --runInBand --forceExit
 
+  test-macos-alpha:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup PHP and Caddy via Homebrew
+        run: |
+          brew install caddy php ghostscript
+          # Copy Caddy binary to caddy/
+          mkdir -p caddy
+          cp /opt/homebrew/bin/caddy caddy/caddy || cp /usr/local/bin/caddy caddy/caddy
+          chmod +x caddy/caddy
+          # Copy PHP binary to php/
+          mkdir -p php
+          cp $(which php) php/php
+          chmod +x php/php
+
+      - name: Install dependencies
+        run: |
+          npm install
+          cd app
+          php ../composer.phar install --no-dev --optimize-autoloader --ignore-platform-reqs || true
+          cd ..
+
+      - name: Install Composer and PHP dependencies
+        run: |
+          curl -sS https://getcomposer.org/installer | php
+          cd app
+          php ../composer.phar install --optimize-autoloader --ignore-platform-reqs
+          cd ..
+
+      - name: Run PHP Tests (Pest)
+        run: |
+          chmod +x app/tests/helpers/mock_binary.sh
+          cd app
+          ./vendor/bin/pest --display-deprecations --display-errors --display-notices
+          cd ..
+
+      - name: Run JS Tests (Jest)
+        run: npm test -- --runInBand --forceExit
+
+
   create-alpha-release:
-    needs: [get-version, test-linux-alpha, test-windows-alpha]
+    needs: [get-version, test-linux-alpha, test-windows-alpha, test-macos-alpha]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -355,8 +407,86 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  build-macos-alpha:
+    needs: [get-version, create-alpha-release]
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin, aarch64-apple-darwin
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Update package.json and tauri.conf.json for Alpha
+        run: |
+          VERSION="${{ needs.get-version.outputs.version }}"
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '$VERSION';
+            pkg.name = 'dupli-tauri-alpha';
+            pkg.productName = 'Duplicator Alpha';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+
+            const tauriPath = 'src-tauri/tauri.conf.json';
+            const tauriConf = JSON.parse(fs.readFileSync(tauriPath, 'utf8'));
+            const cleanVersion = '$VERSION'.split('-')[0];
+            tauriConf.version = cleanVersion;
+            tauriConf.productName = 'Duplicator Alpha';
+            fs.writeFileSync(tauriPath, JSON.stringify(tauriConf, null, 2) + '\n');
+            console.log('Updated tauri.conf.json version to', cleanVersion);
+          "
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Composer and PHP dependencies
+        run: |
+          curl -sS https://getcomposer.org/installer | php
+          cd app
+          php ../composer.phar install --no-dev --optimize-autoloader --ignore-platform-reqs
+          cd ..
+
+      - name: Download Tauri Sidecars
+        run: node scripts/download-tauri-sidecars.js
+
+      - name: Build Tauri macOS Alpha (Universal)
+        run: npx @tauri-apps/cli build --target universal-apple-darwin
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+      - name: Upload macOS Alpha artifacts
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.get-version.outputs.tag }}
+          files: |
+            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/universal-apple-darwin/release/bundle/macos/*.tar.gz
+            src-tauri/target/universal-apple-darwin/release/bundle/macos/*.tar.gz.sig
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   publish-updater:
-    needs: [get-version, build-linux-alpha, build-windows-alpha]
+    needs: [get-version, build-linux-alpha, build-windows-alpha, build-macos-alpha]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -382,8 +512,12 @@ jobs:
           WIN_URL=$(echo "$ASSETS" | jq -r '.[] | select(.name | endswith("-setup.exe")) | .url')
           WIN_SIG_URL=$(echo "$ASSETS" | jq -r '.[] | select(.name | endswith("-setup.exe.sig")) | .url')
           
+          MAC_URL=$(echo "$ASSETS" | jq -r '.[] | select(.name | endswith(".app.tar.gz")) | .url')
+          MAC_SIG_URL=$(echo "$ASSETS" | jq -r '.[] | select(.name | endswith(".app.tar.gz.sig")) | .url')
+          
           LINUX_SIG=""
           WIN_SIG=""
+          MAC_SIG=""
           
           if [ "$LINUX_SIG_URL" != "null" ] && [ -n "$LINUX_SIG_URL" ]; then
             LINUX_SIG=$(curl -sL "$LINUX_SIG_URL")
@@ -391,6 +525,10 @@ jobs:
           
           if [ "$WIN_SIG_URL" != "null" ] && [ -n "$WIN_SIG_URL" ]; then
             WIN_SIG=$(curl -sL "$WIN_SIG_URL")
+          fi
+          
+          if [ "$MAC_SIG_URL" != "null" ] && [ -n "$MAC_SIG_URL" ]; then
+            MAC_SIG=$(curl -sL "$MAC_SIG_URL")
           fi
           
           mkdir -p updater
@@ -407,6 +545,14 @@ jobs:
               "windows-x86_64": {
                 "signature": "$WIN_SIG",
                 "url": "$WIN_URL"
+              },
+              "darwin-x86_64": {
+                "signature": "$MAC_SIG",
+                "url": "$MAC_URL"
+              },
+              "darwin-aarch64": {
+                "signature": "$MAC_SIG",
+                "url": "$MAC_URL"
               }
             }
           }
