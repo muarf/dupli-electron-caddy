@@ -159,7 +159,7 @@ jobs:
 
       - name: Setup PHP and Caddy via Homebrew
         run: |
-          brew install caddy php ghostscript
+          brew install caddy php ghostscript imagemagick
           # Copy Caddy binary to caddy/
           mkdir -p caddy
           cp /opt/homebrew/bin/caddy caddy/caddy || cp /usr/local/bin/caddy caddy/caddy
