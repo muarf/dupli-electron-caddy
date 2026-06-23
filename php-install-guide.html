@@ -97,6 +97,10 @@
             content: "🏔️";
         }
         
+        .macos::before {
+            content: "🍎";
+        }
+        
         .command {
             background: #2d3748;
             color: #a0ff00;
@@ -217,6 +221,19 @@
             <div class="icon">⚠️</div>
             <h1>PHP n'est pas installé sur votre système</h1>
             <p class="subtitle">Duplicator nécessite PHP pour fonctionner. Veuillez l'installer selon votre distribution Linux.</p>
+        </div>
+        
+        <div class="section macos">
+            <h2>macOS (Apple Silicon & Intel)</h2>
+            <p style="margin-bottom: 10px; color: #718096;">Si ce n'est pas déjà fait, installez Homebrew, puis les paquets requis :</p>
+            <div class="command">
+                <code># 1. Installer Homebrew (copiez/collez dans le Terminal)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# 2. Installer PHP, Ghostscript et ImageMagick
+brew install php ghostscript imagemagick</code>
+                <button class="copy-btn" onclick="copyCommand(this)">Copier</button>
+            </div>
         </div>
         
         <div class="section debian">
