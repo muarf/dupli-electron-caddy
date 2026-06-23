@@ -26,11 +26,12 @@
       "../Caddyfile",
       "../app",
       "../bin",
+      "../php-install-guide.html",
       "binaries"
     ],
     "externalBin": [
       "binaries/caddy",
-      "binaries/php"
+      "binaries/dupli-php"
     ],
     "createUpdaterArtifacts": true
   },

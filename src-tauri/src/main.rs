@@ -152,19 +152,40 @@ fn main() {
                 let caddy_ready = wait_for_port(CADDY_PORT, CADDY_READY_TIMEOUT_SECS).await;
                 let php_ready = wait_for_port(8001, CADDY_READY_TIMEOUT_SECS).await;
 
-                let target_url = if caddy_ready && php_ready {
+                let parsed_url = if caddy_ready && php_ready {
                     log::info!("Serveurs prêts (Caddy & PHP) ! Navigation vers {APP_URL}");
-                    APP_URL
+                    APP_URL.parse().expect("URL invalide")
+                } else if !php_ready {
+                    log::warn!("PHP n'est pas prêt. Tentative de chargement de la page d'aide.");
+                    let guide_path = app_handle.path().resource_dir().ok().and_then(|res| {
+                        let candidate_up = res.join("_up_").join("php-install-guide.html");
+                        if candidate_up.exists() {
+                            return Some(candidate_up);
+                        }
+                        let candidate = res.join("php-install-guide.html");
+                        if candidate.exists() {
+                            return Some(candidate);
+                        }
+                        None
+                    });
+
+                    if let Some(path) = guide_path {
+                        tauri::Url::from_file_path(path).unwrap_or_else(|_| {
+                            FALLBACK_URL.parse().expect("URL de secours invalide")
+                        })
+                    } else {
+                        log::error!("Fichier php-install-guide.html introuvable dans les ressources.");
+                        FALLBACK_URL.parse().expect("URL de secours invalide")
+                    }
                 } else {
-                    log::warn!("Timeout d'un serveur (caddy_ready={caddy_ready}, php_ready={php_ready}) — fallback vers PHP direct : {FALLBACK_URL}");
-                    FALLBACK_URL
+                    log::warn!("Caddy n'est pas prêt — fallback vers PHP direct : {FALLBACK_URL}");
+                    FALLBACK_URL.parse().expect("URL de secours invalide")
                 };
 
-                // Navigate la fenêtre vers l'URL PHP
+                // Navigate la fenêtre vers l'URL
                 if let Some(window) = app_handle.get_webview_window("main") {
-                    let parsed_url = target_url.parse().expect("URL invalide");
-                    if let Err(e) = window.navigate(parsed_url) {
-                        log::error!("Impossible de naviguer vers {target_url} : {e}");
+                    if let Err(e) = window.navigate(parsed_url.clone()) {
+                        log::error!("Impossible de naviguer vers {parsed_url} : {e}");
                     }
                     let _ = app_handle.emit("servers-ready", ());
                 } else {

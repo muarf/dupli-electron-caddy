@@ -94,11 +94,58 @@ pub fn get_printers() -> Result<Vec<PrinterDto>, String> {
             })
     }
 
-    // Stub pour Linux/macOS — retourne une liste vide sans erreur
+    // Récupération des imprimantes CUPS sous Linux/macOS
     #[cfg(not(target_os = "windows"))]
     {
-        log::warn!("[printer_commands] get_printers() : non supporté sur cette plateforme (non-Windows)");
-        Ok(Vec::new())
+        log::info!("[printer_commands] get_printers() : exécution sous Linux/macOS");
+        let mut printers = Vec::new();
+
+        // 1. Déterminer l'imprimante par défaut via `lpstat -d`
+        let default_printer = std::process::Command::new("lpstat")
+            .arg("-d")
+            .output()
+            .ok()
+            .and_then(|out| {
+                if out.status.success() {
+                    let stdout = String::from_utf8_lossy(&out.stdout);
+                    // Format: "system default destination: Printer_Name"
+                    stdout.split(':').nth(1).map(|s| s.trim().to_string())
+                } else {
+                    None
+                }
+            });
+
+        // 2. Récupérer la liste des imprimantes via `lpstat -e`
+        if let Ok(out) = std::process::Command::new("lpstat").arg("-e").output() {
+            if out.status.success() {
+                let stdout = String::from_utf8_lossy(&out.stdout);
+                for line in stdout.lines() {
+                    let name = line.trim().to_string();
+                    if name.is_empty() { continue; }
+
+                    let is_default = Some(&name) == default_printer.as_ref();
+                    printers.push(PrinterDto {
+                        name: name.clone(),
+                        driver_name: "CUPS".to_string(),
+                        port_name: "CUPS_Port".to_string(),
+                        comment: "Imprimante CUPS système".to_string(),
+                        location: "".to_string(),
+                        status: 4, // 4 = Idle / Prête
+                        status_label: "Prête".to_string(),
+                        jobs_count: 0,
+                        is_default,
+                        is_shared: false,
+                    });
+                }
+            } else {
+                log::warn!("[printer_commands] get_printers() : lpstat -e a renvoyé une erreur");
+            }
+        } else {
+            log::warn!("[printer_commands] get_printers() : impossible de lancer lpstat");
+        }
+
+        log::info!("[printer_commands] get_printers() : {} imprimante(s) trouvée(s) sous Linux/macOS", printers.len());
+        Ok(printers)
     }
 }
 
@@ -208,8 +255,47 @@ pub fn delete_print_job(printer_name: String, job_id: u32) -> Result<(), String>
 
     #[cfg(not(target_os = "windows"))]
     {
-        log::warn!("[printer_commands] delete_print_job() : non supporté sur cette plateforme");
-        Err("La suppression de jobs n'est supportée que sous Windows.".to_string())
+        // Formater l'identifiant pour CUPS : printer_name-job_id
+        let cancel_arg = if printer_name.trim().is_empty() {
+            format!("{}", job_id)
+        } else {
+            let clean_printer = printer_name.replace(' ', "_");
+            format!("{}-{}", clean_printer, job_id)
+        };
+
+        log::info!(
+            "[printer_commands] delete_print_job(job_id={}) : tentative via cancel avec '{}'",
+            job_id, cancel_arg
+        );
+        
+        let mut status = std::process::Command::new("cancel")
+            .arg(&cancel_arg)
+            .status();
+
+        // Fallback si échec (essayer uniquement avec l'ID numérique)
+        if (status.is_err() || !status.as_ref().unwrap().success()) && !printer_name.trim().is_empty() {
+            log::info!(
+                "[printer_commands] delete_print_job : échec avec '{}', tentative fallback avec '{}'",
+                cancel_arg, job_id
+            );
+            status = std::process::Command::new("cancel")
+                .arg(format!("{}", job_id))
+                .status();
+        }
+
+        match status {
+            Ok(s) if s.success() => {
+                log::info!("[printer_commands] delete_print_job : job {} annulé avec succès", job_id);
+                Ok(())
+            }
+            Ok(s) => {
+                let code = s.code().unwrap_or(-1);
+                Err(format!("La commande cancel (CUPS) a échoué avec le code de sortie : {}", code))
+            }
+            Err(e) => {
+                Err(format!("Impossible de lancer la commande cancel : {}", e))
+            }
+        }
     }
 }
 
@@ -264,20 +350,84 @@ pub fn get_printer_capabilities(printer_name: String) -> Result<PrinterCapabilit
         return Err("Le nom de l'imprimante ne peut pas être vide.".to_string());
     }
 
-    // TODO : Implémenter via DeviceCapabilitiesW (Win32) dans windows_native.rs
-    // Retourne des valeurs par défaut conservatrices pour l'instant
-    log::warn!(
-        "[printer_commands] get_printer_capabilities('{}') : implémentation partielle, retour des valeurs par défaut",
-        printer_name
-    );
+    #[cfg(target_os = "windows")]
+    {
+        // TODO : Implémenter via DeviceCapabilitiesW (Win32) dans windows_native.rs
+        // Retourne des valeurs par défaut conservatrices pour l'instant
+        log::warn!(
+            "[printer_commands] get_printer_capabilities('{}') : implémentation partielle, retour des valeurs par défaut",
+            printer_name
+        );
 
-    Ok(PrinterCapabilities {
-        supports_color: false,
-        supports_duplex: false,
-        supports_staple: false,
-        max_copies: 999,
-        supported_paper_sizes: vec!["A4".to_string(), "Letter".to_string()],
-    })
+        Ok(PrinterCapabilities {
+            supports_color: false,
+            supports_duplex: false,
+            supports_staple: false,
+            max_copies: 999,
+            supported_paper_sizes: vec!["A4".to_string(), "Letter".to_string()],
+        })
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        log::info!("[printer_commands] get_printer_capabilities('{}') : exécution sous Linux/macOS", printer_name);
+        
+        let mut supports_color = false;
+        let mut supports_duplex = false;
+        let mut supports_staple = false;
+        let mut supported_paper_sizes = Vec::new();
+
+        if let Ok(out) = std::process::Command::new("lpoptions")
+            .args(["-p", &printer_name, "-l"])
+            .output()
+        {
+            if out.status.success() {
+                let stdout = String::from_utf8_lossy(&out.stdout);
+                for line in stdout.lines() {
+                    let trimmed = line.trim();
+                    if trimmed.is_empty() { continue; }
+
+                    if trimmed.starts_with("Duplex/") || trimmed.starts_with("sides/") {
+                        supports_duplex = true;
+                    }
+                    if trimmed.starts_with("StapleLocation/") || trimmed.starts_with("Staple/") {
+                        supports_staple = true;
+                    }
+                    if trimmed.starts_with("ColorModel/") || trimmed.starts_with("print-color-mode/") {
+                        if let Some(colon_idx) = trimmed.find(':') {
+                            let values = trimmed[colon_idx + 1..].to_lowercase();
+                            if values.contains("color") || values.contains("rgb") {
+                                supports_color = true;
+                            }
+                        }
+                    }
+                    if trimmed.starts_with("PageSize/") || trimmed.starts_with("media/") {
+                        if let Some(colon_idx) = trimmed.find(':') {
+                            let values = &trimmed[colon_idx + 1..];
+                            for val in values.split_whitespace() {
+                                let clean_val = val.trim_start_matches('*');
+                                if !supported_paper_sizes.contains(&clean_val.to_string()) {
+                                    supported_paper_sizes.push(clean_val.to_string());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if supported_paper_sizes.is_empty() {
+            supported_paper_sizes.push("A4".to_string());
+        }
+
+        Ok(PrinterCapabilities {
+            supports_color,
+            supports_duplex,
+            supports_staple,
+            max_copies: 9999,
+            supported_paper_sizes,
+        })
+    }
 }
 
 // =============================================================================
@@ -326,9 +476,8 @@ impl PrintMonitorState {
 
             // Cache des job_id déjà vus pour n'émettre que les nouveaux jobs.
             // Déclaré ici (hors du loop) pour persister entre chaque itération.
-            // Conditionné #[cfg(windows)] pour éviter le warning unused_variables sur Linux.
-            #[cfg(target_os = "windows")]
             let mut seen_job_ids: std::collections::HashSet<u32> = std::collections::HashSet::new();
+            let mut initial_scan_done = false;
 
             loop {
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
@@ -376,10 +525,57 @@ impl PrintMonitorState {
                     }
                 }
 
-                // Sur non-Windows : le moniteur ne fait rien mais reste actif pour ne pas crasher
+                // Sur non-Windows : polling CUPS via lpstat
                 #[cfg(not(target_os = "windows"))]
                 {
-                    log::trace!("[PrintMonitorState] Moniteur actif (non-Windows : aucune action)");
+                    let is_initial = !initial_scan_done;
+                    if is_initial {
+                        initial_scan_done = true;
+                    }
+
+                    if let Ok(out) = std::process::Command::new("lpstat")
+                        .args(["-W", "all", "-o"])
+                        .output()
+                    {
+                        if out.status.success() {
+                            let stdout = String::from_utf8_lossy(&out.stdout);
+                            for line in stdout.lines() {
+                                let parts: Vec<&str> = line.split_whitespace().collect();
+                                if parts.len() >= 3 {
+                                    let job_part = parts[0];
+                                    let size_bytes: u32 = parts[2].parse().unwrap_or(0);
+                                    
+                                    if let Some(dash_idx) = job_part.rfind('-') {
+                                        let printer_name = job_part[..dash_idx].to_string();
+                                        let job_id_str = &job_part[dash_idx + 1..];
+                                        if let Ok(job_id) = job_id_str.parse::<u32>() {
+                                            if seen_job_ids.insert(job_id) {
+                                                if !is_initial {
+                                                    log::info!(
+                                                        "[PrintMonitorState] (CUPS) Nouveau job détecté : id={} doc='Job {}' imprimante='{}'",
+                                                        job_id, job_id, printer_name
+                                                    );
+                                                    let payload = serde_json::json!({
+                                                        "jobId": job_id,
+                                                        "document": format!("Job {}", job_id),
+                                                        "printerName": printer_name,
+                                                        "status": 3, // Spooled/Printing
+                                                        "statusLabel": "Prêt".to_string(),
+                                                        "totalPages": 1,
+                                                        "sizeBytes": size_bytes,
+                                                        "isDuplex": false,
+                                                        "paperSize": "A4",
+                                                        "isGrayscale": false,
+                                                    });
+                                                    let _ = app_handle.emit("print-job-detected", payload);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -496,6 +692,8 @@ pub struct ReanalyzeResult {
     pub is_grayscale: bool,
     pub is_duplex: bool,
     pub paper_size: String,
+    pub fill_rate: f64,
+    pub thumbnail_url: String,
 }
 
 #[command]
@@ -540,6 +738,8 @@ pub fn reanalyze_print_job(
                         is_grayscale: !job.is_color,
                         is_duplex: job.is_duplex,
                         paper_size: job.paper_size.clone(),
+                        fill_rate: 0.0,
+                        thumbnail_url: "".to_string(),
                     });
                 }
             }
@@ -558,13 +758,154 @@ pub fn reanalyze_print_job(
             is_grayscale: false,
             is_duplex: false,
             paper_size: "A4".to_string(),
+            fill_rate: 0.0,
+            thumbnail_url: "".to_string(),
         })
     }
 
     #[cfg(not(target_os = "windows"))]
     {
-        log::warn!("[printer_commands] reanalyze_print_job() : non supporté sur cette plateforme");
-        Err("La réanalyse de job n'est supportée que sous Windows.".to_string())
+        log::info!("[printer_commands] reanalyze_print_job() : exécution sous Linux/macOS");
+
+        // 1. Déterminer le chemin du spool file
+        let mut source_path = std::path::PathBuf::from(&spl_path);
+        if spl_path.is_empty() || !source_path.exists() {
+            let padded_id = format!("{:05}", job_id);
+            let p1 = std::path::PathBuf::from(format!("/var/spool/cups/d{}-001", padded_id));
+            let p2 = std::path::PathBuf::from(format!("/var/spool/cups/d{}", padded_id));
+            if p1.exists() {
+                source_path = p1;
+            } else if p2.exists() {
+                source_path = p2;
+            }
+        }
+
+        if !source_path.exists() {
+            log::warn!("[printer_commands] reanalyze_print_job : spool file introuvable pour le job {}", job_id);
+            return Ok(ReanalyzeResult {
+                job_id,
+                found: false,
+                document: document_name,
+                status: 0,
+                status_label: "Fichier spool introuvable".to_string(),
+                total_pages: 0,
+                size_bytes: 0,
+                is_grayscale: false,
+                is_duplex: false,
+                paper_size: "A4".to_string(),
+                fill_rate: 0.0,
+                thumbnail_url: "".to_string(),
+            });
+        }
+
+        // 2. Copier vers /tmp pour l'analyse Ghostscript
+        let temp_copy_str = format!("/tmp/convert_job_{}.pdf", job_id);
+        if let Err(e) = std::fs::copy(&source_path, &temp_copy_str) {
+            log::error!("[printer_commands] reanalyze_print_job : impossible de copier le spool {} vers /tmp : {}", job_id, e);
+            return Err(format!("Impossible de lire le fichier spool : {}", e));
+        }
+
+        // 3. Créer le dossier des miniatures
+        let thumb_dir = std::path::Path::new("/tmp/dupli_thumbnails");
+        if !thumb_dir.exists() {
+            let _ = std::fs::create_dir_all(thumb_dir);
+        }
+
+        // 4. Générer les miniatures via gs
+        let output_pattern = format!("/tmp/dupli_thumbnails/job_{}_page_%d.png", job_id);
+        let _ = std::process::Command::new("gs")
+            .args([
+                "-dNOPAUSE",
+                "-dBATCH",
+                "-dSAFER",
+                "-dQUIET",
+                "-sDEVICE=png16m",
+                "-r72",
+                &format!("-sOutputFile={}", output_pattern),
+                &temp_copy_str,
+            ])
+            .status();
+
+        // 5. Analyser la couverture d'encre (ink_cov) via gs
+        let mut total_c = 0.0;
+        let mut total_m = 0.0;
+        let mut total_y = 0.0;
+        let mut total_k = 0.0;
+        let mut pages = 0;
+
+        if let Ok(out) = std::process::Command::new("gs")
+            .args([
+                "-dNOPAUSE",
+                "-dBATCH",
+                "-dSAFER",
+                "-dQUIET",
+                "-o", "-",
+                "-sDEVICE=ink_cov",
+                &temp_copy_str,
+            ])
+            .output()
+        {
+            if out.status.success() {
+                let stdout = String::from_utf8_lossy(&out.stdout);
+                for line in stdout.lines() {
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    if parts.len() >= 4 {
+                        if let (Ok(c), Ok(m), Ok(y), Ok(k)) = (
+                            parts[0].parse::<f64>(),
+                            parts[1].parse::<f64>(),
+                            parts[2].parse::<f64>(),
+                            parts[3].parse::<f64>(),
+                        ) {
+                            total_c += c;
+                            total_m += m;
+                            total_y += y;
+                            total_k += k;
+                            pages += 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Nettoyage de la copie temporaire
+        let _ = std::fs::remove_file(&temp_copy_str);
+
+        // 6. Calcul des statistiques
+        let mut is_grayscale = true;
+        let mut fill_rate = 0.0;
+        let total_pages = if pages > 0 { pages } else { 1 };
+
+        if pages > 0 {
+            let avg_c = total_c / (pages as f64);
+            let avg_m = total_m / (pages as f64);
+            let avg_y = total_y / (pages as f64);
+            let diff_cm = (avg_c - avg_m).abs();
+            let diff_my = (avg_m - avg_y).abs();
+            let diff_cy = (avg_c - avg_y).abs();
+            let max_diff = diff_cm.max(diff_my).max(diff_cy);
+
+            let is_color = (avg_c + avg_m + avg_y > 2.0) && (max_diff > 1.0);
+            is_grayscale = !is_color || !driver_color;
+            fill_rate = (total_c + total_m + total_y + total_k) / (pages as f64);
+        }
+
+        let size_bytes = std::fs::metadata(&source_path).map(|m| m.len() as u32).unwrap_or(0);
+        let thumbnail_url = format!("/?get_linux_thumb=job_{}_page_1.png", job_id);
+
+        Ok(ReanalyzeResult {
+            job_id,
+            found: true,
+            document: document_name,
+            status: 3, // Spooled/Printing
+            status_label: "Prêt".to_string(),
+            total_pages,
+            size_bytes,
+            is_grayscale,
+            is_duplex: false,
+            paper_size: "A4".to_string(),
+            fill_rate,
+            thumbnail_url,
+        })
     }
 }
 

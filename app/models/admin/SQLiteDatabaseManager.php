@@ -48,6 +48,11 @@ class SQLiteDatabaseManager {
             // Créer les tables essentielles
             $this->createEssentialTables($db);
             
+            // Réinitialiser le flag de migration pour forcer l'exécution sur la nouvelle base
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                unset($_SESSION['_migrations_checked']);
+            }
+            
             $result['success'] = "Base de données SQLite '$db_name' créée avec succès.";
             
             // Si un template est spécifié, copier les données
@@ -129,6 +134,11 @@ class SQLiteDatabaseManager {
             
             // Mettre à jour le fichier de configuration
             $this->updateConfigFile($new_db_path);
+            
+            // Réinitialiser le flag de migration pour forcer l'exécution sur la nouvelle base
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                unset($_SESSION['_migrations_checked']);
+            }
             
             $result['success'] = "Basculement vers '$new_db' effectué avec succès. La page va se recharger automatiquement.";
             $result['current_db'] = $new_db;
@@ -364,6 +374,11 @@ class SQLiteDatabaseManager {
             // Recréer la structure
             $this->createEssentialTables($db);
             
+            // Réinitialiser le flag de migration pour forcer l'exécution sur la nouvelle base
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                unset($_SESSION['_migrations_checked']);
+            }
+            
             $result['success'] = "Base de données réinitialisée avec succès. Structure recréée.";
             
         } catch(PDOException $e) {
@@ -497,7 +512,11 @@ class SQLiteDatabaseManager {
                 nom_machine TEXT DEFAULT 'Duplicopieur',
                 duplicopieur_id INTEGER DEFAULT 1,
                 tambour TEXT DEFAULT NULL,
-                tirage_global_id TEXT DEFAULT NULL
+                tirage_global_id TEXT DEFAULT NULL,
+                session_id INTEGER REFERENCES print_sessions(id),
+                document_name TEXT,
+                thumbnail_url TEXT,
+                nb_exemplaires INTEGER DEFAULT 1
             )",
             
             'a4' => "CREATE TABLE IF NOT EXISTS a4 (
@@ -528,7 +547,11 @@ class SQLiteDatabaseManager {
                 cb TEXT NOT NULL,
                 mot TEXT NOT NULL,
                 date TEXT NOT NULL,
-                tirage_global_id TEXT DEFAULT NULL
+                tirage_global_id TEXT DEFAULT NULL,
+                session_id INTEGER REFERENCES print_sessions(id),
+                document_name TEXT,
+                thumbnail_url TEXT,
+                nb_exemplaires INTEGER DEFAULT 1
             )",
             
             'printer_mappings' => "CREATE TABLE IF NOT EXISTS printer_mappings (

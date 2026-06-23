@@ -29,7 +29,7 @@
           "args": true
         },
         {
-          "name": "binaries/php",
+          "name": "binaries/dupli-php",
           "sidecar": true,
           "args": true
         }

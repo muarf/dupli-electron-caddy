@@ -152,10 +152,10 @@ fn setup_caddy(triple: &str, binaries_dir: &Path) -> Result<(), Box<dyn std::err
 
 fn setup_php(triple: &str, binaries_dir: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let ext = if triple.contains("windows") { ".exe" } else { "" };
-    let output_name = format!("php-{}{}", triple, ext);
+    let output_name = format!("dupli-php-{}{}", triple, ext);
     let output_path = binaries_dir.join(&output_name);
 
-    if output_path.exists() && fs::metadata(&output_path)?.len() > 1024 {
+    if output_path.exists() && fs::metadata(&output_path)?.len() > 10 {
         println!("[PHP] Le binaire existe déjà : {}", output_name);
         return Ok(());
     }
@@ -210,55 +210,30 @@ fn setup_php(triple: &str, binaries_dir: &Path) -> Result<(), Box<dyn std::error
 
         println!("[PHP] Installé sous : {}", output_name);
     } else {
-        // Unix (Linux/macOS) : Copie du PHP système local
-        println!("[PHP] Utilisation du PHP système...");
-        
-        let which_php = Command::new("which")
-            .arg("php")
-            .output()?;
-        
-        if !which_php.status.success() {
-            return Err("PHP n'est pas détecté sur le système Unix local.".into());
-        }
-
-        let php_path_str = String::from_utf8_lossy(&which_php.stdout).trim().to_string();
-        let php_path = Path::new(&php_path_str);
-
-        fs::copy(php_path, &output_path)?;
+        // Unix (Linux/macOS) : Génération du script wrapper PHP
+        println!("[PHP] Génération du script wrapper PHP...");
+        let wrapper_content = "#!/bin/sh\nexec php \"$@\"\n";
+        fs::write(&output_path, wrapper_content)?;
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
             fs::set_permissions(&output_path, fs::Permissions::from_mode(0o755))?;
         }
-        println!("[PHP] Copié depuis le système vers : {}", output_name);
+        println!("[PHP] Wrapper PHP créé avec succès : {}", output_name);
 
-        // Tentative de copie de php-fpm
+        // Génération du script wrapper PHP-FPM
         let fpm_name = format!("php-fpm-{}", triple);
         let fpm_path = binaries_dir.join(&fpm_name);
-
         if !fpm_path.exists() {
-            let mut fpm_found = false;
-            // Essayer différentes variantes de noms courants
-            for fpm_cmd in &["php-fpm", "php-fpm8.2", "php-fpm8.1", "php-fpm8.3"] {
-                let which_fpm = Command::new("which").arg(fpm_cmd).output();
-                if let Ok(out) = which_fpm {
-                    if out.status.success() {
-                        let path_str = String::from_utf8_lossy(&out.stdout).trim().to_string();
-                        fs::copy(Path::new(&path_str), &fpm_path)?;
-                        #[cfg(unix)]
-                        {
-                            use std::os::unix::fs::PermissionsExt;
-                            fs::set_permissions(&fpm_path, fs::Permissions::from_mode(0o755))?;
-                        }
-                        println!("[PHP-FPM] Copié depuis le système vers : {}", fpm_name);
-                        fpm_found = true;
-                        break;
-                    }
-                }
+            println!("[PHP-FPM] Génération du script wrapper PHP-FPM...");
+            let fpm_wrapper_content = "#!/bin/sh\nexec php-fpm \"$@\"\n";
+            fs::write(&fpm_path, fpm_wrapper_content)?;
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                fs::set_permissions(&fpm_path, fs::Permissions::from_mode(0o755))?;
             }
-            if !fpm_found {
-                println!("[PHP-FPM] php-fpm non détecté en local. Seul le serveur PHP intégré sera utilisé.");
-            }
+            println!("[PHP-FPM] Wrapper PHP-FPM créé avec succès : {}", fpm_name);
         }
     }
 

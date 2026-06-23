@@ -271,6 +271,11 @@ function Action($conf = null){
                         throw $t;
                     }
                     
+                    // Réinitialiser le flag de migration pour forcer l'exécution sur la nouvelle base
+                    if (session_status() === PHP_SESSION_ACTIVE) {
+                        unset($_SESSION['_migrations_checked']);
+                    }
+                    
                     // Rediriger vers l'accueil avec un message de succès
                     if (PHP_SAPI === 'cli') {
                         return "setup_success";
