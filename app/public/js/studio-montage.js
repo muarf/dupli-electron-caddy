@@ -267,7 +267,6 @@
     }
 
     try {
-    try {
       const isImage = file.type.startsWith('image/');
       const fileId = pdfDocs.length;
       
