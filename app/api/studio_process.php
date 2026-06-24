@@ -658,7 +658,7 @@ if ($action === 'unimpose') {
         finfo_close($finfo);
         if ($mime !== 'application/pdf') throw new Exception("Le fichier doit être un PDF.");
 
-        $mode        = $_POST['unimpose_mode'] ?? 'booklet'; // booklet | doubles
+        $mode        = $_POST['unimpose_mode'] ?? 'booklet'; // booklet | doubles | sequential
         $outFilename = $safeName . '_unimposed.pdf';
         $outPath     = $tmpBase . $outFilename;
 
@@ -666,6 +666,8 @@ if ($action === 'unimpose') {
 
         if ($mode === 'doubles') {
             $result = $un->splitDoublePages();
+        } elseif ($mode === 'sequential') {
+            $result = $un->splitSequential();
         } else {
             $result = $un->unimposeBooklet();
         }

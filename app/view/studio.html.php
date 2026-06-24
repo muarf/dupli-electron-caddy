@@ -461,6 +461,7 @@
           <select class="panel-select" id="selUnimposeMode">
             <option value="booklet">Livret classique</option>
             <option value="doubles">Doubles pages (couv + doubles)</option>
+            <option value="sequential">Coupe Séquentielle (1g, 1d, 2g, 2d...)</option>
           </select>
         </div>
         <div class="panel-row" style="margin-top:12px">
