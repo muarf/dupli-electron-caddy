@@ -594,6 +594,9 @@
     <!-- Footer -->
     <div style="padding:16px 20px;border-top:1px solid #e2e5ea;display:flex;gap:10px;justify-content:flex-end">
       <button id="impPreviewCloseBtn" style="padding:10px 20px;border:1px solid #e2e5ea;border-radius:8px;background:#fff;cursor:pointer;font-family:Inter,sans-serif;font-size:13px;font-weight:500;color:#374151">Fermer</button>
+      <button id="impPreviewLoadApp" style="padding:10px 20px;border:none;border-radius:8px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;cursor:pointer;font-family:Inter,sans-serif;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px">
+        <i class="fa fa-folder-open"></i> Charger dans le Studio
+      </button>
       <a id="impPreviewDownload" href="#" style="padding:10px 20px;border:none;border-radius:8px;background:linear-gradient(135deg,#4f6ef7,#6f42c1);color:#fff;cursor:pointer;font-family:Inter,sans-serif;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:6px">
         <i class="fa fa-download"></i> Télécharger le PDF
       </a>
@@ -1218,7 +1221,7 @@ document.addEventListener('DOMContentLoaded', function() {
       hideSpinner();
       if (json.success && json.download_url) {
         setPdfReady(json.download_url); // Save for contextual export
-        if (json.preview_url && action === 'impose') {
+        if (json.preview_url && (action === 'impose' || action === 'unimpose')) {
           // Ouvrir le modal de preview
           openImpPreview(json.preview_url, json.download_url);
         } else {
@@ -1267,12 +1270,39 @@ document.addEventListener('DOMContentLoaded', function() {
     const img     = $('impPreviewImg');
     const loading = $('impPreviewLoading');
     const dlBtn   = $('impPreviewDownload');
+    const loadAppBtn = $('impPreviewLoadApp');
 
     // Reset
     img.style.display = 'none';
     loading.style.display = 'block';
     $('impPreviewPageLabel').textContent = '(page 1)';
     dlBtn.href = downloadUrl;
+
+    if (loadAppBtn) {
+      loadAppBtn.onclick = async () => {
+        const originalText = loadAppBtn.innerHTML;
+        loadAppBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Chargement...';
+        loadAppBtn.disabled = true;
+        try {
+          const response = await fetch(downloadUrl);
+          if (!response.ok) throw new Error('Network error');
+          const blob = await response.blob();
+          const filename = state.file ? state.file.name.replace(/\.[^.]+$/, '') + '_imposé.pdf' : 'document_imposé.pdf';
+          const newFile = new File([blob], filename, { type: 'application/pdf' });
+          
+          $('impPreviewModal').style.display = 'none';
+          $('impPreviewImg').src = '';
+          
+          loadFile(newFile);
+          showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>Fichier chargé dans le Studio avec succès.</b>', false);
+        } catch (e) {
+          showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur lors du chargement :</b> ' + e.message, true);
+        } finally {
+          loadAppBtn.innerHTML = originalText;
+          loadAppBtn.disabled = false;
+        }
+      };
+    }
 
     modal.style.display = 'flex';
 
