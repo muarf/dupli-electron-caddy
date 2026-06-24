@@ -1,7 +1,9 @@
 <link rel="stylesheet" href="css/studio.css?v=<?php echo time(); ?>">
 <script src="js/build/pdf.js" defer></script>
+<script src="js/fabric.min.js" defer></script>
 <script src="js/jszip.min.js" defer></script>
 <script src="js/riso-tools.js?v=<?php echo time(); ?>" defer></script>
+<script src="js/studio-montage.js?v=<?php echo time(); ?>" defer></script>
 
 <div class="studio-layout" id="studioApp">
 
@@ -11,6 +13,7 @@
     <button class="tool-btn" data-tool="geometry" title="Géométrie"><i class="fa fa-crop"></i>Géométrie</button>
     <div class="sidebar-divider"></div>
     <button class="tool-btn" data-tool="imposition" title="Imposition"><i class="fa fa-book"></i>Imposition</button>
+    <button class="tool-btn" data-tool="montage" title="Montage Libre"><i class="fa fa-object-group"></i>Montage</button>
     <button class="tool-btn" data-tool="pages" title="Pages"><i class="fa fa-files-o"></i>Pages</button>
     <div class="sidebar-divider"></div>
     <button class="tool-btn" data-tool="riso" title="Riso"><i class="fa fa-adjust"></i>Riso</button>
@@ -71,6 +74,13 @@
       </div>
 
       <canvas id="studioCanvas" style="display:none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 4px; transition: transform 0.2s;"></canvas>
+      
+      <!-- Montage Canvas Container -->
+      <div id="montageCanvasContainer" style="display:none; width:100%; height:100%; position:absolute; top:0; left:0; align-items:center; justify-content:center; overflow:auto; background:var(--studio-bg);">
+        <div style="box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius:4px; background:white;">
+          <canvas id="montageCanvas"></canvas>
+        </div>
+      </div>
     </div>
 
     <!-- Thumbnails Bar -->
@@ -416,6 +426,51 @@
       </div>
     </div>
 
+    <!-- Panel Montage Libre -->
+    <div id="panelMontage" style="display:none">
+      <div class="panel-section">
+        <div class="panel-section-title">Format du Canva</div>
+        <div class="panel-row">
+          <div class="panel-label">Format</div>
+          <select class="panel-select" id="montageFormat">
+            <option value="A3">A3</option>
+            <option value="A4" selected>A4</option>
+            <option value="A5">A5</option>
+          </select>
+        </div>
+        <div class="panel-row">
+          <div class="panel-label">Orientation</div>
+          <select class="panel-select" id="montageOrientation">
+            <option value="portrait">Portrait</option>
+            <option value="landscape">Paysage</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="panel-section">
+        <div class="panel-section-title">Planches</div>
+        <div id="montagePlanchesList" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+          <!-- Planches boutons -->
+        </div>
+        <button class="panel-btn" id="btnAddPlanche"><i class="fa fa-plus"></i> Nouvelle Planche</button>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-section-title">Fichiers Sources</div>
+        <input type="file" id="montageUploadPdf" accept=".pdf,.jpg,.jpeg,.png,.webp" multiple style="display:none">
+        <button class="panel-btn" id="btnMontageUpload"><i class="fa fa-upload"></i> Importer un PDF ou Image</button>
+        <div id="montageSourceThumbs" style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:5px; max-height:300px; overflow-y:auto; padding-right:4px;">
+          <!-- Thumbnails of uploaded PDFs -->
+        </div>
+      </div>
+
+      <div class="panel-section" style="text-align:center">
+        <button class="panel-btn" id="btnGenerateMontage" style="background:var(--studio-primary);color:white;width:100%;font-weight:600;margin-top:10px;">
+          <i class="fa fa-magic"></i> Générer le Montage PDF
+        </button>
+      </div>
+    </div>
+
     <!-- Pages Panel (hidden) -->
     <div id="panelPages" style="display:none">
       <div class="panel-section">
@@ -620,14 +675,46 @@ document.addEventListener('DOMContentLoaded', function() {
       btn.classList.add('active');
       const tool = btn.dataset.tool;
       // Show/hide panels
-      ['panelFilters','panelImposition','panelGeometry','panelPages','panelRiso'].forEach(p => { if($(p)) $(p).style.display = 'none'; });
-      if (tool === 'filters') $('panelFilters').style.display = '';
-      else if (tool === 'imposition') $('panelImposition').style.display = '';
-      else if (tool === 'geometry') $('panelGeometry').style.display = '';
-      else if (tool === 'pages') $('panelPages').style.display = '';
-      else if (tool === 'riso') {
-        $('panelRiso').style.display = '';
-        if (state.originalImageData && !window.risoChannels) initRisoChannels();
+      ['panelFilters','panelImposition','panelGeometry','panelPages','panelRiso','panelMontage'].forEach(p => { if($(p)) $(p).style.display = 'none'; });
+      
+      const standardCanvas = $('studioCanvas');
+      const montageContainer = $('montageCanvasContainer');
+      const stdThumbs = $('thumbsBar');
+      
+      if (tool === 'montage') {
+        $('panelMontage').style.display = '';
+        if (standardCanvas) standardCanvas.style.display = 'none';
+        if (stdThumbs) stdThumbs.style.display = 'none';
+        if (uploadZone) uploadZone.style.display = 'none';
+        if (panel) panel.classList.add('visible');
+        if (montageContainer) montageContainer.style.display = 'flex';
+        // Initialize montage if not done yet
+        if (window.initStudioMontage) window.initStudioMontage();
+        
+        // Auto-load global file if exists
+        if (window.state && window.state.file && window.state.isPdf && window.addFileToMontage) {
+          window.addFileToMontage(window.state.file);
+        }
+      } else {
+        if (montageContainer) montageContainer.style.display = 'none';
+        if (stdThumbs && window.orgSequence && window.orgSequence.length > 0) stdThumbs.style.display = '';
+        
+        if (state.originalImageData) {
+          if (standardCanvas) standardCanvas.style.display = 'block';
+          if (uploadZone) uploadZone.style.display = 'none';
+        } else {
+          if (uploadZone) uploadZone.style.display = 'block';
+          if (panel) panel.classList.remove('visible');
+        }
+        
+        if (tool === 'filters') $('panelFilters').style.display = '';
+        else if (tool === 'imposition') $('panelImposition').style.display = '';
+        else if (tool === 'geometry') $('panelGeometry').style.display = '';
+        else if (tool === 'pages') $('panelPages').style.display = '';
+        else if (tool === 'riso') {
+          $('panelRiso').style.display = '';
+          if (state.originalImageData && !window.risoChannels) initRisoChannels();
+        }
       }
     });
   });
@@ -1257,6 +1344,11 @@ document.addEventListener('DOMContentLoaded', function() {
           $('impPreviewImg').src = '';
           
           loadFile(newFile);
+          
+          // Switch back to standard view to actually see the loaded file
+          const btnFilters = document.querySelector('.tool-btn[data-tool="filters"]');
+          if (btnFilters) btnFilters.click();
+          
           showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>Fichier chargé dans le Studio avec succès.</b>', false);
         } catch (e) {
           showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur lors du chargement :</b> ' + e.message, true);
