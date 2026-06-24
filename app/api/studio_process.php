@@ -31,7 +31,7 @@ $originalName = null;
 $safeName = 'studio_doc';
 
 // --- Récupérer le fichier uploadé (sauf pour certaines actions) ---
-if (!in_array($action, ['organize_pages', 'merge', 'riso_pdf'])) {
+if (!in_array($action, ['organize_pages', 'merge', 'riso_pdf', 'montage_libre'])) {
     if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
         echo json_encode(['success' => false, 'errors' => ['Aucun fichier valide reçu.']]);
         exit;
@@ -757,6 +757,107 @@ if ($action === 'organize_pages') {
         echo json_encode([
             'success'      => true,
             'download_url' => '?download_studio&file=' . urlencode($outFilename),
+            'errors'       => [],
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'errors' => [$e->getMessage()]]);
+    }
+    exit;
+}
+
+// === ACTION : MONTAGE_LIBRE ===
+if ($action === 'montage_libre') {
+    header('Content-Type: application/json');
+    try {
+        $payloadRaw = $_POST['payload'] ?? '';
+        $payload = json_decode($payloadRaw, true);
+        if (!$payload || !isset($payload['planches'])) throw new Exception("Payload invalide");
+
+        $pdf = new \setasign\Fpdi\Tcpdf\Fpdi('P', 'mm', 'A4');
+        $pdf->SetAutoPageBreak(false);
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+
+        // Save uploaded files to temp
+        $tempSourcePdfs = [];
+        foreach ($_FILES as $key => $fileInfo) {
+            if (strpos($key, 'file_') === 0 && $fileInfo['error'] === UPLOAD_ERR_OK) {
+                $id = str_replace('file_', '', $key);
+                $tmpPath = $tmpBase . 'source_' . $id . '_' . time() . '.pdf';
+                move_uploaded_file($fileInfo['tmp_name'], $tmpPath);
+                $tempSourcePdfs[$id] = $tmpPath;
+            }
+        }
+
+        foreach ($payload['planches'] as $planche) {
+            $fmt = [$planche['width_mm'], $planche['height_mm']];
+            $orientation = ($planche['width_mm'] > $planche['height_mm']) ? 'L' : 'P';
+            $pdf->AddPage($orientation, $fmt);
+
+            if (isset($planche['objects']) && is_array($planche['objects'])) {
+                foreach ($planche['objects'] as $obj) {
+                    $fileId = $obj['source_fileId'];
+                    if (!isset($tempSourcePdfs[$fileId])) continue;
+                    
+                    $original_w = $obj['original_width_mm'];
+                    $original_h = $obj['original_height_mm'];
+                    $scale_x = $obj['scale_x'];
+                    $scale_y = $obj['scale_y'];
+                    $angle = $obj['angle'];
+                    $mm_to_px = $obj['mm_to_px'];
+                    
+                    $cx = $obj['x_px'] / $mm_to_px;
+                    $cy = $obj['y_px'] / $mm_to_px;
+                    
+                    $isImage = isset($obj['is_image']) && $obj['is_image'];
+                    
+                    if ($isImage) {
+                        $pdf->StartTransform();
+                        $pdf->Translate($cx, $cy);
+                        if ($angle != 0) {
+                            $pdf->Rotate(-$angle);
+                        }
+                        if ($scale_x != 1 || $scale_y != 1) {
+                            $pdf->ScaleX($scale_x * 100, 0, 0);
+                            $pdf->ScaleY($scale_y * 100, 0, 0);
+                        }
+                        
+                        $pdf->Image($tempSourcePdfs[$fileId], -$original_w / 2, -$original_h / 2, $original_w, $original_h);
+                        $pdf->StopTransform();
+                    } else {
+                        $pageNum = $obj['page_num'];
+                        $pdf->setSourceFile($tempSourcePdfs[$fileId]);
+                        $tplId = $pdf->importPage($pageNum);
+                        
+                        $pdf->StartTransform();
+                        $pdf->Translate($cx, $cy);
+                        if ($angle != 0) {
+                            $pdf->Rotate(-$angle);
+                        }
+                        if ($scale_x != 1 || $scale_y != 1) {
+                            $pdf->ScaleX($scale_x * 100, 0, 0);
+                            $pdf->ScaleY($scale_y * 100, 0, 0);
+                        }
+                        
+                        $pdf->useTemplate($tplId, -$original_w / 2, -$original_h / 2, $original_w, $original_h);
+                        $pdf->StopTransform();
+                    }
+                }
+            }
+        }
+
+        $outFilename = 'montage_libre_' . time() . '.pdf';
+        $outPath = $tmpBase . $outFilename;
+        $pdf->Output($outPath, 'F');
+        
+        $previewPng = generateImpositionPreview($outPath, $tmpBase, 'montage_libre_preview');
+
+        foreach ($tempSourcePdfs as $tp) { @unlink($tp); }
+
+        echo json_encode([
+            'success'      => true,
+            'download_url' => '?download_studio&file=' . urlencode($outFilename),
+            'preview_url'  => $previewPng ? '?preview_studio&file=' . urlencode($previewPng) : null,
             'errors'       => [],
         ]);
     } catch (Exception $e) {
