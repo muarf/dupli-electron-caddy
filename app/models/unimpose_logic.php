@@ -270,6 +270,92 @@ class UnimposeBooklet {
         
         return $finalOutputFile;
     }
+
+    /**
+     * Désimpose un PDF format séquentiel (ex: page 1 = 1 gauche, 1 droite, page 2 = 2 gauche, 2 droite...)
+     * 
+     * @return string|false Chemin du fichier de sortie ou false en cas d'erreur
+     */
+    public function splitSequential() {
+        try {
+            // Vérifier que le fichier d'entrée existe
+            if (!file_exists($this->inputFile)) {
+                throw new Exception("Le fichier d'entrée n'existe pas : " . $this->inputFile);
+            }
+            
+            // Parser le PDF pour obtenir les informations
+            $parser = new Parser();
+            $pdf = $parser->parseFile($this->inputFile);
+            $pages = $pdf->getPages();
+            $pageCount = count($pages);
+            
+            if ($pageCount == 0) {
+                throw new Exception("Le fichier PDF ne contient aucune page");
+            }
+            
+            // Créer un nouveau PDF de sortie avec FPDI
+            $outputPdf = new setasign\Fpdi\Fpdi();
+            $outputPdf->SetCreator('Unimpose PHP Script');
+            $outputPdf->SetTitle('PDF désimposé (séquentiel)');
+            
+            for ($i = 1; $i <= $pageCount; $i++) {
+                // Page de gauche
+                $halfPdfLeft = new setasign\Fpdi\Fpdi();
+                $halfPdfLeft->setSourceFile($this->inputFile);
+                $templateIdLeft = $halfPdfLeft->importPage($i);
+                $size = $halfPdfLeft->getTemplateSize($templateIdLeft);
+                $w = $size['width'];
+                $h = $size['height'];
+                
+                $halfPdfLeft->AddPage('P', array($w/2, $h));
+                $halfPdfLeft->useTemplate($templateIdLeft, 0, 0, $w, null, false);
+                $tempFileLeft = tempnam(sys_get_temp_dir(), 'pdf_left_');
+                file_put_contents($tempFileLeft, $halfPdfLeft->Output('S'));
+                
+                // Page de droite
+                $halfPdfRight = new setasign\Fpdi\Fpdi();
+                $halfPdfRight->setSourceFile($this->inputFile);
+                $templateIdRight = $halfPdfRight->importPage($i);
+                $halfPdfRight->AddPage('P', array($w/2, $h));
+                $halfPdfRight->useTemplate($templateIdRight, -$w/2, 0, $w, null, false);
+                $tempFileRight = tempnam(sys_get_temp_dir(), 'pdf_right_');
+                file_put_contents($tempFileRight, $halfPdfRight->Output('S'));
+                
+                // Ajouter la moitié gauche
+                $outputPdf->setSourceFile($tempFileLeft);
+                $tplIdxLeft = $outputPdf->importPage(1);
+                $sizeLeft = $outputPdf->getTemplateSize($tplIdxLeft);
+                $outputPdf->AddPage('P', array($sizeLeft['width'], $sizeLeft['height']));
+                $outputPdf->useTemplate($tplIdxLeft);
+                
+                // Ajouter la moitié droite
+                $outputPdf->setSourceFile($tempFileRight);
+                $tplIdxRight = $outputPdf->importPage(1);
+                $sizeRight = $outputPdf->getTemplateSize($tplIdxRight);
+                $outputPdf->AddPage('P', array($sizeRight['width'], $sizeRight['height']));
+                $outputPdf->useTemplate($tplIdxRight);
+                
+                // Nettoyer les fichiers temporaires
+                if (file_exists($tempFileLeft)) {
+                    unlink($tempFileLeft);
+                }
+                if (file_exists($tempFileRight)) {
+                    unlink($tempFileRight);
+                }
+            }
+            
+            // Sauvegarder le PDF avec le nom fourni
+            $finalOutputFile = $this->outputFile;
+            $outputPdf->Output($finalOutputFile, 'F');
+            
+        } catch (Exception $e) {
+            error_log("Erreur lors du découpage séquentiel : " . $e->getMessage());
+            error_log("Trace : " . $e->getTraceAsString());
+            return false;
+        }
+        
+        return $finalOutputFile;
+    }
 }
 
 // Fonction principale
