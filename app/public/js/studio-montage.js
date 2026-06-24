@@ -423,6 +423,8 @@
     } catch (err) {
       console.error(`[Montage] Erreur dans addPageToCanvas:`, err);
     }
+  }
+
   async function renderImageThumbnail(fileId) {
     const docInfo = pdfDocs[fileId];
     const container = document.getElementById('montageSourceThumbs');
