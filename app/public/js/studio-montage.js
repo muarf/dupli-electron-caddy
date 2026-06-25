@@ -190,19 +190,19 @@
     const rulerY = document.getElementById('montageRulerY');
     if (rulerX && rulerY) {
       rulerX.width = w_px;
-      rulerX.height = 20;
-      rulerY.width = 20;
+      rulerX.height = 30;
+      rulerY.width = 30;
       rulerY.height = h_px;
       
       drawRulerX(rulerX, w_mm);
       drawRulerY(rulerY, h_mm);
     }
     
-    // Ajuster le conteneur Grid (canvas + 20px de règle)
+    // Ajuster le conteneur Grid (canvas + 30px de règle)
     const gridContainer = document.getElementById('montageGridContainer');
     if (gridContainer) {
-      gridContainer.style.width = (w_px + 20) + 'px';
-      gridContainer.style.height = (h_px + 20) + 'px';
+      gridContainer.style.width = (w_px + 30) + 'px';
+      gridContainer.style.height = (h_px + 30) + 'px';
     }
   }
 
@@ -221,23 +221,23 @@
     for (let mm = 0; mm <= max_mm; mm++) {
       const x = mm * MM_TO_PX;
       ctx.beginPath();
-      ctx.moveTo(x, 20);
+      ctx.moveTo(x, 30);
       
       if (mm % 10 === 0) {
         // Graduation en centimètre
-        ctx.lineTo(x, 6);
+        ctx.lineTo(x, 18);
         ctx.stroke();
         const cm = mm / 10;
         if (cm > 0 && x < canvasEl.width - 10) {
-          ctx.fillText(cm.toString(), x, 5);
+          ctx.fillText(cm.toString(), x, 12);
         }
       } else if (mm % 5 === 0) {
         // Demi-centimètre
-        ctx.lineTo(x, 11);
+        ctx.lineTo(x, 22);
         ctx.stroke();
       } else {
         // Millimètre
-        ctx.lineTo(x, 15);
+        ctx.lineTo(x, 25);
         ctx.stroke();
       }
     }
@@ -259,23 +259,23 @@
     for (let mm = 0; mm <= max_mm; mm++) {
       const y = mm * MM_TO_PX;
       ctx.beginPath();
-      ctx.moveTo(20, y);
+      ctx.moveTo(30, y);
       
       if (mm % 10 === 0) {
         // Graduation en centimètre
-        ctx.lineTo(6, y);
+        ctx.lineTo(18, y);
         ctx.stroke();
         const cm = mm / 10;
         if (cm > 0 && y < canvasEl.height - 10) {
-          ctx.fillText(cm.toString(), 5, y);
+          ctx.fillText(cm.toString(), 14, y);
         }
       } else if (mm % 5 === 0) {
         // Demi-centimètre
-        ctx.lineTo(11, y);
+        ctx.lineTo(22, y);
         ctx.stroke();
       } else {
         // Millimètre
-        ctx.lineTo(15, y);
+        ctx.lineTo(25, y);
         ctx.stroke();
       }
     }
