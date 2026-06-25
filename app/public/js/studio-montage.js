@@ -23,6 +23,93 @@
       backgroundColor: '#ffffff'
     });
     
+    // Événements d'aimantation (snapping) au centre de la planche
+    canvas.on('object:moving', function(e) {
+      const obj = e.target;
+      const midX = canvas.width / 2;
+      const midY = canvas.height / 2;
+      const snapTolerance = 5; // px
+      
+      if (Math.abs(obj.left - midX) < snapTolerance) {
+        obj.set({ left: midX });
+      }
+      if (Math.abs(obj.top - midY) < snapTolerance) {
+        obj.set({ top: midY });
+      }
+    });
+
+    // Forcer le rendu des lignes de guidage lors des transformations
+    canvas.on('object:scaling', () => canvas.renderAll());
+    canvas.on('object:rotating', () => canvas.renderAll());
+
+    // Tracer les traits de guidage dynamiques vers les règles après le rendu
+    canvas.on('after:render', function() {
+      const obj = canvas.getActiveObject();
+      if (!obj) return;
+      
+      const ctx = canvas.getContext();
+      ctx.save();
+      
+      const midX = canvas.width / 2;
+      const midY = canvas.height / 2;
+      const left = obj.left;
+      const top = obj.top;
+      
+      const isCenteredX = Math.abs(left - midX) <= 1;
+      const isCenteredY = Math.abs(top - midY) <= 1;
+      
+      // Dessiner les traits de guidage en pointillés
+      ctx.setLineDash([4, 4]);
+      
+      // Ligne verticale vers l'axe X (règle du haut) depuis le centre
+      ctx.beginPath();
+      ctx.moveTo(left, top);
+      ctx.lineTo(left, 0);
+      ctx.strokeStyle = isCenteredX ? '#2ec4b6' : '#4f6ef7';
+      ctx.lineWidth = isCenteredX ? 2 : 1;
+      ctx.stroke();
+      
+      // Ligne horizontale vers l'axe Y (règle de gauche) depuis le centre
+      ctx.beginPath();
+      ctx.moveTo(left, top);
+      ctx.lineTo(0, top);
+      ctx.strokeStyle = isCenteredY ? '#2ec4b6' : '#4f6ef7';
+      ctx.lineWidth = isCenteredY ? 2 : 1;
+      ctx.stroke();
+      
+      // Dessiner des lignes de projection plus fines pour les bords de la boîte englobante
+      const bbox = obj.getBoundingRect(true);
+      ctx.setLineDash([2, 4]);
+      ctx.strokeStyle = 'rgba(79, 110, 247, 0.4)';
+      ctx.lineWidth = 1;
+      
+      // Projection du bord gauche vers le haut
+      ctx.beginPath();
+      ctx.moveTo(bbox.left, bbox.top);
+      ctx.lineTo(bbox.left, 0);
+      ctx.stroke();
+      
+      // Projection du bord droit vers le haut
+      ctx.beginPath();
+      ctx.moveTo(bbox.left + bbox.width, bbox.top);
+      ctx.lineTo(bbox.left + bbox.width, 0);
+      ctx.stroke();
+      
+      // Projection du bord supérieur vers la gauche
+      ctx.beginPath();
+      ctx.moveTo(bbox.left, bbox.top);
+      ctx.lineTo(0, bbox.top);
+      ctx.stroke();
+      
+      // Projection du bord inférieur vers la gauche
+      ctx.beginPath();
+      ctx.moveTo(bbox.left, bbox.top + bbox.height);
+      ctx.lineTo(0, bbox.top + bbox.height);
+      ctx.stroke();
+      
+      ctx.restore();
+    });
+    
     // Configurer les poignées de redimensionnement
     fabric.Object.prototype.transparentCorners = false;
     fabric.Object.prototype.cornerColor = '#4f6ef7';
@@ -98,10 +185,100 @@
     canvas.setHeight(h_px);
     canvas.renderAll();
     
-    // Centrer le canvas dans le conteneur
-    const container = document.getElementById('montageCanvasContainer').children[0];
-    container.style.width = w_px + 'px';
-    container.style.height = h_px + 'px';
+    // Mettre à jour les règles X et Y
+    const rulerX = document.getElementById('montageRulerX');
+    const rulerY = document.getElementById('montageRulerY');
+    if (rulerX && rulerY) {
+      rulerX.width = w_px;
+      rulerX.height = 20;
+      rulerY.width = 20;
+      rulerY.height = h_px;
+      
+      drawRulerX(rulerX, w_mm);
+      drawRulerY(rulerY, h_mm);
+    }
+    
+    // Ajuster le conteneur Grid (canvas + 20px de règle)
+    const gridContainer = document.getElementById('montageGridContainer');
+    if (gridContainer) {
+      gridContainer.style.width = (w_px + 20) + 'px';
+      gridContainer.style.height = (h_px + 20) + 'px';
+    }
+  }
+
+  function drawRulerX(canvasEl, max_mm) {
+    const ctx = canvasEl.getContext('2d');
+    ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
+    
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.fillStyle = '#64748b';
+    ctx.font = '9px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    
+    for (let mm = 0; mm <= max_mm; mm++) {
+      const x = mm * MM_TO_PX;
+      ctx.beginPath();
+      ctx.moveTo(x, 20);
+      
+      if (mm % 10 === 0) {
+        // Graduation en centimètre
+        ctx.lineTo(x, 6);
+        ctx.stroke();
+        const cm = mm / 10;
+        if (cm > 0 && x < canvasEl.width - 10) {
+          ctx.fillText(cm.toString(), x, 5);
+        }
+      } else if (mm % 5 === 0) {
+        // Demi-centimètre
+        ctx.lineTo(x, 11);
+        ctx.stroke();
+      } else {
+        // Millimètre
+        ctx.lineTo(x, 15);
+        ctx.stroke();
+      }
+    }
+  }
+
+  function drawRulerY(canvasEl, max_mm) {
+    const ctx = canvasEl.getContext('2d');
+    ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
+    
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.fillStyle = '#64748b';
+    ctx.font = '9px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    
+    for (let mm = 0; mm <= max_mm; mm++) {
+      const y = mm * MM_TO_PX;
+      ctx.beginPath();
+      ctx.moveTo(20, y);
+      
+      if (mm % 10 === 0) {
+        // Graduation en centimètre
+        ctx.lineTo(6, y);
+        ctx.stroke();
+        const cm = mm / 10;
+        if (cm > 0 && y < canvasEl.height - 10) {
+          ctx.fillText(cm.toString(), 5, y);
+        }
+      } else if (mm % 5 === 0) {
+        // Demi-centimètre
+        ctx.lineTo(11, y);
+        ctx.stroke();
+      } else {
+        // Millimètre
+        ctx.lineTo(15, y);
+        ctx.stroke();
+      }
+    }
   }
 
   function saveCurrentPlanche() {

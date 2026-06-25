@@ -77,8 +77,17 @@
       
       <!-- Montage Canvas Container -->
       <div id="montageCanvasContainer" style="display:none; width:100%; height:100%; position:absolute; top:0; left:0; align-items:center; justify-content:center; overflow:auto; background:var(--studio-bg);">
-        <div style="box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius:4px; background:white;">
-          <canvas id="montageCanvas"></canvas>
+        <div id="montageGridContainer" style="box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius:4px; background:white; display: grid; grid-template-columns: 20px 1fr; grid-template-rows: 20px 1fr; overflow: hidden; user-select: none;">
+          <!-- Corner spacer -->
+          <div style="width:20px; height:20px; background:#f0f2f5; border-bottom:1px solid #ccc; border-right:1px solid #ccc;"></div>
+          <!-- X Ruler -->
+          <canvas id="montageRulerX" style="height:20px; display:block; background:#f0f2f5; border-bottom:1px solid #ccc;"></canvas>
+          <!-- Y Ruler -->
+          <canvas id="montageRulerY" style="width:20px; display:block; background:#f0f2f5; border-right:1px solid #ccc;"></canvas>
+          <!-- Canvas wrapper -->
+          <div id="fabricCanvasWrapper" style="position:relative;">
+            <canvas id="montageCanvas"></canvas>
+          </div>
         </div>
       </div>
     </div>
