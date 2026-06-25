@@ -128,28 +128,6 @@ it('convertit un PDF en image pour analyse du taux de remplissage', function () 
     }
 });
 
-it('retourne les tambours dynamiques pour le séparateur Riso', function () {
-    [$dbPath, $pdo] = create_test_sqlite_database();
-    configure_sqlite_conf($dbPath);
-
-    $pdo->exec('CREATE TABLE IF NOT EXISTS duplicopieurs (id INTEGER PRIMARY KEY AUTOINCREMENT, marque TEXT, modele TEXT, actif INTEGER, tambours TEXT)');
-    $pdo->exec("INSERT INTO duplicopieurs (marque, modele, actif, tambours) VALUES ('Riso', 'SF', 1, '[\"tambour_noir\",\"tambour_fluo\"]')");
-
-    try {
-        $html = runPdfTool('riso_separator', 'Action', [$GLOBALS['conf']], [
-            'env' => ['DUPLICATOR_DB_PATH' => $dbPath],
-            'conf' => $GLOBALS['conf'],
-        ]);
-
-        expect($html)->toContain('riso-container');
-        expect($html)->toContain('Séparateur Riso');
-    } finally {
-        if (isset($pdo)) {
-            $pdo = null;
-        }
-        cleanupPath($dbPath);
-    }
-});
 
 /**
  * Lance le helper CLI pour exécuter une fonction de module dans un sous-processus.

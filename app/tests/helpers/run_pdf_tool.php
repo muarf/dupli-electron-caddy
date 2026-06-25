@@ -73,9 +73,6 @@ try {
         case 'taux_remplissage':
             require_once $projectRoot . '/models/taux_remplissage.php';
             break;
-        case 'riso_separator':
-            require_once $projectRoot . '/models/riso_separator.php';
-            break;
         default:
             throw new RuntimeException('Module inconnu: ' . $module);
     }

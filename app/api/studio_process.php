@@ -22,6 +22,22 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use setasign\Fpdi\TcpdfFpdi as TCPDI;
 
+/**
+ * Déplace un fichier uploadé ou copié localement (compatible HTTP et CLI/test).
+ */
+function studio_move_uploaded_file(string $tmp, string $dest): bool {
+    if (is_uploaded_file($tmp)) {
+        return move_uploaded_file($tmp, $dest);
+    }
+    if (file_exists($tmp)) {
+        if (rename($tmp, $dest)) {
+            return true;
+        }
+        return copy($tmp, $dest);
+    }
+    return false;
+}
+
 $action = $_POST['action'] ?? '';
 $errors = [];
 $result = [];
@@ -613,9 +629,9 @@ if ($action === 'merge') {
 
         if ($filesData && is_array($filesData['tmp_name'])) {
             foreach ($filesData['tmp_name'] as $i => $tmp) {
-                if ($filesData['error'][$i] === UPLOAD_ERR_OK && is_uploaded_file($tmp)) {
+                if ($filesData['error'][$i] === UPLOAD_ERR_OK && (is_uploaded_file($tmp) || file_exists($tmp))) {
                     $dest = $tmpBase . 'merge_' . $i . '_' . time() . '.pdf';
-                    move_uploaded_file($tmp, $dest);
+                    studio_move_uploaded_file($tmp, $dest);
                     $pdfPaths[] = $dest;
                 }
             }
@@ -708,7 +724,7 @@ if ($action === 'organize_pages') {
             if (strpos($key, 'file_') === 0 && $fileData['error'] === UPLOAD_ERR_OK) {
                 $idx = str_replace('file_', '', $key);
                 $dest = $tmpBase . 'org_' . $idx . '_' . time() . '.pdf';
-                move_uploaded_file($fileData['tmp_name'], $dest);
+                studio_move_uploaded_file($fileData['tmp_name'], $dest);
                 $files[$idx] = $dest;
             }
         }
@@ -784,7 +800,7 @@ if ($action === 'montage_libre') {
             if (strpos($key, 'file_') === 0 && $fileInfo['error'] === UPLOAD_ERR_OK) {
                 $id = str_replace('file_', '', $key);
                 $tmpPath = $tmpBase . 'source_' . $id . '_' . time() . '.pdf';
-                move_uploaded_file($fileInfo['tmp_name'], $tmpPath);
+                studio_move_uploaded_file($fileInfo['tmp_name'], $tmpPath);
                 $tempSourcePdfs[$id] = $tmpPath;
             }
         }
