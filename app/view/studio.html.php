@@ -76,7 +76,7 @@
       <canvas id="studioCanvas" style="display:none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 4px; transition: transform 0.2s;"></canvas>
       
       <!-- Montage Canvas Container -->
-      <div id="montageCanvasContainer" style="display:none; width:100%; height:100%; position:absolute; top:0; left:0; align-items:center; justify-content:center; overflow:auto; background:var(--studio-bg); padding: 40px; box-sizing: border-box;">
+      <div id="montageCanvasContainer" style="display:none; width:100%; height:100%; position:absolute; top:0; left:0; align-items:flex-start; justify-content:center; overflow:auto; background:var(--studio-bg); padding: 40px; box-sizing: border-box;">
         <div id="montageGridContainer" style="box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius:4px; background:white; display: grid; grid-template-columns: 30px 1fr; grid-template-rows: 30px 1fr; overflow: hidden; user-select: none;">
           <!-- Corner spacer -->
           <div style="width:30px; height:30px; background:#f0f2f5; border-bottom:1px solid #ccc; border-right:1px solid #ccc;"></div>
