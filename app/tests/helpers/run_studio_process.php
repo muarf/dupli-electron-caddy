@@ -1,8 +1,7 @@
 <?php
 
-if (!isset($argc) || php_sapi_name() !== 'cli') {
-    fwrite(STDERR, "Ce script doit être exécuté en CLI.\n");
-    exit(1);
+if (!isset($argc) || php_sapi_name() !== 'cli' || realpath($_SERVER['SCRIPT_FILENAME'] ?? '') !== realpath(__FILE__)) {
+    return;
 }
 
 if ($argc < 2) {
