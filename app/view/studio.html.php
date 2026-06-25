@@ -729,8 +729,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.initStudioMontage) window.initStudioMontage();
         
         // Auto-load global file if exists
-        if (window.state && window.state.file && window.state.isPdf && window.addFileToMontage) {
-          window.addFileToMontage(window.state.file);
+        if (state && state.file && window.addFileToMontage) {
+          window.addFileToMontage(state.file);
         }
       } else {
         if (montageContainer) montageContainer.style.display = 'none';
