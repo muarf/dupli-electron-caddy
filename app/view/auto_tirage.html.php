@@ -437,7 +437,7 @@
                 if (data.success && data.jobs && data.jobs.length > 0) {
                     const newJobs = data.jobs.filter(job => {
                         const jobTime = new Date(job.timestamp).getTime();
-                        if (jobTime > lastCheckTime && !processedJobIds.has(job.job_id)) {
+                        if (jobTime > lastCheckTime && !processedJobIds.has(job.id)) {
                             return true;
                         }
                         return false;
@@ -457,7 +457,7 @@
 
                 // Sync Buffer Jobs: remove jobs that are no longer in the API response
                 if (data.success && Array.isArray(data.jobs)) {
-                    const apiJobIds = new Set(data.jobs.map(j => String(j.job_id)));
+                    const apiJobIds = new Set(data.jobs.map(j => String(j.id)));
                     bufferJobs.forEach((job, jobId) => {
                         if (!apiJobIds.has(String(jobId))) {
                             // Job is gone from server pool (either added to a session or deleted)
@@ -481,11 +481,11 @@
         }
 
         function handleJobCandidate(job) {
-            if (processedJobIds.has(job.job_id)) return;
+            if (processedJobIds.has(job.id)) return;
 
             const now = Date.now();
-            if (!pendingJobs.has(job.job_id)) {
-                pendingJobs.set(job.job_id, {
+            if (!pendingJobs.has(job.id)) {
+                pendingJobs.set(job.id, {
                     job: job,
                     firstSeen: now,
                     lastUpdate: now
@@ -496,7 +496,7 @@
                 job.stabilizing = true;
                 addToBuffer(job);
             } else {
-                const candidate = pendingJobs.get(job.job_id);
+                const candidate = pendingJobs.get(job.id);
                 if (candidate.job.total_pages !== job.total_pages || candidate.job.status !== job.status) {
                     const oldPages = candidate.job.total_pages;
                     candidate.job = job;
@@ -516,7 +516,7 @@
         function checkForUpdate(apiJob) {
             // 1. Check Session Jobs
             const existingIndex = sessionJobs.findIndex(j => {
-                const match = String(j.originalJobId) === String(apiJob.job_id);
+                const match = String(j.originalJobId) === String(apiJob.job_id) && String(j.printerName || j.machine) === String(apiJob.printer_name);
                 return match;
             });
             if (existingIndex !== -1) {
@@ -536,7 +536,7 @@
             }
 
             // 2. Check Buffer Jobs
-            const jobIdKey = String(apiJob.job_id);
+            const jobIdKey = String(apiJob.id);
             if (bufferJobs.has(jobIdKey)) {
                 const existing = bufferJobs.get(jobIdKey);
                 // Only update if something relevant changed (pages, thumbnail, fill_rate or ID)
@@ -592,14 +592,14 @@
         let bufferJobs = new Map();
 
         function addToBuffer(job) {
-            bufferJobs.set(job.job_id, job);
+            bufferJobs.set(job.id, job);
             renderBufferRow(job);
             document.getElementById('buffer-zone').style.display = 'block';
         }
 
         function renderBufferRow(job) {
             const tbody = document.querySelector('#buffer-table tbody');
-            let row = document.getElementById(`buffer-row-${job.job_id}`);
+            let row = document.getElementById(`buffer-row-${job.id}`);
 
             // NEW: Preserve checked state if row exists
             let isChecked = false;
@@ -610,7 +610,7 @@
 
             if (!row) {
                 row = document.createElement('tr');
-                row.id = `buffer-row-${job.job_id}`;
+                row.id = `buffer-row-${job.id}`;
                 tbody.appendChild(row);
             }
 
@@ -637,7 +637,7 @@
                 <button class="btn btn-info btn-sm" onclick="refreshJobAnalysis('${job.job_id}', this, '${job.printer_name.replace(/'/g, "\\'")}')" title="<?php echo __js('common.refresh'); ?>">
                     <i class="fa fa-refresh"></i>
                 </button>
-                <button class="btn btn-primary btn-sm" onclick="moveBufferToSession('${job.job_id}')" title="<?php echo __js('auto_tirage.add_selected'); ?>">
+                <button class="btn btn-primary btn-sm" onclick="moveBufferToSession('${job.id}')" title="<?php echo __js('auto_tirage.add_selected'); ?>">
                     <i class="fa fa-plus"></i>
                 </button>
                 <button class="btn btn-outline-danger btn-sm" onclick="deleteBufferJob('${job.id}', '${job.job_id}')" title="<?php echo __js('auto_tirage.delete_selected'); ?>">
@@ -728,7 +728,7 @@
                 if (!confirmed) return;
 
                 // Optimistic UI: Masquer la ligne immédiatement
-                const rowToHide = document.getElementById(`buffer-row-${spoolJobId}`);
+                const rowToHide = document.getElementById(`buffer-row-${dbId}`);
                 if (rowToHide) rowToHide.style.opacity = '0.5';
 
                 try {
@@ -765,8 +765,8 @@
 
                     if (result.success) {
                         addLog('info', `🗑️ <?php _ejs('auto_tirage.job_deleted'); ?>`);
-                        bufferJobs.delete(spoolJobId);
-                        const row = document.getElementById(`buffer-row-${spoolJobId}`);
+                        bufferJobs.delete(dbId);
+                        const row = document.getElementById(`buffer-row-${dbId}`);
                         if (row) row.remove();
 
                         if (bufferJobs.size === 0) {
