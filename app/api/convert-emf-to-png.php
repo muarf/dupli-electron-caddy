@@ -263,8 +263,8 @@ foreach ($emfPositions as $index => $startOffset) {
     
     $outputPng = $outputDir . "page_$index.png";
     
-    // Optimisation : Si le PNG existe déjà et n'est pas vide, on passe à la suite
-    if (file_exists($outputPng) && filesize($outputPng) > 0) {
+    // Optimisation : Si le PNG existe déjà, n'est pas vide, ET est plus récent que le SPL, on passe à la suite
+    if (file_exists($outputPng) && filesize($outputPng) > 0 && filemtime($outputPng) >= filemtime($splFile)) {
         // Mais on garde l'entrée dans generatedPages pour que le JSON soit complet
         $generatedPages[] = [
             'page' => $index,

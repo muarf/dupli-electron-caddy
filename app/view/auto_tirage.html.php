@@ -515,10 +515,7 @@
 
         function checkForUpdate(apiJob) {
             // 1. Check Session Jobs
-            const existingIndex = sessionJobs.findIndex(j => {
-                const match = String(j.originalJobId) === String(apiJob.job_id) && String(j.printerName || j.machine) === String(apiJob.printer_name);
-                return match;
-            });
+            const existingIndex = sessionJobs.findIndex(j => String(j.id) === String(apiJob.id));
             if (existingIndex !== -1) {
                 const currentJob = sessionJobs[existingIndex];
                 const newFillRate = parseFloat(apiJob.fill_rate || 0);
@@ -1332,7 +1329,7 @@
                     <div class="d-flex justify-content-center align-items-center gap-2">
                         <button class="btn btn-sm btn-outline-info shadow-sm mr-1" 
                                 style="border-radius: 50%; width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;" 
-                                onclick="refreshJobAnalysis('${job.originalJobId}', this)" title="<?php echo __js('common.refresh', [], false); ?>">
+                                onclick="refreshJobAnalysis('${job.originalJobId}', this, '${(job.printerName || job.machine || '').replace(/'/g, "\\'")}', '${job.id}')" title="<?php echo __js('common.refresh', [], false); ?>">
                             <i class="fa fa-refresh"></i>
                         </button>
                         <button class="btn btn-sm btn-outline-primary shadow-sm mr-1" 
@@ -1493,7 +1490,7 @@
             saveSession();
         };
 
-        window.refreshJobAnalysis = async function (jobId, btn, printerName = '') {
+        window.refreshJobAnalysis = async function (jobId, btn, printerName = '', dbId = null) {
             if (!window.electronAPI || !window.electronAPI.reanalyzePrintJob) {
                 return showAppModal({ message: "API Electron non disponible", type: "warning" });
             }
@@ -1515,6 +1512,7 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             action: 'update_job_analysis',
+                            id: dbId,
                             job_id: jobId,
                             printer_name: printerName,
                             thumbnail_url: result.thumbnailUrl || '',

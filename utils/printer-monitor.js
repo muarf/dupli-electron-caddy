@@ -93,9 +93,13 @@ async function analyzePng(pngPath) {
  * Windows : Utilise l'API PHP locale
  */
 async function convertWindows(jobId, format) {
-    const endpointMap = { EMF: 'convert_emf_to_png', PCL: 'convert_pcl_to_png', XPS: 'convert_xps_to_png', RAW: 'convert_pcl_to_png', PostScript: 'convert_ps_to_png' };
-    const endpoint = endpointMap[format];
-    if (!endpoint) return null;
+    let endpoint = 'convert_emf_to_png'; // default fallback
+    if (format) {
+        const fmt = String(format).toUpperCase();
+        if (fmt.includes('PCL') || fmt.includes('RAW')) endpoint = 'convert_pcl_to_png';
+        else if (fmt.includes('XPS')) endpoint = 'convert_xps_to_png';
+        else if (fmt.includes('POSTSCRIPT') || fmt.includes('PS')) endpoint = 'convert_ps_to_png';
+    }
 
     return new Promise((resolve) => {
         const url = `${PHP_API_BASE}/?${endpoint}&job_id=${jobId}`;
