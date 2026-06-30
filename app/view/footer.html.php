@@ -150,5 +150,13 @@ if (file_exists($print_modal_path)) {
             console.log('%c' + msg, styles[type] || styles.info);
         });
     }
+
+    // Intercepter F3 pour empêcher l'ouverture de la barre de recherche du navigateur,
+    // afin que le raccourci Tauri pour la mise à jour fonctionne correctement.
+    window.addEventListener('keydown', function(e) {
+        if (e.key === 'F3' || e.keyCode === 114) {
+            e.preventDefault();
+        }
+    });
 </script>
 <script src="<?= $base_path ?>js/print-session-manager.js"></script>
