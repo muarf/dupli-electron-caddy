@@ -30,6 +30,7 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [
   "tray-icon",        # Pour l'icône dans la barre des tâches
   "webview-data-url", # Pour charger la page HTML de chargement initiale en data: URL
+  "devtools",         # Autoriser les devtools en production
 ] }
 
 # Plugins Tauri officiels
