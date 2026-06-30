@@ -260,6 +260,39 @@ function escape_shell_arg_with_percent(string $arg): string
 }
 
 /**
+ * Retourne la chaîne d'environnement pour HF_HOME si un chemin personnalisé est défini.
+ *
+ * @return string Exemple: "set HF_HOME=D:\IA\hf_cache && " (Windows) ou "export HF_HOME=/opt/IA/hf_cache && " (Linux/Mac)
+ */
+function get_hf_home_env(): string
+{
+    global $db;
+    if (!$db && function_exists('pdo_connect')) {
+        $db = pdo_connect();
+    }
+    if ($db) {
+        require_once __DIR__ . '/../models/SettingsManager.php';
+        $settings = new SettingsManager($db);
+        $ai_local_path = trim($settings->get('ai_local_path') ?? '');
+        if (!empty($ai_local_path)) {
+            $hf_home = rtrim($ai_local_path, '/\\') . DIRECTORY_SEPARATOR . 'hf_cache';
+            if (PHP_OS_FAMILY === 'Windows') {
+                return 'set HF_HOME=' . escapeshellarg($hf_home) . ' && ';
+            } else {
+                return 'export HF_HOME=' . escapeshellarg($hf_home) . ' && ';
+            }
+        }
+    }
+    // Default fallback if not customized in settings
+    $default_cache = __DIR__ . '/../../../bin/ai_models_cache/hf_cache';
+    if (PHP_OS_FAMILY === 'Windows') {
+        $default_cache = __DIR__ . '/../../../bin/win-x64/ai_models_cache/hf_cache';
+        return 'set HF_HOME=' . escapeshellarg(realpath($default_cache) ?: $default_cache) . ' && ';
+    }
+    return 'export HF_HOME=' . escapeshellarg(realpath($default_cache) ?: $default_cache) . ' && ';
+}
+
+/**
  * Retourne le chemin vers l'interpréteur Python.
  *
  * - Windows : utilise le Python embeddable déposé dans bin/win-x64/python/python.exe.
