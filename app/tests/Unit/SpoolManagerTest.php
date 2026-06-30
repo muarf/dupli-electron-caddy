@@ -9,7 +9,6 @@ beforeEach(function () {
     // Inject the temporary spool directory into SpoolManager via Reflection
     $reflection = new ReflectionClass(SpoolManager::class);
     $property = $reflection->getProperty('spoolDir');
-    $property->setAccessible(true);
     $property->setValue(null, $this->tempSpoolDir);
 });
 

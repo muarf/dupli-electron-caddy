@@ -275,10 +275,10 @@ function get_cons($machine)
     	}
     	
     	$res['photocop']['prix_calcule'] = $prix_pack / $res['photocop']['moyenne_total']['nb_p'];
-    	if($res['photocop']['temps_jusqua']  < -30){ $res['photocop']['class'] = "danger" ;}
-		if(($res['photocop']['temps_jusqua']  < 0) AND ($res['photocop']['temps_jusqua']  > -30)){$res['photocop']['class'] = "warning";}
-		if(($res['photocop']['temps_jusqua']  > 0)&&($res['photocop']['temps_jusqua']  < 30)){$res['photocop']['class'] = "info" ;}
-		if($res['photocop']['temps_jusqua']  > 30){$res['photocop']['class'] = "success";}
+    	if($res['photocop']['temps_jusqua'] <= -30){ $res['photocop']['class'] = "danger" ;}
+		if(($res['photocop']['temps_jusqua'] > -30) && ($res['photocop']['temps_jusqua'] <= 0)){$res['photocop']['class'] = "warning";}
+		if(($res['photocop']['temps_jusqua'] > 0) && ($res['photocop']['temps_jusqua'] <= 30)){$res['photocop']['class'] = "info" ;}
+		if($res['photocop']['temps_jusqua'] > 30){$res['photocop']['class'] = "success";}
 		($res['photocop']['prix_calcule']  > $prix_unite)? $res['photocop']['color'] = "green":$res['photocop']['color'] = "red";
   	  }
     else
@@ -368,13 +368,13 @@ function get_cons($machine)
           : $res['encre']['color'] = "red";
       ($res['master']['prix_calcule']< ($prix[$machine_key]['master']['unite'] ?? 0)) ? $res['master']['color'] = "green": $res['master']['color'] = "red";
       
-      if(($res['encre']['temps_jusqua']/86400) < -30){ $res['encre']['class'] = "danger" ;}
-		if((($res['encre']['temps_jusqua']/86400) < 0) AND ($res['encre']['temps_jusqua'] > -30)){ $res['encre']['class'] = "alert";}
-		if((($res['encre']['temps_jusqua']/86400) > 0)&&($res['encre']['temps_jusqua'] < 30)){ $res['encre']['class'] = "info" ;}
+      if(($res['encre']['temps_jusqua']/86400) <= -30){ $res['encre']['class'] = "danger" ;}
+		if((($res['encre']['temps_jusqua']/86400) > -30) && (($res['encre']['temps_jusqua']/86400) <= 0)){ $res['encre']['class'] = "alert";}
+		if((($res['encre']['temps_jusqua']/86400) > 0) && (($res['encre']['temps_jusqua']/86400) <= 30)){ $res['encre']['class'] = "info" ;}
 		if(($res['encre']['temps_jusqua']/86400) > 30){ $res['encre']['class'] = "success";}
-		if($res['master']['temps_jusqua'] < -30){ $res['master']['class'] = "danger" ;}
-		if(($res['master']['temps_jusqua'] < 0) AND ($res['master']['temps_jusqua'] > -30)){$res['master']['class'] = "warning";}
-		if(($res['master']['temps_jusqua'] > 0)&&($res['master']['temps_jusqua'] < 30)){$res['master']['class'] = "info" ;}
+		if($res['master']['temps_jusqua'] <= -30){ $res['master']['class'] = "danger" ;}
+		if(($res['master']['temps_jusqua'] > -30) && ($res['master']['temps_jusqua'] <= 0)){$res['master']['class'] = "warning";}
+		if(($res['master']['temps_jusqua'] > 0) && ($res['master']['temps_jusqua'] <= 30)){$res['master']['class'] = "info" ;}
 		if($res['master']['temps_jusqua'] > 30){$res['master']['class'] = "success";}
 
     }
