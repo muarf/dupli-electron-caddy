@@ -1151,10 +1151,11 @@ if ($action === 'ocr_cleanup') {
                     file_put_contents($docxPath, $vpsResponse);
                 }
             } else {
-                // Mode local (serveur de développement uniquement)
+                // Mode local (Fallback sans API)
                 $doclingScript = __DIR__ . '/scripts/docling_copyfit.py';
-                $doclingCmd = 'export HF_HOME=/opt/docling-venv/cache && export HOME=' . escapeshellarg($tmpBase)
-                    . ' && /opt/docling-venv/bin/python3 ' . escapeshellarg($doclingScript)
+                $pythonEnv = get_python_path();
+                $envPrefix = get_hf_home_env();
+                $doclingCmd = $envPrefix . escapeshellarg($pythonEnv) . ' ' . escapeshellarg($doclingScript)
                     . ' ' . escapeshellarg($outPath) . ' ' . escapeshellarg($docxPath) . ' 2>&1';
                 $doclingOutput = shell_exec($doclingCmd);
 
@@ -1550,7 +1551,8 @@ if ($action === 'recognize_font') {
 
             $pythonScript = __DIR__ . '/scripts/font_recognizer.py';
             $pythonEnv = get_python_path();
-            $cmd = escapeshellarg($pythonEnv) . ' ' . escapeshellarg($pythonScript) . ' ' . escapeshellarg($tmpImagePath);
+            $envPrefix = get_hf_home_env();
+            $cmd = $envPrefix . escapeshellarg($pythonEnv) . ' ' . escapeshellarg($pythonScript) . ' ' . escapeshellarg($tmpImagePath) . ' 2>&1';
 
             $output = shell_exec($cmd);
             @unlink($tmpImagePath);
