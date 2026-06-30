@@ -1076,9 +1076,11 @@ if ($action === 'ocr_cleanup') {
             // Indiquer à ocrmypdf où trouver tesseract.exe
             $tesseractExe = get_tesseract_path();
             if ($tesseractExe !== 'tesseract') {
-                $cmd[] = '--tesseract-cmd ' . escapeshellarg($tesseractExe);
+                $tessDir = dirname(realpath($tesseractExe) ?: $tesseractExe);
+                // Ajouter le dossier de tesseract.exe au PATH pour qu'OCRmyPDF le trouve
+                putenv('PATH=' . $tessDir . PATH_SEPARATOR . getenv('PATH'));
                 // Définir TESSDATA_PREFIX si un dossier tessdata est adjacent
-                $tessdata = dirname(realpath($tesseractExe) ?: $tesseractExe) . DIRECTORY_SEPARATOR . 'tessdata';
+                $tessdata = $tessDir . DIRECTORY_SEPARATOR . 'tessdata';
                 if (is_dir($tessdata)) {
                     putenv('TESSDATA_PREFIX=' . $tessdata);
                 }
