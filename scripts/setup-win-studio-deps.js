@@ -269,26 +269,28 @@ async function setupExiftool() {
     log('ExifTool', 'Installation via Chocolatey...');
     execSync('choco install exiftool -y --no-progress', { stdio: 'inherit' });
 
-    // Localiser l'exécutable installé par choco
-    const candidates = [
-        'C:\\ProgramData\\chocolatey\\bin\\exiftool.exe',
-        'C:\\tools\\exiftool\\exiftool.exe',
-    ];
+    // Localiser le VRAI exécutable installé par choco (et non le shim de 75Ko dans \\bin\\)
+    let src = null;
+    const chocoLibDir = 'C:\\ProgramData\\chocolatey\\lib\\exiftool\\tools';
+    
+    if (fs.existsSync(chocoLibDir)) {
+        src = findFile(chocoLibDir, 'exiftool.exe') || findFile(chocoLibDir, 'exiftool(-k).exe');
+    }
 
-    // Essayer `where exiftool` en dernier recours
-    let src = candidates.find(f => fs.existsSync(f));
     if (!src) {
-        try {
-            const where = execSync('where exiftool', { encoding: 'utf8' }).trim().split('\n')[0].trim();
-            if (where && fs.existsSync(where)) src = where;
-        } catch (_) { /* ignore */ }
+        src = findFile('C:\\tools\\exiftool', 'exiftool.exe') || findFile('C:\\tools\\exiftool', 'exiftool(-k).exe');
     }
 
     if (src) {
+        // Sécurité : vérifier que ce n'est pas un shim Chocolatey (qui fait ~75Ko)
+        const size = fs.statSync(src).size;
+        if (size < 150000) {
+            log('ExifTool', `⚠️ Attention : le fichier trouvé (${size} octets) ressemble toujours à un shim !`);
+        }
         fs.copyFileSync(src, exiftoolExe);
         log('ExifTool', `✅ exiftool.exe copié depuis ${src}`);
     } else {
-        throw new Error('exiftool.exe introuvable après installation choco.');
+        throw new Error('Le vrai exécutable exiftool.exe est introuvable après installation choco.');
     }
 }
 
