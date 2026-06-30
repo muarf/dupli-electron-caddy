@@ -354,7 +354,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $updates[] = "color_mode = ?";
                     $params[] = $colorMode;
                 }
-                if (isset($input['total_pages'])) {
+                if (isset($input['total_pages']) && intval($input['total_pages']) > 0) {
                     $updates[] = "total_pages = ?";
                     $params[] = intval($input['total_pages']);
                 }

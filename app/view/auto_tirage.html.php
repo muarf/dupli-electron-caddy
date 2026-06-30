@@ -890,8 +890,11 @@
                 // job.total_pages from DB is DOCUMENT pages (per copy)
                 // We must multiply by copies to get global total, matching admin monitor logic.
                 const copies = job.copies || 1;
-                const pagesPerCopy = job.total_pages;
-                const globalTotalPages = job.total_pages * copies;
+                let pagesPerCopy = parseInt(job.pages || job.total_pages || 1);
+                if (isNaN(pagesPerCopy) || pagesPerCopy < 1 || pagesPerCopy > 100000) {
+                    pagesPerCopy = 1;
+                }
+                const globalTotalPages = pagesPerCopy * copies;
 
                 // Force robust boolean conversion for duplex
                 const isDuplex = (job.duplex == 1 || job.duplex == '1' || job.duplex === true || String(job.duplex).toLowerCase() === 'oui');
