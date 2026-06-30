@@ -247,6 +247,9 @@ pub async fn download_update(
         let transferred_clone = transferred.clone();
         let app_emit_progress = app_clone.clone();
 
+        log::info!("[app_commands] Arrêt des serveurs sidecar avant installation de la mise à jour...");
+        crate::server_manager::stop_all_sidecars(&app_clone);
+
         let res = update.download_and_install(
             move |chunk_length, content_length| {
                 let mut t = transferred_clone.lock().unwrap();
