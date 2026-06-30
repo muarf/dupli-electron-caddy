@@ -2443,30 +2443,108 @@ function setupAutoUpdater() {
     // Détecter le format de l'application
     const isAppImage = process.env.APPIMAGE || process.resourcesPath.includes('.mount');
 
-    // Configurer le provider selon le format
-    // electron-updater détecte automatiquement AppImage vs deb
-    // Le problème est que latest-linux.yml peut pointer vers le mauvais format
-    // Solution: utiliser providerOptions.updateConfigPath pour pointer vers le bon fichier
-    if (isAppImage) {
+    autoUpdater.channel = channel;
+
+    if (isBeta) {
+        // IMPORTANT: Pour le canal beta, on NE PEUT PAS utiliser le provider 'github' standard
+        // car il lit le flux Atom GitHub qui est limité aux 10 dernières releases.
+        // Les builds alpha sont si fréquents qu'ils noient les releases beta dans ce flux.
+        // Solution: interroger l'API GitHub directement pour trouver la dernière release beta.
+        console.log('[AutoUpdater Beta] Configuration via API GitHub directe (contournement flux Atom)');
+        
+        // On surcharge checkForUpdates pour faire la vérification via l'API GitHub
+        const originalCheckForUpdates = autoUpdater.checkForUpdates.bind(autoUpdater);
+        autoUpdater.checkForUpdates = async function() {
+            try {
+                console.log('[AutoUpdater Beta] Recherche de la dernière release beta via API GitHub...');
+                const https = require('https');
+                const latestBetaRelease = await new Promise((resolve, reject) => {
+                    const options = {
+                        hostname: 'api.github.com',
+                        path: '/repos/muarf/dupli-electron-caddy/releases?per_page=50',
+                        headers: { 'User-Agent': 'dupli-electron-beta-updater' }
+                    };
+                    https.get(options, (res) => {
+                        let data = '';
+                        res.on('data', d => data += d);
+                        res.on('end', () => {
+                            try {
+                                const releases = JSON.parse(data);
+                                const betaRelease = releases.find(r => r.prerelease && r.tag_name.includes('beta'));
+                                resolve(betaRelease || null);
+                            } catch(e) { reject(e); }
+                        });
+                    }).on('error', reject);
+                });
+
+                if (!latestBetaRelease) {
+                    console.log('[AutoUpdater Beta] Aucune release beta trouvée sur GitHub');
+                    autoUpdater.emit('update-not-available', { version: app.getVersion() });
+                    return null;
+                }
+
+                console.log('[AutoUpdater Beta] Dernière release beta trouvée:', latestBetaRelease.tag_name);
+
+                // Trouver le fichier beta.yml dans les assets
+                const ymlAsset = latestBetaRelease.assets.find(a => a.name === 'beta.yml');
+                if (!ymlAsset) {
+                    console.log('[AutoUpdater Beta] Fichier beta.yml introuvable dans la release');
+                    autoUpdater.emit('update-not-available', { version: app.getVersion() });
+                    return null;
+                }
+
+                // Configurer le feed URL vers cette release spécifique
+                autoUpdater.setFeedURL({
+                    provider: 'github',
+                    owner: 'muarf',
+                    repo: 'dupli-electron-caddy',
+                    channel: 'beta',
+                    releaseType: 'prerelease'
+                });
+
+                // Forcer electron-updater à utiliser ce tag spécifique
+                // en utilisant le fichier beta.yml de la bonne release
+                const ymlUrl = ymlAsset.browser_download_url;
+                console.log('[AutoUpdater Beta] URL du beta.yml:', ymlUrl);
+
+                // Utiliser le provider generic pointant vers ce fichier yml
+                autoUpdater.setFeedURL({
+                    provider: 'generic',
+                    url: ymlUrl.substring(0, ymlUrl.lastIndexOf('/'))
+                });
+
+                return originalCheckForUpdates();
+            } catch(err) {
+                console.error('[AutoUpdater Beta] Erreur lors de la recherche via API:', err);
+                // Fallback: utiliser le provider github standard
+                autoUpdater.setFeedURL({
+                    provider: 'github',
+                    owner: 'muarf',
+                    repo: 'dupli-electron-caddy',
+                    channel: 'beta',
+                    releaseType: 'prerelease'
+                });
+                return originalCheckForUpdates();
+            }
+        };
+    } else if (isAppImage) {
         console.log('AppImage détectée - configuration pour utiliser latest-linux-appimage.yml');
-        autoUpdater.channel = channel;
         autoUpdater.setFeedURL({
             provider: 'github',
             owner: 'muarf',
             repo: 'dupli-electron-caddy',
             channel: channel,
-            releaseType: isBeta ? 'prerelease' : 'release'
+            releaseType: 'release'
         });
     } else {
         const platformLabel = process.platform === 'win32' ? 'Windows' : 'Linux (.deb)';
         console.log(`${platformLabel} détectée - configuration du channel:`, channel);
-        autoUpdater.channel = channel;
         autoUpdater.setFeedURL({
             provider: 'github',
             owner: 'muarf',
             repo: 'dupli-electron-caddy',
             channel: channel,
-            releaseType: isBeta ? 'prerelease' : 'release'
+            releaseType: 'release'
         });
     }
 
