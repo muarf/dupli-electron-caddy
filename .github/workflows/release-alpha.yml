@@ -327,6 +327,7 @@ jobs:
             src-tauri/target/release/bundle/deb/*.deb
             src-tauri/target/release/bundle/deb/*.deb.sig
           fail_on_unmatched_files: false
+          overwrite: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -419,6 +420,7 @@ jobs:
             src-tauri/target/release/bundle/nsis/*
             src-tauri/target/release/bundle/msi/*
           fail_on_unmatched_files: false
+          overwrite: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -500,6 +502,7 @@ jobs:
             src-tauri/target/universal-apple-darwin/release/bundle/macos/*.tar.gz
             src-tauri/target/universal-apple-darwin/release/bundle/macos/*.tar.gz.sig
           fail_on_unmatched_files: false
+          overwrite: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
