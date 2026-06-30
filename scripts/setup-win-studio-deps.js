@@ -197,8 +197,22 @@ async function setupTesseract() {
         log('Tesseract', '✅ tesseract.exe + DLLs copiés.');
     }
 
-    // Télécharger les fichiers tessdata (fra + eng)
+    // S'assurer que le dossier tessdata existe
     ensureDir(TESSDATA);
+
+    // Copier les dossiers de configuration Tesseract (configs, tessconfigs)
+    const srcTessdata = path.join(chocoDir, 'tessdata');
+    ['configs', 'tessconfigs'].forEach(folder => {
+        const srcFolder = path.join(srcTessdata, folder);
+        const destFolder = path.join(TESSDATA, folder);
+        if (fs.existsSync(srcFolder)) {
+            ensureDir(destFolder);
+            execSync(`powershell -Command "Copy-Item -Path '${srcFolder}\\*' -Destination '${destFolder}' -Recurse -Force"`, { stdio: 'ignore' });
+            log('Tesseract', `✅ Dossier ${folder} copié.`);
+        }
+    });
+
+    // Télécharger les fichiers tessdata (fra + eng)
     for (const lang of TESSDATA_LANGS) {
         const destFile = path.join(TESSDATA, `${lang}.traineddata`);
         if (fs.existsSync(destFile) && fs.statSync(destFile).size > 100000) {
