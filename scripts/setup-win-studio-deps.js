@@ -9,6 +9,7 @@
  *   - tesseract.exe + DLLs (via Chocolatey) + tessdata/fra.traineddata
  *   - pdftotext.exe (via Chocolatey / poppler)
  *   - exiftool.exe (via Chocolatey)
+ *   - unpaper.exe (via Chocolatey)
  *
  * Utilisation : node scripts/setup-win-studio-deps.js
  */
@@ -294,6 +295,51 @@ async function setupExiftool() {
     }
 }
 
+// ─── Unpaper (via Chocolatey) ────────────────────────────────────────────────
+
+async function setupUnpaper() {
+    const unpaperExe = path.join(WIN_BIN, 'unpaper.exe');
+
+    if (fs.existsSync(unpaperExe) && fs.statSync(unpaperExe).size > 10000) {
+        log('Unpaper', '✅ unpaper.exe déjà présent. Skip.');
+        return;
+    }
+
+    log('Unpaper', 'Installation via Chocolatey...');
+    execSync('choco install unpaper -y --no-progress', { stdio: 'inherit' });
+
+    // Localiser le VRAI exécutable installé par choco (et non le shim dans \\bin\\)
+    let src = null;
+    const chocoLibDir = 'C:\\ProgramData\\chocolatey\\lib\\unpaper\\tools';
+    
+    if (fs.existsSync(chocoLibDir)) {
+        src = findFile(chocoLibDir, 'unpaper.exe');
+    }
+
+    if (!src) {
+        src = findFile('C:\\tools\\unpaper', 'unpaper.exe');
+    }
+
+    if (!src) {
+        // En dernier recours, regarder dans bin si c'est le vrai binaire
+        const binCandidate = 'C:\\ProgramData\\chocolatey\\bin\\unpaper.exe';
+        if (fs.existsSync(binCandidate) && fs.statSync(binCandidate).size > 150000) {
+            src = binCandidate;
+        }
+    }
+
+    if (src) {
+        const size = fs.statSync(src).size;
+        if (size < 150000) {
+            log('Unpaper', `⚠️ Attention : le fichier trouvé (${size} octets) ressemble à un shim !`);
+        }
+        fs.copyFileSync(src, unpaperExe);
+        log('Unpaper', `✅ unpaper.exe copié depuis ${src}`);
+    } else {
+        throw new Error('Le vrai exécutable unpaper.exe est introuvable après installation choco.');
+    }
+}
+
 // ─── Nettoyage ───────────────────────────────────────────────────────────────
 
 function cleanup() {
@@ -320,6 +366,7 @@ async function main() {
         await setupTesseract();
         await setupPdftotext();
         await setupExiftool();
+        await setupUnpaper();
     } finally {
         cleanup();
     }
