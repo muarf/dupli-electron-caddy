@@ -107,6 +107,11 @@ describe('Auto-Updater Logic Tests', () => {
     });
 
     test('setupAutoUpdater should configure GitHub provider', () => {
+        app.getName.mockReturnValue('Duplicator');
+        app.getAppPath.mockReturnValue('/opt/Duplicator');
+        app.getVersion.mockReturnValue('2.0.1');
+        app.getAppId.mockReturnValue('com.dupli.prod');
+
         mainCaddy.setupAutoUpdater();
         
         expect(autoUpdater.setFeedURL).toHaveBeenCalledWith(expect.objectContaining({
