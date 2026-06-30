@@ -22,12 +22,13 @@
       preserveObjectStacking: true,
       backgroundColor: '#ffffff'
     });
+    window.montageCanvas = canvas;
     
     // Événements d'aimantation (snapping) au centre de la planche
     canvas.on('object:moving', function(e) {
       const obj = e.target;
-      const midX = canvas.width / 2;
-      const midY = canvas.height / 2;
+      const midX = canvas.getWidth() / 2;
+      const midY = canvas.getHeight() / 2;
       const snapTolerance = 5; // px
       
       if (Math.abs(obj.left - midX) < snapTolerance) {
@@ -50,8 +51,8 @@
       const ctx = canvas.getContext();
       ctx.save();
       
-      const midX = canvas.width / 2;
-      const midY = canvas.height / 2;
+      const midX = canvas.getWidth() / 2;
+      const midY = canvas.getHeight() / 2;
       const left = obj.left;
       const top = obj.top;
       
@@ -194,6 +195,9 @@
       rulerY.width = 30;
       rulerY.height = h_px;
       
+      rulerX.style.width = w_px + 'px';
+      rulerY.style.height = h_px + 'px';
+      
       drawRulerX(rulerX, w_mm);
       drawRulerY(rulerY, h_mm);
     }
@@ -202,7 +206,9 @@
     const gridContainer = document.getElementById('montageGridContainer');
     if (gridContainer) {
       gridContainer.style.width = (w_px + 30) + 'px';
+      gridContainer.style.minWidth = (w_px + 30) + 'px';
       gridContainer.style.height = (h_px + 30) + 'px';
+      gridContainer.style.minHeight = (h_px + 30) + 'px';
     }
   }
 
@@ -406,6 +412,8 @@
         window.setPdfReady && window.setPdfReady(json.download_url);
         if (json.preview_url && window.openImpPreview) {
           window.openImpPreview(json.preview_url, json.download_url);
+        } else if (window.showResultToast) {
+          window.showResultToast(json.download_url);
         } else {
           window.location.href = json.download_url;
         }
@@ -577,8 +585,8 @@
         console.log(`[Montage] fabric.Image instancié, dimensions: ${img.width}x${img.height}`);
         
         img.set({
-          left: canvas.width / 2,
-          top: canvas.height / 2,
+          left: canvas.getWidth() / 2,
+          top: canvas.getHeight() / 2,
           originX: 'center',
           originY: 'center',
           cornerSize: 10,
@@ -640,8 +648,8 @@
       const scale = target_w_px / docInfo.img.naturalWidth;
       
       img.set({
-        left: canvas.width / 2,
-        top: canvas.height / 2,
+        left: canvas.getWidth() / 2,
+        top: canvas.getHeight() / 2,
         originX: 'center',
         originY: 'center',
         scaleX: scale,

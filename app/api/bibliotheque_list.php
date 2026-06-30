@@ -158,48 +158,15 @@ function getSortLink($column, $currentSort, $currentOrder) {
                             <i class="fa fa-print"></i>
                         </button>
 
-                        <!-- 3. IMPOSER (Dropup) -->
-                        <div class="dropdown dropup mr-1">
-                            <button class="btn btn-sm btn-outline-success dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Imposition">
-                                <i class="fa fa-book"></i>
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-right shadow-lg border-0" style="border-radius: 10px;">
-                                <h6 class="dropdown-header small text-muted uppercase font-weight-bold">Outils d'imposition</h6>
-                                <a class="dropdown-item py-2" href="?imposition_brochure&from_lib=<?= $file['id'] ?>"><i class="fa fa-book text-success mr-2"></i> Brochure</a>
-                                <a class="dropdown-item py-2" href="?imposition_livre&from_lib=<?= $file['id'] ?>"><i class="fa fa-book text-primary mr-2"></i> Livre / Carnet</a>
-                                <a class="dropdown-item py-2" href="?imposition_tracts&from_lib=<?= $file['id'] ?>"><i class="fa fa-copy text-warning mr-2"></i> Tracts / Flyers</a>
-                                <div class="dropdown-divider"></div>
-                                <a class="dropdown-item py-2" href="?pdf_organizer&from_lib=<?= $file['id'] ?>"><i class="fa fa-th text-info mr-2"></i> PDF Organizer</a>
-                            </div>
-                        </div>
+                        <!-- 3. ÉDITER DANS LE STUDIO -->
+                        <button class="btn btn-sm btn-outline-warning mr-1" onclick="window.location.href='?studio&file_id=<?= $file['id'] ?>'" title="Éditer dans le Studio">
+                            <i class="fa fa-magic"></i>
+                        </button>
 
-                        <!-- 4. MODIFIER (Dropup contextuel) -->
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-outline-warning dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Plus d'actions" onclick="$(this).dropdown('toggle'); event.stopPropagation();">
-                                <i class="fa fa-cog"></i>
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-right shadow-lg border-0" style="border-radius: 10px;">
-                                <h6 class="dropdown-header small text-muted uppercase font-weight-bold">Transformations</h6>
-                                
-                                <?php if ($file['file_type'] === 'pdf'): ?>
-                                    <a class="dropdown-item py-2" href="?pdf_to_png&from_lib=<?= $file['id'] ?>"><i class="fa fa-file-image-o text-danger mr-2"></i> Convertir en Images</a>
-                                    <a class="dropdown-item py-2" href="?unimpose&from_lib=<?= $file['id'] ?>"><i class="fa fa-undo text-info mr-2"></i> Désimposer</a>
-                                    <a class="dropdown-item py-2" href="?resizer&from_lib=<?= $file['id'] ?>"><i class="fa fa-expand text-primary mr-2"></i> Redimensionner</a>
-                                    <a class="dropdown-item py-2" href="?pdf_merge&from_lib=<?= $file['id'] ?>"><i class="fa fa-compress text-success mr-2"></i> Fusionner</a>
-                                    <a class="dropdown-item py-2" href="?taux_remplissage&from_lib=<?= $file['id'] ?>"><i class="fa fa-tint text-info mr-2"></i> Taux d'encrage</a>
-                                 <?php endif; ?>
-
-                                <?php if ($file['file_type'] === 'png' || $file['file_type'] === 'jpg'): ?>
-                                    <a class="dropdown-item py-2" href="?png_to_pdf&from_lib=<?= $file['id'] ?>"><i class="fa fa-file-pdf-o text-success mr-2"></i> Convertir en PDF</a>
-                                    <a class="dropdown-item py-2" href="?riso_separator&from_lib=<?= $file['id'] ?>"><i class="fa fa-adjust text-warning mr-2"></i> Séparateur Riso</a>
-                                <?php endif; ?>
-
-                                <a class="dropdown-item py-2" href="?image_processor&from_lib=<?= $file['id'] ?>"><i class="fa fa-sliders text-primary mr-2"></i> Traitement d'image</a>
-                                
-                                <div class="dropdown-divider"></div>
-                                <a class="dropdown-item py-2 text-danger" href="javascript:void(0)" onclick="openDeleteModal(<?= $file['id'] ?>, <?= htmlspecialchars(json_encode($file['filename'])) ?>)"><i class="fa fa-trash mr-2"></i> Supprimer</a>
-                            </div>
-                        </div>
+                        <!-- 4. SUPPRIMER -->
+                        <button class="btn btn-sm btn-outline-danger" onclick="openDeleteModal(<?= $file['id'] ?>, <?= htmlspecialchars(json_encode($file['filename'])) ?>)" title="Supprimer">
+                            <i class="fa fa-trash"></i>
+                        </button>
                     </div>
                     <div class="text-muted mt-1 small" style="font-size: 0.65rem;">
                         Ajouté le <?= date('d/m/y', strtotime($file['created_at'])) ?>

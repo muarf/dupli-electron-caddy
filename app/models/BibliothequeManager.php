@@ -127,8 +127,8 @@ class BibliothequeManager {
         }
         
         $filename = $fileInfo['name'];
-        // Nettoyer le nom de fichier
-        $filename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $filename);
+        // Nettoyer le nom de fichier (autoriser les espaces, lettres, chiffres, tirets, points)
+        $filename = preg_replace('/[^\p{L}\p{N} \._-]/u', '_', $filename);
         
         // Générer un nom unique pour le stockage
         $uniqueName = uniqid() . '_' . $filename;

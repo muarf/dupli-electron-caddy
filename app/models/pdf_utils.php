@@ -100,3 +100,69 @@ function addPageNumber($pdf, $page_num, $x, $y, $new_width, $new_height, $rotati
     }
 }
 }
+
+/**
+ * Ajoute un texte (avec ou sans fond blanc) à des coordonnées précises.
+ */
+if (!function_exists('addTextAndBox')) {
+function addTextAndBox($pdf, $x, $y, $w, $h, $text, $font, $fontSize, $bg) {
+    $pdf->setAutoPageBreak(false);
+    $pdf->SetFont($font, '', $fontSize);
+    
+    if ($bg) {
+        $pdf->SetFillColor(255, 255, 255);
+        $pdf->Rect($x, $y, $w, $h, 'F');
+    }
+    
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->SetXY($x, $y);
+    $pdf->MultiCell($w, $h, $text, 0, 'L', false, 1, '', '', true, 0, false, true, 0, 'T', false);
+}
+}
+
+/**
+ * Ajoute un numéro de page libre.
+ */
+if (!function_exists('addCustomPageNumber')) {
+function addCustomPageNumber($pdf, $x, $y, $text, $font, $fontSize) {
+    $pdf->setAutoPageBreak(false);
+    $pdf->SetFont($font, '', $fontSize);
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->SetXY($x, $y);
+    // On dessine le texte (pas de fond, largeur dynamique simple)
+    $pdf->Cell(0, 0, $text, 0, 0, 'L', false, '', 0, false, 'T', 'M');
+}
+}
+
+/**
+ * Ajoute une biffure (caviardage).
+ */
+if (!function_exists('addRedaction')) {
+function addRedaction($pdf, $x, $y, $w, $h, $color) {
+    $pdf->setAutoPageBreak(false);
+    
+    if ($color === 'black') {
+        $pdf->SetFillColor(0, 0, 0);
+    } elseif ($color === 'white') {
+        $pdf->SetFillColor(255, 255, 255);
+    } elseif ($color === 'red') {
+        $pdf->SetFillColor(255, 0, 0);
+    } elseif (preg_match('/^#([a-f0-9]{3}){1,2}$/i', $color)) {
+        $hex = ltrim($color, '#');
+        if (strlen($hex) == 3) {
+            $r = hexdec(substr($hex, 0, 1) . substr($hex, 0, 1));
+            $g = hexdec(substr($hex, 1, 1) . substr($hex, 1, 1));
+            $b = hexdec(substr($hex, 2, 1) . substr($hex, 2, 1));
+        } else {
+            $r = hexdec(substr($hex, 0, 2));
+            $g = hexdec(substr($hex, 2, 2));
+            $b = hexdec(substr($hex, 4, 2));
+        }
+        $pdf->SetFillColor($r, $g, $b);
+    } else {
+        $pdf->SetFillColor(0, 0, 0);
+    }
+    
+    $pdf->Rect($x, $y, $w, $h, 'F');
+}
+}

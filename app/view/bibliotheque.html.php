@@ -1649,32 +1649,9 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                 <button class="btn btn-primary" onclick="window.open('?get_bibliotheque_file&id=${id}', '_blank')"><i class="fa fa-external-link"></i> Ouvrir</button>
                 <button class="btn btn-info" onclick="printLibraryFile(${id})"><i class="fa fa-print"></i> Imprimer</button>
                 
-                <div class="btn-group dropup">
-                    <button type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown">
-                        <i class="fa fa-book"></i> Imposer
-                    </button>
-                    <div class="dropdown-menu shadow-lg">
-                        <a class="dropdown-item py-2" href="?imposition_brochure&from_lib=${id}"><i class="fa fa-book text-success mr-2"></i> Brochure</a>
-                        <a class="dropdown-item py-2" href="?imposition_livre&from_lib=${id}"><i class="fa fa-book text-primary mr-2"></i> Livre / Carnet</a>
-                        <a class="dropdown-item py-2" href="?imposition_tracts&from_lib=${id}"><i class="fa fa-copy text-warning mr-2"></i> Tracts / Flyers</a>
-                        <div class="dropdown-divider"></div>
-                        <a class="dropdown-item py-2" href="?pdf_organizer&from_lib=${id}"><i class="fa fa-th text-info mr-2"></i> PDF Organizer</a>
-                    </div>
-                </div>
-
-                <div class="btn-group dropup">
-                    <button type="button" class="btn btn-warning dropdown-toggle" data-toggle="dropdown">
-                        <i class="fa fa-cog"></i> Modifier
-                    </button>
-                    <div class="dropdown-menu shadow-lg">
-                        <a class="dropdown-item py-2" href="?pdf_to_png&from_lib=${id}"><i class="fa fa-file-image-o text-danger mr-2"></i> Convertir en Images</a>
-                        <a class="dropdown-item py-2" href="?unimpose&from_lib=${id}"><i class="fa fa-undo text-info mr-2"></i> Désimposer</a>
-                        <a class="dropdown-item py-2" href="?resizer&from_lib=${id}"><i class="fa fa-expand text-primary mr-2"></i> Redimensionner</a>
-                        <a class="dropdown-item py-2" href="?pdf_merge&from_lib=${id}"><i class="fa fa-compress text-success mr-2"></i> Fusionner</a>
-                        <a class="dropdown-item py-2" href="?taux_remplissage&from_lib=${id}"><i class="fa fa-tint text-info mr-2"></i> Taux d'encrage</a>
-                        <a class="dropdown-item py-2" href="?image_processor&from_lib=${id}"><i class="fa fa-sliders text-primary mr-2"></i> Traitement d'image</a>
-                    </div>
-                </div>
+                <button class="btn btn-warning" onclick="window.location.href='?studio&file_id=${id}'">
+                    <i class="fa fa-magic"></i> Éditer dans le Studio
+                </button>
             </div>
         `;
         $('#pdfModalActions').html(actionsHtml);
