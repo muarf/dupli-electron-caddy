@@ -701,8 +701,15 @@ if ($page === 'download_studio') {
     $ext = strtolower(pathinfo($filepath, PATHINFO_EXTENSION));
     $mimeMap = ['pdf' => 'application/pdf', 'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg'];
     $mime = $mimeMap[$ext] ?? 'application/octet-stream';
+    
+    $dlName = $_GET['dl_name'] ?? '';
+    $finalFilename = !empty($dlName) ? basename($dlName) : $filename;
+    if (!empty($dlName) && strtolower(pathinfo($finalFilename, PATHINFO_EXTENSION)) !== $ext) {
+        $finalFilename .= '.' . $ext;
+    }
+    
     header('Content-Type: ' . $mime);
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Disposition: attachment; filename="' . $finalFilename . '"');
     header('Content-Length: ' . filesize($filepath));
     header('Cache-Control: no-cache, must-revalidate');
     readfile($filepath);

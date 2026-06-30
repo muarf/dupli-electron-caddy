@@ -2,8 +2,27 @@
 <script src="js/build/pdf.js" defer></script>
 <script src="js/fabric.min.js" defer></script>
 <script src="js/jszip.min.js" defer></script>
+<style>
+  #modificationContainer,
+  #modificationContainer .canvas-container,
+  #modificationContainer canvas {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+</style>
+<script>
+window.addEventListener('error', function(e) {
+  const errDiv = document.createElement('div');
+  errDiv.style.position = 'fixed'; errDiv.style.top = '10px'; errDiv.style.left = '10px'; errDiv.style.zIndex = '9999'; errDiv.style.background = 'red'; errDiv.style.color = 'white'; errDiv.style.padding = '10px'; errDiv.style.fontSize = '12px';
+  errDiv.textContent = 'JS Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
+  document.body.appendChild(errDiv);
+});
+</script>
 <script src="js/riso-tools.js?v=<?php echo time(); ?>" defer></script>
 <script src="js/studio-montage.js?v=<?php echo time(); ?>" defer></script>
+<script src="js/studio-modification.js?v=<?php echo time(); ?>" defer></script>
+<script src="js/studio-metadata.js?v=<?php echo time(); ?>" defer></script>
 
 <div class="studio-layout" id="studioApp">
 
@@ -17,6 +36,9 @@
     <button class="tool-btn" data-tool="pages" title="Pages"><i class="fa fa-files-o"></i>Pages</button>
     <div class="sidebar-divider"></div>
     <button class="tool-btn" data-tool="riso" title="Riso"><i class="fa fa-adjust"></i>Riso</button>
+    <button class="tool-btn" data-tool="ocr" title="OCR & Scan"><i class="fa fa-font"></i>OCR & Scan</button>
+    <button class="tool-btn" data-tool="modification" title="Modification PDF"><i class="fa fa-edit"></i>Modification</button>
+    <button class="tool-btn" data-tool="metadata" title="Métadonnées"><i class="fa fa-tags"></i>Métadonnées</button>
   </aside>
 
   <!-- === MAIN WORKSPACE === -->
@@ -25,13 +47,16 @@
     <div class="studio-toolbar">
       <div class="toolbar-title"><i class="fa fa-magic"></i> Dupli Studio</div>
       <span class="file-info-badge" id="fileInfoBadge" style="display:none">
-        <i class="fa fa-file"></i> <span id="fileNameDisplay"></span>
+        <i class="fa fa-file"></i> <input type="text" id="fileNameDisplay" style="background:transparent; border:none; outline:none; border-bottom:1px dashed rgba(255,255,255,0.5); color:inherit; font-family:inherit; font-size:inherit; font-weight:inherit; min-width: 150px; max-width:250px;">
         <span id="fileDimsDisplay" style="opacity:0.7;margin-left:6px;font-size:11px"></span>
         <span id="fileInkDisplay" style="margin-left:8px; padding:2px 8px; background:rgba(0,0,0,0.1); border-radius:10px; font-size:11px; font-weight:600; display:none" title="Taux d'encrage moyen (C+M+J+N)"></span>
       </span>
       <div class="toolbar-spacer"></div>
       <button class="toolbar-btn" id="btnNewFile" style="display:none"><i class="fa fa-upload"></i> Nouveau fichier</button>
       <button class="toolbar-btn" id="btnExportPng" style="display:none" title="Exporter le canvas (avec filtres) en PNG"><i class="fa fa-file-image-o"></i> PNG</button>
+      <button class="toolbar-btn" id="btnSaveToLibrary" style="display:none" title="Enregistrer dans la Bibliothèque">
+        <i class="fa fa-bookmark"></i> Bibliothèque
+      </button>
       <button class="toolbar-btn primary" id="btnExportPdf" style="display:none; position: relative;" title="Exporter en PDF via serveur">
         <i class="fa fa-file-pdf-o"></i> PDF
         <span id="pdfReadyBadge" style="display:none; position: absolute; top: -5px; right: -5px; background: #10b981; color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--studio-surface);"><i class="fa fa-check"></i></span>
@@ -73,17 +98,35 @@
         </div>
       </div>
 
+      <!-- Canvas standard (rendu du PDF/image) -->
       <canvas id="studioCanvas" style="display:none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 4px; transition: transform 0.2s;"></canvas>
+      
+      <!-- Crop overlay container (position:absolute par-dessus le canvas, seulement en mode crop) -->
+      <div id="cropContainer" style="display:none; position:absolute; pointer-events:none; z-index:15;">
+        <!-- Coin spacer -->
+        <div id="cropCorner" style="position:absolute; top:0; left:0; width:30px; height:30px; background:#f0f2f5; border-bottom:1px solid #ccc; border-right:1px solid #ccc; z-index:5;"></div>
+        <!-- Règle X (haut) -->
+        <canvas id="cropRulerX" style="position:absolute; top:0; left:30px; height:30px; display:block; background:#f0f2f5; border-bottom:1px solid #ccc; max-width:none !important; max-height:none !important; object-fit:fill !important; box-shadow:none !important; z-index:5;"></canvas>
+        <!-- Règle Y (gauche) -->
+        <canvas id="cropRulerY" style="position:absolute; top:30px; left:0; width:30px; display:block; background:#f0f2f5; border-right:1px solid #ccc; max-width:none !important; max-height:none !important; object-fit:fill !important; box-shadow:none !important; z-index:5;"></canvas>
+        <!-- Overlay de crop (poignées + zones rouges) - pointer-events actif -->
+        <canvas id="cropOverlay" style="position:absolute; top:30px; left:30px; cursor:crosshair; z-index:10; pointer-events:auto; background:transparent !important; box-shadow:none !important;"></canvas>
+      </div>
+
+      <!-- Container pour l'édition de Modification (Fabric.js) -->
+      <div id="modificationContainer" style="display:none; position:absolute; z-index:20; background:transparent !important; box-shadow:none !important;">
+        <canvas id="modificationCanvas" style="background:transparent !important; box-shadow:none !important;"></canvas>
+      </div>
       
       <!-- Montage Canvas Container -->
       <div id="montageCanvasContainer" style="display:none; width:100%; height:100%; position:absolute; top:0; left:0; align-items:flex-start; justify-content:center; overflow:auto; background:var(--studio-bg); padding: 40px; box-sizing: border-box;">
-        <div id="montageGridContainer" style="box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius:4px; background:white; display: grid; grid-template-columns: 30px 1fr; grid-template-rows: 30px 1fr; overflow: hidden; user-select: none;">
+        <div id="montageGridContainer" style="box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius:4px; background:white; display: grid; grid-template-columns: 30px 1fr; grid-template-rows: 30px 1fr; overflow: hidden; user-select: none; flex-shrink: 0;">
           <!-- Corner spacer -->
           <div style="width:30px; height:30px; background:#f0f2f5; border-bottom:1px solid #ccc; border-right:1px solid #ccc;"></div>
           <!-- X Ruler -->
-          <canvas id="montageRulerX" style="height:30px; display:block; background:#f0f2f5; border-bottom:1px solid #ccc;"></canvas>
+          <canvas id="montageRulerX" style="height:30px; display:block; background:#f0f2f5; border-bottom:1px solid #ccc; max-width:none !important; max-height:none !important; object-fit:fill !important; box-shadow:none !important;"></canvas>
           <!-- Y Ruler -->
-          <canvas id="montageRulerY" style="width:30px; display:block; background:#f0f2f5; border-right:1px solid #ccc;"></canvas>
+          <canvas id="montageRulerY" style="width:30px; display:block; background:#f0f2f5; border-right:1px solid #ccc; max-width:none !important; max-height:none !important; object-fit:fill !important; box-shadow:none !important;"></canvas>
           <!-- Canvas wrapper -->
           <div id="fabricCanvasWrapper" style="position:relative;">
             <canvas id="montageCanvas"></canvas>
@@ -456,6 +499,11 @@
           <button class="toolbar-btn" id="btnFlipH" style="width:48%"><i class="fa fa-arrows-h"></i> Flip H</button>
           <button class="toolbar-btn" id="btnFlipV" style="width:48%;float:right"><i class="fa fa-arrows-v"></i> Flip V</button>
         </div>
+        <div class="panel-row" style="margin-top:12px; font-size:11px;">
+          <label style="cursor:pointer;display:flex;align-items:center;gap:6px">
+             <input type="checkbox" id="chkGeomApplyAll"> Appliquer à toutes les pages
+          </label>
+        </div>
       </div>
       <div class="panel-section">
         <div class="panel-section-title">Redimensionner</div>
@@ -469,6 +517,32 @@
         <div class="panel-row" style="margin-top:8px">
           <button class="toolbar-btn primary" id="btnApplyResize" style="width:100%"><i class="fa fa-expand"></i> Redimensionner</button>
         </div>
+      </div>
+      <!-- Section Crop -->
+      <div class="panel-section">
+        <div class="panel-section-title">Rogner (Crop)</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+          <div>
+            <div class="panel-label" style="font-size:11px;">Haut (mm)</div>
+            <input type="number" class="panel-select" id="cropTop" value="0" min="0" step="0.5" style="padding:6px 8px;">
+          </div>
+          <div>
+            <div class="panel-label" style="font-size:11px;">Bas (mm)</div>
+            <input type="number" class="panel-select" id="cropBottom" value="0" min="0" step="0.5" style="padding:6px 8px;">
+          </div>
+          <div>
+            <div class="panel-label" style="font-size:11px;">Gauche (mm)</div>
+            <input type="number" class="panel-select" id="cropLeft" value="0" min="0" step="0.5" style="padding:6px 8px;">
+          </div>
+          <div>
+            <div class="panel-label" style="font-size:11px;">Droite (mm)</div>
+            <input type="number" class="panel-select" id="cropRight" value="0" min="0" step="0.5" style="padding:6px 8px;">
+          </div>
+        </div>
+        <div id="cropSizeInfo" style="font-size:11px; color:var(--studio-text-muted); text-align:center; margin-bottom:10px; font-weight:500;">—</div>
+        <button class="toolbar-btn primary" id="btnActivateCrop" style="width:100%; margin-bottom:8px;"><i class="fa fa-crop"></i> Activer l'aperçu crop</button>
+        <button class="toolbar-btn" id="btnResetCrop" style="width:100%; margin-bottom:8px;"><i class="fa fa-undo"></i> Réinitialiser</button>
+        <button class="toolbar-btn primary" id="btnApplyCropExport" style="width:100%; background:#10b981; border-color:#10b981;"><i class="fa fa-scissors"></i> Appliquer & Exporter</button>
       </div>
     </div>
 
@@ -550,6 +624,9 @@
         <div class="panel-row" style="margin-top:8px">
           <button class="toolbar-btn" id="btnOrgAddBlank" style="width:100%"><i class="fa fa-plus"></i> Insérer page blanche</button>
         </div>
+        <div class="panel-row" style="margin-top:8px">
+          <button class="toolbar-btn" id="btnOrgReverse" style="width:100%"><i class="fa fa-sort-numeric-desc"></i> Inverser l'ordre des pages</button>
+        </div>
         <div class="panel-row" style="margin-top:12px">
           <button class="toolbar-btn primary" id="btnApplyOrg" style="width:100%"><i class="fa fa-magic"></i> Appliquer l'ordre</button>
         </div>
@@ -624,6 +701,232 @@
         </div>
       </div>
     </div>
+    
+    <!-- Nouveau Panneau: OCR & Nettoyage de Scan -->
+    <div id="panelOcr" style="display:none">
+      <div class="panel-section">
+        <div class="panel-section-title">Langue du document</div>
+        <div class="panel-row">
+          <select class="panel-select" id="selOcrLang">
+            <option value="fra">Français</option>
+            <option value="eng">Anglais</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="panel-section">
+        <div class="panel-section-title">Type de Traitement</div>
+        <div class="panel-row">
+          <select class="panel-select" id="selOcrType">
+            <option value="skip_text">OCR Classique (Ignore le texte existant)</option>
+            <option value="force_ocr">Forcer l'OCR (Rastérise d'abord)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-section-title">Nettoyage (Clean & Deskew)</div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#374151;margin-bottom:8px;cursor:pointer">
+          <input type="checkbox" id="chkOcrDeskew" checked>
+          Redresser la page (Deskew)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#374151;margin-bottom:8px;cursor:pointer">
+          <input type="checkbox" id="chkOcrClean" checked>
+          Nettoyer les parasites (Despeckle)
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#374151;margin-bottom:12px;cursor:pointer">
+          <input type="checkbox" id="chkOcrOptimize">
+          Optimiser la taille du fichier
+        </label>
+        <div style="height:1px;background:#e2e5ea;margin:12px 0;"></div>
+        <div class="panel-section-title">Format de sortie</div>
+        <div class="panel-row" style="margin-bottom:12px;">
+          <select class="panel-select" id="selOcrOutputFormat">
+            <option value="pdf">PDF ocrisé</option>
+            <option value="docx_linear">DOCX linéaire (Texte pur avec paragraphes, sans mise en page)</option>
+            <option value="docx_ia">DOCX IA Docling (Structure native Word reconstituée)</option>
+            <option value="docx_layout">DOCX (Tente de garder la mise en page originale)</option>
+          </select>
+        </div>
+        <div class="panel-row">
+          <button class="panel-btn primary" id="btnOcrRun" style="width:100%">
+            <i class="fa fa-magic"></i> Lancer le traitement OCR
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nouveau Panneau: Modification PDF -->
+    <div id="panelModification" style="display:none">
+      <div class="panel-section">
+        <div class="panel-section-title">Outils de modification</div>
+        <div class="panel-row" style="display: flex; flex-direction: column; gap: 5px;">
+          <button class="panel-btn modif-tool-btn active" data-tool="none"><i class="fa fa-mouse-pointer" style="width: 20px;"></i> Sélectionner</button>
+          <button class="panel-btn modif-tool-btn" data-tool="redact_text"><i class="fa fa-font" style="width: 20px;"></i> Texte & Carré blanc</button>
+          <button class="panel-btn modif-tool-btn" data-tool="page_number"><i class="fa fa-hashtag" style="width: 20px;"></i> Numérotation</button>
+          <button class="panel-btn modif-tool-btn" data-tool="strikeout"><i class="fa fa-strikethrough" style="width: 20px;"></i> Biffer & Surligner</button>
+        </div>
+      </div>
+      
+      <!-- Outil : Carré blanc + Texte -->
+      <div id="modifToolRedact" class="panel-section" style="display:none">
+        <div class="panel-section-title">Texte</div>
+        <div class="panel-row">
+          <input type="text" class="panel-select" id="modifRedactText" placeholder="Texte de remplacement..." style="width:100%">
+        </div>
+        <div class="panel-row" style="margin-top:8px; align-items:center;">
+          <div class="panel-label">Police</div>
+          <select class="panel-select" id="modifRedactFont" style="flex:1">
+            <option value="helvetica">Helvetica (Sans serif)</option>
+            <option value="times">Times (Serif)</option>
+            <option value="courier">Courier (Monospace)</option>
+          </select>
+          <button class="panel-btn" id="btnIdentifyFont" title="Reconnaître la police depuis l'image" style="padding:4px 8px; margin-left:4px; color: var(--studio-primary);"><i class="fa fa-magic"></i></button>
+          <button class="panel-btn btn-upload-font" title="Importer une police" style="padding:4px 8px; margin-left:4px"><i class="fa fa-upload"></i></button>
+        </div>
+        
+        <!-- Modal inline pour les résultats de la reconnaissance de police -->
+        <div id="fontRecognitionResults" style="display:none; margin-top:8px; background:white; border:1px solid var(--studio-border); border-radius:4px; padding:8px;">
+          <div style="font-size:11px; font-weight:bold; margin-bottom:4px; color:var(--studio-primary);">Polices détectées :</div>
+          <div id="fontRecognitionList" style="display:flex; flex-direction:column; gap:4px;"></div>
+          <button class="panel-btn" id="btnCancelFontRec" style="width:100%; margin-top:6px; font-size:10px;">Fermer</button>
+        </div>
+        <div class="panel-row" style="margin-top:8px">
+          <div class="panel-label">Taille</div>
+          <input type="number" class="panel-select" id="modifRedactSize" value="12" min="6" max="72">
+        </div>
+        <div class="panel-row" style="margin-top:8px">
+          <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="modifRedactBg" checked> Avec fond blanc</label>
+        </div>
+        <p style="font-size:10px; color:#6b7280; margin-top:8px">Cliquez-glissez sur le PDF pour dessiner la zone.</p>
+      </div>
+
+      <!-- Outil : Numéro de page -->
+      <div id="modifToolPageNum" class="panel-section" style="display:none">
+        <div class="panel-section-title">Paramètres de Numérotation</div>
+        <div class="panel-row">
+          <div class="panel-label">Format</div>
+          <input type="text" class="panel-select" id="modifPageNumFormat" value="{p}" placeholder="{p} pour page courante, {t} pour total">
+        </div>
+        <p style="font-size:10px; color:#6b7280; margin-top:4px; margin-bottom:8px">Ex: <b>Page {p} sur {t}</b> affichera "Page 1 sur 12"</p>
+        <div class="panel-row" style="margin-top:8px">
+          <div class="panel-label">Position</div>
+          <select class="panel-select" id="modifPageNumPosition">
+            <option value="bottom_center">Bas Centre</option>
+            <option value="bottom_left">Bas Gauche</option>
+            <option value="bottom_right">Bas Droite</option>
+            <option value="top_center">Haut Centre</option>
+            <option value="top_left">Haut Gauche</option>
+            <option value="top_right">Haut Droite</option>
+          </select>
+        </div>
+        <div class="panel-row" style="margin-top:8px">
+          <div class="panel-label">Marge (mm)</div>
+          <input type="number" class="panel-select" id="modifPageNumMargin" value="10" min="0" max="100">
+        </div>
+        <div class="panel-row" style="margin-top:8px; align-items:center;">
+          <div class="panel-label">Police</div>
+          <select class="panel-select" id="modifPageNumFont" style="flex:1">
+            <option value="helvetica">Helvetica</option>
+            <option value="times">Times</option>
+          </select>
+          <button class="panel-btn btn-upload-font" title="Importer une police" style="padding:4px 8px; margin-left:4px"><i class="fa fa-upload"></i></button>
+        </div>
+        <input type="file" id="customFontUpload" accept=".ttf,.otf" style="display:none">
+        <div class="panel-row" style="margin-top:8px">
+          <div class="panel-label">Taille</div>
+          <input type="number" class="panel-select" id="modifPageNumSize" value="12" min="6" max="72">
+        </div>
+        <div class="panel-row" style="margin-top:8px">
+          <div class="panel-label">Pages</div>
+          <input type="number" class="panel-select" id="modifPageNumStart" placeholder="Début (1)" style="width:48%">
+          <input type="number" class="panel-select" id="modifPageNumEnd" placeholder="Fin" style="width:48%; margin-left:4%">
+        </div>
+        <div class="panel-row" style="margin-top:8px">
+          <div class="panel-label">Débuter à</div>
+          <input type="number" class="panel-select" id="modifPageNumFirstVal" value="1" placeholder="Numéro de départ" style="width:100%">
+        </div>
+        <p style="font-size:10px; color:#6b7280; margin-top:8px">La numérotation sera placée automatiquement selon la position choisie.</p>
+      </div>
+
+      <!-- Outil : Biffer -->
+      <div id="modifToolStrikeout" class="panel-section" style="display:none">
+        <div class="panel-section-title">Couleur de biffure</div>
+        <div class="panel-row" style="display: flex; flex-direction: row; align-items: stretch; gap: 5px;">
+          <input type="color" class="panel-select" id="modifStrikeColor" value="#000000" style="padding: 0; height: 32px; cursor: pointer; flex: 1; border-radius: 4px; border: 1px solid var(--studio-border);">
+          <button class="panel-btn" id="btnEyeDropper" title="Pipette" style="padding: 0; height: 32px; width: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;"><i class="fa fa-eyedropper"></i></button>
+        </div>
+        <p style="font-size:10px; color:#6b7280; margin-top:8px">Cliquez-glissez sur le PDF pour biffer la zone.</p>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-section-title">Portée</div>
+        <div class="panel-row">
+          <select class="panel-select" id="selModifScope">
+            <option value="current">Cette page uniquement</option>
+            <option value="all">Toutes les pages</option>
+            <option value="even">Pages paires</option>
+            <option value="odd">Pages impaires</option>
+          </select>
+        </div>
+        <div class="panel-row" style="margin-top:12px; gap:8px">
+          <button class="panel-btn" id="btnModifClear" style="flex:1"><i class="fa fa-eraser"></i> Effacer</button>
+          <button class="panel-btn primary" id="btnModifApply" style="flex:1"><i class="fa fa-check"></i> Appliquer au PDF</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nouveau Panneau: Métadonnées -->
+    <div id="panelMetadata" style="display:none">
+      <div class="panel-section">
+        <div class="panel-section-title">Éditer les Métadonnées</div>
+        
+        <div class="panel-row">
+          <div class="panel-label">Titre</div>
+          <input type="text" class="panel-select" id="metaTitle" style="width:100%">
+        </div>
+        <div class="panel-row" style="margin-top:8px">
+          <div class="panel-label">Auteur</div>
+          <input type="text" class="panel-select" id="metaAuthor" style="width:100%">
+        </div>
+        <div class="panel-row" style="margin-top:8px">
+          <div class="panel-label">Sujet</div>
+          <input type="text" class="panel-select" id="metaSubject" style="width:100%">
+        </div>
+        <div class="panel-row" style="margin-top:8px">
+          <div class="panel-label">Mots-clés</div>
+          <input type="text" class="panel-select" id="metaKeywords" style="width:100%">
+        </div>
+        <div class="panel-row" style="margin-top:8px">
+          <div class="panel-label">Créateur</div>
+          <input type="text" class="panel-select" id="metaCreator" style="width:100%">
+        </div>
+        <div class="panel-row" style="margin-top:8px">
+          <div class="panel-label">Producteur</div>
+          <input type="text" class="panel-select" id="metaProducer" style="width:100%">
+        </div>
+        <div class="panel-row" style="margin-top:8px">
+          <div class="panel-label" title="Format: YYYY:MM:DD HH:MM:SS">Création</div>
+          <input type="text" class="panel-select" id="metaCreationDate" placeholder="YYYY:MM:DD HH:MM:SS" style="width:100%">
+        </div>
+        <div class="panel-row" style="margin-top:8px">
+          <div class="panel-label" title="Format: YYYY:MM:DD HH:MM:SS">Modification</div>
+          <input type="text" class="panel-select" id="metaModDate" placeholder="YYYY:MM:DD HH:MM:SS" style="width:100%">
+        </div>
+        
+        <div class="panel-row" style="margin-top:16px; gap:8px; display:flex">
+          <button class="panel-btn primary" id="btnApplyMetadata" style="flex:1"><i class="fa fa-save"></i> Appliquer</button>
+          <button class="panel-btn" id="btnClearMetadata" style="flex:1" title="Effacer toutes les métadonnées de ce fichier"><i class="fa fa-trash"></i> Effacer tout</button>
+        </div>
+        <p style="font-size:10px; color:#6b7280; margin-top:8px">L'enregistrement de métadonnées s'effectue sans perturber le contenu du PDF d'origine.</p>
+        
+        <div class="panel-section-title" style="margin-top: 24px;">Toutes les informations</div>
+        <div style="background: #f8fafc; border: 1px solid var(--studio-border); border-radius: 4px; padding: 8px; max-height: 300px; overflow-y: auto;">
+          <pre id="metaRawInfo" style="font-size: 10px; color: #475569; margin: 0; white-space: pre-wrap; word-break: break-all;">Chargement des informations...</pre>
+        </div>
+      </div>
+    </div>
+
   </aside>
 </div>
 
@@ -635,6 +938,34 @@
 <!-- Toast -->
 <div id="studioToast" style="display:none;position:fixed;bottom:24px;right:24px;z-index:10000;background:#fff;border:1px solid #e2e5ea;border-radius:12px;padding:16px 20px;box-shadow:0 4px 20px rgba(0,0,0,0.12);font-family:Inter,sans-serif;font-size:13px;max-width:340px"></div>
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<!-- Result Modal -->
+<div id="resultModal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(10,12,20,0.65);backdrop-filter:blur(4px);align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:400px;max-width:90vw;overflow:hidden;display:flex;flex-direction:column;animation:popIn 0.3s ease-out">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e2e5ea">
+      <div style="font-family:Inter,sans-serif;font-weight:700;font-size:15px;color:#10b981">
+        <i class="fa fa-check-circle" style="margin-right:8px"></i>Fichier prêt !
+      </div>
+      <button onclick="document.getElementById('resultModal').style.display='none'" style="border:none;background:transparent;cursor:pointer;font-size:20px;color:#6b7280;line-height:1">×</button>
+    </div>
+    <div style="padding:24px 20px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center">
+      <p style="margin:0;font-family:Inter,sans-serif;font-size:14px;color:#374151">Le traitement de votre fichier s'est terminé avec succès.</p>
+      <div style="font-family:Inter,sans-serif;font-weight:600;font-size:13px;color:#6b7280;word-break:break-all" id="resultModalFilename"></div>
+      
+      <div style="display:flex;gap:12px;margin-top:8px;width:100%">
+        <a id="resultModalDownloadBtn" href="#" style="flex:1;padding:12px;border-radius:8px;background:linear-gradient(135deg,#4f6ef7,#6f42c1);color:#fff;text-decoration:none;font-family:Inter,sans-serif;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px">
+          <i class="fa fa-download"></i> Télécharger
+        </a>
+        <button id="resultModalReopenBtn" style="flex:1;padding:12px;border:none;border-radius:8px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;cursor:pointer;font-family:Inter,sans-serif;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px">
+          <i class="fa fa-folder-open"></i> Rouvrir
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+@keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+</style>
 
 <!-- Preview Modal Imposition -->
 <div id="impPreviewModal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(10,12,20,0.65);backdrop-filter:blur(4px);align-items:center;justify-content:center">
@@ -670,6 +1001,18 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  // Check if we need to auto-load a file from the library
+  const urlParams = new URLSearchParams(window.location.search);
+  const fileId = urlParams.get('file_id');
+  if (fileId) {
+    if (window._reopenInStudio) {
+      window._reopenInStudio('?get_bibliotheque_file&id=' + fileId);
+    } else {
+      // Fallback si _reopenInStudio n'est pas encore prêt (normalement impossible car défini globalement)
+      setTimeout(() => { if (window._reopenInStudio) window._reopenInStudio('?get_bibliotheque_file&id=' + fileId); }, 500);
+    }
+  }
+
   // === STATE ===
   const state = {
     file: null, isPdf: false, pdfDoc: null, currentPage: 1, totalPages: 0,
@@ -678,8 +1021,21 @@ document.addEventListener('DOMContentLoaded', function() {
     orgSelectedIndex: 0,
     risoLevels: null,
     risoHalftone: null,
-    risoShowOriginal: false
+    risoShowOriginal: false,
+    filtersModified: false   // true si l'utilisateur a modifié des filtres image
   };
+
+  // Retourne true si des modifications image ont été faites (filtres, bitmap…)
+  function hasFiltersModified() {
+    if (state.filtersModified) return true;
+    if ($('chkBitmap') && $('chkBitmap').checked) return true;
+    const defaults = { contrast: 0, brightness: 0, gamma: 1, saturation: 0 };
+    for (const [k, def] of Object.entries(defaults)) {
+      if (sliders && sliders[k] && parseFloat(sliders[k].el.value) !== def) return true;
+    }
+    return false;
+  }
+  window.state = state;
   
   window.orgSequence = [];
   window.orgDocs = [];
@@ -713,6 +1069,16 @@ document.addEventListener('DOMContentLoaded', function() {
   const canvas = $('studioCanvas'), ctx = canvas.getContext('2d', { willReadFrequently: true });
   const panel = $('studioPanel'), thumbsBar = $('thumbsBar');
   const canvasArea = $('canvasArea');
+  // Helper : affiche/cache le canvas (dans cropContainer)
+  function showCanvas(visible) {
+    canvas.style.display = visible ? 'block' : 'none';
+    // Si on cache le canvas, on cache aussi l'overlay crop
+    if (!visible) {
+      const cc = $('cropContainer');
+      if (cc) cc.style.display = 'none';
+      state.cropMode = false;
+    }
+  }
 
   // === SIDEBAR TOOL SWITCHING ===
   document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
@@ -721,7 +1087,7 @@ document.addEventListener('DOMContentLoaded', function() {
       btn.classList.add('active');
       const tool = btn.dataset.tool;
       // Show/hide panels
-      ['panelFilters','panelImposition','panelGeometry','panelPages','panelRiso','panelMontage'].forEach(p => { if($(p)) $(p).style.display = 'none'; });
+      ['panelFilters','panelImposition','panelGeometry','panelPages','panelRiso','panelMontage','panelOcr','panelModification','panelMetadata'].forEach(p => { if($(p)) $(p).style.display = 'none'; });
       
       const standardCanvas = $('studioCanvas');
       const montageContainer = $('montageCanvasContainer');
@@ -745,18 +1111,30 @@ document.addEventListener('DOMContentLoaded', function() {
         if (montageContainer) montageContainer.style.display = 'none';
         if (stdThumbs && window.orgSequence && window.orgSequence.length > 0) stdThumbs.style.display = '';
         
-        if (state.originalImageData) {
-          if (standardCanvas) standardCanvas.style.display = 'block';
+        if (state.originalImageData || state.isPdf || state.file) {
+          showCanvas(true);
           if (uploadZone) uploadZone.style.display = 'none';
         } else {
           if (uploadZone) uploadZone.style.display = 'block';
           if (panel) panel.classList.remove('visible');
         }
         
+        if (tool === 'modification') {
+          $('panelModification').style.display = '';
+          if ($('modificationContainer')) $('modificationContainer').style.display = 'block';
+          if (window.initStudioModification) window.initStudioModification();
+        } else if (tool === 'metadata') {
+          $('panelMetadata').style.display = '';
+          if (panel) panel.classList.add('visible');
+        } else {
+          if ($('modificationContainer')) $('modificationContainer').style.display = 'none';
+        }
+        
         if (tool === 'filters') $('panelFilters').style.display = '';
         else if (tool === 'imposition') $('panelImposition').style.display = '';
         else if (tool === 'geometry') $('panelGeometry').style.display = '';
         else if (tool === 'pages') $('panelPages').style.display = '';
+        else if (tool === 'ocr') $('panelOcr').style.display = '';
         else if (tool === 'riso') {
           $('panelRiso').style.display = '';
           if (state.originalImageData && !window.risoChannels) initRisoChannels();
@@ -789,13 +1167,14 @@ document.addEventListener('DOMContentLoaded', function() {
     state.isPdf = (file.type === 'application/pdf');
     state.rotation = 0; state.flipH = false; state.flipV = false;
 
-    $('fileNameDisplay').textContent = file.name;
+    $('fileNameDisplay').value = file.name;
     $('fileInfoBadge').style.display = '';
     $('btnNewFile').style.display = '';
     $('btnExportPng').style.display = '';
+    $('btnSaveToLibrary').style.display = '';
     $('btnExportPdf').style.display = '';
     uploadZone.style.display = 'none';
-    canvas.style.display = 'block';
+    showCanvas(true);
     panel.classList.add('visible');
 
     if (state.isPdf) loadPdf(file);
@@ -968,8 +1347,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const tc = document.createElement('canvas');
             tc.width = vp.width; tc.height = vp.height;
             await page.render({canvasContext: tc.getContext('2d'), viewport: vp}).promise;
-            if (item.rotation) {
-              tc.style.transform = `rotate(${item.rotation}deg)`;
+            let transforms = [];
+            if (item.rotation) transforms.push(`rotate(${item.rotation}deg)`);
+            if (item.flipH) transforms.push('scaleX(-1)');
+            if (item.flipV) transforms.push('scaleY(-1)');
+            if (transforms.length) {
+              tc.style.transform = transforms.join(' ');
             }
             div.appendChild(tc);
           }
@@ -1024,8 +1407,31 @@ document.addEventListener('DOMContentLoaded', function() {
             const svp = page.getViewport({scale});
             canvas.width = svp.width; canvas.height = svp.height;
             await page.render({canvasContext: ctx, viewport: svp}).promise;
-            state.originalImageData = ctx.getImageData(0, 0, svp.width, svp.height);
-            state._dispW = svp.width; state._dispH = svp.height;
+            
+            // Appliquer les transformations
+            if (item.flipH || item.flipV || item.rotation) {
+                const off = document.createElement('canvas'); off.width = svp.width; off.height = svp.height;
+                off.getContext('2d').drawImage(canvas, 0, 0);
+                
+                let cw = svp.width, ch = svp.height;
+                const r = item.rotation || 0;
+                if (r === 90 || r === 270 || r === -90 || r === -270) {
+                    cw = svp.height; ch = svp.width;
+                }
+                canvas.width = cw; canvas.height = ch;
+                ctx.clearRect(0,0,cw,ch);
+                ctx.save();
+                ctx.translate(cw/2, ch/2);
+                if (r) ctx.rotate(r * Math.PI / 180);
+                let sx = item.flipH ? -1 : 1;
+                let sy = item.flipV ? -1 : 1;
+                ctx.scale(sx, sy);
+                ctx.drawImage(off, -svp.width/2, -svp.height/2);
+                ctx.restore();
+            }
+
+            state.originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            state._dispW = canvas.width; state._dispH = canvas.height;
             applyFilters();
           }
         } else if (item.type === 'blank') {
@@ -1104,6 +1510,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Plus aucune page
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         canvas.style.display = 'none';
+        $('cropContainer').style.display = 'none';
         $('mainCanvasDeleteBtn').style.display = 'none';
         $('uploadZone').style.display = 'flex'; // Remettre l'upload zone
       }
@@ -1128,11 +1535,13 @@ document.addEventListener('DOMContentLoaded', function() {
     sliders[k].el.addEventListener('input', () => {
       const v = parseFloat(sliders[k].el.value);
       sliders[k].val.textContent = k === 'gamma' ? v.toFixed(1) : Math.round(v);
+      state.filtersModified = true;
       applyFilters();
     });
   });
   $('chkBitmap').addEventListener('change', e => {
     $('bitmapOpts').style.display = e.target.checked ? 'block' : 'none';
+    state.filtersModified = true;
     applyFilters();
   });
   $('selBitmapMethod').addEventListener('change', () => {
@@ -1197,10 +1606,38 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // === GEOMETRY ===
-  $('btnRotateLeft').addEventListener('click', () => rotateCanvas(-90));
-  $('btnRotateRight').addEventListener('click', () => rotateCanvas(90));
-  $('btnFlipH').addEventListener('click', () => flipCanvas('h'));
-  $('btnFlipV').addEventListener('click', () => flipCanvas('v'));
+  $('btnRotateLeft').addEventListener('click', () => applyGeometry('rotate', -90));
+  $('btnRotateRight').addEventListener('click', () => applyGeometry('rotate', 90));
+  $('btnFlipH').addEventListener('click', () => applyGeometry('flipH'));
+  $('btnFlipV').addEventListener('click', () => applyGeometry('flipV'));
+
+  function applyGeometry(action, val) {
+    const applyAll = $('chkGeomApplyAll') && $('chkGeomApplyAll').checked;
+    
+    if (applyAll) {
+       for (let i = 0; i < window.orgSequence.length; i++) {
+          let it = window.orgSequence[i];
+          if (action === 'rotate') it.rotation = ((it.rotation || 0) + val) % 360;
+          if (action === 'flipH') it.flipH = !it.flipH;
+          if (action === 'flipV') it.flipV = !it.flipV;
+       }
+       renderThumbnails();
+       if (action === 'rotate') rotateCanvas(val);
+       if (action === 'flipH') flipCanvas('h');
+       if (action === 'flipV') flipCanvas('v');
+    } else {
+       if (state.orgSelectedIndex !== undefined && window.orgSequence[state.orgSelectedIndex]) {
+          const it = window.orgSequence[state.orgSelectedIndex];
+          if (action === 'rotate') it.rotation = ((it.rotation || 0) + val) % 360;
+          if (action === 'flipH') it.flipH = !it.flipH;
+          if (action === 'flipV') it.flipV = !it.flipV;
+          renderThumbnails();
+       }
+       if (action === 'rotate') rotateCanvas(val);
+       if (action === 'flipH') flipCanvas('h');
+       if (action === 'flipV') flipCanvas('v');
+    }
+  }
 
   function rotateCanvas(deg) {
     if (!state.originalImageData) return;
@@ -1236,22 +1673,491 @@ document.addEventListener('DOMContentLoaded', function() {
     setPdfReady(null);
   }
 
+  // === CROP ===
+  // État du crop (marges en mm depuis chaque bord)
+  state.crop = { top: 0, bottom: 0, left: 0, right: 0 };
+  state.cropMode = false; // true quand l'overlay est visible
+
+  // Référence aux éléments de l'overlay crop
+  const cropContainer   = $('cropContainer');
+  const cropOverlay     = $('cropOverlay');
+  const cropOverlayCtx  = cropOverlay ? cropOverlay.getContext('2d') : null;
+  const cropRulerX      = $('cropRulerX');
+  const cropRulerY      = $('cropRulerY');
+
+  // Convertit des px canvas → mm réels
+  function canvasPxToMm(px, axis) {
+    if (!state.dims) return 0;
+    const totalPx = axis === 'x' ? canvas.width : canvas.height;
+    const totalMm = axis === 'x' ? state.dims.wMm : state.dims.hMm;
+    return (px / totalPx) * totalMm;
+  }
+  // Convertit des mm réels → px canvas
+  function mmToCanvasPx(mm, axis) {
+    if (!state.dims) return 0;
+    const totalPx = axis === 'x' ? canvas.width : canvas.height;
+    const totalMm = axis === 'x' ? state.dims.wMm : state.dims.hMm;
+    return (mm / totalMm) * totalPx;
+  }
+
+  // Dessine une règle graduée en cm sur un canvas
+  function drawCropRuler(rulerCanvas, totalMm, isVertical) {
+    if (!rulerCanvas) return;
+    const thickness = 30;
+    const length = isVertical ? canvas.height : canvas.width;
+    if (isVertical) { rulerCanvas.width = thickness; rulerCanvas.height = length; }
+    else             { rulerCanvas.width = length;    rulerCanvas.height = thickness; }
+
+    const rc = rulerCanvas.getContext('2d');
+    rc.clearRect(0, 0, rulerCanvas.width, rulerCanvas.height);
+    rc.fillStyle = '#f0f2f5';
+    rc.fillRect(0, 0, rulerCanvas.width, rulerCanvas.height);
+
+    rc.fillStyle = '#555';
+    rc.font = '9px Inter, sans-serif';
+    rc.textAlign = 'center';
+
+    const pxPerMm = length / totalMm;
+    const stepMm = totalMm > 200 ? 10 : (totalMm > 80 ? 5 : 2);
+
+    for (let mm = 0; mm <= totalMm; mm += stepMm) {
+      const pos = mm * pxPerMm;
+      const isCm = (mm % 10 === 0);
+      const tickLen = isCm ? 10 : (mm % 5 === 0 ? 7 : 4);
+
+      rc.beginPath();
+      rc.strokeStyle = '#999';
+      rc.lineWidth = 1;
+      if (!isVertical) {
+        rc.moveTo(pos, thickness); rc.lineTo(pos, thickness - tickLen);
+      } else {
+        rc.moveTo(thickness, pos); rc.lineTo(thickness - tickLen, pos);
+      }
+      rc.stroke();
+
+      if (isCm && mm > 0) {
+        const label = (mm / 10) + 'cm';
+        if (!isVertical) {
+          rc.fillText(label, pos, thickness - tickLen - 2);
+        } else {
+          rc.save();
+          rc.translate(thickness - tickLen - 2, pos);
+          rc.rotate(-Math.PI / 2);
+          rc.fillText(label, 0, 0);
+          rc.restore();
+        }
+      }
+    }
+  }
+
+  // Dessine l'overlay de crop (zones rouges + lignes pointillées + poignées)
+  function drawCropOverlay() {
+    if (!cropOverlayCtx || !canvas.width || !canvas.height) return;
+    const w = canvas.width, h = canvas.height;
+    cropOverlay.width = w; cropOverlay.height = h;
+
+    const c = state.crop;
+    const topPx    = mmToCanvasPx(c.top,    'y');
+    const bottomPx = mmToCanvasPx(c.bottom, 'y');
+    const leftPx   = mmToCanvasPx(c.left,   'x');
+    const rightPx  = mmToCanvasPx(c.right,  'x');
+
+    const x0 = leftPx, y0 = topPx;
+    const x1 = w - rightPx, y1 = h - bottomPx;
+    const cw = x1 - x0, ch = y1 - y0;
+
+    cropOverlayCtx.clearRect(0, 0, w, h);
+
+    // ── 1. Masque sombre sur les zones exclues (style éditeur pro)
+    cropOverlayCtx.fillStyle = 'rgba(0, 0, 0, 0.60)';
+    cropOverlayCtx.fillRect(0,  0,  w,  y0);          // Haut
+    cropOverlayCtx.fillRect(0,  y1, w,  h - y1);       // Bas
+    cropOverlayCtx.fillRect(0,  y0, x0, ch);           // Gauche
+    cropOverlayCtx.fillRect(x1, y0, w - x1, ch);       // Droite
+
+    // ── 2. Bordure extérieure (blanc opaque) + intérieure (noir fin)
+    cropOverlayCtx.strokeStyle = 'rgba(0,0,0,0.6)';
+    cropOverlayCtx.lineWidth = 1;
+    cropOverlayCtx.setLineDash([]);
+    cropOverlayCtx.strokeRect(x0 - 1, y0 - 1, cw + 2, ch + 2);
+
+    cropOverlayCtx.strokeStyle = '#ffffff';
+    cropOverlayCtx.lineWidth = 2;
+    cropOverlayCtx.strokeRect(x0, y0, cw, ch);
+
+    // ── 3. Lignes de tiers (règle des tiers - 3×3 grille)
+    if (cw > 40 && ch > 40) {
+      cropOverlayCtx.strokeStyle = 'rgba(255,255,255,0.25)';
+      cropOverlayCtx.lineWidth = 1;
+      cropOverlayCtx.setLineDash([]);
+      // Verticales
+      for (let i = 1; i <= 2; i++) {
+        const x = x0 + (cw / 3) * i;
+        cropOverlayCtx.beginPath(); cropOverlayCtx.moveTo(x, y0); cropOverlayCtx.lineTo(x, y1); cropOverlayCtx.stroke();
+      }
+      // Horizontales
+      for (let i = 1; i <= 2; i++) {
+        const y = y0 + (ch / 3) * i;
+        cropOverlayCtx.beginPath(); cropOverlayCtx.moveTo(x0, y); cropOverlayCtx.lineTo(x1, y); cropOverlayCtx.stroke();
+      }
+    }
+
+    // ── 4. Poignées circulaires sur les 4 bords (avec ombre)
+    const handles = getCropHandles(x0, y0, x1, y1);
+    handles.forEach(hnd => {
+      cropOverlayCtx.save();
+      cropOverlayCtx.shadowColor = 'rgba(0,0,0,0.5)';
+      cropOverlayCtx.shadowBlur = 4;
+      cropOverlayCtx.beginPath();
+      cropOverlayCtx.arc(hnd.x, hnd.y, 8, 0, Math.PI * 2);
+      cropOverlayCtx.fillStyle = '#ffffff';
+      cropOverlayCtx.fill();
+      cropOverlayCtx.shadowBlur = 0;
+      cropOverlayCtx.strokeStyle = 'rgba(0,0,0,0.4)';
+      cropOverlayCtx.lineWidth = 1.5;
+      cropOverlayCtx.stroke();
+      cropOverlayCtx.restore();
+    });
+
+    // ── 5. Étiquette dimensions (mm) au centre de la zone conservée
+    if (state.dims && cw > 60 && ch > 30) {
+      const wFinal = Math.max(0, state.dims.wMm - c.left - c.right);
+      const hFinal = Math.max(0, state.dims.hMm - c.top  - c.bottom);
+      const label = wFinal.toFixed(1) + ' × ' + hFinal.toFixed(1) + ' mm';
+      const cx = x0 + cw / 2, cy = y0 + ch / 2;
+
+      cropOverlayCtx.save();
+      cropOverlayCtx.font = 'bold 13px Inter, sans-serif';
+      cropOverlayCtx.textAlign = 'center';
+      cropOverlayCtx.textBaseline = 'middle';
+      const tw = cropOverlayCtx.measureText(label).width + 20;
+      // Fond de l'étiquette
+      cropOverlayCtx.fillStyle = 'rgba(0,0,0,0.55)';
+      const rr = 6;
+      const rx = cx - tw / 2, ry = cy - 13;
+      cropOverlayCtx.beginPath();
+      cropOverlayCtx.roundRect(rx, ry, tw, 26, rr);
+      cropOverlayCtx.fill();
+      // Texte blanc
+      cropOverlayCtx.fillStyle = '#ffffff';
+      cropOverlayCtx.fillText(label, cx, cy);
+      cropOverlayCtx.restore();
+    }
+  }
+
+  // Retourne les positions des 4 poignées (centres des 4 bords)
+  function getCropHandles(x0, y0, x1, y1) {
+    const mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+    return [
+      { id: 'top',    x: mx, y: y0 },
+      { id: 'bottom', x: mx, y: y1 },
+      { id: 'left',   x: x0, y: my },
+      { id: 'right',  x: x1, y: my },
+    ];
+  }
+
+  // Initialise l'overlay de crop (taille + règles + rendu)
+  function initCropOverlay() {
+    if (!canvas.width || !canvas.height || !state.dims) return;
+
+    // Positionner le cropContainer par-dessus le canvas
+    const canvasRect = canvas.getBoundingClientRect();
+    const areaRect   = canvasArea.getBoundingClientRect();
+    const relLeft = canvasRect.left - areaRect.left;
+    const relTop  = canvasRect.top  - areaRect.top;
+
+    cropContainer.style.left   = (relLeft - 30) + 'px'; // -30 pour la règle Y
+    cropContainer.style.top    = (relTop  - 30) + 'px'; // -30 pour la règle X
+    cropContainer.style.width  = (canvas.width  + 30) + 'px';
+    cropContainer.style.height = (canvas.height + 30) + 'px';
+    cropContainer.style.display = 'block';
+
+    // Dimensionner les règles
+    if (cropRulerX) {
+      cropRulerX.style.width = canvas.width + 'px';
+      cropRulerX.width  = canvas.width;
+      cropRulerX.height = 30;
+    }
+    if (cropRulerY) {
+      cropRulerY.style.height = canvas.height + 'px';
+      cropRulerY.width  = 30;
+      cropRulerY.height = canvas.height;
+    }
+    // Dimensionner l'overlay
+    if (cropOverlay) {
+      cropOverlay.style.width  = canvas.width  + 'px';
+      cropOverlay.style.height = canvas.height + 'px';
+    }
+
+    drawCropRuler(cropRulerX, state.dims.wMm, false);
+    drawCropRuler(cropRulerY, state.dims.hMm, true);
+    drawCropOverlay();
+    updateCropSizeInfo();
+  }
+
+  // Met à jour l'indicateur de taille finale après crop
+  function updateCropSizeInfo() {
+    if (!state.dims) { $('cropSizeInfo').textContent = '—'; return; }
+    const c = state.crop;
+    const wFinal = Math.max(0, state.dims.wMm - c.left - c.right);
+    const hFinal = Math.max(0, state.dims.hMm - c.top - c.bottom);
+    $('cropSizeInfo').textContent = '→ ' + wFinal.toFixed(1) + ' × ' + hFinal.toFixed(1) + ' mm';
+  }
+
+  // Lit les inputs mm et met à jour state.crop
+  function updateCropFromInputs() {
+    state.crop.top    = Math.max(0, parseFloat($('cropTop').value)    || 0);
+    state.crop.bottom = Math.max(0, parseFloat($('cropBottom').value) || 0);
+    state.crop.left   = Math.max(0, parseFloat($('cropLeft').value)   || 0);
+    state.crop.right  = Math.max(0, parseFloat($('cropRight').value)  || 0);
+    drawCropOverlay();
+    updateCropSizeInfo();
+  }
+
+  // Met à jour les inputs depuis state.crop
+  function updateInputsFromCrop() {
+    $('cropTop').value    = state.crop.top.toFixed(1);
+    $('cropBottom').value = state.crop.bottom.toFixed(1);
+    $('cropLeft').value   = state.crop.left.toFixed(1);
+    $('cropRight').value  = state.crop.right.toFixed(1);
+    updateCropSizeInfo();
+  }
+
+  // Écoute les inputs
+  ['cropTop','cropBottom','cropLeft','cropRight'].forEach(id => {
+    const el = $(id);
+    if (el) el.addEventListener('input', updateCropFromInputs);
+  });
+
+  // Drag des poignées sur l'overlay
+  let _cropDrag = null; // { id, startX, startY, startCrop }
+
+  if (cropOverlay) {
+    cropOverlay.addEventListener('mousedown', e => {
+      if (!state.cropMode || !state.dims) return;
+      const rect = cropOverlay.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      const c = state.crop;
+      const topPx    = mmToCanvasPx(c.top,    'y');
+      const bottomPx = mmToCanvasPx(c.bottom, 'y');
+      const leftPx   = mmToCanvasPx(c.left,   'x');
+      const rightPx  = mmToCanvasPx(c.right,  'x');
+      const x0 = leftPx, y0 = topPx;
+      const x1 = canvas.width - rightPx, y1 = canvas.height - bottomPx;
+      const handles = getCropHandles(x0, y0, x1, y1);
+      const HIT = 12;
+      const hit = handles.find(h => Math.abs(mx - h.x) < HIT && Math.abs(my - h.y) < HIT);
+      if (hit) {
+        _cropDrag = { id: hit.id, startMx: mx, startMy: my, startCrop: {...state.crop} };
+        e.preventDefault();
+      }
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (!_cropDrag || !state.dims) return;
+      const rect = cropOverlay.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      const dx = mx - _cropDrag.startMx, dy = my - _cropDrag.startMy;
+      const sc = _cropDrag.startCrop;
+      const c = state.crop;
+      if (_cropDrag.id === 'top') {
+        c.top = Math.max(0, sc.top + canvasPxToMm(dy, 'y'));
+      } else if (_cropDrag.id === 'bottom') {
+        c.bottom = Math.max(0, sc.bottom - canvasPxToMm(dy, 'y'));
+      } else if (_cropDrag.id === 'left') {
+        c.left = Math.max(0, sc.left + canvasPxToMm(dx, 'x'));
+      } else if (_cropDrag.id === 'right') {
+        c.right = Math.max(0, sc.right - canvasPxToMm(dx, 'x'));
+      }
+      // Sécurité : ne pas dépasser les bords opposés
+      const safeMargin = 5; // mm min
+      if (c.top + c.bottom >= state.dims.hMm - safeMargin) { c.top = sc.top; c.bottom = sc.bottom; }
+      if (c.left + c.right >= state.dims.wMm - safeMargin)  { c.left = sc.left; c.right = sc.right; }
+      drawCropOverlay();
+      updateInputsFromCrop();
+    });
+
+    document.addEventListener('mouseup', () => { _cropDrag = null; });
+  }
+
+  // Activer l'aperçu crop
+  $('btnActivateCrop') && $('btnActivateCrop').addEventListener('click', () => {
+    if (!state.originalImageData) { showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> Chargez d\'abord un fichier.', true); return; }
+    state.cropMode = true;
+    updateCropFromInputs();
+    initCropOverlay(); // Positionne et affiche cropContainer par-dessus le canvas
+    $('btnActivateCrop').innerHTML = '<i class="fa fa-eye"></i> Aperçu crop actif';
+    $('btnActivateCrop').style.background = '#059669';
+  });
+
+  // Réinitialiser le crop
+  $('btnResetCrop') && $('btnResetCrop').addEventListener('click', () => {
+    state.crop = { top: 0, bottom: 0, left: 0, right: 0 };
+    updateInputsFromCrop();
+    state.cropMode = false;
+    // Cacher l'overlay crop
+    const cc = $('cropContainer');
+    if (cc) cc.style.display = 'none';
+    if (cropOverlayCtx) cropOverlayCtx.clearRect(0, 0, cropOverlay.width, cropOverlay.height);
+    $('btnActivateCrop').innerHTML = '<i class="fa fa-crop"></i> Activer l\'aperçu crop';
+    $('btnActivateCrop').style.background = '';
+  });
+
+  // Appliquer & Exporter (crop export)
+  $('btnApplyCropExport') && $('btnApplyCropExport').addEventListener('click', async () => {
+    if (!state.file) { showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> Chargez d\'abord un fichier.', true); return; }
+    const c = state.crop;
+    const hasAnyCrop = c.top > 0 || c.bottom > 0 || c.left > 0 || c.right > 0;
+    if (!hasAnyCrop) { showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> Aucune marge de crop définie.', true); return; }
+
+    showSpinner('Rognage en cours...');
+    const fd = new FormData();
+    fd.append('action', 'crop_pdf');
+    fd.append('file', state.file, $('fileNameDisplay').value || state.file.name);
+    fd.append('crop', JSON.stringify(c));
+    try {
+      const res = await fetch('?studio_process', { method: 'POST', body: fd });
+      const json = await res.json();
+      hideSpinner();
+      if (json.success && json.download_url) {
+        setPdfReady(json.download_url);
+        showResultToast(json.download_url);
+      } else {
+        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (json.errors || []).join(', '), true);
+      }
+    } catch(e) {
+      hideSpinner();
+      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
+    }
+  });
+
   // === EXPORT PNG (Canvas) ===
   $('btnExportPng').addEventListener('click', () => {
     const link = document.createElement('a');
-    link.download = (state.file ? state.file.name.replace(/\.[^.]+$/, '') : 'studio') + '_export.png';
+    link.download = (state.file ? ($('fileNameDisplay').value || state.file.name).replace(/\.[^.]+$/, '') : 'studio') + '_export.png';
+    const c = state.crop;
+    const hasAnyCrop = c && (c.top > 0 || c.bottom > 0 || c.left > 0 || c.right > 0);
+    if (hasAnyCrop && state.dims) {
+      // Appliquer le crop directement sur un canvas temporaire
+      const leftPx   = Math.round(mmToCanvasPx(c.left,   'x'));
+      const topPx    = Math.round(mmToCanvasPx(c.top,    'y'));
+      const rightPx  = Math.round(mmToCanvasPx(c.right,  'x'));
+      const bottomPx = Math.round(mmToCanvasPx(c.bottom, 'y'));
+      const newW = canvas.width - leftPx - rightPx;
+      const newH = canvas.height - topPx - bottomPx;
+      if (newW > 0 && newH > 0) {
+        const tmp = document.createElement('canvas');
+        tmp.width = newW; tmp.height = newH;
+        tmp.getContext('2d').drawImage(canvas, leftPx, topPx, newW, newH, 0, 0, newW, newH);
+        link.href = tmp.toDataURL('image/png');
+        link.click(); return;
+      }
+    }
     link.href = canvas.toDataURL('image/png');
     link.click();
   });
 
+  // === ENREGISTRER DANS LA BIBLIOTHEQUE ===
+  $('btnSaveToLibrary') && $('btnSaveToLibrary').addEventListener('click', async () => {
+    if (!state.file && !state.lastServerResultUrl) {
+      showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> Aucun fichier à enregistrer.', true);
+      return;
+    }
+    
+    // Si on est en mode montage, inviter à générer le PDF d'abord si pas déjà fait
+    if ($('panelMontage') && $('panelMontage').style.display !== 'none' && !state.lastServerResultUrl) {
+      showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> Veuillez générer le PDF du montage d\'abord.', true);
+      return;
+    }
+
+    // === Détection OCR / Texte ===
+    // Vérifier si le PDF a du texte extractible (couche OCR)
+    if (state.isPdf && state.pdfDoc) {
+      showSpinner('Vérification OCR...');
+      let hasText = false;
+      const maxPages = Math.min(state.pdfDoc.numPages, 3); // Vérifier les 3 premières pages
+      for (let p = 1; p <= maxPages; p++) {
+        try {
+          const page = await state.pdfDoc.getPage(p);
+          const tc = await page.getTextContent();
+          if (tc.items && tc.items.some(item => (item.str || '').trim().length > 3)) {
+            hasText = true;
+            break;
+          }
+        } catch(e) {}
+      }
+      hideSpinner();
+      if (!hasText) {
+        const proceed = await new Promise(resolve => {
+          const msg = '<i class="fa fa-exclamation-triangle" style="color:#f59e0b"></i> <b>Ce PDF ne contient pas de texte (pas de couche OCR détectée).</b><br>Pour une meilleure indexation, pensez à l\'OCRiser d\'abord (onglet Texte › OCR).<br><br><button id="btnLibConfirmOk" class="toolbar-btn primary" style="margin-right:8px">Ajouter quand même</button><button id="btnLibConfirmCancel" class="toolbar-btn">Annuler</button>';
+          showToast(msg, false, 15000);
+          document.getElementById('btnLibConfirmOk').onclick = () => { resolve(true); };
+          document.getElementById('btnLibConfirmCancel').onclick = () => { resolve(false); };
+        });
+        if (!proceed) return;
+      }
+    }
+
+    showSpinner('Enregistrement dans la bibliothèque...');
+    try {
+      const fd = new FormData();
+      let filename = $('fileNameDisplay').value || (state.file ? state.file.name : 'studio_export.pdf');
+      if (!filename.toLowerCase().endsWith('.pdf') && !filename.toLowerCase().endsWith('.png')) {
+          filename += '.pdf';
+      }
+
+      // Si PDF non modifié, passer directement le fichier original (préserve l'OCR)
+      const useOriginalFile = state.isPdf && state.file && !hasFiltersModified() && !state.lastServerResultUrl;
+
+      if (state.lastServerResultUrl) {
+        // Récupérer le dernier résultat serveur (imposition, fusion, crop, montage...)
+        const resp = await fetch(state.lastServerResultUrl);
+        const blob = await resp.blob();
+        
+        // Si l'utilisateur n'a pas tapé de nom personnalisé, on prend celui généré
+        if (!$('fileNameDisplay').value) {
+            filename = (state.lastServerResultUrl.split('file=').pop() || filename).replace(/%20/g, '_');
+            filename = decodeURIComponent(filename);
+            if (!filename.toLowerCase().endsWith('.pdf') && !filename.toLowerCase().endsWith('.png')) filename += '.pdf';
+        }
+        
+        fileToUpload = new File([blob], filename, { type: blob.type || 'application/pdf' });
+      } else if (useOriginalFile) {
+        // PDF non modifié : uploader directement le fichier original pour préserver l'OCR
+        fileToUpload = new File([state.file], filename, { type: state.file.type || 'application/pdf' });
+      } else {
+        // Enregistrer le fichier original (image ou PDF modifié via canvas)
+        fileToUpload = state.file;
+      }
+
+      fd.append('file', fileToUpload, filename);
+      
+      const res = await fetch('?upload_bibliotheque', { method: 'POST', body: fd });
+      const json = await res.json();
+      hideSpinner();
+      
+      if (json.success) {
+        showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>Enregistré !</b> Le fichier a été ajouté à la bibliothèque.', false);
+      } else {
+        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (json.error || 'Erreur inconnue'), true);
+      }
+    } catch(e) {
+      hideSpinner();
+      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
+    }
+  });
+
   // === EXPORT PDF (Canvas → Serveur) ===
   $('btnExportPdf').addEventListener('click', async () => {
+    // En mode montage, déléguer au bouton de génération du montage
+    if ($('panelMontage') && $('panelMontage').style.display !== 'none') {
+      const bm = $('btnGenerateMontage');
+      if (bm) { bm.click(); return; }
+    }
+
     if (state.lastServerResultUrl) {
-      // Télécharger le dernier résultat serveur (imposition, fusion, etc.)
-      const link = document.createElement('a');
-      link.href = state.lastServerResultUrl;
-      link.download = '';
-      link.click();
+      // Proposer téléchargement + réouverture du dernier résultat serveur
+      showResultToast(state.lastServerResultUrl);
       return;
     }
     
@@ -1263,13 +2169,37 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
-    // Sinon, exporter uniquement le canvas actuel
+    // Si c'est un PDF sans modifications image : proposer directement le fichier original
+    // pour préserver la couche OCR, les hyperliens, etc.
+    if (state.isPdf && state.file && !hasFiltersModified()) {
+      const customName = $('fileNameDisplay').value || state.file.name;
+      const fd = new FormData();
+      fd.append('file', state.file, customName);
+      fd.append('action', 'passthrough_pdf');
+      showSpinner('Préparation du PDF...');
+      try {
+        const res = await fetch('?studio_process', { method: 'POST', body: fd });
+        const json = await res.json();
+        hideSpinner();
+        if (json.success && json.download_url) {
+          setPdfReady(json.download_url);
+          showResultToast(json.download_url);
+        } else {
+          showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (json.errors||[]).join(', '), true);
+        }
+      } catch(e) {
+        hideSpinner();
+        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
+      }
+      return;
+    }
+
+    // Sinon, exporter le canvas (avec filtres appliqués)
     showSpinner('Génération du PDF...');
     try {
-      // Récupérer le canvas courant comme blob PNG
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
       const fd = new FormData();
-      fd.append('file', blob, (state.file ? state.file.name.replace(/\.[^.]+$/, '') : 'studio') + '_canvas.png');
+      fd.append('file', blob, (state.file ? ($('fileNameDisplay').value || state.file.name).replace(/\.[^.]+$/, '') : 'studio') + '_canvas.png');
       fd.append('action', 'to_pdf');
       fd.append('dpi', state.dims ? state.dims.dpi : 96);
       const res = await fetch('?studio_process', { method: 'POST', body: fd });
@@ -1277,7 +2207,7 @@ document.addEventListener('DOMContentLoaded', function() {
       hideSpinner();
       if (json.success && json.download_url) {
         setPdfReady(json.download_url);
-        showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>PDF prêt !</b> <a href="' + json.download_url + '" style="color:#4f6ef7;font-weight:600">Télécharger le PDF</a>', false);
+        showResultToast(json.download_url);
       } else {
         showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (json.errors||[]).join(', '), true);
       }
@@ -1294,21 +2224,112 @@ document.addEventListener('DOMContentLoaded', function() {
     el.style.display = 'flex';
   }
   function hideSpinner() { $('studioSpinner').style.display = 'none'; }
+
+  // Affiche un modal persistant avec les boutons
+  function showResultToast(downloadUrl, filename) {
+    let customName = $('fileNameDisplay') ? $('fileNameDisplay').value : '';
+    let fname = customName || filename || downloadUrl.split('file=').pop() || 'fichier';
+    fname = decodeURIComponent(fname);
+    
+    if (fname && !fname.toLowerCase().endsWith('.pdf') && !fname.toLowerCase().endsWith('.png') && !fname.toLowerCase().endsWith('.zip') && !fname.toLowerCase().endsWith('.docx') && !fname.toLowerCase().endsWith('.odt')) {
+        fname += '.pdf';
+    }
+
+    if (customName && downloadUrl.indexOf('dl_name=') === -1) {
+        downloadUrl += (downloadUrl.indexOf('?') !== -1 ? '&' : '?') + 'dl_name=' + encodeURIComponent(fname);
+    }
+
+    const modal = document.getElementById('resultModal');
+    document.getElementById('resultModalFilename').textContent = fname;
+    document.getElementById('resultModalDownloadBtn').href = downloadUrl;
+    
+    const reopenBtn = document.getElementById('resultModalReopenBtn');
+    if (fname.toLowerCase().endsWith('.docx') || fname.toLowerCase().endsWith('.odt')) {
+        reopenBtn.style.display = 'none';
+    } else {
+        reopenBtn.style.display = '';
+    }
+
+    reopenBtn.onclick = function() {
+      modal.style.display = 'none';
+      window._reopenInStudio(downloadUrl);
+    };
+    modal.style.display = 'flex';
+  }
+  window.showResultToast = showResultToast; // exposé pour studio-montage.js
+
+  // Charge un PDF/image depuis une URL dans le studio
+  window._reopenInStudio = async function(url) {
+    try {
+      showSpinner('Chargement dans le Studio...');
+      const resp = await fetch(url);
+      const blob = await resp.blob();
+      
+      let fname = 'Document.pdf';
+      const cd = resp.headers.get('content-disposition');
+      if (cd && cd.includes('filename=')) {
+        const match = cd.match(/filename="?([^"]+)"?/);
+        if (match) fname = match[1];
+      } else {
+        fname = (url.split('file=').pop() || 'result.pdf').replace(/%20/g, '_');
+        if (fname.includes('?get_bibliotheque_file')) {
+          fname = 'Document_' + (url.split('id=').pop() || 'Importe') + '.pdf';
+        }
+      }
+      
+      const file = new File([blob], decodeURIComponent(fname), { type: blob.type || 'application/pdf' });
+      hideSpinner();
+      // Activer l'onglet Filtres (onglet principal) puis charger
+      const filtersBtn = document.querySelector('.tool-btn[data-tool="filters"]');
+      if (filtersBtn) filtersBtn.click();
+      loadFile(file);
+    } catch(e) {
+      hideSpinner();
+      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> Erreur lors du rechargement : ' + e.message, true);
+    }
+  };
+
   function showToast(html, isError) {
+    if (isError) {
+      const existing = document.getElementById('errorModalOverlay');
+      if (existing) existing.remove();
+      const modalHtml = `
+        <div id="errorModalOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:100000;display:flex;align-items:center;justify-content:center;">
+          <div style="background:#fff;border-radius:12px;width:90%;max-width:600px;box-shadow:0 10px 30px rgba(0,0,0,0.2);overflow:hidden;font-family:Inter,sans-serif;">
+            <div style="background:#fef2f2;border-bottom:1px solid #fee2e2;padding:16px 20px;display:flex;align-items:center;gap:12px;">
+              <i class="fa fa-exclamation-triangle" style="color:#ef4444;font-size:20px;"></i>
+              <h3 style="margin:0;color:#991b1b;font-size:16px;font-weight:600;">Information / Erreur</h3>
+            </div>
+            <div style="padding:20px;max-height:60vh;overflow-y:auto;">
+              <div id="errorModalContent" style="color:#374151;font-size:13px;line-height:1.6;background:#f9fafb;padding:16px;border-radius:8px;border:1px solid #e5e7eb;user-select:text;word-break:break-word;">
+                ${html}
+              </div>
+            </div>
+            <div style="padding:16px 20px;border-top:1px solid #e2e5ea;display:flex;justify-content:flex-end;gap:12px;background:#f8fafc;">
+              <button onclick="navigator.clipboard.writeText(document.getElementById('errorModalContent').innerText); showToast('<i class=\\'fa fa-check\\'></i> Message copié', false);" style="padding:8px 16px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:#374151;display:flex;align-items:center;gap:6px;"><i class="fa fa-copy"></i> Copier le message</button>
+              <button onclick="document.getElementById('errorModalOverlay').remove()" style="padding:8px 16px;background:#ef4444;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;font-weight:500;">Fermer</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+      return;
+    }
+
     const t = $('studioToast');
     t.innerHTML = html;
-    t.style.borderLeftColor = isError ? '#ef4444' : '#10b981';
+    t.style.borderLeftColor = '#10b981';
     t.style.borderLeftWidth = '4px';
     t.style.display = 'block';
     clearTimeout(t._tid);
-    t._tid = setTimeout(() => t.style.display = 'none', isError ? 8000 : 5000);
+    t._tid = setTimeout(() => t.style.display = 'none', 5000);
   }
 
   async function serverProcess(action, extraFields, spinnerMsg) {
     if (!state.file) { showToast('<b>Aucun fichier chargé.</b> Déposez un fichier d\'abord.', true); return; }
     showSpinner(spinnerMsg);
     const fd = new FormData();
-    fd.append('file', state.file, state.file.name);
+    fd.append('file', state.file, $('fileNameDisplay').value || state.file.name);
     fd.append('action', action);
     Object.entries(extraFields).forEach(([k, v]) => fd.append(k, v));
     try {
@@ -1321,7 +2342,7 @@ document.addEventListener('DOMContentLoaded', function() {
           // Ouvrir le modal de preview
           openImpPreview(json.preview_url, json.download_url);
         } else {
-          showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>Terminé !</b> <a href="' + json.download_url + '" style="color:#4f6ef7;font-weight:600">Télécharger le fichier</a>', false);
+          showResultToast(json.download_url);
         }
       } else {
         const errs = (json.errors || ['Erreur inconnue']).join('<br>');
@@ -1338,7 +2359,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const fd = new FormData();
     fd.append('action', 'merge');
     if (state.file) {
-      fd.append('file', state.file, state.file.name); // Inclure le fichier principal s'il y en a un
+      fd.append('file', state.file, $('fileNameDisplay').value || state.file.name); // Inclure le fichier principal s'il y en a un
     }
     for (let i = 0; i < files.length; i++) {
       fd.append('files[]', files[i]);
@@ -1349,7 +2370,7 @@ document.addEventListener('DOMContentLoaded', function() {
       hideSpinner();
       if (json.success && json.download_url) {
         setPdfReady(json.download_url);
-        showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>Fusion terminée !</b> <a href="' + json.download_url + '" style="color:#4f6ef7;font-weight:600">Télécharger</a>', false);
+        showResultToast(json.download_url);
       } else {
         const errs = (json.errors || ['Erreur inconnue']).join('<br>');
         showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b><br>' + errs, true);
@@ -1383,7 +2404,7 @@ document.addEventListener('DOMContentLoaded', function() {
           const response = await fetch(downloadUrl);
           if (!response.ok) throw new Error('Network error');
           const blob = await response.blob();
-          const filename = state.file ? state.file.name.replace(/\.[^.]+$/, '') + '_imposé.pdf' : 'document_imposé.pdf';
+          const filename = state.file ? ($('fileNameDisplay').value || state.file.name).replace(/\.[^.]+$/, '') + '_imposé.pdf' : 'document_imposé.pdf';
           const newFile = new File([blob], filename, { type: 'application/pdf' });
           
           $('impPreviewModal').style.display = 'none';
@@ -1681,6 +2702,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  if ($('btnOrgReverse')) {
+    $('btnOrgReverse').addEventListener('click', async () => {
+      window.orgSequence.reverse();
+      await renderThumbnails();
+      // Click first thumbnail to update canvas
+      const thumbs = thumbsBar.querySelectorAll('.thumb-item');
+      if (thumbs.length > 0) thumbs[0].click();
+    });
+  }
+
   $('btnApplyOrg').addEventListener('click', async () => {
     if (window.orgSequence.length === 0) return;
     showSpinner("Génération du PDF réorganisé...");
@@ -1699,7 +2730,7 @@ document.addEventListener('DOMContentLoaded', function() {
       hideSpinner();
       if (json.success && json.download_url) {
         setPdfReady(json.download_url);
-        showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>Réorganisation terminée !</b> <a href="' + json.download_url + '" style="color:#4f6ef7;font-weight:600">Télécharger</a>', false);
+        showResultToast(json.download_url);
       } else {
         const errs = (json.errors || ['Erreur inconnue']).join('<br>');
         showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b><br>' + errs, true);
@@ -2428,14 +3459,23 @@ document.addEventListener('DOMContentLoaded', function() {
   function resetStudio() {
     state.file = null; state.pdfDoc = null; state.originalImageData = null;
     state.totalPages = 0; state.currentPage = 1; state.orgSelectedIndex = 0;
-    uploadZone.style.display = ''; canvas.style.display = 'none';
+    state.crop = { top: 0, bottom: 0, left: 0, right: 0 };
+    state.cropMode = false;
+    uploadZone.style.display = '';
+    showCanvas(false);
     panel.classList.remove('visible'); thumbsBar.classList.remove('visible');
     thumbsBar.innerHTML = '';
     $('fileInfoBadge').style.display = 'none';
     $('btnNewFile').style.display = 'none';
     $('btnExportPng').style.display = 'none';
+    $('btnSaveToLibrary').style.display = 'none';
     $('btnExportPdf').style.display = 'none';
     $('fileDimsDisplay').textContent = '';
+    // Reset crop inputs & info
+    ['cropTop','cropBottom','cropLeft','cropRight'].forEach(id => { const el = $(id); if(el) el.value = '0'; });
+    if ($('cropSizeInfo')) $('cropSizeInfo').textContent = '—';
+    if ($('btnActivateCrop')) { $('btnActivateCrop').innerHTML = '<i class="fa fa-crop"></i> Activer l\'aperçu crop'; $('btnActivateCrop').style.background = ''; }
+    const co = $('cropOverlay'); if (co) co.getContext('2d').clearRect(0, 0, co.width, co.height);
     fileInput.value = '';
     mergeFilesList = [];
     window.orgSequence = [];
@@ -2445,5 +3485,43 @@ document.addEventListener('DOMContentLoaded', function() {
     window.risoBaseImage = null;
     renderMergeList();
   }
+  // === OCR & SCAN ===
+  $('btnOcrRun').addEventListener('click', async () => {
+    if (!state.file || !state.isPdf) {
+      showToast('<i class="fa fa-exclamation-triangle"></i> Veuillez d\'abord charger un fichier PDF.', true);
+      return;
+    }
+    const formData = new FormData();
+    formData.append('action', 'ocr_cleanup');
+    formData.append('file', state.file);
+    formData.append('lang', $('selOcrLang').value);
+    formData.append('type', $('selOcrType').value);
+    formData.append('deskew', $('chkOcrDeskew').checked ? '1' : '0');
+    formData.append('clean', $('chkOcrClean').checked ? '1' : '0');
+    formData.append('optimize', $('chkOcrOptimize').checked ? '1' : '0');
+    const outFormat = $('selOcrOutputFormat').value;
+    formData.append('to_docx_flow', outFormat === 'docx_linear' ? '1' : '0');
+    formData.append('to_docx_docling', outFormat === 'docx_ia' ? '1' : '0');
+    formData.append('to_docx', outFormat === 'docx_layout' ? '1' : '0');
+    formData.append('to_odt', '0'); // Plus d'option ODT dans la nouvelle liste
+
+    showSpinner('Traitement OCR en cours... (peut prendre plusieurs minutes)');
+    try {
+      const res = await fetch('?studio_process', { method: 'POST', body: formData });
+      const data = await res.json();
+      hideSpinner();
+      if (data.success && data.download_url) {
+        showResultToast(data.download_url, data.filename);
+      } else {
+        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> ' + (data.error || 'Erreur inconnue'), true);
+      }
+    } catch (e) {
+      hideSpinner();
+      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> Erreur réseau : ' + e.message, true);
+    }
+  });
+
 });
 </script>
+</body>
+</html>
