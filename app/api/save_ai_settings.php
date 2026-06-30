@@ -32,6 +32,9 @@ try {
         'ai_token',
         'ai_system_prompt',
         'bibliotheque_password',
+        // Studio IA — endpoints VPS
+        'studio_api_fonts_url',
+        'studio_api_docling_url',
     ];
 
     foreach ($fields as $field) {

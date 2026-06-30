@@ -258,3 +258,79 @@ function escape_shell_arg_with_percent(string $arg): string
     }
     return escapeshellarg($arg);
 }
+
+/**
+ * Retourne le chemin vers l'interpréteur Python.
+ *
+ * - Windows : utilise le Python embeddable déposé dans bin/win-x64/python/python.exe.
+ *             Fallback : 'python' dans le PATH (mode développement).
+ * - Linux/macOS : utilise le venv local app/api/venv_fonts si disponible,
+ *                 sinon python3 du système.
+ *
+ * @return string Chemin absolu ou nom de commande système
+ */
+function get_python_path(): string
+{
+    if (PHP_OS_FAMILY === 'Windows') {
+        $local_paths = [
+            __DIR__ . '/../../../bin/win-x64/python/python.exe',
+            __DIR__ . '/../../bin/win-x64/python/python.exe',
+        ];
+        foreach ($local_paths as $path) {
+            $real = realpath($path);
+            if ($real && file_exists($real)) {
+                return $real;
+            }
+        }
+        // Mode dev Windows : Python dans le PATH
+        return 'python';
+    }
+
+    // Linux/macOS : privilégier le venv local (contient pdf2docx, python-docx…)
+    $venv_paths = [
+        __DIR__ . '/../../api/venv_fonts/bin/python',
+        __DIR__ . '/../../../app/api/venv_fonts/bin/python',
+    ];
+    foreach ($venv_paths as $path) {
+        $real = realpath($path);
+        if ($real && file_exists($real) && is_executable($real)) {
+            return $real;
+        }
+    }
+
+    $sys = trim((string)(shell_exec('which python3 2>/dev/null') ?? ''));
+    return $sys ?: 'python3';
+}
+
+/**
+ * Retourne le chemin vers l'exécutable Tesseract.
+ * Sur Windows, cherche bin/win-x64/tesseract.exe via get_binary_path().
+ *
+ * @return string
+ */
+function get_tesseract_path(): string
+{
+    return get_binary_path('tesseract', 'DUPLICATOR_TESSERACT_PATH') ?: 'tesseract';
+}
+
+/**
+ * Retourne le chemin vers l'exécutable pdftotext (poppler).
+ * Sur Windows, cherche bin/win-x64/pdftotext.exe via get_binary_path().
+ *
+ * @return string
+ */
+function get_pdftotext_path(): string
+{
+    return get_binary_path('pdftotext', 'DUPLICATOR_PDFTOTEXT_PATH') ?: 'pdftotext';
+}
+
+/**
+ * Retourne le chemin vers l'exécutable ExifTool.
+ * Sur Windows, cherche bin/win-x64/exiftool.exe via get_binary_path().
+ *
+ * @return string
+ */
+function get_exiftool_path(): string
+{
+    return get_binary_path('exiftool', 'DUPLICATOR_EXIFTOOL_PATH') ?: 'exiftool';
+}
