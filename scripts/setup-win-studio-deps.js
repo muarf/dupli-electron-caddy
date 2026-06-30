@@ -306,7 +306,11 @@ async function setupUnpaper() {
     }
 
     log('Unpaper', 'Installation via Chocolatey...');
-    execSync('choco install unpaper -y --no-progress', { stdio: 'inherit' });
+    try {
+        execSync('choco install unpaper -y --no-progress', { stdio: 'inherit' });
+    } catch (e) {
+        log('Unpaper', `⚠️ Échec de choco install: ${e.message}`);
+    }
 
     // Localiser le VRAI exécutable installé par choco (et non le shim dans \\bin\\)
     let src = null;
@@ -336,7 +340,21 @@ async function setupUnpaper() {
         fs.copyFileSync(src, unpaperExe);
         log('Unpaper', `✅ unpaper.exe copié depuis ${src}`);
     } else {
-        throw new Error('Le vrai exécutable unpaper.exe est introuvable après installation choco.');
+        log('Unpaper', '⚠️ unpaper.exe introuvable via choco. Téléchargement direct (Fallback Github)...');
+        
+        const UNPAPER_BASE_URL = 'https://raw.githubusercontent.com/Inc44/unpaper_windows/main';
+        const UNPAPER_FILES = ['unpaper.exe', 'LIBBZ2-1.DLL', 'LIBWINPTHREAD-1.DLL', 'ZLIB1.DLL'];
+        
+        for (const file of UNPAPER_FILES) {
+            log('Unpaper', `Téléchargement ${file}...`);
+            await downloadFile(`${UNPAPER_BASE_URL}/${file}`, path.join(WIN_BIN, file));
+        }
+        
+        if (fs.existsSync(unpaperExe) && fs.statSync(unpaperExe).size > 10000) {
+            log('Unpaper', `✅ unpaper.exe et DLLs installés via fallback Github.`);
+        } else {
+            throw new Error('Échec du téléchargement fallback de unpaper.exe');
+        }
     }
 }
 
