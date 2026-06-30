@@ -2289,7 +2289,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   };
 
-  function showToast(html, isError) {
+  window.showToast = function showToast(html, isError) {
     if (isError) {
       const existing = document.getElementById('errorModalOverlay');
       if (existing) existing.remove();
