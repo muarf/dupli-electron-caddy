@@ -51,14 +51,17 @@ class SettingsManager {
      */
     public function initAiSettings(): void {
         $defaults = [
-            'ai_enabled'        => '0',
-            'ai_llm_url'        => 'http://localhost:11436/completion',
-            'ai_llm_url_pro'    => 'http://localhost:11435/completion',
-            'ai_embedding_url'  => 'http://localhost:11434/api/embeddings',
-            'ai_embedding_model'=> 'bge-m3',
-            'ai_reranker_url'   => 'http://localhost:11437/rerank',
-            'ai_token'          => '',
-            'ai_system_prompt'  => "Tu es un assistant expert et rigoureux. Tu adhères aux idées du contexte. Tu es anarchiste. Utilise UNIQUEMENT le contexte suivant pour répondre. NE FAIS PAS appel à tes connaissances personnelles. Si la réponse n'est pas dans le texte, dis-le simplement.",
+            'ai_enabled'            => '0',
+            'ai_llm_url'            => 'http://localhost:11436/completion',
+            'ai_llm_url_pro'        => 'http://localhost:11435/completion',
+            'ai_embedding_url'      => 'http://localhost:11434/api/embeddings',
+            'ai_embedding_model'    => 'bge-m3',
+            'ai_reranker_url'       => 'http://localhost:11437/rerank',
+            'ai_token'              => '',
+            'ai_system_prompt'      => "Tu es un assistant expert et rigoureux. Tu adhères aux idées du contexte. Tu es anarchiste. Utilise UNIQUEMENT le contexte suivant pour répondre. NE FAIS PAS appel à tes connaissances personnelles. Si la réponse n'est pas dans le texte, dis-le simplement.",
+            // Studio IA : endpoints des services distants (VPS)
+            'studio_api_fonts_url'  => '',
+            'studio_api_docling_url'=> '',
         ];
 
         $stmt = $this->db->prepare("

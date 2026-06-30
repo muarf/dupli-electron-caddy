@@ -18,7 +18,27 @@ require_once __DIR__ . '/../controler/conf.php';
 require_once __DIR__ . '/../controler/func.php';
 require_once __DIR__ . '/../controler/functions/paths.php';
 require_once __DIR__ . '/../controler/functions/binary_utilities.php';
+require_once __DIR__ . '/../models/SettingsManager.php';
 require_once __DIR__ . '/../vendor/autoload.php';
+
+/**
+ * Retourne tous les réglages de l'application (cached).
+ * Utilisé pour lire les URLs VPS des services IA Studio.
+ */
+function getStudioSettings(): array
+{
+    static $cache = null;
+    if ($cache === null) {
+        try {
+            $db = pdo_connect();
+            $sm = new SettingsManager($db);
+            $cache = $sm->getAll();
+        } catch (Throwable $e) {
+            $cache = [];
+        }
+    }
+    return $cache;
+}
 
 use setasign\Fpdi\TcpdfFpdi as TCPDI;
 
@@ -47,7 +67,7 @@ $originalName = null;
 $safeName = 'studio_doc';
 
 // --- Récupérer le fichier uploadé (sauf pour certaines actions) ---
-if (!in_array($action, ['organize_pages', 'merge', 'riso_pdf', 'montage_libre'])) {
+if (!in_array($action, ['organize_pages', 'merge', 'riso_pdf', 'montage_libre', 'crop_pdf', 'modification', 'upload_font', 'list_fonts', 'recognize_font', 'passthrough_pdf', 'download_google_font'])) {
     if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
         echo json_encode(['success' => false, 'errors' => ['Aucun fichier valide reçu.']]);
         exit;
@@ -481,6 +501,38 @@ if ($action === 'to_pdf') {
     }
 }
 
+// === ACTION : PASSTHROUGH_PDF (PDF → PDF sans modification) ===
+// Permet de télécharger un PDF brut en préservant la couche OCR/texte
+if ($action === 'passthrough_pdf') {
+    try {
+        $finfo    = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_file($finfo, $uploadedFile);
+        finfo_close($finfo);
+
+        if ($mimeType !== 'application/pdf') {
+            throw new Exception("Le fichier doit être un PDF pour le passthrough.");
+        }
+
+        $outFilename = $safeName . '_studio.pdf';
+        $outPath     = $tmpBase . $outFilename;
+        if (!copy($uploadedFile, $outPath)) {
+            throw new Exception("Impossible de copier le fichier PDF.");
+        }
+
+        echo json_encode([
+            'success'      => true,
+            'download_url' => '?download_studio&file=' . urlencode($outFilename),
+            'filename'     => $outFilename,
+            'errors'       => []
+        ]);
+        exit;
+
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'errors' => [$e->getMessage()]]);
+        exit;
+    }
+}
+
 // === ACTION : RISO_PDF (Multiple layers → Multi-page PDF) ===
 if ($action === "riso_pdf") {
     try {
@@ -745,12 +797,40 @@ if ($action === 'organize_pages') {
                 if (!isset($files[$idx]) || !file_exists($files[$idx])) continue;
                 
                 $rotation = intval($item['rotation'] ?? 0);
+                $flipH = !empty($item['flipH']);
+                $flipV = !empty($item['flipV']);
                 $page_idx = intval($item['page_num'] ?? 1) - 1;
                 $out_path = $tmpBase . 'page_' . uniqid() . '.png';
                 
                 $rot_cmd = $rotation != 0 ? "-rotate $rotation" : "";
-                $magick_args = "-density 150 " . escapeshellarg($files[$idx] . "[$page_idx]") . " $rot_cmd " . escapeshellarg($out_path);
+                $flop_cmd = $flipH ? "-flop" : "";
+                $flip_cmd = $flipV ? "-flip" : "";
+                $magick_args = "-density 150 " . escapeshellarg($files[$idx] . "[$page_idx]") . " $rot_cmd $flop_cmd $flip_cmd " . escapeshellarg($out_path);
                 run_imagemagick($magick_args);
+                
+                // Appliquer le crop si défini
+                $crop = isset($_POST['crop']) ? json_decode($_POST['crop'], true) : null;
+                if (file_exists($out_path) && $crop) {
+                    // 150 DPI : 1 mm = 150/25.4 px ≈ 5.906 px
+                    $dpi = 150;
+                    $pxPerMm = $dpi / 25.4;
+                    list($imgW, $imgH) = getimagesize($out_path);
+                    $cropL = max(0, round(floatval($crop['left'])   * $pxPerMm));
+                    $cropT = max(0, round(floatval($crop['top'])    * $pxPerMm));
+                    $cropR = max(0, round(floatval($crop['right'])  * $pxPerMm));
+                    $cropB = max(0, round(floatval($crop['bottom']) * $pxPerMm));
+                    $newW = $imgW - $cropL - $cropR;
+                    $newH = $imgH - $cropT - $cropB;
+                    if ($newW > 0 && $newH > 0) {
+                        $cropped = $tmpBase . 'cropped_' . uniqid() . '.png';
+                        $crop_args = escapeshellarg($out_path) . " -crop {$newW}x{$newH}+{$cropL}+{$cropT} +repage " . escapeshellarg($cropped);
+                        run_imagemagick($crop_args);
+                        if (file_exists($cropped)) {
+                            @unlink($out_path);
+                            $out_path = $cropped;
+                        }
+                    }
+                }
                 
                 if (file_exists($out_path)) {
                     $images[] = $out_path;
@@ -882,5 +962,670 @@ if ($action === 'montage_libre') {
     exit;
 }
 
-echo json_encode(['success' => false, 'errors' => ['Action inconnue : ' . htmlspecialchars($action)]]);
+// === ACTION : CROP_PDF ===
+// Rogne toutes les pages d'un PDF ou image selon les marges en mm
+if ($action === 'crop_pdf') {
+    header('Content-Type: application/json');
+    try {
+        $crop = json_decode($_POST['crop'] ?? 'null', true);
+        if (!$crop) throw new Exception('Paramètres de crop invalides.');
+        if (!$uploadedFile || !file_exists($uploadedFile)) throw new Exception('Fichier invalide.');
 
+        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        $isPdf = ($ext === 'pdf');
+
+        // 150 DPI : 1 mm = 150/25.4 px ≈ 5.906 px
+        $dpi = 150;
+        $pxPerMm = $dpi / 25.4;
+        $cropL = max(0, round(floatval($crop['left'])   * $pxPerMm));
+        $cropT = max(0, round(floatval($crop['top'])    * $pxPerMm));
+        $cropR = max(0, round(floatval($crop['right'])  * $pxPerMm));
+        $cropB = max(0, round(floatval($crop['bottom']) * $pxPerMm));
+
+        $images = [];
+
+        if ($isPdf) {
+            // Compter les pages via ImageMagick identify
+            $page_count_raw = shell_exec('identify ' . escapeshellarg($uploadedFile) . ' 2>/dev/null | wc -l');
+            $numPages = max(1, intval(trim($page_count_raw)));
+
+            for ($p = 0; $p < $numPages; $p++) {
+                $page_png = $tmpBase . 'crop_page_' . $p . '_' . uniqid() . '.png';
+                $magick_args = "-density {$dpi} " . escapeshellarg($uploadedFile . "[$p]") . ' ' . escapeshellarg($page_png);
+                run_imagemagick($magick_args);
+                if (!file_exists($page_png)) continue;
+
+                list($imgW, $imgH) = getimagesize($page_png);
+                $newW = $imgW - $cropL - $cropR;
+                $newH = $imgH - $cropT - $cropB;
+                if ($newW <= 0 || $newH <= 0) throw new Exception("Marge de crop trop grande pour la page " . ($p + 1));
+
+                $cropped = $tmpBase . 'crop_result_' . $p . '_' . uniqid() . '.png';
+                run_imagemagick(escapeshellarg($page_png) . " -crop {$newW}x{$newH}+{$cropL}+{$cropT} +repage " . escapeshellarg($cropped));
+                @unlink($page_png);
+                if (file_exists($cropped)) $images[] = $cropped;
+            }
+        } else {
+            // Image simple (PNG/JPG/etc.)
+            $page_png = $tmpBase . 'crop_img_' . uniqid() . '.png';
+            run_imagemagick(escapeshellarg($uploadedFile) . ' ' . escapeshellarg($page_png));
+            list($imgW, $imgH) = getimagesize($page_png);
+            $newW = $imgW - $cropL - $cropR;
+            $newH = $imgH - $cropT - $cropB;
+            if ($newW <= 0 || $newH <= 0) throw new Exception('Marge de crop trop grande.');
+            $cropped = $tmpBase . 'crop_result_' . uniqid() . '.png';
+            run_imagemagick(escapeshellarg($page_png) . " -crop {$newW}x{$newH}+{$cropL}+{$cropT} +repage " . escapeshellarg($cropped));
+            @unlink($page_png);
+            if (file_exists($cropped)) $images[] = $cropped;
+        }
+
+        if (empty($images)) throw new Exception('Aucune page rognée générée.');
+
+        $outFilename = $safeName . '_cropped_' . time() . '.pdf';
+        $outPath = $tmpBase . $outFilename;
+        $img_list = implode(' ', array_map('escapeshellarg', $images));
+        run_imagemagick("$img_list " . escapeshellarg($outPath));
+
+        foreach ($images as $img) @unlink($img);
+
+        if (!file_exists($outPath)) throw new Exception('Erreur génération PDF rogné.');
+
+        echo json_encode([
+            'success'      => true,
+            'download_url' => '?download_studio&file=' . urlencode($outFilename),
+            'errors'       => [],
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'errors' => [$e->getMessage()]]);
+    }
+    exit;
+}
+
+if ($action === 'ocr_cleanup') {
+    header('Content-Type: application/json');
+    try {
+        if (!$uploadedFile || !file_exists($uploadedFile)) throw new Exception('Fichier invalide ou manquant.');
+        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        
+        // Si c'est une image, on la convertit d'abord en PDF
+        if ($ext !== 'pdf') {
+            $newPdf = $tmpBase . 'temp_ocr_input_' . uniqid() . '.pdf';
+            run_imagemagick(escapeshellarg($uploadedFile) . ' ' . escapeshellarg($newPdf));
+            if (!file_exists($newPdf)) throw new Exception("Impossible de préparer l'image pour l'OCR.");
+            $uploadedFile = $newPdf;
+        }
+
+        $lang = $_POST['lang'] ?? 'fra';
+        $type = $_POST['type'] ?? 'skip_text'; // skip_text ou force_ocr
+        $deskew = ($_POST['deskew'] ?? '0') === '1';
+        $clean = ($_POST['clean'] ?? '0') === '1';
+        $optimize = ($_POST['optimize'] ?? '0') === '1';
+
+        $outFilename = $safeName . '_ocr_' . time() . '.pdf';
+        $outPath = $tmpBase . $outFilename;
+
+        $toDocxFlow = ($_POST['to_docx_flow'] ?? '0') === '1';
+        $sidecarPath = $tmpBase . 'sidecar_' . uniqid() . '.txt';
+
+        // Construction de la commande ocrmypdf
+        // Sur Windows : on appelle ocrmypdf via le Python embarqué (python -m ocrmypdf)
+        // Sur Linux/macOS : on utilise la commande système ocrmypdf
+        if (PHP_OS_FAMILY === 'Windows') {
+            $pythonExe = get_python_path();
+            $cmd = [escapeshellarg($pythonExe), '-m', 'ocrmypdf'];
+            // Indiquer à ocrmypdf où trouver tesseract.exe
+            $tesseractExe = get_tesseract_path();
+            if ($tesseractExe !== 'tesseract') {
+                $cmd[] = '--tesseract-cmd ' . escapeshellarg($tesseractExe);
+                // Définir TESSDATA_PREFIX si un dossier tessdata est adjacent
+                $tessdata = dirname(realpath($tesseractExe) ?: $tesseractExe) . DIRECTORY_SEPARATOR . 'tessdata';
+                if (is_dir($tessdata)) {
+                    putenv('TESSDATA_PREFIX=' . $tessdata);
+                }
+            }
+        } else {
+            $cmd = ['ocrmypdf'];
+        }
+
+        $ocrType = $_POST['type'] ?? 'skip_text';
+        if ($ocrType === 'force_ocr') {
+            $cmd[] = '--force-ocr';
+        } else {
+            $cmd[] = '--skip-text';
+        }
+
+        $cmd[] = '--output-type pdf';
+        $cmd[] = '--pdf-renderer hocr';
+
+        // Tesseract permet plusieurs langues (ex: fra+eng), ici on en passe une ou plusieurs
+        $cleanLang = preg_replace('/[^a-z\+]/', '', strtolower($lang));
+        if (empty($cleanLang)) $cleanLang = 'fra';
+        $cmd[] = '--language ' . escapeshellarg($cleanLang);
+
+        if ($deskew) $cmd[] = '--deskew';
+        if ($clean) $cmd[] = '--clean';
+        if ($optimize) $cmd[] = '--optimize 1';
+
+        $cmd[] = escapeshellarg($uploadedFile);
+        $cmd[] = escapeshellarg($outPath);
+
+        $fullCmd = implode(' ', $cmd) . ' 2>&1';
+        $output = shell_exec($fullCmd);
+
+        if (!file_exists($outPath) || filesize($outPath) === 0) {
+            throw new Exception("Erreur lors du traitement OCR. Logs : " . htmlspecialchars($output));
+        }
+
+        $toOdt = ($_POST['to_odt'] ?? '0') === '1';
+        $toDocx = ($_POST['to_docx'] ?? '0') === '1';
+        $toDocxDocling = ($_POST['to_docx_docling'] ?? '0') === '1';
+
+        if ($toDocxDocling) {
+            $outFilenameDocx = str_replace('.pdf', '_docling.docx', $outFilename);
+            $docxPath = $tmpBase . $outFilenameDocx;
+
+            $studioSettings = getStudioSettings();
+            $doclingApiUrl = trim($studioSettings['studio_api_docling_url'] ?? '');
+
+            if (!empty($doclingApiUrl)) {
+                // Mode VPS : envoyer le PDF en Base64 au serveur Docling distant
+                $pdfData = base64_encode((string)file_get_contents($outPath));
+                $ch = curl_init($doclingApiUrl);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['pdf' => $pdfData, 'filename' => basename($outPath)]));
+                curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 180);
+                $vpsResponse = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+
+                if ($httpCode !== 200 || !$vpsResponse) {
+                    throw new Exception("L'API Docling VPS est inaccessible (HTTP $httpCode). Vérifiez studio_api_docling_url dans les réglages.");
+                }
+                $vpsData = json_decode($vpsResponse, true);
+                if ($vpsData && isset($vpsData['docx'])) {
+                    file_put_contents($docxPath, base64_decode($vpsData['docx']));
+                } else {
+                    // Réponse binaire directe
+                    file_put_contents($docxPath, $vpsResponse);
+                }
+            } else {
+                // Mode local (serveur de développement uniquement)
+                $doclingScript = __DIR__ . '/scripts/docling_copyfit.py';
+                $doclingCmd = 'export HF_HOME=/opt/docling-venv/cache && export HOME=' . escapeshellarg($tmpBase)
+                    . ' && /opt/docling-venv/bin/python3 ' . escapeshellarg($doclingScript)
+                    . ' ' . escapeshellarg($outPath) . ' ' . escapeshellarg($docxPath) . ' 2>&1';
+                $doclingOutput = shell_exec($doclingCmd);
+
+                if (!file_exists($docxPath) || filesize($docxPath) === 0) {
+                    throw new Exception("Aucune URL Docling VPS configurée et l'environnement local est indisponible. Configurez studio_api_docling_url dans les réglages IA.");
+                }
+            }
+
+            if (!file_exists($docxPath) || filesize($docxPath) === 0) {
+                throw new Exception("Erreur lors de l'extraction Copyfit IA (Docling). Vérifiez les logs serveur.");
+            }
+
+            $outFilename = $outFilenameDocx;
+            $outPath = $docxPath;
+        } else if ($toDocxFlow) {
+            // Extraction du texte depuis le PDF de sortie (qui contient l'original + l'OCR)
+            $pdftotextExe = get_pdftotext_path();
+            shell_exec(escapeshellarg($pdftotextExe) . ' -enc UTF-8 ' . escapeshellarg($outPath) . ' ' . escapeshellarg($sidecarPath));
+            
+            if (!file_exists($sidecarPath) || filesize($sidecarPath) === 0) {
+                throw new Exception("Aucun texte n'a pu être extrait du document.");
+            }
+            
+            $outFilenameDocx = str_replace('.pdf', '_fluide.docx', $outFilename);
+            $docxPath = $tmpBase . $outFilenameDocx;
+            
+            $pythonEnv = get_python_path();
+            $textToDocxScript = __DIR__ . '/scripts/text_to_docx.py';
+
+            $docxCmd = escapeshellarg($pythonEnv) . ' ' . escapeshellarg($textToDocxScript) . ' ' . escapeshellarg($sidecarPath) . ' ' . escapeshellarg($docxPath) . ' 2>&1';
+            $docxOutput = shell_exec($docxCmd);
+            
+            @unlink($sidecarPath);
+            
+            if (file_exists($docxPath) && filesize($docxPath) > 0) {
+                $outFilename = $outFilenameDocx;
+                $outPath = $docxPath;
+            } else {
+                throw new Exception("Erreur lors de la conversion du texte fluide. Logs : " . htmlspecialchars($docxOutput));
+            }
+            
+        } else if ($toDocx) {
+            // Conversion en DOCX via pdf2docx
+            $outFilenameDocx = str_replace('.pdf', '.docx', $outFilename);
+            $docxPath = $tmpBase . $outFilenameDocx;
+            
+            $pythonEnv = get_python_path();
+            $pdfToDocxScript = __DIR__ . '/scripts/pdf_to_docx.py';
+
+            $docxCmd = escapeshellarg($pythonEnv) . ' ' . escapeshellarg($pdfToDocxScript) . ' ' . escapeshellarg($outPath) . ' ' . escapeshellarg($docxPath) . ' 2>&1';
+            $docxOutput = shell_exec($docxCmd);
+            
+            if (file_exists($docxPath) && filesize($docxPath) > 0) {
+                $outFilename = $outFilenameDocx;
+                $outPath = $docxPath;
+            } else {
+                throw new Exception("Erreur lors de la conversion DOCX par pdf2docx. Logs : " . htmlspecialchars($docxOutput));
+            }
+        }
+
+        echo json_encode([
+            'success'      => true,
+            'download_url' => '?download_studio&file=' . urlencode($outFilename),
+            'filename'     => $outFilename
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// === ACTION : MODIFICATION ===
+if ($action === 'modification') {
+    try {
+        require_once __DIR__ . '/../models/pdf_utils.php';
+
+        $dataRaw = $_POST['data'] ?? '{}';
+        $data = json_decode($dataRaw, true);
+        if (!$data) throw new Exception("Données de modification invalides.");
+        
+        $scope = $data['scope'] ?? 'current';
+        $currentPage = intval($data['currentPage'] ?? 1);
+        $ops = $data['operations'] ?? [];
+
+        // Gestion du fichier source (via file_id bibliothèque ou upload)
+        $sourcePdf = null;
+        if (isset($_POST['file_id']) && !empty($_POST['file_id'])) {
+            require_once __DIR__ . '/../models/bibliotheque.php';
+            $fileInfo = get_bibliotheque_file($_POST['file_id']);
+            if ($fileInfo && isset($fileInfo['path']) && file_exists($fileInfo['path'])) {
+                $sourcePdf = $fileInfo['path'];
+                $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($fileInfo['filename'], PATHINFO_FILENAME));
+            }
+        } elseif (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
+            $sourcePdf = $_FILES['file']['tmp_name'];
+            $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($_FILES['file']['name'], PATHINFO_FILENAME));
+        }
+
+        if (!$sourcePdf || !file_exists($sourcePdf)) {
+            throw new Exception("Fichier source introuvable.");
+        }
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime  = finfo_file($finfo, $sourcePdf);
+        finfo_close($finfo);
+        if ($mime !== 'application/pdf') throw new Exception("Le fichier doit être un PDF.");
+
+        $pdf = new TCPDI();
+        $pdf->SetCreator('Dupli Studio');
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->SetAutoPageBreak(false, 0);
+        
+        $pageCount = $pdf->setSourceFile($sourcePdf);
+        
+        for ($p = 1; $p <= $pageCount; $p++) {
+            $tpl = $pdf->importPage($p);
+            $size = $pdf->getTemplateSize($tpl);
+            $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+            $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+            $pdf->useTemplate($tpl);
+            
+            // Vérifier si la portée s'applique à cette page
+            $apply = false;
+            if ($scope === 'all') $apply = true;
+            elseif ($scope === 'even' && $p % 2 === 0) $apply = true;
+            elseif ($scope === 'odd' && $p % 2 !== 0) $apply = true;
+            elseif ($scope === 'current' && $p === $currentPage) $apply = true;
+            
+            if ($apply) {
+                foreach ($ops as $op) {
+                    $type = $op['type'] ?? '';
+                    if ($type === 'redact_text' || $type === 'strikeout') {
+                        $x = ($op['relX'] ?? 0) * $size['width'];
+                        $y = ($op['relY'] ?? 0) * $size['height'];
+                        $w = ($op['relW'] ?? 0) * $size['width'];
+                        $h = ($op['relH'] ?? 0) * $size['height'];
+                        
+                        if ($type === 'redact_text') {
+                            addTextAndBox($pdf, $x, $y, $w, $h, 
+                                          $op['text'], $op['font'] ?? 'helvetica', intval($op['size'] ?? 12), $op['bg']);
+                        } else {
+                            addRedaction($pdf, $x, $y, $w, $h, $op['color'] ?? 'black');
+                        }
+                    } elseif ($type === 'page_number') {
+                        $rangeStart = isset($op['rangeStart']) && $op['rangeStart'] !== null ? intval($op['rangeStart']) : 1;
+                        $rangeEnd = isset($op['rangeEnd']) && $op['rangeEnd'] !== null ? intval($op['rangeEnd']) : $pageCount;
+                        $firstVal = isset($op['firstVal']) && $op['firstVal'] !== null ? intval($op['firstVal']) : 1;
+                        
+                        if ($p >= $rangeStart && $p <= $rangeEnd) {
+                            $currentNum = $firstVal + ($p - $rangeStart);
+                            $text = str_replace('{p}', $currentNum, $op['format']);
+                            $text = str_replace('{t}', $pageCount, $text);
+                            $pos = $op['position'] ?? 'bottom_center';
+                            $margin = floatval($op['margin'] ?? 10);
+                            
+                            // Default size estimation to center roughly
+                            $pdf->SetFont($op['font'] ?? 'helvetica', '', intval($op['size'] ?? 12));
+                            $textWidth = $pdf->GetStringWidth($text);
+                            
+                            $x = 0; $y = 0;
+                            if ($pos === 'custom') {
+                                $x = ($op['relX'] ?? 0) * $size['width'];
+                                $y = ($op['relY'] ?? 0) * $size['height'];
+                            } else {
+                                if (strpos($pos, 'bottom') !== false) {
+                                    $y = $size['height'] - $margin;
+                                } else {
+                                    $y = $margin; // top
+                                }
+                                
+                                if (strpos($pos, 'left') !== false) {
+                                    $x = $margin;
+                                } elseif (strpos($pos, 'right') !== false) {
+                                    $x = $size['width'] - $margin - $textWidth;
+                                } else { // center
+                                    $x = ($size['width'] - $textWidth) / 2;
+                                }
+                            }
+                            
+                            addCustomPageNumber($pdf, $x, $y, $text, $op['font'] ?? 'helvetica', intval($op['size'] ?? 12));
+                        }
+                    }
+                }
+            }
+        }
+        
+        $outFilename = $safeName . '_modif_' . time() . '.pdf';
+        $outPath = $tmpBase . $outFilename;
+        $pdf->Output($outPath, 'F');
+        
+        if (!file_exists($outPath)) throw new Exception("Erreur lors de la génération du PDF modifié.");
+        
+        echo json_encode([
+            'success'      => true,
+            'result'       => ['pdf_url' => '?download_studio&file=' . urlencode($outFilename)],
+            'download_url' => '?download_studio&file=' . urlencode($outFilename)
+        ]);
+        
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// === ACTION : LIST_FONTS ===
+if ($action === 'list_fonts') {
+    $fontsDir = __DIR__ . '/../public/custom_fonts';
+    if (!is_dir($fontsDir)) @mkdir($fontsDir, 0777, true);
+    
+    $fonts = [];
+    foreach (glob($fontsDir . '/*.{ttf,otf}', GLOB_BRACE) as $file) {
+        $basename = basename($file);
+        $name = pathinfo($basename, PATHINFO_FILENAME);
+        $fonts[] = [
+            'name' => $name,
+            'url' => 'custom_fonts/' . $basename
+        ];
+    }
+    echo json_encode(['success' => true, 'fonts' => $fonts]);
+    exit;
+}
+
+// === ACTION : UPLOAD_FONT ===
+if ($action === 'upload_font') {
+    try {
+        if (!isset($_FILES['font']) || $_FILES['font']['error'] !== UPLOAD_ERR_OK) {
+            throw new Exception("Erreur lors de l'upload de la police.");
+        }
+        
+        $tmpName = $_FILES['font']['tmp_name'];
+        $originalName = $_FILES['font']['name'];
+        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        
+        if (!in_array($ext, ['ttf', 'otf'])) {
+            throw new Exception("Seuls les formats .ttf et .otf sont supportés.");
+        }
+        
+        $fontsDir = __DIR__ . '/../public/custom_fonts';
+        if (!is_dir($fontsDir)) @mkdir($fontsDir, 0777, true);
+        
+        // Clean filename
+        $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
+        $destPath = $fontsDir . '/' . $safeName . '.' . $ext;
+        
+        if (!move_uploaded_file($tmpName, $destPath)) {
+            throw new Exception("Impossible de sauvegarder la police.");
+        }
+        
+        // Convert for TCPDF
+        require_once __DIR__ . '/../vendor/autoload.php';
+        $fontname = TCPDF_FONTS::addTTFfont($destPath, 'TrueTypeUnicode', '', 96);
+        if (!$fontname) {
+            // Rollback
+            @unlink($destPath);
+            throw new Exception("Le moteur interne a rejeté cette police.");
+        }
+        
+        echo json_encode(['success' => true, 'font_name' => $fontname, 'url' => 'custom_fonts/' . basename($destPath)]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// === ACTION : READ_METADATA ===
+if ($action === 'read_metadata') {
+    try {
+        if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+            throw new Exception("Fichier introuvable.");
+        }
+        $file = escapeshellarg($_FILES['file']['tmp_name']);
+        $exiftoolExe = escapeshellarg(get_exiftool_path());
+        $cmd = "$exiftoolExe -json $file 2>&1";
+        $output = shell_exec($cmd);
+        $data = json_decode($output, true);
+        if ($data && is_array($data) && count($data) > 0) {
+            echo json_encode(['success' => true, 'metadata' => $data[0]]);
+        } else {
+            throw new Exception("Impossible de lire les métadonnées.");
+        }
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// === ACTION : UPDATE_METADATA ===
+if ($action === 'update_metadata') {
+    try {
+        if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+            throw new Exception("Fichier introuvable.");
+        }
+        
+        $fields = ['Title', 'Author', 'Subject', 'Keywords', 'Creator', 'Producer', 'CreateDate', 'ModifyDate'];
+        $args = [];
+        
+        if (!empty($_POST['clear_all'])) {
+            $args[] = "-all=";
+        } else {
+            foreach ($fields as $f) {
+                if (isset($_POST[$f])) {
+                    $val = $_POST[$f];
+                    $args[] = "-" . $f . "=" . escapeshellarg($val);
+                }
+            }
+        }
+        
+        if (empty($args)) {
+            echo json_encode(['success' => true]);
+            exit;
+        }
+        
+        global $tmpBase;
+        
+        $tmpCopy = $tmpBase . 'meta_' . uniqid() . '.pdf';
+        if (!move_uploaded_file($_FILES['file']['tmp_name'], $tmpCopy) && !copy($_FILES['file']['tmp_name'], $tmpCopy)) {
+            throw new Exception("Erreur copie temporaire.");
+        }
+        
+        $exiftoolExe = escapeshellarg(get_exiftool_path());
+        $cmd = "$exiftoolExe -overwrite_original " . implode(" ", $args) . " " . escapeshellarg($tmpCopy) . " 2>&1";
+        $output = shell_exec($cmd);
+        
+        // Output file to download directory
+        $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($_FILES['file']['name'], PATHINFO_FILENAME));
+        if (empty($safeName)) $safeName = 'document';
+        $outFilename = $safeName . '_meta_' . time() . '.pdf';
+        $outPath = $tmpBase . $outFilename;
+        
+        rename($tmpCopy, $outPath);
+        
+        if (!file_exists($outPath)) {
+            throw new Exception("Erreur d'écriture : " . $output);
+        }
+        
+        echo json_encode([
+            'success' => true, 
+            'download_url' => '?download_studio&file=' . urlencode($outFilename)
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// === ACTION : RECOGNIZE_FONT ===
+if ($action === 'recognize_font') {
+    try {
+        if (!isset($_POST['image'])) {
+            throw new Exception("Aucune image (Base64) reçue.");
+        }
+        $imgData = $_POST['image'];
+        if (strpos($imgData, ',') !== false) {
+            $imgData = explode(',', $imgData)[1];
+        }
+        $imgDecoded = base64_decode($imgData);
+        if ($imgDecoded === false) {
+            throw new Exception("L'image n'a pas pu être décodée.");
+        }
+
+        $studioSettings = getStudioSettings();
+        $fontsApiUrl = trim($studioSettings['studio_api_fonts_url'] ?? '');
+
+        if (!empty($fontsApiUrl)) {
+            // Mode VPS : envoyer l'image en Base64 au serveur distant
+            $ch = curl_init($fontsApiUrl);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['image' => base64_encode($imgDecoded)]));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            $vpsResponse = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode !== 200 || !$vpsResponse) {
+                throw new Exception("L'API de reconnaissance de police est inaccessible (HTTP $httpCode). Vérifiez studio_api_fonts_url dans les réglages.");
+            }
+            $resultData = json_decode($vpsResponse, true);
+            if ($resultData === null) {
+                throw new Exception("Réponse invalide du serveur VPS.");
+            }
+            echo json_encode(['success' => true, 'fonts' => $resultData]);
+        } else {
+            // Mode local : appel Python (venv local ou Python embarqué Windows)
+            global $tmpBase;
+            if (empty($tmpBase)) {
+                $tmpBase = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR;
+            }
+            $tmpImagePath = $tmpBase . 'font_crop_' . uniqid() . '.png';
+            file_put_contents($tmpImagePath, $imgDecoded);
+
+            $pythonScript = __DIR__ . '/scripts/font_recognizer.py';
+            $pythonEnv = get_python_path();
+            $cmd = escapeshellarg($pythonEnv) . ' ' . escapeshellarg($pythonScript) . ' ' . escapeshellarg($tmpImagePath);
+
+            $output = shell_exec($cmd);
+            @unlink($tmpImagePath);
+
+            $resultData = json_decode($output, true);
+            if ($resultData === null) {
+                throw new Exception("Erreur de l'IA (JSON invalide): " . $output);
+            }
+            if (isset($resultData['error'])) {
+                throw new Exception("Erreur Python: " . $resultData['error']);
+            }
+            echo json_encode(['success' => true, 'fonts' => $resultData]);
+        }
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// === ACTION : DOWNLOAD_GOOGLE_FONT ===
+if ($action === 'download_google_font') {
+    try {
+        $fontNameRaw = $_POST['font_name'] ?? '';
+        if (empty($fontNameRaw)) throw new Exception("Nom de police manquant.");
+        
+        $url = 'https://fonts.googleapis.com/css?family=' . urlencode($fontNameRaw);
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        // User-Agent ancien pour forcer Google Fonts à renvoyer du TTF au lieu de WOFF2
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0');
+        $css = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode !== 200 || empty($css)) {
+            throw new Exception("offline"); // Mot-clé pour déclencher l'alerte spécifique JS
+        }
+        
+        if (!preg_match('/url\((https:\/\/[^)]+\.ttf)\)/i', $css, $matches)) {
+             throw new Exception("offline"); // On considère comme erreur de téléchargement
+        }
+        $ttfUrl = $matches[1];
+        
+        // Timeout de 15s max pour le téléchargement
+        $ctx = stream_context_create(['http' => ['timeout' => 15]]);
+        $ttfData = @file_get_contents($ttfUrl, false, $ctx);
+        if (empty($ttfData)) {
+            throw new Exception("offline");
+        }
+        
+        $fontsDir = __DIR__ . '/../public/custom_fonts';
+        if (!is_dir($fontsDir)) @mkdir($fontsDir, 0777, true);
+        
+        $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $fontNameRaw);
+        $destPath = $fontsDir . '/' . $safeName . '.ttf';
+        
+        if (file_put_contents($destPath, $ttfData) === false) {
+             throw new Exception("Impossible de sauvegarder le fichier TTF.");
+        }
+        
+        require_once __DIR__ . '/../vendor/autoload.php';
+        $fontname = TCPDF_FONTS::addTTFfont($destPath, 'TrueTypeUnicode', '', 96);
+        if (!$fontname) {
+             @unlink($destPath);
+             throw new Exception("Erreur de conversion TCPDF.");
+        }
+        
+        echo json_encode(['success' => true, 'font_name' => $fontname, 'url' => 'custom_fonts/' . basename($destPath)]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+echo json_encode(['success' => false, 'errors' => ['Action inconnue : ' . htmlspecialchars($action)]]);

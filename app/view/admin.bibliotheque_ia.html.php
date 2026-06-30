@@ -13,6 +13,8 @@ $ai_embedding_model= $_ai['ai_embedding_model'] ?? 'bge-m3';
 $ai_reranker_url   = $_ai['ai_reranker_url'] ?? 'http://localhost:11437/rerank';
 $ai_token          = $_ai['ai_token'] ?? '';
 $ai_system_prompt  = $_ai['ai_system_prompt'] ?? '';
+$studio_api_fonts_url   = $_ai['studio_api_fonts_url'] ?? '';
+$studio_api_docling_url = $_ai['studio_api_docling_url'] ?? '';
 ?>
 
 <div class="section">
@@ -168,6 +170,43 @@ $ai_system_prompt  = $_ai['ai_system_prompt'] ?? '';
                 <small class="text-muted">
                   Si défini, un mot de passe sera demandé pour accéder à la bibliothèque. 
                   L'administrateur (vous) a toujours accès s'il est connecté.
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section Studio IA : Endpoints VPS -->
+          <div class="panel panel-info">
+            <div class="panel-heading">
+              <h3 class="panel-title"><i class="fa fa-magic"></i> Studio — Outils IA (VPS)</h3>
+            </div>
+            <div class="panel-body">
+              <p class="text-muted">
+                Ces outils utilisent des modèles d'IA lourds (reconnaissance de polices, conversion Docling)
+                qui doivent tourner sur un serveur distant. Laissez vide pour désactiver la fonctionnalité
+                ou pour utiliser un environnement local de développement.
+              </p>
+
+              <div class="form-group">
+                <label for="studio_api_fonts_url">URL API — Reconnaissance de police</label>
+                <input type="url" class="form-control" id="studio_api_fonts_url" name="studio_api_fonts_url"
+                       value="<?php echo htmlspecialchars($studio_api_fonts_url); ?>"
+                       placeholder="https://vps.example.com/api/font-recognizer">
+                <small class="text-muted">
+                  Endpoint POST JSON <code>{"image": "&lt;base64&gt;"}</code> → réponse <code>[{"label": "...", "score": 0.xx}]</code>.
+                  Si vide, le bouton "Reconnaître" sera inopérant sur Windows.
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label for="studio_api_docling_url">URL API — Conversion Docling (PDF → DOCX)</label>
+                <input type="url" class="form-control" id="studio_api_docling_url" name="studio_api_docling_url"
+                       value="<?php echo htmlspecialchars($studio_api_docling_url); ?>"
+                       placeholder="https://vps.example.com/api/docling-convert">
+                <small class="text-muted">
+                  Endpoint POST JSON <code>{"pdf": "&lt;base64&gt;", "filename": "doc.pdf"}</code>
+                  → réponse <code>{"docx": "&lt;base64&gt;"}</code> ou binaire .docx direct.
+                  Si vide, seul l'environnement local <code>/opt/docling-venv/</code> est utilisé.
                 </small>
               </div>
             </div>
