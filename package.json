@@ -1,6 +1,6 @@
 {
-  "name": "dupli-electron-alpha",
-  "version": "2.0.1-alpha.local",
+  "name": "dupli-electron-beta",
+  "version": "2.0.1-beta.local",
   "main": "main-caddy.js",
   "scripts": {
     "start": "electron . --no-sandbox --disable-gpu",
