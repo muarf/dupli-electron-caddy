@@ -212,6 +212,33 @@ $studio_api_docling_url = $_ai['studio_api_docling_url'] ?? '';
             </div>
           </div>
 
+          <!-- Section Studio IA : Installation Locale -->
+          <div class="panel panel-default">
+            <div class="panel-heading">
+              <h3 class="panel-title"><i class="fa fa-download"></i> Studio — Installation IA Locale (Optionnel)</h3>
+            </div>
+            <div class="panel-body">
+              <p class="text-muted">
+                Si vous ne disposez pas d'un VPS, vous pouvez télécharger les modèles lourds (PyTorch, Docling, etc.)
+                sur cette machine. <strong>Attention : Le téléchargement pèse environ 1.5 Go.</strong>
+              </p>
+              
+              <div class="form-group">
+                <label for="ai_local_path">Dossier d'installation des modèles (Optionnel)</label>
+                <input type="text" class="form-control" id="ai_local_path" name="ai_local_path"
+                       value="<?php echo htmlspecialchars($_ai['ai_local_path'] ?? ''); ?>"
+                       placeholder="Ex: D:\Duplicator_IA (Laissez vide pour le dossier par défaut)">
+                <small class="text-muted">Utile si vous n'avez plus de place sur le disque principal (C:).</small>
+              </div>
+
+              <div class="form-group" style="margin-top: 15px;">
+                <button type="button" class="btn btn-default" onclick="installLocalAi()">
+                  <i class="fa fa-terminal"></i> Installer / Mettre à jour l'IA Locale
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- Bouton Sauvegarde -->
           <div class="form-group">
             <button type="submit" class="btn btn-success btn-lg btn-block" id="btn-save">
@@ -482,4 +509,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }).catch(e => {});
 });
+
+function installLocalAi() {
+    const path = document.getElementById('ai_local_path').value.trim();
+    if (!confirm('Cette action va ouvrir un terminal et télécharger environ 1.5 Go de données. Voulez-vous continuer ?')) return;
+
+    fetch('?install_local_ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'target_dir=' + encodeURIComponent(path)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert('L\'installation a été lancée dans un nouveau terminal ! Veuillez patienter jusqu\'à la fermeture de la fenêtre.');
+        } else {
+            alert('Erreur : ' + (data.error || 'Inconnue'));
+        }
+    })
+    .catch(() => alert('Erreur réseau lors du lancement de l\'installation.'));
+}
 </script>

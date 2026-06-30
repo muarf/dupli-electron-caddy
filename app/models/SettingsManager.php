@@ -62,6 +62,7 @@ class SettingsManager {
             // Studio IA : endpoints des services distants (VPS)
             'studio_api_fonts_url'  => '',
             'studio_api_docling_url'=> '',
+            'ai_local_path'         => '',
         ];
 
         $stmt = $this->db->prepare("
