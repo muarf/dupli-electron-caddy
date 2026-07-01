@@ -393,14 +393,9 @@ jobs:
       - name: Cache Studio Windows dependencies (Python + binaires)
         uses: actions/cache@v4
         with:
-          path: |
-            bin/win-x64/python
-            bin/win-x64/tessdata
-            bin/win-x64/tesseract.exe
-            bin/win-x64/pdftotext.exe
-            bin/win-x64/exiftool.exe
+          path: bin/win-x64
           # Clé basée sur la version de Python et la liste des packages pip
-          key: win-studio-deps-py3119-v1
+          key: win-studio-deps-py3119-v2
 
       - name: Setup Studio Windows dependencies
         run: node scripts/setup-win-studio-deps.js
