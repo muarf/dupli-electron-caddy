@@ -12,6 +12,7 @@
 
 set_time_limit(600);
 ini_set('memory_limit', '512M');
+ini_set('display_errors', 0);
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../controler/conf.php';
@@ -1112,10 +1113,13 @@ if ($action === 'ocr_cleanup') {
         $cmd[] = escapeshellarg($outPath);
 
         $fullCmd = implode(' ', $cmd) . ' 2>&1';
+        if (PHP_OS_FAMILY === 'Windows') {
+            $fullCmd = '"' . $fullCmd . '"';
+        }
         $output = shell_exec($fullCmd);
 
         if (!file_exists($outPath) || filesize($outPath) === 0) {
-            throw new Exception("Erreur lors du traitement OCR. Logs : " . htmlspecialchars($output));
+            throw new Exception("Erreur lors du traitement OCR. Logs : " . htmlspecialchars((string)$output));
         }
 
         $toOdt = ($_POST['to_odt'] ?? '0') === '1';
