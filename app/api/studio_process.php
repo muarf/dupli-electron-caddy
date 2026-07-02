@@ -1119,7 +1119,7 @@ if ($action === 'ocr_cleanup') {
         $output = shell_exec($fullCmd);
 
         if (!file_exists($outPath) || filesize($outPath) === 0) {
-            throw new Exception("Erreur lors du traitement OCR. Logs : " . htmlspecialchars((string)$output));
+            throw new Exception("Erreur lors du traitement OCR. Logs : " . htmlspecialchars((string)$output, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
         }
 
         $toOdt = ($_POST['to_odt'] ?? '0') === '1';
