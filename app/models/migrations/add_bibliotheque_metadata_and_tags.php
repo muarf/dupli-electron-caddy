@@ -30,4 +30,13 @@ function migrate_add_bibliotheque_metadata_and_tags($db) {
             error_log("[MIGRATION] Erreur tags: " . $e->getMessage());
         }
     }
+
+    // Vérification post-création
+    $checkQuery = $db->query("PRAGMA table_info(`bibliotheque_files`)");
+    $cols = $checkQuery ? $checkQuery->fetchAll(PDO::FETCH_ASSOC) : [];
+    $found = false;
+    foreach($cols as $c) { if($c['name'] === 'metadata_json') $found = true; }
+    if (!$found) {
+        throw new Exception("ERREUR: La colonne 'metadata_json' n'a pas pu être ajoutée à 'bibliotheque_files'.");
+    }
 }

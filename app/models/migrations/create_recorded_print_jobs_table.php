@@ -17,4 +17,10 @@ function migrate_create_recorded_print_jobs_table($db)
 
     // Créer un index pour accélérer la vérification lors des notifications
     $db->exec("CREATE INDEX IF NOT EXISTS idx_recorded_jobs_lookup ON recorded_print_jobs(job_id, printer_name)");
+
+    // Vérification post-création
+    $checkQuery = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='recorded_print_jobs'");
+    if (!$checkQuery || !$checkQuery->fetch()) {
+        throw new Exception("ERREUR: La table 'recorded_print_jobs' n'a pas pu être créée.");
+    }
 }
