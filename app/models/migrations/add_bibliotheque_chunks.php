@@ -32,4 +32,10 @@ function migrate_add_bibliotheque_chunks(PDO $db) {
     echo "   ✓ Table FTS pour les chunks prête\n";
 
     echo "✅ Migration chunking terminée\n\n";
+
+    // Vérification post-création
+    $checkQuery = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='bibliotheque_chunks_fts'");
+    if (!$checkQuery || !$checkQuery->fetch()) {
+        throw new Exception("ERREUR: La table 'bibliotheque_chunks_fts' n'a pas pu être créée.");
+    }
 }

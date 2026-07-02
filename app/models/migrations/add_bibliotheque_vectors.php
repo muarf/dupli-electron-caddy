@@ -16,4 +16,10 @@ function migrate_add_bibliotheque_vectors(PDO $db) {
     
     echo "   ✓ Table 'bibliotheque_vectors' créée\n";
     echo "✅ Migration vecteurs terminée\n\n";
+
+    // Vérification post-création
+    $checkQuery = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='bibliotheque_vectors'");
+    if (!$checkQuery || !$checkQuery->fetch()) {
+        throw new Exception("ERREUR: La table 'bibliotheque_vectors' n'a pas pu être créée.");
+    }
 }
