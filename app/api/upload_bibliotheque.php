@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../controler/functions/bibliotheque.php';
+requireBibliothequeAuth();
 // Désactiver l'affichage des erreurs pour éviter la pollution JSON
 ini_set('display_errors', 0);
 error_reporting(E_ALL);

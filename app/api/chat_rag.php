@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../controler/functions/bibliotheque.php';
+requireBibliothequeAuth();
 /**
  * API Chat RAG (Retrieval-Augmented Generation) - STREAMING MODE (ROBUST & INSTRUMENTED)
  */
