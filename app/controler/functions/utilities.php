@@ -264,10 +264,12 @@ function template($template_file, $variables = array())
 /**
  * Fonction pour normaliser un chemin (séparateurs de répertoire)
  */
-function normalizePath($path) {
-    $path = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $path);
-    $path = trim($path);
-    return rtrim($path, DIRECTORY_SEPARATOR);
+if (!function_exists('normalizePath')) {
+    function normalizePath($path) {
+        $path = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $path);
+        $path = trim($path);
+        return rtrim($path, DIRECTORY_SEPARATOR);
+    }
 }
 
 /**
