@@ -155,6 +155,12 @@ class DatabaseMigrationManager {
         // Créer des index pour la recherche
         $this->db->exec("CREATE INDEX IF NOT EXISTS idx_bibliotheque_filename ON bibliotheque_files(filename)");
         $this->db->exec("CREATE INDEX IF NOT EXISTS idx_bibliotheque_type ON bibliotheque_files(file_type)");
+
+        // Vérification post-création
+        $checkQuery = $this->db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='bibliotheque_files'");
+        if (!$checkQuery || !$checkQuery->fetch()) {
+            throw new Exception("ERREUR: La table 'bibliotheque_files' n'a pas pu être créée.");
+        }
     }
 
     /**
@@ -225,6 +231,12 @@ class DatabaseMigrationManager {
             error_log("[MIGRATION] Erreur remplissage FTS5: " . $e->getMessage());
             // Ne pas bloquer si le remplissage échoue, la table est créée
         }
+
+        // Vérification post-création
+        $checkFtsQuery = $this->db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='bibliotheque_files_fts'");
+        if (!$checkFtsQuery || !$checkFtsQuery->fetch()) {
+            throw new Exception("ERREUR: La table FTS5 'bibliotheque_files_fts' n'a pas pu être créée (module FTS5 manquant ?).");
+        }
     }
 
     /**
@@ -241,11 +253,17 @@ class DatabaseMigrationManager {
         if (!$dupliHasColumn) {
             error_log("[MIGRATION] Ajout colonne tirage_global_id à dupli");
             $this->db->exec('ALTER TABLE dupli ADD COLUMN tirage_global_id TEXT');
+            if (!$this->columnExists('dupli', 'tirage_global_id')) {
+                throw new Exception("ERREUR: La colonne 'tirage_global_id' n'a pas pu être ajoutée à la table 'dupli'.");
+            }
         }
         
         if (!$photocopHasColumn) {
             error_log("[MIGRATION] Ajout colonne tirage_global_id à photocop");
             $this->db->exec('ALTER TABLE photocop ADD COLUMN tirage_global_id TEXT');
+            if (!$this->columnExists('photocop', 'tirage_global_id')) {
+                throw new Exception("ERREUR: La colonne 'tirage_global_id' n'a pas pu être ajoutée à la table 'photocop'.");
+            }
         }
         
         // Mettre à jour les données existantes
