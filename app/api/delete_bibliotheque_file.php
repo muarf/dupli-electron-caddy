@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../controler/functions/bibliotheque.php';
+requireBibliothequeAuth();
 require_once __DIR__ . '/../controler/conf.php';
 require_once __DIR__ . '/../controler/func.php';
 require_once __DIR__ . '/../models/BibliothequeManager.php';

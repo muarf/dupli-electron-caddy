@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../controler/functions/bibliotheque.php';
+requireBibliothequeAuth();
 /**
  * API pour charger la liste HTML de la bibliothèque (Version Corrigée)
  */

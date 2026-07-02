@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../controler/functions/bibliotheque.php';
+requireBibliothequeAuth();
 /**
  * API pour récupérer les informations détaillées d'un fichier de la bibliothèque
  */

@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/../controler/functions/bibliotheque.php';
+requireBibliothequeAuth();
+require_once __DIR__ . '/../controler/functions/bibliotheque.php';
 require_once __DIR__ . '/../models/BibliothequeManager.php';
 
 $fileId = $_GET['id'] ?? '';

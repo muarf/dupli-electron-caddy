@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../controler/functions/bibliotheque.php';
+requireBibliothequeAuth();
 // API pour renommer un fichier dans la bibliothèque
 require_once __DIR__ . '/../controler/conf.php';
 require_once __DIR__ . '/../models/BibliothequeManager.php';

@@ -75,3 +75,48 @@ function validateBibliothequePath($path) {
     
     return $realPath && $realBaseDir && strpos($realPath, $realBaseDir) === 0;
 }
+
+/**
+ * Vérifie que l'utilisateur a le droit d'accéder aux API de la bibliothèque.
+ * Bloque l'accès si un mot de passe est configuré et non fourni.
+ */
+function requireBibliothequeAuth() {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    // Si l'utilisateur est administrateur, on autorise d'office
+    if (isset($_SESSION['user'])) {
+        return true;
+    }
+    
+    require_once __DIR__ . '/../database.php';
+    require_once __DIR__ . '/../../models/SettingsManager.php';
+    
+    $db = pdo_connect();
+    $settings = new SettingsManager($db);
+    $bib_password = $settings->get('bibliotheque_password', '');
+    
+    // S'il n'y a pas de mot de passe configuré, on autorise
+    if (empty($bib_password)) {
+        return true;
+    }
+    
+    // Si la session "bibliotheque" est validée, on autorise
+    if (isset($_SESSION['bib_authenticated']) && $_SESSION['bib_authenticated'] === true) {
+        return true;
+    }
+    
+    // Sinon, on refuse l'accès
+    // Si c'est une requête AJAX (fetch, xhr) on renvoie 403
+    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+        http_response_code(403);
+        echo json_encode(['error' => 'Authentication required for library', 'auth_required' => true]);
+        exit;
+    }
+    
+    // Si l'URL contient api/ ou si l'on est dans un script api, 
+    // l'accès direct au PDF (via href direct) redirige vers la vue bibliotheque.
+    header('Location: ?bibliotheque');
+    exit;
+}
