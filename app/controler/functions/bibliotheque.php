@@ -90,7 +90,7 @@ function requireBibliothequeAuth() {
         return true;
     }
     
-    require_once __DIR__ . '/../database.php';
+    require_once __DIR__ . '/database.php';
     require_once __DIR__ . '/../../models/SettingsManager.php';
     
     $db = pdo_connect();
