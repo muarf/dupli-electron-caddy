@@ -14,7 +14,9 @@
     "test:e2e:smoke": "xvfb-run -a playwright test tests/e2e/smoke.test.js",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "tauri": "tauri"
+    "start-php": "php\\php.exe -S 127.0.0.1:8000 -t app\\public",
+    "tauri": "tauri",
+    "dev": "npx @tauri-apps/cli dev"
   },
   "keywords": [],
   "author": "",
