@@ -4,7 +4,6 @@
   "version": "1.0.0",
   "identifier": "fr.duplicator.alpha",
   "build": {
-    "devUrl": "http://localhost:8000",
     "frontendDist": "../app/public"
   },
   "app": {

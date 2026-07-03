@@ -50,7 +50,8 @@ function get_binary_path(string $name, ?string $env_var = null): ?string
     $search_paths = [
         __DIR__ . "/../../../bin/$platform/$name$ext", // Mode dev: app/controler/functions/../../../bin/
         __DIR__ . "/../../bin/$platform/$name$ext",    // Cas où app/ est la racine
-        dirname(__DIR__, 3) . "/bin/$platform/$name$ext" // Chemin absolu calculé
+        dirname(__DIR__, 3) . "/bin/$platform/$name$ext", // Chemin absolu calculé
+        __DIR__ . "/../../../../../../../bin/$platform/$name$ext", // Tauri dev: src-tauri/target/debug/_up_/app/controler/functions -> dupli-electron-caddy/bin
     ];
 
     foreach ($search_paths as $path) {
@@ -308,6 +309,7 @@ function get_python_path(): string
         $local_paths = [
             __DIR__ . '/../../../bin/win-x64/python/python.exe',
             __DIR__ . '/../../bin/win-x64/python/python.exe',
+            __DIR__ . '/../../../../../../../bin/win-x64/python/python.exe', // Tauri dev: src-tauri/target/debug/_up_/app/controler/functions -> dupli-electron-caddy/bin
         ];
         foreach ($local_paths as $path) {
             $real = realpath($path);

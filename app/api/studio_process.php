@@ -1113,9 +1113,6 @@ if ($action === 'ocr_cleanup') {
         $cmd[] = escapeshellarg($outPath);
 
         $fullCmd = implode(' ', $cmd) . ' 2>&1';
-        if (PHP_OS_FAMILY === 'Windows') {
-            $fullCmd = '"' . $fullCmd . '"';
-        }
         $output = shell_exec($fullCmd);
 
         if (!file_exists($outPath) || filesize($outPath) === 0) {

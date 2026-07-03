@@ -81,3 +81,5 @@ src-tauri/binaries/
 src-tauri/target/
 tauri-private.key
 embed_ia.md
+
+bin/win-x64/
