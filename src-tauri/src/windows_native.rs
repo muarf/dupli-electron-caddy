@@ -58,6 +58,8 @@ pub struct PrintJob {
     pub paper_size: String,
     /// Issu de DEVMODE.dmColor (2=Color, 1=Monochrome)
     pub is_color: bool,
+    /// Nombre d'exemplaires (issu de DEVMODE.dmCopies)
+    pub copies: u32,
 }
 
 /// Erreur Win32 avec code et message lisible
@@ -442,14 +444,16 @@ unsafe fn get_jobs_from_handle(handle: HANDLE, printer_name: &str) -> Win32Resul
             // DEVMODEW offsets (Win32 ABI stable, WCHAR[32] + 4 WORDs + 1 DWORD + union) :
             //   offset 68 : dmSize    (u16) — taille de la struct, garde de sécurité
             //   offset 78 : dmPaperSize (i16) — code papier Windows
+            //   offset 86 : dmCopies    (i16) — nombre de copies
             //   offset 92 : dmColor     (i16) — 1=Mono, 2=Color
             //   offset 94 : dmDuplex    (i16) — 1=Simplex, 2=DuplexLong, 3=DuplexShort
-            let (is_duplex, paper_size, is_color) = unsafe {
+            let (is_duplex, paper_size, is_color, copies) = unsafe {
                 if !job.pDevMode.is_null() {
                     let ptr = job.pDevMode as *const u8;
                     let dm_size = u16::from_le_bytes([*ptr.add(68), *ptr.add(69)]);
                     if dm_size >= 96 {
                         let dm_paper_size = i16::from_le_bytes([*ptr.add(78), *ptr.add(79)]);
+                        let dm_copies     = i16::from_le_bytes([*ptr.add(86), *ptr.add(87)]);
                         let dm_color      = i16::from_le_bytes([*ptr.add(92), *ptr.add(93)]);
                         let dm_duplex     = i16::from_le_bytes([*ptr.add(94), *ptr.add(95)]);
                         let paper = match dm_paper_size {
@@ -460,12 +464,13 @@ unsafe fn get_jobs_from_handle(handle: HANDLE, printer_name: &str) -> Win32Resul
                             5  => "Legal",
                             _  => "A4",
                         };
-                        (dm_duplex > 1, paper.to_string(), dm_color == 2)
+                        let copies_val = if dm_copies > 0 { dm_copies as u32 } else { 1 };
+                        (dm_duplex > 1, paper.to_string(), dm_color == 2, copies_val)
                     } else {
-                        (false, "A4".to_string(), false)
+                        (false, "A4".to_string(), false, 1)
                     }
                 } else {
-                    (false, "A4".to_string(), false)
+                    (false, "A4".to_string(), false, 1)
                 }
             };
 
@@ -484,6 +489,7 @@ unsafe fn get_jobs_from_handle(handle: HANDLE, printer_name: &str) -> Win32Resul
                 is_duplex,
                 paper_size,
                 is_color,
+                copies,
             }
         })
         .collect();
