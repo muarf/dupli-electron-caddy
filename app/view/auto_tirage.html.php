@@ -1704,13 +1704,14 @@
 
                     const bPrefix = `machines[${index}][brochures][0]`;
                     // Use nb_feuilles from backend if available (handles duplex correctly), else fallback
+                    const jobCopies = job.copies || 1;
                     const sheetsPerCopy = job.nb_feuilles
-                        ? Math.ceil(job.nb_feuilles / job.copies)
-                        : Math.ceil((job.pages / job.copies) / (job.duplex ? 2 : 1));
+                        ? Math.ceil(job.nb_feuilles / jobCopies)
+                        : Math.ceil((job.pages / jobCopies) / (job.duplex ? 2 : 1));
 
-                    addHidden(form, `${bPrefix}[nb_exemplaires]`, job.copies);
+                    addHidden(form, `${bPrefix}[nb_exemplaires]`, jobCopies);
                     addHidden(form, `${bPrefix}[nb_feuilles]`, sheetsPerCopy);
-                    addHidden(form, `${bPrefix}[nb_pages]`, job.pages / job.copies);
+                    addHidden(form, `${bPrefix}[nb_pages]`, job.pages / jobCopies);
                     addHidden(form, `${bPrefix}[taille]`, job.taille);
                     addHidden(form, `${bPrefix}[rv]`, job.duplex ? 'oui' : 'non');
                     addHidden(form, `${bPrefix}[couleur]`, job.color ? 'oui' : 'non');
