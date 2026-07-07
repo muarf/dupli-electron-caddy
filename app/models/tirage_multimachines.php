@@ -1014,6 +1014,15 @@ function Action($conf = null)
             $paye = $_POST['paye'] ?? "non";
             $cb = floatval($_POST['cb'] ?? 0);
 
+            // Calculer le prix total de la commande pour la répartition du montant payé
+            $total_commande_prix = 0;
+            if (isset($_POST['machines']) && is_array($_POST['machines'])) {
+                foreach ($_POST['machines'] as $index => $machine) {
+                    $total_commande_prix += round(floatval($array['machines'][$index]['prix'] ?? 0), 2);
+                }
+            }
+            $cb_restant_global = $cb;
+
             $mot = addslashes($_POST['mot'] ?? '');
             $session_id = isset($_POST['session_id']) ? intval($_POST['session_id']) : null;
 
@@ -1024,6 +1033,18 @@ function Action($conf = null)
 
             try {
                 foreach ($_POST['machines'] as $index => $machine) {
+                    // Calcul de la CB pour cette machine
+                    $prix_machine_calcule = round(floatval($array['machines'][$index]['prix'] ?? 0), 2);
+                    if ($total_commande_prix > 0) {
+                        $cb_machine = round($cb * ($prix_machine_calcule / $total_commande_prix), 2);
+                    } else {
+                        $cb_machine = $cb_restant_global;
+                    }
+                    if ($index === array_key_last($_POST['machines'])) {
+                        $cb_machine = $cb_restant_global;
+                    }
+                    $cb_restant_global -= $cb_machine;
+
                     if ($machine['type'] === 'duplicopieur') {
                         // Enregistrement duplicopieur dans table dupli
                         // Déterminer la taille selon les options
@@ -1102,13 +1123,13 @@ function Action($conf = null)
                         if ($db_id > 0) {
                             error_log("[DEDUPLICATION] Mise à jour d'un job dupli existant ID: $db_id");
                             $sql = 'UPDATE dupli SET contact = ?, master_av = ?, master_ap = ?, passage_av = ?, passage_ap = ?, rv = ?, prix = ?, paye = ?, cb = ?, mot = ?, date = ?, nom_machine = ?, duplicopieur_id = ?, tambour = ?, tirage_global_id = ?, session_id = ?, document_name = ?, thumbnail_url = ? WHERE id = ?';
-                            $params = [$machine['contact'] ?? $contact, $master_av, $master_ap, $passage_av, $passage_ap, $rv, $prix, $paye, $cb, $mot, $date, $nom_machine, $duplicopieur_id, $machine['tambour'] ?? null, $tirage_global_id, $session_id, $machine['document_name'] ?? null, $machine['thumbnail_url'] ?? null, $db_id];
+                            $params = [$machine['contact'] ?? $contact, $master_av, $master_ap, $passage_av, $passage_ap, $rv, $prix, $paye, $cb_machine, $mot, $date, $nom_machine, $duplicopieur_id, $machine['tambour'] ?? null, $tirage_global_id, $session_id, $machine['document_name'] ?? null, $machine['thumbnail_url'] ?? null, $db_id];
                             $query = $db->prepare($sql);
                             $query->execute($params);
                         } else {
                             // Insérer dans la table dupli (Enregistrement Manuel)
                             $sql = 'INSERT INTO dupli (type, contact, master_av, master_ap, passage_av, passage_ap, rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id, tambour, tirage_global_id, session_id, document_name, thumbnail_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-                            $params = [$type, $machine['contact'] ?? $contact, $master_av, $master_ap, $passage_av, $passage_ap, $rv, $prix, $paye, $cb, $mot, $date, $nom_machine, $duplicopieur_id, $machine['tambour'] ?? null, $tirage_global_id, $session_id, $machine['document_name'] ?? null, $machine['thumbnail_url'] ?? null];
+                            $params = [$type, $machine['contact'] ?? $contact, $master_av, $master_ap, $passage_av, $passage_ap, $rv, $prix, $paye, $cb_machine, $mot, $date, $nom_machine, $duplicopieur_id, $machine['tambour'] ?? null, $tirage_global_id, $session_id, $machine['document_name'] ?? null, $machine['thumbnail_url'] ?? null];
                             $query = $db->prepare($sql);
                             $query->execute($params);
                         }
@@ -1135,16 +1156,23 @@ function Action($conf = null)
                         // Générer l'identifiant global pour cette machine spécifique
                         $tirage_global_id = DatabaseMigrationManager::generateTirageGlobalId($date, $contact, $marque);
 
-                        // Utiliser le prix calculé pour cette machine
-                        $prix_machine_calcule = round(floatval($array['machines'][$index]['prix'] ?? 0), 2);
+                        // Utiliser le prix calculé pour cette machine (déjà calculé avant la condition de type de machine)
 
-                        // Debug: Log du prix final transmis à insert_photocop
+                        // Pré-calculer le nombre total de feuilles pour répartir le prix et la CB
+                        $total_feuilles_machine = 0;
+                        if (isset($machine['brochures']) && is_array($machine['brochures'])) {
+                            foreach ($machine['brochures'] as $brochure) {
+                                $total_feuilles_machine += (intval($brochure['nb_exemplaires'] ?? 0) * intval($brochure['nb_feuilles'] ?? 0));
+                            }
+                        }
 
-                        // Debug: Log des brochures reçues
+                        $prix_restant_machine = $prix_machine_calcule;
+                        $cb_restant_machine = $cb_machine;
+                        $is_first_brochure = true;
 
                         // Traiter les brochures pour récupérer les infos nécessaires à l'enregistrement
                         if (isset($machine['brochures']) && is_array($machine['brochures'])) {
-                            foreach ($machine['brochures'] as $brochure) {
+                            foreach ($machine['brochures'] as $b_index => $brochure) {
                                 if (!empty($brochure['nb_exemplaires']) && !empty($brochure['nb_feuilles']) && !empty($brochure['taille'])) {
                                     $nb_exemplaires = intval($brochure['nb_exemplaires']);
                                     $nb_feuilles = intval($brochure['nb_feuilles']);
@@ -1152,15 +1180,32 @@ function Action($conf = null)
                                     $taille = $brochure['taille'];
                                     $rv = isset($brochure['rv']) && $brochure['rv'] == 'oui' ? 'oui' : 'non';
 
+                                    if ($total_feuilles_machine > 0) {
+                                        $prix_brochure = round($prix_machine_calcule * ($nb_f_total / $total_feuilles_machine), 2);
+                                        $cb_brochure = round($cb_machine * ($nb_f_total / $total_feuilles_machine), 2);
+                                    } else {
+                                        $prix_brochure = $prix_restant_machine;
+                                        $cb_brochure = $cb_restant_machine;
+                                    }
+
+                                    if ($b_index === array_key_last($machine['brochures'])) {
+                                        $prix_brochure = $prix_restant_machine;
+                                        $cb_brochure = $cb_restant_machine;
+                                    }
+
+                                    $prix_restant_machine -= $prix_brochure;
+                                    $cb_restant_machine -= $cb_brochure;
+
                                     // Vérifier si ce job existe déjà en base de données (Auto-Tirage)
                                     $db_id = isset($machine['db_id']) ? intval($machine['db_id']) : 0;
 
-                                    if ($db_id > 0) {
+                                    if ($db_id > 0 && $is_first_brochure) {
                                         error_log("[DEDUPLICATION] Mise à jour d'un job photocop existant ID: $db_id");
                                         $sql = 'UPDATE photocop SET contact = ?, nb_f = ?, rv = ?, prix = ?, paye = ?, cb = ?, mot = ?, date = ?, marque = ?, tirage_global_id = ?, session_id = ?, document_name = ?, thumbnail_url = ? WHERE id = ?';
-                                        $params = [$machine['contact'] ?? $contact, $nb_f_total, $rv, $prix_machine_calcule, $paye, $cb, $mot, $date, $marque, $tirage_global_id, $session_id, $machine['document_name'] ?? null, $machine['thumbnail_url'] ?? null, $db_id];
+                                        $params = [$machine['contact'] ?? $contact, $nb_f_total, $rv, $prix_brochure, $paye, $cb_brochure, $mot, $date, $marque, $tirage_global_id, $session_id, $machine['document_name'] ?? null, $machine['thumbnail_url'] ?? null, $db_id];
                                         $query = $db->prepare($sql);
                                         $query->execute($params);
+                                        $is_first_brochure = false;
                                     } else {
                                         // Insérer dans la table photocop avec le prix transmis
                                         insert_photocop(
@@ -1169,9 +1214,9 @@ function Action($conf = null)
                                             $machine['contact'] ?? $contact,
                                             $nb_f_total,
                                             $rv,
-                                            $prix_machine_calcule,
+                                            $prix_brochure,
                                             $paye,
-                                            $cb,
+                                            $cb_brochure,
                                             $mot,
                                             $date,
                                             $db,
