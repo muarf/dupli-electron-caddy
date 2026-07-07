@@ -154,6 +154,7 @@
                 <th style="width:20%;"><?php _e('admin_machines.type'); ?></th>
                 <th style="width:20%;"><?php _e('admin_prices.current_price_label'); ?></th>
                 <th style="width:20%;"><?php _e('admin_prices.new_price_label'); ?></th>
+                <th style="width:20%;"><?php _e('admin_prices.ramette_price'); ?></th>
                 <th style="width:20%;"><?php _e('admin_machines.actions'); ?></th>
               </thead>
               <tbody>
@@ -163,9 +164,16 @@
                   <td>
                     <form method="post" style="display: inline;">
                       <div class="form-group">
-                        <input type="number" step="0.001" class="form-control prix-input" name="papier_A4" 
+                        <input type="number" step="0.001" class="form-control prix-input" name="papier_A4" id="papier_A4"
                                value="<?= isset($prix['papier']['A4']) ? $prix['papier']['A4'] : '0.01' ?>" 
                                min="0" max="1" required>
+                      </div>
+                  </td>
+                  <td>
+                      <div class="form-group">
+                        <input type="number" step="0.01" class="form-control prix-input" id="ramette_A4"
+                               value="<?= isset($prix['papier']['A4']) ? number_format($prix['papier']['A4'] * 500, 2, '.', '') : '5.00' ?>" 
+                               min="0" required>
                       </div>
                   </td>
                   <td>
@@ -179,9 +187,16 @@
                   <td>
                     <form method="post" style="display: inline;">
                       <div class="form-group">
-                        <input type="number" step="0.001" class="form-control prix-input" name="papier_A3" 
+                        <input type="number" step="0.001" class="form-control prix-input" name="papier_A3" id="papier_A3"
                                value="<?= isset($prix['papier']['A3']) ? $prix['papier']['A3'] : '0.02' ?>" 
                                min="0" max="1" required>
+                      </div>
+                  </td>
+                  <td>
+                      <div class="form-group">
+                        <input type="number" step="0.01" class="form-control prix-input" id="ramette_A3"
+                               value="<?= isset($prix['papier']['A3']) ? number_format($prix['papier']['A3'] * 500, 2, '.', '') : '10.00' ?>" 
+                               min="0" required>
                       </div>
                   </td>
                   <td>
@@ -202,3 +217,32 @@
     </div>
   </div>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    function setupSync(idFeuille, idRamette) {
+      var inputFeuille = document.getElementById(idFeuille);
+      var inputRamette = document.getElementById(idRamette);
+      if(inputFeuille && inputRamette) {
+        inputFeuille.addEventListener('input', function() {
+          var val = parseFloat(this.value);
+          if(!isNaN(val)) {
+            inputRamette.value = (val * 500).toFixed(2);
+          } else {
+            inputRamette.value = '';
+          }
+        });
+        inputRamette.addEventListener('input', function() {
+          var val = parseFloat(this.value);
+          if(!isNaN(val)) {
+            inputFeuille.value = (val / 500).toFixed(3);
+          } else {
+            inputFeuille.value = '';
+          }
+        });
+      }
+    }
+    setupSync('papier_A4', 'ramette_A4');
+    setupSync('papier_A3', 'ramette_A3');
+  });
+</script>

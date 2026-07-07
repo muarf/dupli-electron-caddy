@@ -1548,6 +1548,7 @@
         "paper_price": "Prix du Papier",
         "current_price_label": "Prix actuel (€)",
         "new_price_label": "Nouveau prix (€)",
+        "ramette_price": "Prix Ramette (500)",
         "paper_price_info": "Info: Le prix A3 est automatiquement le double du prix A4."
     },
     "admin_stats": {

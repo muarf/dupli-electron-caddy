@@ -1509,6 +1509,7 @@
         "paper_price": "Paper Price",
         "current_price_label": "Current price (€)",
         "new_price_label": "New price (€)",
+        "ramette_price": "Ream Price (500)",
         "paper_price_info": "Info: The A3 price is automatically double the A4 price."
     },
     "admin_stats": {
