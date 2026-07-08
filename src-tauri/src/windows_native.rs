@@ -60,6 +60,10 @@ pub struct PrintJob {
     pub is_color: bool,
     /// Nombre d'exemplaires (issu de DEVMODE.dmCopies)
     pub copies: u32,
+    /// Heure de soumission du job (issu de JOB_INFO_2W.Submitted, format ISO 8601)
+    /// Clé de déduplication : permet de distinguer deux jobs qui auraient le même job_id
+    /// (Windows recycle les IDs de 1 à ~999 avant de reboucler).
+    pub time_submitted: String,
 }
 
 /// Erreur Win32 avec code et message lisible
@@ -435,9 +439,21 @@ unsafe fn get_jobs_from_handle(handle: HANDLE, printer_name: &str) -> Win32Resul
             let datatype = wide_ptr_to_string(job.pDatatype);
             let status = job.Status;
 
+            // Lire le timestamp de soumission (SYSTEMTIME) pour construire la clé de dédup
+            let st = &job.Submitted;
+            let time_submitted = if st.wYear > 0 {
+                format!(
+                    "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:03}Z",
+                    st.wYear, st.wMonth, st.wDay,
+                    st.wHour, st.wMinute, st.wSecond, st.wMilliseconds
+                )
+            } else {
+                String::new()
+            };
+
             log::trace!(
-                "[windows_native] job_id={} doc='{}' user='{}' status=0x{:08X} pages={}/{}",
-                job.JobId, document, user, status, job.PagesPrinted, job.TotalPages
+                "[windows_native] job_id={} doc='{}' user='{}' status=0x{:08X} pages={}/{} submitted='{}'",
+                job.JobId, document, user, status, job.PagesPrinted, job.TotalPages, time_submitted
             );
 
             // Lire les champs DEVMODE (duplex, taille papier, couleur, copies)
@@ -525,6 +541,7 @@ unsafe fn get_jobs_from_handle(handle: HANDLE, printer_name: &str) -> Win32Resul
                 paper_size,
                 is_color,
                 copies,
+                time_submitted,
             }
         })
         .collect();
