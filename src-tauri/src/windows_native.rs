@@ -440,22 +440,51 @@ unsafe fn get_jobs_from_handle(handle: HANDLE, printer_name: &str) -> Win32Resul
                 job.JobId, document, user, status, job.PagesPrinted, job.TotalPages
             );
 
-            // Lire les champs DEVMODE (duplex, taille papier, couleur)
+            // Lire les champs DEVMODE (duplex, taille papier, couleur, copies)
             // DEVMODEW offsets (Win32 ABI stable, WCHAR[32] + 4 WORDs + 1 DWORD + union) :
-            //   offset 68 : dmSize    (u16) — taille de la struct, garde de sécurité
-            //   offset 78 : dmPaperSize (i16) — code papier Windows
-            //   offset 86 : dmCopies    (i16) — nombre de copies
-            //   offset 92 : dmColor     (i16) — 1=Mono, 2=Color
-            //   offset 94 : dmDuplex    (i16) — 1=Simplex, 2=DuplexLong, 3=DuplexShort
+            //   offset 68 : dmSize      (u16)  — taille de la struct (garde de sécurité)
+            //   offset 70 : dmFields    (u32)  — bitmask des champs valides
+            //   offset 78 : dmPaperSize (i16)  — code papier Windows
+            //   offset 86 : dmCopies    (i16)  — nombre de copies
+            //   offset 92 : dmColor     (i16)  — 1=Mono, 2=Color
+            //   offset 94 : dmDuplex    (i16)  — 1=Simplex, 2=DuplexLong, 3=DuplexShort
+            //
+            // On vérifie dmFields avant chaque lecture, exactement comme le fait le C++
+            // de la branche beta : `if (dm->dmFields & DM_COPIES) ev.copies = dm->dmCopies;`
+            // Sans cette vérification, on risque de lire un résidu mémoire à la place d'une
+            // valeur valide (ex : le pilote RISO ne positionne pas toujours DM_COPIES via
+            // EnumJobsW, ce qui renvoyait 0 → fallback 1 au lieu du vrai nombre d'exemplaires).
+            const DM_PAPERSIZE: u32 = 0x0000_0002;
+            const DM_COPIES:    u32 = 0x0000_0100;
+            const DM_COLOR:     u32 = 0x0000_0800;
+            const DM_DUPLEX:    u32 = 0x0000_1000;
+
             let (is_duplex, paper_size, is_color, copies) = unsafe {
                 if !job.pDevMode.is_null() {
                     let ptr = job.pDevMode as *const u8;
                     let dm_size = u16::from_le_bytes([*ptr.add(68), *ptr.add(69)]);
                     if dm_size >= 96 {
-                        let dm_paper_size = i16::from_le_bytes([*ptr.add(78), *ptr.add(79)]);
-                        let dm_copies     = i16::from_le_bytes([*ptr.add(86), *ptr.add(87)]);
-                        let dm_color      = i16::from_le_bytes([*ptr.add(92), *ptr.add(93)]);
-                        let dm_duplex     = i16::from_le_bytes([*ptr.add(94), *ptr.add(95)]);
+                        // Lire le bitmask dmFields (offset 70, u32 LE)
+                        let dm_fields = u32::from_le_bytes([
+                            *ptr.add(70), *ptr.add(71), *ptr.add(72), *ptr.add(73),
+                        ]);
+
+                        let dm_paper_size = if dm_fields & DM_PAPERSIZE != 0 {
+                            i16::from_le_bytes([*ptr.add(78), *ptr.add(79)])
+                        } else { 9 }; // défaut A4
+
+                        let dm_copies = if dm_fields & DM_COPIES != 0 {
+                            i16::from_le_bytes([*ptr.add(86), *ptr.add(87)])
+                        } else { 1 };
+
+                        let dm_color = if dm_fields & DM_COLOR != 0 {
+                            i16::from_le_bytes([*ptr.add(92), *ptr.add(93)])
+                        } else { 1 }; // défaut Mono
+
+                        let dm_duplex = if dm_fields & DM_DUPLEX != 0 {
+                            i16::from_le_bytes([*ptr.add(94), *ptr.add(95)])
+                        } else { 1 }; // défaut Simplex
+
                         let paper = match dm_paper_size {
                             9  => "A4",
                             8  => "A3",
@@ -465,6 +494,12 @@ unsafe fn get_jobs_from_handle(handle: HANDLE, printer_name: &str) -> Win32Resul
                             _  => "A4",
                         };
                         let copies_val = if dm_copies > 0 { dm_copies as u32 } else { 1 };
+
+                        log::trace!(
+                            "[windows_native] job_id={} dmFields=0x{:08X} copies={} duplex={} color={} paper={}",
+                            job.JobId, dm_fields, copies_val, dm_duplex, dm_color, paper
+                        );
+
                         (dm_duplex > 1, paper.to_string(), dm_color == 2, copies_val)
                     } else {
                         (false, "A4".to_string(), false, 1)

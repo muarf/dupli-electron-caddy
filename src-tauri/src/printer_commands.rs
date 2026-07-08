@@ -509,6 +509,7 @@ impl PrintMonitorState {
                                                     "isDuplex": job.is_duplex,
                                                     "paperSize": job.paper_size,
                                                     "isGrayscale": !job.is_color,
+                                                    "copies": job.copies,
                                                 });
                                                 let _ = app_handle.emit("print-job-detected", payload);
                                             }
