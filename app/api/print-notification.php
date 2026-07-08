@@ -124,13 +124,27 @@ try {
     }
 
     // 0b. Vérifier si le job est déjà dans print_jobs (non validé)
-    // On s'assure d'identifier le même job en vérifiant le nom du document
+    // Si timeSubmitted est fourni (Tauri Windows), on s'en sert comme clé stricte :
+    // job_id + time_submitted + printer_name = identifiant unique, sans risque de collision
+    // lors du recyclage des IDs Windows.
+    // Fallback : logique floue des 10 minutes pour Linux/CUPS (pas de timeSubmitted).
+    $timeSubmitted = $data['timeSubmitted'] ?? null;
     $checkPendingSql = "SELECT id, fill_rate, thumbnail_url, total_pages, status FROM print_jobs WHERE ";
     $checkPendingParams = [];
     if ($jobUuid) {
         $checkPendingSql .= "job_uuid = ?";
         $checkPendingParams[] = $jobUuid;
+    } elseif (!empty($timeSubmitted)) {
+        // Identification stricte par job_id + time_submitted (pas de risque de collision)
+        $checkPendingSql .= "job_id = ? AND time_submitted = ?";
+        $checkPendingParams[] = $jobId;
+        $checkPendingParams[] = $timeSubmitted;
+        if ($platform !== 'linux') {
+            $checkPendingSql .= " AND printer_name = ?";
+            $checkPendingParams[] = $data['printerName'];
+        }
     } else {
+        // Fallback flou pour Linux/CUPS (pas de timeSubmitted disponible)
         $checkPendingSql .= "job_id = ? AND created_at > datetime('now', '-10 minutes') AND (document = ? OR document_display_name = ?)";
         $checkPendingParams[] = $jobId;
         $checkPendingParams[] = $documentDisplay;
@@ -175,15 +189,25 @@ try {
         }
     }
 
-    // Vérifier si le job existe déjà pour UPDATE (uniquement si même document ou s'il est très récent)
-    // pour éviter les fausses associations dues au recyclage des job_id Windows.
-    $existingJobId = $db->selectOne(
-        "SELECT id FROM print_jobs 
-         WHERE job_id = ? AND printer_name = ? 
-           AND (document = ? OR document_display_name = ? OR created_at > datetime('now', '-10 minutes'))
-         ORDER BY created_at DESC LIMIT 1",
-        [strval($data['jobId']), $data['printerName'], $documentDisplay, $documentDisplay]
-    );
+    // Vérifier si le job existe déjà pour UPDATE
+    // Si timeSubmitted est fourni, identification stricte (pas de risque de collision sur les IDs recyclés).
+    // Sinon, fallback sur la logique floue (10 min + nom document).
+    if (!empty($timeSubmitted)) {
+        $existingJobId = $db->selectOne(
+            "SELECT id FROM print_jobs 
+             WHERE job_id = ? AND printer_name = ? AND time_submitted = ?
+             ORDER BY created_at DESC LIMIT 1",
+            [strval($data['jobId']), $data['printerName'], $timeSubmitted]
+        );
+    } else {
+        $existingJobId = $db->selectOne(
+            "SELECT id FROM print_jobs 
+             WHERE job_id = ? AND printer_name = ? 
+               AND (document = ? OR document_display_name = ? OR created_at > datetime('now', '-10 minutes'))
+             ORDER BY created_at DESC LIMIT 1",
+            [strval($data['jobId']), $data['printerName'], $documentDisplay, $documentDisplay]
+        );
+    }
     
     if ($existingJobId) {
         // UPDATE si le job existe déjà (met à jour le timestamp pour le maintenir actif dans le polling)

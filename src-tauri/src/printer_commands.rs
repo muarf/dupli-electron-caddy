@@ -474,9 +474,17 @@ impl PrintMonitorState {
             log::info!("[PrintMonitorState] Moniteur démarré — polling toutes les 2 secondes");
             let _ = app_handle.emit("print-monitor-started", ());
 
-            // Cache des job_id déjà vus pour n'émettre que les nouveaux jobs.
-            // Déclaré ici (hors du loop) pour persister entre chaque itération.
-            let mut seen_job_ids: std::collections::HashSet<u32> = std::collections::HashSet::new();
+            // Cache des états vus : clé composite → état courant.
+            // Clé   = "{printerName}_{jobId}_{timeSubmitted}" (comme la branche beta C++)
+            // Valeur = "{status}|{totalPages}"
+            //
+            // Avantage vs un simple HashSet<u32> :
+            //  - Windows recycle les job_id (1..~999). Avec un HashSet<u32>, un ID recyclé
+            //    n'est jamais ré-émis. Avec la clé composite, deux jobs qui auraient le même
+            //    job_id mais des timeSubmitted différents sont correctement distincts.
+            //  - Les changements de statut (Spooling → Printing → Printed) sont détectés
+            //    et ré-émis au frontend pour mise à jour de l'interface.
+            let mut seen_states: std::collections::HashMap<String, String> = std::collections::HashMap::new();
             let mut initial_scan_done = false;
 
             loop {
@@ -492,12 +500,31 @@ impl PrintMonitorState {
                                 match crate::windows_native::get_print_jobs(&printer.name) {
                                     Ok(jobs) => {
                                         for job in jobs {
-                                            if seen_job_ids.insert(job.job_id) {
-                                                // Nouveau job : émettre l'événement vers le frontend
-                                                log::info!(
-                                                    "[PrintMonitorState] Nouveau job détecté : id={} doc='{}' imprimante='{}'",
-                                                    job.job_id, job.document, printer.name
-                                                );
+                                            // Clé composite identifiant ce job de façon unique
+                                            let job_key = format!(
+                                                "{}_{}_{}", printer.name, job.job_id, job.time_submitted
+                                            );
+                                            // État courant : statut + pages pour détecter les mises à jour
+                                            let job_state = format!("{}|{}", job.status, job.total_pages);
+
+                                            let is_new = !seen_states.contains_key(&job_key);
+                                            let has_changed = !is_new && seen_states.get(&job_key) != Some(&job_state);
+
+                                            if is_new || has_changed {
+                                                if is_new {
+                                                    log::info!(
+                                                        "[PrintMonitorState] Nouveau job détecté : id={} doc='{}' imprimante='{}' submitted='{}'",
+                                                        job.job_id, job.document, printer.name, job.time_submitted
+                                                    );
+                                                } else {
+                                                    log::info!(
+                                                        "[PrintMonitorState] Job mis à jour : id={} doc='{}' état='{}'",
+                                                        job.job_id, job.document, job_state
+                                                    );
+                                                }
+
+                                                seen_states.insert(job_key, job_state);
+
                                                 let payload = serde_json::json!({
                                                     "jobId": job.job_id,
                                                     "document": job.document,
@@ -510,6 +537,7 @@ impl PrintMonitorState {
                                                     "paperSize": job.paper_size,
                                                     "isGrayscale": !job.is_color,
                                                     "copies": job.copies,
+                                                    "timeSubmitted": job.time_submitted,
                                                 });
                                                 let _ = app_handle.emit("print-job-detected", payload);
                                             }
