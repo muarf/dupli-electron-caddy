@@ -906,7 +906,9 @@
                 // Normalization: if coming from a field where it's 0-100, convert to 0-1
                 if (parsedFillRate > 1.0) parsedFillRate = parsedFillRate / 100.0;
 
-
+                // Mapping formats papier
+                const paperMapSimulate = { '9': 'A4', '8': 'A3', '11': 'A5', '1': 'Letter', '5': 'Legal' };
+                const mappedPaperSize = paperMapSimulate[String(job.paper_size)] || job.paper_size || 'A4';
 
                 const payload = {
                     printerName: job.printer_name,
@@ -917,7 +919,7 @@
                     total_pages: globalTotalPages,
                     duplex: isDuplex,
                     color_mode: job.color_mode,
-                    paper_size: job.paper_size,
+                    paper_size: mappedPaperSize,
                     fill_rate: parsedFillRate,
                     thumbnail_url: job.thumbnail_url, // SEND TO BACKEND
                     timestamp: job.timestamp,
