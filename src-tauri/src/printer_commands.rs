@@ -578,7 +578,12 @@ impl PrintMonitorState {
                                         let printer_name = job_part[..dash_idx].to_string();
                                         let job_id_str = &job_part[dash_idx + 1..];
                                         if let Ok(job_id) = job_id_str.parse::<u32>() {
-                                            if seen_job_ids.insert(job_id) {
+                                            // Pour CUPS, pas de time_submitted — on utilise
+                                            // une clé composite avec suffixe fixe "cups".
+                                            let job_key = format!("{}_{}_{}", printer_name, job_id, "cups");
+                                            let is_new = !seen_states.contains_key(&job_key);
+                                            if is_new {
+                                                seen_states.insert(job_key, "cups".to_string());
                                                 if !is_initial {
                                                     log::info!(
                                                         "[PrintMonitorState] (CUPS) Nouveau job détecté : id={} doc='Job {}' imprimante='{}'",
