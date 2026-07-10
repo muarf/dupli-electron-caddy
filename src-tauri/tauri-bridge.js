@@ -450,6 +450,7 @@
           IsDuplex:      payload.isDuplex    || false,
           PaperSize:     payload.paperSize   || 'A4',
           IsGrayscale:   payload.isGrayscale || false,
+          Copies:        payload.copies      || 1,
         });
       } else {
         cb(payload);
