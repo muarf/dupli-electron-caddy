@@ -255,48 +255,57 @@ foreach ($emfPositions as $index => $startOffset) {
     $endOffset = isset($emfPositions[$index + 1]) ? $emfPositions[$index + 1] : filesize($splFile);
     $length = $endOffset - $startOffset;
 
-    if ($length > 2048) {
-        fseek($handle, $startOffset);
-        $emfData = fread($handle, $length);
-        
-        $tempEmf = $outputDir . "page_$index.emf";
-        file_put_contents($tempEmf, $emfData);
-    } else {
+    if ($length <= 2048) {
         debugLog("Skipping EMF at index $index: Length is too small ($length), likely metadata/header record.");
         continue;
     }
-    
+
     $outputPng = $outputDir . "page_$index.png";
-    
+
     // Optimisation : Si le PNG existe déjà et n'est pas vide, on passe à la suite
+    // IMPORTANT : ce `continue` doit être AVANT l'écriture de l'EMF sur disque,
+    // sinon l'EMF serait créé mais jamais supprimé.
     if (file_exists($outputPng) && filesize($outputPng) > 0) {
-        // Mais on garde l'entrée dans generatedPages pour que le JSON soit complet
         $generatedPages[] = [
             'page' => $index,
             'path' => $outputPng,
             'size' => filesize($outputPng),
-            'url' => $baseUrl . "page_$index.png"
+            'url'  => $baseUrl . "page_$index.png"
         ];
         continue;
     }
 
+    // Extraire l'EMF depuis le SPL vers un fichier temporaire
+    fseek($handle, $startOffset);
+    $emfData = fread($handle, $length);
+    $tempEmf = $outputDir . "page_$index.emf";
+    file_put_contents($tempEmf, $emfData);
+
     // Conversion avec ImageMagick (Resolution basse 72 DPI)
     $magick_args = "-density 72 " . escapeshellarg($tempEmf) . " -background white -flatten " . escapeshellarg($outputPng);
     $im_result = run_imagemagick($magick_args);
-    
+
     if ($im_result['success'] && file_exists($outputPng)) {
         $generatedPages[] = [
             'page' => $index,
             'path' => $outputPng,
             'size' => filesize($outputPng),
-            'url' => $baseUrl . "page_$index.png"
+            'url'  => $baseUrl . "page_$index.png"
         ];
     } else {
         debugLog("Conversion failed for page $index. Output: " . $im_result['output']);
     }
-    
-    // Supprimer l'EMF temporaire
-    @unlink($tempEmf);
+
+    // Supprimer l'EMF temporaire — toujours, succès ou échec
+    // Le @unlink est intentionnel pour éviter les erreurs silencieuses sous Windows,
+    // mais on tente quand même plusieurs fois en cas de verrou de fichier.
+    if (file_exists($tempEmf)) {
+        if (!@unlink($tempEmf)) {
+            // Windows peut garder un verrou court sur le fichier après ImageMagick
+            usleep(200000); // 200ms
+            @unlink($tempEmf);
+        }
+    }
 }
 
 fclose($handle);
