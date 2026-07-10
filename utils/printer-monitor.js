@@ -51,7 +51,7 @@ function makeCacheKey(jobId, documentName) { return `${jobId}|${documentName}`; 
 async function analyzePng(pngPath) {
     const { data, info } = await sharp(pngPath)
         .resize(200, 200, { fit: 'inside', withoutEnlargement: true })
-        .removeAlpha()
+        .flatten({ background: { r: 255, g: 255, b: 255 } })
         .raw()
         .toBuffer({ resolveWithObject: true });
 
