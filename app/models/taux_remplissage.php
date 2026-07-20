@@ -169,14 +169,52 @@ function analyze_pdf_ink_coverage_gs($pdf_file) {
         $avgM = $totalM / $pageCount;
         $avgY = $totalY / $pageCount;
         $avgK = $totalK / $pageCount;
-
-        $fillRate = ($avgC + $avgM + $avgY + $avgK);
+        
         $maxDiff = max(abs($avgC - $avgM), abs($avgM - $avgY), abs($avgC - $avgY));
         $isColor = ($avgC + $avgM + $avgY > 0.01) && ($maxDiff > 0.005);
 
+        // 2. Calcul du VRAI taux de couverture par pixels (Area Coverage)
+        $temp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'pdf_pages_' . uniqid();
+        mkdir($temp_dir, 0777, true);
+        $output_pattern = $temp_dir . DIRECTORY_SEPARATOR . 'page_%d.png';
+        
+        // Rendu en 36 DPI (basse résolution pour aller vite)
+        // Note: On Windows escapeshellarg strips "%", so we use manual quotes for the safe output pattern.
+        $gs_png_args = "-q -dNOPAUSE -dBATCH -sDEVICE=png16m -r36 -sOutputFile=\"" . $output_pattern . "\" " . escapeshellarg($pdf_file);
+        $gs_png_result = run_ghostscript($gs_png_args);
+        
+        $total_true_fill_rate = 0;
+        
+        for ($i = 1; $i <= $pageCount; $i++) {
+            $png_file = $temp_dir . DIRECTORY_SEPARATOR . 'page_' . $i . '.png';
+            $page_fill_rate = 0;
+            
+            if (file_exists($png_file)) {
+                try {
+                    $pixel_analysis = calculate_fill_rate($png_file, 245);
+                    if ($pixel_analysis['success']) {
+                        $page_fill_rate = $pixel_analysis['fill_rate'];
+                    }
+                } catch (Exception $e) {
+                    error_log("Erreur analyse page $i : " . $e->getMessage());
+                }
+                unlink($png_file);
+            }
+            
+            // On met à jour le vrai fill_rate dans le tableau des pages
+            $pages[$i - 1]['fill_rate'] = round($page_fill_rate, 2);
+            $total_true_fill_rate += $page_fill_rate;
+        }
+        
+        if (is_dir($temp_dir)) {
+            rmdir($temp_dir);
+        }
+        
+        $avg_fill_rate = $total_true_fill_rate / $pageCount;
+
         return array(
-            'fill_rate' => round($fillRate, 2),
-            'empty_rate' => round(max(0, 100 - $fillRate), 2),
+            'fill_rate' => round($avg_fill_rate, 2),
+            'empty_rate' => round(max(0, 100 - $avg_fill_rate), 2),
             'page_count' => $pageCount,
             'is_color' => $isColor,
             'pages' => $pages,

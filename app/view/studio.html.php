@@ -3381,8 +3381,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
   $('btnRisoExportPdf').addEventListener('click', async () => {
     const mode = $('selRisoMode').value;
-    const layersData = window.risoChannels[mode];
-    if (!layersData) {
+    const chanList = $('risoChannelsList').querySelectorAll('select');
+    let hasActiveLayer = false;
+    chanList.forEach(sel => { if(sel.value !== 'none') hasActiveLayer = true; });
+
+    if (!window.risoChannels || !hasActiveLayer) {
       showToast('Aucune donnée Riso à exporter. Veuillez d\'abord choisir un mode de séparation.', true);
       return;
     }
@@ -3392,40 +3395,82 @@ document.addEventListener('DOMContentLoaded', function() {
     fd.append('action', 'riso_pdf');
     
     // Utiliser le DPI réel du Master Riso (pour les PDF scale 3.0 = 216 DPI, pour les images = original DPI)
-    let exportDpi = 96;
-    if (state.isPdf) {
-        exportDpi = 216; // 72 * 3.0 scale
-    } else if (state.dims && state.dims.dpi) {
-        exportDpi = state.dims.dpi;
-    }
+    let exportDpi = state.isPdf ? 216 : (state.dims && state.dims.dpi ? state.dims.dpi : 96);
     fd.append('dpi', exportDpi);
     
-    const chanList = $('risoChannelsList').querySelectorAll('select');
-    let count = 0;
-    
     try {
-      for (const sel of chanList) {
-        const key = sel.dataset.channel;
-        const colorKey = sel.value;
-        if (colorKey !== 'none') {
-          let imgData = layersData[key];
-          if (mode === 'PIPETTE' || mode === 'AUTO_BICHROMIE') imgData = layersData[key].imageData;
+      let pagesToProcess = state.isPdf ? state.totalPages : 1;
+      let count = 0;
+      
+      for (let p = 1; p <= pagesToProcess; p++) {
+        if (pagesToProcess > 1) {
+          showSpinner(`Génération du PDF Riso... (Page ${p}/${pagesToProcess})`);
+        }
+        
+        let pChannels;
+        // Pour la page courante ou si ce n'est pas un PDF, utiliser les calques déjà générés (et la Pipette)
+        if (p === state.currentPage || !state.isPdf || mode === 'PIPETTE') {
+          pChannels = window.risoChannels[mode];
+        } else {
+          // Rendu de la page PDF
+          const tempCanvas = document.createElement('canvas');
+          const tempCtx = tempCanvas.getContext('2d');
+          const page = await state.pdfDoc.getPage(p);
+          const viewport = page.getViewport({ scale: 3.0 });
+          tempCanvas.width = viewport.width;
+          tempCanvas.height = viewport.height;
+          await page.render({ canvasContext: tempCtx, viewport: viewport }).promise;
+          const pImgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
           
-          if (imgData) {
-            if (imgData.width === 0 || imgData.height === 0) {
-              console.warn("Calque vide ignoré:", key);
-              continue;
-            }
-            // Créer un canvas temporaire pour exporter le calque en PNG
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = imgData.width;
-            tempCanvas.height = imgData.height;
-            tempCanvas.getContext('2d').putImageData(imgData, 0, 0);
+          if (mode === 'RGB') pChannels = extractRGBChannels(pImgData);
+          else if (mode === 'CMYK') pChannels = extractCMYKChannels(pImgData);
+          else if (mode === '2COLOR') {
+            const raw2c = splitGrayscaleInTwo(toGrayscale(pImgData), 128);
+            pChannels = { dark: raw2c.dark, light: raw2c.light };
+          }
+          else if (mode === 'AUTO_BICHROMIE') {
+            const rawAuto = autoBichromieSeparation(pImgData);
+            if (rawAuto) pChannels = { color1: rawAuto.color1, color2: rawAuto.color2 };
+            else pChannels = {};
+          }
+        }
+
+        if (!pChannels) continue;
+
+        for (const sel of chanList) {
+          const key = sel.dataset.channel;
+          const colorKey = sel.value;
+          if (colorKey !== 'none') {
+            let imgData = pChannels[key];
+            if (mode === 'PIPETTE' || mode === 'AUTO_BICHROMIE') imgData = pChannels[key]?.imageData;
             
-            const blob = await new Promise(resolve => tempCanvas.toBlob(resolve, 'image/png'));
-            fd.append('layers[]', blob, `${key}_${colorKey}.png`);
-            fd.append('colors[]', colorKey);
-            count++;
+            if (imgData) {
+              if (imgData.width === 0 || imgData.height === 0) {
+                console.warn(`Calque vide ignoré: ${key} sur page ${p}`);
+                continue;
+              }
+              
+              // Appliquer les effets Riso (contraste, postérisation, trame) sur le calque avant export
+              let processed = imgData;
+              if ((mode === 'PIPETTE' || mode === 'AUTO_BICHROMIE') && pChannels[key]) {
+                if (pChannels[key].contrast || pChannels[key].brightness) {
+                  processed = applyContrastBrightness(processed, pChannels[key].contrast || 0, pChannels[key].brightness || 0);
+                }
+              }
+              if (state.risoLevels) processed = posterizeImage(processed, state.risoLevels);
+              if (state.risoHalftone) processed = applyHalftone(processed, state.risoHalftone, 45);
+
+              // Créer un canvas temporaire pour exporter le calque en PNG
+              const tempCanvas = document.createElement('canvas');
+              tempCanvas.width = processed.width;
+              tempCanvas.height = processed.height;
+              tempCanvas.getContext('2d').putImageData(processed, 0, 0);
+              
+              const blob = await new Promise(resolve => tempCanvas.toBlob(resolve, 'image/png'));
+              fd.append('layers[]', blob, `${key}_${colorKey}_p${p}.png`);
+              fd.append('colors[]', colorKey);
+              count++;
+            }
           }
         }
       }
@@ -3436,16 +3481,20 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
       
+      showSpinner('Envoi au serveur...');
       const res = await fetch('?studio_process', { method: 'POST', body: fd });
-      const json = await res.json();
+      const text = await res.text();
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch (err) {
+        throw new Error("Réponse serveur invalide: " + text.substring(0, 100));
+      }
       hideSpinner();
       
       if (json.success && json.download_url) {
-        const link = document.createElement('a');
-        link.href = json.download_url;
-        link.download = '';
-        link.click();
-        showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>PDF Riso prêt !</b> Le téléchargement a commencé.', false);
+        setPdfReady(json.download_url);
+        showResultToast(json.download_url);
       } else {
         showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (json.errors||[]).join(', '), true);
       }

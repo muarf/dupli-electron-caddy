@@ -367,7 +367,8 @@
                 const m = k === 1 ? 0 : (1 - gP - k) / (1 - k);
                 const y = k === 1 ? 0 : (1 - bP - k) / (1 - k);
                 
-                totalDensity += (c + m + y + k);
+                // Capper à 1.0 maximum par pixel pour que le fillRate ne dépasse pas 100%
+                totalDensity += Math.min(1, c + m + y + k);
                 
                 // Seuil de couleur pour détection isColor
                 if (Math.abs(r - g) > 25 || Math.abs(g - b) > 25 || Math.abs(r - b) > 25) {
