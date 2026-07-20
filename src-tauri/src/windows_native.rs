@@ -459,7 +459,7 @@ unsafe fn get_jobs_from_handle(handle: HANDLE, printer_name: &str) -> Win32Resul
             // Lire les champs DEVMODE (duplex, taille papier, couleur, copies)
             // DEVMODEW offsets (Win32 ABI stable, WCHAR[32] + 4 WORDs + 1 DWORD + union) :
             //   offset 68 : dmSize      (u16)  — taille de la struct (garde de sécurité)
-            //   offset 70 : dmFields    (u32)  — bitmask des champs valides
+            //   offset 72 : dmFields    (u32)  — bitmask des champs valides
             //   offset 78 : dmPaperSize (i16)  — code papier Windows
             //   offset 86 : dmCopies    (i16)  — nombre de copies
             //   offset 92 : dmColor     (i16)  — 1=Mono, 2=Color
@@ -480,9 +480,9 @@ unsafe fn get_jobs_from_handle(handle: HANDLE, printer_name: &str) -> Win32Resul
                     let ptr = job.pDevMode as *const u8;
                     let dm_size = u16::from_le_bytes([*ptr.add(68), *ptr.add(69)]);
                     if dm_size >= 96 {
-                        // Lire le bitmask dmFields (offset 70, u32 LE)
+                        // Lire le bitmask dmFields (offset 72, u32 LE)
                         let dm_fields = u32::from_le_bytes([
-                            *ptr.add(70), *ptr.add(71), *ptr.add(72), *ptr.add(73),
+                            *ptr.add(72), *ptr.add(73), *ptr.add(74), *ptr.add(75),
                         ]);
 
                         let dm_paper_size = if dm_fields & DM_PAPERSIZE != 0 {

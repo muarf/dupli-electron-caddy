@@ -11,7 +11,7 @@
  */
 
 set_time_limit(600);
-ini_set('memory_limit', '512M');
+ini_set('memory_limit', '2048M');
 ini_set('display_errors', 0);
 header('Content-Type: application/json');
 
