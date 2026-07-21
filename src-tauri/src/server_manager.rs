@@ -479,9 +479,9 @@ fn build_php_args(app: &AppHandle) -> Vec<String> {
     args.push("-d".to_string());
     args.push("log_errors=1".to_string());
     args.push("-d".to_string());
-    args.push("upload_max_filesize=500M".to_string());
+    args.push("upload_max_filesize=1000M".to_string());
     args.push("-d".to_string());
-    args.push("post_max_size=500M".to_string());
+    args.push("post_max_size=1000M".to_string());
     args.push("-d".to_string());
     args.push("max_input_vars=10000".to_string());
     args.push("-d".to_string());

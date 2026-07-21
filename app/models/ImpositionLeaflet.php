@@ -473,7 +473,8 @@ class ImpositionLeaflet
         $len = $this->settings['crop_mark_len'];
         $this->pdf->SetLineWidth($this->settings['crop_mark_width']);
         $this->pdf->SetDrawColor(0, 0, 0);
-        $offset = 1; // espace entre le trait de coupe et la limite de la page
+
+        $offset = isset($this->settings['crop_mark_offset']) ? $this->settings['crop_mark_offset'] : 1; // espace entre le trait de coupe et la limite de la page
 
         // Position des lignes de coupe : à l'intérieur de la page (dans la zone fond perdu)
         $cutX1 = $x + $bleedX;      // ligne de coupe gauche

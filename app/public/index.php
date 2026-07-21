@@ -762,6 +762,16 @@ if ($page === 'get_markdown_migration_status') {
     if (file_exists($api_file)) { require_once $api_file; exit; }
     http_response_code(500); echo json_encode(['error' => 'API file not found']); exit;
 }
+if ($page === 'get_markdown_migration_logs') {
+    $api_file = __DIR__ . '/../api/get_markdown_migration_logs.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    http_response_code(500); echo json_encode(['error' => 'API file not found']); exit;
+}
+if ($page === 'stop_markdown_migration') {
+    $api_file = __DIR__ . '/../api/stop_markdown_migration.php';
+    if (file_exists($api_file)) { require_once $api_file; exit; }
+    http_response_code(500); echo json_encode(['error' => 'API file not found']); exit;
+}
 if ($page === 'get_bibliotheque_tags') {
     $api_file = __DIR__ . '/../api/get_bibliotheque_tags.php';
     if (file_exists($api_file)) { require_once $api_file; exit; }

@@ -26,8 +26,8 @@
         # Timeouts augmentés pour les opérations lentes (traitement d'images, PDF)
         transport http {
             dial_timeout 10s
-            read_timeout 120s
-            write_timeout 120s
+            read_timeout 1800s
+            write_timeout 1800s
         }
         
         # Gestion des erreurs

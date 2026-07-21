@@ -26,6 +26,8 @@ try {
             c.id, 
             c.file_id, 
             c.content, 
+            c.section_title,
+            c.heading_level,
             f.filename,
             f.filepath,
             bm25(bibliotheque_chunks_fts) as rank

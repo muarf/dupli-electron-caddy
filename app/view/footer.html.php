@@ -36,6 +36,12 @@ $print_modal_path = __DIR__ . '/components/print-modal.html.php';
 if (file_exists($print_modal_path)) {
     include $print_modal_path;
 }
+
+// Inclure le gestionnaire de tâches global
+$task_manager_path = __DIR__ . '/components/global-task-manager.html.php';
+if (file_exists($task_manager_path)) {
+    include $task_manager_path;
+}
 ?>
 
 <!-- Print Session Manager - Toast Notifications CSS -->

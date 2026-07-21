@@ -11,6 +11,9 @@ header('Connection: keep-alive');
 header('X-Accel-Buffering: no');
 header('Content-Encoding: none');
 ini_set('memory_limit', '2G');
+set_time_limit(0); // Empêche PHP de tuer le script (max_execution_time)
+ignore_user_abort(true); // Continue le script même si le client se déconnecte
+
 
 function sendStreamEvent($data) {
     global $debugFile;
@@ -87,7 +90,20 @@ try {
     $ch = curl_init($embeddingUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['model' => $embeddingModel, 'prompt' => $question]));
+    
+    $isOllamaNative = (strpos($embeddingUrl, '/api/embeddings') !== false);
+    if ($isOllamaNative) {
+        $payload = [
+            'model' => $embeddingModel,
+            'prompt' => $question
+        ];
+    } else {
+        $payload = [
+            'model' => $embeddingModel,
+            'input' => $question
+        ];
+    }
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
     
     $headers = ['Content-Type: application/json'];
     if (!empty($token)) {
@@ -100,18 +116,35 @@ try {
     curl_close($ch);
 
     if ($httpCode !== 200 || !$response) {
-        throw new Exception("Erreur Embeddings (HTTP $httpCode)");
+        $errorMsg = curl_error($ch);
+        throw new Exception("Erreur Embeddings (HTTP $httpCode) - URL: $embeddingUrl - Error: $errorMsg");
     }
     
     $qEmbeddingData = json_decode($response, true);
-    $qVector = $qEmbeddingData['embedding'];
+    $qVector = null;
+    if ($isOllamaNative && isset($qEmbeddingData['embedding'])) {
+        $qVector = $qEmbeddingData['embedding'];
+    } elseif (!$isOllamaNative && isset($qEmbeddingData['data'][0]['embedding'])) {
+        $qVector = $qEmbeddingData['data'][0]['embedding'];
+    }
+    
+    if (!$qVector || !is_array($qVector)) {
+        throw new Exception("Format de réponse d'embedding invalide ou vide.");
+    }
+    
     ragDebug("Embedding reçu (" . count($qVector) . " dimensions)");
 
     sendStreamEvent(['type' => 'status', 'message' => '🔍 Recherche des documents...']);
 
-    // 3. RECHERCHE VECTORIELLE FILTRÉE (Top 20)
-    $top20Ids = $libManager->searchVector($qVector, 20, $tagFilter);
-    ragDebug("Recherche vectorielle terminée (Filtrée). Trouvé: " . count($top20Ids));
+    $selectedFiles = $input['selected_files'] ?? [];
+    if (!is_array($selectedFiles)) {
+        $selectedFiles = [];
+    }
+    ragDebug("Recherche hybride. Fichiers sélectionnés: " . count($selectedFiles));
+
+    // 3. RECHERCHE HYBRIDE (Vectorielle + FTS, Top 20)
+    $top20Ids = $libManager->searchHybrid($question, $qVector, 20, $tagFilter, $selectedFiles);
+    ragDebug("Recherche hybride terminée (Filtrée). Trouvé: " . count($top20Ids));
 
     // 4. RÉCUPÉRATION DES CHUNKS ET RERANKING
     $uniqueSources = [];
@@ -119,7 +152,7 @@ try {
     
     if (!empty($top20Ids)) {
         $placeholders = implode(',', array_fill(0, count($top20Ids), '?'));
-        $stmt = $db->prepare("SELECT c.id, c.content, b.id as file_id, b.filename as title 
+        $stmt = $db->prepare("SELECT c.id, c.content, c.section_title, b.id as file_id, b.filename as title 
                              FROM bibliotheque_chunks c 
                              JOIN bibliotheque_files b ON c.file_id = b.id 
                              WHERE c.id IN ($placeholders)");
@@ -207,7 +240,8 @@ try {
                     $isTop = ($i < 5); // Les 5 meilleurs pour le contexte IA
                     
                     if ($isTop) {
-                        $context .= "[Source: " . $src['title'] . "]\n" . $src['content'] . "\n\n";
+                        $sectionLabel = !empty($src['section_title']) ? ' — ' . $src['section_title'] : '';
+                        $context .= "[Source: " . $src['title'] . $sectionLabel . "]\n" . $src['content'] . "\n\n";
                     }
                     
                     // Normalisation du nom pour le dédoublonnage
@@ -224,6 +258,7 @@ try {
                         $groupedSources[$key] = [
                             'id' => $src['file_id'],
                             'title' => $src['title'],
+                            'section_title' => $src['section_title'] ?? '',
                             'is_top' => $isTop,
                             'score' => round($src['relevance'], 2),
                             'chunks' => 1,
@@ -235,6 +270,10 @@ try {
                             $groupedSources[$key]['contents'][] = $src['content'];
                         }
                         if ($isTop) $groupedSources[$key]['is_top'] = true;
+                        // Garder la section_title du chunk le plus pertinent (premier top)
+                        if ($isTop && empty($groupedSources[$key]['section_title'])) {
+                            $groupedSources[$key]['section_title'] = $src['section_title'] ?? '';
+                        }
                         $groupedSources[$key]['score'] = max($groupedSources[$key]['score'], round($src['relevance'], 2));
                     }
                 }
@@ -245,15 +284,17 @@ try {
             // Mode dégradé : on prend les 5 meilleurs vecteurs bruts
             $groupedSources = [];
             foreach (array_slice($orderedRows, 0, 5) as $row) {
-                $context .= "[Source: " . $row['title'] . "]\n" . $row['content'] . "\n\n";
+                $sectionLabel = !empty($row['section_title']) ? ' — ' . $row['section_title'] : '';
+                $context .= "[Source: " . $row['title'] . $sectionLabel . "]\n" . $row['content'] . "\n\n";
                 if (!isset($groupedSources[$row['file_id']])) {
                     $groupedSources[$row['file_id']] = [
                         'id' => $row['file_id'], 
-                        'title' => $row['title'], 
+                        'title' => $row['title'],
+                        'section_title' => $row['section_title'] ?? '',
                         'is_top' => true, 
                         'score' => 0, 
                         'chunks' => 1,
-                        'content' => $row['content'] // Ajout du contenu pour l'UI
+                        'content' => $row['content']
                     ];
                 }
             }
@@ -299,6 +340,9 @@ try {
     if ($modelMode === 'fast') {
         $prompt = "<|im_start|>system\n" . $systemPromptText . "<|im_end|>\n<|im_start|>user\n$question<|im_end|>\n<|im_start|>assistant\n";
         $llmUrl = $settingsManager->get('ai_llm_url', 'http://localhost:11436/completion');
+    } elseif ($modelMode === 'nemotron') {
+        $prompt = "<|im_start|>system\n" . $systemPromptText . "<|im_end|>\n<|im_start|>user\n$question<|im_end|>\n<|im_start|>assistant\n";
+        $llmUrl = $settingsManager->get('ai_llm_url_nemotron', 'http://localhost:11438/completion');
     } else {
         $prompt = "<|turn|>system\n" . $systemPromptText . "<|turn|>\n<|turn|>user\n$question<|turn|>\n<|turn|>model\n<|think|>\n";
         $llmUrl = $settingsManager->get('ai_llm_url_pro', 'http://localhost:11435/completion');
@@ -308,6 +352,8 @@ try {
     $ch = curl_init($llmUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 0); // Aucune limite de temps pour cURL
+
     
     // Prise en charge des endpoints type OpenAI (/v1/chat/completions) vs llama.cpp (/completion)
     $isChatCompletions = strpos($llmUrl, '/chat/completions') !== false;
@@ -342,6 +388,19 @@ try {
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headersLlm);
 
     $fullResponse = "";
+    
+    // Heartbeat mechanism to prevent UI timeout during long prompt processing
+    curl_setopt($ch, CURLOPT_NOPROGRESS, false);
+    $lastHeartbeat = microtime(true);
+    curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, function($ch, $download_size, $downloaded, $upload_size, $uploaded) use (&$lastHeartbeat) {
+        $now = microtime(true);
+        if ($now - $lastHeartbeat > 10.0) { // Send heartbeat every 10 seconds
+            ragDebug("Heartbeat LLM progressif (réflexion en cours...)");
+            sendStreamEvent(['type' => 'status', 'message' => 'L\'IA réfléchit...']);
+            $lastHeartbeat = $now;
+        }
+        return 0; // Return 0 to continue
+    });
     curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $data) use (&$fullResponse) {
         $lines = explode("\n", $data);
         foreach ($lines as $line) {

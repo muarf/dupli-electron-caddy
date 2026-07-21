@@ -18,8 +18,15 @@ $apiUrl = $settingsManager->get('ai_embedding_url', 'http://localhost:11434/api/
 $token = $settingsManager->get('ai_token', '');
 $model = $settingsManager->get('ai_embedding_model', 'bge-m3');
 $batchSize = 1; // Un seul par un pour éviter de dépasser les limites de tokens
+$opts = getopt('', ['force-all']);
+$forceAll = isset($opts['force-all']);
 
 echo "[" . date('H:i:s') . "] DÉMARRAGE VECTORISATION (Endpoint : $apiUrl - Modèle : $model)\n";
+
+if ($forceAll) {
+    echo "[" . date('H:i:s') . "] MODE FORCE-ALL : Suppression de tous les anciens vecteurs...\n";
+    $db->exec("DELETE FROM bibliotheque_vectors");
+}
 
 // Récupération des chunks à traiter
 $sql = "SELECT c.id, c.content 
@@ -79,10 +86,24 @@ for ($i = 0; $i < $total; $i += $batchSize) {
         $ch = curl_init($apiUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
-            'model' => $model,
-            'input' => $batchTexts
-        ]));
+        
+        $isOllamaNative = strpos($apiUrl, '/api/embeddings') !== false;
+        
+        if ($isOllamaNative) {
+            // Native Ollama API expects 'prompt' for a single string
+            $payload = json_encode([
+                'model' => $model,
+                'prompt' => $batchTexts[0]
+            ]);
+        } else {
+            // OpenAI compatible API expects 'input' as array
+            $payload = json_encode([
+                'model' => $model,
+                'input' => $batchTexts
+            ]);
+        }
+        
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
         $headers = ['Content-Type: application/json'];
         if (!empty($token)) {
             $headers[] = 'Authorization: Bearer ' . $token;
@@ -96,8 +117,20 @@ for ($i = 0; $i < $total; $i += $batchSize) {
 
         if ($httpCode === 200 && $response) {
             $data = json_decode($response, true);
-            if (isset($data['data']) && is_array($data['data'])) {
-                $db->beginTransaction();
+            $db->beginTransaction();
+            
+            if ($isOllamaNative && isset($data['embedding'])) {
+                // Ollama native response
+                $chunkId = $batchIds[0];
+                $vector = $data['embedding'];
+                $blob = pack('f*', ...$vector);
+                $ins = $db->prepare("INSERT OR REPLACE INTO bibliotheque_vectors (chunk_id, vector) VALUES (?, ?)");
+                $ins->execute([$chunkId, $blob]);
+                $db->commit();
+                $success = true;
+                break;
+            } elseif (!$isOllamaNative && isset($data['data']) && is_array($data['data'])) {
+                // OpenAI compatible response
                 foreach ($data['data'] as $item) {
                     $idx = $item['index'];
                     $chunkId = $batchIds[$idx];
@@ -111,6 +144,7 @@ for ($i = 0; $i < $total; $i += $batchSize) {
                 $success = true;
                 break;
             }
+            $db->rollBack();
         }
 
         echo "[" . date('H:i:s') . "] Échec batch à $i (HTTP $httpCode). Tentative $attempt/$maxRetries. Réponse: " . substr($response, 0, 200) . "...\n";

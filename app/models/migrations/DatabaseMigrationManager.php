@@ -40,6 +40,7 @@ class DatabaseMigrationManager
             require_once __DIR__ . '/create_site_settings_table.php';
             require_once __DIR__ . '/add_bibliotheque_chunks.php';
             require_once __DIR__ . '/add_bibliotheque_vectors.php';
+            require_once __DIR__ . '/update_rag_markdown.php';
 
             $migrations = [
                 'tirage_global_id' => [$this, 'migrateTirageGlobalId'],
@@ -81,6 +82,9 @@ class DatabaseMigrationManager
                 },
                 'add_bibliotheque_vectors' => function () {
                     migrate_add_bibliotheque_vectors($this->db);
+                },
+                'update_rag_markdown' => function () {
+                    migrate_update_rag_markdown($this->db);
                 },
                 'printer_mappings_table' => [$this, 'createPrinterMappingsTable'],
                 // Ajouter d'autres migrations ici à l'avenir

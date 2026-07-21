@@ -8,6 +8,7 @@ $_ai = $_settings->getAll();
 $ai_enabled        = $_ai['ai_enabled'] ?? '0';
 $ai_llm_url        = $_ai['ai_llm_url'] ?? 'http://localhost:11436/completion';
 $ai_llm_url_pro    = $_ai['ai_llm_url_pro'] ?? 'http://localhost:11435/completion';
+$ai_llm_url_nemotron = $_ai['ai_llm_url_nemotron'] ?? 'http://localhost:11438/completion';
 $ai_embedding_url  = $_ai['ai_embedding_url'] ?? 'http://localhost:11434/api/embeddings';
 $ai_embedding_model= $_ai['ai_embedding_model'] ?? 'bge-m3';
 $ai_reranker_url   = $_ai['ai_reranker_url'] ?? 'http://localhost:11437/rerank';
@@ -62,13 +63,21 @@ $studio_api_docling_url = $_ai['studio_api_docling_url'] ?? '';
                        placeholder="http://localhost:11436/completion">
                 <small class="text-muted">Ex : Luth via llama.cpp. Port actuel : 11436.</small>
               </div>
-              <div class="form-group">
+              <div class="form-group mb-4">
                 <label for="ai_llm_url_pro">URL LLM Avancé (mode "Pro")</label>
                 <input type="url" class="form-control" id="ai_llm_url_pro" name="ai_llm_url_pro"
                        value="<?php echo htmlspecialchars($ai_llm_url_pro); ?>"
                        placeholder="http://localhost:11435/completion">
-                <small class="text-muted">Ex : Gemma via llama.cpp. Port actuel : 11435.</small>
-              </div>
+                <small class="form-text text-muted">Ex: Gemma 2 27B / Llama 3 70B</small>
+            </div>
+            
+            <div class="form-group mb-4">
+                <label for="ai_llm_url_nemotron">URL LLM Nemotron (mode "Nemotron")</label>
+                <input type="url" class="form-control" id="ai_llm_url_nemotron" name="ai_llm_url_nemotron"
+                       value="<?php echo htmlspecialchars($ai_llm_url_nemotron); ?>"
+                       placeholder="http://localhost:11438/completion">
+                <small class="form-text text-muted">Ex: Nemotron-Mini-4B / Nemotron 70B</small>
+            </div>
             </div>
           </div>
 
@@ -256,16 +265,24 @@ $studio_api_docling_url = $_ai['studio_api_docling_url'] ?? '';
             <h3 class="panel-title"><i class="fa fa-cog fa-spin-hover"></i> Maintenance de la Bibliothèque</h3>
           </div>
           <div class="panel-body">
-            <div class="alert alert-danger">
-              <i class="fa fa-exclamation-circle"></i>
-              <strong>⚠️ Opération longue :</strong> Cette action va recalculer <strong>TOUS</strong> les vecteurs de la bibliothèque depuis zéro.
-              Selon la taille de votre bibliothèque et la puissance de votre serveur, cela peut prendre <strong>plusieurs heures, voire plusieurs jours</strong>.
-              N'éteignez pas le serveur pendant l'opération.
+            <div class="alert alert-info">
+              <i class="fa fa-info-circle"></i>
+              <strong>Deux modes disponibles :</strong>
+              <ul>
+                <li><strong>Compléter les manquants :</strong> Très rapide, ne traite que les PDFs récemment ajoutés ou migrés.</li>
+                <li><strong>Tout réinitialiser (Force-all) :</strong> Efface tous les vecteurs existants et recommence à zéro. <strong>Indispensable si vous avez changé de modèle d'embedding</strong>. Peut durer très longtemps.</li>
+              </ul>
             </div>
-            <p>Utilisez ce bouton si vous avez changé de modèle d'embedding, ou si vous suspectez que les vecteurs sont corrompus ou incomplets.</p>
-            <button class="btn btn-danger btn-lg" id="btn-vectorize" onclick="triggerVectorization()">
-              <i class="fa fa-refresh"></i> Relancer la vectorisation totale
-            </button>
+            
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;">
+              <button class="btn btn-warning" id="btn-vectorize-missing" onclick="triggerVectorization('missing')">
+                <i class="fa fa-search-plus"></i> Compléter les vecteurs manquants
+              </button>
+              <button class="btn btn-danger" id="btn-vectorize-all" onclick="triggerVectorization('all')">
+                <i class="fa fa-refresh"></i> Réinitialiser et TOUT re-vectoriser
+              </button>
+            </div>
+            
             <div id="vectorize-status" style="display:none; margin-top:15px;">
               <div class="progress">
                 <div class="progress-bar progress-bar-striped active" style="width:100%">
@@ -273,6 +290,45 @@ $studio_api_docling_url = $_ai['studio_api_docling_url'] ?? '';
                 </div>
               </div>
               <p class="text-muted text-center" id="vectorize-msg"></p>
+            </div>
+            <hr>
+            <h4><i class="fa fa-file-text-o"></i> Migrer la bibliothèque en Markdown (Docling)</h4>
+            <p>
+              Retraite tous les PDF avec <strong>Docling</strong> pour générer des chunks sémantiques par sections (titres, chapitres…) au lieu du découpage naïf par mots.
+              Les anciens chunks sont <strong>préservés jusqu'au commit atomique</strong> — le RAG reste fonctionnel pendant l'opération.
+            </p>
+            <div id="markdown-counts" class="row" style="margin-bottom:12px;">
+              <div class="col-xs-3 text-center"><span class="badge" style="background:#777;" id="md-count-raw">…</span><br><small>À traiter</small></div>
+              <div class="col-xs-3 text-center"><span class="badge" style="background:#5bc0de;" id="md-count-processing">…</span><br><small>En cours</small></div>
+              <div class="col-xs-3 text-center"><span class="badge" style="background:#5cb85c;" id="md-count-done">…</span><br><small>Terminés</small></div>
+              <div class="col-xs-3 text-center"><span class="badge" style="background:#d9534f;" id="md-count-error">…</span><br><small>En erreur</small></div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+              <button class="btn btn-primary" id="btn-markdown-all" onclick="triggerMarkdownMigration('all')">
+                <i class="fa fa-magic"></i> Migrer tous les PDFs (raw)
+              </button>
+              <button class="btn btn-warning" id="btn-markdown-retry" onclick="triggerMarkdownMigration('retry')">
+                <i class="fa fa-refresh"></i> Relancer les erreurs
+              </button>
+              <button class="btn btn-default" id="btn-markdown-force" onclick="triggerMarkdownMigration('force')" title="Retraite aussi les fichiers déjà migrés">
+                <i class="fa fa-repeat"></i> Tout retraiter
+              </button>
+              <button class="btn btn-danger" id="btn-markdown-stop" onclick="stopMarkdownMigration()" style="display:none;">
+                <i class="fa fa-stop"></i> Stopper la migration
+              </button>
+            </div>
+            <div id="markdown-status" style="display:none; margin-top:10px;">
+              <div class="progress">
+                <div class="progress-bar progress-bar-striped active" id="markdown-progress-bar" style="width:100%">
+                  Migration en cours en arrière-plan…
+                </div>
+              </div>
+              <p class="text-muted text-center" id="markdown-msg" style="font-size:0.9em;"></p>
+            </div>
+            
+            <div id="markdown-logs-container" style="display:none; margin-top:15px;">
+              <p><strong><i class="fa fa-terminal"></i> Logs en direct :</strong></p>
+              <pre id="markdown-logs" style="font-size: 0.85em; background: #222; color: #0f0; max-height: 250px; overflow-y: auto; border: 1px solid #000; padding: 10px;"></pre>
             </div>
 
             <hr>
@@ -394,14 +450,26 @@ document.getElementById('ai-settings-form').addEventListener('submit', function(
         });
 });
 
-function triggerVectorization() {
-    if (!confirm('⚠️ Êtes-vous sûr ? Cette opération peut durer plusieurs heures. Continuer ?')) return;
+function triggerVectorization(mode = 'missing') {
+    let msg = mode === 'all' 
+        ? '⚠️ ATTENTION : Vous allez effacer TOUS les vecteurs existants et tout recommencer à zéro.\n\nCette opération peut durer plusieurs heures.\nÊtes-vous absolument sûr ?'
+        : 'Lancer la vectorisation pour compléter uniquement les blocs manquants ?\n\n(L\'opération se fera en arrière-plan).';
 
-    const btn = document.getElementById('btn-vectorize');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Lancement en cours...';
+    if (!confirm(msg)) return;
 
-    fetch('?trigger_vectorization', { method: 'POST' })
+    // Désactiver les deux boutons
+    const btnAll = document.getElementById('btn-vectorize-all');
+    const btnMissing = document.getElementById('btn-vectorize-missing');
+    if (btnAll) btnAll.disabled = true;
+    if (btnMissing) btnMissing.disabled = true;
+    
+    document.getElementById('vectorize-status').style.display = 'block';
+    document.getElementById('vectorize-msg').innerText = 'Démarrage en cours...';
+
+    const form = new FormData();
+    form.append('mode', mode);
+
+    fetch('?trigger_vectorization', { method: 'POST', body: form })
         .then(r => r.json())
         .then(data => {
             if (data.success) {
@@ -409,14 +477,14 @@ function triggerVectorization() {
                 document.getElementById('vectorize-msg').textContent = data.message;
             } else {
                 alert('Erreur : ' + (data.error || 'Inconnue'));
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa fa-refresh"></i> Relancer la vectorisation totale';
+                if (btnAll) btnAll.disabled = false;
+                if (btnMissing) btnMissing.disabled = false;
             }
         })
         .catch(() => {
             alert('Erreur réseau lors du déclenchement.');
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa fa-refresh"></i> Relancer la vectorisation totale';
+            if (btnAll) btnAll.disabled = false;
+            if (btnMissing) btnMissing.disabled = false;
         });
 }
 
@@ -508,7 +576,152 @@ document.addEventListener('DOMContentLoaded', () => {
                 monitorRescan(data.job_id);
             }
         }).catch(e => {});
+
+    // Charger les compteurs Markdown au chargement de la page
+    refreshMarkdownCounts();
 });
+
+// ─── Migration Markdown ───────────────────────────────────────────────────────
+
+let mdPollInterval = null;
+
+function refreshMarkdownCounts() {
+    fetch('?get_markdown_migration_status')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.counts) return;
+            const c = data.counts;
+            document.getElementById('md-count-raw').textContent        = c.raw + (c.null ? '+'+c.null : '');
+            document.getElementById('md-count-processing').textContent = c.processing;
+            document.getElementById('md-count-done').textContent       = c.done;
+            document.getElementById('md-count-error').textContent      = c.error;
+
+            // Reprendre le polling si une migration est en cours
+            if (data.running && !mdPollInterval) {
+                document.getElementById('markdown-status').style.display = 'block';
+                document.getElementById('btn-markdown-stop').style.display = 'inline-block';
+                mdPollInterval = setInterval(pollMarkdownStatus, 3000);
+            }
+        }).catch(() => {});
+}
+
+function stopMarkdownMigration() {
+    if (!confirm('Voulez-vous vraiment stopper la migration Markdown en cours ?')) return;
+    fetch('?stop_markdown_migration', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert('Migration stoppée.');
+                pollMarkdownStatus();
+            }
+        }).catch(() => alert('Erreur réseau lors de l\'arrêt.'));
+}
+
+function triggerMarkdownMigration(mode) {
+    const labels = { all: 'tous les PDFs non traités', retry: 'les fichiers en erreur', force: 'TOUS les fichiers (y compris déjà traités)' };
+    if (!confirm('⚠️ Lancer la migration Markdown Docling pour ' + (labels[mode] || mode) + ' ?\n\nOpération longue — le RAG reste fonctionnel pendant l\'opération.')) return;
+
+    ['btn-markdown-all', 'btn-markdown-retry', 'btn-markdown-force'].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) b.disabled = true;
+    });
+    document.getElementById('btn-markdown-stop').style.display = 'inline-block';
+    document.getElementById('btn-markdown-all').innerHTML = '<i class="fa fa-spinner fa-spin"></i> Lancement…';
+
+    const form = new FormData();
+    form.append('mode', mode);
+
+    fetch('?trigger_markdown_migration', { method: 'POST', body: form })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('markdown-status').style.display = 'block';
+                document.getElementById('markdown-msg').textContent = data.message;
+                if (!mdPollInterval) {
+                    mdPollInterval = setInterval(pollMarkdownStatus, 3000);
+                }
+            } else {
+                alert('Erreur : ' + (data.error || 'Inconnue'));
+                resetMarkdownButtons();
+            }
+        })
+        .catch(() => {
+            alert('Erreur réseau lors du déclenchement.');
+            resetMarkdownButtons();
+        });
+}
+
+function pollMarkdownStatus() {
+    fetch('?get_markdown_migration_status')
+        .then(r => r.json())
+        .then(data => {
+            const bar = document.getElementById('markdown-progress-bar');
+            const msg = document.getElementById('markdown-msg');
+
+            // Mettre à jour les compteurs
+            if (data.counts) {
+                const c = data.counts;
+                document.getElementById('md-count-raw').textContent        = c.raw + (c.null ? '+'+c.null : '');
+                document.getElementById('md-count-processing').textContent = c.processing;
+                document.getElementById('md-count-done').textContent       = c.done;
+                document.getElementById('md-count-error').textContent      = c.error;
+            }
+
+            if (data.running) {
+                const total     = data.total || 1;
+                const processed = data.processed || 0;
+                const pct       = total > 0 ? Math.round((processed / total) * 100) : 0;
+                if (bar) {
+                    bar.style.width = Math.max(10, pct) + '%';
+                    bar.textContent = processed + '/' + total + ' fichiers (' + pct + '%)';
+                }
+                if (msg && data.current) {
+                    msg.textContent = '⚙️ ' + (data.current.name || '');
+                }
+                
+                // --- AJOUT LOGS ---
+                document.getElementById('markdown-logs-container').style.display = 'block';
+                fetch('?get_markdown_migration_logs')
+                    .then(r => r.text())
+                    .then(logs => {
+                        const logsEl = document.getElementById('markdown-logs');
+                        if (logsEl) {
+                            const isScrolledToBottom = logsEl.scrollHeight - logsEl.clientHeight <= logsEl.scrollTop + 10;
+                            logsEl.textContent = logs;
+                            if (isScrolledToBottom) {
+                                logsEl.scrollTop = logsEl.scrollHeight;
+                            }
+                        }
+                    }).catch(() => {});
+                // ------------------
+                
+            } else {
+                // Migration terminée
+                clearInterval(mdPollInterval);
+                mdPollInterval = null;
+                if (bar) {
+                    bar.classList.remove('active');
+                    bar.classList.add('progress-bar-success');
+                    bar.style.width = '100%';
+                    const p = data.processed || 0;
+                    const e = data.errors    || 0;
+                    bar.textContent = '✅ Terminé : ' + p + ' fichiers traités' + (e > 0 ? ', ' + e + ' erreur(s)' : '');
+                }
+                if (msg) msg.textContent = 'Terminé le ' + (data.finished_at || '');
+                resetMarkdownButtons();
+            }
+        }).catch(() => {});
+}
+
+function resetMarkdownButtons() {
+    document.getElementById('btn-markdown-all').innerHTML   = '<i class="fa fa-magic"></i> Migrer tous les PDFs (raw)';
+    document.getElementById('btn-markdown-retry').innerHTML = '<i class="fa fa-refresh"></i> Relancer les erreurs';
+    document.getElementById('btn-markdown-stop').style.display = 'none';
+    ['btn-markdown-all', 'btn-markdown-retry', 'btn-markdown-force'].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) b.disabled = false;
+    });
+}
 
 function installLocalAi() {
     const path = document.getElementById('ai_local_path').value.trim();

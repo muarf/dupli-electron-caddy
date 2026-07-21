@@ -18,6 +18,13 @@ window.addEventListener('error', function(e) {
   errDiv.textContent = 'JS Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno;
   document.body.appendChild(errDiv);
 });
+window.addEventListener('unhandledrejection', function(e) {
+  const errDiv = document.createElement('div');
+  errDiv.style.position = 'fixed'; errDiv.style.top = '40px'; errDiv.style.left = '10px'; errDiv.style.zIndex = '9999'; errDiv.style.background = 'orange'; errDiv.style.color = 'white'; errDiv.style.padding = '10px'; errDiv.style.fontSize = '12px';
+  const reason = e.reason ? (e.reason.stack || e.reason.message || e.reason) : 'Unknown Promise Rejection';
+  errDiv.textContent = 'Promise Error: ' + reason;
+  document.body.appendChild(errDiv);
+});
 </script>
 <script src="js/riso-tools.js?v=<?php echo time(); ?>" defer></script>
 <script src="js/studio-montage.js?v=<?php echo time(); ?>" defer></script>
@@ -499,7 +506,14 @@ window.addEventListener('error', function(e) {
           <button class="toolbar-btn" id="btnFlipH" style="width:48%"><i class="fa fa-arrows-h"></i> Flip H</button>
           <button class="toolbar-btn" id="btnFlipV" style="width:48%;float:right"><i class="fa fa-arrows-v"></i> Flip V</button>
         </div>
-        <div class="panel-row" style="margin-top:12px; font-size:11px;">
+        <div class="panel-row" style="margin-top:12px; border-top: 1px solid var(--studio-border); padding-top: 12px;">
+          <div class="panel-label">Redressement (Deskew) <span class="panel-value" id="valDeskew">0°</span></div>
+          <input type="range" class="panel-slider" id="sliderDeskew" min="-15" max="15" step="0.1" value="0">
+        </div>
+        <div class="panel-row" style="margin-top:4px">
+          <button class="toolbar-btn primary" id="btnApplyDeskew" style="width:100%"><i class="fa fa-check"></i> Valider l'angle</button>
+        </div>
+        <div class="panel-row" style="margin-top:12px; font-size:11px; border-top: 1px solid var(--studio-border); padding-top: 12px;">
           <label style="cursor:pointer;display:flex;align-items:center;gap:6px">
              <input type="checkbox" id="chkGeomApplyAll"> Appliquer à toutes les pages
           </label>
@@ -609,10 +623,6 @@ window.addEventListener('error', function(e) {
         <div class="panel-section-title">Organiser (Glisser-Déposer)</div>
         <p style="font-size:12px;color:#6b7280;margin-bottom:8px;">Utilisez la barre du bas pour réorganiser les pages.</p>
         <div class="panel-row">
-          <input type="file" id="orgAddPdfInput" accept=".pdf" style="display:none">
-          <button class="toolbar-btn" id="btnOrgAddPdf" style="width:100%"><i class="fa fa-file-pdf-o"></i> Ajouter un PDF</button>
-        </div>
-        <div class="panel-row" style="margin-top:8px">
           <div class="panel-label">Position d'insertion</div>
           <select class="panel-select" id="selOrgBlankPos">
             <option value="end">À la fin</option>
@@ -620,6 +630,10 @@ window.addEventListener('error', function(e) {
             <option value="before">Avant la page active</option>
             <option value="after">Après la page active</option>
           </select>
+        </div>
+        <div class="panel-row" style="margin-top:8px">
+          <input type="file" id="orgAddPdfInput" accept=".pdf" style="display:none">
+          <button class="toolbar-btn" id="btnOrgAddPdf" style="width:100%"><i class="fa fa-file-pdf-o"></i> Ajouter un PDF</button>
         </div>
         <div class="panel-row" style="margin-top:8px">
           <button class="toolbar-btn" id="btnOrgAddBlank" style="width:100%"><i class="fa fa-plus"></i> Insérer page blanche</button>
@@ -1015,6 +1029,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // === STATE ===
   const state = {
+    libraryId: null,
     file: null, isPdf: false, pdfDoc: null, currentPage: 1, totalPages: 0,
     originalImageData: null, rotation: 0, flipH: false, flipV: false,
     dims: null,  // { wPx, hPx, wMm, hMm, label }
@@ -1024,6 +1039,15 @@ document.addEventListener('DOMContentLoaded', function() {
     risoShowOriginal: false,
     filtersModified: false   // true si l'utilisateur a modifié des filtres image
   };
+
+  function appendStudioFile(fd, defaultName) {
+    if (state.libraryId) {
+      fd.append('file_id', state.libraryId);
+      if (defaultName) fd.append('filename', defaultName);
+    } else {
+      fd.append('file', state.file, defaultName || state.file.name);
+    }
+  }
 
   // Retourne true si des modifications image ont été faites (filtres, bitmap…)
   function hasFiltersModified() {
@@ -1161,6 +1185,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // === LOAD FILE ===
   function loadFile(file) {
+    state.libraryId = null; // Reset unless explicitly set after
     const valid = ['image/png','image/jpeg','image/jpg','image/gif','image/webp','application/pdf'];
     if (!valid.includes(file.type)) { alert('Format non supporté'); return; }
     state.file = file;
@@ -1191,13 +1216,47 @@ document.addEventListener('DOMContentLoaded', function() {
     badge.style.color = 'var(--studio-text-muted)';
     
     const fd = new FormData();
-    fd.append('file', state.file);
+    appendStudioFile(fd);
     fd.append('action', 'analyze_ink');
     
     try {
       const res = await fetch('?studio_process', { method: 'POST', body: fd });
       const json = await res.json();
-      if (json.success && json.result) {
+      
+      if (json.success && json.job_id) {
+        const checkInterval = setInterval(async () => {
+          const stFd = new FormData();
+          stFd.append('action', 'analyze_ink_status');
+          stFd.append('job_id', json.job_id);
+          try {
+            const stRes = await fetch('?studio_process', { method: 'POST', body: stFd });
+            const stData = await stRes.json();
+            if (stData.success) {
+              if (stData.status === 'done') {
+                clearInterval(checkInterval);
+                state.inkData = stData.result;
+                badge.innerHTML = '<i class="fa fa-tint" style="color:var(--studio-primary)"></i> Enc: ' + stData.result.fill_rate + '%';
+                badge.style.color = 'var(--studio-primary)';
+                renderThumbnails(); // Refresh thumbs to show per-page ink
+                if (typeof fetchActiveJobs === 'function') fetchActiveJobs(); // Update task manager
+              } else if (stData.status === 'error') {
+                clearInterval(checkInterval);
+                console.error("Ink analysis failed: ", stData.error);
+                badge.style.display = 'none';
+                if (typeof fetchActiveJobs === 'function') fetchActiveJobs();
+              }
+            } else {
+              clearInterval(checkInterval);
+              console.error("Ink analysis error:", stData.error);
+              badge.style.display = 'none';
+            }
+          } catch(err) {
+            console.error("Erreur polling ink", err);
+          }
+        }, 3000);
+        
+        if (typeof fetchActiveJobs === 'function') fetchActiveJobs(); // Ajouter le job au manager
+      } else if (json.success && json.result) {
         state.inkData = json.result;
         badge.innerHTML = '<i class="fa fa-tint" style="color:var(--studio-primary)"></i> Enc: ' + json.result.fill_rate + '%';
         badge.style.color = 'var(--studio-primary)';
@@ -1312,173 +1371,195 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   async function renderThumbnails() {
-    if (window.orgSequence.length === 0) {
-      thumbsBar.innerHTML = '';
-      thumbsBar.classList.remove('visible');
-      return;
-    }
-    const fragment = document.createDocumentFragment();
-
-    // Add info span
-    const navSpan = document.createElement('span');
-    navSpan.className = 'page-nav';
-    navSpan.textContent = window.orgSequence.length + ' page(s)';
-    fragment.appendChild(navSpan);
-
-    for (let i = 0; i < window.orgSequence.length; i++) {
-      const item = window.orgSequence[i];
-      const div = document.createElement('div');
-      div.className = 'thumb-item' + (i === state.orgSelectedIndex ? ' active' : '');
-      div.draggable = true;
-      div.dataset.index = i;
-
-      if (item.type === 'blank') {
-        const tc = document.createElement('div');
-        tc.style.width = '60px'; tc.style.height = '85px'; tc.style.background = '#fff'; tc.style.border = '1px solid #ccc';
-        tc.style.display = 'flex'; tc.style.alignItems = 'center'; tc.style.justifyContent = 'center'; tc.style.fontSize = '10px'; tc.style.color = '#999';
-        tc.textContent = 'BLANK';
-        div.appendChild(tc);
-      } else {
-        try {
-          const doc = window.orgDocs[item.file_idx];
-          if (doc) {
-            const page = await doc.getPage(item.page_num);
-            const vp = page.getViewport({scale: 0.2});
-            const tc = document.createElement('canvas');
-            tc.width = vp.width; tc.height = vp.height;
-            await page.render({canvasContext: tc.getContext('2d'), viewport: vp}).promise;
-            let transforms = [];
-            if (item.rotation) transforms.push(`rotate(${item.rotation}deg)`);
-            if (item.flipH) transforms.push('scaleX(-1)');
-            if (item.flipV) transforms.push('scaleY(-1)');
-            if (transforms.length) {
-              tc.style.transform = transforms.join(' ');
-            }
-            div.appendChild(tc);
-          }
-        } catch(e) { console.error("Error rendering thumbnail", e); }
+    try {
+      if (window.orgSequence.length === 0) {
+        thumbsBar.innerHTML = '';
+        thumbsBar.classList.remove('visible');
+        return;
       }
+      const fragment = document.createDocumentFragment();
 
-      const lbl = document.createElement('div');
-      lbl.className = 'thumb-label'; lbl.textContent = i + 1;
-      div.appendChild(lbl);
+      // Add info span
+      const navSpan = document.createElement('span');
+      navSpan.className = 'page-nav';
+      navSpan.textContent = window.orgSequence.length + ' page(s)';
+      fragment.appendChild(navSpan);
 
-      // Ink Badge for page
-      if (state.inkData && state.inkData.pages) {
-        const pageInfo = state.inkData.pages.find(p => p.page === item.page_num);
-        if (pageInfo) {
-          const ink = pageInfo.fill_rate;
+      // Tableau pour stocker les promesses de rendu asynchrone
+      const renderTasks = [];
+
+      for (let i = 0; i < window.orgSequence.length; i++) {
+        const item = window.orgSequence[i];
+        const div = document.createElement('div');
+        div.className = 'thumb-item' + (i === state.orgSelectedIndex ? ' active' : '');
+        div.draggable = true;
+        div.dataset.index = i;
+
+        if (item.type === 'blank') {
+          const tc = document.createElement('div');
+          tc.style.width = '60px'; tc.style.height = '85px'; tc.style.background = '#fff'; tc.style.border = '1px solid #ccc';
+          tc.style.display = 'flex'; tc.style.alignItems = 'center'; tc.style.justifyContent = 'center'; tc.style.fontSize = '10px'; tc.style.color = '#999';
+          tc.textContent = 'BLANK';
+          div.appendChild(tc);
+        } else {
+          // Créer le canvas vide immédiatement
+          const tc = document.createElement('canvas');
+          tc.width = 60; tc.height = 85; // Placeholder size
+          div.appendChild(tc);
+
+          // Ajouter la tâche de rendu en arrière-plan
+          renderTasks.push(async () => {
+            try {
+              const doc = window.orgDocs[item.file_idx];
+              if (doc) {
+                const page = await doc.getPage(item.page_num);
+                const vp = page.getViewport({scale: 0.2});
+                tc.width = vp.width; tc.height = vp.height;
+                await page.render({canvasContext: tc.getContext('2d'), viewport: vp}).promise;
+                let transforms = [];
+                if (item.rotation) transforms.push(`rotate(${item.rotation}deg)`);
+                if (item.flipH) transforms.push('scaleX(-1)');
+                if (item.flipV) transforms.push('scaleY(-1)');
+                if (transforms.length) {
+                  tc.style.transform = transforms.join(' ');
+                }
+              }
+            } catch(e) { console.error("Error rendering thumbnail", e); }
+          });
+        }
+
+        const lbl = document.createElement('div');
+        lbl.className = 'thumb-label'; lbl.textContent = i + 1;
+        div.appendChild(lbl);
+
+        // Ink Badge for page
+        if (state.inkData && state.inkData.pages) {
+          const pageInfo = state.inkData.pages.find(p => p.page === item.page_num);
+          if (pageInfo) {
+            const ink = pageInfo.fill_rate;
+            const inkBadge = document.createElement('div');
+            inkBadge.style = "position:absolute; top:2px; left:2px; background:rgba(0,0,0,0.6); color:white; font-size:9px; padding:1px 3px; border-radius:3px; z-index:5;";
+            inkBadge.textContent = ink + "%";
+            div.appendChild(inkBadge);
+          }
+        } else if (state.inkData && !state.inkData.pages && i === 0) {
+          // Simple image (only one page)
+          const ink = state.inkData.fill_rate;
           const inkBadge = document.createElement('div');
           inkBadge.style = "position:absolute; top:2px; left:2px; background:rgba(0,0,0,0.6); color:white; font-size:9px; padding:1px 3px; border-radius:3px; z-index:5;";
           inkBadge.textContent = ink + "%";
           div.appendChild(inkBadge);
         }
-      } else if (state.inkData && !state.inkData.pages && i === 0) {
-        // Simple image (only one page)
-        const ink = state.inkData.fill_rate;
-        const inkBadge = document.createElement('div');
-        inkBadge.style = "position:absolute; top:2px; left:2px; background:rgba(0,0,0,0.6); color:white; font-size:9px; padding:1px 3px; border-radius:3px; z-index:5;";
-        inkBadge.textContent = ink + "%";
-        div.appendChild(inkBadge);
+
+        // Actions hover overlay
+        const acts = document.createElement('div');
+        acts.className = 'thumb-actions';
+        acts.innerHTML = `
+          <i class="fa fa-rotate-right" onclick="event.stopPropagation(); orgRotate(${i}, 90)" title="Pivoter"></i>
+          <i class="fa fa-trash" style="color:#ef4444" onclick="event.stopPropagation(); orgDelete(${i})" title="Supprimer"></i>
+        `;
+        div.appendChild(acts);
+
+        // Click to view
+        div.addEventListener('click', async () => { 
+          state.orgSelectedIndex = i; // Suivre l'index sélectionné dans l'organiseur
+          console.log('[Studio] Thumb clicked:', i, '| type:', item.type, '| file_idx:', item.file_idx);
+          if (item.type === 'page') {
+            const doc = window.orgDocs[item.file_idx];
+            if (doc) {
+              state.currentPage = item.page_num;
+              const page = await doc.getPage(item.page_num);
+              const vp = page.getViewport({scale: 1});
+              const maxW = canvasArea.clientWidth - 48;
+              const maxH = canvasArea.clientHeight - 48;
+              const scale = Math.min(maxW / vp.width, maxH / vp.height, 2);
+              const svp = page.getViewport({scale});
+              canvas.width = svp.width; canvas.height = svp.height;
+              await page.render({canvasContext: ctx, viewport: svp}).promise;
+              
+              // Appliquer les transformations
+              if (item.flipH || item.flipV || item.rotation) {
+                  const off = document.createElement('canvas'); off.width = svp.width; off.height = svp.height;
+                  off.getContext('2d').drawImage(canvas, 0, 0);
+                  
+                  let cw = svp.width, ch = svp.height;
+                  const r = item.rotation || 0;
+                  if (r === 90 || r === 270 || r === -90 || r === -270) {
+                      cw = svp.height; ch = svp.width;
+                  }
+                  canvas.width = cw; canvas.height = ch;
+                  ctx.clearRect(0,0,cw,ch);
+                  ctx.save();
+                  ctx.translate(cw/2, ch/2);
+                  if (r) ctx.rotate(r * Math.PI / 180);
+                  let sx = item.flipH ? -1 : 1;
+                  let sy = item.flipV ? -1 : 1;
+                  ctx.scale(sx, sy);
+                  ctx.drawImage(off, -svp.width/2, -svp.height/2);
+                  ctx.restore();
+              }
+
+              state.originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              state._dispW = canvas.width; state._dispH = canvas.height;
+              applyFilters();
+            }
+          } else if (item.type === 'blank') {
+            // Afficher une page blanche dans le canvas
+            const w = (state.dims && state.dims.wPx) ? state.dims.wPx : 1240;
+            const h = (state.dims && state.dims.hPx) ? state.dims.hPx : 1754;
+            canvas.width = w; canvas.height = h;
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, w, h);
+            state.originalImageData = ctx.getImageData(0, 0, w, h);
+            state._dispW = w; state._dispH = h;
+          }
+          // S'assurer que le canvas est visible
+          canvas.style.display = 'block';
+          if ($('mainCanvasDeleteBtn')) $('mainCanvasDeleteBtn').style.display = 'flex';
+          $('uploadZone').style.display = 'none';
+          // Highlight active thumb
+          thumbsBar.querySelectorAll('.thumb-item').forEach((t,idx) => t.classList.toggle('active', idx === i));
+        });
+
+        // Drag and Drop
+        div.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', i);
+          div.style.opacity = '0.5';
+        });
+        div.addEventListener('dragend', () => div.style.opacity = '1');
+        div.addEventListener('dragover', (e) => { e.preventDefault(); div.style.border = '2px dashed #4f46e5'; });
+        div.addEventListener('dragleave', () => div.style.border = '');
+        div.addEventListener('drop', (e) => {
+          e.preventDefault();
+          div.style.border = '';
+          const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+          const toIdx = i;
+          if (fromIdx !== toIdx) {
+            const moved = window.orgSequence.splice(fromIdx, 1)[0];
+            window.orgSequence.splice(toIdx, 0, moved);
+            renderThumbnails();
+          }
+        });
+
+        fragment.appendChild(div);
       }
 
-      // Actions hover overlay
-      const acts = document.createElement('div');
-      acts.className = 'thumb-actions';
-      acts.innerHTML = `
-        <i class="fa fa-rotate-right" onclick="event.stopPropagation(); orgRotate(${i}, 90)" title="Pivoter"></i>
-        <i class="fa fa-trash" style="color:#ef4444" onclick="event.stopPropagation(); orgDelete(${i})" title="Supprimer"></i>
-      `;
-      div.appendChild(acts);
+      // Appliquer le fragment d'un coup pour éviter les duplications (race condition)
+      thumbsBar.innerHTML = '';
+      thumbsBar.style.display = 'flex'; // FORCE L'AFFICHAGE (contourne les éventuels style.display = 'none')
+      thumbsBar.classList.add('visible');
+      thumbsBar.appendChild(fragment);
+      console.log('[Studio] Thumbnails rendus et affichés', window.orgSequence.length);
 
-      // Click to view
-      div.addEventListener('click', async () => { 
-        state.orgSelectedIndex = i; // Suivre l'index sélectionné dans l'organiseur
-        console.log('[Studio] Thumb clicked:', i, '| type:', item.type, '| file_idx:', item.file_idx);
-        if (item.type === 'page') {
-          const doc = window.orgDocs[item.file_idx];
-          if (doc) {
-            state.currentPage = item.page_num;
-            const page = await doc.getPage(item.page_num);
-            const vp = page.getViewport({scale: 1});
-            const maxW = canvasArea.clientWidth - 48;
-            const maxH = canvasArea.clientHeight - 48;
-            const scale = Math.min(maxW / vp.width, maxH / vp.height, 2);
-            const svp = page.getViewport({scale});
-            canvas.width = svp.width; canvas.height = svp.height;
-            await page.render({canvasContext: ctx, viewport: svp}).promise;
-            
-            // Appliquer les transformations
-            if (item.flipH || item.flipV || item.rotation) {
-                const off = document.createElement('canvas'); off.width = svp.width; off.height = svp.height;
-                off.getContext('2d').drawImage(canvas, 0, 0);
-                
-                let cw = svp.width, ch = svp.height;
-                const r = item.rotation || 0;
-                if (r === 90 || r === 270 || r === -90 || r === -270) {
-                    cw = svp.height; ch = svp.width;
-                }
-                canvas.width = cw; canvas.height = ch;
-                ctx.clearRect(0,0,cw,ch);
-                ctx.save();
-                ctx.translate(cw/2, ch/2);
-                if (r) ctx.rotate(r * Math.PI / 180);
-                let sx = item.flipH ? -1 : 1;
-                let sy = item.flipV ? -1 : 1;
-                ctx.scale(sx, sy);
-                ctx.drawImage(off, -svp.width/2, -svp.height/2);
-                ctx.restore();
-            }
-
-            state.originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            state._dispW = canvas.width; state._dispH = canvas.height;
-            applyFilters();
-          }
-        } else if (item.type === 'blank') {
-          // Afficher une page blanche dans le canvas
-          const w = (state.dims && state.dims.wPx) ? state.dims.wPx : 1240;
-          const h = (state.dims && state.dims.hPx) ? state.dims.hPx : 1754;
-          canvas.width = w; canvas.height = h;
-          ctx.fillStyle = 'white';
-          ctx.fillRect(0, 0, w, h);
-          state.originalImageData = ctx.getImageData(0, 0, w, h);
-          state._dispW = w; state._dispH = h;
+      // Lancer les rendus en arrière-plan sans bloquer
+      setTimeout(async () => {
+        for (const task of renderTasks) {
+          await task();
         }
-        // S'assurer que le canvas est visible
-        canvas.style.display = 'block';
-        if ($('mainCanvasDeleteBtn')) $('mainCanvasDeleteBtn').style.display = 'flex';
-        $('uploadZone').style.display = 'none';
-        // Highlight active thumb
-        thumbsBar.querySelectorAll('.thumb-item').forEach((t,idx) => t.classList.toggle('active', idx === i));
-      });
-
-      // Drag and Drop
-      div.addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData('text/plain', i);
-        div.style.opacity = '0.5';
-      });
-      div.addEventListener('dragend', () => div.style.opacity = '1');
-      div.addEventListener('dragover', (e) => { e.preventDefault(); div.style.border = '2px dashed #4f46e5'; });
-      div.addEventListener('dragleave', () => div.style.border = '');
-      div.addEventListener('drop', (e) => {
-        e.preventDefault();
-        div.style.border = '';
-        const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
-        const toIdx = i;
-        if (fromIdx !== toIdx) {
-          const moved = window.orgSequence.splice(fromIdx, 1)[0];
-          window.orgSequence.splice(toIdx, 0, moved);
-          renderThumbnails();
-        }
-      });
-
-      fragment.appendChild(div);
+      }, 50);
+    } catch (err) {
+      console.error("Erreur critique lors du rendu des vignettes", err);
     }
-
-    // Appliquer le fragment d'un coup pour éviter les duplications (race condition)
-    thumbsBar.innerHTML = '';
-    thumbsBar.classList.add('visible');
-    thumbsBar.appendChild(fragment);
   }
 
   window.orgRotate = function(idx, angle) {
@@ -1611,29 +1692,47 @@ document.addEventListener('DOMContentLoaded', function() {
   $('btnFlipH').addEventListener('click', () => applyGeometry('flipH'));
   $('btnFlipV').addEventListener('click', () => applyGeometry('flipV'));
 
+  if ($('sliderDeskew')) {
+    $('sliderDeskew').addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      $('valDeskew').textContent = val + '°';
+      canvas.style.transform = 'rotate(' + val + 'deg)';
+    });
+
+    $('btnApplyDeskew').addEventListener('click', () => {
+      const val = parseFloat($('sliderDeskew').value);
+      if (val !== 0) {
+        applyGeometry('rotateFine', val);
+        $('sliderDeskew').value = 0;
+        $('valDeskew').textContent = '0°';
+        canvas.style.transform = '';
+      }
+    });
+  }
+
   function applyGeometry(action, val) {
     const applyAll = $('chkGeomApplyAll') && $('chkGeomApplyAll').checked;
     
     if (applyAll) {
        for (let i = 0; i < window.orgSequence.length; i++) {
           let it = window.orgSequence[i];
-          if (action === 'rotate') it.rotation = ((it.rotation || 0) + val) % 360;
+          if (action === 'rotate' || action === 'rotateFine') it.rotation = ((it.rotation || 0) + val) % 360;
           if (action === 'flipH') it.flipH = !it.flipH;
           if (action === 'flipV') it.flipV = !it.flipV;
        }
        renderThumbnails();
-       if (action === 'rotate') rotateCanvas(val);
+       if (action === 'rotate' || action === 'rotateFine') rotateCanvas(val);
        if (action === 'flipH') flipCanvas('h');
        if (action === 'flipV') flipCanvas('v');
     } else {
        if (state.orgSelectedIndex !== undefined && window.orgSequence[state.orgSelectedIndex]) {
           const it = window.orgSequence[state.orgSelectedIndex];
-          if (action === 'rotate') it.rotation = ((it.rotation || 0) + val) % 360;
+          if (action === 'rotate' || action === 'rotateFine') it.rotation = ((it.rotation || 0) + val) % 360;
           if (action === 'flipH') it.flipH = !it.flipH;
           if (action === 'flipV') it.flipV = !it.flipV;
           renderThumbnails();
        }
-       if (action === 'rotate') rotateCanvas(val);
+       if (action === 'rotate' || action === 'rotateFine') rotateCanvas(val);
        if (action === 'flipH') flipCanvas('h');
        if (action === 'flipV') flipCanvas('v');
     }
@@ -2018,13 +2117,14 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       const res = await fetch('?studio_process', { method: 'POST', body: fd });
       const json = await res.json();
-      hideSpinner();
-      if (json.success && json.download_url) {
-        setPdfReady(json.download_url);
-        showResultToast(json.download_url);
-      } else {
-        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (json.errors || []).join(', '), true);
-      }
+      window.pollStudioTask(json, (finalJson) => {
+        if (finalJson.download_url) {
+          setPdfReady(finalJson.download_url);
+          showResultToast(finalJson.download_url);
+        }
+      }, (errJson) => {
+        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (errJson.error || errJson.errors?.join(', ') || 'Erreur inconnue'), true);
+      });
     } catch(e) {
       hideSpinner();
       showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
@@ -2132,7 +2232,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
       fd.append('file', fileToUpload, filename);
       
-      const res = await fetch('?upload_bibliotheque', { method: 'POST', body: fd });
+      const res = await fetch('?upload_bibliotheque', { 
+        method: 'POST', 
+        body: fd,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+
+      if (res.status === 403) {
+        hideSpinner();
+        if (typeof showBibPasswordModal === 'function') {
+            showBibPasswordModal();
+            showToast('<i class="fa fa-info-circle" style="color:#3b82f6"></i> <b>Authentification requise</b> Veuillez entrer le mot de passe puis réessayer.', false);
+        } else {
+            showToast('<i class="fa fa-lock" style="color:#f59e0b"></i> <b>Accès refusé</b> Vous devez être connecté à la bibliothèque.', true);
+        }
+        return;
+      }
+
       const json = await res.json();
       hideSpinner();
       
@@ -2174,19 +2290,20 @@ document.addEventListener('DOMContentLoaded', function() {
     if (state.isPdf && state.file && !hasFiltersModified()) {
       const customName = $('fileNameDisplay').value || state.file.name;
       const fd = new FormData();
-      fd.append('file', state.file, customName);
+      appendStudioFile(fd, customName);
       fd.append('action', 'passthrough_pdf');
       showSpinner('Préparation du PDF...');
       try {
         const res = await fetch('?studio_process', { method: 'POST', body: fd });
         const json = await res.json();
-        hideSpinner();
-        if (json.success && json.download_url) {
-          setPdfReady(json.download_url);
-          showResultToast(json.download_url);
-        } else {
-          showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (json.errors||[]).join(', '), true);
-        }
+        window.pollStudioTask(json, (finalJson) => {
+          if (finalJson.download_url) {
+            setPdfReady(finalJson.download_url);
+            showResultToast(finalJson.download_url);
+          }
+        }, (errJson) => {
+          showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (errJson.error || errJson.errors?.join(', ') || 'Erreur inconnue'), true);
+        });
       } catch(e) {
         hideSpinner();
         showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
@@ -2203,14 +2320,15 @@ document.addEventListener('DOMContentLoaded', function() {
       fd.append('action', 'to_pdf');
       fd.append('dpi', state.dims ? state.dims.dpi : 96);
       const res = await fetch('?studio_process', { method: 'POST', body: fd });
-      const json = await res.json();
-      hideSpinner();
-      if (json.success && json.download_url) {
-        setPdfReady(json.download_url);
-        showResultToast(json.download_url);
-      } else {
-        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (json.errors||[]).join(', '), true);
-      }
+        const json = await res.json();
+        window.pollStudioTask(json, (finalJson) => {
+          if (finalJson.download_url) {
+            setPdfReady(finalJson.download_url);
+            showResultToast(finalJson.download_url);
+          }
+        }, (errJson) => {
+          showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (errJson.error || errJson.errors?.join(', ') || 'Erreur inconnue'), true);
+        });
     } catch(e) {
       hideSpinner();
       showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
@@ -2242,9 +2360,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('resultModal');
     document.getElementById('resultModalFilename').textContent = fname;
     document.getElementById('resultModalDownloadBtn').href = downloadUrl;
-    
+
     const reopenBtn = document.getElementById('resultModalReopenBtn');
-    if (fname.toLowerCase().endsWith('.docx') || fname.toLowerCase().endsWith('.odt')) {
+      if (fname.toLowerCase().endsWith('.docx') || fname.toLowerCase().endsWith('.odt')) {
         reopenBtn.style.display = 'none';
     } else {
         reopenBtn.style.display = '';
@@ -2258,13 +2376,35 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   window.showResultToast = showResultToast; // exposé pour studio-montage.js
 
+  // Déduit le type MIME depuis l'extension de fichier
+  function mimeFromExt(filename) {
+    const ext = (filename.split('.').pop() || '').toLowerCase();
+    const map = { pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp' };
+    return map[ext] || null;
+  }
+
   // Charge un PDF/image depuis une URL dans le studio
   window._reopenInStudio = async function(url) {
     try {
       showSpinner('Chargement dans le Studio...');
-      const resp = await fetch(url);
-      const blob = await resp.blob();
+      const resp = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+
+      if (resp.status === 403) {
+        hideSpinner();
+        // Demander le mot de passe bibliothèque
+        showBibPasswordModal(url);
+        return;
+      }
       
+      if (!resp.ok) {
+        hideSpinner();
+        const text = await resp.text();
+        alert('Erreur lors du chargement du fichier: ' + (text || resp.statusText));
+        return;
+      }
+
+      const blob = await resp.blob();
+
       let fname = 'Document.pdf';
       const cd = resp.headers.get('content-disposition');
       if (cd && cd.includes('filename=')) {
@@ -2272,20 +2412,135 @@ document.addEventListener('DOMContentLoaded', function() {
         if (match) fname = match[1];
       } else {
         fname = (url.split('file=').pop() || 'result.pdf').replace(/%20/g, '_');
-        if (fname.includes('?get_bibliotheque_file')) {
-          fname = 'Document_' + (url.split('id=').pop() || 'Importe') + '.pdf';
-        }
       }
-      
-      const file = new File([blob], decodeURIComponent(fname), { type: blob.type || 'application/pdf' });
+
+      // Forcer le type MIME depuis l'extension plutôt que de faire confiance à blob.type
+      const forcedType = mimeFromExt(fname) || blob.type || 'application/pdf';
+      const file = new File([blob], decodeURIComponent(fname), { type: forcedType });
       hideSpinner();
-      // Activer l'onglet Filtres (onglet principal) puis charger
       const filtersBtn = document.querySelector('.tool-btn[data-tool="filters"]');
       if (filtersBtn) filtersBtn.click();
       loadFile(file);
+      // Mémoriser l'ID bibliothèque APRÈS loadFile (qui reset libraryId)
+      const urlParams = new URLSearchParams(url.split('?')[1]);
+      const libId = urlParams.get('id');
+      if (libId && url.includes('get_bibliotheque_file')) {
+        state.libraryId = libId;
+      }
     } catch(e) {
       hideSpinner();
       showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> Erreur lors du rechargement : ' + e.message, true);
+    }
+  };
+
+  // === MODAL MOT DE PASSE BIBLIOTHÈQUE ===
+  function showBibPasswordModal(retryUrl) {
+    let modal = document.getElementById('bibPasswordModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'bibPasswordModal';
+      modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;';
+      modal.innerHTML = `
+        <div style="background:#fff;border-radius:16px;padding:32px;max-width:360px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);font-family:Inter,sans-serif;">
+          <div style="font-size:20px;font-weight:700;color:#1e293b;margin-bottom:8px;"><i class="fa fa-lock" style="color:#6366f1;margin-right:8px;"></i>Bibliothèque protégée</div>
+          <p style="color:#64748b;font-size:14px;margin-bottom:20px;">Entrez le mot de passe pour accéder aux fichiers de la bibliothèque.</p>
+          <input id="bibPasswordInput" type="password" placeholder="Mot de passe" style="width:100%;box-sizing:border-box;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;margin-bottom:8px;outline:none;">
+          <div id="bibPasswordError" style="color:#ef4444;font-size:13px;min-height:18px;margin-bottom:12px;"></div>
+          <div style="display:flex;gap:8px;">
+            <button id="bibPasswordCancel" style="flex:1;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;cursor:pointer;font-size:14px;">Annuler</button>
+            <button id="bibPasswordSubmit" style="flex:2;padding:10px;background:#6366f1;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">Confirmer</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+    }
+    modal.style.display = 'flex';
+    const input = document.getElementById('bibPasswordInput');
+    const errDiv = document.getElementById('bibPasswordError');
+    const submitBtn = document.getElementById('bibPasswordSubmit');
+    const cancelBtn = document.getElementById('bibPasswordCancel');
+    input.value = '';
+    errDiv.textContent = '';
+    setTimeout(() => input.focus(), 50);
+
+    const close = () => { modal.style.display = 'none'; };
+    cancelBtn.onclick = close;
+
+    const doSubmit = async () => {
+      const pass = input.value;
+      if (!pass) return;
+      submitBtn.disabled = true;
+      submitBtn.textContent = '...';
+      errDiv.textContent = '';
+      try {
+        const fd = new FormData();
+        fd.append('bib_pass', pass);
+        // POST vers ?bibliotheque, en suivant les redirections manuellement
+        const r = await fetch('?bibliotheque', { method: 'POST', body: fd, redirect: 'manual' });
+        // status 0 = redirection opaque (fetch redirect:manual) = auth réussie
+        if (r.status === 0 || r.status === 200 || r.status === 302) {
+          close();
+          window._reopenInStudio(retryUrl);
+        } else {
+          errDiv.textContent = 'Mot de passe incorrect.';
+        }
+      } catch(e) {
+        // Une opaque redirect peut throw selon le navigateur — on considère succès
+        close();
+        window._reopenInStudio(retryUrl);
+      }
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Confirmer';
+    };
+    submitBtn.onclick = doSubmit;
+    input.onkeydown = e => { if (e.key === 'Enter') doSubmit(); };
+  }
+
+  
+
+
+
+  window.pollStudioTask = async function(json, onSuccess, onError) {
+    if (json.job_id && (json.status === 'pending' || !json.download_url)) {
+      hideSpinner();
+      showToast('<i class="fa fa-spinner fa-spin" style="color:#4f46e5"></i> <b>Traitement en arrière-plan :</b> En cours...', false);
+      const interval = setInterval(async () => {
+        try {
+          const stFd = new FormData();
+          stFd.append('action', 'task_status');
+          stFd.append('job_id', json.job_id);
+          const res = await fetch('?studio_process', { method: 'POST', body: stFd });
+          const stData = await res.json();
+          if (stData.success && stData.job) {
+            const job = stData.job;
+            if (job.status === 'done') {
+              clearInterval(interval);
+              onSuccess(job);
+            } else if (job.status === 'error') {
+              clearInterval(interval);
+              onError(job);
+            } else if (job.last_log) {
+              let txt = job.last_log.substring(0, 60);
+              if (job.last_log.length > 60) txt += '...';
+              showToast('<i class="fa fa-spinner fa-spin" style="color:#4f46e5"></i> <b>En arrière-plan :</b> ' + txt, false);
+            }
+          } else if (!stData.success) {
+            clearInterval(interval);
+            onError(stData);
+          }
+        } catch (e) {
+          clearInterval(interval);
+          onError({error: "Erreur réseau lors de la vérification du statut"});
+        }
+      }, 2000);
+      return;
+    }
+
+    // Si c'est déjà success ou error et pas de job en arrière-plan
+    hideSpinner();
+    if (json.success || json.status === 'done') {
+      onSuccess(json);
+    } else {
+      onError(json);
     }
   };
 
@@ -2335,19 +2590,19 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       const res = await fetch('?studio_process', { method: 'POST', body: fd });
       const json = await res.json();
-      hideSpinner();
-      if (json.success && json.download_url) {
-        setPdfReady(json.download_url); // Save for contextual export
-        if (json.preview_url && (action === 'impose' || action === 'unimpose')) {
-          // Ouvrir le modal de preview
-          openImpPreview(json.preview_url, json.download_url);
-        } else {
-          showResultToast(json.download_url);
+      window.pollStudioTask(json, (finalJson) => {
+        if (finalJson.download_url) {
+          setPdfReady(finalJson.download_url);
+          if (finalJson.preview_url && (action === 'impose' || action === 'unimpose')) {
+            openImpPreview(finalJson.preview_url, finalJson.download_url);
+          } else {
+            showResultToast(finalJson.download_url);
+          }
         }
-      } else {
-        const errs = (json.errors || ['Erreur inconnue']).join('<br>');
+      }, (errJson) => {
+        const errs = errJson.error || (errJson.errors && errJson.errors.join('<br>')) || 'Erreur inconnue';
         showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b><br>' + errs, true);
-      }
+      });
     } catch(e) {
       hideSpinner();
       showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
@@ -2367,14 +2622,15 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       const res = await fetch('?studio_process', { method: 'POST', body: fd });
       const json = await res.json();
-      hideSpinner();
-      if (json.success && json.download_url) {
-        setPdfReady(json.download_url);
-        showResultToast(json.download_url);
-      } else {
-        const errs = (json.errors || ['Erreur inconnue']).join('<br>');
+      window.pollStudioTask(json, (finalJson) => {
+        if (finalJson.download_url) {
+          setPdfReady(finalJson.download_url);
+          showResultToast(finalJson.download_url);
+        }
+      }, (errJson) => {
+        const errs = errJson.error || (errJson.errors && errJson.errors.join('<br>')) || 'Erreur inconnue';
         showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b><br>' + errs, true);
-      }
+      });
     } catch(e) {
       hideSpinner();
       showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
@@ -2640,9 +2896,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const file_idx = window.orgFiles.length;
         window.orgFiles.push(file);
         window.orgDocs.push(doc);
+        const newPages = [];
         for (let i = 1; i <= doc.numPages; i++) {
-          window.orgSequence.push({ file_idx: file_idx, page_num: i, type: 'page', rotation: 0 });
+          newPages.push({ file_idx: file_idx, page_num: i, type: 'page', rotation: 0 });
         }
+        
+        const pos = $('selOrgBlankPos').value;
+        let selIdx = state.orgSelectedIndex;
+        if (selIdx === undefined || selIdx === null || selIdx < 0) {
+          selIdx = Math.max(0, window.orgSequence.length - 1);
+        }
+
+        if (pos === 'end') {
+          window.orgSequence.push(...newPages);
+        } else if (pos === 'start') {
+          window.orgSequence.unshift(...newPages);
+        } else if (pos === 'after') {
+          window.orgSequence.splice(selIdx + 1, 0, ...newPages);
+        } else if (pos === 'before') {
+          window.orgSequence.splice(selIdx, 0, ...newPages);
+        }
+        
         renderThumbnails();
       };
       reader.readAsArrayBuffer(file);
@@ -2727,14 +3001,15 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       const res = await fetch('?studio_process', { method: 'POST', body: fd });
       const json = await res.json();
-      hideSpinner();
-      if (json.success && json.download_url) {
-        setPdfReady(json.download_url);
-        showResultToast(json.download_url);
-      } else {
-        const errs = (json.errors || ['Erreur inconnue']).join('<br>');
+      window.pollStudioTask(json, (finalJson) => {
+        if (finalJson.download_url) {
+          setPdfReady(finalJson.download_url);
+          showResultToast(finalJson.download_url);
+        }
+      }, (errJson) => {
+        const errs = errJson.error || (errJson.errors && errJson.errors.join('<br>')) || 'Erreur inconnue';
         showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b><br>' + errs, true);
-      }
+      });
     } catch(e) {
       hideSpinner();
       showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
@@ -3542,7 +3817,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     const formData = new FormData();
     formData.append('action', 'ocr_cleanup');
-    formData.append('file', state.file);
+    appendStudioFile(formData);
     formData.append('lang', $('selOcrLang').value);
     formData.append('type', $('selOcrType').value);
     formData.append('deskew', $('chkOcrDeskew').checked ? '1' : '0');
@@ -3559,10 +3834,54 @@ document.addEventListener('DOMContentLoaded', function() {
       const res = await fetch('?studio_process', { method: 'POST', body: formData });
       const data = await res.json();
       hideSpinner();
-      if (data.success && data.download_url) {
-        showResultToast(data.download_url, data.filename);
+      if (data.success) {
+        if (data.job_id) {
+          if (typeof closeOcrModal === 'function') closeOcrModal();
+          
+          showToast('<i class="fa fa-spinner fa-spin" style="color:#4f46e5"></i> OCR en cours... Initialisation', false);
+          
+          const checkInterval = setInterval(async () => {
+            const stFd = new FormData();
+            stFd.append('action', 'ocr_status');
+            stFd.append('job_id', data.job_id);
+            try {
+              const stRes = await fetch('?studio_process', { method: 'POST', body: stFd });
+              const stData = await stRes.json();
+              if (stData.success && stData.job) {
+                const job = stData.job;
+                if (job.status === 'done') {
+                  clearInterval(checkInterval);
+                  let dlName = data.filename;
+                  if (job.download_url) {
+                    try {
+                      const urlParams = new URLSearchParams(job.download_url.split('?')[1]);
+                      dlName = urlParams.get('dl_name') || urlParams.get('file') || data.filename;
+                    } catch(e) {}
+                    showResultToast(job.download_url, dlName);
+                  } else {
+                    showToast('<i class="fa fa-check"></i> Terminé', false);
+                  }
+                } else if (job.status === 'error') {
+                  clearInterval(checkInterval);
+                  showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> Erreur: ' + (job.error || 'inconnue'), true);
+                } else {
+                  if (job.last_log) {
+                    // Limiter la taille du log pour le toast
+                    let txt = job.last_log.substring(0, 60);
+                    if (job.last_log.length > 60) txt += '...';
+                    showToast('<i class="fa fa-spinner fa-spin" style="color:#4f46e5"></i> ' + txt, false);
+                  }
+                }
+              }
+            } catch(e) {}
+          }, 3000);
+          
+        } else if (data.download_url) {
+          showResultToast(data.download_url, data.filename);
+        }
       } else {
-        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> ' + (data.error || 'Erreur inconnue'), true);
+        const errorMsg = data.error || (data.errors && data.errors[0]) || 'Erreur inconnue';
+        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> ' + errorMsg, true);
       }
     } catch (e) {
       hideSpinner();

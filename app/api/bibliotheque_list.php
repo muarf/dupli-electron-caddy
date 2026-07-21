@@ -7,6 +7,11 @@ requireBibliothequeAuth();
 require_once __DIR__ . '/../controler/conf.php';
 require_once __DIR__ . '/../controler/func.php';
 require_once __DIR__ . '/../models/BibliothequeManager.php';
+require_once __DIR__ . '/../models/SettingsManager.php';
+
+$db = pdo_connect();
+$settingsManager = new SettingsManager($db);
+$ai_enabled = (int)$settingsManager->get('ai_enabled', 0);
 
 // Debug
 error_reporting(E_ALL);
@@ -61,6 +66,11 @@ function getSortLink($column, $currentSort, $currentOrder) {
     <table class="table table-hover bg-white shadow-sm" style="border-radius: 12px; border-collapse: separate; border-spacing: 0;">
         <thead class="bg-light">
             <tr>
+                <?php if ($ai_enabled): ?>
+                <th style="border-top:none; width: 40px; text-align: center;">
+                    <input type="checkbox" id="selectAllPdfs" onclick="toggleAllPdfs(this)" title="Tout sélectionner">
+                </th>
+                <?php endif; ?>
                 <?php if (!empty($search)): ?>
                 <th <?= getSortLink('rank', $sort_by, $sort_order) ?> style="border-top:none; text-align:center; width: 100px;">Pertinence <?= ($sort_by === 'rank' ? ($sort_order === 'ASC' ? '<i class="fa fa-sort-up"></i>' : '<i class="fa fa-sort-down"></i>') : '<i class="fa fa-sort text-muted" style="opacity:0.3"></i>') ?></th>
                 <?php endif; ?>
@@ -84,7 +94,12 @@ function getSortLink($column, $currentSort, $currentOrder) {
                 // Chemin de la miniature
                 $thumb = !empty($file['thumbnail_path']) ? '?get_bibliotheque_thumbnail&file=' . urlencode($file['thumbnail_path']) : null;
             ?>
-            <tr onclick="editFile(<?= $file['id'] ?>)" style="cursor: pointer;" title="Cliquer pour éditer les métadonnées">
+            <tr style="cursor: pointer;" onclick="if(event.target.tagName !== 'INPUT' && event.target.tagName !== 'BUTTON' && event.target.tagName !== 'I') editFile(<?= $file['id'] ?>)" title="Cliquer pour éditer les métadonnées">
+                <?php if ($ai_enabled): ?>
+                <td class="align-middle text-center" onclick="event.stopPropagation();">
+                    <input type="checkbox" class="pdf-select-cb" value="<?= $file['id'] ?>" onclick="updatePdfSelection()">
+                </td>
+                <?php endif; ?>
                 <?php if (!empty($search)): ?>
                 <td class="align-middle text-center">
                     <div class="badge badge-primary px-2" style="background: #6366f1; opacity: <?= max(0.3, 1 - ($file['rank'] ?? 0)/10) ?>"><?= round(10 - ($file['rank'] ?? 0), 1) ?></div>

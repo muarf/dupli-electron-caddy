@@ -474,14 +474,19 @@
         
         await renderImageThumbnail(fileId);
       } else {
-        const reader = new FileReader();
-        const arrayBuffer = await new Promise((resolve) => {
-          reader.onload = (re) => resolve(re.target.result);
-          reader.readAsArrayBuffer(file);
-        });
-        
-        const data = new Uint8Array(arrayBuffer);
-        const pdf = await pdfjsLib.getDocument({ data }).promise;
+        let pdf;
+        // Optimization: reuse global PDF doc if this is the main file
+        if (window.state && window.state.file === file && window.state.pdfDoc) {
+          pdf = window.state.pdfDoc;
+        } else {
+          const reader = new FileReader();
+          const arrayBuffer = await new Promise((resolve) => {
+            reader.onload = (re) => resolve(re.target.result);
+            reader.readAsArrayBuffer(file);
+          });
+          const data = new Uint8Array(arrayBuffer);
+          pdf = await pdfjsLib.getDocument({ data }).promise;
+        }
         
         pdfDocs.push({
           id: fileId,
@@ -503,23 +508,30 @@
   async function renderPdfThumbnails(fileId) {
     const docInfo = pdfDocs[fileId];
     const container = document.getElementById('montageSourceThumbs');
-    
+    const renderTasks = [];
+
     for (let i = 1; i <= docInfo.pdf.numPages; i++) {
       const page = await docInfo.pdf.getPage(i);
       // Récupérer la taille originale pour l'échelle
       const viewport = page.getViewport({ scale: 1 });
-      
+
       // Thumbnail scale
       const thumbScale = 100 / viewport.width;
       const thumbViewport = page.getViewport({ scale: thumbScale });
-      
+
       const thumbCanvas = document.createElement('canvas');
       thumbCanvas.width = thumbViewport.width;
       thumbCanvas.height = thumbViewport.height;
-      const ctx = thumbCanvas.getContext('2d');
-      
-      await page.render({ canvasContext: ctx, viewport: thumbViewport }).promise;
-      
+
+      renderTasks.push(async () => {
+        try {
+          const ctx = thumbCanvas.getContext('2d');
+          await page.render({ canvasContext: ctx, viewport: thumbViewport }).promise;
+        } catch (e) {
+          console.error("Error rendering montage thumb", e);
+        }
+      });
+
       const thumbDiv = document.createElement('div');
       thumbDiv.style.border = '1px solid #e2e5ea';
       thumbDiv.style.borderRadius = '4px';
@@ -528,11 +540,11 @@
       thumbDiv.style.position = 'relative';
       thumbDiv.style.background = '#fff';
       thumbDiv.title = `Ajouter au montage (Page ${i})`;
-      
+
       thumbCanvas.style.width = '100%';
       thumbCanvas.style.height = 'auto';
       thumbCanvas.style.display = 'block';
-      
+
       const label = document.createElement('div');
       label.textContent = `P.${i}`;
       label.style.position = 'absolute';
@@ -542,15 +554,19 @@
       label.style.color = 'white';
       label.style.fontSize = '10px';
       label.style.padding = '2px 4px';
-      
+
       thumbDiv.appendChild(thumbCanvas);
       thumbDiv.appendChild(label);
-      
-      // Au clic, ajouter au canvas principal
-      thumbDiv.addEventListener('click', () => addPageToCanvas(fileId, i));
-      
+      thumbDiv.onclick = () => addPageToCanvas(fileId, i);
+
       container.appendChild(thumbDiv);
     }
+
+    setTimeout(async () => {
+      for (const task of renderTasks) {
+        await task();
+      }
+    }, 50);
   }
 
   async function addPageToCanvas(fileId, pageNum) {
@@ -668,6 +684,135 @@
       canvas.setActiveObject(img);
       canvas.renderAll();
     });
+  }
+
+  let montageThumbnailObserver = null;
+
+  window.syncMontageFromOrg = async function(orgSequence, orgDocs, orgFiles) {
+    if (!orgDocs || !orgDocs.length) return;
+    
+    const container = document.getElementById('montageSourceThumbs');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    pdfDocs = [];
+    loadedFileNames.clear();
+
+    for (let i = 0; i < orgFiles.length; i++) {
+      const file = orgFiles[i];
+      const doc = orgDocs[i];
+      loadedFileNames.add(file.name);
+      
+      if (file.type && file.type.startsWith('image/')) {
+        pdfDocs.push({ id: i, name: file.name, isImage: true, img: window.state ? window.state._img : null, rawFile: file });
+      } else {
+        pdfDocs.push({ id: i, name: file.name, pdf: doc, rawFile: file });
+      }
+    }
+
+    if (!montageThumbnailObserver) {
+      montageThumbnailObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const div = entry.target;
+            if (div.dataset.rendered !== 'true') {
+              div.dataset.rendered = 'true';
+              renderSingleMontageThumbnail(div);
+            }
+          }
+        });
+      }, { root: container, rootMargin: '200px' });
+    }
+
+    const fragment = document.createDocumentFragment();
+
+    for (let i = 0; i < orgSequence.length; i++) {
+      const item = orgSequence[i];
+      if (item.type !== 'page') continue;
+
+      const fileId = item.file_idx;
+      const pageNum = item.page_num;
+      
+      const thumbDiv = document.createElement('div');
+      thumbDiv.style.border = '1px solid #e2e5ea';
+      thumbDiv.style.borderRadius = '4px';
+      thumbDiv.style.overflow = 'hidden';
+      thumbDiv.style.cursor = 'pointer';
+      thumbDiv.style.position = 'relative';
+      thumbDiv.style.background = '#fff';
+      thumbDiv.title = `Ajouter au montage (Seq ${i+1} - P.${pageNum})`;
+      
+      thumbDiv.dataset.fileId = fileId;
+      thumbDiv.dataset.pageNum = pageNum;
+      thumbDiv.dataset.rendered = 'false';
+
+      const placeholder = document.createElement('div');
+      placeholder.className = 'montage-thumb-canvas-container';
+      placeholder.style.width = '100%';
+      placeholder.style.height = '120px';
+      placeholder.style.background = '#e5e7eb';
+      placeholder.style.display = 'flex';
+      placeholder.style.alignItems = 'center';
+      placeholder.style.justifyContent = 'center';
+      placeholder.innerHTML = '<i class="fa fa-spinner fa-spin" style="color:#9ca3af;font-size:10px;"></i>';
+      
+      const label = document.createElement('div');
+      label.textContent = `S.${i+1} (P.${pageNum})`;
+      label.style.position = 'absolute';
+      label.style.bottom = '0';
+      label.style.right = '0';
+      label.style.background = 'rgba(0,0,0,0.6)';
+      label.style.color = 'white';
+      label.style.fontSize = '10px';
+      label.style.padding = '2px 4px';
+      
+      thumbDiv.appendChild(placeholder);
+      thumbDiv.appendChild(label);
+      
+      thumbDiv.addEventListener('click', () => addPageToCanvas(fileId, pageNum));
+      
+      fragment.appendChild(thumbDiv);
+    }
+    
+    container.appendChild(fragment);
+
+    container.querySelectorAll('div[data-rendered="false"]').forEach(el => {
+      montageThumbnailObserver.observe(el);
+    });
+  };
+
+  async function renderSingleMontageThumbnail(div) {
+    const fileId = parseInt(div.dataset.fileId, 10);
+    const pageNum = parseInt(div.dataset.pageNum, 10);
+    const container = div.querySelector('.montage-thumb-canvas-container');
+    if (!container) return;
+    
+    try {
+      const docInfo = pdfDocs[fileId];
+      if (!docInfo || !docInfo.pdf) return;
+      const page = await docInfo.pdf.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 1 });
+      const thumbScale = 100 / viewport.width;
+      const thumbViewport = page.getViewport({ scale: thumbScale });
+      
+      const thumbCanvas = document.createElement('canvas');
+      thumbCanvas.width = thumbViewport.width;
+      thumbCanvas.height = thumbViewport.height;
+      const ctx = thumbCanvas.getContext('2d');
+      
+      await page.render({ canvasContext: ctx, viewport: thumbViewport }).promise;
+      
+      thumbCanvas.style.width = '100%';
+      thumbCanvas.style.height = 'auto';
+      thumbCanvas.style.display = 'block';
+      
+      container.innerHTML = '';
+      container.style.height = 'auto';
+      container.appendChild(thumbCanvas);
+    } catch(e) {
+      console.error("Error rendering montage thumbnail", e);
+      container.innerHTML = '<i class="fa fa-exclamation-triangle" style="color:red"></i>';
+    }
   }
 
 })();

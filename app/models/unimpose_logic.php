@@ -29,6 +29,20 @@ class UnimposeBooklet {
                 throw new Exception("Le fichier d'entrée n'existe pas : " . $this->inputFile);
             }
             
+            // CONTOURNEMENT FPDI : Dégrader la version du PDF à 1.4 via Ghostscript
+            // FPDI gratuit ne supporte pas les PDF > 1.4, ce qui fait planter l'importation.
+            $safeInputFile = tempnam(sys_get_temp_dir(), 'gs_downgrade_');
+            $gsCommand = "gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dQUIET -dBATCH -sOutputFile=" . escapeshellarg($safeInputFile) . " " . escapeshellarg($this->inputFile);
+            exec($gsCommand, $output, $returnVar);
+            
+            if ($returnVar !== 0 || !file_exists($safeInputFile)) {
+                throw new Exception("Échec de la conversion Ghostscript (downgrade) du fichier PDF.");
+            }
+            
+            // Remplacer temporairement le inputFile par la version dégradée
+            $originalInputFile = $this->inputFile;
+            $this->inputFile = $safeInputFile;
+
             // Lire le contenu du PDF
             $pdfContent = file_get_contents($this->inputFile);
             
@@ -144,11 +158,19 @@ class UnimposeBooklet {
                 }
             }
             
+            // Restaurer le inputFile original
+            $this->inputFile = $originalInputFile;
+            if (file_exists($safeInputFile)) unlink($safeInputFile);
+            
             // Livret transformé avec succès : $finalOutputFile
             
         } catch (Exception $e) {
-            // Erreur lors de la transformation : $e->getMessage()
-            // Trace: $e->getTraceAsString()
+            error_log("Erreur lors de la transformation : " . $e->getMessage());
+            error_log("Trace: " . $e->getTraceAsString());
+            
+            if (isset($safeInputFile) && file_exists($safeInputFile)) unlink($safeInputFile);
+            if (isset($originalInputFile)) $this->inputFile = $originalInputFile;
+            
             return false;
         }
         
@@ -167,6 +189,18 @@ class UnimposeBooklet {
             if (!file_exists($this->inputFile)) {
                 throw new Exception("Le fichier d'entrée n'existe pas : " . $this->inputFile);
             }
+            
+            // CONTOURNEMENT FPDI : Dégrader la version du PDF à 1.4 via Ghostscript
+            $safeInputFile = tempnam(sys_get_temp_dir(), 'gs_downgrade_');
+            $gsCommand = "gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dQUIET -dBATCH -sOutputFile=" . escapeshellarg($safeInputFile) . " " . escapeshellarg($this->inputFile);
+            exec($gsCommand, $output, $returnVar);
+            
+            if ($returnVar !== 0 || !file_exists($safeInputFile)) {
+                throw new Exception("Échec de la conversion Ghostscript (downgrade) du fichier PDF.");
+            }
+            
+            $originalInputFile = $this->inputFile;
+            $this->inputFile = $safeInputFile;
             
             // Parser le PDF pour obtenir les informations
             $parser = new Parser();
@@ -262,9 +296,16 @@ class UnimposeBooklet {
             $finalOutputFile = $this->outputFile;
             $outputPdf->Output($finalOutputFile, 'F');
             
+            $this->inputFile = $originalInputFile;
+            if (file_exists($safeInputFile)) unlink($safeInputFile);
+            
         } catch (Exception $e) {
             error_log("Erreur lors du découpage des doubles pages : " . $e->getMessage());
             error_log("Trace : " . $e->getTraceAsString());
+            
+            if (isset($safeInputFile) && file_exists($safeInputFile)) unlink($safeInputFile);
+            if (isset($originalInputFile)) $this->inputFile = $originalInputFile;
+            
             return false;
         }
         
@@ -282,6 +323,18 @@ class UnimposeBooklet {
             if (!file_exists($this->inputFile)) {
                 throw new Exception("Le fichier d'entrée n'existe pas : " . $this->inputFile);
             }
+            
+            // CONTOURNEMENT FPDI : Dégrader la version du PDF à 1.4 via Ghostscript
+            $safeInputFile = tempnam(sys_get_temp_dir(), 'gs_downgrade_');
+            $gsCommand = "gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dQUIET -dBATCH -sOutputFile=" . escapeshellarg($safeInputFile) . " " . escapeshellarg($this->inputFile);
+            exec($gsCommand, $output, $returnVar);
+            
+            if ($returnVar !== 0 || !file_exists($safeInputFile)) {
+                throw new Exception("Échec de la conversion Ghostscript (downgrade) du fichier PDF.");
+            }
+            
+            $originalInputFile = $this->inputFile;
+            $this->inputFile = $safeInputFile;
             
             // Parser le PDF pour obtenir les informations
             $parser = new Parser();
@@ -348,9 +401,16 @@ class UnimposeBooklet {
             $finalOutputFile = $this->outputFile;
             $outputPdf->Output($finalOutputFile, 'F');
             
+            $this->inputFile = $originalInputFile;
+            if (file_exists($safeInputFile)) unlink($safeInputFile);
+            
         } catch (Exception $e) {
             error_log("Erreur lors du découpage séquentiel : " . $e->getMessage());
             error_log("Trace : " . $e->getTraceAsString());
+            
+            if (isset($safeInputFile) && file_exists($safeInputFile)) unlink($safeInputFile);
+            if (isset($originalInputFile)) $this->inputFile = $originalInputFile;
+            
             return false;
         }
         
