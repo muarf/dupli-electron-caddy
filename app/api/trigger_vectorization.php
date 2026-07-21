@@ -30,6 +30,12 @@ if (!$scriptPath || !file_exists($scriptPath)) {
 $logFile = __DIR__ . '/../../logs/vectorization.log';
 $jobId = uniqid('vec_', true);
 
+$mode = $_POST['mode'] ?? 'missing';
+$args = '';
+if ($mode === 'all') {
+    $args = '--force-all';
+}
+
 // Lancement en arrière-plan
 $phpPath = 'php';
 if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
@@ -45,12 +51,13 @@ if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             break;
         }
     }
-    $cmd = 'start /B "" ' . escapeshellarg($phpPath) . ' ' . escapeshellarg($scriptPath) . ' >> ' . escapeshellarg($logFile) . ' 2>&1';
+    $cmd = 'start /B "" ' . escapeshellarg($phpPath) . ' ' . escapeshellarg($scriptPath) . ' ' . $args . ' >> ' . escapeshellarg($logFile) . ' 2>&1';
     pclose(popen($cmd, 'r'));
 } else {
     $cmd = sprintf(
-        'nohup php %s >> %s 2>&1 &',
+        'nohup php %s %s >> %s 2>&1 &',
         escapeshellarg($scriptPath),
+        $args,
         escapeshellarg($logFile)
     );
     exec($cmd);

@@ -272,7 +272,7 @@ function get_hf_home_env(): string
         $db = pdo_connect();
     }
     if ($db) {
-        require_once __DIR__ . '/../models/SettingsManager.php';
+        require_once __DIR__ . '/../../models/SettingsManager.php';
         $settings = new SettingsManager($db);
         $ai_local_path = trim($settings->get('ai_local_path') ?? '');
         if (!empty($ai_local_path)) {
@@ -327,14 +327,44 @@ function get_python_path(): string
         __DIR__ . '/../../../app/api/venv_fonts/bin/python',
     ];
     foreach ($venv_paths as $path) {
-        $real = realpath($path);
-        if ($real && file_exists($real) && is_executable($real)) {
-            return $real;
+        if (file_exists($path) && is_executable($path)) {
+            return $path;
         }
     }
 
     $sys = trim((string)(shell_exec('which python3 2>/dev/null') ?? ''));
     return $sys ?: 'python3';
+}
+
+/**
+ * @return string
+ */
+function get_php_executable(): string
+{
+    if (PHP_OS_FAMILY === 'Windows') {
+        $local_paths = [
+            __DIR__ . '/../../../bin/win-x64/php/php.exe',
+            __DIR__ . '/../../bin/win-x64/php/php.exe',
+            __DIR__ . '/../../../../../../../bin/win-x64/php/php.exe'
+        ];
+        foreach ($local_paths as $path) {
+            $real = realpath($path);
+            if ($real && file_exists($real)) {
+                return $real;
+            }
+        }
+        return 'php.exe';
+    }
+    
+    // Server Linux / macOS
+    if (defined('PHP_BINARY') && !empty(PHP_BINARY)) {
+        // PHP-FPM and CGI cannot execute CLI scripts directly via arguments
+        if (strpos(PHP_BINARY, 'fpm') !== false || strpos(PHP_BINARY, 'cgi') !== false) {
+            return '/usr/bin/env php';
+        }
+        return PHP_BINARY;
+    }
+    return '/usr/bin/env php';
 }
 
 /**

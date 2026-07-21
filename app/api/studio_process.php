@@ -15,6 +15,8 @@ ini_set('memory_limit', '2048M');
 ini_set('display_errors', 0);
 header('Content-Type: application/json');
 
+if (session_id()) session_write_close();
+
 require_once __DIR__ . '/../controler/conf.php';
 require_once __DIR__ . '/../controler/func.php';
 require_once __DIR__ . '/../controler/functions/paths.php';
@@ -63,25 +65,41 @@ $action = $_POST['action'] ?? '';
 $errors = [];
 $result = [];
 
-$uploadedFile = null;
-$originalName = null;
-$safeName = 'studio_doc';
+if (!defined('IS_BACKGROUND')) {
+    $uploadedFile = null;
+    $originalName = null;
+    $safeName = 'studio_doc';
+}
 
-// --- Récupérer le fichier uploadé (sauf pour certaines actions) ---
-if (!in_array($action, ['organize_pages', 'merge', 'riso_pdf', 'montage_libre', 'crop_pdf', 'modification', 'upload_font', 'list_fonts', 'recognize_font', 'passthrough_pdf', 'download_google_font'])) {
-    if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
-        echo json_encode(['success' => false, 'errors' => ['Aucun fichier valide reçu.']]);
-        exit;
+// Si file_id est fourni, on priorise le fichier de la bibliothèque (évite l'upload réseau)
+if (isset($_POST['file_id']) && !empty($_POST['file_id'])) {
+    require_once __DIR__ . '/../models/BibliothequeManager.php';
+    $bm = new BibliothequeManager();
+    $fileInfo = $bm->getFile((int)$_POST['file_id']);
+    if ($fileInfo && isset($fileInfo['filepath']) && file_exists($fileInfo['filepath'])) {
+        $uploadedFile = $fileInfo['filepath'];
+        $originalName = $fileInfo['filename'];
+        $safeName     = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
     }
-    $uploadedFile  = $_FILES['file']['tmp_name'];
-    $originalName  = $_FILES['file']['name'];
-    $safeName      = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
-} else {
-    // S'il y a quand même un fichier 'file' (ex: merge avec fichier principal), on le récupère
-    if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
+}
+
+if (!$uploadedFile) {
+    // --- Récupérer le fichier uploadé (sauf pour certaines actions) ---
+    if (!in_array($action, ['organize_pages', 'merge', 'riso_pdf', 'montage_libre', 'crop_pdf', 'modification', 'upload_font', 'list_fonts', 'recognize_font', 'passthrough_pdf', 'download_google_font', 'ocr_status', 'analyze_ink_status', 'task_status', 'get_active_jobs', 'delete_job'])) {
+        if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+            echo json_encode(['success' => false, 'errors' => ['Aucun fichier valide reçu.']]);
+            exit;
+        }
         $uploadedFile  = $_FILES['file']['tmp_name'];
         $originalName  = $_FILES['file']['name'];
         $safeName      = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
+    } else {
+        // S'il y a quand même un fichier 'file' (ex: merge avec fichier principal), on le récupère
+        if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
+            $uploadedFile  = $_FILES['file']['tmp_name'];
+            $originalName  = $_FILES['file']['name'];
+            $safeName      = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
+        }
     }
 }
 
@@ -109,6 +127,71 @@ function generateImpositionPreview(string $pdfPath, string $tmpBase, string $saf
         return basename($previewFile);
     }
     return null;
+}
+
+// === INTERCEPTION ARRIÈRE-PLAN ===
+$background_actions = ['impose', 'resize', 'to_pdf', 'analyze_ink', 'pdf_to_images', 'merge', 'unimpose', 'organize_pages', 'montage_libre', 'crop_pdf', 'modification', 'recognize_font'];
+
+if (!defined('IS_BACKGROUND') && in_array($action, $background_actions)) {
+    $jobId = 'task_stu_' . uniqid() . '_' . time();
+    $jobFile = $tmpBase . $jobId . '.json';
+    
+    // 1. Préparer le fichier persistant (fichier principal)
+    $persistentFile = null;
+    if ($uploadedFile && file_exists($uploadedFile)) {
+        $ext = strtolower(pathinfo($originalName ?? 'doc.pdf', PATHINFO_EXTENSION));
+        $persistentFile = $tmpBase . $jobId . '_input.' . $ext;
+        studio_move_uploaded_file($uploadedFile, $persistentFile);
+    }
+
+    // 2. Préparer $_FILES (copier vers tmpBase pour que le script de fond puisse les lire)
+    $persistentFilesArray = [];
+    if (isset($_FILES) && !empty($_FILES)) {
+        foreach ($_FILES as $key => $fileData) {
+            if (is_array($fileData['tmp_name'])) {
+                foreach ($fileData['tmp_name'] as $i => $tmp) {
+                    if ($fileData['error'][$i] === UPLOAD_ERR_OK && file_exists($tmp)) {
+                        $ext = strtolower(pathinfo($fileData['name'][$i], PATHINFO_EXTENSION));
+                        $dest = $tmpBase . $jobId . '_' . $key . '_' . $i . '.' . $ext;
+                        studio_move_uploaded_file($tmp, $dest);
+                        $persistentFilesArray[$key]['tmp_name'][$i] = $dest;
+                        $persistentFilesArray[$key]['name'][$i] = $fileData['name'][$i];
+                        $persistentFilesArray[$key]['error'][$i] = 0;
+                        $persistentFilesArray[$key]['size'][$i] = filesize($dest);
+                    }
+                }
+            } else {
+                if ($fileData['error'] === UPLOAD_ERR_OK && file_exists($fileData['tmp_name'])) {
+                    $ext = strtolower(pathinfo($fileData['name'], PATHINFO_EXTENSION));
+                    $dest = $tmpBase . $jobId . '_' . $key . '.' . $ext;
+                    studio_move_uploaded_file($fileData['tmp_name'], $dest);
+                    $persistentFilesArray[$key]['tmp_name'] = $dest;
+                    $persistentFilesArray[$key]['name'] = $fileData['name'];
+                    $persistentFilesArray[$key]['error'] = 0;
+                    $persistentFilesArray[$key]['size'] = filesize($dest);
+                }
+            }
+        }
+    }
+    
+    $jobData = [
+        'status' => 'pending',
+        'action' => $action,
+        'post' => $_POST,
+        'uploadedFile' => $persistentFile,
+        'originalName' => $originalName,
+        'safeName' => $safeName,
+        'files' => $persistentFilesArray,
+        'created_at' => time()
+    ];
+    file_put_contents($jobFile, json_encode($jobData));
+
+    $phpExe = get_php_executable();
+    $scriptPath = __DIR__ . '/background_studio_task.php';
+    exec($phpExe . ' ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($jobId) . ' > /dev/null 2>&1 &');
+
+    echo json_encode(['success' => true, 'job_id' => $jobId]);
+    exit;
 }
 
 // === ACTION : IMPOSE ===
@@ -787,11 +870,44 @@ if ($action === 'organize_pages') {
         $blank_width = 1240;
         $blank_height = 1754;
 
+        // Déterminer la taille de la première page réelle pour les pages blanches
+        foreach ($structure as $item) {
+            if ($item['type'] !== 'blank') {
+                $idx = $item['file_idx'];
+                if (isset($files[$idx]) && file_exists($files[$idx])) {
+                    try {
+                        $pdfSizeCheck = new TCPDI();
+                        $pageCount = $pdfSizeCheck->setSourceFile($files[$idx]);
+                        $page_idx = intval($item['page_num'] ?? 1);
+                        if ($page_idx >= 1 && $page_idx <= $pageCount) {
+                            $tpl = $pdfSizeCheck->importPage($page_idx);
+                            $size = $pdfSizeCheck->getTemplateSize($tpl);
+                            // Convertir les mm en pixels à 150 DPI (1 mm = 150/25.4 px)
+                            // On vérifie si la page est tournée (la taille retournée par TCPDI peut ne pas refléter la rotation, mais on tente)
+                            $rotation = intval($item['rotation'] ?? 0);
+                            $w_mm = $size['width'];
+                            $h_mm = $size['height'];
+                            if ($rotation === 90 || $rotation === 270) {
+                                $w_mm = $size['height'];
+                                $h_mm = $size['width'];
+                            }
+                            $blank_width = round($w_mm * (150 / 25.4));
+                            $blank_height = round($h_mm * (150 / 25.4));
+                        }
+                    } catch (Exception $e) {
+                        // Fallback vers A4 si erreur
+                    }
+                    break;
+                }
+            }
+        }
+
         foreach ($structure as $item) {
             if ($item['type'] === 'blank') {
                 $blank_path = $tmpBase . 'blank_' . uniqid() . '.png';
                 $magick_args = "-size {$blank_width}x{$blank_height} xc:white " . escapeshellarg($blank_path);
-                run_imagemagick($magick_args);
+                $res = run_imagemagick($magick_args);
+if (!$res['success']) { file_put_contents('/tmp/duplicator/duplicator_studio/magick_debug.log', print_r($res, true) . "\nArgs: $magick_args\n", FILE_APPEND); }
                 $images[] = $blank_path;
             } else {
                 $idx = $item['file_idx'];
@@ -807,7 +923,8 @@ if ($action === 'organize_pages') {
                 $flop_cmd = $flipH ? "-flop" : "";
                 $flip_cmd = $flipV ? "-flip" : "";
                 $magick_args = "-density 150 " . escapeshellarg($files[$idx] . "[$page_idx]") . " $rot_cmd $flop_cmd $flip_cmd " . escapeshellarg($out_path);
-                run_imagemagick($magick_args);
+                $res = run_imagemagick($magick_args);
+if (!$res['success']) { file_put_contents('/tmp/duplicator/duplicator_studio/magick_debug.log', print_r($res, true) . "\nArgs: $magick_args\n", FILE_APPEND); }
                 
                 // Appliquer le crop si défini
                 $crop = isset($_POST['crop']) ? json_decode($_POST['crop'], true) : null;
@@ -865,6 +982,8 @@ if ($action === 'organize_pages') {
 // === ACTION : MONTAGE_LIBRE ===
 if ($action === 'montage_libre') {
     header('Content-Type: application/json');
+
+if (session_id()) session_write_close();
     try {
         $payloadRaw = $_POST['payload'] ?? '';
         $payload = json_decode($payloadRaw, true);
@@ -967,6 +1086,8 @@ if ($action === 'montage_libre') {
 // Rogne toutes les pages d'un PDF ou image selon les marges en mm
 if ($action === 'crop_pdf') {
     header('Content-Type: application/json');
+
+if (session_id()) session_write_close();
     try {
         $crop = json_decode($_POST['crop'] ?? 'null', true);
         if (!$crop) throw new Exception('Paramètres de crop invalides.');
@@ -993,7 +1114,8 @@ if ($action === 'crop_pdf') {
             for ($p = 0; $p < $numPages; $p++) {
                 $page_png = $tmpBase . 'crop_page_' . $p . '_' . uniqid() . '.png';
                 $magick_args = "-density {$dpi} " . escapeshellarg($uploadedFile . "[$p]") . ' ' . escapeshellarg($page_png);
-                run_imagemagick($magick_args);
+                $res = run_imagemagick($magick_args);
+if (!$res['success']) { file_put_contents('/tmp/duplicator/duplicator_studio/magick_debug.log', print_r($res, true) . "\nArgs: $magick_args\n", FILE_APPEND); }
                 if (!file_exists($page_png)) continue;
 
                 list($imgW, $imgH) = getimagesize($page_png);
@@ -1044,6 +1166,568 @@ if ($action === 'crop_pdf') {
 
 if ($action === 'ocr_cleanup') {
     header('Content-Type: application/json');
+
+    if (!$uploadedFile || !file_exists($uploadedFile)) {
+        echo json_encode(['success' => false, 'error' => 'Fichier source introuvable.']);
+        exit;
+    }
+
+    $jobId = 'ocr_job_' . uniqid() . '_' . time();
+    $jobFile = $tmpBase . $jobId . '.json';
+    
+    // Si le fichier vient de la bibliothèque (chemin permanent), on le copie.
+    // Sinon (upload tmp PHP), on le copie aussi pour survivre à la fin du script.
+    $persistentFile = $tmpBase . $jobId . '_input.pdf';
+    if (!copy($uploadedFile, $persistentFile)) {
+        echo json_encode(['success' => false, 'error' => 'Impossible de préparer le fichier pour le traitement.']);
+        exit;
+    }
+
+    $jobData = [
+        'status' => 'pending',
+        'post' => $_POST,
+        'uploadedFile' => $persistentFile,
+        'originalName' => $originalName ?? ($_FILES['file']['name'] ?? 'Document OCR'),
+        'created_at' => time()
+    ];
+    file_put_contents($jobFile, json_encode($jobData));
+    
+    $phpExe = get_php_executable();
+    $scriptPath = __DIR__ . '/background_studio_ocr.php';
+    exec($phpExe . ' ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($jobId) . ' > /dev/null 2>&1 &');
+    
+    echo json_encode(['success' => true, 'job_id' => $jobId]);
+    exit;
+}
+
+if ($action === 'ocr_status' || $action === 'analyze_ink_status' || $action === 'task_status') {
+    $jobId = $_POST['job_id'] ?? '';
+    if (!$jobId) {
+        echo json_encode(['success' => false, 'error' => 'Job ID manquant']);
+        exit;
+    }
+    $jobFile = $tmpBase . $jobId . '.json';
+    if (!file_exists($jobFile)) {
+        echo json_encode(['success' => false, 'error' => 'Job introuvable']);
+        exit;
+    }
+    $jobData = json_decode(file_get_contents($jobFile), true);
+    
+    $logFile = $tmpBase . $jobId . '.log';
+    if (file_exists($logFile)) {
+        $logs = trim(file_get_contents($logFile));
+        $jobData['logs'] = $logs;
+        // Also grab the last line for the toast
+        $lines = explode("\n", $logs);
+        $jobData['last_log'] = end($lines);
+    }
+    
+    echo json_encode(['success' => true, 'job' => $jobData]);
+    exit;
+}
+
+if ($action === 'get_active_jobs') {
+    $jobs = [];
+    foreach (glob($tmpBase . 'ocr_job_*.json') as $file) {
+        $data = json_decode(file_get_contents($file), true);
+        if ($data) {
+            $data['job_id'] = basename($file, '.json');
+            // Check if log exists
+            $logFile = str_replace('.json', '.log', $file);
+            if (file_exists($logFile)) {
+                $data['has_logs'] = true;
+            }
+            $jobs[] = $data;
+        }
+    }
+    // Sort by created_at descending
+    usort($jobs, function($a, $b) {
+        return ($b['created_at'] ?? 0) <=> ($a['created_at'] ?? 0);
+    });
+    echo json_encode(['success' => true, 'jobs' => $jobs]);
+    exit;
+}
+
+if ($action === 'delete_job') {
+    $jobId = $_POST['job_id'] ?? '';
+    if ($jobId) {
+        @unlink($tmpBase . $jobId . '.json');
+        @unlink($tmpBase . $jobId . '.log');
+        @unlink($tmpBase . $jobId . '_input.pdf');
+    }
+    echo json_encode(['success' => true]);
+    exit;
+}
+if ($action === 'analyze_ink') {
+    try {
+        require_once __DIR__ . '/../models/taux_remplissage.php';
+        
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime  = finfo_file($finfo, $uploadedFile);
+        finfo_close($finfo);
+
+        if ($mime === 'application/pdf') {
+            $result = analyze_pdf_ink_coverage_gs($uploadedFile);
+        } else {
+            // For images, use the simple fill rate calculation
+            $result = calculate_fill_rate($uploadedFile);
+        }
+
+        echo json_encode([
+            'success' => true,
+            'result'  => $result
+        ]);
+        exit;
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'errors' => [$e->getMessage()]]);
+        exit;
+    }
+}
+
+// === ACTION : PDF_TO_IMAGES ===
+if ($action === 'pdf_to_images') {
+    try {
+        require_once __DIR__ . '/../models/pdf_to_png.php';
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime  = finfo_file($finfo, $uploadedFile);
+        finfo_close($finfo);
+        if ($mime !== 'application/pdf') throw new Exception("Le fichier doit être un PDF.");
+
+        $dpi     = max(72, min(300, intval($_POST['dpi'] ?? 150)));
+        $outDir  = $tmpBase . $safeName . '_pages_' . time() . DIRECTORY_SEPARATOR;
+        if (!is_dir($outDir)) mkdir($outDir, 0777, true);
+
+        $created = convert_pdf_to_png($uploadedFile, $outDir, $dpi, $safeName);
+
+        if (empty($created)) throw new Exception("Aucune image générée.");
+
+        // Créer un ZIP
+        $zipName = $safeName . '_pages.zip';
+        $zipPath = $tmpBase . $zipName;
+        $zip = new ZipArchive();
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true) {
+            foreach ($created as $f) $zip->addFile($f, basename($f));
+            $zip->close();
+        }
+
+        // Copier les PNG dans tmpBase pour les servir via download_studio
+        $dlUrls = [];
+        foreach ($created as $f) {
+            $dest = $tmpBase . basename($f);
+            copy($f, $dest);
+            $dlUrls[] = '?download_studio&file=' . urlencode(basename($f));
+        }
+
+        // Preview = première page
+        $previewPng = null;
+        if (!empty($dlUrls)) {
+            $firstPng = $tmpBase . basename($created[0]);
+            if (file_exists($firstPng)) $previewPng = '?preview_studio&file=' . urlencode(basename($firstPng));
+        }
+
+        echo json_encode([
+            'success'       => true,
+            'download_url'  => file_exists($zipPath) ? '?download_studio&file=' . urlencode($zipName) : $dlUrls[0],
+            'preview_url'   => $previewPng,
+            'page_urls'     => $dlUrls,
+            'page_count'    => count($created),
+            'errors'        => [],
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'errors' => [$e->getMessage()]]);
+    }
+    exit;
+}
+
+// === ACTION : MERGE ===
+// Fusionne plusieurs fichiers PDF (reçus dans $_FILES['files'][])
+if ($action === 'merge') {
+    try {
+        require_once __DIR__ . '/../models/pdf_merge.php';
+
+        // Récupérer tous les fichiers de la requête (multi-upload clé 'files[]')
+        $filesData = $_FILES['files'] ?? null;
+        $pdfPaths = [];
+
+        // Si un fichier unique a été chargé via la dropzone normale, l'inclure aussi
+        if (file_exists($uploadedFile)) {
+            $pdfPaths[] = $uploadedFile;
+        }
+
+        if ($filesData && is_array($filesData['tmp_name'])) {
+            foreach ($filesData['tmp_name'] as $i => $tmp) {
+                if ($filesData['error'][$i] === UPLOAD_ERR_OK && (is_uploaded_file($tmp) || file_exists($tmp))) {
+                    $dest = $tmpBase . 'merge_' . $i . '_' . time() . '.pdf';
+                    studio_move_uploaded_file($tmp, $dest);
+                    $pdfPaths[] = $dest;
+                }
+            }
+        }
+
+        // Dédoublonner et valider que ce sont des PDFs
+        $pdfPaths = array_unique($pdfPaths);
+        $pdfPaths = array_filter($pdfPaths, function($p) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $m = finfo_file($finfo, $p);
+            finfo_close($finfo);
+            return $m === 'application/pdf';
+        });
+        $pdfPaths = array_values($pdfPaths);
+
+        if (count($pdfPaths) < 2) throw new Exception("Au moins 2 PDFs valides sont requis pour la fusion.");
+
+        $outFilename = $safeName . '_merged.pdf';
+        $outPath     = $tmpBase . $outFilename;
+
+        merge_pdfs($pdfPaths, $outPath);
+
+        if (!file_exists($outPath)) throw new Exception("Le fichier fusionné n'a pas été créé.");
+
+        $previewPng = generateImpositionPreview($outPath, $tmpBase, $safeName . '_merged');
+
+        echo json_encode([
+            'success'      => true,
+            'download_url' => '?download_studio&file=' . urlencode($outFilename),
+            'preview_url'  => $previewPng ? '?preview_studio&file=' . urlencode($previewPng) : null,
+            'errors'       => [],
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'errors' => [$e->getMessage()]]);
+    }
+    exit;
+}
+
+// === ACTION : UNIMPOSE ===
+if ($action === 'unimpose') {
+    try {
+        require_once __DIR__ . '/../vendor/autoload.php';
+        require_once __DIR__ . '/../models/unimpose_logic.php';
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime  = finfo_file($finfo, $uploadedFile);
+        finfo_close($finfo);
+        if ($mime !== 'application/pdf') throw new Exception("Le fichier doit être un PDF.");
+
+        $mode        = $_POST['unimpose_mode'] ?? 'booklet'; // booklet | doubles | sequential
+        $outFilename = $safeName . '_unimposed.pdf';
+        $outPath     = $tmpBase . $outFilename;
+
+        $un = new UnimposeBooklet($uploadedFile, $outPath);
+
+        if ($mode === 'doubles') {
+            $result = $un->splitDoublePages();
+        } elseif ($mode === 'sequential') {
+            $result = $un->splitSequential();
+        } else {
+            $result = $un->unimposeBooklet();
+        }
+
+        if (!$result || !file_exists($outPath)) throw new Exception("La dés-imposition a échoué. Vérifiez que le PDF est bien un livret imposé.");
+
+        $previewPng = generateImpositionPreview($outPath, $tmpBase, $safeName . '_unimposed');
+
+        echo json_encode([
+            'success'      => true,
+            'download_url' => '?download_studio&file=' . urlencode($outFilename),
+            'preview_url'  => $previewPng ? '?preview_studio&file=' . urlencode($previewPng) : null,
+            'errors'       => [],
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'errors' => [$e->getMessage()]]);
+    }
+    exit;
+}
+
+// === ACTION : ORGANIZE_PAGES ===
+if ($action === 'organize_pages') {
+    try {
+        $structure = json_decode($_POST['structure'] ?? '[]', true);
+        if (empty($structure)) throw new Exception("Structure de pages invalide.");
+
+        $files = []; // Map file_idx => temp path
+        
+        // Save uploaded files to temp
+        foreach ($_FILES as $key => $fileData) {
+            if (strpos($key, 'file_') === 0 && $fileData['error'] === UPLOAD_ERR_OK) {
+                $idx = str_replace('file_', '', $key);
+                $dest = $tmpBase . 'org_' . $idx . '_' . time() . '.pdf';
+                studio_move_uploaded_file($fileData['tmp_name'], $dest);
+                $files[$idx] = $dest;
+            }
+        }
+
+        // Generate images for each page, then combine
+        $images = [];
+        $blank_width = 1240;
+        $blank_height = 1754;
+
+        foreach ($structure as $item) {
+            if ($item['type'] === 'blank') {
+                $blank_path = $tmpBase . 'blank_' . uniqid() . '.png';
+                $magick_args = "-size {$blank_width}x{$blank_height} xc:white " . escapeshellarg($blank_path);
+                $res = run_imagemagick($magick_args);
+if (!$res['success']) { file_put_contents('/tmp/duplicator/duplicator_studio/magick_debug.log', print_r($res, true) . "\nArgs: $magick_args\n", FILE_APPEND); }
+                $images[] = $blank_path;
+            } else {
+                $idx = $item['file_idx'];
+                if (!isset($files[$idx]) || !file_exists($files[$idx])) continue;
+                
+                $rotation = intval($item['rotation'] ?? 0);
+                $flipH = !empty($item['flipH']);
+                $flipV = !empty($item['flipV']);
+                $page_idx = intval($item['page_num'] ?? 1) - 1;
+                $out_path = $tmpBase . 'page_' . uniqid() . '.png';
+                
+                $rot_cmd = $rotation != 0 ? "-rotate $rotation" : "";
+                $flop_cmd = $flipH ? "-flop" : "";
+                $flip_cmd = $flipV ? "-flip" : "";
+                $magick_args = "-density 150 " . escapeshellarg($files[$idx] . "[$page_idx]") . " $rot_cmd $flop_cmd $flip_cmd " . escapeshellarg($out_path);
+                $res = run_imagemagick($magick_args);
+if (!$res['success']) { file_put_contents('/tmp/duplicator/duplicator_studio/magick_debug.log', print_r($res, true) . "\nArgs: $magick_args\n", FILE_APPEND); }
+                
+                // Appliquer le crop si défini
+                $crop = isset($_POST['crop']) ? json_decode($_POST['crop'], true) : null;
+                if (file_exists($out_path) && $crop) {
+                    // 150 DPI : 1 mm = 150/25.4 px ≈ 5.906 px
+                    $dpi = 150;
+                    $pxPerMm = $dpi / 25.4;
+                    list($imgW, $imgH) = getimagesize($out_path);
+                    $cropL = max(0, round(floatval($crop['left'])   * $pxPerMm));
+                    $cropT = max(0, round(floatval($crop['top'])    * $pxPerMm));
+                    $cropR = max(0, round(floatval($crop['right'])  * $pxPerMm));
+                    $cropB = max(0, round(floatval($crop['bottom']) * $pxPerMm));
+                    $newW = $imgW - $cropL - $cropR;
+                    $newH = $imgH - $cropT - $cropB;
+                    if ($newW > 0 && $newH > 0) {
+                        $cropped = $tmpBase . 'cropped_' . uniqid() . '.png';
+                        $crop_args = escapeshellarg($out_path) . " -crop {$newW}x{$newH}+{$cropL}+{$cropT} +repage " . escapeshellarg($cropped);
+                        run_imagemagick($crop_args);
+                        if (file_exists($cropped)) {
+                            @unlink($out_path);
+                            $out_path = $cropped;
+                        }
+                    }
+                }
+                
+                if (file_exists($out_path)) {
+                    $images[] = $out_path;
+                }
+            }
+        }
+
+        if (empty($images)) throw new Exception("Aucune page à inclure");
+
+        $outFilename = 'organized_' . time() . '.pdf';
+        $outPath = $tmpBase . $outFilename;
+
+        $img_list = implode(' ', array_map('escapeshellarg', $images));
+        run_imagemagick("$img_list " . escapeshellarg($outPath));
+
+        foreach ($images as $img) @unlink($img);
+
+        if (!file_exists($outPath)) throw new Exception("Erreur génération PDF");
+
+        echo json_encode([
+            'success'      => true,
+            'download_url' => '?download_studio&file=' . urlencode($outFilename),
+            'errors'       => [],
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'errors' => [$e->getMessage()]]);
+    }
+    exit;
+}
+
+// === ACTION : MONTAGE_LIBRE ===
+if ($action === 'montage_libre') {
+    header('Content-Type: application/json');
+
+if (session_id()) session_write_close();
+    try {
+        $payloadRaw = $_POST['payload'] ?? '';
+        $payload = json_decode($payloadRaw, true);
+        if (!$payload || !isset($payload['planches'])) throw new Exception("Payload invalide");
+
+        $pdf = new \setasign\Fpdi\Tcpdf\Fpdi('P', 'mm', 'A4');
+        $pdf->SetAutoPageBreak(false);
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+
+        // Save uploaded files to temp
+        $tempSourcePdfs = [];
+        foreach ($_FILES as $key => $fileInfo) {
+            if (strpos($key, 'file_') === 0 && $fileInfo['error'] === UPLOAD_ERR_OK) {
+                $id = str_replace('file_', '', $key);
+                $tmpPath = $tmpBase . 'source_' . $id . '_' . time() . '.pdf';
+                studio_move_uploaded_file($fileInfo['tmp_name'], $tmpPath);
+                $tempSourcePdfs[$id] = $tmpPath;
+            }
+        }
+
+        foreach ($payload['planches'] as $planche) {
+            $fmt = [$planche['width_mm'], $planche['height_mm']];
+            $orientation = ($planche['width_mm'] > $planche['height_mm']) ? 'L' : 'P';
+            $pdf->AddPage($orientation, $fmt);
+
+            if (isset($planche['objects']) && is_array($planche['objects'])) {
+                foreach ($planche['objects'] as $obj) {
+                    $fileId = $obj['source_fileId'];
+                    if (!isset($tempSourcePdfs[$fileId])) continue;
+                    
+                    $original_w = $obj['original_width_mm'];
+                    $original_h = $obj['original_height_mm'];
+                    $scale_x = $obj['scale_x'];
+                    $scale_y = $obj['scale_y'];
+                    $angle = $obj['angle'];
+                    $mm_to_px = $obj['mm_to_px'];
+                    
+                    $cx = $obj['x_px'] / $mm_to_px;
+                    $cy = $obj['y_px'] / $mm_to_px;
+                    
+                    $isImage = isset($obj['is_image']) && $obj['is_image'];
+                    
+                    if ($isImage) {
+                        $pdf->StartTransform();
+                        $pdf->Translate($cx, $cy);
+                        if ($angle != 0) {
+                            $pdf->Rotate(-$angle);
+                        }
+                        if ($scale_x != 1 || $scale_y != 1) {
+                            $pdf->ScaleX($scale_x * 100, 0, 0);
+                            $pdf->ScaleY($scale_y * 100, 0, 0);
+                        }
+                        
+                        $pdf->Image($tempSourcePdfs[$fileId], -$original_w / 2, -$original_h / 2, $original_w, $original_h);
+                        $pdf->StopTransform();
+                    } else {
+                        $pageNum = $obj['page_num'];
+                        $pdf->setSourceFile($tempSourcePdfs[$fileId]);
+                        $tplId = $pdf->importPage($pageNum);
+                        
+                        $pdf->StartTransform();
+                        $pdf->Translate($cx, $cy);
+                        if ($angle != 0) {
+                            $pdf->Rotate(-$angle);
+                        }
+                        if ($scale_x != 1 || $scale_y != 1) {
+                            $pdf->ScaleX($scale_x * 100, 0, 0);
+                            $pdf->ScaleY($scale_y * 100, 0, 0);
+                        }
+                        
+                        $pdf->useTemplate($tplId, -$original_w / 2, -$original_h / 2, $original_w, $original_h);
+                        $pdf->StopTransform();
+                    }
+                }
+            }
+        }
+
+        $outFilename = 'montage_libre_' . time() . '.pdf';
+        $outPath = $tmpBase . $outFilename;
+        $pdf->Output($outPath, 'F');
+        
+        $previewPng = generateImpositionPreview($outPath, $tmpBase, 'montage_libre_preview');
+
+        foreach ($tempSourcePdfs as $tp) { @unlink($tp); }
+
+        echo json_encode([
+            'success'      => true,
+            'download_url' => '?download_studio&file=' . urlencode($outFilename),
+            'preview_url'  => $previewPng ? '?preview_studio&file=' . urlencode($previewPng) : null,
+            'errors'       => [],
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'errors' => [$e->getMessage()]]);
+    }
+    exit;
+}
+
+// === ACTION : CROP_PDF ===
+// Rogne toutes les pages d'un PDF ou image selon les marges en mm
+if ($action === 'crop_pdf') {
+    header('Content-Type: application/json');
+
+if (session_id()) session_write_close();
+    try {
+        $crop = json_decode($_POST['crop'] ?? 'null', true);
+        if (!$crop) throw new Exception('Paramètres de crop invalides.');
+        if (!$uploadedFile || !file_exists($uploadedFile)) throw new Exception('Fichier invalide.');
+
+        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        $isPdf = ($ext === 'pdf');
+
+        // 150 DPI : 1 mm = 150/25.4 px ≈ 5.906 px
+        $dpi = 150;
+        $pxPerMm = $dpi / 25.4;
+        $cropL = max(0, round(floatval($crop['left'])   * $pxPerMm));
+        $cropT = max(0, round(floatval($crop['top'])    * $pxPerMm));
+        $cropR = max(0, round(floatval($crop['right'])  * $pxPerMm));
+        $cropB = max(0, round(floatval($crop['bottom']) * $pxPerMm));
+
+        $images = [];
+
+        if ($isPdf) {
+            // Compter les pages via ImageMagick identify
+            $page_count_raw = shell_exec('identify ' . escapeshellarg($uploadedFile) . ' 2>/dev/null | wc -l');
+            $numPages = max(1, intval(trim($page_count_raw)));
+
+            for ($p = 0; $p < $numPages; $p++) {
+                $page_png = $tmpBase . 'crop_page_' . $p . '_' . uniqid() . '.png';
+                $magick_args = "-density {$dpi} " . escapeshellarg($uploadedFile . "[$p]") . ' ' . escapeshellarg($page_png);
+                $res = run_imagemagick($magick_args);
+if (!$res['success']) { file_put_contents('/tmp/duplicator/duplicator_studio/magick_debug.log', print_r($res, true) . "\nArgs: $magick_args\n", FILE_APPEND); }
+                if (!file_exists($page_png)) continue;
+
+                list($imgW, $imgH) = getimagesize($page_png);
+                $newW = $imgW - $cropL - $cropR;
+                $newH = $imgH - $cropT - $cropB;
+                if ($newW <= 0 || $newH <= 0) throw new Exception("Marge de crop trop grande pour la page " . ($p + 1));
+
+                $cropped = $tmpBase . 'crop_result_' . $p . '_' . uniqid() . '.png';
+                run_imagemagick(escapeshellarg($page_png) . " -crop {$newW}x{$newH}+{$cropL}+{$cropT} +repage " . escapeshellarg($cropped));
+                @unlink($page_png);
+                if (file_exists($cropped)) $images[] = $cropped;
+            }
+        } else {
+            // Image simple (PNG/JPG/etc.)
+            $page_png = $tmpBase . 'crop_img_' . uniqid() . '.png';
+            run_imagemagick(escapeshellarg($uploadedFile) . ' ' . escapeshellarg($page_png));
+            list($imgW, $imgH) = getimagesize($page_png);
+            $newW = $imgW - $cropL - $cropR;
+            $newH = $imgH - $cropT - $cropB;
+            if ($newW <= 0 || $newH <= 0) throw new Exception('Marge de crop trop grande.');
+            $cropped = $tmpBase . 'crop_result_' . uniqid() . '.png';
+            run_imagemagick(escapeshellarg($page_png) . " -crop {$newW}x{$newH}+{$cropL}+{$cropT} +repage " . escapeshellarg($cropped));
+            @unlink($page_png);
+            if (file_exists($cropped)) $images[] = $cropped;
+        }
+
+        if (empty($images)) throw new Exception('Aucune page rognée générée.');
+
+        $outFilename = $safeName . '_cropped_' . time() . '.pdf';
+        $outPath = $tmpBase . $outFilename;
+        $img_list = implode(' ', array_map('escapeshellarg', $images));
+        run_imagemagick("$img_list " . escapeshellarg($outPath));
+
+        foreach ($images as $img) @unlink($img);
+
+        if (!file_exists($outPath)) throw new Exception('Erreur génération PDF rogné.');
+
+        echo json_encode([
+            'success'      => true,
+            'download_url' => '?download_studio&file=' . urlencode($outFilename),
+            'errors'       => [],
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => false, 'errors' => [$e->getMessage()]]);
+    }
+    exit;
+}
+
+if ($action === 'ocr_cleanup') {
+    header('Content-Type: application/json');
+
+if (session_id()) session_write_close();
     try {
         if (!$uploadedFile || !file_exists($uploadedFile)) throw new Exception('Fichier invalide ou manquant.');
         $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
@@ -1243,19 +1927,8 @@ if ($action === 'modification') {
         $currentPage = intval($data['currentPage'] ?? 1);
         $ops = $data['operations'] ?? [];
 
-        // Gestion du fichier source (via file_id bibliothèque ou upload)
-        $sourcePdf = null;
-        if (isset($_POST['file_id']) && !empty($_POST['file_id'])) {
-            require_once __DIR__ . '/../models/bibliotheque.php';
-            $fileInfo = get_bibliotheque_file($_POST['file_id']);
-            if ($fileInfo && isset($fileInfo['path']) && file_exists($fileInfo['path'])) {
-                $sourcePdf = $fileInfo['path'];
-                $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($fileInfo['filename'], PATHINFO_FILENAME));
-            }
-        } elseif (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
-            $sourcePdf = $_FILES['file']['tmp_name'];
-            $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($_FILES['file']['name'], PATHINFO_FILENAME));
-        }
+        // Utiliser $uploadedFile défini globalement
+        $sourcePdf = $uploadedFile;
 
         if (!$sourcePdf || !file_exists($sourcePdf)) {
             throw new Exception("Fichier source introuvable.");
@@ -1272,7 +1945,22 @@ if ($action === 'modification') {
         $pdf->setPrintFooter(false);
         $pdf->SetAutoPageBreak(false, 0);
         
-        $pageCount = $pdf->setSourceFile($sourcePdf);
+        $pageCount = 0;
+        try {
+            $pageCount = $pdf->setSourceFile($sourcePdf);
+        } catch (Exception $e) {
+            if (strpos($e->getMessage(), 'compression technique') !== false) {
+                $downgraded = downgradePdfTo14($sourcePdf);
+                if ($downgraded) {
+                    $sourcePdf = $downgraded;
+                    $pageCount = $pdf->setSourceFile($sourcePdf);
+                } else {
+                    throw new Exception("Le PDF utilise une compression non supportée et la conversion a échoué.");
+                }
+            } else {
+                throw $e;
+            }
+        }
         
         for ($p = 1; $p <= $pageCount; $p++) {
             $tpl = $pdf->importPage($p);
@@ -1310,8 +1998,9 @@ if ($action === 'modification') {
                         
                         if ($p >= $rangeStart && $p <= $rangeEnd) {
                             $currentNum = $firstVal + ($p - $rangeStart);
+                            $logicalTotal = $rangeEnd - $rangeStart + 1;
                             $text = str_replace('{p}', $currentNum, $op['format']);
-                            $text = str_replace('{t}', $pageCount, $text);
+                            $text = str_replace('{t}', $logicalTotal, $text);
                             $pos = $op['position'] ?? 'bottom_center';
                             $margin = floatval($op['margin'] ?? 10);
                             

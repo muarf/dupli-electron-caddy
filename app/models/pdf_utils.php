@@ -166,3 +166,24 @@ function addRedaction($pdf, $x, $y, $w, $h, $color) {
     $pdf->Rect($x, $y, $w, $h, 'F');
 }
 }
+
+/**
+ * Downgrade un PDF vers la version 1.4 en utilisant Ghostscript.
+ * Utile pour contourner l'erreur de compression de FPDI.
+ */
+if (!function_exists('downgradePdfTo14')) {
+function downgradePdfTo14($inputFile) {
+    require_once __DIR__ . '/../controler/functions/binary_utilities.php';
+    $gsPath = escapeshellarg(get_ghostscript_path());
+    
+    $tempDir = resolveTempDir() . DIRECTORY_SEPARATOR;
+    $outputFile = $tempDir . 'downgraded_' . uniqid() . '_' . basename($inputFile);
+    
+    $input = escapeshellarg($inputFile);
+    $output = escapeshellarg($outputFile);
+    $cmd = "$gsPath -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dQUIET -dBATCH -sOutputFile=$output $input 2>&1";
+    exec($cmd, $out, $ret);
+    
+    return ($ret === 0 && file_exists($outputFile)) ? $outputFile : false;
+}
+}

@@ -631,6 +631,7 @@ class SQLiteDatabaseManager {
                 source_directory TEXT,
                 metadata_json TEXT,
                 tags TEXT,
+                markdown_status TEXT DEFAULT 'raw',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )",
@@ -641,6 +642,8 @@ class SQLiteDatabaseManager {
                 chunk_index INTEGER NOT NULL,
                 content TEXT NOT NULL,
                 word_count INTEGER DEFAULT 0,
+                section_title TEXT,
+                heading_level INTEGER DEFAULT 0,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (file_id) REFERENCES bibliotheque_files(id) ON DELETE CASCADE
             )",

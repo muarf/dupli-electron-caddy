@@ -74,7 +74,10 @@ function get_package_install_help(string $type, string $pkg_key, string $distro)
             'ghostscript' => 'ghostscript',
             'imagemagick' => 'imagemagick',
             'gpcl6' => 'ghostscript',
-            'gxps' => 'libgxps-utils'
+            'gxps' => 'libgxps-utils',
+            'ocrmypdf' => 'ocrmypdf',
+            'tesseract' => 'tesseract-ocr tesseract-ocr-fra',
+            'jbig2' => 'jbig2'
         ];
         if ($distro === 'windows') {
             return "Téléchargez et installez " . ($bins[$pkg_key] ?? $pkg_key);
@@ -84,6 +87,9 @@ function get_package_install_help(string $type, string $pkg_key, string $distro)
             if ($pkg_key === 'gpcl6') return 'sudo apt-get install -y ghostscript (inclut gpcl6)';
             if ($pkg_key === 'ghostscript') return 'sudo apt-get install -y ghostscript';
             if ($pkg_key === 'imagemagick') return 'sudo apt-get install -y imagemagick';
+            if ($pkg_key === 'ocrmypdf') return 'sudo apt-get install -y ocrmypdf';
+            if ($pkg_key === 'tesseract') return 'sudo apt-get install -y tesseract-ocr tesseract-ocr-fra';
+            if ($pkg_key === 'jbig2') return 'sudo apt-get install -y jbig2';
         }
         return $d['pref'] . ($bins[$pkg_key] ?? $pkg_key);
     }
@@ -131,7 +137,10 @@ function get_aggregated_install_command(array $packages): string
         'ghostscript' => 'ghostscript',
         'imagemagick' => 'imagemagick',
         'gpcl6' => 'ghostscript',
-        'gxps' => 'libgxps-utils'
+        'gxps' => 'libgxps-utils',
+        'ocrmypdf' => 'ocrmypdf',
+        'tesseract' => 'tesseract-ocr tesseract-ocr-fra',
+        'jbig2' => 'jbig2'
     ];
     
     $exts = [
@@ -202,6 +211,30 @@ function check_system_dependencies(): array
                 'path' => null,
                 'critical' => true,
                 'help' => get_package_install_help('bin', 'imagemagick', $distro)
+            ],
+            'ocrmypdf' => [
+                'name' => 'OCRmyPDF',
+                'status' => false,
+                'version' => null,
+                'path' => null,
+                'critical' => true,
+                'help' => get_package_install_help('bin', 'ocrmypdf', $distro)
+            ],
+            'tesseract' => [
+                'name' => 'Tesseract OCR',
+                'status' => false,
+                'version' => null,
+                'path' => null,
+                'critical' => true,
+                'help' => get_package_install_help('bin', 'tesseract', $distro)
+            ],
+            'jbig2' => [
+                'name' => 'JBIG2 Encoder',
+                'status' => false,
+                'version' => null,
+                'path' => null,
+                'critical' => true,
+                'help' => get_package_install_help('bin', 'jbig2', $distro)
             ]
         ],
         'php_extensions' => [],
@@ -285,6 +318,31 @@ function check_system_dependencies(): array
             $lines = explode("\n", trim(shell_exec(escapeshellarg($convert_path) . " -version | head -n 1")));
             $results['dependencies']['imagemagick']['version'] = trim($lines[0] ?? '');
         }
+    }
+
+    // === Vérifier OCRmyPDF ===
+    $ocrmypdf_path = trim(shell_exec(($is_windows ? "where " : "which ") . "ocrmypdf 2>&1"));
+    if ($ocrmypdf_path && (file_exists($ocrmypdf_path) || strpos($ocrmypdf_path, 'not found') === false)) {
+        $results['dependencies']['ocrmypdf']['status'] = true;
+        $results['dependencies']['ocrmypdf']['path'] = $ocrmypdf_path;
+        $results['dependencies']['ocrmypdf']['version'] = trim(shell_exec(escapeshellarg($ocrmypdf_path) . " --version 2>&1"));
+    }
+
+    // === Vérifier Tesseract ===
+    $tesseract_path = trim(shell_exec(($is_windows ? "where " : "which ") . "tesseract 2>&1"));
+    if ($tesseract_path && (file_exists($tesseract_path) || strpos($tesseract_path, 'not found') === false)) {
+        $results['dependencies']['tesseract']['status'] = true;
+        $results['dependencies']['tesseract']['path'] = $tesseract_path;
+        $lines = explode("\n", trim(shell_exec(escapeshellarg($tesseract_path) . " --version 2>&1")));
+        $results['dependencies']['tesseract']['version'] = trim($lines[0] ?? '');
+    }
+
+    // === Vérifier JBIG2 ===
+    $jbig2_path = trim(shell_exec(($is_windows ? "where " : "which ") . "jbig2 2>&1"));
+    if ($jbig2_path && (file_exists($jbig2_path) || strpos($jbig2_path, 'not found') === false)) {
+        $results['dependencies']['jbig2']['status'] = true;
+        $results['dependencies']['jbig2']['path'] = $jbig2_path;
+        $results['dependencies']['jbig2']['version'] = trim(shell_exec(escapeshellarg($jbig2_path) . " -V 2>&1"));
     }
 
     // Vérifier les permissions

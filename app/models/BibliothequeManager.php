@@ -491,9 +491,20 @@ class BibliothequeManager {
                                  ON CONFLICT(rowid) DO UPDATE SET filename=excluded.filename, extracted_text=excluded.extracted_text");
             } catch (Exception $e) { /* FTS fail non-bloquant */ }
 
-            // 4. Génération des chunks pour le RAG
+            // 4. Génération des chunks pour le RAG (fallback PdfParser immédiat)
             if (!empty($extractedText)) {
                 $this->generateChunksForFile($finalId, $extractedText);
+            }
+
+            // 5. Marquer pour traitement Markdown (Docling) en arrière-plan
+            //    markdown_status = 'raw' → sera traité par process_markdown_chunks.php
+            try {
+                $this->db->prepare("UPDATE bibliotheque_files SET markdown_status = 'raw' WHERE id = ? AND file_type = 'pdf'")
+                         ->execute([$finalId]);
+                $this->queueMarkdownProcessing($finalId);
+            } catch (Exception $e) {
+                // Non-bloquant — le chunk PdfParser reste utilisé
+                error_log("queueMarkdownProcessing failed for id=$finalId: " . $e->getMessage());
             }
 
             ini_set('memory_limit', $originalMemoryLimit);
@@ -633,10 +644,15 @@ class BibliothequeManager {
      * AND pour 2-3 mots, OR pour 4+ mots
      */
     private function prepareFTSQuery($search) {
+        $stopWords = ['le', 'la', 'les', 'un', 'une', 'des', 'et', 'ou', 'de', 'du', 'en', 'pour', 'dans', 'sur', 'qui', 'que', 'quoi', 'dont', 'où', 'quelles', 'quel', 'quelle', 'quels', 'ce', 'cet', 'cette', 'ces', 'au', 'aux', 'est', 'sont', 'a', 'ont', 'avec', 'par'];
+
         // Découper la recherche en mots
         $words = preg_split('/\s+/', trim($search));
-        // Filtrer les mots de moins de 2 caractères
-        $words = array_filter($words, function($w) { return strlen($w) >= 2; });
+        
+        // Filtrer les mots de moins de 2 caractères et les stopwords
+        $words = array_filter($words, function($w) use ($stopWords) { 
+            return strlen($w) >= 2 && !in_array(mb_strtolower($w, 'UTF-8'), $stopWords); 
+        });
         
         if (empty($words)) {
             return '';
@@ -651,10 +667,8 @@ class BibliothequeManager {
         // Comportement intelligent : AND pour 2-3 mots, OR pour 4+ mots
         $wordCount = count($quotedWords);
         if ($wordCount >= 2 && $wordCount <= 3) {
-            // Tous les mots requis
             return implode(' AND ', $quotedWords);
         } else {
-            // Au moins un mot
             return implode(' OR ', $quotedWords);
         }
     }
@@ -796,7 +810,9 @@ class BibliothequeManager {
             return $this->getAllFilesWithLike($search, $type, $filters);
         }
         
-        $sql = "SELECT b.*, bibliotheque_files_fts.rank 
+        $sql = "SELECT b.id, b.filename, b.file_type, b.thumbnail_path, b.file_size, b.page_count, b.metadata_json, b.tags, b.is_external, b.source_directory, b.created_at, b.updated_at, 
+                       bm25(bibliotheque_files_fts, 10.0, 5.0) as rank,
+                       snippet(bibliotheque_files_fts, -1, '<mark>', '</mark>', '...', 30) as fts_snippet
                 FROM bibliotheque_files b
                 JOIN bibliotheque_files_fts ON bibliotheque_files_fts.rowid = b.id
                 WHERE bibliotheque_files_fts MATCH ?";
@@ -853,16 +869,12 @@ class BibliothequeManager {
         
         // Extraire les contextes pour chaque résultat
         foreach ($results as &$file) {
-            try {
-                $contexts = $this->extractMatchContexts($file['extracted_text'] ?? '', $search);
-                $file['match_contexts'] = $contexts;
-            } catch (Exception $e) {
-                error_log("Erreur extraction contextes pour fichier " . ($file['id'] ?? 'inconnu') . ": " . $e->getMessage());
-                $file['match_contexts'] = [];
-            } catch (Error $e) {
-                error_log("Erreur fatale extraction contextes pour fichier " . ($file['id'] ?? 'inconnu') . ": " . $e->getMessage());
+            if (!empty($file['fts_snippet'])) {
+                $file['match_contexts'] = [$file['fts_snippet']];
+            } else {
                 $file['match_contexts'] = [];
             }
+            unset($file['fts_snippet']);
         }
         unset($file);
         
@@ -892,7 +904,7 @@ class BibliothequeManager {
             $params[] = "%$word%";
         }
         
-        $sql = "SELECT b.* FROM bibliotheque_files b WHERE (" . implode(" AND ", $conditions) . ")";
+        $sql = "SELECT b.id, b.filename, b.file_type, b.thumbnail_path, b.file_size, b.page_count, b.metadata_json, b.tags, b.is_external, b.source_directory, b.created_at, b.updated_at FROM bibliotheque_files b WHERE (" . implode(" AND ", $conditions) . ")";
         
         if (!empty($type)) {
             $sql .= " AND b.file_type = ?";
@@ -942,18 +954,9 @@ class BibliothequeManager {
         $stmt->execute($params);
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        // Extraire les contextes pour chaque résultat
+        // Sans FTS, pas d'extraction rapide du texte, contextes vides
         foreach ($results as &$file) {
-            try {
-                $contexts = $this->extractMatchContexts($file['extracted_text'] ?? '', $search);
-                $file['match_contexts'] = $contexts;
-            } catch (Exception $e) {
-                error_log("Erreur extraction contextes pour fichier " . ($file['id'] ?? 'inconnu') . ": " . $e->getMessage());
-                $file['match_contexts'] = [];
-            } catch (Error $e) {
-                error_log("Erreur fatale extraction contextes pour fichier " . ($file['id'] ?? 'inconnu') . ": " . $e->getMessage());
-                $file['match_contexts'] = [];
-            }
+            $file['match_contexts'] = [];
         }
         unset($file);
         
@@ -975,7 +978,7 @@ class BibliothequeManager {
         $sort = isset($filters['sort']) && in_array($filters['sort'], $allowedSort) ? $filters['sort'] : 'created_at';
         $order = isset($filters['order']) && strtoupper($filters['order']) === 'ASC' ? 'ASC' : 'DESC';
         
-        $sql = "SELECT * FROM bibliotheque_files WHERE 1=1";
+        $sql = "SELECT id, filename, file_type, thumbnail_path, file_size, page_count, metadata_json, tags, is_external, source_directory, created_at, updated_at FROM bibliotheque_files WHERE 1=1";
         $params = [];
         
         if (!empty($type)) {
@@ -1039,7 +1042,7 @@ class BibliothequeManager {
     public function getAllFiles($search = '', $type = '', $filters = []) {
         // Si pas de recherche, retourner tous les fichiers (avec filtres éventuels)
         if (empty($search)) {
-            $sql = "SELECT * FROM bibliotheque_files b WHERE 1=1";
+            $sql = "SELECT id, filename, file_type, thumbnail_path, file_size, page_count, metadata_json, tags, is_external, source_directory, created_at, updated_at FROM bibliotheque_files b WHERE 1=1";
             $params = [];
             
             if (!empty($type)) {
@@ -1539,6 +1542,31 @@ class BibliothequeManager {
     }
 
     /**
+     * Ajoute un file_id dans la queue Markdown pour traitement Docling en background.
+     * Utilise un fichier texte simple (logs/markdown_queue.txt) — un ID par ligne.
+     * Un daemon/cron/worker lit ce fichier séquentiellement.
+     */
+    public function queueMarkdownProcessing(int $fileId): void
+    {
+        $logsDir   = __DIR__ . '/../../logs';
+        $queueFile = $logsDir . '/markdown_queue.txt';
+
+        if (!is_dir($logsDir)) {
+            @mkdir($logsDir, 0777, true);
+        }
+
+        // Éviter les doublons : ne pas rajouter si déjà dans la queue
+        if (file_exists($queueFile)) {
+            $existing = file($queueFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            if (in_array((string)$fileId, $existing, true)) {
+                return;
+            }
+        }
+
+        file_put_contents($queueFile, $fileId . "\n", FILE_APPEND | LOCK_EX);
+    }
+
+    /**
      * Applique les filtres de tags (Inclusion/Exclusion) à une requête SQL
      * @param string &$sql La requête SQL en cours de construction
      * @param array &$params Les paramètres de la requête
@@ -1579,7 +1607,7 @@ class BibliothequeManager {
     /**
      * Recherche vectorielle filtrée par tags
      */
-    public function searchVector($qVector, $limit = 20, $tagFilter = '') {
+    public function searchVector($qVector, $limit = 20, $tagFilter = '', $fileIds = []) {
         $sql = "SELECT v.chunk_id, v.vector 
                 FROM bibliotheque_vectors v
                 JOIN bibliotheque_chunks c ON v.chunk_id = c.id
@@ -1588,6 +1616,12 @@ class BibliothequeManager {
         $params = [];
         
         $this->applyTagFilters($sql, $params, $tagFilter, 'b');
+
+        if (!empty($fileIds) && is_array($fileIds)) {
+            $placeholders = implode(',', array_fill(0, count($fileIds), '?'));
+            $sql .= " AND b.id IN ($placeholders)";
+            $params = array_merge($params, $fileIds);
+        }
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
@@ -1605,6 +1639,62 @@ class BibliothequeManager {
         
         arsort($scores);
         return array_slice(array_keys($scores), 0, $limit);
+    }
+    
+    /**
+     * Recherche hybride (Vector + Full-Text Search) filtrée par tags
+     */
+    public function searchHybrid($question, $qVector, $limit = 20, $tagFilter = '', $fileIds = []) {
+        $ftsLimit = ceil($limit / 2);
+        $vectorLimit = $limit; // Demander plus de vecteurs pour compenser les doublons potentiels
+        
+        $hybridIds = [];
+        
+        // 1. Recherche Plein-Texte (FTS) sur les mots-clés de la question
+        $ftsQuery = $this->prepareFTSQuery($question);
+        if (!empty($ftsQuery)) {
+            $sqlFts = "SELECT c.id 
+                       FROM bibliotheque_chunks c
+                       JOIN bibliotheque_chunks_fts fts ON c.id = fts.rowid
+                       JOIN bibliotheque_files b ON c.file_id = b.id
+                       WHERE bibliotheque_chunks_fts MATCH ?";
+            $paramsFts = [$ftsQuery];
+            
+            $this->applyTagFilters($sqlFts, $paramsFts, $tagFilter, 'b');
+
+            if (!empty($fileIds) && is_array($fileIds)) {
+                $placeholders = implode(',', array_fill(0, count($fileIds), '?'));
+                $sqlFts .= " AND b.id IN ($placeholders)";
+                $paramsFts = array_merge($paramsFts, $fileIds);
+            }
+            
+            $sqlFts .= " ORDER BY rank LIMIT " . (int)$ftsLimit;
+            
+            $stmt = $this->db->prepare($sqlFts);
+            $stmt->execute($paramsFts);
+            $ftsResults = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            foreach ($ftsResults as $id) {
+                if (!in_array($id, $hybridIds)) {
+                    $hybridIds[] = $id;
+                }
+            }
+        }
+        
+        // 2. Recherche Vectorielle pour le sémantique global
+        // On demande un peu plus de résultats au cas où les FTS prennent déjà des places
+        $vectorResults = $this->searchVector($qVector, $vectorLimit, $tagFilter, $fileIds);
+        
+        foreach ($vectorResults as $id) {
+            if (!in_array($id, $hybridIds)) {
+                $hybridIds[] = $id;
+            }
+            if (count($hybridIds) >= $limit) {
+                break;
+            }
+        }
+        
+        return array_slice($hybridIds, 0, $limit);
     }
 }
 

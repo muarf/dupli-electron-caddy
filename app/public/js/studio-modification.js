@@ -635,11 +635,24 @@
       if (spinner) spinner.style.display = 'none';
 
       if (json.success) {
-        if (window.showResultToast) {
-          window.showResultToast(json.download_url);
+        if (json.job_id && window.pollStudioTask) {
+          window.pollStudioTask(json, (finalJson) => {
+            if (window.showResultToast) {
+              window.showResultToast(finalJson.download_url);
+            } else {
+              alert("Modifications appliquées avec succès !");
+              window.location.href = finalJson.download_url;
+            }
+          }, (errJson) => {
+            alert("Erreur: " + (errJson.error || errJson.errors?.join(', ') || 'Erreur inconnue'));
+          });
         } else {
-          alert("Modifications appliquées avec succès !");
-          window.location.href = json.download_url;
+          if (window.showResultToast) {
+            window.showResultToast(json.download_url);
+          } else {
+            alert("Modifications appliquées avec succès !");
+            window.location.href = json.download_url;
+          }
         }
       } else {
         alert("Erreur: " + (json.error || json.errors.join(', ')));

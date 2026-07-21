@@ -20,6 +20,7 @@ class Imposition
     private $cropMarks;
     private $cropMarkLen;
     private $cropMarkWidth;
+    private $collationMarks;
     private $orientation;
     private $nUp;
     private $duplex;
@@ -62,6 +63,7 @@ class Imposition
         $this->gutterY = $this->settings['gutter_y'];
         $this->gutterStrategy = $this->settings['gutter_strategy'];
         $this->cropMarks = $this->settings['crop_marks'];
+        $this->collationMarks = $this->settings['collation_marks'] ?? false;
         $this->cropMarkLen = $this->settings['crop_mark_len'];
         $this->cropMarkWidth = $this->settings['crop_mark_width'];
         $this->orientation = $this->settings['orientation'];
@@ -184,7 +186,7 @@ class Imposition
                 $currentRow = floor($pos / $cols);
                 $currentCol = $pos % $cols;
 
-                $this->placePage($pageNo, $currentCol, $currentRow, $cols, $rows, $sheetWidth, $sheetHeight);
+                $this->placePage($pageNo, $currentCol, $currentRow, $cols, $rows, $sheetWidth, $sheetHeight, $i, $stackDepth);
             }
 
             // --- VERSO (Seulement si Duplex) ---
@@ -210,7 +212,7 @@ class Imposition
                     $mirrorCol = ($cols - 1) - $origCol;
                     $mirrorRow = $origRow; // La ligne ne change pas si on tourne la page comme un livre
 
-                    $this->placePage($pageNo, $mirrorCol, $mirrorRow, $cols, $rows, $sheetWidth, $sheetHeight);
+                    $this->placePage($pageNo, $mirrorCol, $mirrorRow, $cols, $rows, $sheetWidth, $sheetHeight, $i, $stackDepth);
                 }
             }
         }
@@ -245,7 +247,7 @@ class Imposition
         return $this->previewPdf;
     }
 
-    private function placePage($pageNo, $colIndex, $rowIndex, $totalCols, $totalRows, $sheetWidth, $sheetHeight)
+    private function placePage($pageNo, $colIndex, $rowIndex, $totalCols, $totalRows, $sheetWidth, $sheetHeight, $stackIndex = 1, $stackDepth = 1)
     {
         $isBlank = ($pageNo > $this->pageCount);
         $tplIdx = null;
@@ -433,6 +435,52 @@ class Imposition
             // On passe ces "bleeds" à une fonction de dessin adaptée
             $this->drawSmartCropMarks($x, $y, $finalW, $finalH, $bleedX, $bleedY);
         }
+
+        // Témoins d'assemblage (Collation Marks)
+        if ($this->collationMarks) {
+            $this->drawCollationMark($pageNo, $x, $y, $finalW, $finalH, $stackIndex, $stackDepth);
+        }
+    }
+
+    private function drawCollationMark($pageNo, $x, $y, $w, $h, $stackIndex, $stackDepth)
+    {
+        // Dimensions du témoin
+        $markWidth = 3; // mm
+        $markHeight = 10; // mm
+
+        // Si on n'a qu'une seule feuille, pas besoin de témoin (ou on le met au milieu)
+        $steps = max(1, $stackDepth - 1);
+        
+        // On laisse une marge en haut et en bas pour ne pas déborder (ex: 5mm)
+        $marginTopBottom = 5;
+        $availableHeight = $h - (2 * $marginTopBottom) - $markHeight;
+        if ($availableHeight < 0) {
+            $availableHeight = 0; // Sécurité si page minuscule
+        }
+        $stepY = $availableHeight / $steps;
+        
+        $markY = $y + $marginTopBottom + (($stackIndex - 1) * $stepY);
+        
+        // Position X : bord gauche ou droit selon si c'est recto ou verso
+        // Page impaire (recto) : dos à gauche
+        // Page paire (verso) : dos à droite
+        $isRecto = ($pageNo % 2 != 0);
+        
+        if ($isRecto) {
+            $markX = $x; // Bord gauche de la page
+        } else {
+            $markX = $x + $w - $markWidth; // Bord droit de la page
+        }
+        
+        // Dessiner le rectangle sur le PDF final
+        $this->pdf->SetFillColor(0, 0, 0); // Noir
+        $this->pdf->Rect($markX, $markY, $markWidth, $markHeight, 'F');
+        
+        // Dessiner sur le preview si actif
+        if ($this->previewPdf) {
+            $this->previewPdf->SetFillColor(0, 0, 0);
+            $this->previewPdf->Rect($markX, $markY, $markWidth, $markHeight, 'F');
+        }
     }
 
     private function drawSmartCropMarks($x, $y, $w, $h, $bleedX, $bleedY)
@@ -441,7 +489,8 @@ class Imposition
         $this->pdf->SetLineWidth($this->settings['crop_mark_width']);
         $this->pdf->SetDrawColor(0, 0, 0);
 
-        $visualOffset = 1;
+        $visualOffset = isset($this->settings['crop_mark_offset']) ? $this->settings['crop_mark_offset'] : 1;
+
 
         // Coordonnées de coupe (en rentrant dans la page de bleedX/Y)
         // Si bleed est négatif (mode réduire avec marges), on sort de la page

@@ -454,6 +454,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
             <select id="ai_model" class="ml-2" style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 0 10px; height: 45px; background: #f8fafc; color: #475569; font-weight: 500;">
                 <option value="fast">🚀 Mode Rapide (Luth)</option>
                 <option value="pro">🧠 Mode Expert (Gemma)</option>
+                <option value="nemotron">⚡ Nemotron</option>
             </select>
             <?php endif; ?>
             
@@ -621,8 +622,9 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
     </div>
 
     <?php if ($ai_enabled): ?>
-    <button class="floating-ai-btn" onclick="toggleAiChat()" title="Ouvrir l'Assistant Chat">
+    <button class="floating-ai-btn" id="ai-chat-btn" onclick="toggleAiChat()" title="Ouvrir l'Assistant Chat" style="position: relative;">
         <i class="fa fa-comments"></i>
+        <span id="ai-chat-badge" class="badge badge-danger" style="position: absolute; top: -5px; right: -5px; display: none; border-radius: 50%; padding: 5px 8px; font-size: 0.8rem;"></span>
     </button>
     <?php endif; ?>
 
@@ -832,7 +834,8 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                 body: JSON.stringify({ 
                     question: question, 
                     mode: currentAiMode,
-                    tags: activeTags.join(',')
+                    tags: activeTags.join(','),
+                    selected_files: selectedPdfIds
                 }),
                 signal: aiAbortController.signal
             });
@@ -946,6 +949,45 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
     let currentOrder = 'DESC';
     let activeTags = [];
     let allTagsList = [];
+    let selectedPdfIds = [];
+
+    function toggleAllPdfs(checkbox) {
+        const isChecked = $(checkbox).prop('checked');
+        $('.pdf-select-cb').prop('checked', isChecked);
+        updatePdfSelection();
+    }
+
+    function updatePdfSelection() {
+        selectedPdfIds = [];
+        $('.pdf-select-cb:checked').each(function() {
+            selectedPdfIds.push($(this).val());
+        });
+        
+        const count = selectedPdfIds.length;
+        if (count > 0) {
+            $('#ai-chat-badge').text(count).show();
+            $('#ai-selection-info').html(`<i class="fa fa-filter"></i> Filtre actif : ${count} document${count > 1 ? 's' : ''} sélectionné${count > 1 ? 's' : ''}`).show();
+        } else {
+            $('#ai-chat-badge').hide();
+            $('#ai-selection-info').hide();
+        }
+    }
+
+    function restorePdfSelection() {
+        if (selectedPdfIds.length === 0) return;
+        $('.pdf-select-cb').each(function() {
+            if (selectedPdfIds.includes($(this).val())) {
+                $(this).prop('checked', true);
+            }
+        });
+        
+        // Mettre à jour la case "Tout sélectionner" si toutes les cases affichées sont cochées
+        const total = $('.pdf-select-cb').length;
+        const checked = $('.pdf-select-cb:checked').length;
+        if (total > 0 && total === checked) {
+            $('#selectAllPdfs').prop('checked', true);
+        }
+    }
 
     $(document).ready(function() {
         loadLibrary();
@@ -1083,6 +1125,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
             success: function(html) {
                 console.log("Success: HTML reçu (" + html.length + " caractères)");
                 $('#library_content').html(html).css('opacity', '1');
+                restorePdfSelection();
                 if (page > 1) {
                     $('html, body').animate({ scrollTop: $('#library_content').offset().top - 100 }, 200);
                 }
@@ -1267,7 +1310,13 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
         container.innerHTML = `
             <div class="ai-overview-header d-flex justify-content-between align-items-center">
                 <div class="ai-overview-title"><i class="fa fa-magic"></i> Analyse de la Bibliothèque</div>
-                <div id="aiOverviewStatus" style="font-size: 0.8rem; color: #64748b;"></div>
+                <div class="d-flex align-items-center">
+                    <span id="aiOverviewStatus" style="font-size: 0.8rem; color: #64748b; margin-right: 15px;"></span>
+                    <button id="aiOverviewStopBtn" class="btn btn-sm btn-outline-danger mr-3" onclick="if(aiAbortController) { aiAbortController.abort(); this.innerHTML='<i class=\\\'fa fa-ban\\\'></i> Arrêté'; this.classList.replace('btn-outline-danger', 'btn-secondary'); this.disabled=true; const loader = document.getElementById('aiOverviewLoading'); if(loader) loader.style.display='none'; }">
+                        <i class="fa fa-stop"></i> Stop
+                    </button>
+                    <button class="btn btn-sm btn-link text-muted p-0" onclick="if(aiAbortController) aiAbortController.abort(); document.getElementById('aiOverviewContainer').style.display='none'"><i class="fa fa-times" style="font-size: 1.2rem;"></i></button>
+                </div>
             </div>
             <div class="row">
                 <div class="col-md-7">
@@ -1300,7 +1349,8 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                 body: JSON.stringify({ 
                     question: query, 
                     mode: model,
-                    tags: activeTags.join(',')
+                    tags: activeTags.join(','),
+                    selected_files: selectedPdfIds
                 }),
                 signal: aiAbortController.signal
             });
@@ -1454,6 +1504,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                 <label class="btn btn-xs text-white px-3 active" id="modeFastLabel" onclick="setAiMode('fast')" style="font-size: 0.7rem; border: none;">Rapide</label>
                 <label class="btn btn-xs text-white px-3" id="modeProLabel" onclick="setAiMode('pro')" style="font-size: 0.7rem; border: none;">Expert</label>
             </div>
+            <div id="ai-selection-info" class="text-warning mt-1 font-weight-bold" style="font-size: 0.75rem; display: none;"></div>
         </div>
         <button type="button" class="btn text-white" onclick="toggleAiChat()" style="font-size: 1.5rem;">&times;</button>
     </div>
