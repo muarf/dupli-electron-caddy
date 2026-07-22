@@ -69,5 +69,8 @@ if ($projectRoot === false) {
 // Se positionner dans public/ pour simuler un appel HTTP direct
 chdir($projectRoot . '/public');
 
+// Définir la constante pour forcer l'exécution synchrone lors des tests
+define('IS_BACKGROUND', true);
+
 // Exécuter le point d'entrée studio_process
 require_once $projectRoot . '/api/studio_process.php';
