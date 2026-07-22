@@ -2249,20 +2249,18 @@ if ($action === 'recognize_font') {
             $output = shell_exec($cmd);
             @unlink($tmpImagePath);
 
-            $cleanJson = $output;
-            $jsonStart = strpos($output, '[');
-            $jsonEnd = strrpos($output, ']');
-            if ($jsonStart !== false && $jsonEnd !== false && $jsonEnd > $jsonStart) {
-                $cleanJson = substr($output, $jsonStart, $jsonEnd - $jsonStart + 1);
-            } else {
-                $jsonStart = strpos($output, '{');
-                $jsonEnd = strrpos($output, '}');
-                if ($jsonStart !== false && $jsonEnd !== false && $jsonEnd > $jsonStart) {
-                    $cleanJson = substr($output, $jsonStart, $jsonEnd - $jsonStart + 1);
+            $resultData = null;
+            $lines = explode("\n", $output);
+            foreach (array_reverse($lines) as $line) {
+                $line = trim($line);
+                if (empty($line)) continue;
+                $decoded = json_decode($line, true);
+                if ($decoded !== null && (is_array($decoded) || is_object($decoded))) {
+                    $resultData = $decoded;
+                    break;
                 }
             }
 
-            $resultData = json_decode($cleanJson, true);
             if ($resultData === null) {
                 throw new Exception("Erreur de l'IA (JSON invalide): " . $output);
             }
