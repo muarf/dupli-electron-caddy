@@ -2211,6 +2211,60 @@ if ($action === 'recognize_font') {
 
         $studioSettings = getStudioSettings();
         $fontsApiUrl = trim($studioSettings['studio_api_fonts_url'] ?? '');
+        $whatfontisKey = trim($studioSettings['whatfontis_api_key'] ?? '');
+
+        if (!empty($whatfontisKey)) {
+            // Mode WhatFontIs API
+            $ch = curl_init("https://www.whatfontis.com/api2/");
+            $postFields = [
+                'API_KEY' => $whatfontisKey,
+                'IMAGEBASE64' => '1',
+                'urlimagebase64' => base64_encode($imgDecoded),
+                'limit' => '5'
+            ];
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postFields));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode !== 200 || !$response) {
+                throw new Exception("L'API WhatFontIs est inaccessible (HTTP $httpCode).");
+            }
+
+            $wfiData = json_decode($response, true);
+            if ($wfiData === null) {
+                throw new Exception("Réponse invalide de WhatFontIs: " . $response);
+            }
+
+            $formatted = [];
+            $items = [];
+            if (is_array($wfiData)) {
+                if (isset($wfiData[0])) {
+                    $items = $wfiData;
+                } else if (isset($wfiData['fonts']) && is_array($wfiData['fonts'])) {
+                    $items = $wfiData['fonts'];
+                } else {
+                    $items = [$wfiData];
+                }
+            }
+            foreach ($items as $item) {
+                if (is_array($item)) {
+                    $label = $item['title'] ?? $item['label'] ?? $item['font_name'] ?? 'Unknown Font';
+                    $score = isset($item['score']) ? floatval($item['score']) : 1.0;
+                    if ($score > 1.0) $score = $score / 100.0;
+                    $formatted[] = [
+                        'label' => $label,
+                        'score' => $score
+                    ];
+                }
+            }
+            echo json_encode(['success' => true, 'fonts' => $formatted]);
+            exit;
+        }
 
         if (!empty($fontsApiUrl)) {
             // Mode VPS : envoyer l'image en Base64 au serveur distant

@@ -25,6 +25,14 @@ Sortie JSON:
 En cas d'erreur : exit code 1 + message sur stderr.
 """
 
+import os
+# Brider la parallélisation CPU de PyTorch/Docling à un seul thread
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
 import sys
 import json
 import re
@@ -256,6 +264,11 @@ def main():
         from docling.document_converter import DocumentConverter, PdfFormatOption
         from docling.datamodel.base_models import InputFormat
         from docling.datamodel.pipeline_options import PdfPipelineOptions
+        try:
+            import torch
+            torch.set_num_threads(1)
+        except ImportError:
+            pass
     except ImportError as e:
         print(f"ERREUR import Docling: {e}", file=sys.stderr)
         sys.exit(1)

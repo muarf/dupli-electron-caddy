@@ -16,6 +16,7 @@ $ai_token          = $_ai['ai_token'] ?? '';
 $ai_system_prompt  = $_ai['ai_system_prompt'] ?? '';
 $studio_api_fonts_url   = $_ai['studio_api_fonts_url'] ?? '';
 $studio_api_docling_url = $_ai['studio_api_docling_url'] ?? '';
+$whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
 ?>
 
 <div class="section">
@@ -204,6 +205,16 @@ $studio_api_docling_url = $_ai['studio_api_docling_url'] ?? '';
                 <small class="text-muted">
                   Endpoint POST JSON <code>{"image": "&lt;base64&gt;"}</code> → réponse <code>[{"label": "...", "score": 0.xx}]</code>.
                   Si vide, le bouton "Reconnaître" sera inopérant sur Windows.
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label for="whatfontis_api_key">Clé API — WhatFontIs (Optionnel)</label>
+                <input type="text" class="form-control" id="whatfontis_api_key" name="whatfontis_api_key"
+                       value="<?php echo htmlspecialchars($whatfontis_api_key); ?>"
+                       placeholder="Votre clé API WhatFontIs">
+                <small class="text-muted">
+                  Si renseignée, l'API commerciale tierce WhatFontIs.com sera utilisée pour la reconnaissance de police au lieu du modèle local/VPS.
                 </small>
               </div>
 
