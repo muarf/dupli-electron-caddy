@@ -70,6 +70,10 @@ register_shutdown_function(function() use ($jobId, $jobFile, $logFile) {
                 if (isset($result['pdf_url'])) {
                     $jobData['pdf_url'] = $result['pdf_url'];
                 }
+                // Si la tâche renvoie une liste de polices reconnues (recognize_font)
+                if (isset($result['fonts'])) {
+                    $jobData['fonts'] = $result['fonts'];
+                }
             } else {
                 $jobData['status'] = 'error';
                 $errors = $result['errors'] ?? null;
