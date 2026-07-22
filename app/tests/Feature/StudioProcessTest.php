@@ -92,7 +92,7 @@ it('impose un PDF en brochure (brochure_type = booklet/leaflet)', function () {
         ]);
 
         expect($response['success'])->toBeTrue();
-        expect($response['download_url'])->toContain('download_studio');
+        expect($response['download_url'])->toMatch('/download_studio/');
 
         // Analyser le fichier généré
         preg_match('/file=([^&]+)/', $response['download_url'], $matches);
@@ -127,7 +127,7 @@ it('impose un PDF en livre (cut & stack)', function () {
         ]);
 
         expect($response['success'])->toBeTrue();
-        expect($response['download_url'])->toContain('download_studio');
+        expect($response['download_url'])->toMatch('/download_studio/');
 
         preg_match('/file=([^&]+)/', $response['download_url'], $matches);
         $fileName = urldecode($matches[1]);
@@ -157,7 +157,7 @@ it('impose un PDF en tracts (copies identiques N-up)', function () {
         ]);
 
         expect($response['success'])->toBeTrue();
-        expect($response['download_url'])->toContain('file=');
+        expect($response['download_url'])->toMatch('/file=/');
     } finally {
         cleanupPath($pdfPath);
     }
@@ -178,7 +178,7 @@ it('redimensionne un PDF', function () {
         ]);
 
         expect($response['success'])->toBeTrue();
-        expect($response['download_url'])->toContain('download_studio');
+        expect($response['download_url'])->toMatch('/download_studio/');
     } finally {
         cleanupPath($pdfPath);
     }
@@ -199,7 +199,7 @@ it('exporte une image PNG sous forme de PDF (to_pdf)', function () {
         ]);
 
         expect($response['success'])->toBeTrue();
-        expect($response['download_url'])->toContain('download_studio');
+        expect($response['download_url'])->toMatch('/download_studio/');
     } finally {
         cleanupPath($pngPath);
     }
@@ -229,7 +229,7 @@ it('génère un PDF multi-pages à partir de calques de couleurs Riso', function
         ]);
 
         expect($response['success'])->toBeTrue();
-        expect($response['download_url'])->toContain('download_studio');
+        expect($response['download_url'])->toMatch('/download_studio/');
     } finally {
         cleanupPath($png1);
         cleanupPath($png2);
@@ -298,7 +298,7 @@ it('fusionne deux PDFs (merge)', function () {
         ]);
 
         expect($response['success'])->toBeTrue();
-        expect($response['download_url'])->toContain('download_studio');
+        expect($response['download_url'])->toMatch('/download_studio/');
     } finally {
         cleanupPath($pdf1);
         cleanupPath($pdf2);
@@ -320,7 +320,7 @@ it('désimpose un livret PDF (unimpose)', function () {
         ]);
 
         expect($response['success'])->toBeTrue();
-        expect($response['download_url'])->toContain('download_studio');
+        expect($response['download_url'])->toMatch('/download_studio/');
     } finally {
         cleanupPath($pdfPath);
     }
@@ -351,7 +351,7 @@ it('organise les pages (organize_pages)', function () {
         ]);
 
         expect($response['success'])->toBeTrue();
-        expect($response['download_url'])->toContain('download_studio');
+        expect($response['download_url'])->toMatch('/download_studio/');
     } finally {
         cleanupPath($pdfPath);
     }
