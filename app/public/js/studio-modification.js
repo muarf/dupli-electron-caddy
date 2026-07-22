@@ -259,6 +259,73 @@
               if (window.showSpinner) window.showSpinner();
               if ($id('spinnerMsg')) $id('spinnerMsg').textContent = "L'IA analyse la police...";
               
+              function renderFontRecognitionResults(fonts) {
+                  $id('fontRecognitionResults').style.display = 'block';
+                  const listCont = $id('fontRecognitionList');
+                  listCont.innerHTML = '';
+                  fonts.forEach(f => {
+                      const conf = (f.score * 100).toFixed(1);
+                      const cleanName = f.label.replace(/[-_]/g, ' ');
+                      const btn = document.createElement('button');
+                      btn.className = 'panel-btn';
+                      btn.style.textAlign = 'left';
+                      btn.style.fontSize = '10px';
+                      btn.style.padding = '4px';
+                      btn.innerHTML = `<b>${cleanName}</b> <span style="float:right; opacity:0.6">${conf}%</span>`;
+                      
+                      btn.onclick = async () => {
+                          const fontNameRaw = f.label.split('-')[0].split('_')[0];
+                          const cssUrl = `https://fonts.googleapis.com/css2?family=${fontNameRaw}&display=swap`;
+                          
+                          if (window.showSpinner) {
+                              if ($id('spinnerMsg')) $id('spinnerMsg').textContent = "Installation de la police...";
+                              window.showSpinner();
+                          }
+                          
+                          try {
+                              // 1. Load in browser for preview
+                              const link = document.createElement('link');
+                              link.href = cssUrl;
+                              link.rel = 'stylesheet';
+                              document.head.appendChild(link);
+                              
+                              // 2. Ask server to download the TTF
+                              const fd = new FormData();
+                              fd.append('action', 'download_google_font');
+                              fd.append('font_name', fontNameRaw);
+                              
+                              const res = await fetch('?studio_process', { method: 'POST', body: fd });
+                              const json = await res.json();
+                              
+                              if (json.success && json.font_name) {
+                                  addFontToSelects(json.font_name, fontNameRaw);
+                                  if ($id('modifRedactFont')) $id('modifRedactFont').value = json.font_name;
+                              } else {
+                                  if (json.error === 'offline') {
+                                      alert("⚠️ Pas de connexion internet sur le serveur (ou lien direct introuvable).\n\nL'application n'a pas pu télécharger automatiquement le fichier .ttf pour la génération PDF finale.\n\nVeuillez télécharger la police manuellement sur votre ordinateur (ex: depuis Google Fonts) et l'importer via le bouton avec l'icône de nuage.");
+                                  } else {
+                                      alert("Erreur lors de l'installation sur le serveur : " + (json.error || "Inconnue"));
+                                  }
+                                  addFontToSelects(fontNameRaw, fontNameRaw);
+                              }
+                              
+                              // Switch to text redact tool if not already
+                              const textToolBtn = document.querySelector('.modif-tool-btn[data-tool="redact_text"]');
+                              if (textToolBtn && currentTool !== 'redact_text') {
+                                  textToolBtn.click();
+                              }
+                          } catch (e) {
+                              alert("Erreur réseau (téléchargement police): " + e.message);
+                              addFontToSelects(fontNameRaw, fontNameRaw);
+                          }
+                          
+                          if (window.hideSpinner) window.hideSpinner();
+                          $id('fontRecognitionResults').style.display = 'none';
+                      };
+                      listCont.appendChild(btn);
+                  });
+              }
+
               try {
                   const fd = new FormData();
                   fd.append('action', 'recognize_font');
@@ -267,74 +334,28 @@
                   const res = await fetch('?studio_process', { method: 'POST', body: fd });
                   const json = await res.json();
                   
-                  if (window.hideSpinner) window.hideSpinner();
-                  
-                  if (json.success && json.fonts) {
-                      $id('fontRecognitionResults').style.display = 'block';
-                      const listCont = $id('fontRecognitionList');
-                      listCont.innerHTML = '';
-                      json.fonts.forEach(f => {
-                          const conf = (f.score * 100).toFixed(1);
-                          const cleanName = f.label.replace(/[-_]/g, ' ');
-                          const btn = document.createElement('button');
-                          btn.className = 'panel-btn';
-                          btn.style.textAlign = 'left';
-                          btn.style.fontSize = '10px';
-                          btn.style.padding = '4px';
-                          btn.innerHTML = `<b>${cleanName}</b> <span style="float:right; opacity:0.6">${conf}%</span>`;
-                          
-                          btn.onclick = async () => {
-                              const fontNameRaw = f.label.split('-')[0].split('_')[0];
-                              const cssUrl = `https://fonts.googleapis.com/css2?family=${fontNameRaw}&display=swap`;
-                              
-                              if (window.showSpinner) {
-                                  if ($id('spinnerMsg')) $id('spinnerMsg').textContent = "Installation de la police...";
-                                  window.showSpinner();
-                              }
-                              
-                              try {
-                                  // 1. Load in browser for preview
-                                  const link = document.createElement('link');
-                                  link.href = cssUrl;
-                                  link.rel = 'stylesheet';
-                                  document.head.appendChild(link);
-                                  
-                                  // 2. Ask server to download the TTF
-                                  const fd = new FormData();
-                                  fd.append('action', 'download_google_font');
-                                  fd.append('font_name', fontNameRaw);
-                                  
-                                  const res = await fetch('?studio_process', { method: 'POST', body: fd });
-                                  const json = await res.json();
-                                  
-                                  if (json.success && json.font_name) {
-                                      addFontToSelects(json.font_name, fontNameRaw);
-                                      if ($id('modifRedactFont')) $id('modifRedactFont').value = json.font_name;
-                                  } else {
-                                      if (json.error === 'offline') {
-                                          alert("⚠️ Pas de connexion internet sur le serveur (ou lien direct introuvable).\n\nL'application n'a pas pu télécharger automatiquement le fichier .ttf pour la génération PDF finale.\n\nVeuillez télécharger la police manuellement sur votre ordinateur (ex: depuis Google Fonts) et l'importer via le bouton avec l'icône de nuage.");
-                                      } else {
-                                          alert("Erreur lors de l'installation sur le serveur : " + (json.error || "Inconnue"));
-                                      }
-                                      addFontToSelects(fontNameRaw, fontNameRaw);
-                                  }
-                                  
-                                  // Switch to text redact tool if not already
-                                  const textToolBtn = document.querySelector('.modif-tool-btn[data-tool="redact_text"]');
-                                  if (textToolBtn && currentTool !== 'redact_text') {
-                                      textToolBtn.click();
-                                  }
-                              } catch (e) {
-                                  alert("Erreur réseau (téléchargement police): " + e.message);
-                                  addFontToSelects(fontNameRaw, fontNameRaw);
-                              }
-                              
+                  if (json.success) {
+                      if (json.job_id && window.pollStudioTask) {
+                          window.pollStudioTask(json, (finalJson) => {
                               if (window.hideSpinner) window.hideSpinner();
-                              $id('fontRecognitionResults').style.display = 'none';
-                          };
-                          listCont.appendChild(btn);
-                      });
+                              if (finalJson.fonts) {
+                                  renderFontRecognitionResults(finalJson.fonts);
+                              } else {
+                                  alert("Aucune police détectée dans le résultat.");
+                              }
+                          }, (errJson) => {
+                              if (window.hideSpinner) window.hideSpinner();
+                              alert("Erreur IA: " + (errJson.error || errJson.errors?.join(', ') || 'Inconnue'));
+                          });
+                      } else if (json.fonts) {
+                          if (window.hideSpinner) window.hideSpinner();
+                          renderFontRecognitionResults(json.fonts);
+                      } else {
+                          if (window.hideSpinner) window.hideSpinner();
+                          alert("Aucune police reconnue.");
+                      }
                   } else {
+                      if (window.hideSpinner) window.hideSpinner();
                       const errorMsg = json.error || (json.errors ? json.errors.join(', ') : "Inconnue");
                       alert("Erreur IA: " + errorMsg);
                   }
