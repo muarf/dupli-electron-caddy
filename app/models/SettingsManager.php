@@ -63,6 +63,7 @@ class SettingsManager {
             'studio_api_fonts_url'  => '',
             'studio_api_docling_url'=> '',
             'ai_local_path'         => '',
+            'whatfontis_api_key'    => '',
         ];
 
         $stmt = $this->db->prepare("
