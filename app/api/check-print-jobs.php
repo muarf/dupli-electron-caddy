@@ -107,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
                 $isLocalServer = in_array($remoteAddr, ['127.0.0.1', '::1', 'localhost'], true) || strpos($remoteAddr, '127.0.0.1') !== false;
                 $hasAdminPermission = (isset($_SESSION['admin']) && $_SESSION['admin'] === true) || 
-                                     (isset($_SESSION['user']) && ($_SESSION['user'] === "1" || !empty($_SESSION['user']))) ||
+                                     (isset($_SESSION['user']) && $_SESSION['user'] === "1") ||
                                      $isLocalServer;
 
                 if (!$hasAdminPermission) {

@@ -19,15 +19,27 @@ if (!isElectron()) {
     exit;
 }
 
-// Verrou exclusif non-bloquant pour éviter le double-démarrage simultané d'indexations
-$lockFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dupli_indexing.lock';
-$lockFp = @fopen($lockFile, 'c+');
-if ($lockFp) {
-    if (!flock($lockFp, LOCK_EX | LOCK_NB)) {
-        http_response_code(409);
-        echo json_encode(['error' => 'Une tâche d\'indexation est déjà en cours d\'exécution.']);
-        exit;
+// PID file pour empêcher les exécutions parallèles
+$pidFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dupli_indexing.pid';
+$isRunning = false;
+
+if (file_exists($pidFile)) {
+    $oldPid = (int)trim(file_get_contents($pidFile));
+    if ($oldPid > 0) {
+        if (posix_kill($oldPid, 0) || (PHP_OS_FAMILY === 'Windows' && `tasklist /FI "PID eq $oldPid" 2>NUL | find /I "$oldPid"`)) {
+            $isRunning = true;
+        } else {
+            @unlink($pidFile);
+        }
+    } else {
+        @unlink($pidFile);
     }
+}
+
+if ($isRunning) {
+    http_response_code(409);
+    echo json_encode(['error' => 'Une tâche d\'indexation est déjà en cours d\'exécution.']);
+    exit;
 }
 
 $data = json_decode(file_get_contents('php://input'), true);
@@ -91,10 +103,17 @@ if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
     // Windows: start /B permet de lancer en arrière-plan sans bloquer
     $cmd = 'start /B "" ' . implode(' ', array_map('escapeshellarg', $cmdArgs));
     pclose(popen($cmd, 'r'));
+    file_put_contents($pidFile, getmypid());
 } else {
-    // Linux/Mac: > /dev/null 2>&1 &
-    $cmd = implode(' ', array_map('escapeshellarg', $cmdArgs)) . ' > /dev/null 2>&1 &';
-    exec($cmd);
+    // Linux/Mac: capturer le PID du processus background
+    $cmd = implode(' ', array_map('escapeshellarg', $cmdArgs)) . ' > /dev/null 2>&1 & echo $!';
+    exec($cmd, $output);
+    $bgPid = trim($output[0] ?? '');
+    if ($bgPid && ctype_digit($bgPid)) {
+        file_put_contents($pidFile, $bgPid);
+    } else {
+        file_put_contents($pidFile, getmypid());
+    }
 }
     
     // Créer un fichier de statut initial pour éviter les race conditions
