@@ -309,9 +309,10 @@
       let pages = [];
 
       try {
+        const phpBase = window.location.origin.includes('8000') ? '' : 'http://127.0.0.1:8000';
         const endpoints = [
-          `/?convert_emf_to_png&job_id=${numericJobId}`,
-          `/?convert_pcl_to_png&job_id=${numericJobId}`,
+          `${phpBase}/?convert_emf_to_png&job_id=${numericJobId}`,
+          `${phpBase}/?convert_pcl_to_png&job_id=${numericJobId}`,
         ];
 
         for (const endpoint of endpoints) {
@@ -409,9 +410,10 @@
       let analyzedCount = 0;
 
       if (pageCount > 0) {
+        const baseUrl = window.location.origin.includes('8000') ? '' : 'http://127.0.0.1:8000';
         for (let i = 0; i < pageCount; i++) {
-          const relativeUrl = `/thumbnails/${numericJobId}/page_${i}.png?t=${Date.now()}`;
-          const analysis = await analyzeImagePage(relativeUrl);
+          const fullImageUrl = `${baseUrl}/thumbnails/${numericJobId}/page_${i}.png?t=${Date.now()}`;
+          const analysis = await analyzeImagePage(fullImageUrl);
           totalFillRate += analysis.fillRate;
           if (analysis.isColor) {
             foundRealColor = true;
