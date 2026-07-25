@@ -62,6 +62,16 @@ pub async fn launch_all_sidecars(app: &AppHandle) -> Result<(), String> {
     // Récupère l'état partagé, géré par Tauri via `app.manage()`
     let state = app.state::<AppState>();
 
+    // Garde atomique : refuse le double démarrage
+    {
+        let caddy = state.caddy_child.lock().unwrap();
+        let php = state.php_child.lock().unwrap();
+        if caddy.is_some() || php.is_some() {
+            log::warn!("[server_manager] Double démarrage refusé : des serveurs tournent déjà.");
+            return Err("Les serveurs sont déjà en cours d'exécution.".into());
+        }
+    }
+
     // --- Lancement de Caddy ---
     let caddy_handle = app.clone();
     let caddy_child_ref = Arc::clone(&state.caddy_child);
