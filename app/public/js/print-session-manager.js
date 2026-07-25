@@ -61,19 +61,23 @@ class PrintSessionManager {
         
         setTimeout(async () => {
             try {
-                // Convertir en nombre pour le C++
                 const numericJobId = parseInt(jobId, 10);
                 console.log('[PrintSessionManager] Réanalyse scheduled pour job:', numericJobId);
+
+                const keyStr = String(jobId);
+                const keyNum = Number(jobId);
+                const jobData = this.lastJobData.get(keyStr) || this.lastJobData.get(keyNum) || {};
+                const printerName = jobData.PrinterName || jobData.printerName || '';
+                const documentName = jobData.Document || jobData.documentName || '';
+
+                // Transmettre driverColor = true sauf si isGrayscale === true explicitement
+                const driverColor = jobData.isGrayscale === true ? false : true;
                 
                 if (window.electronAPI && window.electronAPI.reanalyzePrintJob) {
-                    const result = await window.electronAPI.reanalyzePrintJob(numericJobId);
+                    const result = await window.electronAPI.reanalyzePrintJob(numericJobId, documentName, '', '', driverColor);
                     
                     if (result && result.success) {
                         console.log('[PrintSessionManager] Réanalyse result:', result);
-                        
-                        // Obtenir le printer name des données stockées
-                        const jobData = this.lastJobData.get(jobId) || {};
-                        const printerName = jobData.PrinterName || jobData.printerName || '';
                         
                         // Mettre à jour la DB avec les valeurs analysées
                         const postBody = {
@@ -231,19 +235,33 @@ class PrintSessionManager {
         
         if (jobId) {
             this.processedJobIds.add(jobId);
-            // Stocker données pour comparaison future
-            this.lastJobData.set(jobId, {
+            this.processedJobIds.add(String(jobId));
+            this.processedJobIds.add(Number(jobId));
+
+            const jobMeta = {
                 status: currentStatus,
                 totalPages: currentPages,
-                PrinterName: jobData.PrinterName || jobData.printerName || ''
-            });
+                PrinterName: jobData.PrinterName || jobData.printerName || '',
+                Document: jobData.Document || jobData.documentName || '',
+                isGrayscale: jobData.isGrayscale,
+                colorMode: jobData.colorMode
+            };
+
+            // Stocker données avec clés string et number pour éviter les incohérences de types
+            this.lastJobData.set(jobId, jobMeta);
+            this.lastJobData.set(String(jobId), jobMeta);
+            this.lastJobData.set(Number(jobId), jobMeta);
 
             // TTL de l'anti-spam (60s)
             setTimeout(() => {
                 const entry = this.lastJobData.get(jobId);
                 if (entry && entry.status === currentStatus) {
                     this.processedJobIds.delete(jobId);
+                    this.processedJobIds.delete(String(jobId));
+                    this.processedJobIds.delete(Number(jobId));
                     this.lastJobData.delete(jobId);
+                    this.lastJobData.delete(String(jobId));
+                    this.lastJobData.delete(Number(jobId));
                 }
             }, 60000);
             
