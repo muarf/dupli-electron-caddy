@@ -1234,7 +1234,7 @@
                     colDetails = `
                     <div style="font-size: 0.9em;">
                         ${job.copies} ex × ${pPerEx} pg.<br>
-                        <small>${job.duplex ? '<?php echo addslashes(__('common.duplex')); ?>' : '<?php echo addslashes(__('common.simplex')); ?>'} - ${job.taille}</small>
+                        <small>${job.duplex ? '<?php echo addslashes(__('common.duplex')); ?>' : '<?php echo addslashes(__('common.simplex')); ?>'} - ${(job.taille && job.taille !== 'undefined') ? job.taille : 'A4'}</small>
                         ${job.color && job.fill_rate_percent ? '<br><small class="text-muted"><?php echo addslashes(__('auto_tirage.fill_rate')); ?>: ' + job.fill_rate_percent + '%</small>' : ''}
                     </div>
 

@@ -318,6 +318,7 @@ try {
                     document = ?,
                     total_pages = ?,
                     copies = ?,
+                    paper_size = ?,
                     thumbnail_url = ?
                 WHERE job_id = ? AND printer_name = ?
             ");
@@ -330,6 +331,7 @@ try {
                 $document,
                 $total_pages,
                 $copies,
+                $taille,
                 $input['thumbnail_url'] ?? null,
                 strval($original_job_id),
                 $printerName
