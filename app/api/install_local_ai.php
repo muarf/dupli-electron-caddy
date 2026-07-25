@@ -67,9 +67,9 @@ try {
             }
             exec($cmd . ' > /dev/null 2>&1 &');
         } else {
-            // Linux : using escapeshellarg for scriptPath and targetDir
-            $cmd = 'x-terminal-emulator -e "bash ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($targetDir) . '" > /dev/null 2>&1 &';
-            exec($cmd);
+            // Linux : use escapeshellcmd + escapeshellarg — pass args as separate tokens
+            $cmd = 'x-terminal-emulator -e bash ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($targetDir);
+            exec($cmd . ' > /dev/null 2>&1 &');
         }
     }
 

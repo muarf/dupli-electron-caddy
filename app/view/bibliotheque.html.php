@@ -20,7 +20,12 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
     if (isset($_SESSION[$lockoutKey]) && time() < $_SESSION[$lockoutKey]) {
         $waitTime = $_SESSION[$lockoutKey] - time();
         $bib_error = "Trop de tentatives. Veuillez réessayez dans {$waitTime} seconde(s).";
-    } elseif (isset($_POST['bib_pass'])) {
+    } elseif (isset($_SESSION[$lockoutKey]) && time() >= $_SESSION[$lockoutKey]) {
+        // Lockout expired — reset counters
+        unset($_SESSION[$attemptsKey], $_SESSION[$lockoutKey]);
+    }
+
+    if (!isset($_SESSION[$lockoutKey]) && isset($_POST['bib_pass'])) {
         $attempts = (int)($_SESSION[$attemptsKey] ?? 0);
         if ($attempts >= $maxAttempts) {
             $_SESSION[$lockoutKey] = time() + 60; // Verrouillé 60 sec
