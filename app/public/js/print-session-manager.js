@@ -130,16 +130,22 @@ class PrintSessionManager {
 
             let regenerated = 0;
 
-            // 2. Pour chaque job, appeler le C++ via IPC pour réanalyser
+            // 2. Pour chaque job, appeler l'IPC pour réanalyser
             for (const job of result.jobs) {
                 const jobId = parseInt(job.job_id);
                 if (!jobId || jobId <= 0) continue;
 
                 try {
-                    // Appeler le C++ via Electron IPC pour analyse complète
                     if (window.electronAPI && window.electronAPI.reanalyzePrintJob) {
-                        console.log(`[PrintSessionManager] Appel IPC reanalyzePrintJob pour job ${jobId}...`);
-                        const analysisResult = await window.electronAPI.reanalyzePrintJob(jobId);
+                        const documentName = job.document || job.document_name || job.document_display_name || '';
+                        const printerName = job.printer_name || '';
+                        
+                        // Déterminer driverColor : true par défaut sauf si explicitement monochrome
+                        const isMono = (job.color_mode && job.color_mode.toLowerCase() === 'monochrome') || job.is_grayscale === true || job.is_grayscale === '1';
+                        const driverColor = !isMono;
+
+                        console.log(`[PrintSessionManager] Appel IPC reanalyzePrintJob pour job ${jobId} (doc: '${documentName}', color: ${driverColor})...`);
+                        const analysisResult = await window.electronAPI.reanalyzePrintJob(jobId, documentName, '', '', driverColor);
                         console.log(`[PrintSessionManager] Résultat IPC pour job ${jobId}:`, analysisResult);
 
                         if (analysisResult && analysisResult.success) {
@@ -150,10 +156,12 @@ class PrintSessionManager {
                                 body: JSON.stringify({
                                     action: 'update_job_analysis',
                                     id: job.id,
-                                    thumbnail_url: analysisResult.thumbnailUrl,
-                                    fill_rate: analysisResult.fillRate,
+                                    job_id: jobId,
+                                    printer_name: printerName,
+                                    thumbnail_url: analysisResult.thumbnailUrl || '',
+                                    fill_rate: analysisResult.fillRate || 0,
                                     is_grayscale: analysisResult.isGrayscale,
-                                    total_pages: analysisResult.totalPages
+                                    total_pages: analysisResult.totalPages || job.total_pages || 0
                                 })
                             });
                             regenerated++;
