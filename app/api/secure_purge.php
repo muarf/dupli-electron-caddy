@@ -11,7 +11,17 @@ ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+if ((!isset($_SESSION['admin']) || $_SESSION['admin'] !== true) && 
+    (!isset($_SESSION['user']) || $_SESSION['user'] !== "1")) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Accès réservé à l\'administrateur']);
+    exit;
+}
 
 try {
     require_once(__DIR__ . '/../controler/func.php');

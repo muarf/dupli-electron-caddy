@@ -45,7 +45,7 @@ if (substr(strtolower($filename), -4) !== '.pdf') {
 // Définir les headers pour le téléchargement
 header('Content-Type: application/pdf');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
-header('Content-Length: ' . filesize($filepath));
+header('Content-Length: ' . filesize($real_filepath));
 header('Cache-Control: private, max-age=0, must-revalidate');
 header('Pragma: public');
 header('Expires: 0');
@@ -56,6 +56,6 @@ if (ob_get_level()) {
 }
 
 // Lire et envoyer le fichier
-readfile($filepath);
+readfile($real_filepath);
 exit;
 ?>

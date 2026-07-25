@@ -5,7 +5,6 @@
 
 // Headers CORS et JSON
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
@@ -42,6 +41,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 // POST: Ajouter ou mettre à jour un mapping
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    if ((!isset($_SESSION['admin']) || $_SESSION['admin'] !== true) && 
+        (!isset($_SESSION['user']) || $_SESSION['user'] !== "1")) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Accès réservé à l\'administrateur']);
+        exit;
+    }
+
     $input = json_decode(file_get_contents('php://input'), true);
 
     if (!isset($input['system_printer_name']) || !isset($input['machine_type']) || !isset($input['machine_id'])) {

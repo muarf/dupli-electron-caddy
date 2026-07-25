@@ -178,7 +178,26 @@ if (!function_exists('verify_csrf_token')) {
      */
     function verify_csrf_token(string $token): bool
     {
-        return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+        return isset($_SESSION['csrf_token']) && !empty($token) && hash_equals($_SESSION['csrf_token'], $token);
+    }
+}
+
+if (!function_exists('require_csrf_token')) {
+    /**
+     * Exiger un token CSRF valide pour les requêtes POST sensibles
+     */
+    function require_csrf_token(): void
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+        if (!verify_csrf_token($token)) {
+            http_response_code(403);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['success' => false, 'error' => 'Jeton CSRF invalide ou expiré']);
+            exit;
+        }
     }
 }
 

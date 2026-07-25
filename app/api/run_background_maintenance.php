@@ -5,16 +5,13 @@ require_once __DIR__ . '/../controler/func.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-// Empêcher les lancements multiples trop fréquents (cache de 5 minutes)
-$lockFile = __DIR__ . '/../logs/maintenance_lock.txt';
-if (file_exists($lockFile) && (time() - filemtime($lockFile) < 300)) {
-    echo json_encode(['status' => 'skipped', 'message' => 'Maintenance already running or recently finished']);
+// Verrou de fichier atomique pour empêcher les exécutions parallèles
+$lockFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dupli_maintenance.lock';
+$lockFp = @fopen($lockFile, 'c+');
+if ($lockFp && !flock($lockFp, LOCK_EX | LOCK_NB)) {
+    echo json_encode(['status' => 'skipped', 'message' => 'Maintenance déjà en cours d\'exécution']);
     exit;
 }
-
-// Créer le lock
-if (!is_dir(dirname($lockFile))) mkdir(dirname($lockFile), 0777, true);
-file_put_contents($lockFile, time());
 
 // Job ID pour le suivi (optionnel)
 $jobId = 'maint_' . uniqid();

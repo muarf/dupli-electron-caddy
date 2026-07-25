@@ -43,7 +43,6 @@
     "fs:allow-read",
     "fs:allow-write",
     "fs:allow-write-file",
-    "allow-all-commands",
     "updater:default"
   ]
 }
