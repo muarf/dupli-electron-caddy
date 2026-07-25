@@ -1,34 +1,28 @@
-# Rapport de Bug : Absence de Miniature, Encrage à 0 et Mauvaise Détection Couleur (N&B)
+# Rapport de Bug : Fix de la Réanalyse Automatique des Miniatures et Détection Couleur
 
 ## 📌 Description du Problème
-Lors de la détection de nouvelles impressions dans le buffer (`auto_tirage.html.php`), le système affichait les symptômes suivants :
-1. Le mode couleur était systématiquement détecté en **N&B (Monochrome)** au lieu de **Couleur**.
-2. La miniature (thumbnail/preview) n'était pas générée ni affichée.
-3. Le taux d'encrage (`fill_rate`) restait bloqué à `0%`.
+Lors de la détection de nouvelles impressions dans le buffer (`auto_tirage.html.php`), les impressions perdaient leur miniature (thumbnail), affichaient un taux d'encrage à `0%` et basculaient en mode **Monochrome (N&B)**.
 
 ---
 
 ## 🔍 Analyse & Cause Racine
 
-### 1. Forçage du mode Monochrome (`driver_color = false`)
-- **Fichier** : `app/public/js/print-session-manager.js` (`scheduleReanalysis`)
-- **Mécanisme** : La fonction appelait `window.electronAPI.reanalyzePrintJob(numericJobId)` avec 1 seul argument (le `jobId`), au lieu des 5 arguments attendus par la bridge (`jobId, documentName, format, splPath, driverColor`).
-- **Conséquence** : `driverColor` valait `undefined` (`false`). Dans Rust (`printer_commands.rs`), la condition `is_grayscale = !is_color || !driver_color` évaluait toujours à `true`, forçant la couleur à `Monochrome` (N&B) en base SQLite.
-
-### 2. Incohérence de clés d'indexation & Échec de la mise à jour SQLite
-- **Fichier** : `app/public/js/print-session-manager.js` (`lastJobData`)
-- **Mécanisme** : Le job ID était stocké sous forme de chaîne ou de nombre indifféremment. Lors de la réanalyse 3 secondes plus tard, `this.lastJobData.get(jobId)` échouait à retrouver le nom de l'imprimante (`printerName`).
-- **Conséquence** : La requête `update_job_analysis` envoyée à `check-print-jobs.php` contenait un `printer_name` vide, ne correspondant à aucune ligne dans SQLite. Les colonnes `thumbnail_url` et `fill_rate` n'étaient donc jamais enregistrées.
+### 1. Surécriture par la tâche de fond (`regenerateMissingThumbnails`)
+- **Fichier** : `app/public/js/print-session-manager.js` (`regenerateMissingThumbnails`)
+- **Mécanisme** : Une boucle automatique s'exécutait toutes les 10 secondes pour traiter les travaux en base sans miniature.
+- **Cause** : À la ligne 142, la fonction exécutait `reanalyzePrintJob(jobId)` avec un seul argument (omettant `documentName`, `printerName` et `driverColor`).
+- **Conséquence** : 
+  1. `driverColor` valant `undefined` (`false`), Rust évaluait par défaut `isGrayscale = true`.
+  2. `printerName` étant vide dans l'appel `update_job_analysis`, SQLite ne pouvait pas faire correspondre la ligne du job.
+  3. Toutes les 10 secondes, cette tâche de fond écrasait les données en BDD SQLite avec `color_mode = Monochrome` et `thumbnail_url = ""`.
 
 ---
 
 ## 🛠️ Résolution Apportée
 
-1. **Stockage complet et tolérant aux types** (`print-session-manager.js`) :
-   - Stockage des métadonnées du job (`PrinterName`, `Document`, `isGrayscale`, `colorMode`) dans `lastJobData` sous les deux formes (chaine `String(jobId)` et nombre `Number(jobId)`).
+1. **Passage complet des métadonnées dans la boucle de 10s** (`print-session-manager.js`) :
+   - Récupération de `documentName` (`job.document_name`), `printerName` (`job.printer_name`) et déduction de `driverColor` (!isMono).
+   - Appel corrigé : `window.electronAPI.reanalyzePrintJob(jobId, documentName, '', '', driverColor)`.
 
-2. **Transmission de `driverColor` et du `documentName`** (`print-session-manager.js`) :
-   - Mise à jour de l'appel `reanalyzePrintJob(numericJobId, documentName, '', '', driverColor)` pour transmettre la couleur réelle du pilote (défaut à `true` sauf si explicitement monochrome).
-
-3. **Correction de la mise à jour BDD** (`check-print-jobs.php`) :
-   - Grâce à la récupération garantie du `printerName`, la requête SQL `update_job_analysis` applique correctement le `thumbnail_url`, le `fill_rate` calculé et le `color_mode` en SQLite.
+2. **Transmission de l'ID et du nom d'imprimante dans l'update SQLite** :
+   - Envoi de `id`, `job_id` et `printer_name` à `update_job_analysis` pour que la mise à jour BDD cible la bonne ligne et enregistre la miniature (`thumbnail_url`) ainsi que l'encrage réel.
