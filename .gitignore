@@ -68,6 +68,10 @@ app/bibliotheque/thumbnails/
 
 # Test artifacts
 tests/output_xps/
+playwright-report/
+test-results/
+app/tmp/
+logs/*.json
 
 # Cache
 .cache/
