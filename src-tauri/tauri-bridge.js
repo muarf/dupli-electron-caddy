@@ -309,9 +309,10 @@
       let pages = [];
 
       try {
+        const phpBase = window.location.origin.includes('8000') ? '' : 'http://127.0.0.1:8000';
         const endpoints = [
-          `/?convert_emf_to_png&job_id=${numericJobId}`,
-          `/?convert_pcl_to_png&job_id=${numericJobId}`,
+          `${phpBase}/?convert_emf_to_png&job_id=${numericJobId}`,
+          `${phpBase}/?convert_pcl_to_png&job_id=${numericJobId}`,
         ];
 
         for (const endpoint of endpoints) {
