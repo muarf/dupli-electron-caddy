@@ -124,8 +124,26 @@ foreach ($files as $idx => $file) {
         'started_at' => date('Y-m-d H:i:s'),
     ], $statusFile);
 
-    // Vérifications préalables
-    if (!file_exists($filepath)) {
+    // Vérifications préalables (avec résolution automatique si déplacement de disque C: -> D: ou Desktop -> Bureau)
+    $realPath = $filepath;
+    if (!file_exists($realPath)) {
+        $candidates = [
+            str_replace(['C:\Users\Dupli\Desktop', 'C:/Users/Dupli/Desktop'], ['D:\Bureau', 'D:/Bureau'], $filepath),
+            str_replace(['C:', 'Desktop'], ['D:', 'Bureau'], $filepath),
+            str_replace('C:', 'D:', $filepath),
+            str_replace('Desktop', 'Bureau', $filepath),
+        ];
+        foreach ($candidates as $cand) {
+            if ($cand && file_exists($cand)) {
+                $realPath = $cand;
+                logMsg("  INFO — chemin corrigé en BDD : $filepath -> $realPath", $logFile);
+                $db->prepare("UPDATE bibliotheque_files SET filepath = ? WHERE id = ?")->execute([$realPath, $fileId]);
+                break;
+            }
+        }
+    }
+
+    if (!file_exists($realPath)) {
         logMsg("  SKIP — fichier introuvable : $filepath", $logFile);
         $skipped++;
         continue;
@@ -143,7 +161,7 @@ foreach ($files as $idx => $file) {
     $cmd = $envPrefix 
          . escapeshellarg($pythonBin)
          . ' ' . escapeshellarg($scriptPy)
-         . ' ' . escapeshellarg($filepath)
+         . ' ' . escapeshellarg($realPath)
          . ' ' . escapeshellarg($tmpJson)
          . ' 2>&1';
 

@@ -271,3 +271,5 @@ async fn wait_for_port(port: u16, timeout_secs: u64) -> bool {
 
     result.unwrap_or(false)
 }
+
+// Trigger rebuild
