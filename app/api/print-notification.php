@@ -7,7 +7,6 @@
  */
 
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
@@ -43,6 +42,13 @@ foreach ($requiredFields as $field) {
         exit;
     }
 }
+
+// Sanitization des entrées numériques
+$data['jobId'] = strval($data['jobId']);
+$data['totalPages'] = max(0, intval($data['totalPages'] ?? 0));
+$data['copies'] = max(1, intval($data['copies'] ?? 1));
+$data['pagesPrinted'] = max(0, intval($data['pagesPrinted'] ?? 0));
+$data['size'] = max(0, intval($data['size'] ?? 0));
 
 try {
     // Inclure les fichiers nécessaires

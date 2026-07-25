@@ -19,6 +19,17 @@ if (!isElectron()) {
     exit;
 }
 
+// Verrou exclusif non-bloquant pour éviter le double-démarrage simultané d'indexations
+$lockFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dupli_indexing.lock';
+$lockFp = @fopen($lockFile, 'c+');
+if ($lockFp) {
+    if (!flock($lockFp, LOCK_EX | LOCK_NB)) {
+        http_response_code(409);
+        echo json_encode(['error' => 'Une tâche d\'indexation est déjà en cours d\'exécution.']);
+        exit;
+    }
+}
+
 $data = json_decode(file_get_contents('php://input'), true);
 $path = $data['path'] ?? '';
 $recursive = $data['recursive'] ?? false;

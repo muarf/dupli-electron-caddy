@@ -39,6 +39,7 @@ try {
             break;
             
         case 'close_all':
+            requireAdminAuth();
             closeAllSessions($db);
             break;
             
@@ -51,6 +52,21 @@ try {
     error_log("[SESSIONS API] Erreur: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => 'Erreur serveur', 'message' => $e->getMessage()]);
+}
+
+/**
+ * Exiger une session admin active
+ */
+function requireAdminAuth() {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    if ((!isset($_SESSION['admin']) || $_SESSION['admin'] !== true) && 
+        (!isset($_SESSION['user']) || $_SESSION['user'] !== "1")) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Accès réservé à l\'administrateur']);
+        exit;
+    }
 }
 
 /**

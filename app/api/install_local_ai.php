@@ -12,6 +12,17 @@ require_once __DIR__ . '/../controler/functions/paths.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+if ((!isset($_SESSION['admin']) || $_SESSION['admin'] !== true) && 
+    (!isset($_SESSION['user']) || $_SESSION['user'] !== "1")) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Accès réservé à l\'administrateur']);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['error' => 'Method Not Allowed']);
@@ -33,7 +44,7 @@ try {
         
         $cmd = 'start cmd.exe /c ""' . $scriptPath . '"';
         if ($targetDir !== '') {
-            $cmd .= ' "' . $targetDir . '"';
+            $cmd .= ' ' . escapeshellarg($targetDir);
         }
         $cmd .= '"';
         
@@ -50,16 +61,14 @@ try {
         $osType = php_uname('s');
         if (stripos($osType, 'darwin') !== false) {
             // macOS
-            $cmd = 'open -a Terminal "' . $scriptPath . '"';
+            $cmd = 'open -a Terminal ' . escapeshellarg($scriptPath);
             if ($targetDir !== '') {
-                $cmd .= ' --args "' . $targetDir . '"';
+                $cmd .= ' --args ' . escapeshellarg($targetDir);
             }
             exec($cmd . ' > /dev/null 2>&1 &');
         } else {
-            // Linux : we try x-terminal-emulator, gnome-terminal, etc. 
-            // We just use a generic wrapper or nohup if we can't open a terminal easily.
-            // Using x-terminal-emulator is usually safest on desktop linux.
-            $cmd = 'x-terminal-emulator -e "bash \'' . $scriptPath . '\' \'' . $targetDir . '\'" > /dev/null 2>&1 &';
+            // Linux : using escapeshellarg for scriptPath and targetDir
+            $cmd = 'x-terminal-emulator -e "bash ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($targetDir) . '" > /dev/null 2>&1 &';
             exec($cmd);
         }
     }

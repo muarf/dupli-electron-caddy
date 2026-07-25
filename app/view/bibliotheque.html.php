@@ -13,14 +13,36 @@ $is_admin = isset($_SESSION['user']);
 $is_authenticated = isset($_SESSION['bib_authenticated']) && $_SESSION['bib_authenticated'] === true;
 
 if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
-    if (isset($_POST['bib_pass'])) {
-        if ($_POST['bib_pass'] === $bib_password) {
-            $_SESSION['bib_authenticated'] = true;
-            // Redirection pour éviter de renvoyer le formulaire
-            header('Location: ?bibliotheque');
-            exit;
+    $maxAttempts = 5;
+    $attemptsKey = 'bib_auth_attempts';
+    $lockoutKey = 'bib_auth_lockout';
+
+    if (isset($_SESSION[$lockoutKey]) && time() < $_SESSION[$lockoutKey]) {
+        $waitTime = $_SESSION[$lockoutKey] - time();
+        $bib_error = "Trop de tentatives. Veuillez réessayez dans {$waitTime} seconde(s).";
+    } elseif (isset($_POST['bib_pass'])) {
+        $attempts = (int)($_SESSION[$attemptsKey] ?? 0);
+        if ($attempts >= $maxAttempts) {
+            $_SESSION[$lockoutKey] = time() + 60; // Verrouillé 60 sec
+            $bib_error = "Trop de tentatives échouées. Accès bloqué pendant 60 secondes.";
         } else {
-            $bib_error = "Mot de passe incorrect.";
+            $inputPass = $_POST['bib_pass'];
+            $isValid = password_verify($inputPass, $bib_password) || ($inputPass === $bib_password);
+
+            if ($isValid) {
+                // Auto-migration si le mdp était stocké en clair
+                if ($inputPass === $bib_password && !password_verify($inputPass, $bib_password)) {
+                    $_bib_settings->set('bibliotheque_password', password_hash($inputPass, PASSWORD_BCRYPT));
+                }
+                unset($_SESSION[$attemptsKey], $_SESSION[$lockoutKey]);
+                $_SESSION['bib_authenticated'] = true;
+                header('Location: ?bibliotheque');
+                exit;
+            } else {
+                $_SESSION[$attemptsKey] = $attempts + 1;
+                $remaining = $maxAttempts - $_SESSION[$attemptsKey];
+                $bib_error = "Mot de passe incorrect. ({$remaining} tentative(s) restante(s))";
+            }
         }
     }
     // Affichage du formulaire de login dédié

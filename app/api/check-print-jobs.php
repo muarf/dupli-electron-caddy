@@ -25,7 +25,6 @@ ini_set('log_errors', 1);
 
 // Définir les headers AVANT toute sortie
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
@@ -90,6 +89,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $db = create_database_manager();
 
             $action = $input['action'];
+
+            if (in_array($action, ['delete_jobs', 'delete_by_job_id', 'purge_all'], true)) {
+                if (session_status() === PHP_SESSION_NONE) {
+                    session_start();
+                }
+                if ((!isset($_SESSION['admin']) || $_SESSION['admin'] !== true) && 
+                    (!isset($_SESSION['user']) || $_SESSION['user'] !== "1")) {
+                    throw new Exception("Accès réservé à l'administrateur pour la suppression d'impressions.");
+                }
+            }
 
             if ($action === 'delete_jobs') {
                 if (!isset($input['ids']) || !is_array($input['ids']) || empty($input['ids'])) {
