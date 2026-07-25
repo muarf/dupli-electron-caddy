@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - 'alpha'
+  pull_request:
+    branches:
+      - 'alpha'
 
 permissions:
   contents: write
@@ -195,6 +198,7 @@ jobs:
 
 
   create-alpha-release:
+    if: github.event_name != 'pull_request'
     needs: [get-version, test-linux-alpha, test-windows-alpha, test-macos-alpha]
     runs-on: ubuntu-latest
     steps:
