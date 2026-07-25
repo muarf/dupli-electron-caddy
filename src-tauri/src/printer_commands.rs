@@ -219,6 +219,14 @@ pub fn delete_print_job(printer_name: String, job_id: u32) -> Result<(), String>
             if let Ok(printers) = crate::windows_native::enum_printers() {
                 for printer in &printers {
                     if printer.jobs_count == 0 { continue; }
+                    // Ignorer les imprimantes réseau hors ligne / inaccessibles pour éviter le timeout Win32 (30-60s)
+                    if (printer.status & (0x00000080 | 0x00000400 | 0x00001000)) != 0
+                        || printer.status_label.to_lowercase().contains("offline")
+                        || printer.status_label.to_lowercase().contains("hors ligne")
+                    {
+                        log::info!("[printer_commands] delete_print_job : saut de l'imprimante hors ligne '{}'", printer.name);
+                        continue;
+                    }
                     if let Ok(jobs) = crate::windows_native::get_print_jobs(&printer.name) {
                         if jobs.into_iter().any(|j| j.job_id == job_id) {
                             resolved_printer_name = printer.name.clone();
@@ -755,6 +763,14 @@ pub fn reanalyze_print_job(
 
         for printer in &printers {
             if printer.jobs_count == 0 { continue; }
+            // Ignorer les imprimantes réseau hors ligne / inaccessibles pour éviter le timeout Win32 (30-60s)
+            if (printer.status & (0x00000080 | 0x00000400 | 0x00001000)) != 0
+                || printer.status_label.to_lowercase().contains("offline")
+                || printer.status_label.to_lowercase().contains("hors ligne")
+            {
+                log::info!("[printer_commands] reanalyze_print_job : saut de l'imprimante hors ligne '{}'", printer.name);
+                continue;
+            }
             if let Ok(jobs) = crate::windows_native::get_print_jobs(&printer.name) {
                 if let Some(job) = jobs.into_iter().find(|j| j.job_id == job_id) {
                     log::info!(
