@@ -999,7 +999,11 @@ if (session_id()) session_write_close();
         foreach ($_FILES as $key => $fileInfo) {
             if (strpos($key, 'file_') === 0 && $fileInfo['error'] === UPLOAD_ERR_OK) {
                 $id = str_replace('file_', '', $key);
-                $tmpPath = $tmpBase . 'source_' . $id . '_' . time() . '.pdf';
+                $ext = pathinfo($fileInfo['name'] ?? 'document.pdf', PATHINFO_EXTENSION);
+                if (empty($ext)) {
+                    $ext = 'pdf';
+                }
+                $tmpPath = $tmpBase . 'source_' . $id . '_' . time() . '.' . $ext;
                 studio_move_uploaded_file($fileInfo['tmp_name'], $tmpPath);
                 $tempSourcePdfs[$id] = $tmpPath;
             }
@@ -1025,7 +1029,8 @@ if (session_id()) session_write_close();
                     $cx = $obj['x_px'] / $mm_to_px;
                     $cy = $obj['y_px'] / $mm_to_px;
                     
-                    $isImage = isset($obj['is_image']) && $obj['is_image'];
+                    $ext = strtolower(pathinfo($tempSourcePdfs[$fileId], PATHINFO_EXTENSION));
+                    $isImage = (isset($obj['is_image']) && $obj['is_image']) || in_array($ext, ['png', 'jpg', 'jpeg', 'webp', 'gif']);
                     
                     if ($isImage) {
                         $pdf->StartTransform();
@@ -1559,7 +1564,11 @@ if (session_id()) session_write_close();
         foreach ($_FILES as $key => $fileInfo) {
             if (strpos($key, 'file_') === 0 && $fileInfo['error'] === UPLOAD_ERR_OK) {
                 $id = str_replace('file_', '', $key);
-                $tmpPath = $tmpBase . 'source_' . $id . '_' . time() . '.pdf';
+                $ext = pathinfo($fileInfo['name'] ?? 'document.pdf', PATHINFO_EXTENSION);
+                if (empty($ext)) {
+                    $ext = 'pdf';
+                }
+                $tmpPath = $tmpBase . 'source_' . $id . '_' . time() . '.' . $ext;
                 studio_move_uploaded_file($fileInfo['tmp_name'], $tmpPath);
                 $tempSourcePdfs[$id] = $tmpPath;
             }
@@ -1585,7 +1594,8 @@ if (session_id()) session_write_close();
                     $cx = $obj['x_px'] / $mm_to_px;
                     $cy = $obj['y_px'] / $mm_to_px;
                     
-                    $isImage = isset($obj['is_image']) && $obj['is_image'];
+                    $ext = strtolower(pathinfo($tempSourcePdfs[$fileId], PATHINFO_EXTENSION));
+                    $isImage = (isset($obj['is_image']) && $obj['is_image']) || in_array($ext, ['png', 'jpg', 'jpeg', 'webp', 'gif']);
                     
                     if ($isImage) {
                         $pdf->StartTransform();
@@ -2163,7 +2173,12 @@ if ($action === 'update_metadata') {
         
         global $tmpBase;
         
-        $tmpCopy = $tmpBase . 'meta_' . uniqid() . '.pdf';
+        $ext = pathinfo($_FILES['file']['name'] ?? 'document.pdf', PATHINFO_EXTENSION);
+        if (empty($ext)) {
+            $ext = 'pdf';
+        }
+        
+        $tmpCopy = $tmpBase . 'meta_' . uniqid() . '.' . $ext;
         if (!move_uploaded_file($_FILES['file']['tmp_name'], $tmpCopy) && !copy($_FILES['file']['tmp_name'], $tmpCopy)) {
             throw new Exception("Erreur copie temporaire.");
         }
@@ -2175,7 +2190,7 @@ if ($action === 'update_metadata') {
         // Output file to download directory
         $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($_FILES['file']['name'], PATHINFO_FILENAME));
         if (empty($safeName)) $safeName = 'document';
-        $outFilename = $safeName . '_meta_' . time() . '.pdf';
+        $outFilename = $safeName . '_meta_' . time() . '.' . $ext;
         $outPath = $tmpBase . $outFilename;
         
         rename($tmpCopy, $outPath);

@@ -395,8 +395,8 @@ window.addEventListener('unhandledrejection', function(e) {
             <div class="panel-row">
               <div class="panel-label">Style de repères</div>
               <select class="panel-select" id="liv_crop_style" style="font-size:10px">
-                <option value="standard">Standard (Autour de chaque pose)</option>
-                <option value="spreads" selected>Planches (Autour de chaque paire)</option>
+                <option value="standard" selected>Standard (Autour de chaque pose)</option>
+                <option value="spreads">Planches (Autour de chaque paire)</option>
                 <option value="booklet">Livret (Coins extérieurs)</option>
               </select>
             </div>
@@ -2346,11 +2346,19 @@ document.addEventListener('DOMContentLoaded', function() {
   // Affiche un modal persistant avec les boutons
   function showResultToast(downloadUrl, filename) {
     let customName = $('fileNameDisplay') ? $('fileNameDisplay').value : '';
-    let fname = customName || filename || downloadUrl.split('file=').pop() || 'fichier';
+    let targetFile = filename || downloadUrl.split('file=').pop() || '';
+    let targetExt = 'pdf';
+    
+    if (targetFile) {
+        let m = targetFile.match(/\.([a-z0-9]+)$/i);
+        if (m) targetExt = m[1].toLowerCase();
+    }
+
+    let fname = filename || (customName ? customName.replace(/\.[^.]+$/, '') + '.' + targetExt : targetFile || 'fichier');
     fname = decodeURIComponent(fname);
     
-    if (fname && !fname.toLowerCase().endsWith('.pdf') && !fname.toLowerCase().endsWith('.png') && !fname.toLowerCase().endsWith('.zip') && !fname.toLowerCase().endsWith('.docx') && !fname.toLowerCase().endsWith('.odt')) {
-        fname += '.pdf';
+    if (fname && !fname.toLowerCase().endsWith('.' + targetExt)) {
+        fname += '.' + targetExt;
     }
 
     if (customName && downloadUrl.indexOf('dl_name=') === -1) {
@@ -2802,10 +2810,6 @@ document.addEventListener('DOMContentLoaded', function() {
   $('bro_scale').addEventListener('input', () => $('bro_scale_val').textContent = $('bro_scale').value);
   $('liv_scale').addEventListener('input', () => $('liv_scale_val').textContent = $('liv_scale').value);
 
-  // == Brochure: afficher options traits si coché ==
-  $('bro_crop_marks').addEventListener('change', () => {
-    $('bro_crop_opts').style.display = $('bro_crop_marks').checked ? '' : 'none';
-  });
 
   $('btnApplyResize').addEventListener('click', () => {
     serverProcess('resize', {
