@@ -13,6 +13,8 @@ class PrintSessionManager {
         this.toastContainer = null;
         this.processedJobIds = new Set(); // Pour éviter les doublons de notifications
         this.lastJobData = new Map(); // Stocker dernières données pour comparaison
+        this.analyzingJobIds = new Set(); // Verrou d'analyse par job pour éviter les appels concurrents
+        this.isRegenerating = false; // Verrou global pour la boucle de régénération des thumbnails
 
         console.log('[PrintSessionManager] Initialized', {
             mode: this.isElectron ? 'Electron' : 'Standalone PHP',
@@ -63,40 +65,49 @@ class PrintSessionManager {
             try {
                 // Convertir en nombre pour le C++
                 const numericJobId = parseInt(jobId, 10);
+                if (this.analyzingJobIds.has(numericJobId)) {
+                    console.log('[PrintSessionManager] Réanalyse déjà en cours pour job:', numericJobId);
+                    return;
+                }
+                this.analyzingJobIds.add(numericJobId);
                 console.log('[PrintSessionManager] Réanalyse scheduled pour job:', numericJobId);
                 
-                if (window.electronAPI && window.electronAPI.reanalyzePrintJob) {
-                    const result = await window.electronAPI.reanalyzePrintJob(numericJobId);
-                    
-                    if (result && result.success) {
-                        console.log('[PrintSessionManager] Réanalyse result:', result);
+                try {
+                    if (window.electronAPI && window.electronAPI.reanalyzePrintJob) {
+                        const result = await window.electronAPI.reanalyzePrintJob(numericJobId);
                         
-                        // Obtenir le printer name des données stockées
-                        const jobData = this.lastJobData.get(jobId) || {};
-                        const printerName = jobData.PrinterName || jobData.printerName || '';
-                        
-                        // Mettre à jour la DB avec les valeurs analysées
-                        const postBody = {
-                            action: 'update_job_analysis',
-                            job_id: numericJobId,
-                            printer_name: printerName,
-                            thumbnail_url: result.thumbnailUrl || '',
-                            fill_rate: result.fillRate || 0,
-                            is_grayscale: result.isGrayscale,
-                            total_pages: result.totalPages || 0,
-                            is_duplex: result.isDuplex,
-                            paper_size: result.paperSize || ''
-                        };
-                        await fetch('?check_print_jobs', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(postBody)
-                        });
-                        
-                        console.log('[PrintSessionManager] DB mise à jour pour job:', numericJobId, result.totalPages, 'pages');
-                    } else {
-                        console.warn('[PrintSessionManager] Réanalyse échouée pour job:', numericJobId, result);
+                        if (result && result.success) {
+                            console.log('[PrintSessionManager] Réanalyse result:', result);
+                            
+                            // Obtenir le printer name des données stockées
+                            const jobData = this.lastJobData.get(jobId) || {};
+                            const printerName = jobData.PrinterName || jobData.printerName || '';
+                            
+                            // Mettre à jour la DB avec les valeurs analysées
+                            const postBody = {
+                                action: 'update_job_analysis',
+                                job_id: numericJobId,
+                                printer_name: printerName,
+                                thumbnail_url: result.thumbnailUrl || '',
+                                fill_rate: result.fillRate || 0,
+                                is_grayscale: result.isGrayscale,
+                                total_pages: result.totalPages || 0,
+                                is_duplex: result.isDuplex,
+                                paper_size: result.paperSize || ''
+                            };
+                            await fetch('?check_print_jobs', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(postBody)
+                            });
+                            
+                            console.log('[PrintSessionManager] DB mise à jour pour job:', numericJobId, result.totalPages, 'pages');
+                        } else {
+                            console.warn('[PrintSessionManager] Réanalyse échouée pour job:', numericJobId, result);
+                        }
                     }
+                } finally {
+                    this.analyzingJobIds.delete(numericJobId);
                 }
             } catch (e) {
                 console.error('[PrintSessionManager] Erreur réanalyse scheduled:', e);
@@ -108,6 +119,12 @@ class PrintSessionManager {
      * Appeler le C++ pour régénérer les thumbnails manquantes
      */
     async regenerateMissingThumbnails() {
+        if (this.isRegenerating) {
+            console.log('[PrintSessionManager] Régénération déjà en cours, saut de ce cycle');
+            return;
+        }
+        this.isRegenerating = true;
+
         try {
             // 1. Récupérer la liste des jobs sans thumbnail via PHP (rapide)
             const response = await fetch('?check_print_jobs', {
@@ -130,6 +147,12 @@ class PrintSessionManager {
             for (const job of result.jobs) {
                 const jobId = parseInt(job.job_id);
                 if (!jobId || jobId <= 0) continue;
+
+                if (this.analyzingJobIds.has(jobId)) {
+                    console.log(`[PrintSessionManager] Job ${jobId} déjà en cours d'analyse, saut...`);
+                    continue;
+                }
+                this.analyzingJobIds.add(jobId);
 
                 try {
                     // Appeler le C++ via Electron IPC pour analyse complète
@@ -162,6 +185,8 @@ class PrintSessionManager {
                     }
                 } catch (e) {
                     console.warn(`[PrintSessionManager] Erreur réanalyse job ${jobId}:`, e);
+                } finally {
+                    this.analyzingJobIds.delete(jobId);
                 }
             }
 
@@ -173,6 +198,8 @@ class PrintSessionManager {
             }
         } catch (error) {
             // Erreur silencieuse pour ne pas spammer la console
+        } finally {
+            this.isRegenerating = false;
         }
     }
 
