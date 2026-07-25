@@ -414,8 +414,11 @@
       const finalIsGrayscale = res.isGrayscale || !foundRealColor;
 
       // 3. Retourner le format attendu par print-session-manager.js
+      // Succès si le job est encore actif dans le spouleur OU si la miniature a été générée sur le disque
+      const isSuccess = Boolean(res.found || thumbnailUrl);
+
       return {
-        success:      res.found,
+        success:      isSuccess,
         isGrayscale:  finalIsGrayscale,     // depuis DEVMODE.dmColor + analyse pixels
         isDuplex:     res.isDuplex,          // depuis DEVMODE.dmDuplex
         paperSize:    res.paperSize,         // depuis DEVMODE.dmPaperSize
