@@ -289,7 +289,7 @@
 
   function saveCurrentPlanche() {
     if (canvas) {
-      planches[currentPlancheIdx].state = canvas.toJSON(['source_fileId', 'source_pageNum', 'original_width_mm', 'original_height_mm']);
+      planches[currentPlancheIdx].state = canvas.toJSON(['source_fileId', 'source_pageNum', 'original_width_mm', 'original_height_mm', 'is_image']);
     }
   }
 
@@ -407,22 +407,47 @@
     try {
       const res = await fetch('?studio_process', { method: 'POST', body: fd });
       const json = await res.json();
-      if (spinner) spinner.style.display = 'none';
-      if (json.success && json.download_url) {
-        window.setPdfReady && window.setPdfReady(json.download_url);
-        if (json.preview_url && window.openImpPreview) {
-          window.openImpPreview(json.preview_url, json.download_url);
-        } else if (window.showResultToast) {
-          window.showResultToast(json.download_url);
-        } else {
-          window.location.href = json.download_url;
-        }
+      if (window.pollStudioTask) {
+        window.pollStudioTask(json, (finalJson) => {
+          if (finalJson.download_url) {
+            window.setPdfReady && window.setPdfReady(finalJson.download_url);
+            if (finalJson.preview_url && window.openImpPreview) {
+              window.openImpPreview(finalJson.preview_url, finalJson.download_url);
+            } else if (window.showResultToast) {
+              window.showResultToast(finalJson.download_url);
+            } else {
+              window.location.href = finalJson.download_url;
+            }
+          }
+        }, (errJson) => {
+          if (window.showToast) {
+            window.showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (errJson.error || errJson.errors?.join(', ') || 'Erreur inconnue'), true);
+          } else {
+            alert("Erreur: " + (errJson.error || errJson.errors?.join(', ') || 'Erreur inconnue'));
+          }
+        });
       } else {
-        alert("Erreur: " + (json.errors || []).join(', '));
+        if (spinner) spinner.style.display = 'none';
+        if (json.success && json.download_url) {
+          window.setPdfReady && window.setPdfReady(json.download_url);
+          if (json.preview_url && window.openImpPreview) {
+            window.openImpPreview(json.preview_url, json.download_url);
+          } else if (window.showResultToast) {
+            window.showResultToast(json.download_url);
+          } else {
+            window.location.href = json.download_url;
+          }
+        } else {
+          alert("Erreur: " + (json.errors || []).join(', '));
+        }
       }
     } catch(e) {
       if (spinner) spinner.style.display = 'none';
-      alert("Erreur réseau: " + e.message);
+      if (window.showToast) {
+        window.showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
+      } else {
+        alert("Erreur réseau: " + e.message);
+      }
     }
   }
 

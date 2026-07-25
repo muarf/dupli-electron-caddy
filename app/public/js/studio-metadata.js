@@ -26,8 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const file = window.state.file;
-    if (!window.state.isPdf) {
-      if ($id('metaRawInfo')) $id('metaRawInfo').textContent = "Erreur: Ce n'est pas un fichier PDF.";
+    if (!file) {
+      if ($id('metaRawInfo')) $id('metaRawInfo').textContent = "Aucun fichier sélectionné (window.state.file est vide). Si vous êtes dans Montage Libre, exportez le PDF d'abord.";
       return;
     }
 
@@ -89,8 +89,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       const file = window.state.file;
-      if (!window.state.isPdf) {
-        alert("Les métadonnées ne peuvent être modifiées que sur des fichiers PDF.");
+      if (!file) {
+        alert("Veuillez charger un fichier d'abord.");
         return;
       }
 
@@ -122,7 +122,10 @@ document.addEventListener('DOMContentLoaded', () => {
           if (window.showToast) window.showToast("Métadonnées mises à jour avec succès !", "success");
           
           if (data.download_url && window.showResultToast) {
-              window.showResultToast(data.download_url, 'metadata.pdf');
+              const nameParts = file.name.split('.');
+              const ext = nameParts.pop();
+              const baseName = nameParts.join('.');
+              window.showResultToast(data.download_url, `${baseName}_metadata.${ext}`);
           } else {
               loadCurrentMetadata();
           }
@@ -146,8 +149,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       const file = window.state.file;
-      if (!window.state.isPdf) {
-        alert("Les métadonnées ne peuvent être modifiées que sur des fichiers PDF.");
+      if (!file) {
+        alert("Veuillez charger un fichier d'abord.");
         return;
       }
 
@@ -175,7 +178,10 @@ document.addEventListener('DOMContentLoaded', () => {
           if (window.showToast) window.showToast("Toutes les métadonnées ont été effacées !", "success");
           
           if (data.download_url && window.showResultToast) {
-              window.showResultToast(data.download_url, 'metadata_cleared.pdf');
+              const nameParts = file.name.split('.');
+              const ext = nameParts.pop();
+              const baseName = nameParts.join('.');
+              window.showResultToast(data.download_url, `${baseName}_cleared.${ext}`);
           } else {
               loadCurrentMetadata();
           }
