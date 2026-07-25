@@ -33,6 +33,7 @@ class DatabaseMigrationManager
             require_once __DIR__ . '/create_recorded_print_jobs_table.php';
             require_once __DIR__ . '/persist_job_extra_data.php';
             require_once __DIR__ . '/add_nb_exemplaires.php';
+            require_once __DIR__ . '/add_taille_column.php';
             require_once __DIR__ . '/add_staging_columns.php';
             require_once __DIR__ . '/add_document_display_fields.php';
             require_once __DIR__ . '/add_print_job_id_to_recorded_print_jobs.php';
@@ -61,6 +62,9 @@ class DatabaseMigrationManager
                 },
                 'add_nb_exemplaires' => function () {
                     migrate_add_nb_exemplaires($this->db);
+                },
+                'add_taille_column' => function () {
+                    migrate_add_taille_column($this->db);
                 },
                 'add_staging_columns' => function () {
                     migrate_add_staging_columns($this->db);

@@ -14,7 +14,7 @@ if ($page_check === 'download_backup') {
     error_reporting(0);
 
     // Rediriger vers le fichier API dédié pour éviter toute pollution du buffer
-    $api_file = __DIR__ . '/api/download_backup.php';
+    $api_file = __DIR__ . '/../api/download_backup.php';
     if (file_exists($api_file)) {
         require_once $api_file;
         exit;
@@ -710,13 +710,13 @@ if ($page === 'download_studio') {
     
     header('Content-Type: ' . $mime);
     header('Content-Disposition: attachment; filename="' . $finalFilename . '"');
-    header('Content-Length: ' . filesize($filepath));
+    header('Content-Length: ' . filesize($realFile));
     header('Cache-Control: no-cache, must-revalidate');
-    readfile($filepath);
+    readfile($realFile);
     
     $jobId = $_GET['job_id'] ?? '';
     if (!empty($jobId) && preg_match('/^[a-zA-Z0-9_]+$/', $jobId)) {
-        @unlink($filepath);
+        @unlink($realFile);
         @unlink($tmpDir . $jobId . '.json');
         @unlink($tmpDir . $jobId . '.log');
     }
@@ -735,15 +735,15 @@ if ($page === 'preview_studio') {
     if (!$realFile || !$realDir || strpos($realFile, $realDir) !== 0 || !file_exists($filepath)) {
         http_response_code(404); die('Fichier non trouvé ou expiré');
     }
-    $ext = strtolower(pathinfo($filepath, PATHINFO_EXTENSION));
+    $ext = strtolower(pathinfo($realFile, PATHINFO_EXTENSION));
     $mimeMap = ['png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'pdf' => 'application/pdf'];
     $mime = $mimeMap[$ext] ?? 'image/png';
     header('Content-Type: ' . $mime);
     header('Content-Disposition: inline; filename="' . $filename . '"');
-    header('Content-Length: ' . filesize($filepath));
+    header('Content-Length: ' . filesize($realFile));
     header('Cache-Control: no-store');
     header('X-Frame-Options: SAMEORIGIN');
-    readfile($filepath);
+    readfile($realFile);
     exit;
 }
 
@@ -974,8 +974,10 @@ if ($page === 'download_unimposed') {
     // Sécuriser le nom de fichier
     $filename = basename($file);
     $filePath = $tmpDir . $filename;
+    $real_filepath = realpath($filePath);
+    $real_tmp_dir = realpath($tmpDir);
 
-    if (file_exists($filePath) && is_readable($filePath) && strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) === 'pdf') {
+    if ($real_filepath && $real_tmp_dir && strpos($real_filepath, $real_tmp_dir) === 0 && file_exists($real_filepath) && is_readable($real_filepath) && strtolower(pathinfo($real_filepath, PATHINFO_EXTENSION)) === 'pdf') {
         // Désactiver la compression de sortie pour éviter les problèmes de téléchargement
         if (ini_get('zlib.output_compression')) {
             ini_set('zlib.output_compression', 'Off');
@@ -983,11 +985,11 @@ if ($page === 'download_unimposed') {
 
         header('Content-Type: application/pdf');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
-        header('Content-Length: ' . filesize($filePath));
+        header('Content-Length: ' . filesize($real_filepath));
         header('Cache-Control: private, max-age=0, must-revalidate');
         header('Pragma: public');
 
-        readfile($filePath);
+        readfile($real_filepath);
         exit;
     } else {
         http_response_code(404);
@@ -1025,7 +1027,7 @@ if ($page === 'download_processed') {
     }
 
     // Déterminer le type MIME
-    $extension = strtolower(pathinfo($filepath, PATHINFO_EXTENSION));
+    $extension = strtolower(pathinfo($real_filepath, PATHINFO_EXTENSION));
     $mime_types = array(
         'pdf' => 'application/pdf',
         'png' => 'image/png',
@@ -1039,11 +1041,11 @@ if ($page === 'download_processed') {
     // Définir les headers
     header('Content-Type: ' . $mime_type);
     header('Content-Disposition: attachment; filename="' . $filename . '"');
-    header('Content-Length: ' . filesize($filepath));
+    header('Content-Length: ' . filesize($real_filepath));
     header('Cache-Control: no-cache, must-revalidate');
     header('Expires: 0');
 
-    readfile($filepath);
+    readfile($real_filepath);
     exit;
 }
 
@@ -1207,7 +1209,24 @@ if ($page === 'ajax_delete_machine') {
 }
 
 
-$page_secure = array('base', 'accueil', 'devis', 'tirage_multimachines', 'changement', 'admin', 'admin_aide_machines', 'admin_translations', 'installation', 'setup', 'setup_save', 'setup_upload', 'create_password', 'stats', 'aide_machines', 'error', 'lang', 'ajax_edit_tambours', 'ajax_get_tambour_prices', 'download_pdf', 'download_png', 'download_organized', 'organizer_thumb', 'download_merged', 'download_resized', 'download_unimposed', 'download_processed', 'download_backup', 'view_pdf', 'get-machine-template', 'upload_aide_pdf', 'view_aide_pdf', 'bibliotheque', 'bibliotheque_list', 'get_bibliotheque_file_info', 'update_bibliotheque_metadata', 'upload_bibliotheque', 'search_bibliotheque', 'preview_directory', 'index_file', 'start_indexing', 'get_indexing_status', 'delete_bibliotheque_file', 'get_bibliotheque_thumbnail', 'get_bibliotheque_file', 'get_bibliotheque_tags', 'chat_rag', 'check_print_jobs', 'print_notification', 'auto_tirage', 'sessions', 'get_session_jobs', 'get_session_staging_jobs', 'get_pending_jobs', 'convert_emf_to_png', 'convert_pcl_to_png', 'convert_xps_to_png', 'secure_purge', 'get_linux_thumb', 'admin_bibliotheque_ia', 'save_ai_settings', 'trigger_vectorization', 'trigger_markdown_migration', 'get_markdown_migration_status', 'studio', 'studio_process', 'download_studio', 'preview_studio', 'install_local_ai');
+if ($page === 'logout') {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    $_SESSION = array();
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000,
+            $params["path"], $params["domain"],
+            $params["secure"], $params["httponly"]
+        );
+    }
+    session_destroy();
+    header('Location: ?accueil');
+    exit;
+}
+
+$page_secure = array('base', 'accueil', 'devis', 'tirage_multimachines', 'changement', 'admin', 'admin_aide_machines', 'admin_translations', 'installation', 'setup', 'setup_save', 'setup_upload', 'create_password', 'stats', 'aide_machines', 'error', 'lang', 'ajax_edit_tambours', 'ajax_get_tambour_prices', 'download_pdf', 'download_png', 'download_organized', 'organizer_thumb', 'download_merged', 'download_resized', 'download_unimposed', 'download_processed', 'download_backup', 'view_pdf', 'get-machine-template', 'upload_aide_pdf', 'view_aide_pdf', 'bibliotheque', 'bibliotheque_list', 'get_bibliotheque_file_info', 'update_bibliotheque_metadata', 'upload_bibliotheque', 'search_bibliotheque', 'preview_directory', 'index_file', 'start_indexing', 'get_indexing_status', 'delete_bibliotheque_file', 'get_bibliotheque_thumbnail', 'get_bibliotheque_file', 'get_bibliotheque_tags', 'chat_rag', 'check_print_jobs', 'print_notification', 'auto_tirage', 'sessions', 'get_session_jobs', 'get_session_staging_jobs', 'get_pending_jobs', 'convert_emf_to_png', 'convert_pcl_to_png', 'convert_xps_to_png', 'secure_purge', 'get_linux_thumb', 'admin_bibliotheque_ia', 'save_ai_settings', 'trigger_vectorization', 'trigger_markdown_migration', 'get_markdown_migration_status', 'studio', 'studio_process', 'download_studio', 'preview_studio', 'install_local_ai', 'logout');
 
 error_log("[PASSWORD_CHECK] ===== DEBUT VERIFICATION =====");
 error_log("[PASSWORD_CHECK] Page demandée (avant vérification): " . $page);

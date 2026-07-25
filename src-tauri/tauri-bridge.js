@@ -309,9 +309,10 @@
       let pages = [];
 
       try {
+        const phpBase = window.location.origin.includes('8000') ? '' : 'http://127.0.0.1:8000';
         const endpoints = [
-          `/?convert_emf_to_png&job_id=${numericJobId}`,
-          `/?convert_pcl_to_png&job_id=${numericJobId}`,
+          `${phpBase}/?convert_emf_to_png&job_id=${numericJobId}`,
+          `${phpBase}/?convert_pcl_to_png&job_id=${numericJobId}`,
         ];
 
         for (const endpoint of endpoints) {
@@ -336,58 +337,69 @@
       // Fonction pour analyser une image via Canvas et récupérer son taux de remplissage / couleur
       const analyzeImagePage = (url) => {
         return new Promise((resolve) => {
-          const img = new Image();
-          img.crossOrigin = "anonymous";
-          img.onload = () => {
-            try {
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              canvas.width = 200;
-              canvas.height = 200;
-              ctx.drawImage(img, 0, 0, 200, 200);
-              
-              const imgData = ctx.getImageData(0, 0, 200, 200);
-              const data = imgData.data;
-              const totalPixels = 200 * 200;
-              let totalDensity = 0;
-              let coloredPixels = 0;
+          let retries = 3;
+          const attemptLoad = (attempt) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => {
+              try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 200;
+                canvas.height = 200;
+                ctx.drawImage(img, 0, 0, 200, 200);
+                
+                const imgData = ctx.getImageData(0, 0, 200, 200);
+                const data = imgData.data;
+                const totalPixels = 200 * 200;
+                let totalDensity = 0;
+                let coloredPixels = 0;
 
-              for (let i = 0; i < data.length; i += 4) {
-                const r = data[i];
-                const g = data[i+1];
-                const b = data[i+2];
-                
-                const rP = r / 255;
-                const gP = g / 255;
-                const bP = b / 255;
-                
-                // Simulation CMYK à partir de RGB pour correspondre à Ghostscript
-                const k = 1 - Math.max(rP, gP, bP);
-                const c = k === 1 ? 0 : (1 - rP - k) / (1 - k);
-                const m = k === 1 ? 0 : (1 - gP - k) / (1 - k);
-                const y = k === 1 ? 0 : (1 - bP - k) / (1 - k);
-                
-                // Capper à 1.0 maximum par pixel pour que le fillRate ne dépasse pas 100%
-                totalDensity += Math.min(1, c + m + y + k);
-                
-                // Seuil de couleur pour détection isColor
-                if (Math.abs(r - g) > 25 || Math.abs(g - b) > 25 || Math.abs(r - b) > 25) {
-                  coloredPixels++;
+                for (let i = 0; i < data.length; i += 4) {
+                  const r = data[i];
+                  const g = data[i+1];
+                  const b = data[i+2];
+                  
+                  const rP = r / 255;
+                  const gP = g / 255;
+                  const bP = b / 255;
+                  
+                  // Simulation CMYK à partir de RGB pour correspondre à Ghostscript
+                  const k = 1 - Math.max(rP, gP, bP);
+                  const c = k === 1 ? 0 : (1 - rP - k) / (1 - k);
+                  const m = k === 1 ? 0 : (1 - gP - k) / (1 - k);
+                  const y = k === 1 ? 0 : (1 - bP - k) / (1 - k);
+                  
+                  // Capper à 1.0 maximum par pixel pour que le fillRate ne dépasse pas 100%
+                  totalDensity += Math.min(1, c + m + y + k);
+                  
+                  // Seuil de couleur pour détection isColor
+                  if (Math.abs(r - g) > 25 || Math.abs(g - b) > 25 || Math.abs(r - b) > 25) {
+                    coloredPixels++;
+                  }
                 }
-              }
 
-              const fillRate = (totalDensity / totalPixels) * 100;
-              const isColor = (coloredPixels / totalPixels) > 0.005;
-              resolve({ fillRate, isColor });
-            } catch (e) {
-              console.warn('[tauri-bridge] Erreur analyse canvas:', e);
-              resolve({ fillRate: 0, isColor: false });
-            }
+                const fillRate = (totalDensity / totalPixels) * 100;
+                const isColor = (coloredPixels / totalPixels) > 0.005;
+                resolve({ fillRate, isColor });
+              } catch (e) {
+                console.warn('[tauri-bridge] Erreur analyse canvas:', e);
+                resolve({ fillRate: 0, isColor: false });
+              }
+            };
+            img.onerror = () => {
+              if (attempt < retries) {
+                setTimeout(() => attemptLoad(attempt + 1), 250);
+              } else {
+                resolve({ fillRate: 0, isColor: false });
+              }
+            };
+            // Ajouter timestamp rafraîchi par tentative pour contourner le cache navigateur
+            img.src = url + (url.includes('?') ? '&' : '?') + `retry=${attempt}`;
           };
-          img.onerror = () => {
-            resolve({ fillRate: 0, isColor: false });
-          };
-          img.src = url;
+
+          // Petite attente initiale de 200ms pour laisser à PHP/FS le temps de flusher le fichier PNG
+          setTimeout(() => attemptLoad(1), 200);
         });
       };
 
@@ -398,9 +410,10 @@
       let analyzedCount = 0;
 
       if (pageCount > 0) {
+        const baseUrl = window.location.origin.includes('8000') ? '' : 'http://127.0.0.1:8000';
         for (let i = 0; i < pageCount; i++) {
-          const relativeUrl = `/thumbnails/${numericJobId}/page_${i}.png?t=${Date.now()}`;
-          const analysis = await analyzeImagePage(relativeUrl);
+          const fullImageUrl = `${baseUrl}/thumbnails/${numericJobId}/page_${i}.png?t=${Date.now()}`;
+          const analysis = await analyzeImagePage(fullImageUrl);
           totalFillRate += analysis.fillRate;
           if (analysis.isColor) {
             foundRealColor = true;
@@ -602,9 +615,10 @@
 
         showBridgeToast('<i class="fa fa-info-circle" style="color:#4f6ef7"></i> <b>Téléchargement en cours...</b>', false);
 
-        // Fetch le fichier sous forme binaire
+        // Fetch le fichier sous forme binaire (inline=1 évite Content-Disposition: attachment qui bloque WebView2)
+        const fetchUrl = absoluteUrl + (absoluteUrl.includes('?') ? '&' : '?') + 'inline=1';
         remoteLog('Fetching binary content...');
-        const response = await fetch(absoluteUrl);
+        const response = await fetch(fetchUrl);
         if (!response.ok) {
           throw new Error(`Erreur HTTP : ${response.status} ${response.statusText}`);
         }

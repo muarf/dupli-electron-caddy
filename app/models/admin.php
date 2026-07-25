@@ -176,6 +176,7 @@ function Action($conf = null)
             $result = $query->fetch(PDO::FETCH_ASSOC);
             
             if ($result && password_verify($_POST['password'], $result['password_hash'])) {
+                session_regenerate_id(true);
                 $_SESSION['user'] = "1";
                 $_SESSION['admin'] = true;
                 

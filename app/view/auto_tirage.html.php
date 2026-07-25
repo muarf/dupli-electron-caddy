@@ -727,16 +727,26 @@
             }, async (confirmed) => {
                 if (!confirmed) return;
 
-                // Optimistic UI: Masquer la ligne immédiatement
+                // Masquer la ligne immédiatement (UI Optimiste)
                 const rowToHide = document.getElementById(`buffer-row-${spoolJobId}`);
                 if (rowToHide) rowToHide.style.opacity = '0.5';
 
+                // Récupérer le nom de l'imprimante pour éviter le scan global Win32 (qui bloque sur les imprimantes hors ligne)
+                const targetJob = bufferJobs.get(spoolJobId) || bufferJobs.get(Number(spoolJobId));
+                const printerName = targetJob ? (targetJob.printer_name || targetJob.nom_machine || '') : '';
+
                 try {
-                    // 1. Supprimer de Windows via Electron IPC (si disponible)
+                    // 1. Supprimer de Windows via IPC avec timeout court (3s) pour ne pas figer l'interface si l'imprimante est hors ligne
                     if (window.electronAPI && window.electronAPI.deletePrintJob) {
-                        console.log('[DELETE] Appel IPC deletePrintJob pour job Windows:', spoolJobId);
-                        const ipcResult = await window.electronAPI.deletePrintJob(null, spoolJobId);
-                        console.log('[DELETE] Résultat IPC:', ipcResult);
+                        console.log('[DELETE] Appel IPC deletePrintJob:', spoolJobId, 'imprimante:', printerName);
+                        try {
+                            await Promise.race([
+                                window.electronAPI.deletePrintJob(printerName, spoolJobId),
+                                new Promise((_, reject) => setTimeout(() => reject(new Error('IPC Timeout')), 3000))
+                            ]);
+                        } catch (ipcErr) {
+                            console.warn('[DELETE] Avertissement/Timeout IPC deletePrintJob:', ipcErr);
+                        }
                     }
 
                     // 2. Supprimer de la base de données via PHP (par DB id)
@@ -751,35 +761,39 @@
 
                     const result = await response.json();
                     
-                    // 3. Nettoyage final: supprimer tout job avec ce spoolJobId 
-                    // (au cas où il aurait été réinséré pendant la suppression Windows)
-                    await fetch('?check_print_jobs', {
+                    // 3. Nettoyage final par spoolJobId
+                    fetch('?check_print_jobs', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             action: 'delete_by_job_id',
                             job_id: spoolJobId
                         })
-                    });
-                    console.log('[DELETE] Nettoyage final par job_id:', spoolJobId);
+                    }).catch(e => console.warn('[DELETE] Nettoyage secondaire par job_id ignoré:', e));
 
-                    if (result.success) {
+                    if (result && result.success) {
                         addLog('info', `🗑️ <?php _ejs('auto_tirage.job_deleted'); ?>`);
-                        bufferJobs.delete(spoolJobId);
-                        const row = document.getElementById(`buffer-row-${spoolJobId}`);
-                        if (row) row.remove();
-
-                        if (bufferJobs.size === 0) {
-                            document.getElementById('buffer-zone').style.display = 'none';
-                        }
-                    } else {
-                        showAppModal({ message: "<?php _ejs('auto_tirage.delete_error'); ?>: " + result.error, type: "danger" });
                     }
+                    
+                    // Toujours nettoyer la ligne et le buffer de l'UI
+                    bufferJobs.delete(spoolJobId);
+                    bufferJobs.delete(Number(spoolJobId));
+                    if (rowToHide) rowToHide.remove();
+                    if (bufferJobs.size === 0) {
+                        const bufferZone = document.getElementById('buffer-zone');
+                        if (bufferZone) bufferZone.style.display = 'none';
+                    }
+
                 } catch (error) {
                     console.error("Erreur suppression job:", error);
-                    // Rétablir l'affichage en cas d'erreur
-                    if (rowToHide) rowToHide.style.opacity = '1';
-                    showAppModal({ message:  "<?php echo __js('auto_tirage.communication_error'); ?>" , type: "danger" });
+                    // Retirer quand même la ligne de l'UI optimiste
+                    bufferJobs.delete(spoolJobId);
+                    bufferJobs.delete(Number(spoolJobId));
+                    if (rowToHide) rowToHide.remove();
+                    if (bufferJobs.size === 0) {
+                        const bufferZone = document.getElementById('buffer-zone');
+                        if (bufferZone) bufferZone.style.display = 'none';
+                    }
                 }
             });
         };
@@ -1220,7 +1234,7 @@
                     colDetails = `
                     <div style="font-size: 0.9em;">
                         ${job.copies} ex × ${pPerEx} pg.<br>
-                        <small>${job.duplex ? '<?php echo addslashes(__('common.duplex')); ?>' : '<?php echo addslashes(__('common.simplex')); ?>'} - ${job.taille}</small>
+                        <small>${job.duplex ? '<?php echo addslashes(__('common.duplex')); ?>' : '<?php echo addslashes(__('common.simplex')); ?>'} - ${(job.taille && job.taille !== 'undefined') ? job.taille : 'A4'}</small>
                         ${job.color && job.fill_rate_percent ? '<br><small class="text-muted"><?php echo addslashes(__('auto_tirage.fill_rate')); ?>: ' + job.fill_rate_percent + '%</small>' : ''}
                     </div>
 
