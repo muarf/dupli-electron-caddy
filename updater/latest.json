@@ -1,23 +1,23 @@
 {
-  "version": "2.0.144-alpha.20260725130039+49ff4ea",
-  "notes": "Alpha release version 2.0.144-alpha.20260725130039+49ff4ea",
-  "pub_date": "2026-07-25T13:20:25Z",
+  "version": "2.0.145-alpha.20260725130323+634ace9",
+  "notes": "Alpha release version 2.0.145-alpha.20260725130323+634ace9",
+  "pub_date": "2026-07-25T13:22:32Z",
   "platforms": {
     "linux-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSS004cEI4QmpVVUdHQTVxSlVRNXdkRG9uWXg2Vk1sMUtvNDZ5VWJhdXNUNnppbkI2QXVWMXNzUUdFc0prZXdCdjJqckxyMm5sR2ljTGkzV3RkazNjOEgrcjBvN09BbXdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0OTg1MTQ4CWZpbGU6RHVwbGljYXRvciBBbHBoYV8yLjAuMTQ0X2FtZDY0LkFwcEltYWdlCkJwYWNONmUxQTBwUHFLT29ZamNDZnBxT1FmV0kyMDZLWHh4UE5BbE5wRjlLSDZUOEsremZFNDdEbG8zVXVuRERlbWtYcXZ1VWh1WnU5ZnJYQjJ5MkRnPT0K",
-      "url": "https://github.com/muarf/dupli-electron-caddy/releases/download/v2.0.144-alpha.20260725130039/Duplicator.Alpha_2.0.144_amd64.AppImage"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSS004cEI4QmpVVUIwdTkvVTIzQys5b0xPTVlwUW9vOXltaytKVVdDYktKQXlUS2VHYVpxbkpuZUdkdHh4OUU0R0l4SFgzaUgxZUFrS1pYbWlIMVV1ODhiLzdMblF3UmdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0OTg1NDA0CWZpbGU6RHVwbGljYXRvciBBbHBoYV8yLjAuMTQ1X2FtZDY0LkFwcEltYWdlCjlSRkRnYkIySXpjTEg5MWJPc0t4ZzFRc295L25ocnhxc2xZb3RPWS9CNGNPbmo4UEl3WXVFcFJJL3AwZndIOFlzdGtnSUZRaVFGUkF4aTRDc0NJdENRPT0K",
+      "url": "https://github.com/muarf/dupli-electron-caddy/releases/download/v2.0.145-alpha.20260725130323/Duplicator.Alpha_2.0.145_amd64.AppImage"
     },
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSS004cEI4QmpVVVBQL1BjY20yVXVvdDNiSVo4NjZQZmtRMVZoYldFTGl6SFVHbFZGZTFRb0haUnZjR0dqTFFBRU5uQ1Zva0R3eERlMW9WZzVQMCtOU3pkWTZLb0E2M2djPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0OTg1NTc2CWZpbGU6RHVwbGljYXRvciBBbHBoYV8yLjAuMTQ0X3g2NC1zZXR1cC5leGUKUy83ajkyWlowTUFGSm5mMTdGT3JteVZid1FRUVZrQ2UxWjNCWnBpSVRDTVd4eVYzK1pla3JhbHYzVkk5T1RUOGk4ekVjM1dwOUh4bkRjWmVFOGxPQWc9PQo=",
-      "url": "https://github.com/muarf/dupli-electron-caddy/releases/download/v2.0.144-alpha.20260725130039/Duplicator.Alpha_2.0.144_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSS004cEI4QmpVVUp4L2crYStUaEw5eUxZQk9LeFZLNldmM3ZwR1pIUVA1cVpsTkROQlJYYUR1N2RXRjc4RnFDdmd0dFBKcDFVOWtyM2NkQWh2SEJxWTQrRkF1TkRlUncwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0OTg1NzAxCWZpbGU6RHVwbGljYXRvciBBbHBoYV8yLjAuMTQ1X3g2NC1zZXR1cC5leGUKbXp1SGlUKzFSenZTeHAyazVSeUVBbk1RMnBmNnBESll0cVdBL25RSFpDOU96aVBjZHhQM3d4bDVnV2lHVzFUbzhwRG5BUFdoZlJGeXl6bFlCM2NKQmc9PQo=",
+      "url": "https://github.com/muarf/dupli-electron-caddy/releases/download/v2.0.145-alpha.20260725130323/Duplicator.Alpha_2.0.145_x64-setup.exe"
     },
     "darwin-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSS004cEI4QmpVVU9rQk1RTGpzN1FOWjB3eE5udFZGVFBzSmQyTUlITzIwaWpnQ3Y2S0FjSVVsZnQwaXZLQTI5UDRNUWVPd2NCUUp2RkdlN0R6TThQSEhJemNOM2JxQ1FRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0OTg0OTE2CWZpbGU6RHVwbGljYXRvciBBbHBoYS5hcHAudGFyLmd6CmUwSW1SbFFEdDBycGVhSzR5L3hQaU5QMEprRGpBSy9xVEwzd081UVN4MFQ0d05rZ2h5N1RyUnlMWjJpODUyTXNlcUNmT1JnOXI4UTk0UUFNV3l4MUJ3PT0K",
-      "url": "https://github.com/muarf/dupli-electron-caddy/releases/download/v2.0.144-alpha.20260725130039/Duplicator.Alpha.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSS004cEI4QmpVVUdjcmNBWHp3ZVRLd3hSQ3kxS3loQVg4aEV4cm5vcUpkSHVKSUpuTDlUWHd4YmtnVUtGbUN4cmpGaW5pT3Vhc2NCTExlc1RkMXZncVFTaUJBK1lzOWdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0OTg1MTU3CWZpbGU6RHVwbGljYXRvciBBbHBoYS5hcHAudGFyLmd6Ckl3Zkk4OUNiZUk4bHdBRjVIL0pzUUF0MDNiZGxYM2tidy9CVzhpSXhabEZHQXpSNGZKeHY1VHV4NzJzazIwUGdtRVNTazhkOURmL1ZtL2grMENKL0R3PT0K",
+      "url": "https://github.com/muarf/dupli-electron-caddy/releases/download/v2.0.145-alpha.20260725130323/Duplicator.Alpha.app.tar.gz"
     },
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSS004cEI4QmpVVU9rQk1RTGpzN1FOWjB3eE5udFZGVFBzSmQyTUlITzIwaWpnQ3Y2S0FjSVVsZnQwaXZLQTI5UDRNUWVPd2NCUUp2RkdlN0R6TThQSEhJemNOM2JxQ1FRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0OTg0OTE2CWZpbGU6RHVwbGljYXRvciBBbHBoYS5hcHAudGFyLmd6CmUwSW1SbFFEdDBycGVhSzR5L3hQaU5QMEprRGpBSy9xVEwzd081UVN4MFQ0d05rZ2h5N1RyUnlMWjJpODUyTXNlcUNmT1JnOXI4UTk0UUFNV3l4MUJ3PT0K",
-      "url": "https://github.com/muarf/dupli-electron-caddy/releases/download/v2.0.144-alpha.20260725130039/Duplicator.Alpha.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSS004cEI4QmpVVUdjcmNBWHp3ZVRLd3hSQ3kxS3loQVg4aEV4cm5vcUpkSHVKSUpuTDlUWHd4YmtnVUtGbUN4cmpGaW5pT3Vhc2NCTExlc1RkMXZncVFTaUJBK1lzOWdjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0OTg1MTU3CWZpbGU6RHVwbGljYXRvciBBbHBoYS5hcHAudGFyLmd6Ckl3Zkk4OUNiZUk4bHdBRjVIL0pzUUF0MDNiZGxYM2tidy9CVzhpSXhabEZHQXpSNGZKeHY1VHV4NzJzazIwUGdtRVNTazhkOURmL1ZtL2grMENKL0R3PT0K",
+      "url": "https://github.com/muarf/dupli-electron-caddy/releases/download/v2.0.145-alpha.20260725130323/Duplicator.Alpha.app.tar.gz"
     }
   }
 }
