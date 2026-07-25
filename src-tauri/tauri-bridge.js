@@ -309,10 +309,9 @@
       let pages = [];
 
       try {
-        const phpBase = window.location.origin.includes('8000') ? '' : 'http://127.0.0.1:8000';
         const endpoints = [
-          `${phpBase}/?convert_emf_to_png&job_id=${numericJobId}`,
-          `${phpBase}/?convert_pcl_to_png&job_id=${numericJobId}`,
+          `/?convert_emf_to_png&job_id=${numericJobId}`,
+          `/?convert_pcl_to_png&job_id=${numericJobId}`,
         ];
 
         for (const endpoint of endpoints) {
@@ -399,10 +398,9 @@
       let analyzedCount = 0;
 
       if (pageCount > 0) {
-        const baseUrl = window.location.origin.includes('8000') ? '' : 'http://127.0.0.1:8000';
         for (let i = 0; i < pageCount; i++) {
-          const fullImageUrl = `${baseUrl}/thumbnails/${numericJobId}/page_${i}.png?t=${Date.now()}`;
-          const analysis = await analyzeImagePage(fullImageUrl);
+          const relativeUrl = `/thumbnails/${numericJobId}/page_${i}.png?t=${Date.now()}`;
+          const analysis = await analyzeImagePage(relativeUrl);
           totalFillRate += analysis.fillRate;
           if (analysis.isColor) {
             foundRealColor = true;
@@ -415,11 +413,8 @@
       const finalIsGrayscale = res.isGrayscale || !foundRealColor;
 
       // 3. Retourner le format attendu par print-session-manager.js
-      // Succès si le job est encore actif dans le spouleur OU si la miniature a été générée sur le disque
-      const isSuccess = Boolean(res.found || thumbnailUrl);
-
       return {
-        success:      isSuccess,
+        success:      res.found,
         isGrayscale:  finalIsGrayscale,     // depuis DEVMODE.dmColor + analyse pixels
         isDuplex:     res.isDuplex,          // depuis DEVMODE.dmDuplex
         paperSize:    res.paperSize,         // depuis DEVMODE.dmPaperSize
@@ -607,9 +602,10 @@
 
         showBridgeToast('<i class="fa fa-info-circle" style="color:#4f6ef7"></i> <b>Téléchargement en cours...</b>', false);
 
-        // Fetch le fichier sous forme binaire
+        // Fetch le fichier sous forme binaire (inline=1 évite Content-Disposition: attachment qui bloque WebView2)
+        const fetchUrl = absoluteUrl + (absoluteUrl.includes('?') ? '&' : '?') + 'inline=1';
         remoteLog('Fetching binary content...');
-        const response = await fetch(absoluteUrl);
+        const response = await fetch(fetchUrl);
         if (!response.ok) {
           throw new Error(`Erreur HTTP : ${response.status} ${response.statusText}`);
         }

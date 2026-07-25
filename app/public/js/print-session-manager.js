@@ -61,23 +61,19 @@ class PrintSessionManager {
         
         setTimeout(async () => {
             try {
+                // Convertir en nombre pour le C++
                 const numericJobId = parseInt(jobId, 10);
                 console.log('[PrintSessionManager] Réanalyse scheduled pour job:', numericJobId);
-
-                const keyStr = String(jobId);
-                const keyNum = Number(jobId);
-                const jobData = this.lastJobData.get(keyStr) || this.lastJobData.get(keyNum) || {};
-                const printerName = jobData.PrinterName || jobData.printerName || '';
-                const documentName = jobData.Document || jobData.documentName || '';
-
-                // Transmettre driverColor = true sauf si isGrayscale === true explicitement
-                const driverColor = jobData.isGrayscale === true ? false : true;
                 
                 if (window.electronAPI && window.electronAPI.reanalyzePrintJob) {
-                    const result = await window.electronAPI.reanalyzePrintJob(numericJobId, documentName, '', '', driverColor);
+                    const result = await window.electronAPI.reanalyzePrintJob(numericJobId);
                     
                     if (result && result.success) {
                         console.log('[PrintSessionManager] Réanalyse result:', result);
+                        
+                        // Obtenir le printer name des données stockées
+                        const jobData = this.lastJobData.get(jobId) || {};
+                        const printerName = jobData.PrinterName || jobData.printerName || '';
                         
                         // Mettre à jour la DB avec les valeurs analysées
                         const postBody = {
@@ -130,22 +126,16 @@ class PrintSessionManager {
 
             let regenerated = 0;
 
-            // 2. Pour chaque job, appeler l'IPC pour réanalyser
+            // 2. Pour chaque job, appeler le C++ via IPC pour réanalyser
             for (const job of result.jobs) {
                 const jobId = parseInt(job.job_id);
                 if (!jobId || jobId <= 0) continue;
 
                 try {
+                    // Appeler le C++ via Electron IPC pour analyse complète
                     if (window.electronAPI && window.electronAPI.reanalyzePrintJob) {
-                        const documentName = job.document || job.document_name || job.document_display_name || '';
-                        const printerName = job.printer_name || '';
-                        
-                        // Déterminer driverColor : true par défaut sauf si explicitement monochrome
-                        const isMono = (job.color_mode && job.color_mode.toLowerCase() === 'monochrome') || job.is_grayscale === true || job.is_grayscale === '1';
-                        const driverColor = !isMono;
-
-                        console.log(`[PrintSessionManager] Appel IPC reanalyzePrintJob pour job ${jobId} (doc: '${documentName}', color: ${driverColor})...`);
-                        const analysisResult = await window.electronAPI.reanalyzePrintJob(jobId, documentName, '', '', driverColor);
+                        console.log(`[PrintSessionManager] Appel IPC reanalyzePrintJob pour job ${jobId}...`);
+                        const analysisResult = await window.electronAPI.reanalyzePrintJob(jobId);
                         console.log(`[PrintSessionManager] Résultat IPC pour job ${jobId}:`, analysisResult);
 
                         if (analysisResult && analysisResult.success) {
@@ -156,12 +146,10 @@ class PrintSessionManager {
                                 body: JSON.stringify({
                                     action: 'update_job_analysis',
                                     id: job.id,
-                                    job_id: jobId,
-                                    printer_name: printerName,
-                                    thumbnail_url: analysisResult.thumbnailUrl || '',
-                                    fill_rate: analysisResult.fillRate || 0,
+                                    thumbnail_url: analysisResult.thumbnailUrl,
+                                    fill_rate: analysisResult.fillRate,
                                     is_grayscale: analysisResult.isGrayscale,
-                                    total_pages: analysisResult.totalPages || job.total_pages || 0
+                                    total_pages: analysisResult.totalPages
                                 })
                             });
                             regenerated++;
@@ -243,33 +231,19 @@ class PrintSessionManager {
         
         if (jobId) {
             this.processedJobIds.add(jobId);
-            this.processedJobIds.add(String(jobId));
-            this.processedJobIds.add(Number(jobId));
-
-            const jobMeta = {
+            // Stocker données pour comparaison future
+            this.lastJobData.set(jobId, {
                 status: currentStatus,
                 totalPages: currentPages,
-                PrinterName: jobData.PrinterName || jobData.printerName || '',
-                Document: jobData.Document || jobData.documentName || '',
-                isGrayscale: jobData.isGrayscale,
-                colorMode: jobData.colorMode
-            };
-
-            // Stocker données avec clés string et number pour éviter les incohérences de types
-            this.lastJobData.set(jobId, jobMeta);
-            this.lastJobData.set(String(jobId), jobMeta);
-            this.lastJobData.set(Number(jobId), jobMeta);
+                PrinterName: jobData.PrinterName || jobData.printerName || ''
+            });
 
             // TTL de l'anti-spam (60s)
             setTimeout(() => {
                 const entry = this.lastJobData.get(jobId);
                 if (entry && entry.status === currentStatus) {
                     this.processedJobIds.delete(jobId);
-                    this.processedJobIds.delete(String(jobId));
-                    this.processedJobIds.delete(Number(jobId));
                     this.lastJobData.delete(jobId);
-                    this.lastJobData.delete(String(jobId));
-                    this.lastJobData.delete(Number(jobId));
                 }
             }, 60000);
             
