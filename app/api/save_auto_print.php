@@ -6,7 +6,6 @@
 
 // Headers CORS et JSON
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
@@ -60,6 +59,7 @@ try {
     if ($fill_rate > 1.0) {
         $fill_rate = $fill_rate / 100.0;
     }
+    $fill_rate = max(0.05, min(1.0, $fill_rate));
 
     // ID du job original (pour suppression après traitement)
     $original_job_id = isset($input['job_id']) ? $input['job_id'] : null;
@@ -318,6 +318,7 @@ try {
                     document = ?,
                     total_pages = ?,
                     copies = ?,
+                    paper_size = ?,
                     thumbnail_url = ?
                 WHERE job_id = ? AND printer_name = ?
             ");
@@ -330,6 +331,7 @@ try {
                 $document,
                 $total_pages,
                 $copies,
+                $taille,
                 $input['thumbnail_url'] ?? null,
                 strval($original_job_id),
                 $printerName

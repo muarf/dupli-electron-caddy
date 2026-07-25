@@ -50,8 +50,22 @@ $args = match ($mode) {
 
 // Lancer en arrière-plan (même pattern que trigger_vectorization.php)
 $phpBin = (PHP_OS_FAMILY === 'Windows') ? (PHP_BINARY ?: 'php') : 'php';
+$extraFlags = '';
+
+if (PHP_OS_FAMILY === 'Windows') {
+    $phpIni = __DIR__ . '/../php.ini';
+    if (file_exists($phpIni)) {
+        $extraFlags .= ' -c ' . escapeshellarg(realpath($phpIni) ?: $phpIni);
+    }
+    $extDir = ini_get('extension_dir');
+    if (!empty($extDir)) {
+        $extraFlags .= ' -d extension_dir=' . escapeshellarg($extDir);
+    }
+    $extraFlags .= ' -d extension=php_sqlite3.dll -d extension=php_pdo_sqlite.dll';
+}
+
 $logFile = escapeshellarg($logsDir . '/markdown_migration.log');
-$cmd     = escapeshellarg($phpBin) . ' ' . escapeshellarg($worker) . ' ' . $args;
+$cmd     = escapeshellarg($phpBin) . $extraFlags . ' ' . escapeshellarg($worker) . ' ' . $args;
 
 if (PHP_OS_FAMILY === 'Windows') {
     $bgCmd = 'start /B "" ' . $cmd . ' >> ' . $logFile . ' 2>&1';

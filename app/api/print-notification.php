@@ -6,13 +6,18 @@
  * de surveillance Node.js et les enregistre dans la base de données.
  */
 
+// Définir la gestion CORS sécurisée restreinte aux origines de l'application desktop
+$allowedOrigins = ['http://127.0.0.1:8000', 'http://localhost:8000', 'http://tauri.localhost', 'tauri://localhost', 'https://tauri.localhost'];
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if (in_array($origin, $allowedOrigins, true)) {
+    header("Access-Control-Allow-Origin: $origin");
+}
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
 // Gérer les requêtes OPTIONS (CORS preflight)
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
@@ -43,6 +48,13 @@ foreach ($requiredFields as $field) {
         exit;
     }
 }
+
+// Sanitization des entrées numériques
+$data['jobId'] = strval($data['jobId']);
+$data['totalPages'] = max(0, intval($data['totalPages'] ?? 0));
+$data['copies'] = max(1, intval($data['copies'] ?? 1));
+$data['pagesPrinted'] = max(0, intval($data['pagesPrinted'] ?? 0));
+$data['size'] = max(0, intval($data['size'] ?? 0));
 
 try {
     // Inclure les fichiers nécessaires

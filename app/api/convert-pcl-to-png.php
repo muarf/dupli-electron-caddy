@@ -195,6 +195,17 @@ if (!$splFile || !file_exists($splFile)) {
     exit;
 }
 
+// Spool Shadow Copy (H5 / RC1): Isoler le fichier spool pour éviter les TOCTOU / verrous Windows
+$shadowSplFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'shadow_' . uniqid('spl_', true) . '.spl';
+if (@copy($splFile, $shadowSplFile)) {
+    $splFile = $shadowSplFile;
+    register_shutdown_function(function() use ($shadowSplFile) {
+        if (file_exists($shadowSplFile)) {
+            @unlink($shadowSplFile);
+        }
+    });
+}
+
 // LOG HEADER (HEX) to identify format
 $headerHandle = @fopen($splFile, 'rb');
 $isPcl = false;

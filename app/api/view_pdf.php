@@ -27,10 +27,10 @@ if (substr(strtolower($filename), -4) !== '.pdf') {
 
 // Définir les headers pour l'affichage (pas de téléchargement)
 header('Content-Type: application/pdf');
-header('Content-Length: ' . filesize($filepath));
+header('Content-Length: ' . filesize($real_filepath));
 header('Cache-Control: no-cache, must-revalidate');
 header('Expires: 0');
 
 // Lire et envoyer le fichier
-readfile($filepath);
+readfile($real_filepath);
 ?>

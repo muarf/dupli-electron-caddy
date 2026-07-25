@@ -37,7 +37,7 @@ if ((!isset($_SESSION['admin']) || $_SESSION['admin'] !== true) &&
     (!isset($_SESSION['user']) || $_SESSION['user'] !== "1")) {
     http_response_code(401);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['success' => false, 'error' => 'Non autorisé', 'debug' => $_SESSION]);
+    echo json_encode(['success' => false, 'error' => 'Non autorisé']);
     exit;
 }
 

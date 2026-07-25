@@ -4,6 +4,17 @@
  */
 header('Content-Type: application/json; charset=utf-8');
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+if ((!isset($_SESSION['admin']) || $_SESSION['admin'] !== true) && 
+    (!isset($_SESSION['user']) || $_SESSION['user'] !== "1")) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Accès réservé à l\'administrateur']);
+    exit;
+}
+
 require_once __DIR__ . '/../controler/functions/database.php';
 
 try {

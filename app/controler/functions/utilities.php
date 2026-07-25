@@ -284,8 +284,7 @@ function resolveTempDir() {
     if (!empty($envDir)) {
         $dir = normalizePath($envDir);
         if (!is_dir($dir)) {
-            @mkdir($dir, 0777, true);
-            @chmod($dir, 0777);
+            @mkdir($dir, 0700, true);
         }
         if (is_dir($dir) && is_writable($dir)) return $dir;
     }
@@ -296,8 +295,7 @@ function resolveTempDir() {
         $dbDir = dirname($electronDbPath);
         $tempDir = normalizePath($dbDir . DIRECTORY_SEPARATOR . 'temp');
         if (!is_dir($tempDir)) {
-            @mkdir($tempDir, 0777, true);
-            @chmod($tempDir, 0777);
+            @mkdir($tempDir, 0700, true);
         }
         if (is_dir($tempDir) && is_writable($tempDir)) return $tempDir;
     }
@@ -310,8 +308,7 @@ function resolveTempDir() {
         if ($home_dir) {
             $tempDir = normalizePath($home_dir . '/.config/Duplicator/temp');
             if (!is_dir($tempDir)) {
-                @mkdir($tempDir, 0777, true);
-                @chmod($tempDir, 0777);
+                @mkdir($tempDir, 0700, true);
             }
             if (is_dir($tempDir) && is_writable($tempDir)) return $tempDir;
         }
@@ -322,8 +319,7 @@ function resolveTempDir() {
         $tempBase = getenv('TEMP') ?: getenv('TMP') ?: sys_get_temp_dir();
         $tempDir = normalizePath($tempBase . DIRECTORY_SEPARATOR . 'Duplicator' . DIRECTORY_SEPARATOR . 'temp');
         if (!is_dir($tempDir)) {
-            @mkdir($tempDir, 0777, true);
-            @chmod($tempDir, 0777);
+            @mkdir($tempDir, 0700, true);
         }
         if (is_dir($tempDir) && is_writable($tempDir)) return $tempDir;
     }
@@ -332,8 +328,7 @@ function resolveTempDir() {
     $tmpDir = sys_get_temp_dir();
     $tempDir = normalizePath($tmpDir . DIRECTORY_SEPARATOR . 'duplicator');
     if (!is_dir($tempDir)) {
-        @mkdir($tempDir, 0777, true);
-        @chmod($tempDir, 0777);
+        @mkdir($tempDir, 0700, true);
     }
     
     if (is_dir($tempDir) && is_writable($tempDir)) {

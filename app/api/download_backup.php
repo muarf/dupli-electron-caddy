@@ -21,9 +21,24 @@ if (ob_get_length() !== false) {
     ob_clean();
 }
 
+if (session_status() === PHP_SESSION_NONE) {
+    $session_path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_sessions';
+    if (!is_dir($session_path)) {
+        mkdir($session_path, 0777, true);
+    }
+    session_save_path($session_path);
+    session_start();
+}
+
+if ((!isset($_SESSION['admin']) || $_SESSION['admin'] !== true) && 
+    (!isset($_SESSION['user']) || $_SESSION['user'] !== "1")) {
+    http_response_code(403);
+    die('Accès réservé à l\'administrateur');
+}
+
 // Charger uniquement ce qui est nécessaire pour BackupManager
-require_once __DIR__ . '/../../controler/conf.php';
-require_once __DIR__ . '/../../models/admin/BackupManager.php';
+require_once __DIR__ . '/../controler/conf.php';
+require_once __DIR__ . '/../models/admin/BackupManager.php';
 
 $filename = $_GET['file'] ?? '';
 if (empty($filename)) {

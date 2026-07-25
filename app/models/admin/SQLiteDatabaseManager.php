@@ -516,7 +516,8 @@ class SQLiteDatabaseManager {
                 session_id INTEGER REFERENCES print_sessions(id),
                 document_name TEXT,
                 thumbnail_url TEXT,
-                nb_exemplaires INTEGER DEFAULT 1
+                nb_exemplaires INTEGER DEFAULT 1,
+                taille TEXT DEFAULT 'A3'
             )",
             
             'a4' => "CREATE TABLE IF NOT EXISTS a4 (
@@ -551,7 +552,8 @@ class SQLiteDatabaseManager {
                 session_id INTEGER REFERENCES print_sessions(id),
                 document_name TEXT,
                 thumbnail_url TEXT,
-                nb_exemplaires INTEGER DEFAULT 1
+                nb_exemplaires INTEGER DEFAULT 1,
+                taille TEXT DEFAULT 'A3'
             )",
             
             'printer_mappings' => "CREATE TABLE IF NOT EXISTS printer_mappings (
