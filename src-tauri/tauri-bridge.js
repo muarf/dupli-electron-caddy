@@ -336,58 +336,69 @@
       // Fonction pour analyser une image via Canvas et récupérer son taux de remplissage / couleur
       const analyzeImagePage = (url) => {
         return new Promise((resolve) => {
-          const img = new Image();
-          img.crossOrigin = "anonymous";
-          img.onload = () => {
-            try {
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              canvas.width = 200;
-              canvas.height = 200;
-              ctx.drawImage(img, 0, 0, 200, 200);
-              
-              const imgData = ctx.getImageData(0, 0, 200, 200);
-              const data = imgData.data;
-              const totalPixels = 200 * 200;
-              let totalDensity = 0;
-              let coloredPixels = 0;
+          let retries = 3;
+          const attemptLoad = (attempt) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => {
+              try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 200;
+                canvas.height = 200;
+                ctx.drawImage(img, 0, 0, 200, 200);
+                
+                const imgData = ctx.getImageData(0, 0, 200, 200);
+                const data = imgData.data;
+                const totalPixels = 200 * 200;
+                let totalDensity = 0;
+                let coloredPixels = 0;
 
-              for (let i = 0; i < data.length; i += 4) {
-                const r = data[i];
-                const g = data[i+1];
-                const b = data[i+2];
-                
-                const rP = r / 255;
-                const gP = g / 255;
-                const bP = b / 255;
-                
-                // Simulation CMYK à partir de RGB pour correspondre à Ghostscript
-                const k = 1 - Math.max(rP, gP, bP);
-                const c = k === 1 ? 0 : (1 - rP - k) / (1 - k);
-                const m = k === 1 ? 0 : (1 - gP - k) / (1 - k);
-                const y = k === 1 ? 0 : (1 - bP - k) / (1 - k);
-                
-                // Capper à 1.0 maximum par pixel pour que le fillRate ne dépasse pas 100%
-                totalDensity += Math.min(1, c + m + y + k);
-                
-                // Seuil de couleur pour détection isColor
-                if (Math.abs(r - g) > 25 || Math.abs(g - b) > 25 || Math.abs(r - b) > 25) {
-                  coloredPixels++;
+                for (let i = 0; i < data.length; i += 4) {
+                  const r = data[i];
+                  const g = data[i+1];
+                  const b = data[i+2];
+                  
+                  const rP = r / 255;
+                  const gP = g / 255;
+                  const bP = b / 255;
+                  
+                  // Simulation CMYK à partir de RGB pour correspondre à Ghostscript
+                  const k = 1 - Math.max(rP, gP, bP);
+                  const c = k === 1 ? 0 : (1 - rP - k) / (1 - k);
+                  const m = k === 1 ? 0 : (1 - gP - k) / (1 - k);
+                  const y = k === 1 ? 0 : (1 - bP - k) / (1 - k);
+                  
+                  // Capper à 1.0 maximum par pixel pour que le fillRate ne dépasse pas 100%
+                  totalDensity += Math.min(1, c + m + y + k);
+                  
+                  // Seuil de couleur pour détection isColor
+                  if (Math.abs(r - g) > 25 || Math.abs(g - b) > 25 || Math.abs(r - b) > 25) {
+                    coloredPixels++;
+                  }
                 }
-              }
 
-              const fillRate = (totalDensity / totalPixels) * 100;
-              const isColor = (coloredPixels / totalPixels) > 0.005;
-              resolve({ fillRate, isColor });
-            } catch (e) {
-              console.warn('[tauri-bridge] Erreur analyse canvas:', e);
-              resolve({ fillRate: 0, isColor: false });
-            }
+                const fillRate = (totalDensity / totalPixels) * 100;
+                const isColor = (coloredPixels / totalPixels) > 0.005;
+                resolve({ fillRate, isColor });
+              } catch (e) {
+                console.warn('[tauri-bridge] Erreur analyse canvas:', e);
+                resolve({ fillRate: 0, isColor: false });
+              }
+            };
+            img.onerror = () => {
+              if (attempt < retries) {
+                setTimeout(() => attemptLoad(attempt + 1), 250);
+              } else {
+                resolve({ fillRate: 0, isColor: false });
+              }
+            };
+            // Ajouter timestamp rafraîchi par tentative pour contourner le cache navigateur
+            img.src = url + (url.includes('?') ? '&' : '?') + `retry=${attempt}`;
           };
-          img.onerror = () => {
-            resolve({ fillRate: 0, isColor: false });
-          };
-          img.src = url;
+
+          // Petite attente initiale de 200ms pour laisser à PHP/FS le temps de flusher le fichier PNG
+          setTimeout(() => attemptLoad(1), 200);
         });
       };
 
