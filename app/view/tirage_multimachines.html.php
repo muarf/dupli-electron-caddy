@@ -758,7 +758,7 @@ try {
                     <?php endif; ?>
 
                         <!-- Formulaire d'enregistrement -->
-                        <form class="form-horizontal" action="" method="post" id="form-enregistrement"
+                        <form class="" action="" method="post" id="form-enregistrement"
                             onsubmit="console.log('Formulaire soumis !'); return true;">
                             <fieldset>
 
@@ -846,35 +846,42 @@ try {
                             <?php endforeach; ?>
 
                                 <!-- Champ "As-tu payé" -->
-                                <div class="form-group">
-                                    <label class="col-md-4 control-label" for="payeoui"><?php _e('tirage_multimachines.have_you_paid'); ?></label>
-                                    <div class="col-md-4">
-                                        <label class="radio-inline">
-                                            <input type="radio" name="paye" value="oui" id="payeoui"
-                                                onchange="updatePaymentAmount()"> <?php _e('tirage_multimachines.yes'); ?>
-                                        </label>
-                                        <label class="radio-inline">
-                                            <input type="radio" name="paye" value="non" id="payenon"
-                                                onchange="updatePaymentAmount()" checked> <?php _e('tirage_multimachines.no'); ?>
-                                        </label>
+                                <div class="clearfix"></div>
+                                <div class="row" style="margin-top: 20px;">
+                                    <div class="col-xs-12">
+                                        <div class="form-group">
+                                            <label for="payeoui"><strong><?php _e('tirage_multimachines.have_you_paid'); ?></strong></label><br>
+                                            <label class="radio-inline">
+                                                <input type="radio" name="paye" value="oui" id="payeoui"
+                                                    onchange="updatePaymentAmount()"> <?php _e('tirage_multimachines.yes'); ?>
+                                            </label>
+                                            <label class="radio-inline">
+                                                <input type="radio" name="paye" value="non" id="payenon"
+                                                    onchange="updatePaymentAmount()" checked> <?php _e('tirage_multimachines.no'); ?>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <!-- Champ montant -->
-                                <div class="form-group">
-                                    <label class="col-md-4 control-label" for="cb1"><?php _e('tirage_multimachines.amount_paid'); ?></label>
-                                    <div class="col-md-4">
-                                        <input id="cb1" name="cb" class="form-control input-md" type="number" step="0.01"
-                                            min="0" placeholder="0.00">
-                                        <span class="help-block"><?php _e('tirage_multimachines.amount_in_euros'); ?></span>
+                                <div class="row">
+                                    <div class="col-xs-12 col-md-6">
+                                        <div class="form-group">
+                                            <label for="cb1"><?php _e('tirage_multimachines.amount_paid'); ?></label>
+                                            <input id="cb1" name="cb" class="form-control" type="number" step="0.01"
+                                                min="0" placeholder="0.00">
+                                            <span class="help-block"><?php _e('tirage_multimachines.amount_in_euros'); ?></span>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <!-- Champ "Un petit mot" -->
-                                <div class="form-group">
-                                    <label class="col-md-4 control-label" for="mot"><?php _e('tirage_multimachines.message_placeholder'); ?></label>
-                                    <div class="col-md-4">
-                                        <textarea id="mot" name="mot" class="form-control input-md"></textarea>
+                                <div class="row">
+                                    <div class="col-xs-12 col-md-6">
+                                        <div class="form-group">
+                                            <label for="mot"><?php _e('tirage_multimachines.message_placeholder'); ?></label>
+                                            <textarea id="mot" name="mot" class="form-control"></textarea>
+                                        </div>
                                     </div>
                                 </div>
 
