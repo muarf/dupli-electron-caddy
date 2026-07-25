@@ -441,6 +441,9 @@ window.addEventListener('unhandledrejection', function(e) {
           <div class="panel-row" style="margin-top:10px">
             <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_tete_beche"> Tête-bêche</label>
           </div>
+          <div class="panel-row" style="margin-top:10px">
+            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_collation_marks"> Témoins d'assemblage</label>
+          </div>
           
 
         </div>
@@ -2758,6 +2761,7 @@ document.addEventListener('DOMContentLoaded', function() {
         duplex:         '1',
         tete_beche:     $('liv_tete_beche').checked ? '1' : '0',
         crop_marks:     $('liv_crop_marks').checked ? '1' : '0',
+        collation_marks: $('liv_collation_marks').checked ? '1' : '0',
         crop_style:     $('liv_crop_style').value,
         crop_mark_len:  $('liv_crop_len').value,
         add_page_numbers_in_gutters: $('liv_page_nums').checked ? '1' : '0',
@@ -3084,13 +3088,10 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   $('bro_page_nums').addEventListener('change', e => {
     $('bro_folio_settings').style.display = e.target.checked ? 'block' : 'none';
-    requestStudioPreview();
   });
   $('bro_page_nums_manual').addEventListener('change', e => {
     $('bro_folio_manual_settings').style.display = e.target.checked ? 'block' : 'none';
     $('bro_folio_position_row').style.display = e.target.checked ? 'none' : '';
-    $('bro_folio_position').addEventListener('change', requestStudioPreview);
-    requestStudioPreview();
   });
 
   document.querySelectorAll('input[name="liv_resize_mode"]').forEach(radio => {
@@ -3104,13 +3105,10 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   $('liv_page_nums').addEventListener('change', e => {
     $('liv_folio_settings').style.display = e.target.checked ? 'block' : 'none';
-    requestStudioPreview();
   });
   $('liv_page_nums_manual').addEventListener('change', e => {
     $('liv_folio_manual_settings').style.display = e.target.checked ? 'block' : 'none';
     $('liv_folio_position_row').style.display = e.target.checked ? 'none' : '';
-    $('liv_folio_position').addEventListener('change', requestStudioPreview);
-    requestStudioPreview();
   });
 
   // Imposition Tab switching

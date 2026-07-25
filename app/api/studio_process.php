@@ -322,6 +322,7 @@ if ($action === 'impose') {
                 'gutter_y'                    => floatval($_POST['gutter_y']       ?? 0),
                 'gutter_strategy'             => $_POST['gutter_strategy']          ?? 'reduce',
                 'crop_marks'                  => ($_POST['crop_marks'] ?? '0') === '1',
+                'collation_marks'             => ($_POST['collation_marks'] ?? '0') === '1',
                 'crop_style'                  => $_POST['crop_style']               ?? 'spreads',
                 'crop_mark_len'               => floatval($_POST['crop_mark_len']  ?? 2),
                 'crop_mark_width'             => floatval($_POST['crop_mark_width'] ?? 0.1),
