@@ -84,3 +84,5 @@ embed_ia.md
 
 bin/win-x64/
 app/cache/huggingface/
+app/api/venv_fonts/
+app/public/custom_fonts/
