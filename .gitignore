@@ -86,3 +86,4 @@ bin/win-x64/
 app/cache/huggingface/
 app/api/venv_fonts/
 app/public/custom_fonts/
+app/api/debug_log.txt
