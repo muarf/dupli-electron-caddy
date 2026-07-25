@@ -9,7 +9,7 @@
 /**
  * Insérer un tirage photocopieur
  */
-function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb, $mot, $date, $db = null, $tirage_global_id = null, $session_id = null, $document_name = null, $thumbnail_url = null)
+function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb, $mot, $date, $db = null, $tirage_global_id = null, $session_id = null, $document_name = null, $thumbnail_url = null, $taille = 'A4')
 {
     // CORRECTION DEADLOCK : Utiliser la connexion passée en paramètre si disponible (pour les transactions)
     if ($db === null) {
@@ -41,9 +41,9 @@ function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb
     }
 
     if ($hasTirageGlobalId) {
-        $query = $db->prepare('INSERT into photocop (type, marque, contact, nb_f, rv, prix, paye, cb, mot, date, tirage_global_id, session_id, document_name, thumbnail_url) VALUES (:type,:marque,:contact,:nb_f,:rv,:prix,:paye,:cb,:mot,:date,:tirage_global_id,:session_id, :document_name, :thumbnail_url)');
+        $query = $db->prepare('INSERT into photocop (type, marque, contact, nb_f, rv, prix, paye, cb, mot, date, tirage_global_id, session_id, document_name, thumbnail_url, taille) VALUES (:type,:marque,:contact,:nb_f,:rv,:prix,:paye,:cb,:mot,:date,:tirage_global_id,:session_id, :document_name, :thumbnail_url, :taille)');
     } else {
-        $query = $db->prepare('INSERT into photocop (type, marque, contact, nb_f, rv, prix, paye, cb, mot, date, session_id, document_name, thumbnail_url) VALUES (:type,:marque,:contact,:nb_f,:rv,:prix,:paye,:cb,:mot,:date,:session_id, :document_name, :thumbnail_url)');
+        $query = $db->prepare('INSERT into photocop (type, marque, contact, nb_f, rv, prix, paye, cb, mot, date, session_id, document_name, thumbnail_url, taille) VALUES (:type,:marque,:contact,:nb_f,:rv,:prix,:paye,:cb,:mot,:date,:session_id, :document_name, :thumbnail_url, :taille)');
     }
 
     $query->bindParam(':type', $type);
@@ -56,6 +56,7 @@ function insert_photocop($type, $marque, $contact, $nb_f, $rv, $prix, $paye, $cb
     $query->bindParam(':cb', $cb);
     $query->bindParam(':mot', $mot);
     $query->bindParam(':date', $date);
+    $query->bindParam(':taille', $taille);
 
     if ($hasTirageGlobalId) {
         $query->bindParam(':tirage_global_id', $tirage_global_id);
