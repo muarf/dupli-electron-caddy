@@ -156,14 +156,6 @@
     openExternalFile: (fileUrl) =>
       invoke('open_external_file', { fileUrl }),
 
-    // ─────────────────────────────────────────────────────────────────
-    // Informations de l'application
-    // ─────────────────────────────────────────────────────────────────
-
-    /** Retourne le chemin de la base de données SQLite */
-    getDatabasePath: () =>
-      invoke('get_database_path'),
-
     /** Retourne la version de l'application */
     getAppVersion: () =>
       invoke('get_app_version'),
