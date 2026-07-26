@@ -336,7 +336,7 @@ try {
                     // Debug POST - seulement si debug dans l'URL
                     if (isset($_GET['debug']) && $_SERVER['REQUEST_METHOD'] === 'POST'): ?>
                         <div class="alert alert-danger">
-                            <h4>Debug POST complet test:</h4>
+                            <h4><?php _e("auto_clean.tirage_multimachines_html_php_1", [], false); ?></h4>
                             <pre>REQUEST_METHOD: <?php echo $_SERVER['REQUEST_METHOD']; ?></pre>
                             <pre>POST count: <?php echo count($_POST); ?></pre>
                             <pre>POST keys: <?php print_r(array_keys($_POST), true); ?></pre>
@@ -677,7 +677,7 @@ try {
                                                                     <?php endforeach; ?>
                                                                 <?php endif; ?>
                                                             <?php else: ?>
-                                                                <li class="text-danger">Erreur: Détails du prix non calculés.</li>
+                                                                <li class="text-danger"><?php _e("auto_clean.tirage_multimachines_html_php_2", [], false); ?></li>
                                                             <?php endif; ?>
                                                             </ul>
                                                         </div>
@@ -694,7 +694,7 @@ try {
                                                         <div class="ink-coverage-box text-left" style="margin-top: 20px;">
                                                             <div class="ink-bar-label">
                                                                 <span><strong><i class="fa fa-tint"></i> Couverture d'encre: <?= round($b['fr_percent'], 1) ?>%</strong></span>
-                                                                <span class="label label-primary">x<?= number_format($b['multiplier'], 2) ?> sur couleurs</span>
+                                                                <span class="label label-primary">x<?= number_format($b['multiplier'], 2) ?><?php _e("auto_clean.tirage_multimachines_html_php_3", [], false); ?></span>
                                                             </div>
                                                             <div class="ink-progress">
                                                                 <div class="ink-progress-bar ink-global" style="width: <?= min(100, $b['fr_percent']) ?>%"></div>
@@ -711,12 +711,12 @@ try {
                                                                 </tr>
                                                                 <?php if ($b['is_color']): ?>
                                                                 <tr class="info">
-                                                                    <td>Couleurs (Ajusté x<?= number_format($b['multiplier'], 2) ?>)</td>
+                                                                    <td><?php _e("auto_clean.tirage_multimachines_html_php_4", [], false); ?><?= number_format($b['multiplier'], 2) ?>)</td>
                                                                     <td class="text-right"><?= number_format($b['couleurs'], 2) ?> €</td>
                                                                 </tr>
                                                                 <?php endif; ?>
                                                                 <tr style="border-top: 2px solid #ddd; font-weight: bold;">
-                                                                    <td>Total cette machine</td>
+                                                                    <td><?php _e("auto_clean.tirage_multimachines_html_php_5", [], false); ?></td>
                                                                     <td class="text-right"><?= number_format($b['papier'] + $b['noir'] + $b['couleurs'], 2) ?> €</td>
                                                                 </tr>
                                                             </table>
@@ -727,7 +727,7 @@ try {
                                                     ?>
                                                         <div class="ink-coverage-box text-left">
                                                             <div class="ink-bar-label">
-                                                                <span><strong><i class="fa fa-tint"></i> Couverture d'encre estimée</strong></span>
+                                                                <span><strong><i class="fa fa-tint"></i><?php _e("auto_clean.tirage_multimachines_html_php_6", [], false); ?></strong></span>
                                                                 <span><?= round($fr_percent, 1) ?>%</span>
                                                             </div>
                                                             <div class="ink-progress">
@@ -912,9 +912,9 @@ try {
                                 <h3 style="margin-top: 0; color: #f39c12;">
                                     <i class="fa fa-exclamation-triangle"></i> Attention
                                 </h3>
-                                <p>Vous êtes sur le formulaire de paiement final.</p>
-                                <p><strong>Si vous quittez maintenant, les informations saisies seront perdues.</strong></p>
-                                <p>Voulez-vous vraiment annuler et quitter cette page ?</p>
+                                <p><?php _e("auto_clean.tirage_multimachines_html_php_7", [], false); ?></p>
+                                <p><strong><?php _e("auto_clean.tirage_multimachines_html_php_8", [], false); ?></strong></p>
+                                <p><?php _e("auto_clean.tirage_multimachines_html_php_9", [], false); ?></p>
                                 
                                 <div style="margin-top: 25px; text-align: right;">
                                     <button id="btnStay" class="btn btn-primary" style="margin-right: 10px;">
@@ -932,7 +932,7 @@ try {
                         ?>
                     <?php if (!empty($errors)): ?>
                             <div class="alert alert-danger">
-                                <strong>Erreurs détectées :</strong>
+                                <strong><?php _e("auto_clean.tirage_multimachines_html_php_10", [], false); ?></strong>
                                 <ul>
                                 <?php foreach ($errors as $error): ?>
                                         <li><?= htmlspecialchars($error) ?></li>
@@ -958,7 +958,7 @@ try {
                             <div class="alert alert-warning">
                                 <h4>Debug SQL:</h4>
                                 <p><strong>Requête:</strong> <?php echo htmlspecialchars($debug_sql); ?></p>
-                                <p><strong>Paramètres:</strong></p>
+                                <p><strong><?php _e("auto_clean.tirage_multimachines_html_php_11", [], false); ?></strong></p>
                                 <pre><?php var_dump($debug_params); ?></pre>
                             </div>
                     <?php endif; ?>
@@ -979,14 +979,14 @@ try {
 
                     <?php if (isset($debug_simple)): ?>
                             <div class="alert alert-success">
-                                <h4>Debug Simple:</h4>
+                                <h4><?php _e("auto_clean.tirage_multimachines_html_php_12", [], false); ?></h4>
                                 <p><?php echo htmlspecialchars($debug_simple); ?></p>
                             </div>
                     <?php endif; ?>
 
                     <?php if (isset($debug_model_executed)): ?>
                             <div class="alert alert-info">
-                                <h4>Debug Modèle:</h4>
+                                <h4><?php _e("auto_clean.tirage_multimachines_html_php_13", [], false); ?></h4>
                                 <p><?php echo htmlspecialchars($debug_model_executed); ?></p>
                             </div>
                     <?php endif; ?>

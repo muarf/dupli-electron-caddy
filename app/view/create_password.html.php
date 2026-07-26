@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Création du mot de passe administrateur - Dupli</title>
+    <title><?php _e("auto_clean.create_password_html_php_1", [], false); ?></title>
     <link href="<?= $base_path ?>css/bootstrap.css" rel="stylesheet" type="text/css">
     <link href="<?= $base_path ?>css/font-awesome.min.css" rel="stylesheet" type="text/css">
     <script src="<?= $base_path ?>js/jquery.min.js"></script>

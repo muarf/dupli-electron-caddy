@@ -34,7 +34,7 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
           <!-- Section 1 : Activation -->
           <div class="panel panel-<?php echo $ai_enabled ? 'success' : 'default'; ?>" id="panel-enabled">
             <div class="panel-heading">
-              <h3 class="panel-title"><i class="fa fa-power-off"></i> Activation</h3>
+              <h3 class="panel-title"><i class="fa fa-power-off"></i><?php _e("admin_bibliotheque_ia.auto_key_1", [], false); ?></h3>
             </div>
             <div class="panel-body">
               <div class="form-group">
@@ -53,31 +53,31 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
           <!-- Section 2 : LLM -->
           <div class="panel panel-info">
             <div class="panel-heading">
-              <h3 class="panel-title"><i class="fa fa-comments"></i> Endpoints LLM (Synthèse / RAG)</h3>
+              <h3 class="panel-title"><i class="fa fa-comments"></i><?php _e("admin_bibliotheque_ia.auto_key_2", [], false); ?></h3>
             </div>
             <div class="panel-body">
-              <p class="text-muted">Compatible : llama.cpp, Ollama, OpenRouter, Claude, OpenAI, et tout endpoint au format <code>/completion</code> ou <code>/v1/chat/completions</code>.</p>
+              <p class="text-muted"><?php _e("admin_bibliotheque_ia.auto_key_3", [], false); ?><code><?php _e("admin_bibliotheque_ia.auto_key_4", [], false); ?></code> ou <code><?php _e("admin_bibliotheque_ia.auto_key_5", [], false); ?></code>.</p>
               <div class="form-group">
-                <label for="ai_llm_url">URL LLM Rapide (mode "Fast")</label>
+                <label for="ai_llm_url"><?php _e("admin_bibliotheque_ia.auto_key_6", [], false); ?></label>
                 <input type="url" class="form-control" id="ai_llm_url" name="ai_llm_url"
                        value="<?php echo htmlspecialchars($ai_llm_url); ?>"
                        placeholder="http://localhost:11436/completion">
-                <small class="text-muted">Ex : Luth via llama.cpp. Port actuel : 11436.</small>
+                <small class="text-muted"><?php _e("admin_bibliotheque_ia.auto_key_7", [], false); ?></small>
               </div>
               <div class="form-group mb-4">
-                <label for="ai_llm_url_pro">URL LLM Avancé (mode "Pro")</label>
+                <label for="ai_llm_url_pro"><?php _e("admin_bibliotheque_ia.auto_key_8", [], false); ?></label>
                 <input type="url" class="form-control" id="ai_llm_url_pro" name="ai_llm_url_pro"
                        value="<?php echo htmlspecialchars($ai_llm_url_pro); ?>"
                        placeholder="http://localhost:11435/completion">
-                <small class="form-text text-muted">Ex: Gemma 2 27B / Llama 3 70B</small>
+                <small class="form-text text-muted"><?php _e("admin_bibliotheque_ia.auto_key_9", [], false); ?></small>
             </div>
             
             <div class="form-group mb-4">
-                <label for="ai_llm_url_nemotron">URL LLM Nemotron (mode "Nemotron")</label>
+                <label for="ai_llm_url_nemotron"><?php _e("admin_bibliotheque_ia.auto_key_10", [], false); ?></label>
                 <input type="url" class="form-control" id="ai_llm_url_nemotron" name="ai_llm_url_nemotron"
                        value="<?php echo htmlspecialchars($ai_llm_url_nemotron); ?>"
                        placeholder="http://localhost:11438/completion">
-                <small class="form-text text-muted">Ex: Nemotron-Mini-4B / Nemotron 70B</small>
+                <small class="form-text text-muted"><?php _e("admin_bibliotheque_ia.auto_key_11", [], false); ?></small>
             </div>
             </div>
           </div>
@@ -85,23 +85,23 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
           <!-- Section 3 : Embedding -->
           <div class="panel panel-info">
             <div class="panel-heading">
-              <h3 class="panel-title"><i class="fa fa-database"></i> Endpoint Embedding (Vectorisation)</h3>
+              <h3 class="panel-title"><i class="fa fa-database"></i><?php _e("admin_bibliotheque_ia.auto_key_12", [], false); ?></h3>
             </div>
             <div class="panel-body">
               <div class="alert alert-warning">
                 <i class="fa fa-exclamation-triangle"></i>
-                <strong>Attention :</strong> Changer de modèle d'embedding rend les vecteurs existants <strong>incompatibles</strong>.
+                <strong><?php _e("admin_bibliotheque_ia.auto_key_13", [], false); ?></strong><?php _e("admin_bibliotheque_ia.auto_key_14", [], false); ?><strong><?php _e("admin_bibliotheque_ia.auto_key_15", [], false); ?></strong>.
                 Si vous modifiez ces champs, relancez impérativement la vectorisation complète ci-dessous.
               </div>
               <div class="form-group">
-                <label for="ai_embedding_url">URL Endpoint Embedding</label>
+                <label for="ai_embedding_url"><?php _e("admin_bibliotheque_ia.auto_key_16", [], false); ?></label>
                 <input type="url" class="form-control" id="ai_embedding_url" name="ai_embedding_url"
                        value="<?php echo htmlspecialchars($ai_embedding_url); ?>"
                        placeholder="http://localhost:11434/api/embeddings">
-                <small class="text-muted">Ex : Ollama local (port 11434) ou endpoint distant compatible.</small>
+                <small class="text-muted"><?php _e("admin_bibliotheque_ia.auto_key_17", [], false); ?></small>
               </div>
               <div class="form-group">
-                <label for="ai_embedding_model">Nom du modèle d'embedding</label>
+                <label for="ai_embedding_model"><?php _e("admin_bibliotheque_ia.auto_key_18", [], false); ?></label>
                 <input type="text" class="form-control" id="ai_embedding_model" name="ai_embedding_model"
                        value="<?php echo htmlspecialchars($ai_embedding_model); ?>"
                        placeholder="bge-m3">
@@ -112,15 +112,15 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
           <!-- Section 4 : Re-ranker -->
           <div class="panel panel-info">
             <div class="panel-heading">
-              <h3 class="panel-title"><i class="fa fa-sort-amount-desc"></i> Re-ranker (optionnel)</h3>
+              <h3 class="panel-title"><i class="fa fa-sort-amount-desc"></i><?php _e("admin_bibliotheque_ia.auto_key_19", [], false); ?></h3>
             </div>
             <div class="panel-body">
               <div class="form-group">
-                <label for="ai_reranker_url">URL Re-ranker</label>
+                <label for="ai_reranker_url"><?php _e("admin_bibliotheque_ia.auto_key_20", [], false); ?></label>
                 <input type="url" class="form-control" id="ai_reranker_url" name="ai_reranker_url"
                        value="<?php echo htmlspecialchars($ai_reranker_url); ?>"
                        placeholder="http://localhost:11437/rerank">
-                <small class="text-muted">Si vide ou indisponible, le système utilise automatiquement le mode dégradé (similarité vectorielle seule).</small>
+                <small class="text-muted"><?php _e("admin_bibliotheque_ia.auto_key_21", [], false); ?></small>
               </div>
             </div>
           </div>
@@ -128,11 +128,11 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
           <!-- Section 5 : Authentification -->
           <div class="panel panel-warning">
             <div class="panel-heading">
-              <h3 class="panel-title"><i class="fa fa-key"></i> Authentification</h3>
+              <h3 class="panel-title"><i class="fa fa-key"></i><?php _e("admin_bibliotheque_ia.auto_key_22", [], false); ?></h3>
             </div>
             <div class="panel-body">
               <div class="form-group">
-                <label for="ai_token">Token / API Key</label>
+                <label for="ai_token"><?php _e("admin_bibliotheque_ia.auto_key_23", [], false); ?></label>
                 <div class="input-group">
                   <input type="password" class="form-control" id="ai_token" name="ai_token"
                          value="<?php echo htmlspecialchars($ai_token); ?>"
@@ -143,7 +143,7 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
                     </button>
                   </span>
                 </div>
-                <small class="text-muted">Laisser vide pour les endpoints locaux (Ollama, llama.cpp). Requis pour OpenAI, OpenRouter, OVH, etc.</small>
+                <small class="text-muted"><?php _e("admin_bibliotheque_ia.auto_key_24", [], false); ?></small>
               </div>
             </div>
           </div>
@@ -151,11 +151,11 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
           <!-- Section 6 : Prompt Système -->
           <div class="panel panel-info">
             <div class="panel-heading">
-              <h3 class="panel-title"><i class="fa fa-pencil"></i> Prompt Système</h3>
+              <h3 class="panel-title"><i class="fa fa-pencil"></i><?php _e("admin_bibliotheque_ia.auto_key_25", [], false); ?></h3>
             </div>
             <div class="panel-body">
               <div class="form-group">
-                <label for="ai_system_prompt">Instructions pour l'IA</label>
+                <label for="ai_system_prompt"><?php _e("admin_bibliotheque_ia.auto_key_26", [], false); ?></label>
                 <textarea class="form-control" id="ai_system_prompt" name="ai_system_prompt" rows="6"
                           placeholder="Tu es un assistant expert..."><?php echo htmlspecialchars($ai_system_prompt); ?></textarea>
                 <small class="text-muted">
@@ -169,11 +169,11 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
           <!-- Section 7 : Sécurité de la Bibliothèque -->
           <div class="panel panel-warning">
             <div class="panel-heading">
-              <h3 class="panel-title"><i class="fa fa-lock"></i> Accès Sécurisé</h3>
+              <h3 class="panel-title"><i class="fa fa-lock"></i><?php _e("admin_bibliotheque_ia.auto_key_27", [], false); ?></h3>
             </div>
             <div class="panel-body">
               <div class="form-group">
-                <label for="bibliotheque_password">Mot de passe de la Bibliothèque</label>
+                <label for="bibliotheque_password"><?php _e("admin_bibliotheque_ia.auto_key_28", [], false); ?></label>
                 <input type="text" class="form-control" id="bibliotheque_password" name="bibliotheque_password"
                        value="<?php echo htmlspecialchars($_ai['bibliotheque_password'] ?? ''); ?>"
                        placeholder="Laisser vide pour un accès libre">
@@ -226,7 +226,7 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
                 <small class="text-muted">
                   Endpoint POST JSON <code>{"pdf": "&lt;base64&gt;", "filename": "doc.pdf"}</code>
                   → réponse <code>{"docx": "&lt;base64&gt;"}</code> ou binaire .docx direct.
-                  Si vide, seul l'environnement local <code>/opt/docling-venv/</code> est utilisé.
+                  Si vide, seul l'environnement local <code><?php _e("admin_bibliotheque_ia.auto_key_29", [], false); ?></code> est utilisé.
                 </small>
               </div>
             </div>
@@ -240,15 +240,15 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
             <div class="panel-body">
               <p class="text-muted">
                 Si vous ne disposez pas d'un VPS, vous pouvez télécharger les modèles lourds (PyTorch, Docling, etc.)
-                sur cette machine. <strong>Attention : Le téléchargement pèse environ 1.5 Go.</strong>
+                sur cette machine. <strong><?php _e("admin_bibliotheque_ia.auto_key_30", [], false); ?></strong>
               </p>
               
               <div class="form-group">
-                <label for="ai_local_path">Dossier d'installation des modèles (Optionnel)</label>
+                <label for="ai_local_path"><?php _e("admin_bibliotheque_ia.auto_key_31", [], false); ?></label>
                 <input type="text" class="form-control" id="ai_local_path" name="ai_local_path"
                        value="<?php echo htmlspecialchars($_ai['ai_local_path'] ?? ''); ?>"
                        placeholder="Ex: D:\Duplicator_IA (Laissez vide pour le dossier par défaut)">
-                <small class="text-muted">Utile si vous n'avez plus de place sur le disque principal (C:).</small>
+                <small class="text-muted"><?php _e("admin_bibliotheque_ia.auto_key_32", [], false); ?></small>
               </div>
 
               <div class="form-group" style="margin-top: 15px;">
@@ -273,15 +273,15 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
         <!-- Section 7 : Maintenance -->
         <div class="panel panel-danger">
           <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-cog fa-spin-hover"></i> Maintenance de la Bibliothèque</h3>
+            <h3 class="panel-title"><i class="fa fa-cog fa-spin-hover"></i><?php _e("admin_bibliotheque_ia.auto_key_33", [], false); ?></h3>
           </div>
           <div class="panel-body">
             <div class="alert alert-info">
               <i class="fa fa-info-circle"></i>
-              <strong>Deux modes disponibles :</strong>
+              <strong><?php _e("admin_bibliotheque_ia.auto_key_34", [], false); ?></strong>
               <ul>
-                <li><strong>Compléter les manquants :</strong> Très rapide, ne traite que les PDFs récemment ajoutés ou migrés.</li>
-                <li><strong>Tout réinitialiser (Force-all) :</strong> Efface tous les vecteurs existants et recommence à zéro. <strong>Indispensable si vous avez changé de modèle d'embedding</strong>. Peut durer très longtemps.</li>
+                <li><strong><?php _e("admin_bibliotheque_ia.auto_key_35", [], false); ?></strong><?php _e("admin_bibliotheque_ia.auto_key_36", [], false); ?></li>
+                <li><strong><?php _e("admin_bibliotheque_ia.auto_key_37", [], false); ?></strong><?php _e("admin_bibliotheque_ia.auto_key_38", [], false); ?><strong><?php _e("admin_bibliotheque_ia.auto_key_39", [], false); ?></strong><?php _e("admin_bibliotheque_ia.auto_key_40", [], false); ?></li>
               </ul>
             </div>
             
@@ -303,16 +303,16 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
               <p class="text-muted text-center" id="vectorize-msg"></p>
             </div>
             <hr>
-            <h4><i class="fa fa-file-text-o"></i> Migrer la bibliothèque en Markdown (Docling)</h4>
+            <h4><i class="fa fa-file-text-o"></i><?php _e("admin_bibliotheque_ia.auto_key_41", [], false); ?></h4>
             <p>
-              Retraite tous les PDF avec <strong>Docling</strong> pour générer des chunks sémantiques par sections (titres, chapitres…) au lieu du découpage naïf par mots.
-              Les anciens chunks sont <strong>préservés jusqu'au commit atomique</strong> — le RAG reste fonctionnel pendant l'opération.
+              Retraite tous les PDF avec <strong><?php _e("admin_bibliotheque_ia.auto_key_42", [], false); ?></strong> pour générer des chunks sémantiques par sections (titres, chapitres…) au lieu du découpage naïf par mots.
+              Les anciens chunks sont <strong><?php _e("admin_bibliotheque_ia.auto_key_43", [], false); ?></strong> — le RAG reste fonctionnel pendant l'opération.
             </p>
             <div id="markdown-counts" class="row" style="margin-bottom:12px;">
-              <div class="col-xs-3 text-center"><span class="badge" style="background:#777;" id="md-count-raw">…</span><br><small>À traiter</small></div>
-              <div class="col-xs-3 text-center"><span class="badge" style="background:#5bc0de;" id="md-count-processing">…</span><br><small>En cours</small></div>
-              <div class="col-xs-3 text-center"><span class="badge" style="background:#5cb85c;" id="md-count-done">…</span><br><small>Terminés</small></div>
-              <div class="col-xs-3 text-center"><span class="badge" style="background:#d9534f;" id="md-count-error">…</span><br><small>En erreur</small></div>
+              <div class="col-xs-3 text-center"><span class="badge" style="background:#777;" id="md-count-raw">…</span><br><small><?php _e("admin_bibliotheque_ia.auto_key_44", [], false); ?></small></div>
+              <div class="col-xs-3 text-center"><span class="badge" style="background:#5bc0de;" id="md-count-processing">…</span><br><small><?php _e("admin_bibliotheque_ia.auto_key_45", [], false); ?></small></div>
+              <div class="col-xs-3 text-center"><span class="badge" style="background:#5cb85c;" id="md-count-done">…</span><br><small><?php _e("admin_bibliotheque_ia.auto_key_46", [], false); ?></small></div>
+              <div class="col-xs-3 text-center"><span class="badge" style="background:#d9534f;" id="md-count-error">…</span><br><small><?php _e("admin_bibliotheque_ia.auto_key_47", [], false); ?></small></div>
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
               <button class="btn btn-primary" id="btn-markdown-all" onclick="triggerMarkdownMigration('all')">
@@ -338,13 +338,13 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
             </div>
             
             <div id="markdown-logs-container" style="display:none; margin-top:15px;">
-              <p><strong><i class="fa fa-terminal"></i> Logs en direct :</strong></p>
+              <p><strong><i class="fa fa-terminal"></i><?php _e("admin_bibliotheque_ia.auto_key_48", [], false); ?></strong></p>
               <pre id="markdown-logs" style="font-size: 0.85em; background: #222; color: #0f0; max-height: 250px; overflow-y: auto; border: 1px solid #000; padding: 10px;"></pre>
             </div>
 
             <hr>
-            <h4><i class="fa fa-search"></i> Scanner les nouveaux fichiers</h4>
-            <p>Utilisez ce bouton pour forcer un scan complet de la bibliothèque (y compris les dossiers externes s'il y en a) et indexer les nouveaux fichiers.</p>
+            <h4><i class="fa fa-search"></i><?php _e("admin_bibliotheque_ia.auto_key_49", [], false); ?></h4>
+            <p><?php _e("admin_bibliotheque_ia.auto_key_50", [], false); ?></p>
             <button class="btn btn-warning btn-lg" id="btn-rescan" onclick="rescanLibrary('all')">
               <i class="fa fa-refresh"></i> Lancer un scan complet
             </button>

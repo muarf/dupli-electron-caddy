@@ -90,7 +90,7 @@
 
 <div id="global-task-manager">
     <div class="task-manager-header" onclick="toggleTaskManager()">
-        <span><i class="fa fa-tasks"></i> Tâches en arrière-plan (<span id="task-manager-count">0</span>)</span>
+        <span><i class="fa fa-tasks"></i><?php _e("global_task_manager.auto_key_1", [], false); ?><span id="task-manager-count">0</span>)</span>
         <i id="task-manager-toggle-icon" class="fa fa-chevron-down"></i>
     </div>
     <div class="task-manager-body" id="task-manager-body">

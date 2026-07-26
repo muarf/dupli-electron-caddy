@@ -209,7 +209,7 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
                         <img id="previewImage" src="" class="img-responsive"
                             style="max-height: 80vh; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
                         <p id="previewError" class="text-danger" style="display:none;"><i
-                                class="fa fa-exclamation-triangle"></i> Impossible de charger l'image</p>
+                                class="fa fa-exclamation-triangle"></i><?php _e("auto_clean.admin_imprimantes_html_php_1", [], false); ?></p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-default" data-dismiss="modal"><?php _e('admin_printers.close'); ?></button>

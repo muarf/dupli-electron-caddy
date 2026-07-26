@@ -87,8 +87,8 @@
                                     <option value="A5">A5</option>
                                     <option value="A6">A6</option>
                                     <option value="A2">A2</option>
-                                    <option value="Letter">Letter (US)</option>
-                                    <option value="Legal">Legal (US)</option>
+                                    <option value="Letter"><?php _e("auto_clean.components_print-modal_html_php_1", [], false); ?></option>
+                                    <option value="Legal"><?php _e("auto_clean.components_print-modal_html_php_2", [], false); ?></option>
                                     <option value="Tabloid">Tabloid</option>
                                     <option value="Statement">Statement</option>
                                 </select>

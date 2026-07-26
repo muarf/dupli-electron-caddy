@@ -442,20 +442,20 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
     </style>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0 font-weight-bold"><i class="fa fa-book-open text-primary"></i> Bibliothèque</h2>
-        <div class="text-muted">662 documents disponibles</div>
+        <h2 class="mb-0 font-weight-bold"><i class="fa fa-book-open text-primary"></i> <?php _e('header.bibliotheque', [], false); ?></h2>
+        <div class="text-muted"><?php _e('bibliotheque.available_docs_count', [], false); ?></div>
     </div>
 
     <!-- Toolbar Premium -->
     <div class="library-toolbar">
         <div class="search-container">
             <i class="fa fa-search"></i>
-            <input type="text" id="search_query" placeholder="Rechercher un livre, un auteur, une thématique..." onkeypress="if(event.key === 'Enter') { event.preventDefault(); triggerAiSearch(); }">
+            <input type="text" id="search_query" placeholder="<?= htmlspecialchars(__('bibliotheque.search_placeholder')) ?>" onkeypress="if(event.key === 'Enter') { event.preventDefault(); triggerAiSearch(); }">
         </div>
         
         <div class="filter-group">
             <select id="filter_format">
-                <option value="">Format</option>
+                <option value=""><?php _e('bibliotheque.format', [], false); ?></option>
                 <option value="A3">A3</option>
                 <option value="A4">A4</option>
                 <option value="A5">A5</option>
@@ -463,15 +463,15 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
             </select>
             
             <select id="filter_color">
-                <option value="">Couleur</option>
+                <option value=""><?php _e('bibliotheque.color', [], false); ?></option>
                 <option value="NB">N&B</option>
-                <option value="Couleur">Couleur</option>
+                <option value="Couleur"><?php _e('bibliotheque.color', [], false); ?></option>
             </select>
 
             <div class="position-relative" style="min-width: 250px;">
                 <div id="tag_filter_wrapper" class="d-flex align-items-center flex-wrap" style="border: 1px solid #e2e8f0; border-radius: 12px; padding: 2px 10px; min-height: 45px; background: #fff; cursor: text;" onclick="document.getElementById('tag_filter_input').focus()">
                     <div id="active_tags" class="d-flex flex-wrap" style="gap: 5px;"></div>
-                    <input type="text" id="tag_filter_input" placeholder="Tags (+/-)..." style="border: none; outline: none; flex: 1; min-width: 80px; padding: 8px 0; font-size: 0.9rem;" autocomplete="off">
+                    <input type="text" id="tag_filter_input" placeholder="<?php _e('bibliotheque.tags_placeholder', [], false); ?>" style="border: none; outline: none; flex: 1; min-width: 80px; padding: 8px 0; font-size: 0.9rem;" autocomplete="off">
                     <button class="btn btn-link p-0 text-muted ml-2" onclick="const v = $('#tag_filter_input').val().trim(); if(v) addTagFilter(v); return false;"><i class="fa fa-plus-circle"></i></button>
                 </div>
                 <div id="tag_autocomplete" class="shadow-lg border rounded" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1050; background: white; max-height: 250px; overflow-y: auto; margin-top: 5px;"></div>
@@ -492,7 +492,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
 
         <?php if ($ai_enabled): ?>
         <button class="btn btn-primary px-4 shadow-sm" type="button" onclick="triggerAiSearch()" style="border-radius: 12px; height: 45px;">
-            <i class="fa fa-magic mr-2"></i> Assistant IA
+            <i class="fa fa-magic mr-2"></i> <?php _e('bibliotheque.ai_assistant', [], false); ?>
         </button>
         <?php endif; ?>
     </div>
@@ -505,7 +505,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
     <!-- Zone d'upload -->
     <div class="mb-3">
         <button class="btn btn-outline-secondary btn-sm" type="button" data-toggle="collapse" data-target="#uploadZone" style="border-radius: 8px;">
-            <i class="fa fa-cloud-upload"></i> Ajouter des documents
+            <i class="fa fa-cloud-upload"></i> <?php _e('bibliotheque.add_documents', [], false); ?>
         </button>
         <div class="collapse mt-2" id="uploadZone">
             <div id="dropZone" style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 30px; text-align: center; cursor: pointer; background: #f8fafc; transition: all 0.3s;"
@@ -514,7 +514,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                  ondragleave="this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc';"
                  ondrop="event.preventDefault(); this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc'; handleFiles(event.dataTransfer.files);">
                 <i class="fa fa-cloud-upload" style="font-size: 2em; color: #94a3b8; margin-bottom: 10px;"></i><br>
-                <span style="color: #64748b;">Glissez vos PDF ici ou cliquez pour parcourir</span>
+                <span style="color: #64748b;"><?php _e('bibliotheque.drag_drop_pdf', [], false); ?></span>
                 <input type="file" id="fileInput" class="d-none" accept=".pdf,.png" multiple
                        onchange="handleFiles(this.files)">
             </div>
@@ -527,9 +527,9 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
     <div id="aiOverviewContainer" class="ai-overview-box">
         <div class="ai-overview-header d-flex justify-content-between align-items-center mb-2">
             <div class="ai-overview-title m-0">
-                <i class="fa fa-magic"></i> Aperçu par l'IA
+                <i class="fa fa-magic"></i> <?php _e('bibliotheque.ai_overview', [], false); ?>
                 <span id="aiOverviewLoading" style="display:none; font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">
-                    <i class="fa fa-circle-notch fa-spin"></i> Recherche en cours...
+                    <i class="fa fa-circle-notch fa-spin"></i> <?php _e('bibliotheque.searching', [], false); ?>...
                 </span>
                 <span id="aiOverviewStatus" class="ml-2" style="font-size: 0.75rem; opacity: 0.8; font-weight: normal; font-style: italic;"></span>
             </div>
@@ -546,10 +546,10 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
     <script>console.log("DUPLI: Debug View Rendered");</script>
     <div id="aiDebugView" class="debug-container mb-4 p-4 bg-white shadow-lg" style="border-radius: 20px; border-top: 5px solid #dc3545; position: sticky; top: 10px; z-index: 1050; max-height: 80vh; overflow-y: auto;">
         <h3 class="mb-4 d-flex justify-content-between align-items-center">
-            <span><i class="fa fa-bug text-danger"></i> Historique de Debug IA (28 messages injectés)</span>
+            <span><i class="fa fa-bug text-danger"></i><?php _e("auto_clean.bibliotheque_html_php_1", [], false); ?></span>
             <div>
-                <button onclick="location.reload()" class="btn btn-sm btn-outline-info mr-2"><i class="fa fa-refresh"></i> Actualiser</button>
-                <a href="?bibliotheque" class="btn btn-sm btn-outline-secondary">Fermer le Debug</a>
+                <button onclick="location.reload()" class="btn btn-sm btn-outline-info mr-2"><i class="fa fa-refresh"></i> <?php _e('common.refresh', [], false); ?></button>
+                <a href="?bibliotheque" class="btn btn-sm btn-outline-secondary"><?php _e('bibliotheque.close_debug', [], false); ?></a>
             </div>
         </h3>
         
@@ -557,13 +557,13 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
         $historyFile = __DIR__ . '/../../logs/chat_history.json';
         $history = file_exists($historyFile) ? json_decode(file_get_contents($historyFile), true) : [];
         if (empty($history)): ?>
-            <p class="text-muted italic">Aucun historique disponible pour le moment.</p>
+            <p class="text-muted italic"><?php _e('bibliotheque.no_history', [], false); ?></p>
         <?php else: ?>
             <div class="table-responsive">
                 <table class="table table-hover border">
                     <thead class="bg-light">
                         <tr>
-                            <th style="width: 150px;">Timestamp</th>
+                            <th style="width: 150px;"><?php _e('auto_clean.bibliotheque_html_php_1', [], false); ?></th>
                             <th>Modèle / Temps</th>
                             <th>Question / Réponse</th>
                             <th>Détails Techniques</th>
@@ -581,7 +581,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                             </td>
                             <td>
                                 <div class="mb-3" style="font-size: 1.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-                                    <strong>QUESTION :</strong> <span style="color: #1e293b;"><?= htmlspecialchars($item['question']) ?></span>
+                                    <strong><?php _e('bibliotheque.question_label', [], false); ?> :</strong> <span style="color: #1e293b;"><?= htmlspecialchars($item['question']) ?></span>
                                 </div>
                                 
                                 <?php if (!empty($item['thought'])): ?>
@@ -591,24 +591,24 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                                 <?php endif; ?>
 
                                 <div style="font-size: 1.5rem !important; line-height: 1.5; background: #f0f7ff; padding: 20px; border-radius: 12px; border-left: 5px solid #007bff; color: #1e293b;">
-                                    <strong>RÉPONSE :</strong> <?= nl2br(htmlspecialchars($item['response'])) ?>
+                                    <strong><?php _e('bibliotheque.answer_label', [], false); ?> :</strong> <?= nl2br(htmlspecialchars($item['response'])) ?>
                                 </div>
                             </td>
                             <td>
-                                <button class="btn btn-xs btn-outline-info mb-1" onclick="$(this).next().toggle()">Voir Prompt complet</button>
+                                <button class="btn btn-xs btn-outline-info mb-1" onclick="$(this).next().toggle()"><?php _e('bibliotheque.see_full_prompt', [], false); ?></button>
                                 <div style="display:none; font-size: 0.75rem; background: #1e293b; color: #94a3b8; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
                                     <?= nl2br(htmlspecialchars($item['prompt'])) ?>
                                 </div>
                                 <br>
                                 <?php if (!empty($item['thought'])): ?>
-                                <button class="btn btn-xs btn-outline-warning mb-1" onclick="$(this).next().toggle()">Voir Pensée</button>
+                                <button class="btn btn-xs btn-outline-warning mb-1" onclick="$(this).next().toggle()"><?php _e('bibliotheque.see_thought', [], false); ?></button>
                                 <div style="display:none; font-size: 0.8rem; font-style: italic; color: #475569; background: #fffbeb; padding: 10px; border: 1px solid #fde68a; border-radius: 5px; margin-bottom: 10px;">
                                     <?= nl2br(htmlspecialchars($item['thought'])) ?>
                                 </div>
                                 <?php endif; ?>
                                 <br>
                                 <div style="font-size: 1rem; margin-top: 10px; background: white; padding: 15px; border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
-                                    <div class="mb-2 font-weight-bold text-success"><i class="fa fa-database"></i> Sources utilisées pour cette réponse :</div>
+                                    <div class="mb-2 font-weight-bold text-success"><i class="fa fa-database"></i> <?php _e('bibliotheque.used_sources', [], false); ?> :</div>
                                     <?php foreach ($item['sources'] as $idx => $src): 
                                         $uniqueId = "debug_src_" . md5($item['timestamp'] . $idx);
                                     ?>
@@ -621,14 +621,14 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                                             <?php 
                                             $extracts = $src['contents'] ?? (!empty($src['content']) ? [$src['content']] : []);
                                             if (!empty($extracts)): ?>
-                                                <div class="text-muted mb-1" style="font-size: 0.85rem; font-style: italic;">Extraits du texte (Contexte) :</div>
+                                                <div class="text-muted mb-1" style="font-size: 0.85rem; font-style: italic;"><?php _e('bibliotheque.text_extracts', [], false); ?> :</div>
                                                 <?php foreach ($extracts as $cIdx => $content): ?>
                                                     <div id="<?= $uniqueId ?>_<?= $cIdx ?>" style="font-size: 1.1rem; color: #334155; background: #f1f5f9; padding: 12px; border-radius: 8px; border-left: 4px solid #6366f1; line-height: 1.5; margin-bottom: 8px;">
                                                         <?= nl2br(htmlspecialchars($content)) ?>
                                                     </div>
                                                 <?php endforeach; ?>
                                             <?php else: ?>
-                                                <div class="small text-muted italic">Extrait non disponible (Ancien log ou source secondaire)</div>
+                                                <div class="small text-muted italic"><?php _e('bibliotheque.extract_unavailable', [], false); ?></div>
                                             <?php endif; ?>
                                         </div>
                                     <?php endforeach; ?>
@@ -660,28 +660,28 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
                 <div class="modal-header bg-danger text-white border-0 py-3" style="border-radius: 20px 20px 0 0;">
-                    <h5 class="modal-title font-weight-bold"><i class="fa fa-trash mr-2"></i> Supprimer du document</h5>
+                    <h5 class="modal-title font-weight-bold"><i class="fa fa-trash mr-2"></i> <?php _e('bibliotheque.delete_doc', [], false); ?></h5>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body p-4">
                     <p class="mb-3 text-dark font-weight-bold" id="delete_filename_display"></p>
-                    <p class="text-muted small">Cette action supprimera définitivement le document de la bibliothèque et de l'indexation IA (vecteurs).</p>
+                    <p class="text-muted small"><?php _e('bibliotheque.delete_doc_desc', [], false); ?></p>
                     
                     <div class="custom-control custom-checkbox mt-4 p-3 bg-light rounded border">
                         <input type="checkbox" class="custom-control-input" id="delete_from_disk_check" checked>
                         <label class="custom-control-label font-weight-bold text-danger" for="delete_from_disk_check">
-                            Supprimer également le fichier physique sur le disque dur
+                            <?php _e('bibliotheque.delete_from_disk', [], false); ?>
                         </label>
-                        <small class="d-block text-muted mt-1 ml-4">Attention : Si coché, le fichier sera définitivement effacé de votre ordinateur.</small>
+                        <small class="d-block text-muted mt-1 ml-4"><?php _e('bibliotheque.delete_warning', [], false); ?></small>
                     </div>
                 </div>
                 <div class="modal-footer border-0 p-4">
                     <input type="hidden" id="delete_file_id">
-                    <button type="button" class="btn btn-light px-4" data-dismiss="modal" style="border-radius: 12px;">Annuler</button>
+                    <button type="button" class="btn btn-light px-4" data-dismiss="modal" style="border-radius: 12px;"><?php _e('common.cancel', [], false); ?></button>
                     <button type="button" class="btn btn-danger px-4 shadow-sm" onclick="confirmDeleteFile()" style="border-radius: 12px;">
-                        <i class="fa fa-trash mr-2"></i> Confirmer la suppression
+                        <i class="fa fa-trash mr-2"></i> <?php _e('bibliotheque.confirm_delete', [], false); ?>
                     </button>
                 </div>
             </div>
@@ -1160,7 +1160,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
             error: function(xhr, status, error) {
                 console.error("Erreur AJAX:", status, error);
                 console.log("Response text:", xhr.responseText);
-                $('#library_content').html('<div class="alert alert-danger">Erreur lors du chargement (voir console).</div>').css('opacity', '1');
+                $('#library_content').html('<div class="alert alert-danger"><?php _e("auto_clean.bibliotheque_html_php_11", [], false); ?></div>').css('opacity', '1');
             }
         });
     }
@@ -1348,7 +1348,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
         container.style.display = 'block';
         container.innerHTML = `
             <div class="ai-overview-header d-flex justify-content-between align-items-center">
-                <div class="ai-overview-title"><i class="fa fa-magic"></i> Analyse de la Bibliothèque</div>
+                <div class="ai-overview-title"><i class="fa fa-magic"></i><?php _e("auto_clean.bibliotheque_html_php_12", [], false); ?></div>
                 <div class="d-flex align-items-center">
                     <span id="aiOverviewStatus" style="font-size: 0.8rem; color: #64748b; margin-right: 15px;"></span>
                     <button id="aiOverviewStopBtn" class="btn btn-sm btn-outline-danger mr-3" onclick="if(aiAbortController) { aiAbortController.abort(); this.innerHTML='<i class=\\\'fa fa-ban\\\'></i> Arrêté'; this.classList.replace('btn-outline-danger', 'btn-secondary'); this.disabled=true; const loader = document.getElementById('aiOverviewLoading'); if(loader) loader.style.display='none'; }">
@@ -1360,7 +1360,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
             <div class="row">
                 <div class="col-md-7">
                     <div class="mb-3" style="font-size: 1.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-                        <strong>QUESTION :</strong> <span style="color: #1e293b;">${query}</span>
+                        <strong><?php _e('bibliotheque.question_label', [], false); ?> :</strong> <span style="color: #1e293b;">${query}</span>
                     </div>
                     <div id="aiOverviewThought" class="ai-thought-box" style="display:none;"></div>
                     <div id="aiOverviewResponse" style="font-size: 1.6rem !important; line-height: 1.5; background: #f0f7ff; padding: 20px; border-radius: 12px; border-left: 5px solid #007bff; color: #1e293b; display:none;">
@@ -1369,7 +1369,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                 </div>
                 <div class="col-md-5">
                     <div id="aiOverviewSources" class="p-3 bg-white border rounded shadow-sm" style="max-height: 600px; overflow-y: auto;">
-                        <div class="text-muted italic"><i class="fa fa-circle-notch fa-spin"></i> Recherche des sources...</div>
+                        <div class="text-muted italic"><i class="fa fa-circle-notch fa-spin"></i><?php _e("auto_clean.bibliotheque_html_php_13", [], false); ?></div>
                     </div>
                 </div>
             </div>
@@ -1428,11 +1428,11 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                             if (data.type === 'status') {
                                 if (stDiv) stDiv.textContent = data.message;
                                 if (data.sources && data.sources.length > 0 && sDiv) {
-                                    let html = '<div class="mb-3 font-weight-bold text-success" style="font-size:1.1rem;"><i class="fa fa-database"></i> Sources identifiées :</div>';
+                                    let html = '<div class="mb-3 font-weight-bold text-success" style="font-size:1.1rem;"><i class="fa fa-database"></i> <?php _e('bibliotheque.identified_sources', [], false); ?> :</div>';
                                     data.sources.forEach((src) => {
                                         const extractsHtml = (src.contents && src.contents.length > 0) 
                                             ? src.contents.map(c => `<div class="p-2 mb-2 bg-light rounded shadow-sm" style="font-size:1.1rem; border-left:4px solid #6366f1; line-height:1.4;">${c}</div>`).join('')
-                                            : `<div class="p-2 mb-1 bg-light rounded small italic text-muted" style="font-size:0.9rem;">Extrait non disponible</div>`;
+                                            : `<div class="p-2 mb-1 bg-light rounded small italic text-muted" style="font-size:0.9rem;"><?php _e('bibliotheque.extract_unavailable', [], false); ?></div>`;
 
                                         html += `
                                             <div class="mb-4 pb-2 border-bottom">
@@ -1496,7 +1496,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
             if (err.name !== 'AbortError') {
                 const scSpan = document.getElementById('aiStreamingContent');
                 const lSpan = document.getElementById('aiOverviewLoading');
-                if (scSpan) scSpan.innerHTML = '<span class="text-danger">Erreur lors de la génération.</span>';
+                if (scSpan) scSpan.innerHTML = '<span class="text-danger"><?php _e("auto_clean.bibliotheque_html_php_14", [], false); ?></span>';
                 if (lSpan) lSpan.style.display = 'none';
             }
         }
@@ -1538,7 +1538,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
 <div id="aiChatSidebar" class="ai-chat-sidebar">
     <div class="ai-chat-header d-flex justify-content-between align-items-center">
         <div>
-            <h5 class="mb-1"><i class="fa fa-robot"></i> Assistant Dupli</h5>
+            <h5 class="mb-1"><i class="fa fa-robot"></i><?php _e("auto_clean.bibliotheque_html_php_15", [], false); ?></h5>
             <div class="btn-group btn-group-toggle" style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 2px;">
                 <label class="btn btn-xs text-white px-3 active" id="modeFastLabel" onclick="setAiMode('fast')" style="font-size: 0.7rem; border: none;">Rapide</label>
                 <label class="btn btn-xs text-white px-3" id="modeProLabel" onclick="setAiMode('pro')" style="font-size: 0.7rem; border: none;">Expert</label>
@@ -1557,7 +1557,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
     <!-- Zone de Contexte/Sources -->
     <div id="aiContextArea" class="px-3 py-2 bg-light" style="display:none; font-size: 0.75rem;">
         <div class="d-flex justify-content-between align-items-center mb-1">
-            <b><i class="fa fa-link"></i> Sources utilisées :</b>
+            <b><i class="fa fa-link"></i><?php _e("auto_clean.bibliotheque_html_php_16", [], false); ?></b>
             <button class="btn btn-xs btn-link p-0 text-primary" onclick="$('#aiContextDetails').toggle()">Détails</button>
         </div>
         <div id="aiContextDetails" style="display:none; max-height: 120px; overflow-y: auto;"></div>
@@ -1588,7 +1588,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content shadow-lg" style="border-radius: 15px; border: none;">
             <div class="modal-header bg-primary text-white" style="border-radius: 15px 15px 0 0;">
-                <h5 class="modal-title"><i class="fa fa-edit"></i> Édition du document</h5>
+                <h5 class="modal-title"><i class="fa fa-edit"></i><?php _e("auto_clean.bibliotheque_html_php_17", [], false); ?></h5>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -1597,7 +1597,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                 <input type="hidden" id="edit_file_id">
                 
                 <div class="form-group mb-3">
-                    <label class="font-weight-bold text-muted small uppercase">Nom du fichier</label>
+                    <label class="font-weight-bold text-muted small uppercase"><?php _e("auto_clean.bibliotheque_html_php_18", [], false); ?></label>
                     <input type="text" id="edit_filename" class="form-control form-control-lg shadow-sm" style="border-radius: 10px; border: 1px solid #e2e8f0;">
                 </div>
                 
@@ -1610,9 +1610,9 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                     </div>
                     <div class="col-md-4">
                         <div class="form-group mb-3">
-                            <label class="font-weight-bold text-muted small uppercase">Couleur</label>
+                            <label class="font-weight-bold text-muted small uppercase"><?php _e("auto_clean.bibliotheque_html_php_19", [], false); ?></label>
                             <select id="edit_is_color" class="form-control shadow-sm" style="border-radius: 10px; border: 1px solid #e2e8f0;">
-                                <option value="1">Couleur</option>
+                                <option value="1"><?php _e("auto_clean.bibliotheque_html_php_20", [], false); ?></option>
                                 <option value="0">Noir & Blanc</option>
                             </select>
                         </div>
@@ -1632,12 +1632,12 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                 </div>
 
                 <div class="form-group mb-0">
-                    <label class="font-weight-bold text-muted small uppercase">Tags (séparés par des virgules)</label>
+                    <label class="font-weight-bold text-muted small uppercase"><?php _e("auto_clean.bibliotheque_html_php_21", [], false); ?></label>
                     <textarea id="edit_tags" class="form-control shadow-sm" rows="3" style="border-radius: 10px; border: 1px solid #e2e8f0;"></textarea>
                 </div>
             </div>
             <div class="modal-footer bg-light" style="border-radius: 0 0 15px 15px;">
-                <button type="button" class="btn btn-secondary px-4 shadow-sm" data-dismiss="modal" style="border-radius: 10px;">Annuler</button>
+                <button type="button" class="btn btn-secondary px-4 shadow-sm" data-dismiss="modal" style="border-radius: 10px;"><?php _e('common.cancel', [], false); ?></button>
                 <button type="button" id="btnSaveMetadata" onclick="saveMetadata()" class="btn btn-primary px-4 shadow-sm" style="border-radius: 10px;">
                     <i class="fa fa-check"></i> Enregistrer
                 </button>
@@ -1666,7 +1666,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
             <div class="modal-body p-0 position-relative" style="height: 75vh; background: #525659; overflow-y: auto; text-align: center;">
                 <div id="pdfLoading" class="position-absolute w-100 h-100 d-flex flex-column align-items-center justify-content-center text-white" style="background: #525659; z-index: 10;">
                     <i class="fa fa-circle-notch fa-spin fa-3x mb-3"></i>
-                    <p>Chargement du document...</p>
+                    <p><?php _e("auto_clean.bibliotheque_html_php_22", [], false); ?></p>
                 </div>
                 <canvas id="pdfCanvas" class="shadow-lg my-4 mx-auto" style="max-width: 95%;"></canvas>
             </div>
@@ -1674,7 +1674,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                 <div class="viewer-actions d-flex" id="pdfModalActions">
                     <!-- Les boutons seront injectés ici en JS pour garder l'ID courant -->
                 </div>
-                <button type="button" class="btn btn-outline-light px-4" data-dismiss="modal" style="border-radius: 8px;">Fermer</button>
+                <button type="button" class="btn btn-outline-light px-4" data-dismiss="modal" style="border-radius: 8px;"><?php _e('common.close', [], false); ?></button>
             </div>
         </div>
     </div>
@@ -1754,7 +1754,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
             $('#pdfCanvas').show();
             renderPage(pageNum);
         }).catch(err => {
-            $('#pdfLoading').html('<i class="fa fa-exclamation-triangle fa-2x text-warning"></i><p class="mt-2">Erreur : Impossible de charger le PDF</p>');
+            $('#pdfLoading').html('<i class="fa fa-exclamation-triangle fa-2x text-warning"></i><p class="mt-2"><?php _e("auto_clean.bibliotheque_html_php_23", [], false); ?></p>');
         });
     }
 </script>

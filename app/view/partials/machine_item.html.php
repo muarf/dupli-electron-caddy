@@ -212,7 +212,7 @@ $photocopieur_checked = 'checked';
                             <label class="col-xs-4 control-label" for="nb_masters_<?= $index ?>"><?php _e('tirage_multimachines.masters_label'); ?></label>  
                             <div class="col-xs-8">
                                 <input id="nb_masters_<?= $index ?>" name="machines[<?= $index ?>][nb_masters]" class="form-control input-sm" type="number" min="0" value="0" onchange="calculateTotalPrice()" style="max-width: 120px;">
-                                <span class="help-block">Nombre utilisé</span>  
+                                <span class="help-block"><?php _e("auto_clean.partials_machine_item_html_php_1", [], false); ?></span>  
                             </div>
                         </div>
                     </div>
@@ -221,7 +221,7 @@ $photocopieur_checked = 'checked';
                             <label class="col-xs-4 control-label" for="nb_passages_<?= $index ?>"><?php _e('tirage_multimachines.passes_label'); ?></label>  
                             <div class="col-xs-8">
                                 <input id="nb_passages_<?= $index ?>" name="machines[<?= $index ?>][nb_passages]" class="form-control input-sm" type="number" min="0" value="0" onchange="calculateTotalPrice()" style="max-width: 120px;">
-                                <span class="help-block">Nombre effectué</span>
+                                <span class="help-block"><?php _e("auto_clean.partials_machine_item_html_php_2", [], false); ?></span>
                             </div>
                         </div>
                     </div>

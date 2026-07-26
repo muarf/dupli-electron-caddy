@@ -469,20 +469,20 @@
                 <h5><i class="fa fa-cog"></i> <?php _e('admin_machines.drum_dev_unit'); ?></h5>
                 <div class="row">
                   <div class="col-md-6">
-                    <h6>Tambour :</h6>
+                    <h6><?php _e('admin_machines.drum', [], false); ?> :</h6>
                     <div class="form-group">
-                      <label class="col-md-4 control-label">Prix (€) :</label>
+                      <label class="col-md-4 control-label"><?php _e('common.price', [], false); ?> (€) :</label>
                       <div class="col-md-8">
                         <input type="number" name="tambour_prix" class="form-control" value="200" step="0.01" min="0">
-                        <span class="help-block">Durée de vie : 120 000 pages</span>
+                        <span class="help-block"><?php _e('admin_machines.lifespan_pages', ['count' => '120 000'], false); ?></span>
                       </div>
                     </div>
                     <div class="form-group">
-                      <label class="col-md-4 control-label">Prix par copie (€) :</label>
+                      <label class="col-md-4 control-label"><?php _e('admin_machines.price_per_copy', [], false); ?> (€) :</label>
                       <div class="col-md-8">
                         <input type="number" name="tambour_prix_copie" class="form-control" value="0.00167"
                           step="0.00001" min="0">
-                        <span class="help-block">Calculé : 200€ ÷ 120 000 pages</span>
+                        <span class="help-block"><?php _e('admin_machines.calculated_help', ['amount' => '200', 'pages' => '120 000'], false); ?></span>
                       </div>
                     </div>
                   </div>
@@ -490,18 +490,18 @@
                   <div class="col-md-6">
                     <h6><?php _e('admin_machines.dev_unit'); ?></h6>
                     <div class="form-group">
-                      <label class="col-md-4 control-label">Prix (€) :</label>
+                      <label class="col-md-4 control-label"><?php _e('common.price', [], false); ?> (€) :</label>
                       <div class="col-md-8">
                         <input type="number" name="dev_prix" class="form-control" value="300" step="0.01" min="0">
-                        <span class="help-block">Durée de vie : 120 000 pages</span>
+                        <span class="help-block"><?php _e('admin_machines.lifespan_pages', ['count' => '120 000'], false); ?></span>
                       </div>
                     </div>
                     <div class="form-group">
-                      <label class="col-md-4 control-label">Prix par copie (€) :</label>
+                      <label class="col-md-4 control-label"><?php _e('admin_machines.price_per_copy', [], false); ?> (€) :</label>
                       <div class="col-md-8">
                         <input type="number" name="dev_prix_copie" class="form-control" value="0.00250" step="0.00001"
                           min="0">
-                        <span class="help-block">Calculé : 300€ ÷ 120 000 pages</span>
+                        <span class="help-block"><?php _e('admin_machines.calculated_help', ['amount' => '300', 'pages' => '120 000'], false); ?></span>
                       </div>
                     </div>
                   </div>

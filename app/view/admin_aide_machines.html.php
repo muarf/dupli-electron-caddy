@@ -35,7 +35,7 @@
                 <div class="form-group">
                   <label><?php _e('admin_aide.select_pdf'); ?> :</label>
                   <input type="file" id="pdf-file-input" class="form-control" accept=".pdf" />
-                  <small class="text-muted">Maximum 10MB, format PDF uniquement</small>
+                  <small class="text-muted"><?php _e("admin_aide.auto_key_1", [], false); ?></small>
                 </div>
                 <button type="button" class="btn btn-primary" onclick="uploadPdf()">
                   <i class="fa fa-upload"></i> <?php _e('admin_aide.upload_pdf'); ?>
@@ -550,10 +550,10 @@
           var html = '<table class="table table-striped table-hover">' +
             '<thead>' +
             '<tr>' +
-            '<th>Nom du PDF</th>' +
+            '<th><?php _e("admin_aide.auto_key_2", [], false); ?></th>' +
             '<th>Date d\'upload</th>' +
-            '<th>Taille</th>' +
-            '<th>Actions</th>' +
+            '<th><?php _e("admin_aide.auto_key_3", [], false); ?></th>' +
+            '<th><?php _e("admin_aide.auto_key_4", [], false); ?></th>' +
             '</tr>' +
             '</thead>' +
             '<tbody>';
@@ -593,7 +593,7 @@
         }
       })
       .catch(error => {
-        document.getElementById('pdf-list').innerHTML = '<div class="alert alert-danger">Erreur lors du chargement des PDFs</div>';
+        document.getElementById('pdf-list').innerHTML = '<div class="alert alert-danger"><?php _e("admin_aide.auto_key_5", [], false); ?></div>';
       });
   }
 
@@ -608,7 +608,7 @@
         '<i class="fa fa-file-pdf-o" style="color: #d32f2f; margin-right: 5px;"></i>' +
         '<strong>' + name + '</strong>' +
         '<a href="' + url + '" target="_blank" style="float: right; color: #1976d2; text-decoration: none;">' +
-        '<i class="fa fa-external-link"></i> Ouvrir dans un nouvel onglet</a>' +
+        '<i class="fa fa-external-link"></i><?php _e("admin_aide.auto_key_6", [], false); ?></a>' +
         '</div>' +
         '<iframe src="' + url + '" width="100%" height="500px" style="border: none;"></iframe>' +
         '</div>';

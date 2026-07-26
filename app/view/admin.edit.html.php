@@ -357,7 +357,7 @@ $(document).ready(function() {
         showAppModal({
             type: 'warning',
             title: 'Confirmation de suppression',
-            message: 'Êtes-vous sûr de vouloir supprimer ce tirage ?<br><br><strong>Cette action est irréversible.</strong>',
+            message: 'Êtes-vous sûr de vouloir supprimer ce tirage ?<br><br><strong><?php _e("auto_clean.admin_edit_html_php_1", [], false); ?></strong>',
             confirm: true,
             onConfirm: function() {
                 // Créer un champ caché pour simuler le clic sur le bouton delete

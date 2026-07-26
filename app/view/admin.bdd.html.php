@@ -153,11 +153,11 @@
                         </td>
                         <td>
                           <?php if ($db['type'] == 'production'): ?>
-                            <span class="label label-danger">Production</span>
+                            <span class="label label-danger"><?php _e("auto_clean.admin_bdd_html_php_1", [], false); ?></span>
                           <?php elseif ($db['type'] == 'dev'): ?>
                             <span class="label label-warning">Développement</span>
                           <?php elseif ($db['type'] == 'test'): ?>
-                            <span class="label label-info">Test</span>
+                            <span class="label label-info"><?php _e("auto_clean.admin_bdd_html_php_2", [], false); ?></span>
                           <?php elseif ($db['type'] == 'staging'): ?>
                             <span class="label label-primary">Staging</span>
                           <?php else: ?>
@@ -214,21 +214,21 @@
         <!-- Base de données actuelle -->
         <div class="panel panel-primary">
           <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-database"></i> Base de données actuelle</h3>
+            <h3 class="panel-title"><i class="fa fa-database"></i><?php _e("auto_clean.admin_bdd_html_php_3", [], false); ?></h3>
           </div>
           <div class="panel-body">
             <p class="lead">
-              <strong>Base actuelle :</strong>
+              <strong><?php _e("auto_clean.admin_bdd_html_php_4", [], false); ?></strong>
               <span
                 class="label label-primary"><?= htmlspecialchars($GLOBALS['model_variables']['current_db'] ?? 'duplinew') ?></span>
               <?php
               $current_db = $GLOBALS['model_variables']['current_db'] ?? 'duplinew';
               if ($current_db === 'duplinew'): ?>
-                <span class="label label-success">Production</span>
+                <span class="label label-success"><?php _e("auto_clean.admin_bdd_html_php_5", [], false); ?></span>
               <?php elseif (strpos($current_db, '_dev') !== false): ?>
                 <span class="label label-warning">Développement</span>
               <?php elseif (strpos($current_db, '_test') !== false): ?>
-                <span class="label label-info">Test</span>
+                <span class="label label-info"><?php _e("auto_clean.admin_bdd_html_php_6", [], false); ?></span>
               <?php endif; ?>
             </p>
             <p class="text-muted">
@@ -236,7 +236,7 @@
               Cette base de données est actuellement utilisée par l'application.
               <?php if (isset($_SESSION['active_database']) && $_SESSION['active_database'] !== $current_db): ?>
                 <br><i class="fa fa-exclamation-triangle text-warning"></i>
-                <strong>Attention :</strong> La session indique une base différente. Rechargez la page pour synchroniser.
+                <strong><?php _e("auto_clean.admin_bdd_html_php_7", [], false); ?></strong> La session indique une base différente. Rechargez la page pour synchroniser.
               <?php endif; ?>
             </p>
           </div>
@@ -245,7 +245,7 @@
         <!-- Créer une nouvelle base de données SQLite -->
         <div class="panel panel-success">
           <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-plus"></i> Créer un nouveau fichier de base de données SQLite</h3>
+            <h3 class="panel-title"><i class="fa fa-plus"></i><?php _e("auto_clean.admin_bdd_html_php_8", [], false); ?></h3>
           </div>
           <div class="panel-body">
             <div class="alert alert-info">
@@ -256,7 +256,7 @@
 
             <form method="post" class="form-horizontal" action="?admin&bdd">
               <div class="form-group">
-                <label class="col-md-3 control-label" for="db_name">Nom du fichier :</label>
+                <label class="col-md-3 control-label" for="db_name"><?php _e("auto_clean.admin_bdd_html_php_9", [], false); ?></label>
                 <div class="col-md-9">
                   <input type="text" class="form-control" name="db_name" id="db_name"
                     placeholder="ex: dupli_montreuil, fond_de_la_casse" required>
@@ -271,20 +271,20 @@
                   <select class="form-control" name="db_type" id="db_type" required>
                     <option value="">Choisir un type</option>
                     <option value="dev">Développement</option>
-                    <option value="test">Test</option>
+                    <option value="test"><?php _e("auto_clean.admin_bdd_html_php_10", [], false); ?></option>
                     <option value="staging">Staging</option>
-                    <option value="production">Production</option>
+                    <option value="production"><?php _e("auto_clean.admin_bdd_html_php_11", [], false); ?></option>
                   </select>
                 </div>
               </div>
 
               <div class="form-group">
-                <label class="col-md-3 control-label" for="db_template">Template :</label>
+                <label class="col-md-3 control-label" for="db_template"><?php _e("auto_clean.admin_bdd_html_php_12", [], false); ?></label>
                 <div class="col-md-9">
                   <select class="form-control" name="db_template" id="db_template">
-                    <option value="">Base vide</option>
-                    <option value="structure_complete">Structure complète (tables sans données)</option>
-                    <option value="duplinew">Copier depuis duplinew.sqlite (production)</option>
+                    <option value=""><?php _e("auto_clean.admin_bdd_html_php_13", [], false); ?></option>
+                    <option value="structure_complete"><?php _e("auto_clean.admin_bdd_html_php_14", [], false); ?></option>
+                    <option value="duplinew"><?php _e("auto_clean.admin_bdd_html_php_15", [], false); ?></option>
                     <option value="duplinew_dev">Copier depuis duplinew_dev.sqlite (développement)</option>
                   </select>
                   <small class="text-muted">Choisir un fichier existant pour copier la structure et les données, ou
@@ -307,7 +307,7 @@
         <!-- Actions sur le fichier SQLite actuel -->
         <div class="panel panel-warning">
           <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-cogs"></i> Actions sur le fichier SQLite actuel</h3>
+            <h3 class="panel-title"><i class="fa fa-cogs"></i> <?php _e('admin.bdd.current_actions', [], false); ?></h3>
           </div>
           <div class="panel-body">
             <div class="row">
@@ -315,30 +315,30 @@
                 <form method="post">
                   <div class="form-group">
                     <input type="text" class="form-control" name="backup_name"
-                      placeholder="Nom de la sauvegarde (optionnel)" style="margin-bottom: 10px;">
+                      placeholder="<?php echo __('admin.bdd.backup_name_placeholder'); ?>" style="margin-bottom: 10px;">
                     <button type="submit" name="backup_db" class="btn btn-success btn-block">
-                      <i class="fa fa-download"></i> Créer une sauvegarde
+                      <i class="fa fa-download"></i> <?php _e('admin.bdd.create_backup', [], false); ?>
                     </button>
                   </div>
-                  <small class="text-muted">Sauvegarde complète du fichier SQLite actuel</small>
+                  <small class="text-muted"><?php _e('admin.bdd.full_backup_help', [], false); ?></small>
                 </form>
               </div>
               <div class="col-md-4">
                 <form method="post">
                   <button type="button" name="empty_db" class="btn btn-warning btn-block"
-                    onclick="confirmDBAction(this, 'Êtes-vous sûr de vouloir vider cette base de données ?')">
-                    <i class="fa fa-trash"></i> Vider la base de données
+                    onclick="confirmDBAction(this, '<?= __js('admin.bdd.confirm_empty_db') ?>')">
+                    <i class="fa fa-trash"></i> <?php _e('admin.bdd.empty_db', [], false); ?>
                   </button>
-                  <small class="text-muted">Supprime toutes les données mais garde la structure</small>
+                  <small class="text-muted"><?php _e('admin.bdd.empty_db_help', [], false); ?></small>
                 </form>
               </div>
               <div class="col-md-4">
                 <form method="post">
                   <button type="button" name="reset_db" class="btn btn-danger btn-block"
-                    onclick="confirmDBAction(this, 'Êtes-vous sûr de vouloir réinitialiser cette base de données ?')">
-                    <i class="fa fa-refresh"></i> Réinitialiser complètement
+                    onclick="confirmDBAction(this, '<?= __js('admin.bdd.confirm_reset_db') ?>')">
+                    <i class="fa fa-refresh"></i> <?php _e('admin.bdd.reset_full', [], false); ?>
                   </button>
-                  <small class="text-muted">Supprime tout et recrée la structure</small>
+                  <small class="text-muted"><?php _e('admin.bdd.reset_help', [], false); ?></small>
                 </form>
               </div>
             </div>
@@ -348,7 +348,7 @@
         <!-- Gestion des sauvegardes existantes -->
         <div class="panel panel-info">
           <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-files-o"></i> Sauvegardes disponibles</h3>
+            <h3 class="panel-title"><i class="fa fa-files-o"></i> <?php _e('admin.bdd.available_backups', [], false); ?></h3>
           </div>
           <div class="panel-body">
 
@@ -356,20 +356,19 @@
             <div class="row" style="margin-bottom: 20px;">
               <div class="col-md-12">
                 <div class="alert alert-info">
-                  <i class="fa fa-info-circle"></i> <strong>Charger une sauvegarde :</strong> Vous pouvez uploader un
-                  fichier SQLite (.sqlite) pour l'ajouter à la liste des sauvegardes disponibles.
+                  <i class="fa fa-info-circle"></i> <strong><?php _e('admin.bdd.upload_backup_label', [], false); ?> :</strong> <?php _e('admin.bdd.upload_backup_help', [], false); ?>
                 </div>
                 <form method="post" enctype="multipart/form-data" class="form-inline">
                   <div class="form-group">
-                    <label for="backup_file" class="sr-only">Fichier de sauvegarde</label>
+                    <label for="backup_file" class="sr-only"><?php _e('admin.bdd.backup_file', [], false); ?></label>
                     <input type="file" class="form-control" id="backup_file" name="backup_file" accept=".sqlite"
                       required>
                   </div>
                   <button type="submit" class="btn btn-primary">
-                    <i class="fa fa-upload"></i> Charger la sauvegarde
+                    <i class="fa fa-upload"></i> <?php _e('admin.bdd.upload_btn', [], false); ?>
                   </button>
                 </form>
-                <small class="text-muted">Format accepté : .sqlite (taille maximum : 50MB)</small>
+                <small class="text-muted"><?php _e('admin.bdd.accepted_format', [], false); ?></small>
               </div>
             </div>
 
@@ -380,10 +379,10 @@
                 <table class="table table-striped">
                   <thead>
                     <tr>
-                      <th>Nom du fichier</th>
-                      <th>Taille</th>
-                      <th>Date de création</th>
-                      <th>Actions</th>
+                      <th><?php _e('admin.bdd.filename_col', [], false); ?></th>
+                      <th><?php _e('admin.bdd.size_col', [], false); ?></th>
+                      <th><?php _e('admin.bdd.created_date', [], false); ?></th>
+                      <th><?php _e('common.actions', [], false); ?></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -396,18 +395,18 @@
                           <form method="post" style="display: inline;">
                             <input type="hidden" name="backup_file" value="<?= htmlspecialchars($backup['filename']) ?>">
                             <button type="button" name="restore_db" class="btn btn-warning btn-xs"
-                              onclick="confirmDBAction(this, 'Êtes-vous sûr de vouloir restaurer cette sauvegarde ? Cela écrasera toutes les données actuelles !')">
-                              <i class="fa fa-upload"></i> Restaurer
+                              onclick="confirmDBAction(this, '<?= __js('admin.bdd.confirm_restore') ?>')">
+                              <i class="fa fa-upload"></i> <?php _e('admin.bdd.restore', [], false); ?>
                             </button>
                           </form>
                           <a href="?download_backup&file=<?= urlencode($backup['filename']) ?>" class="btn btn-info btn-xs">
-                            <i class="fa fa-download"></i> Télécharger
+                            <i class="fa fa-download"></i> <?php _e('admin.bdd.download', [], false); ?>
                           </a>
                           <form method="post" style="display: inline;">
                             <input type="hidden" name="backup_file" value="<?= htmlspecialchars($backup['filename']) ?>">
                             <button type="button" name="delete_backup" class="btn btn-danger btn-xs"
-                              onclick="confirmDBAction(this, 'Êtes-vous sûr de vouloir supprimer cette sauvegarde ? Cette action est irréversible !')">
-                              <i class="fa fa-trash"></i> Supprimer
+                              onclick="confirmDBAction(this, '<?= __js('admin.bdd.confirm_delete_backup') ?>')">
+                              <i class="fa fa-trash"></i> <?php _e('common.delete', [], false); ?>
                             </button>
                           </form>
                         </td>
@@ -417,7 +416,7 @@
                 </table>
               </div>
             <?php else: ?>
-              <p class="text-muted">Aucune sauvegarde disponible.</p>
+              <p class="text-muted"><?php _e('admin.bdd.no_backups', [], false); ?></p>
             <?php endif; ?>
           </div>
         </div>
@@ -426,7 +425,7 @@
         <div class="row">
           <div class="col-md-12">
             <a href="?admin" class="btn btn-default btn-block">
-              <i class="fa fa-arrow-left"></i> Retour à l'administration
+              <i class="fa fa-arrow-left"></i> <?php _e('admin.emails.back_to_admin', [], false); ?>
             </a>
           </div>
         </div>
@@ -439,25 +438,24 @@
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal">&times;</button>
-            <h4 class="modal-title">Renommer la base de données</h4>
+            <h4 class="modal-title"><?php _e('admin.bdd.rename_db', [], false); ?></h4>
           </div>
           <form method="post">
             <div class="modal-body">
               <div class="form-group">
-                <label for="old_db_name">Nom actuel :</label>
+                <label for="old_db_name"><?php _e('admin.bdd.current_name', [], false); ?> :</label>
                 <input type="text" class="form-control" id="old_db_name" name="old_db_name" readonly>
               </div>
               <div class="form-group">
-                <label for="new_db_name">Nouveau nom :</label>
+                <label for="new_db_name"><?php _e('admin.bdd.new_name', [], false); ?> :</label>
                 <input type="text" class="form-control" id="new_db_name" name="new_db_name"
                   placeholder="ex: dupli_montreuil" required>
-                <small class="text-muted">Le nom doit commencer par une lettre et ne contenir que des lettres, chiffres
-                  et underscores</small>
+                <small class="text-muted"><?php _e('admin.bdd.name_help', [], false); ?></small>
               </div>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-default" data-dismiss="modal">Annuler</button>
-              <button type="submit" name="rename_db" class="btn btn-warning">Renommer</button>
+              <button type="button" class="btn btn-default" data-dismiss="modal"><?php _e('common.cancel', [], false); ?></button>
+              <button type="submit" name="rename_db" class="btn btn-warning"><?php _e('admin.bdd.rename_btn', [], false); ?></button>
             </div>
           </form>
         </div>

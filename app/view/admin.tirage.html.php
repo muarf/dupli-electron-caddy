@@ -267,14 +267,13 @@ function getTableForMachine($machine)
                 <li><a href="<?= $baseUrl . $pageVar . $pagination['total_pages'] ?>"><?= $pagination['total_pages'] ?></a></li>
               <?php endif; ?>
             </ul>
-            <p class="text-muted">Page <?= $pagination['current_page'] ?> sur <?= $pagination['total_pages'] ?>
-              (<?= $pagination['total_entries'] ?> groupes au total)</p>
+            <p class="text-muted">Page <?= $pagination['current_page'] ?><?php _e("auto_clean.admin_tirage_html_php_1", [], false); ?><?= $pagination['total_pages'] ?>
+              (<?= $pagination['total_entries'] ?><?php _e("auto_clean.admin_tirage_html_php_2", [], false); ?></p>
           </div>
         <?php endif; ?>
 
-        <button class="btn btn-primary" onclick="calculateTotal()">Calculer total</button>
-        <button class="btn btn-danger" onclick="deleteSelected()" style="margin-left: 10px;">Supprimer
-          sélectionnés</button>
+        <button class="btn btn-primary" onclick="calculateTotal()"><?php _e('admin_tirage.calculate_total', [], false); ?></button>
+        <button class="btn btn-danger" onclick="deleteSelected()" style="margin-left: 10px;"><?php _e('admin_tirage.delete_selected', [], false); ?></button>
       </div><?php } ?>
   </div>
   <div class="modal" tabindex="-1" role="dialog" id="myModal">

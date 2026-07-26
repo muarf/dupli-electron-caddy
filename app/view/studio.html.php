@@ -35,34 +35,34 @@ window.addEventListener('unhandledrejection', function(e) {
 
   <!-- === SIDEBAR === -->
   <aside class="studio-sidebar">
-    <button class="tool-btn active" data-tool="filters" title="Filtres"><i class="fa fa-sliders"></i>Filtres</button>
-    <button class="tool-btn" data-tool="geometry" title="Géométrie"><i class="fa fa-crop"></i>Géométrie</button>
+    <button class="tool-btn active" data-tool="filters" title="<?php _e('studio.filters', [], false); ?>"><i class="fa fa-sliders"></i><?php _e('studio.filters', [], false); ?></button>
+    <button class="tool-btn" data-tool="geometry" title="<?php _e('studio.geometry', [], false); ?>"><i class="fa fa-crop"></i><?php _e('studio.geometry', [], false); ?></button>
     <div class="sidebar-divider"></div>
-    <button class="tool-btn" data-tool="imposition" title="Imposition"><i class="fa fa-book"></i>Imposition</button>
-    <button class="tool-btn" data-tool="montage" title="Montage Libre"><i class="fa fa-object-group"></i>Montage</button>
-    <button class="tool-btn" data-tool="pages" title="Pages"><i class="fa fa-files-o"></i>Pages</button>
+    <button class="tool-btn" data-tool="imposition" title="<?php _e('studio.imposition', [], false); ?>"><i class="fa fa-book"></i><?php _e('studio.imposition', [], false); ?></button>
+    <button class="tool-btn" data-tool="montage" title="<?php _e('studio.montage', [], false); ?>"><i class="fa fa-object-group"></i><?php _e('studio.montage', [], false); ?></button>
+    <button class="tool-btn" data-tool="pages" title="<?php _e('studio.pages', [], false); ?>"><i class="fa fa-files-o"></i><?php _e('studio.pages', [], false); ?></button>
     <div class="sidebar-divider"></div>
-    <button class="tool-btn" data-tool="riso" title="Riso"><i class="fa fa-adjust"></i>Riso</button>
-    <button class="tool-btn" data-tool="ocr" title="OCR & Scan"><i class="fa fa-font"></i>OCR & Scan</button>
-    <button class="tool-btn" data-tool="modification" title="Modification PDF"><i class="fa fa-edit"></i>Modification</button>
-    <button class="tool-btn" data-tool="metadata" title="Métadonnées"><i class="fa fa-tags"></i>Métadonnées</button>
+    <button class="tool-btn" data-tool="riso" title="<?php _e('studio.riso', [], false); ?>"><i class="fa fa-adjust"></i><?php _e('studio.riso', [], false); ?></button>
+    <button class="tool-btn" data-tool="ocr" title="<?php _e('studio.ocr_scan', [], false); ?>"><i class="fa fa-font"></i><?php _e('studio.ocr_scan', [], false); ?></button>
+    <button class="tool-btn" data-tool="modification" title="<?php _e('studio.modification', [], false); ?>"><i class="fa fa-edit"></i><?php _e('studio.modification', [], false); ?></button>
+    <button class="tool-btn" data-tool="metadata" title="<?php _e('studio.metadata', [], false); ?>"><i class="fa fa-tags"></i><?php _e('studio.metadata', [], false); ?></button>
   </aside>
 
   <!-- === MAIN WORKSPACE === -->
   <main class="studio-workspace">
     <!-- Toolbar -->
     <div class="studio-toolbar">
-      <div class="toolbar-title"><i class="fa fa-magic"></i> Dupli Studio</div>
+      <div class="toolbar-title"><i class="fa fa-magic"></i><?php _e("studio.auto_key_1", [], false); ?></div>
       <span class="file-info-badge" id="fileInfoBadge" style="display:none">
         <i class="fa fa-file"></i> <input type="text" id="fileNameDisplay" style="background:transparent; border:none; outline:none; border-bottom:1px dashed rgba(255,255,255,0.5); color:inherit; font-family:inherit; font-size:inherit; font-weight:inherit; min-width: 150px; max-width:250px;">
         <span id="fileDimsDisplay" style="opacity:0.7;margin-left:6px;font-size:11px"></span>
         <span id="fileInkDisplay" style="margin-left:8px; padding:2px 8px; background:rgba(0,0,0,0.1); border-radius:10px; font-size:11px; font-weight:600; display:none" title="Taux d'encrage moyen (C+M+J+N)"></span>
       </span>
       <div class="toolbar-spacer"></div>
-      <button class="toolbar-btn" id="btnNewFile" style="display:none"><i class="fa fa-upload"></i> Nouveau fichier</button>
-      <button class="toolbar-btn" id="btnExportPng" style="display:none" title="Exporter le canvas (avec filtres) en PNG"><i class="fa fa-file-image-o"></i> PNG</button>
+      <button class="toolbar-btn" id="btnNewFile" style="display:none"><i class="fa fa-upload"></i> <?php _e('studio.new_file', [], false); ?></button>
+      <button class="toolbar-btn" id="btnExportPng" style="display:none" title="Exporter le canvas (avec filtres) en PNG"><i class="fa fa-file-image-o"></i><?php _e("studio.auto_key_2", [], false); ?></button>
       <button class="toolbar-btn" id="btnSaveToLibrary" style="display:none" title="Enregistrer dans la Bibliothèque">
-        <i class="fa fa-bookmark"></i> Bibliothèque
+        <i class="fa fa-bookmark"></i> <?php _e('header.bibliotheque', [], false); ?>
       </button>
       <button class="toolbar-btn primary" id="btnExportPdf" style="display:none; position: relative;" title="Exporter en PDF via serveur">
         <i class="fa fa-file-pdf-o"></i> PDF
@@ -75,10 +75,10 @@ window.addEventListener('unhandledrejection', function(e) {
       <!-- Upload Zone (visible par défaut) -->
       <div class="studio-upload-zone" id="uploadZone">
         <div class="upload-icon"><i class="fa fa-cloud-upload"></i></div>
-        <div class="upload-title">Déposez votre fichier ici</div>
-        <div class="upload-subtitle">ou cliquez pour parcourir</div>
+        <div class="upload-title"><?php _e('studio.drop_file_here', [], false); ?></div>
+        <div class="upload-subtitle"><?php _e('studio.click_to_browse', [], false); ?></div>
         <div class="upload-formats">
-          <span>PDF</span><span>PNG</span><span>JPG</span><span>GIF</span><span>WebP</span>
+          <span><?php _e("studio.auto_key_3", [], false); ?></span><span><?php _e("studio.auto_key_4", [], false); ?></span><span><?php _e("studio.auto_key_5", [], false); ?></span><span><?php _e("studio.auto_key_6", [], false); ?></span><span><?php _e("studio.auto_key_7", [], false); ?></span>
         </div>
         <input type="file" id="studioFileInput" accept=".pdf,.png,.jpg,.jpeg,.gif,.webp" style="display:none">
       </div>
@@ -86,7 +86,7 @@ window.addEventListener('unhandledrejection', function(e) {
       <!-- Preview canvas (hidden until file loaded) -->
       <div id="studioSpinner" class="studio-spinner" style="display:none">
         <i class="fa fa-spinner fa-spin fa-3x" style="color:var(--studio-primary); margin-bottom:16px;"></i>
-        <div id="spinnerMsg" style="font-weight:600">Traitement en cours...</div>
+        <div id="spinnerMsg" style="font-weight:600"><?php _e("studio.auto_key_8", [], false); ?></div>
       </div>
       
       <!-- Delete page button overlaid on canvas -->
@@ -97,7 +97,7 @@ window.addEventListener('unhandledrejection', function(e) {
       <!-- Lightbox (hidden) -->
       <div id="studioLightbox" class="studio-lightbox">
         <div class="lightbox-header">
-          <div class="lightbox-title"><i class="fa fa-eye"></i> Aperçu Taille Réelle (100%)</div>
+          <div class="lightbox-title"><i class="fa fa-eye"></i><?php _e("studio.auto_key_9", [], false); ?></div>
           <button class="btn-close-lightbox" id="btnCloseLightbox"><i class="fa fa-times"></i></button>
         </div>
         <div class="lightbox-content">
@@ -151,45 +151,45 @@ window.addEventListener('unhandledrejection', function(e) {
     <!-- Filters Panel -->
     <div id="panelFilters">
       <div class="panel-section">
-        <div class="panel-section-title">Réglages d'image</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_10", [], false); ?></div>
         <div class="panel-row">
-          <div class="panel-label">Contraste <span class="panel-value" id="valContrast">0</span></div>
+          <div class="panel-label"><?php _e("studio.auto_key_11", [], false); ?><span class="panel-value" id="valContrast">0</span></div>
           <input type="range" class="panel-slider" id="sliderContrast" min="-100" max="100" value="0">
         </div>
         <div class="panel-row">
-          <div class="panel-label">Luminosité <span class="panel-value" id="valBrightness">0</span></div>
+          <div class="panel-label"><?php _e("studio.auto_key_12", [], false); ?><span class="panel-value" id="valBrightness">0</span></div>
           <input type="range" class="panel-slider" id="sliderBrightness" min="-100" max="100" value="0">
         </div>
         <div class="panel-row">
-          <div class="panel-label">Gamma <span class="panel-value" id="valGamma">1.0</span></div>
+          <div class="panel-label"><?php _e("studio.auto_key_13", [], false); ?><span class="panel-value" id="valGamma"><?php _e("studio.auto_key_14", [], false); ?></span></div>
           <input type="range" class="panel-slider" id="sliderGamma" min="0.1" max="3.0" value="1.0" step="0.1">
         </div>
         <div class="panel-row">
-          <div class="panel-label">Saturation <span class="panel-value" id="valSaturation">0</span></div>
+          <div class="panel-label"><?php _e("studio.auto_key_15", [], false); ?><span class="panel-value" id="valSaturation">0</span></div>
           <input type="range" class="panel-slider" id="sliderSaturation" min="-100" max="100" value="0">
         </div>
       </div>
       <div class="panel-section">
-        <div class="panel-section-title">Bitmap</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_16", [], false); ?></div>
         <label class="panel-checkbox">
           <input type="checkbox" id="chkBitmap"> Activer le mode Bitmap
         </label>
         <div id="bitmapOpts" style="display:none;margin-top:12px">
           <div class="panel-row">
-            <div class="panel-label">Méthode</div>
+            <div class="panel-label"><?php _e("studio.auto_key_17", [], false); ?></div>
             <select class="panel-select" id="selBitmapMethod">
-              <option value="threshold">Seuil simple</option>
-              <option value="dithering">Tramage (Floyd-Steinberg)</option>
+              <option value="threshold"><?php _e("studio.auto_key_18", [], false); ?></option>
+              <option value="dithering"><?php _e("studio.auto_key_19", [], false); ?></option>
             </select>
           </div>
           <div class="panel-row" id="thresholdRow">
-            <div class="panel-label">Seuil <span class="panel-value" id="valThreshold">128</span></div>
+            <div class="panel-label"><?php _e("studio.auto_key_20", [], false); ?><span class="panel-value" id="valThreshold">128</span></div>
             <input type="range" class="panel-slider" id="sliderThreshold" min="0" max="255" value="128">
           </div>
         </div>
       </div>
       <div class="panel-section" style="text-align:center">
-        <button class="toolbar-btn" id="btnReset" style="width:100%;margin-bottom:8px"><i class="fa fa-undo"></i> Réinitialiser</button>
+        <button class="toolbar-btn" id="btnReset" style="width:100%;margin-bottom:8px"><i class="fa fa-undo"></i><?php _e("studio.auto_key_21", [], false); ?></button>
       </div>
     </div>
 
@@ -197,9 +197,9 @@ window.addEventListener('unhandledrejection', function(e) {
     <div id="panelImposition" style="display:none">
       <!-- Tabs -->
       <div style="display:flex;border-bottom:1px solid var(--studio-border);margin-bottom:0">
-        <button class="imp-tab active" data-tab="brochure" style="flex:1;padding:10px 4px;border:none;background:transparent;font-size:11px;font-weight:600;cursor:pointer;color:var(--studio-primary);border-bottom:2px solid var(--studio-primary)">Brochure</button>
-        <button class="imp-tab" data-tab="livre" style="flex:1;padding:10px 4px;border:none;background:transparent;font-size:11px;font-weight:600;cursor:pointer;color:var(--studio-text-muted);border-bottom:2px solid transparent">Livre</button>
-        <button class="imp-tab" data-tab="tracts" style="flex:1;padding:10px 4px;border:none;background:transparent;font-size:11px;font-weight:600;cursor:pointer;color:var(--studio-text-muted);border-bottom:2px solid transparent">Tracts N-up</button>
+        <button class="imp-tab active" data-tab="brochure" style="flex:1;padding:10px 4px;border:none;background:transparent;font-size:11px;font-weight:600;cursor:pointer;color:var(--studio-primary);border-bottom:2px solid var(--studio-primary)"><?php _e("studio.auto_key_22", [], false); ?></button>
+        <button class="imp-tab" data-tab="livre" style="flex:1;padding:10px 4px;border:none;background:transparent;font-size:11px;font-weight:600;cursor:pointer;color:var(--studio-text-muted);border-bottom:2px solid transparent"><?php _e("studio.auto_key_23", [], false); ?></button>
+        <button class="imp-tab" data-tab="tracts" style="flex:1;padding:10px 4px;border:none;background:transparent;font-size:11px;font-weight:600;cursor:pointer;color:var(--studio-text-muted);border-bottom:2px solid transparent"><?php _e("studio.auto_key_24", [], false); ?></button>
       </div>
 
       <!-- == TAB BROCHURE == -->
@@ -207,58 +207,58 @@ window.addEventListener('unhandledrejection', function(e) {
         <div class="panel-section">
           <div class="panel-section-title">Format & Poses</div>
           <div class="panel-row">
-            <div class="panel-label">Sortie</div>
-            <select class="panel-select" id="bro_output_format"><option value="A3">A3 (défaut)</option><option value="A4">A4</option></select>
+            <div class="panel-label"><?php _e("studio.auto_key_25", [], false); ?></div>
+            <select class="panel-select" id="bro_output_format"><option value="A3"><?php _e("studio.auto_key_26", [], false); ?></option><option value="A4">A4</option></select>
           </div>
           <div class="panel-row">
-            <div class="panel-label">N-up (poses)</div>
+            <div class="panel-label"><?php _e("studio.auto_key_27", [], false); ?></div>
             <select class="panel-select" id="bro_n_up">
-              <option value="2">2 pages / feuille</option>
-              <option value="4">4 pages / feuille</option>
-              <option value="8">8 pages / feuille</option>
+              <option value="2"><?php _e("studio.auto_key_28", [], false); ?></option>
+              <option value="4"><?php _e("studio.auto_key_29", [], false); ?></option>
+              <option value="8"><?php _e("studio.auto_key_30", [], false); ?></option>
             </select>
           </div>
         </div>
 
         <div class="panel-section">
-          <div class="panel-section-title">Redimensionnement</div>
+          <div class="panel-section-title"><?php _e("studio.auto_key_31", [], false); ?></div>
           <div class="panel-row">
-            <label style="font-size:11px; cursor:pointer"><input type="radio" name="bro_resize_mode" value="percent" checked> Échelle %</label>
-            <label style="font-size:11px; cursor:pointer; margin-left:10px"><input type="radio" name="bro_resize_mode" value="mm"> Taille cible</label>
+            <label style="font-size:11px; cursor:pointer"><input type="radio" name="bro_resize_mode" value="percent" checked><?php _e("studio.auto_key_32", [], false); ?></label>
+            <label style="font-size:11px; cursor:pointer; margin-left:10px"><input type="radio" name="bro_resize_mode" value="mm"><?php _e("studio.auto_key_33", [], false); ?></label>
           </div>
           <div id="bro_resize_percent_block">
             <div class="panel-row">
-              <div class="panel-label">Échelle (%)</div>
+              <div class="panel-label"><?php _e("studio.auto_key_34", [], false); ?></div>
               <input type="number" class="panel-select" id="bro_scale" value="100" min="10" max="400">
             </div>
           </div>
           <div id="bro_resize_mm_block" style="display:none">
             <div class="panel-row">
-              <div class="panel-label">Largeur (mm)</div>
+              <div class="panel-label"><?php _e("studio.auto_key_35", [], false); ?></div>
               <input type="number" class="panel-select" id="bro_target_w" placeholder="ex: 105" step="0.1">
             </div>
             <div class="panel-row">
-              <div class="panel-label">Hauteur (mm)</div>
+              <div class="panel-label"><?php _e("studio.auto_key_36", [], false); ?></div>
               <input type="number" class="panel-select" id="bro_target_h" placeholder="ex: 148" step="0.1">
             </div>
           </div>
         </div>
 
         <div class="panel-section">
-          <div class="panel-section-title">Gouttières (mm)</div>
+          <div class="panel-section-title"><?php _e("studio.auto_key_37", [], false); ?></div>
           <div class="panel-row">
-            <div class="panel-label">Horiz. (X)</div>
+            <div class="panel-label"><?php _e("studio.auto_key_38", [], false); ?></div>
             <input type="number" class="panel-select" id="bro_gutter_x" value="0" step="0.5">
           </div>
           <div class="panel-row">
-            <div class="panel-label">Vert. (Y)</div>
+            <div class="panel-label"><?php _e("studio.auto_key_39", [], false); ?></div>
             <input type="number" class="panel-select" id="bro_gutter_y" value="0" step="0.5">
           </div>
           <div class="panel-row">
-            <div class="panel-label">Stratégie</div>
+            <div class="panel-label"><?php _e("studio.auto_key_40", [], false); ?></div>
             <select class="panel-select" id="bro_gutter_strategy">
-              <option value="reduce">Réduire échelle</option>
-              <option value="crop">Rogner (Crop)</option>
+              <option value="reduce"><?php _e("studio.auto_key_41", [], false); ?></option>
+              <option value="crop"><?php _e("studio.auto_key_42", [], false); ?></option>
             </select>
           </div>
         </div>
@@ -266,47 +266,47 @@ window.addEventListener('unhandledrejection', function(e) {
         <div class="panel-section">
           <div class="panel-section-title">Repères & Folios</div>
           <div class="panel-row">
-            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_crop_marks"> Traits de coupe</label>
+            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_crop_marks"><?php _e("studio.auto_key_43", [], false); ?></label>
           </div>
           <div id="bro_crop_settings" style="display:none; padding-left:10px; border-left:2px solid var(--studio-border); margin-top:5px">
             <div class="panel-row">
-              <div class="panel-label">Style</div>
+              <div class="panel-label"><?php _e("studio.auto_key_44", [], false); ?></div>
               <select class="panel-select" id="bro_crop_style" style="font-size:10px">
-                <option value="standard">Standard</option>
-                <option value="spreads" selected>Planches (spreads)</option>
-                <option value="booklet">Livret</option>
+                <option value="standard"><?php _e("studio.auto_key_45", [], false); ?></option>
+                <option value="spreads" selected><?php _e("studio.auto_key_46", [], false); ?></option>
+                <option value="booklet"><?php _e("studio.auto_key_47", [], false); ?></option>
               </select>
             </div>
             <div class="panel-row">
-              <div class="panel-label">Long. (mm)</div>
+              <div class="panel-label"><?php _e("studio.auto_key_48", [], false); ?></div>
               <input type="number" class="panel-select" id="bro_crop_len" value="5" min="1" style="width:100px">
             </div>
           </div>
           
           <div class="panel-row" style="margin-top:10px">
-            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_page_nums"> Numéros de pages</label>
+            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_page_nums"><?php _e("studio.auto_key_49", [], false); ?></label>
           </div>
           <div id="bro_folio_settings" style="display:none; padding-left:10px; border-left:2px solid var(--studio-border); margin-top:5px; margin-bottom:10px">
              <div class="panel-row" id="bro_folio_position_row" style="margin-top:5px; margin-bottom:5px;">
-               <div class="panel-label">Position auto</div>
+               <div class="panel-label"><?php _e("studio.auto_key_50", [], false); ?></div>
                <select class="panel-select" id="bro_folio_position" style="font-size:10px">
-                 <option value="margins" selected>Marges (Extérieur)</option>
-                 <option value="gutters">Tranches (Intérieur)</option>
+                 <option value="margins" selected><?php _e("studio.auto_key_51", [], false); ?></option>
+                 <option value="gutters"><?php _e("studio.auto_key_52", [], false); ?></option>
                </select>
              </div>
              <div class="panel-row" style="margin-top:5px; margin-bottom:5px;">
-               <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_page_nums_manual"> Décalage manuel</label>
+               <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_page_nums_manual"><?php _e("studio.auto_key_53", [], false); ?></label>
              </div>
              <div id="bro_folio_manual_settings" style="display:none;">
                  <div class="panel-row">
-                   <div class="panel-label">Décalage X (mm)</div>
+                   <div class="panel-label"><?php _e("studio.auto_key_54", [], false); ?></div>
                     <input type="number" class="panel-select" id="bro_folio_x" value="0" step="0.5" style="width:100px">
                  </div>
                  <div style="font-size:9px; color:var(--studio-text-muted); margin-bottom:6px; margin-top:-2px">
                    Positif = vers la droite, Négatif = vers la gauche
                  </div>
                  <div class="panel-row">
-                   <div class="panel-label">Décalage Y (mm)</div>
+                   <div class="panel-label"><?php _e("studio.auto_key_55", [], false); ?></div>
                     <input type="number" class="panel-select" id="bro_folio_y" value="-2" step="0.5" style="width:100px">
                  </div>
                  <div style="font-size:9px; color:var(--studio-text-muted); margin-bottom:6px; margin-top:-2px">
@@ -316,7 +316,7 @@ window.addEventListener('unhandledrejection', function(e) {
           </div>
 
           <div class="panel-row" style="margin-top:10px">
-            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_tumble"> Tête-bêche</label>
+            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_tumble"><?php _e("studio.auto_key_56", [], false); ?></label>
           </div>
           
 
@@ -328,59 +328,59 @@ window.addEventListener('unhandledrejection', function(e) {
         <div class="panel-section">
           <div class="panel-section-title">Format & Poses</div>
           <div class="panel-row">
-            <div class="panel-label">Sortie</div>
+            <div class="panel-label"><?php _e("studio.auto_key_57", [], false); ?></div>
             <select class="panel-select" id="liv_output_format"><option value="A3">A3</option><option value="A4">A4</option></select>
           </div>
           <div class="panel-row">
-            <div class="panel-label">N-up</div>
+            <div class="panel-label"><?php _e("studio.auto_key_58", [], false); ?></div>
             <select class="panel-select" id="liv_n_up">
-              <option value="2">2 poses</option>
-              <option value="4">4 poses</option>
-              <option value="8">8 poses</option>
+              <option value="2"><?php _e("studio.auto_key_59", [], false); ?></option>
+              <option value="4"><?php _e("studio.auto_key_60", [], false); ?></option>
+              <option value="8"><?php _e("studio.auto_key_61", [], false); ?></option>
             </select>
           </div>
         </div>
 
         <div class="panel-section">
-          <div class="panel-section-title">Redimensionnement</div>
+          <div class="panel-section-title"><?php _e("studio.auto_key_62", [], false); ?></div>
           <div class="panel-row">
-            <label style="font-size:11px; cursor:pointer"><input type="radio" name="liv_resize_mode" value="percent" checked> Échelle %</label>
-            <label style="font-size:11px; cursor:pointer; margin-left:10px"><input type="radio" name="liv_resize_mode" value="mm"> Taille cible</label>
+            <label style="font-size:11px; cursor:pointer"><input type="radio" name="liv_resize_mode" value="percent" checked><?php _e("studio.auto_key_63", [], false); ?></label>
+            <label style="font-size:11px; cursor:pointer; margin-left:10px"><input type="radio" name="liv_resize_mode" value="mm"><?php _e("studio.auto_key_64", [], false); ?></label>
           </div>
           <div id="liv_resize_percent_block">
             <div class="panel-row">
-              <div class="panel-label">Échelle (%)</div>
+              <div class="panel-label"><?php _e("studio.auto_key_65", [], false); ?></div>
               <input type="number" class="panel-select" id="liv_scale" value="100">
             </div>
           </div>
           <div id="liv_resize_mm_block" style="display:none">
             <div class="panel-row">
-              <div class="panel-label">Larg (mm)</div>
+              <div class="panel-label"><?php _e("studio.auto_key_66", [], false); ?></div>
               <input type="number" class="panel-select" id="liv_target_w" placeholder="mm">
             </div>
             <div class="panel-row">
-              <div class="panel-label">Haut (mm)</div>
+              <div class="panel-label"><?php _e("studio.auto_key_67", [], false); ?></div>
               <input type="number" class="panel-select" id="liv_target_h" placeholder="mm">
             </div>
           </div>
         </div>
 
         <div class="panel-section">
-          <div class="panel-section-title">Gouttières (mm)</div>
+          <div class="panel-section-title"><?php _e("studio.auto_key_68", [], false); ?></div>
           <div class="panel-row">
             <div style="width:30%">
-              <div class="panel-label" style="font-size:10px; margin-bottom:2px">Horizontale X</div>
+              <div class="panel-label" style="font-size:10px; margin-bottom:2px"><?php _e("studio.auto_key_69", [], false); ?></div>
               <input type="number" class="panel-select" id="liv_gutter_x" value="0" step="0.5" style="width:100%" placeholder="0">
             </div>
             <div style="width:30%">
-              <div class="panel-label" style="font-size:10px; margin-bottom:2px">Verticale Y</div>
+              <div class="panel-label" style="font-size:10px; margin-bottom:2px"><?php _e("studio.auto_key_70", [], false); ?></div>
               <input type="number" class="panel-select" id="liv_gutter_y" value="0" step="0.5" style="width:100%" placeholder="0">
             </div>
             <div style="width:35%">
-              <div class="panel-label" style="font-size:10px; margin-bottom:2px">Stratégie</div>
+              <div class="panel-label" style="font-size:10px; margin-bottom:2px"><?php _e("studio.auto_key_71", [], false); ?></div>
               <select class="panel-select" id="liv_gutter_strategy" style="width:100%">
-                <option value="reduce">Réduire échelle</option>
-                <option value="crop">Rogner (Crop)</option>
+                <option value="reduce"><?php _e("studio.auto_key_72", [], false); ?></option>
+                <option value="crop"><?php _e("studio.auto_key_73", [], false); ?></option>
               </select>
             </div>
           </div>
@@ -389,47 +389,47 @@ window.addEventListener('unhandledrejection', function(e) {
         <div class="panel-section">
           <div class="panel-section-title">Options de repères & Folio</div>
           <div class="panel-row">
-            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_crop_marks"> Traits de coupe</label>
+            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_crop_marks"><?php _e("studio.auto_key_74", [], false); ?></label>
           </div>
           <div id="liv_crop_settings" style="display:none; padding-left:10px; border-left:2px solid var(--studio-border); margin-top:5px; margin-bottom:10px">
             <div class="panel-row">
-              <div class="panel-label">Style de repères</div>
+              <div class="panel-label"><?php _e("studio.auto_key_75", [], false); ?></div>
               <select class="panel-select" id="liv_crop_style" style="font-size:10px">
-                <option value="standard" selected>Standard (Autour de chaque pose)</option>
-                <option value="spreads">Planches (Autour de chaque paire)</option>
-                <option value="booklet">Livret (Coins extérieurs)</option>
+                <option value="standard" selected><?php _e("studio.auto_key_76", [], false); ?></option>
+                <option value="spreads"><?php _e("studio.auto_key_77", [], false); ?></option>
+                <option value="booklet"><?php _e("studio.auto_key_78", [], false); ?></option>
               </select>
             </div>
             <div class="panel-row">
-              <div class="panel-label">Longueur (mm)</div>
+              <div class="panel-label"><?php _e("studio.auto_key_79", [], false); ?></div>
               <input type="number" class="panel-select" id="liv_crop_len" value="5" min="1" style="width:100px">
             </div>
           </div>
           
           <div class="panel-row">
-            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_page_nums"> Numéros de pages</label>
+            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_page_nums"><?php _e("studio.auto_key_80", [], false); ?></label>
           </div>
           <div id="liv_folio_settings" style="display:none; padding-left:10px; border-left:2px solid var(--studio-border); margin-top:5px; margin-bottom:10px">
              <div class="panel-row" id="liv_folio_position_row" style="margin-top:5px; margin-bottom:5px;">
-               <div class="panel-label">Position auto</div>
+               <div class="panel-label"><?php _e("studio.auto_key_81", [], false); ?></div>
                <select class="panel-select" id="liv_folio_position" style="font-size:10px">
-                 <option value="margins" selected>Marges (Extérieur)</option>
-                 <option value="gutters">Tranches (Intérieur)</option>
+                 <option value="margins" selected><?php _e("studio.auto_key_82", [], false); ?></option>
+                 <option value="gutters"><?php _e("studio.auto_key_83", [], false); ?></option>
                </select>
              </div>
              <div class="panel-row" style="margin-top:5px; margin-bottom:5px;">
-               <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_page_nums_manual"> Décalage manuel</label>
+               <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_page_nums_manual"><?php _e("studio.auto_key_84", [], false); ?></label>
              </div>
              <div id="liv_folio_manual_settings" style="display:none;">
                  <div class="panel-row">
-                   <div class="panel-label">Décalage X (mm)</div>
+                   <div class="panel-label"><?php _e("studio.auto_key_85", [], false); ?></div>
                     <input type="number" class="panel-select" id="liv_folio_x" value="0" step="0.5" style="width:100px">
                  </div>
                  <div style="font-size:9px; color:var(--studio-text-muted); margin-bottom:6px; margin-top:-2px">
                    Positif = vers la droite, Négatif = vers la gauche
                  </div>
                  <div class="panel-row">
-                   <div class="panel-label">Décalage Y (mm)</div>
+                   <div class="panel-label"><?php _e("studio.auto_key_86", [], false); ?></div>
                     <input type="number" class="panel-select" id="liv_folio_y" value="-2" step="0.5" style="width:100px">
                  </div>
                  <div style="font-size:9px; color:var(--studio-text-muted); margin-bottom:6px; margin-top:-2px">
@@ -439,10 +439,10 @@ window.addEventListener('unhandledrejection', function(e) {
           </div>
           
           <div class="panel-row" style="margin-top:10px">
-            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_tete_beche"> Tête-bêche</label>
+            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_tete_beche"><?php _e("studio.auto_key_87", [], false); ?></label>
           </div>
           <div class="panel-row" style="margin-top:10px">
-            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_collation_marks"> Témoins d'assemblage</label>
+            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_collation_marks"><?php _e("studio.auto_key_88", [], false); ?></label>
           </div>
           
 
@@ -452,39 +452,39 @@ window.addEventListener('unhandledrejection', function(e) {
       <!-- == TAB TRACTS == -->
       <div id="impTabTracts" class="imp-tab-content" style="display:none;padding:0">
         <div class="panel-section">
-          <div class="panel-section-title">Format</div>
+          <div class="panel-section-title"><?php _e("studio.auto_key_89", [], false); ?></div>
           <div class="panel-row">
-            <div class="panel-label">Sortie</div>
+            <div class="panel-label"><?php _e("studio.auto_key_90", [], false); ?></div>
             <select class="panel-select" id="tra_output_format"><option value="A3">A3</option><option value="A4">A4</option></select>
           </div>
           <div class="panel-row">
-            <div class="panel-label">Format source</div>
+            <div class="panel-label"><?php _e("studio.auto_key_91", [], false); ?></div>
             <select class="panel-select" id="tra_manual_format">
-              <option value="auto">Détection auto</option>
+              <option value="auto"><?php _e("studio.auto_key_92", [], false); ?></option>
               <option value="A4">A4 → 2 sur A3</option>
               <option value="A5">A5 → 4 sur A3</option>
               <option value="A6">A6 → 8 sur A3</option>
             </select>
           </div>
           <div class="panel-row">
-            <div class="panel-label">Orientation</div>
+            <div class="panel-label"><?php _e("studio.auto_key_93", [], false); ?></div>
             <select class="panel-select" id="tra_orientation">
-              <option value="auto">Auto</option>
-              <option value="portrait">Portrait</option>
-              <option value="landscape">Paysage</option>
+              <option value="auto"><?php _e("studio.auto_key_94", [], false); ?></option>
+              <option value="portrait"><?php _e("studio.auto_key_95", [], false); ?></option>
+              <option value="landscape"><?php _e("studio.auto_key_96", [], false); ?></option>
             </select>
           </div>
         </div>
         <div class="panel-section">
-          <div class="panel-section-title">Options</div>
-          <div class="panel-row"><label class="panel-checkbox"><input type="checkbox" id="tra_crop_marks"> Traits de coupe</label></div>
-          <div class="panel-row"><label class="panel-checkbox"><input type="checkbox" id="tra_keep_size"> Garder taille originale</label></div>
-          <div class="panel-row"><label class="panel-checkbox"><input type="checkbox" id="tra_force_resize"> Forcer redim.</label></div>
+          <div class="panel-section-title"><?php _e("studio.auto_key_97", [], false); ?></div>
+          <div class="panel-row"><label class="panel-checkbox"><input type="checkbox" id="tra_crop_marks"><?php _e("studio.auto_key_98", [], false); ?></label></div>
+          <div class="panel-row"><label class="panel-checkbox"><input type="checkbox" id="tra_keep_size"><?php _e("studio.auto_key_99", [], false); ?></label></div>
+          <div class="panel-row"><label class="panel-checkbox"><input type="checkbox" id="tra_force_resize"><?php _e("studio.auto_key_100", [], false); ?></label></div>
           <div class="panel-row">
-            <div class="panel-label">Mode duplex</div>
+            <div class="panel-label"><?php _e("studio.auto_key_101", [], false); ?></div>
             <select class="panel-select" id="tra_duplex_mode">
-              <option value="none">Non (simple)</option>
-              <option value="manuel">Duplex manuel</option>
+              <option value="none"><?php _e("studio.auto_key_102", [], false); ?></option>
+              <option value="manuel"><?php _e("studio.auto_key_103", [], false); ?></option>
             </select>
           </div>
         </div>
@@ -500,21 +500,21 @@ window.addEventListener('unhandledrejection', function(e) {
     <!-- Geometry Panel (hidden) -->
     <div id="panelGeometry" style="display:none">
       <div class="panel-section">
-        <div class="panel-section-title">Transformation</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_104", [], false); ?></div>
         <div class="panel-row">
           <button class="toolbar-btn" id="btnRotateLeft" style="width:48%"><i class="fa fa-rotate-left"></i> -90°</button>
           <button class="toolbar-btn" id="btnRotateRight" style="width:48%;float:right"><i class="fa fa-rotate-right"></i> +90°</button>
         </div>
         <div class="panel-row" style="margin-top:12px">
-          <button class="toolbar-btn" id="btnFlipH" style="width:48%"><i class="fa fa-arrows-h"></i> Flip H</button>
-          <button class="toolbar-btn" id="btnFlipV" style="width:48%;float:right"><i class="fa fa-arrows-v"></i> Flip V</button>
+          <button class="toolbar-btn" id="btnFlipH" style="width:48%"><i class="fa fa-arrows-h"></i><?php _e("studio.auto_key_105", [], false); ?></button>
+          <button class="toolbar-btn" id="btnFlipV" style="width:48%;float:right"><i class="fa fa-arrows-v"></i><?php _e("studio.auto_key_106", [], false); ?></button>
         </div>
         <div class="panel-row" style="margin-top:12px; border-top: 1px solid var(--studio-border); padding-top: 12px;">
-          <div class="panel-label">Redressement (Deskew) <span class="panel-value" id="valDeskew">0°</span></div>
+          <div class="panel-label"><?php _e("studio.auto_key_107", [], false); ?><span class="panel-value" id="valDeskew">0°</span></div>
           <input type="range" class="panel-slider" id="sliderDeskew" min="-15" max="15" step="0.1" value="0">
         </div>
         <div class="panel-row" style="margin-top:4px">
-          <button class="toolbar-btn primary" id="btnApplyDeskew" style="width:100%"><i class="fa fa-check"></i> Valider l'angle</button>
+          <button class="toolbar-btn primary" id="btnApplyDeskew" style="width:100%"><i class="fa fa-check"></i><?php _e("studio.auto_key_108", [], false); ?></button>
         </div>
         <div class="panel-row" style="margin-top:12px; font-size:11px; border-top: 1px solid var(--studio-border); padding-top: 12px;">
           <label style="cursor:pointer;display:flex;align-items:center;gap:6px">
@@ -523,42 +523,42 @@ window.addEventListener('unhandledrejection', function(e) {
         </div>
       </div>
       <div class="panel-section">
-        <div class="panel-section-title">Redimensionner</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_109", [], false); ?></div>
         <div class="panel-row">
           <select class="panel-select" id="selResizeFormat">
-            <option value="A4">A4 (210×297mm)</option>
-            <option value="A3">A3 (297×420mm)</option>
-            <option value="A5">A5 (148×210mm)</option>
+            <option value="A4"><?php _e("studio.auto_key_110", [], false); ?></option>
+            <option value="A3"><?php _e("studio.auto_key_111", [], false); ?></option>
+            <option value="A5"><?php _e("studio.auto_key_112", [], false); ?></option>
           </select>
         </div>
         <div class="panel-row" style="margin-top:8px">
-          <button class="toolbar-btn primary" id="btnApplyResize" style="width:100%"><i class="fa fa-expand"></i> Redimensionner</button>
+          <button class="toolbar-btn primary" id="btnApplyResize" style="width:100%"><i class="fa fa-expand"></i><?php _e("studio.auto_key_113", [], false); ?></button>
         </div>
       </div>
       <!-- Section Crop -->
       <div class="panel-section">
-        <div class="panel-section-title">Rogner (Crop)</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_114", [], false); ?></div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
           <div>
-            <div class="panel-label" style="font-size:11px;">Haut (mm)</div>
+            <div class="panel-label" style="font-size:11px;"><?php _e("studio.auto_key_115", [], false); ?></div>
             <input type="number" class="panel-select" id="cropTop" value="0" min="0" step="0.5" style="padding:6px 8px;">
           </div>
           <div>
-            <div class="panel-label" style="font-size:11px;">Bas (mm)</div>
+            <div class="panel-label" style="font-size:11px;"><?php _e("studio.auto_key_116", [], false); ?></div>
             <input type="number" class="panel-select" id="cropBottom" value="0" min="0" step="0.5" style="padding:6px 8px;">
           </div>
           <div>
-            <div class="panel-label" style="font-size:11px;">Gauche (mm)</div>
+            <div class="panel-label" style="font-size:11px;"><?php _e("studio.auto_key_117", [], false); ?></div>
             <input type="number" class="panel-select" id="cropLeft" value="0" min="0" step="0.5" style="padding:6px 8px;">
           </div>
           <div>
-            <div class="panel-label" style="font-size:11px;">Droite (mm)</div>
+            <div class="panel-label" style="font-size:11px;"><?php _e("studio.auto_key_118", [], false); ?></div>
             <input type="number" class="panel-select" id="cropRight" value="0" min="0" step="0.5" style="padding:6px 8px;">
           </div>
         </div>
         <div id="cropSizeInfo" style="font-size:11px; color:var(--studio-text-muted); text-align:center; margin-bottom:10px; font-weight:500;">—</div>
-        <button class="toolbar-btn primary" id="btnActivateCrop" style="width:100%; margin-bottom:8px;"><i class="fa fa-crop"></i> Activer l'aperçu crop</button>
-        <button class="toolbar-btn" id="btnResetCrop" style="width:100%; margin-bottom:8px;"><i class="fa fa-undo"></i> Réinitialiser</button>
+        <button class="toolbar-btn primary" id="btnActivateCrop" style="width:100%; margin-bottom:8px;"><i class="fa fa-crop"></i><?php _e("studio.auto_key_119", [], false); ?></button>
+        <button class="toolbar-btn" id="btnResetCrop" style="width:100%; margin-bottom:8px;"><i class="fa fa-undo"></i><?php _e("studio.auto_key_120", [], false); ?></button>
         <button class="toolbar-btn primary" id="btnApplyCropExport" style="width:100%; background:#10b981; border-color:#10b981;"><i class="fa fa-scissors"></i> Appliquer & Exporter</button>
       </div>
     </div>
@@ -566,9 +566,9 @@ window.addEventListener('unhandledrejection', function(e) {
     <!-- Panel Montage Libre -->
     <div id="panelMontage" style="display:none">
       <div class="panel-section">
-        <div class="panel-section-title">Format du Canva</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_121", [], false); ?></div>
         <div class="panel-row">
-          <div class="panel-label">Format</div>
+          <div class="panel-label"><?php _e("studio.auto_key_122", [], false); ?></div>
           <select class="panel-select" id="montageFormat">
             <option value="A3">A3</option>
             <option value="A4" selected>A4</option>
@@ -576,26 +576,26 @@ window.addEventListener('unhandledrejection', function(e) {
           </select>
         </div>
         <div class="panel-row">
-          <div class="panel-label">Orientation</div>
+          <div class="panel-label"><?php _e("studio.auto_key_123", [], false); ?></div>
           <select class="panel-select" id="montageOrientation">
-            <option value="portrait">Portrait</option>
-            <option value="landscape">Paysage</option>
+            <option value="portrait"><?php _e("studio.auto_key_124", [], false); ?></option>
+            <option value="landscape"><?php _e("studio.auto_key_125", [], false); ?></option>
           </select>
         </div>
       </div>
       
       <div class="panel-section">
-        <div class="panel-section-title">Planches</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_126", [], false); ?></div>
         <div id="montagePlanchesList" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
           <!-- Planches boutons -->
         </div>
-        <button class="panel-btn" id="btnAddPlanche"><i class="fa fa-plus"></i> Nouvelle Planche</button>
+        <button class="panel-btn" id="btnAddPlanche"><i class="fa fa-plus"></i><?php _e("studio.auto_key_127", [], false); ?></button>
       </div>
 
       <div class="panel-section">
-        <div class="panel-section-title">Fichiers Sources</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_128", [], false); ?></div>
         <input type="file" id="montageUploadPdf" accept=".pdf,.jpg,.jpeg,.png,.webp" multiple style="display:none">
-        <button class="panel-btn" id="btnMontageUpload"><i class="fa fa-upload"></i> Importer un PDF ou Image</button>
+        <button class="panel-btn" id="btnMontageUpload"><i class="fa fa-upload"></i><?php _e("studio.auto_key_129", [], false); ?></button>
         <div id="montageSourceThumbs" style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:5px; max-height:300px; overflow-y:auto; padding-right:4px;">
           <!-- Thumbnails of uploaded PDFs -->
         </div>
@@ -611,56 +611,56 @@ window.addEventListener('unhandledrejection', function(e) {
     <!-- Pages Panel (hidden) -->
     <div id="panelPages" style="display:none">
       <div class="panel-section">
-        <div class="panel-section-title">PDF vers Images</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_130", [], false); ?></div>
         <div class="panel-row">
-          <div class="panel-label">Qualité (DPI) <span class="panel-value" id="valDpi">150</span></div>
+          <div class="panel-label"><?php _e("studio.auto_key_131", [], false); ?><span class="panel-value" id="valDpi">150</span></div>
           <input type="range" class="panel-slider" id="sliderDpi" min="72" max="300" value="150" step="1">
         </div>
         <div class="panel-row" style="margin-top:12px">
-          <button class="toolbar-btn" id="btnPdfToImg" style="width:100%"><i class="fa fa-file-image-o"></i> Extraire en PNG</button>
+          <button class="toolbar-btn" id="btnPdfToImg" style="width:100%"><i class="fa fa-file-image-o"></i><?php _e("studio.auto_key_132", [], false); ?></button>
         </div>
       </div>
 
 
       <div class="panel-section">
-        <div class="panel-section-title">Organiser (Glisser-Déposer)</div>
-        <p style="font-size:12px;color:#6b7280;margin-bottom:8px;">Utilisez la barre du bas pour réorganiser les pages.</p>
+        <div class="panel-section-title"><?php _e("studio.auto_key_133", [], false); ?></div>
+        <p style="font-size:12px;color:#6b7280;margin-bottom:8px;"><?php _e("studio.auto_key_134", [], false); ?></p>
         <div class="panel-row">
-          <div class="panel-label">Position d'insertion</div>
+          <div class="panel-label"><?php _e("studio.auto_key_135", [], false); ?></div>
           <select class="panel-select" id="selOrgBlankPos">
-            <option value="end">À la fin</option>
-            <option value="start">Au début</option>
-            <option value="before">Avant la page active</option>
-            <option value="after">Après la page active</option>
+            <option value="end"><?php _e("studio.auto_key_136", [], false); ?></option>
+            <option value="start"><?php _e("studio.auto_key_137", [], false); ?></option>
+            <option value="before"><?php _e("studio.auto_key_138", [], false); ?></option>
+            <option value="after"><?php _e("studio.auto_key_139", [], false); ?></option>
           </select>
         </div>
         <div class="panel-row" style="margin-top:8px">
           <input type="file" id="orgAddPdfInput" accept=".pdf" style="display:none">
-          <button class="toolbar-btn" id="btnOrgAddPdf" style="width:100%"><i class="fa fa-file-pdf-o"></i> Ajouter un PDF</button>
+          <button class="toolbar-btn" id="btnOrgAddPdf" style="width:100%"><i class="fa fa-file-pdf-o"></i><?php _e("studio.auto_key_140", [], false); ?></button>
         </div>
         <div class="panel-row" style="margin-top:8px">
-          <button class="toolbar-btn" id="btnOrgAddBlank" style="width:100%"><i class="fa fa-plus"></i> Insérer page blanche</button>
+          <button class="toolbar-btn" id="btnOrgAddBlank" style="width:100%"><i class="fa fa-plus"></i><?php _e("studio.auto_key_141", [], false); ?></button>
         </div>
         <div class="panel-row" style="margin-top:8px">
-          <button class="toolbar-btn" id="btnOrgReverse" style="width:100%"><i class="fa fa-sort-numeric-desc"></i> Inverser l'ordre des pages</button>
+          <button class="toolbar-btn" id="btnOrgReverse" style="width:100%"><i class="fa fa-sort-numeric-desc"></i><?php _e("studio.auto_key_142", [], false); ?></button>
         </div>
         <div class="panel-row" style="margin-top:12px">
-          <button class="toolbar-btn primary" id="btnApplyOrg" style="width:100%"><i class="fa fa-magic"></i> Appliquer l'ordre</button>
+          <button class="toolbar-btn primary" id="btnApplyOrg" style="width:100%"><i class="fa fa-magic"></i><?php _e("studio.auto_key_143", [], false); ?></button>
         </div>
       </div>
 
       <div class="panel-section">
-        <div class="panel-section-title">Désimposer</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_144", [], false); ?></div>
         <div class="panel-row">
-          <div class="panel-label">Mode</div>
+          <div class="panel-label"><?php _e("studio.auto_key_145", [], false); ?></div>
           <select class="panel-select" id="selUnimposeMode">
-            <option value="booklet">Livret classique</option>
+            <option value="booklet"><?php _e("studio.auto_key_146", [], false); ?></option>
             <option value="doubles">Doubles pages (couv + doubles)</option>
-            <option value="sequential">Coupe Séquentielle (1g, 1d, 2g, 2d...)</option>
+            <option value="sequential"><?php _e("studio.auto_key_147", [], false); ?></option>
           </select>
         </div>
         <div class="panel-row" style="margin-top:12px">
-          <button class="toolbar-btn" id="btnApplyUnimpose" style="width:100%"><i class="fa fa-scissors"></i> Désimposer</button>
+          <button class="toolbar-btn" id="btnApplyUnimpose" style="width:100%"><i class="fa fa-scissors"></i><?php _e("studio.auto_key_148", [], false); ?></button>
         </div>
       </div>
     </div>
@@ -668,43 +668,43 @@ window.addEventListener('unhandledrejection', function(e) {
     <!-- Riso Panel (hidden) -->
     <div id="panelRiso" style="display:none">
       <div class="panel-section">
-        <div class="panel-section-title">Mode de Séparation</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_149", [], false); ?></div>
         <div class="panel-row">
           <select class="panel-select" id="selRisoMode">
-            <option value="AUTO_BICHROMIE">Bichromie Auto (Détection 2 couleurs)</option>
-            <option value="RGB">Soustraction RGB (3 couches)</option>
-            <option value="CMYK">Soustraction CMJN (4 couches)</option>
-            <option value="2COLOR">Séparation Luminosité (Sombre/Clair)</option>
-            <option value="PIPETTE">Pipette (Couleur précise)</option>
+            <option value="AUTO_BICHROMIE"><?php _e("studio.auto_key_150", [], false); ?></option>
+            <option value="RGB"><?php _e("studio.auto_key_151", [], false); ?></option>
+            <option value="CMYK"><?php _e("studio.auto_key_152", [], false); ?></option>
+            <option value="2COLOR"><?php _e("studio.auto_key_153", [], false); ?></option>
+            <option value="PIPETTE"><?php _e("studio.auto_key_154", [], false); ?></option>
           </select>
         </div>
       </div>
       
       <div class="panel-section">
-        <div class="panel-section-title">Effets Communs</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_155", [], false); ?></div>
         <div class="panel-row">
-          <div class="panel-label">Postériser (Niv.) <span class="panel-value" id="valRisoLevels">4</span></div>
+          <div class="panel-label"><?php _e("studio.auto_key_156", [], false); ?><span class="panel-value" id="valRisoLevels">4</span></div>
           <input type="range" class="panel-slider" id="sliderRisoLevels" min="2" max="10" value="4">
         </div>
         <div class="panel-row" style="margin-top:4px">
-          <button class="toolbar-btn" id="btnRisoPosterize" style="width:100%"><i class="fa fa-th"></i> Appliquer Postérisation</button>
+          <button class="toolbar-btn" id="btnRisoPosterize" style="width:100%"><i class="fa fa-th"></i><?php _e("studio.auto_key_157", [], false); ?></button>
         </div>
         
         <div class="panel-row" style="margin-top:12px">
-          <div class="panel-label">Taille Trame <span class="panel-value" id="valRisoHalftone">3</span></div>
+          <div class="panel-label"><?php _e("studio.auto_key_158", [], false); ?><span class="panel-value" id="valRisoHalftone">3</span></div>
           <input type="range" class="panel-slider" id="sliderRisoHalftone" min="1" max="10" value="3">
         </div>
         <div class="panel-row" style="margin-top:4px">
-          <button class="toolbar-btn" id="btnRisoHalftone" style="width:100%"><i class="fa fa-th-large"></i> Appliquer Trame</button>
+          <button class="toolbar-btn" id="btnRisoHalftone" style="width:100%"><i class="fa fa-th-large"></i><?php _e("studio.auto_key_159", [], false); ?></button>
         </div>
         
         <div class="panel-row" style="margin-top:12px">
-          <button class="toolbar-btn" id="btnRisoReset" style="width:100%;color:#ef4444"><i class="fa fa-undo"></i> Réinitialiser l'image</button>
+          <button class="toolbar-btn" id="btnRisoReset" style="width:100%;color:#ef4444"><i class="fa fa-undo"></i><?php _e("studio.auto_key_160", [], false); ?></button>
         </div>
       </div>
 
       <div class="panel-section" id="risoChannelsSection">
-        <div class="panel-section-title">Couches Riso</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_161", [], false); ?></div>
         <div id="risoChannelsList">
           <!-- Dynamically populated via JS -->
         </div>
@@ -722,21 +722,21 @@ window.addEventListener('unhandledrejection', function(e) {
     <!-- Nouveau Panneau: OCR & Nettoyage de Scan -->
     <div id="panelOcr" style="display:none">
       <div class="panel-section">
-        <div class="panel-section-title">Langue du document</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_162", [], false); ?></div>
         <div class="panel-row">
           <select class="panel-select" id="selOcrLang">
-            <option value="fra">Français</option>
-            <option value="eng">Anglais</option>
+            <option value="fra"><?php _e("studio.auto_key_163", [], false); ?></option>
+            <option value="eng"><?php _e("studio.auto_key_164", [], false); ?></option>
           </select>
         </div>
       </div>
       
       <div class="panel-section">
-        <div class="panel-section-title">Type de Traitement</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_165", [], false); ?></div>
         <div class="panel-row">
           <select class="panel-select" id="selOcrType">
-            <option value="skip_text">OCR Classique (Ignore le texte existant)</option>
-            <option value="force_ocr">Forcer l'OCR (Rastérise d'abord)</option>
+            <option value="skip_text"><?php _e("studio.auto_key_166", [], false); ?></option>
+            <option value="force_ocr"><?php _e("studio.auto_key_167", [], false); ?></option>
           </select>
         </div>
       </div>
@@ -756,13 +756,13 @@ window.addEventListener('unhandledrejection', function(e) {
           Optimiser la taille du fichier
         </label>
         <div style="height:1px;background:#e2e5ea;margin:12px 0;"></div>
-        <div class="panel-section-title">Format de sortie</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_168", [], false); ?></div>
         <div class="panel-row" style="margin-bottom:12px;">
           <select class="panel-select" id="selOcrOutputFormat">
-            <option value="pdf">PDF ocrisé</option>
-            <option value="docx_linear">DOCX linéaire (Texte pur avec paragraphes, sans mise en page)</option>
-            <option value="docx_ia">DOCX IA Docling (Structure native Word reconstituée)</option>
-            <option value="docx_layout">DOCX (Tente de garder la mise en page originale)</option>
+            <option value="pdf"><?php _e("studio.auto_key_169", [], false); ?></option>
+            <option value="docx_linear"><?php _e("studio.auto_key_170", [], false); ?></option>
+            <option value="docx_ia"><?php _e("studio.auto_key_171", [], false); ?></option>
+            <option value="docx_layout"><?php _e("studio.auto_key_172", [], false); ?></option>
           </select>
         </div>
         <div class="panel-row">
@@ -776,27 +776,27 @@ window.addEventListener('unhandledrejection', function(e) {
     <!-- Nouveau Panneau: Modification PDF -->
     <div id="panelModification" style="display:none">
       <div class="panel-section">
-        <div class="panel-section-title">Outils de modification</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_173", [], false); ?></div>
         <div class="panel-row" style="display: flex; flex-direction: column; gap: 5px;">
-          <button class="panel-btn modif-tool-btn active" data-tool="none"><i class="fa fa-mouse-pointer" style="width: 20px;"></i> Sélectionner</button>
+          <button class="panel-btn modif-tool-btn active" data-tool="none"><i class="fa fa-mouse-pointer" style="width: 20px;"></i><?php _e("studio.auto_key_174", [], false); ?></button>
           <button class="panel-btn modif-tool-btn" data-tool="redact_text"><i class="fa fa-font" style="width: 20px;"></i> Texte & Carré blanc</button>
-          <button class="panel-btn modif-tool-btn" data-tool="page_number"><i class="fa fa-hashtag" style="width: 20px;"></i> Numérotation</button>
+          <button class="panel-btn modif-tool-btn" data-tool="page_number"><i class="fa fa-hashtag" style="width: 20px;"></i><?php _e("studio.auto_key_175", [], false); ?></button>
           <button class="panel-btn modif-tool-btn" data-tool="strikeout"><i class="fa fa-strikethrough" style="width: 20px;"></i> Biffer & Surligner</button>
         </div>
       </div>
       
       <!-- Outil : Carré blanc + Texte -->
       <div id="modifToolRedact" class="panel-section" style="display:none">
-        <div class="panel-section-title">Texte</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_176", [], false); ?></div>
         <div class="panel-row">
           <input type="text" class="panel-select" id="modifRedactText" placeholder="Texte de remplacement..." style="width:100%">
         </div>
         <div class="panel-row" style="margin-top:8px; align-items:center;">
-          <div class="panel-label">Police</div>
+          <div class="panel-label"><?php _e("studio.auto_key_177", [], false); ?></div>
           <select class="panel-select" id="modifRedactFont" style="flex:1">
-            <option value="helvetica">Helvetica (Sans serif)</option>
-            <option value="times">Times (Serif)</option>
-            <option value="courier">Courier (Monospace)</option>
+            <option value="helvetica"><?php _e("studio.auto_key_178", [], false); ?></option>
+            <option value="times"><?php _e("studio.auto_key_179", [], false); ?></option>
+            <option value="courier"><?php _e("studio.auto_key_180", [], false); ?></option>
           </select>
           <button class="panel-btn" id="btnIdentifyFont" title="Reconnaître la police depuis l'image" style="padding:4px 8px; margin-left:4px; color: var(--studio-primary);"><i class="fa fa-magic"></i></button>
           <button class="panel-btn btn-upload-font" title="Importer une police" style="padding:4px 8px; margin-left:4px"><i class="fa fa-upload"></i></button>
@@ -804,91 +804,91 @@ window.addEventListener('unhandledrejection', function(e) {
         
         <!-- Modal inline pour les résultats de la reconnaissance de police -->
         <div id="fontRecognitionResults" style="display:none; margin-top:8px; background:white; border:1px solid var(--studio-border); border-radius:4px; padding:8px;">
-          <div style="font-size:11px; font-weight:bold; margin-bottom:4px; color:var(--studio-primary);">Polices détectées :</div>
+          <div style="font-size:11px; font-weight:bold; margin-bottom:4px; color:var(--studio-primary);"><?php _e("studio.auto_key_181", [], false); ?></div>
           <div id="fontRecognitionList" style="display:flex; flex-direction:column; gap:4px;"></div>
-          <button class="panel-btn" id="btnCancelFontRec" style="width:100%; margin-top:6px; font-size:10px;">Fermer</button>
+          <button class="panel-btn" id="btnCancelFontRec" style="width:100%; margin-top:6px; font-size:10px;"><?php _e("studio.auto_key_182", [], false); ?></button>
         </div>
         <div class="panel-row" style="margin-top:8px">
-          <div class="panel-label">Taille</div>
+          <div class="panel-label"><?php _e("studio.auto_key_183", [], false); ?></div>
           <input type="number" class="panel-select" id="modifRedactSize" value="12" min="6" max="72">
         </div>
         <div class="panel-row" style="margin-top:8px">
-          <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="modifRedactBg" checked> Avec fond blanc</label>
+          <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="modifRedactBg" checked><?php _e("studio.auto_key_184", [], false); ?></label>
         </div>
-        <p style="font-size:10px; color:#6b7280; margin-top:8px">Cliquez-glissez sur le PDF pour dessiner la zone.</p>
+        <p style="font-size:10px; color:#6b7280; margin-top:8px"><?php _e("studio.auto_key_185", [], false); ?></p>
       </div>
 
       <!-- Outil : Numéro de page -->
       <div id="modifToolPageNum" class="panel-section" style="display:none">
-        <div class="panel-section-title">Paramètres de Numérotation</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_186", [], false); ?></div>
         <div class="panel-row">
-          <div class="panel-label">Format</div>
+          <div class="panel-label"><?php _e("studio.auto_key_187", [], false); ?></div>
           <input type="text" class="panel-select" id="modifPageNumFormat" value="{p}" placeholder="{p} pour page courante, {t} pour total">
         </div>
-        <p style="font-size:10px; color:#6b7280; margin-top:4px; margin-bottom:8px">Ex: <b>Page {p} sur {t}</b> affichera "Page 1 sur 12"</p>
+        <p style="font-size:10px; color:#6b7280; margin-top:4px; margin-bottom:8px"><?php _e("studio.auto_key_188", [], false); ?><b>Page {p} sur {t}</b><?php _e("studio.auto_key_189", [], false); ?></p>
         <div class="panel-row" style="margin-top:8px">
-          <div class="panel-label">Position</div>
+          <div class="panel-label"><?php _e("studio.auto_key_190", [], false); ?></div>
           <select class="panel-select" id="modifPageNumPosition">
-            <option value="bottom_center">Bas Centre</option>
-            <option value="bottom_left">Bas Gauche</option>
-            <option value="bottom_right">Bas Droite</option>
-            <option value="top_center">Haut Centre</option>
-            <option value="top_left">Haut Gauche</option>
-            <option value="top_right">Haut Droite</option>
+            <option value="bottom_center"><?php _e("studio.auto_key_191", [], false); ?></option>
+            <option value="bottom_left"><?php _e("studio.auto_key_192", [], false); ?></option>
+            <option value="bottom_right"><?php _e("studio.auto_key_193", [], false); ?></option>
+            <option value="top_center"><?php _e("studio.auto_key_194", [], false); ?></option>
+            <option value="top_left"><?php _e("studio.auto_key_195", [], false); ?></option>
+            <option value="top_right"><?php _e("studio.auto_key_196", [], false); ?></option>
           </select>
         </div>
         <div class="panel-row" style="margin-top:8px">
-          <div class="panel-label">Marge (mm)</div>
+          <div class="panel-label"><?php _e("studio.auto_key_197", [], false); ?></div>
           <input type="number" class="panel-select" id="modifPageNumMargin" value="10" min="0" max="100">
         </div>
         <div class="panel-row" style="margin-top:8px; align-items:center;">
-          <div class="panel-label">Police</div>
+          <div class="panel-label"><?php _e("studio.auto_key_198", [], false); ?></div>
           <select class="panel-select" id="modifPageNumFont" style="flex:1">
-            <option value="helvetica">Helvetica</option>
-            <option value="times">Times</option>
+            <option value="helvetica"><?php _e("studio.auto_key_199", [], false); ?></option>
+            <option value="times"><?php _e("studio.auto_key_200", [], false); ?></option>
           </select>
           <button class="panel-btn btn-upload-font" title="Importer une police" style="padding:4px 8px; margin-left:4px"><i class="fa fa-upload"></i></button>
         </div>
         <input type="file" id="customFontUpload" accept=".ttf,.otf" style="display:none">
         <div class="panel-row" style="margin-top:8px">
-          <div class="panel-label">Taille</div>
+          <div class="panel-label"><?php _e("studio.auto_key_201", [], false); ?></div>
           <input type="number" class="panel-select" id="modifPageNumSize" value="12" min="6" max="72">
         </div>
         <div class="panel-row" style="margin-top:8px">
-          <div class="panel-label">Pages</div>
+          <div class="panel-label"><?php _e("studio.auto_key_202", [], false); ?></div>
           <input type="number" class="panel-select" id="modifPageNumStart" placeholder="Début (1)" style="width:48%">
           <input type="number" class="panel-select" id="modifPageNumEnd" placeholder="Fin" style="width:48%; margin-left:4%">
         </div>
         <div class="panel-row" style="margin-top:8px">
-          <div class="panel-label">Débuter à</div>
+          <div class="panel-label"><?php _e("studio.auto_key_203", [], false); ?></div>
           <input type="number" class="panel-select" id="modifPageNumFirstVal" value="1" placeholder="Numéro de départ" style="width:100%">
         </div>
-        <p style="font-size:10px; color:#6b7280; margin-top:8px">La numérotation sera placée automatiquement selon la position choisie.</p>
+        <p style="font-size:10px; color:#6b7280; margin-top:8px"><?php _e("studio.auto_key_204", [], false); ?></p>
       </div>
 
       <!-- Outil : Biffer -->
       <div id="modifToolStrikeout" class="panel-section" style="display:none">
-        <div class="panel-section-title">Couleur de biffure</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_205", [], false); ?></div>
         <div class="panel-row" style="display: flex; flex-direction: row; align-items: stretch; gap: 5px;">
           <input type="color" class="panel-select" id="modifStrikeColor" value="#000000" style="padding: 0; height: 32px; cursor: pointer; flex: 1; border-radius: 4px; border: 1px solid var(--studio-border);">
           <button class="panel-btn" id="btnEyeDropper" title="Pipette" style="padding: 0; height: 32px; width: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;"><i class="fa fa-eyedropper"></i></button>
         </div>
-        <p style="font-size:10px; color:#6b7280; margin-top:8px">Cliquez-glissez sur le PDF pour biffer la zone.</p>
+        <p style="font-size:10px; color:#6b7280; margin-top:8px"><?php _e("studio.auto_key_206", [], false); ?></p>
       </div>
 
       <div class="panel-section">
-        <div class="panel-section-title">Portée</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_207", [], false); ?></div>
         <div class="panel-row">
           <select class="panel-select" id="selModifScope">
-            <option value="current">Cette page uniquement</option>
-            <option value="all">Toutes les pages</option>
-            <option value="even">Pages paires</option>
-            <option value="odd">Pages impaires</option>
+            <option value="current"><?php _e("studio.auto_key_208", [], false); ?></option>
+            <option value="all"><?php _e("studio.auto_key_209", [], false); ?></option>
+            <option value="even"><?php _e("studio.auto_key_210", [], false); ?></option>
+            <option value="odd"><?php _e("studio.auto_key_211", [], false); ?></option>
           </select>
         </div>
         <div class="panel-row" style="margin-top:12px; gap:8px">
-          <button class="panel-btn" id="btnModifClear" style="flex:1"><i class="fa fa-eraser"></i> Effacer</button>
-          <button class="panel-btn primary" id="btnModifApply" style="flex:1"><i class="fa fa-check"></i> Appliquer au PDF</button>
+          <button class="panel-btn" id="btnModifClear" style="flex:1"><i class="fa fa-eraser"></i><?php _e("studio.auto_key_212", [], false); ?></button>
+          <button class="panel-btn primary" id="btnModifApply" style="flex:1"><i class="fa fa-check"></i><?php _e("studio.auto_key_213", [], false); ?></button>
         </div>
       </div>
     </div>
@@ -896,50 +896,50 @@ window.addEventListener('unhandledrejection', function(e) {
     <!-- Nouveau Panneau: Métadonnées -->
     <div id="panelMetadata" style="display:none">
       <div class="panel-section">
-        <div class="panel-section-title">Éditer les Métadonnées</div>
+        <div class="panel-section-title"><?php _e("studio.auto_key_214", [], false); ?></div>
         
         <div class="panel-row">
-          <div class="panel-label">Titre</div>
+          <div class="panel-label"><?php _e("studio.auto_key_215", [], false); ?></div>
           <input type="text" class="panel-select" id="metaTitle" style="width:100%">
         </div>
         <div class="panel-row" style="margin-top:8px">
-          <div class="panel-label">Auteur</div>
+          <div class="panel-label"><?php _e("studio.auto_key_216", [], false); ?></div>
           <input type="text" class="panel-select" id="metaAuthor" style="width:100%">
         </div>
         <div class="panel-row" style="margin-top:8px">
-          <div class="panel-label">Sujet</div>
+          <div class="panel-label"><?php _e("studio.auto_key_217", [], false); ?></div>
           <input type="text" class="panel-select" id="metaSubject" style="width:100%">
         </div>
         <div class="panel-row" style="margin-top:8px">
-          <div class="panel-label">Mots-clés</div>
+          <div class="panel-label"><?php _e("studio.auto_key_218", [], false); ?></div>
           <input type="text" class="panel-select" id="metaKeywords" style="width:100%">
         </div>
         <div class="panel-row" style="margin-top:8px">
-          <div class="panel-label">Créateur</div>
+          <div class="panel-label"><?php _e("studio.auto_key_219", [], false); ?></div>
           <input type="text" class="panel-select" id="metaCreator" style="width:100%">
         </div>
         <div class="panel-row" style="margin-top:8px">
-          <div class="panel-label">Producteur</div>
+          <div class="panel-label"><?php _e("studio.auto_key_220", [], false); ?></div>
           <input type="text" class="panel-select" id="metaProducer" style="width:100%">
         </div>
         <div class="panel-row" style="margin-top:8px">
-          <div class="panel-label" title="Format: YYYY:MM:DD HH:MM:SS">Création</div>
+          <div class="panel-label" title="Format: YYYY:MM:DD HH:MM:SS"><?php _e("studio.auto_key_221", [], false); ?></div>
           <input type="text" class="panel-select" id="metaCreationDate" placeholder="YYYY:MM:DD HH:MM:SS" style="width:100%">
         </div>
         <div class="panel-row" style="margin-top:8px">
-          <div class="panel-label" title="Format: YYYY:MM:DD HH:MM:SS">Modification</div>
+          <div class="panel-label" title="Format: YYYY:MM:DD HH:MM:SS"><?php _e("studio.auto_key_222", [], false); ?></div>
           <input type="text" class="panel-select" id="metaModDate" placeholder="YYYY:MM:DD HH:MM:SS" style="width:100%">
         </div>
         
         <div class="panel-row" style="margin-top:16px; gap:8px; display:flex">
-          <button class="panel-btn primary" id="btnApplyMetadata" style="flex:1"><i class="fa fa-save"></i> Appliquer</button>
-          <button class="panel-btn" id="btnClearMetadata" style="flex:1" title="Effacer toutes les métadonnées de ce fichier"><i class="fa fa-trash"></i> Effacer tout</button>
+          <button class="panel-btn primary" id="btnApplyMetadata" style="flex:1"><i class="fa fa-save"></i><?php _e("studio.auto_key_223", [], false); ?></button>
+          <button class="panel-btn" id="btnClearMetadata" style="flex:1" title="Effacer toutes les métadonnées de ce fichier"><i class="fa fa-trash"></i><?php _e("studio.auto_key_224", [], false); ?></button>
         </div>
-        <p style="font-size:10px; color:#6b7280; margin-top:8px">L'enregistrement de métadonnées s'effectue sans perturber le contenu du PDF d'origine.</p>
+        <p style="font-size:10px; color:#6b7280; margin-top:8px"><?php _e("studio.auto_key_225", [], false); ?></p>
         
-        <div class="panel-section-title" style="margin-top: 24px;">Toutes les informations</div>
+        <div class="panel-section-title" style="margin-top: 24px;"><?php _e("studio.auto_key_226", [], false); ?></div>
         <div style="background: #f8fafc; border: 1px solid var(--studio-border); border-radius: 4px; padding: 8px; max-height: 300px; overflow-y: auto;">
-          <pre id="metaRawInfo" style="font-size: 10px; color: #475569; margin: 0; white-space: pre-wrap; word-break: break-all;">Chargement des informations...</pre>
+          <pre id="metaRawInfo" style="font-size: 10px; color: #475569; margin: 0; white-space: pre-wrap; word-break: break-all;"><?php _e("studio.auto_key_227", [], false); ?></pre>
         </div>
       </div>
     </div>
@@ -950,7 +950,7 @@ window.addEventListener('unhandledrejection', function(e) {
 <!-- Spinner Overlay -->
 <div id="studioSpinner" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,0.75);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px">
   <div style="width:48px;height:48px;border:4px solid #e2e5ea;border-top-color:#4f6ef7;border-radius:50%;animation:spin 0.8s linear infinite"></div>
-  <div style="font-family:Inter,sans-serif;font-size:14px;font-weight:500;color:#1a1d23" id="spinnerMsg">Traitement en cours...</div>
+  <div style="font-family:Inter,sans-serif;font-size:14px;font-weight:500;color:#1a1d23" id="spinnerMsg"><?php _e("studio.auto_key_228", [], false); ?></div>
 </div>
 <!-- Toast -->
 <div id="studioToast" style="display:none;position:fixed;bottom:24px;right:24px;z-index:10000;background:#fff;border:1px solid #e2e5ea;border-radius:12px;padding:16px 20px;box-shadow:0 4px 20px rgba(0,0,0,0.12);font-family:Inter,sans-serif;font-size:13px;max-width:340px"></div>
@@ -966,7 +966,7 @@ window.addEventListener('unhandledrejection', function(e) {
       <button onclick="document.getElementById('resultModal').style.display='none'" style="border:none;background:transparent;cursor:pointer;font-size:20px;color:#6b7280;line-height:1">×</button>
     </div>
     <div style="padding:24px 20px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center">
-      <p style="margin:0;font-family:Inter,sans-serif;font-size:14px;color:#374151">Le traitement de votre fichier s'est terminé avec succès.</p>
+      <p style="margin:0;font-family:Inter,sans-serif;font-size:14px;color:#374151"><?php _e("studio.auto_key_229", [], false); ?></p>
       <div style="font-family:Inter,sans-serif;font-weight:600;font-size:13px;color:#6b7280;word-break:break-all" id="resultModalFilename"></div>
       
       <div style="display:flex;gap:12px;margin-top:8px;width:100%">
@@ -1005,7 +1005,7 @@ window.addEventListener('unhandledrejection', function(e) {
     </div>
     <!-- Footer -->
     <div style="padding:16px 20px;border-top:1px solid #e2e5ea;display:flex;gap:10px;justify-content:flex-end">
-      <button id="impPreviewCloseBtn" style="padding:10px 20px;border:1px solid #e2e5ea;border-radius:8px;background:#fff;cursor:pointer;font-family:Inter,sans-serif;font-size:13px;font-weight:500;color:#374151">Fermer</button>
+      <button id="impPreviewCloseBtn" style="padding:10px 20px;border:1px solid #e2e5ea;border-radius:8px;background:#fff;cursor:pointer;font-family:Inter,sans-serif;font-size:13px;font-weight:500;color:#374151"><?php _e("studio.auto_key_230", [], false); ?></button>
       <button id="impPreviewLoadApp" style="padding:10px 20px;border:none;border-radius:8px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;cursor:pointer;font-family:Inter,sans-serif;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px">
         <i class="fa fa-folder-open"></i> Charger dans le Studio
       </button>
