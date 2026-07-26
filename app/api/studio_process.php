@@ -22,43 +22,24 @@ require_once __DIR__ . '/../controler/func.php';
 require_once __DIR__ . '/../controler/functions/paths.php';
 require_once __DIR__ . '/../controler/functions/binary_utilities.php';
 require_once __DIR__ . '/../models/SettingsManager.php';
+require_once __DIR__ . '/../models/StudioImpositionService.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
 /**
  * Retourne tous les réglages de l'application (cached).
- * Utilisé pour lire les URLs VPS des services IA Studio.
  */
 function getStudioSettings(): array
 {
-    static $cache = null;
-    if ($cache === null) {
-        try {
-            $db = pdo_connect();
-            $sm = new SettingsManager($db);
-            $cache = $sm->getAll();
-        } catch (Throwable $e) {
-            $cache = [];
-        }
-    }
-    return $cache;
+    return StudioImpositionService::getStudioSettings();
 }
 
 use setasign\Fpdi\TcpdfFpdi as TCPDI;
 
 /**
- * Déplace un fichier uploadé ou copié localement (compatible HTTP et CLI/test).
+ * Déplace un fichier uploadé ou copié localement.
  */
 function studio_move_uploaded_file(string $tmp, string $dest): bool {
-    if (is_uploaded_file($tmp)) {
-        return move_uploaded_file($tmp, $dest);
-    }
-    if (file_exists($tmp)) {
-        if (rename($tmp, $dest)) {
-            return true;
-        }
-        return copy($tmp, $dest);
-    }
-    return false;
+    return StudioImpositionService::moveUploadedFile($tmp, $dest);
 }
 
 $action = $_POST['action'] ?? '';
@@ -108,25 +89,9 @@ if (!is_dir($tmpBase)) mkdir($tmpBase, 0777, true);
 
 /**
  * Génère un aperçu PNG de la première page d'un PDF via Ghostscript.
- * Retourne le nom du fichier PNG créé, ou null si Ghostscript échoue.
  */
 function generateImpositionPreview(string $pdfPath, string $tmpBase, string $safeName): ?string {
-    $previewFile = $tmpBase . $safeName . '_preview.png';
-    // Ghostscript : première page uniquement, 150 dpi, fond blanc
-    $gs_args = implode(' ', [
-        '-dNOPAUSE', '-dBATCH', '-dSAFER',
-        '-sDEVICE=png16m',
-        '-r150',
-        '-dFirstPage=1', '-dLastPage=1',
-        '-dFitPage',
-        '-sOutputFile=' . escapeshellarg($previewFile),
-        escapeshellarg($pdfPath),
-    ]);
-    $result = run_ghostscript($gs_args);
-    if ($result['success'] && file_exists($previewFile) && filesize($previewFile) > 0) {
-        return basename($previewFile);
-    }
-    return null;
+    return StudioImpositionService::generateImpositionPreview($pdfPath, $tmpBase, $safeName);
 }
 
 // === INTERCEPTION ARRIÈRE-PLAN ===
