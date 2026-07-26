@@ -236,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
               badge.style.display = 'none';
             }
           } catch(err) {
-            console.error("Erreur polling ink", err);
+            console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_polling_ink'] || "Erreur polling ink"), err);
           }
         }, 3000);
         
@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', function() {
         canvas.style.display = 'block';
         if ($('mainCanvasDeleteBtn')) $('mainCanvasDeleteBtn').style.display = 'flex';
         state.orgSelectedIndex = 0;
-      } catch(err) { alert('Erreur PDF: ' + err.message); }
+      } catch(err) { alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_pdf'] || 'Erreur PDF: ') + err.message); }
     };
     reader.readAsArrayBuffer(file);
   }
@@ -441,13 +441,13 @@ document.addEventListener('DOMContentLoaded', function() {
         acts.className = 'thumb-actions';
         acts.innerHTML = `
           <i class="fa fa-rotate-right" onclick="event.stopPropagation(); orgRotate(${i}, 90)" title="Pivoter"></i>
-          <i class="fa fa-trash" style="color:#ef4444" onclick="event.stopPropagation(); orgDelete(${i})" title="Supprimer"></i>
+          <i class="fa fa-trash" style="color:#ef4444" onclick="event.stopPropagation(); orgDelete(${i})" title=(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.supprimer'] || "Supprimer")></i>
         `;
         div.appendChild(acts);
 
         // Click to view
         div.addEventListener('click', async () => { 
-          state.orgSelectedIndex = i; // Suivre l'index sélectionné dans l'organiseur
+          state.orgSelectedIndex = i; // Suivre l(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.index_s_lectionn__dans_l'] || 'index sélectionné dans l')organiseur
           console.log('[Studio] Thumb clicked:', i, '| type:', item.type, '| file_idx:', item.file_idx);
           if (item.type === 'page') {
             const doc = window.orgDocs[item.file_idx];
@@ -543,7 +543,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }, 50);
     } catch (err) {
-      console.error("Erreur critique lors du rendu des vignettes", err);
+      console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_critique_lors_du_rendu'] || "Erreur critique lors du rendu des vignettes"), err);
     }
   }
 
@@ -1108,7 +1108,7 @@ document.addEventListener('DOMContentLoaded', function() {
           showResultToast(finalJson.download_url);
         }
       }, (errJson) => {
-        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (errJson.error || errJson.errors?.join(', ') || 'Erreur inconnue'), true);
+        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (errJson.error || errJson.errors?.join(', ') || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_inconnue'] || 'Erreur inconnue')), true);
       });
     } catch(e) {
       hideSpinner();
@@ -1183,7 +1183,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
-    showSpinner('Enregistrement dans la bibliothèque...');
+    showSpinner((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.enregistrement_dans_la_bibliot'] || 'Enregistrement dans la bibliothèque...'));
     try {
       const fd = new FormData();
       let filename = $('fileNameDisplay').value || (state.file ? state.file.name : 'studio_export.pdf');
@@ -1240,7 +1240,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (json.success) {
         showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>Enregistré !</b> Le fichier a été ajouté à la bibliothèque.', false);
       } else {
-        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (json.error || 'Erreur inconnue'), true);
+        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (json.error || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_inconnue'] || 'Erreur inconnue')), true);
       }
     } catch(e) {
       hideSpinner();
@@ -1287,7 +1287,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showResultToast(finalJson.download_url);
           }
         }, (errJson) => {
-          showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (errJson.error || errJson.errors?.join(', ') || 'Erreur inconnue'), true);
+          showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (errJson.error || errJson.errors?.join(', ') || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_inconnue'] || 'Erreur inconnue')), true);
         });
       } catch(e) {
         hideSpinner();
@@ -1312,7 +1312,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showResultToast(finalJson.download_url);
           }
         }, (errJson) => {
-          showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (errJson.error || errJson.errors?.join(', ') || 'Erreur inconnue'), true);
+          showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (errJson.error || errJson.errors?.join(', ') || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_inconnue'] || 'Erreur inconnue')), true);
         });
     } catch(e) {
       hideSpinner();
@@ -1379,7 +1379,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Charge un PDF/image depuis une URL dans le studio
   window._reopenInStudio = async function(url) {
     try {
-      showSpinner('Chargement dans le Studio...');
+      showSpinner((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.chargement_dans_le_studio'] || 'Chargement dans le Studio...'));
       const resp = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
 
       if (resp.status === 403) {
@@ -1392,7 +1392,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!resp.ok) {
         hideSpinner();
         const text = await resp.text();
-        alert('Erreur lors du chargement du fichier: ' + (text || resp.statusText));
+        alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_lors_du_chargement_du_f'] || 'Erreur lors du chargement du fichier: ') + (text || resp.statusText));
         return;
       }
 
@@ -1522,7 +1522,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
         } catch (e) {
           clearInterval(interval);
-          onError({error: "Erreur réseau lors de la vérification du statut"});
+          onError({error: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_r_seau_lors_de_la_v_rif'] || "Erreur réseau lors de la vérification du statut")});
         }
       }, 2000);
       return;
@@ -1593,7 +1593,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
         }
       }, (errJson) => {
-        const errs = errJson.error || (errJson.errors && errJson.errors.join('<br>')) || 'Erreur inconnue';
+        const errs = errJson.error || (errJson.errors && errJson.errors.join('<br>')) || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_inconnue'] || 'Erreur inconnue');
         showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b><br>' + errs, true);
       });
     } catch(e) {
@@ -1621,7 +1621,7 @@ document.addEventListener('DOMContentLoaded', function() {
           showResultToast(finalJson.download_url);
         }
       }, (errJson) => {
-        const errs = errJson.error || (errJson.errors && errJson.errors.join('<br>')) || 'Erreur inconnue';
+        const errs = errJson.error || (errJson.errors && errJson.errors.join('<br>')) || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_inconnue'] || 'Erreur inconnue');
         showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b><br>' + errs, true);
       });
     } catch(e) {
@@ -1806,7 +1806,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // === PAGES PANEL ===
   $('sliderDpi').addEventListener('input', () => $('valDpi').textContent = $('sliderDpi').value);
   $('btnPdfToImg').addEventListener('click', () => {
-    serverProcess('pdf_to_images', { dpi: $('sliderDpi').value }, 'Extraction des images en cours...');
+    serverProcess('pdf_to_images', { dpi: $('sliderDpi').value }, (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.extraction_des_images_en_cours'] || 'Extraction des images en cours...'));
   });
 
   let mergeFilesList = [];
@@ -1866,7 +1866,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if ($('btnApplyMerge')) {
     $('btnApplyMerge').addEventListener('click', () => {
       if (mergeFilesList.length === 0) return;
-      serverProcessMerge(mergeFilesList, 'Fusion des PDF en cours...');
+      serverProcessMerge(mergeFilesList, (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.fusion_des_pdf_en_cours'] || 'Fusion des PDF en cours...'));
     });
   }
 
@@ -1997,7 +1997,7 @@ document.addEventListener('DOMContentLoaded', function() {
           showResultToast(finalJson.download_url);
         }
       }, (errJson) => {
-        const errs = errJson.error || (errJson.errors && errJson.errors.join('<br>')) || 'Erreur inconnue';
+        const errs = errJson.error || (errJson.errors && errJson.errors.join('<br>')) || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_inconnue'] || 'Erreur inconnue');
         showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b><br>' + errs, true);
       });
     } catch(e) {
@@ -2041,7 +2041,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       if (lbCanvas.width === 0 || lbCanvas.height === 0) {
-        throw new Error("Impossible de générer l'aperçu : dimensions nulles.");
+        throw new Error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.impossible_de_g_n_rer_l'] || "Impossible de générer l")aperçu : dimensions nulles.");
       }
 
       hideSpinner();
@@ -2139,7 +2139,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       if (hiResCanvas.width === 0 || hiResCanvas.height === 0) {
-        throw new Error("Dimensions source invalides (0x0). Attendez le chargement complet.");
+        throw new Error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.dimensions_source_invalides__0'] || "Dimensions source invalides (0x0). Attendez le chargement complet."));
       }
 
       state.filteredImageData = hiResCtx.getImageData(0, 0, hiResCanvas.width, hiResCanvas.height);
@@ -2164,7 +2164,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (err) {
       console.error('[Studio] Riso Init Error:', err);
       hideSpinner();
-      showToast('Erreur initialisation Riso: ' + err.message, true);
+      showToast((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_initialisation_riso'] || 'Erreur initialisation Riso: ') + err.message, true);
     }
   }
 
@@ -2736,7 +2736,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (count === 0) {
         hideSpinner();
-        showToast('Aucun calque actif à exporter.', true);
+        showToast((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.aucun_calque_actif___exporter'] || 'Aucun calque actif à exporter.'), true);
         return;
       }
       
@@ -2864,7 +2864,7 @@ document.addEventListener('DOMContentLoaded', function() {
           showResultToast(data.download_url, data.filename);
         }
       } else {
-        const errorMsg = data.error || (data.errors && data.errors[0]) || 'Erreur inconnue';
+        const errorMsg = data.error || (data.errors && data.errors[0]) || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_inconnue'] || 'Erreur inconnue');
         showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> ' + errorMsg, true);
       }
     } catch (e) {

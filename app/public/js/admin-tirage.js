@@ -143,7 +143,7 @@ window.pay = function () {
   const total = selectedTirages.reduce((sum, tirage) => sum + parseFloat(tirage.prix), 0);
 
   showAppModal({
-    title: 'Confirmer le paiement',
+    title: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_tirage.confirmer_le_paiement'] || 'Confirmer le paiement'),
     message: `${translations.confirmPaymentPrints} ${selectedTirages.length} ${translations.printsForTotal} ${total.toFixed(2)}€ ?`,
     confirm: true,
     onConfirm: function () {
@@ -225,14 +225,14 @@ window.markGroupAsPaid = function (groupId, total, count) {
   if (checkboxes.length === 0) {
     showAppModal({
       type: 'warning',
-      message: 'Aucun tirage trouvé dans ce groupe'
+      message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_tirage.aucun_tirage_trouv__dans_ce_gr'] || 'Aucun tirage trouvé dans ce groupe')
     });
     return;
   }
 
   // Confirmer le paiement pour tout le groupe
   showAppModal({
-    title: 'Confirmer le paiement du groupe',
+    title: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_tirage.confirmer_le_paiement_du_group'] || 'Confirmer le paiement du groupe'),
     message: `Marquer ${count} tirages du multi-tirage comme payés pour un total de ${total.toFixed(2)}€ ?`,
     confirm: true,
     onConfirm: function () {

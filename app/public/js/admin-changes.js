@@ -194,7 +194,7 @@ $(document).ready(function () {
       .done(function (response) {
         if (typeof response === 'string') {
           try { response = JSON.parse(response); } catch (e) {
-            showAppModal({ type: 'danger', message: 'Erreur lors du chargement du changement' });
+            showAppModal({ type: 'danger', message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_changes.erreur_lors_du_chargement_du_c'] || 'Erreur lors du chargement du changement') });
             return;
           }
         }
@@ -228,11 +228,11 @@ $(document).ready(function () {
             $('#editModal').modal('show');
           });
         } else {
-          showAppModal({ type: 'danger', message: 'Erreur: ' + (response.error || 'Erreur inconnue') });
+          showAppModal({ type: 'danger', message: 'Erreur: ' + (response.error || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_changes.erreur_inconnue'] || 'Erreur inconnue')) });
         }
       })
       .fail(function (xhr, status, error) {
-        showAppModal({ type: 'danger', message: 'Erreur lors du chargement: ' + error });
+        showAppModal({ type: 'danger', message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_changes.erreur_lors_du_chargement'] || 'Erreur lors du chargement: ') + error });
       });
   });
 
@@ -260,7 +260,7 @@ $(document).ready(function () {
     showAppModal({
       type: 'warning',
       title: 'Confirmation de suppression',
-      message: 'Êtes-vous sûr de vouloir supprimer ce changement ?',
+      message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_changes.tes_vous_s_r_de_vouloir_suppr'] || 'Êtes-vous sûr de vouloir supprimer ce changement ?'),
       confirm: true,
       onConfirm: function () {
         $.post('?admin&changes', { action: 'delete_change', id: id })

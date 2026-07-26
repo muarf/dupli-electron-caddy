@@ -176,7 +176,7 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
                 <label for="bibliotheque_password"><?php _e("admin_bibliotheque_ia.auto_key_28", [], false); ?></label>
                 <input type="text" class="form-control" id="bibliotheque_password" name="bibliotheque_password"
                        value="<?php echo htmlspecialchars($_ai['bibliotheque_password'] ?? ''); ?>"
-                       placeholder="Laisser vide pour un accès libre">
+                       placeholder="<?= __('admin_bibliotheque_ia.password_placeholder') ?>">
                 <small class="text-muted">
                   Si défini, un mot de passe sera demandé pour accéder à la bibliothèque. 
                   L'administrateur (vous) a toujours accès s'il est connecté.
@@ -212,7 +212,7 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
                 <label for="whatfontis_api_key">Clé API — WhatFontIs (Optionnel)</label>
                 <input type="text" class="form-control" id="whatfontis_api_key" name="whatfontis_api_key"
                        value="<?php echo htmlspecialchars($whatfontis_api_key); ?>"
-                       placeholder="Votre clé API WhatFontIs">
+                       placeholder="<?= __('admin_bibliotheque_ia.whatfontis_placeholder') ?>">
                 <small class="text-muted">
                   Si renseignée, l'API commerciale tierce WhatFontIs.com sera utilisée pour la reconnaissance de police au lieu du modèle local/VPS.
                 </small>
@@ -321,7 +321,7 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
               <button class="btn btn-warning" id="btn-markdown-retry" onclick="triggerMarkdownMigration('retry')">
                 <i class="fa fa-refresh"></i> Relancer les erreurs
               </button>
-              <button class="btn btn-default" id="btn-markdown-force" onclick="triggerMarkdownMigration('force')" title="Retraite aussi les fichiers déjà migrés">
+              <button class="btn btn-default" id="btn-markdown-force" onclick="triggerMarkdownMigration('force')" title="<?= __('admin_bibliotheque_ia.force_all_title') ?>">
                 <i class="fa fa-repeat"></i> Tout retraiter
               </button>
               <button class="btn btn-danger" id="btn-markdown-stop" onclick="stopMarkdownMigration()" style="display:none;">

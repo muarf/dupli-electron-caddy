@@ -32,7 +32,7 @@
         } else {
           const msg = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations.error)
             ? window.CONFIG.translations.error + ': ' + (data.error || 'Erreur inconnue')
-            : 'Erreur: ' + (data.error || 'Erreur inconnue');
+            : 'Erreur: ' + (data.error || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.erreur_inconnue'] || 'Erreur inconnue'));
           if (window.showAppModal) window.showAppModal(msg); else alert(msg);
           if (btn) btn.disabled = false;
         }
@@ -53,7 +53,7 @@
           monitorIndexing(data.job_id);
         }
       })
-      .catch(e => console.error("Erreur checkActiveJob:", e));
+      .catch(e => console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.erreur_checkactivejob'] || "Erreur checkActiveJob:"), e));
   }
 
   function monitorIndexing(jobId) {
@@ -94,7 +94,7 @@
         } else if (statusData.status === 'error' || statusData.status === 'fatal_error') {
           clearInterval(pollInterval);
           if (btn) btn.disabled = false;
-          const msg = 'Erreur lors du scan: ' + (statusData.error_msg || 'Inconnue');
+          const msg = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.erreur_lors_du_scan'] || 'Erreur lors du scan: ') + (statusData.error_msg || 'Inconnue');
           if (window.showAppModal) window.showAppModal(msg); else alert(msg);
           if (progress) progress.style.display = 'none';
         } else if (statusData.status === 'none' || statusData.status === 'unknown') {
@@ -103,7 +103,7 @@
           if (progress) progress.style.display = 'none';
         }
       } catch (e) {
-        console.error("Erreur polling:", e);
+        console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.erreur_polling'] || "Erreur polling:"), e);
       }
     }, 1000);
   }
@@ -279,7 +279,7 @@
                 updateAiChatBtn(false);
               }
               if (data.type === 'error') {
-                addChatMessage('ai', 'Erreur : ' + data.message);
+                addChatMessage('ai', (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.erreur'] || 'Erreur : ') + data.message);
                 updateAiChatBtn(false);
               }
             } catch (e) { /* parse error */ }
@@ -385,7 +385,7 @@
         }
       },
       error: function (xhr, status, error) {
-        console.error("Erreur AJAX:", status, error);
+        console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.erreur_ajax'] || "Erreur AJAX:"), status, error);
         console.log("Response text:", xhr.responseText);
         $('#library_content').html('<div class="alert alert-danger">Erreur lors du chargement (voir console).</div>').css('opacity', '1');
       }
@@ -516,7 +516,7 @@
           window.electronAPI.openFile(data.file.filepath);
         }
       } catch (e) {
-        console.error('Erreur ouverture fichier:', e);
+        console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.erreur_ouverture_fichier'] || 'Erreur ouverture fichier:'), e);
       }
     } else {
       window.open('?get_bibliotheque_file&id=' + id, '_blank');
@@ -548,7 +548,7 @@
         window.loadLibrary();
       },
       error: function (xhr) {
-        const msg = "Erreur lors de la suppression : " + (xhr.responseJSON?.error || "Erreur inconnue");
+        const msg = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.erreur_lors_de_la_suppression'] || "Erreur lors de la suppression : ") + (xhr.responseJSON?.error || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.erreur_inconnue'] || "Erreur inconnue"));
         if (window.showAppModal) window.showAppModal(msg); else alert(msg);
       },
       complete: function () {
@@ -581,7 +581,7 @@
         }
       },
       error: function () {
-        const msg = 'Erreur lors de la récupération des informations du fichier.';
+        const msg = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.erreur_lors_de_la_r_cup_ration'] || 'Erreur lors de la récupération des informations du fichier.');
         if (window.showAppModal) window.showAppModal(msg); else alert(msg);
       }
     });
@@ -617,7 +617,7 @@
         }
       },
       error: function (xhr) {
-        const msg = 'Erreur lors de l\'enregistrement : ' + (xhr.responseJSON ? xhr.responseJSON.error : 'Erreur inconnue');
+        const msg = 'Erreur lors de l\'enregistrement : ' + (xhr.responseJSON ? xhr.responseJSON.error : (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.erreur_inconnue'] || 'Erreur inconnue'));
         if (window.showAppModal) window.showAppModal(msg); else alert(msg);
       },
       complete: function () {
@@ -868,7 +868,7 @@
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
       } catch (e) {
-        console.error("Erreur lors de l'impression système:", e);
+        console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.erreur_lors_de_l'] || "Erreur lors de l")impression système:", e);
         window.open(url + '&print=1', '_blank');
       }
     };

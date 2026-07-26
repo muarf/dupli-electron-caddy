@@ -425,7 +425,7 @@ class PrintSessionManager {
                 const sessionName = modal.querySelector('#new-session-name').value.trim();
 
                 if (!contact) {
-                    alert('Veuillez entrer un nom de contact');
+                    alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.print_session_manager.veuillez_entrer_un_nom_de_cont'] || 'Veuillez entrer un nom de contact'));
                     return;
                 }
 
@@ -613,10 +613,10 @@ class PrintSessionManager {
 
             const data = await response.json();
             if (data.success) {
-                this.showToast('Job assigné à la session', jobData, true);
+                this.showToast((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.print_session_manager.job_assign____la_session'] || 'Job assigné à la session'), jobData, true);
             } else {
-                console.error('Erreur assignation:', data);
-                this.showToast('Erreur assignation', jobData, false);
+                console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.print_session_manager.erreur_assignation'] || 'Erreur assignation:'), data);
+                this.showToast((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.print_session_manager.erreur_assignation'] || 'Erreur assignation'), jobData, false);
             }
         } catch (error) {
             console.error('[PrintSessionManager] Erreur assignation:', error);

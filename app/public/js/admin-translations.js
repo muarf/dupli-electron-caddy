@@ -112,7 +112,7 @@ $(document).ready(function() {
                 }, 2000);
             },
             error: function(xhr, status, error) {
-                console.error('Erreur de sauvegarde:', xhr.responseText, status, error);
+                console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_translations.erreur_de_sauvegarde'] || 'Erreur de sauvegarde:'), xhr.responseText, status, error);
                 button.removeClass('saving').addClass('error');
                 button.html('<i class="fa fa-times"></i> Erreur');
                 

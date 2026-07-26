@@ -96,7 +96,7 @@ window.loadPrinters = async function () {
                 const name = (printer.Name || '').toLowerCase();
                 const isError = statusName === 'error' || name.includes('photocopilleuse');
                 const statusClass = isError ? 'danger' : statusName === 'ok' ? 'success' : 'warning';
-                const deleteBtn = isError ? `<button class="btn btn-xs btn-danger" onclick="deletePrinter('${printer.Name.replace(/'/g, "\\'")}')" title="Supprimer cette imprimante"><i class="fa fa-trash"></i></button>` : '';
+                const deleteBtn = isError ? `<button class="btn btn-xs btn-danger" onclick="deletePrinter('${printer.Name.replace(/'/g, "\\'")}')" title=(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_imprimantes_list.supprimer_cette_imprimante'] || "Supprimer cette imprimante")><i class="fa fa-trash"></i></button>` : '';
                 html += `<tr class="${isError ? 'danger' : ''}">
                     <td>${printer.Name || 'N/A'}</td>
                     <td><span class="label label-${statusClass}">${printer.Status || 'N/A'}</span></td>
@@ -188,7 +188,7 @@ window.loadPrintJobs = async function () {
             }
             jobsDiv.innerHTML = html;
         } else {
-            jobsDiv.innerHTML = '<p class="text-muted">' + (data.message || 'Aucune impression enregistrée pour le moment.') + '</p>';
+            jobsDiv.innerHTML = '<p class="text-muted">' + (data.message || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_imprimantes_list.aucune_impression_enregistr_e'] || 'Aucune impression enregistrée pour le moment.')) + '</p>';
         }
     } catch (error) {
         jobsDiv.innerHTML = '<div class="alert alert-danger">Erreur: ' + error.message + '</div>';
@@ -210,7 +210,7 @@ window.deletePrinter = async function (printerName) {
                 if (window.showAppModal) window.showAppModal({ message: msg, type: 'success' }); else alert(msg);
                 window.loadPrinters();
             } else {
-                const msg = 'Erreur lors de la suppression: ' + result.error;
+                const msg = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_imprimantes_list.erreur_lors_de_la_suppression'] || 'Erreur lors de la suppression: ') + result.error;
                 if (window.showAppModal) window.showAppModal({ message: msg, type: 'danger' }); else alert(msg);
             }
         } catch (error) {

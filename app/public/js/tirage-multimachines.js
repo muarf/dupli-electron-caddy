@@ -29,7 +29,7 @@
   function saveFormData() {
     const form = document.getElementById('multimachines-form');
     if (!form) {
-      console.log('Formulaire multimachines-form non trouvé - probablement sur la page de confirmation');
+      console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.formulaire_multimachines_form'] || 'Formulaire multimachines-form non trouvé - probablement sur la page de confirmation'));
       return;
     }
 
@@ -116,7 +116,7 @@
           const newMachineContainer = tempDiv.firstElementChild;
 
           if (!newMachineContainer) {
-            reject('Aucun élément trouvé dans le HTML généré');
+            reject((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.aucun__l_ment_trouv__dans_le_h'] || 'Aucun élément trouvé dans le HTML généré'));
             return;
           }
 
@@ -177,7 +177,7 @@
 
     const form = document.getElementById('multimachines-form');
     if (!form) {
-      console.log('Formulaire non trouvé pour restauration');
+      console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.formulaire_non_trouv__pour_res'] || 'Formulaire non trouvé pour restauration'));
       return false;
     }
 
@@ -449,7 +449,7 @@
     var duplicopieurSelect = document.querySelector(`select[name="machines[${machineIndex}][duplicopieur_id]"]`);
 
     if (!duplicopieurRadio || !photocopieurRadio || !duplicopieurInterface || !photocopieurInterface) {
-      console.log('Éléments manquants pour toggleMachineType:', {
+      console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.l_ments_manquants_pour_toggle'] || 'Éléments manquants pour toggleMachineType:'), {
         machineIndex: machineIndex,
         duplicopieurRadio: !!duplicopieurRadio,
         photocopieurRadio: !!photocopieurRadio,
@@ -577,7 +577,7 @@
         var passageApElement = machineElement.querySelector(`#passage_ap_${machineIndex}`);
 
         console.log("machineElement.innerHTML:", machineElement.innerHTML.substring(0, 300) + '...');
-        console.log("Recherche des éléments avec ID:", {
+        console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.recherche_des__l_ments_avec_id'] || "Recherche des éléments avec ID:"), {
           masterAv: `#master_av_${machineIndex}`,
           masterAp: `#master_ap_${machineIndex}`,
           passageAv: `#passage_av_${machineIndex}`,
@@ -1014,7 +1014,7 @@
       var totalPriceElement = document.querySelector('h2.text-primary strong');
       if (totalPriceElement) {
         var totalText = totalPriceElement.textContent;
-        console.log("Prix trouvé dans h2.text-primary strong:", totalText);
+        console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.prix_trouv__dans_h2_text_prima'] || "Prix trouvé dans h2.text-primary strong:"), totalText);
         var cleanedTotal = cleanNumberString(totalText);
         if (!isNaN(cleanedTotal)) {
           console.log("Prix total extrait:", cleanedTotal);
@@ -1023,7 +1023,7 @@
         }
       }
 
-      console.log("Aucun prix total trouvé");
+      console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.aucun_prix_total_trouv'] || "Aucun prix total trouvé"));
     } else {
       cbField.value = '';
       console.log("cbField.value vidé");
@@ -1162,7 +1162,7 @@
   // =========================================================================
 
   function selectMachineTypeTab(machineIndex, type) {
-    console.log('Sélection onglet:', type, 'pour machine:', machineIndex);
+    console.log('Sélection onglet:', type, (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.pour_machine'] || 'pour machine:'), machineIndex);
 
     const tabDupli = document.getElementById('tab-duplicopieur-' + machineIndex);
     const tabPhoto = document.getElementById('tab-photocopieur-' + machineIndex);
@@ -1349,7 +1349,7 @@
 
     const addMachineBtn = document.getElementById('add-machine');
     if (!addMachineBtn) {
-      console.log('Bouton add-machine non trouvé - probablement sur la page de confirmation');
+      console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.bouton_add_machine_non_trouv'] || 'Bouton add-machine non trouvé - probablement sur la page de confirmation'));
       return;
     }
 
@@ -1362,7 +1362,7 @@
         .then(data => {
           if (data.error) {
             console.error('Erreur:', data.error);
-            showAppModal({ message: 'Erreur lors de l\'ajout de la machine: ' + data.error, type: 'danger' });
+            showAppModal({ message: 'Erreur lors de l\(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.ajout_de_la_machine'] || 'ajout de la machine: ') + data.error, type: 'danger' });
             return;
           }
 
@@ -1372,13 +1372,13 @@
           tempDiv.innerHTML = data.html;
 
           console.log('tempDiv.children.length:', tempDiv.children.length);
-          console.log('Tous les enfants:', Array.from(tempDiv.children).map(el => el.tagName));
+          console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.tous_les_enfants'] || 'Tous les enfants:'), Array.from(tempDiv.children).map(el => el.tagName));
 
           const newMachineContainer = tempDiv.firstElementChild;
 
           if (!newMachineContainer) {
-            console.error('Aucun élément trouvé dans le HTML généré');
-            showAppModal({ message: 'Erreur lors de l\'ajout de la machine: HTML invalide', type: 'danger' });
+            console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.aucun__l_ment_trouv__dans_le_h'] || 'Aucun élément trouvé dans le HTML généré'));
+            showAppModal({ message: 'Erreur lors de l\(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.ajout_de_la_machine__html_inva'] || 'ajout de la machine: HTML invalide'), type: 'danger' });
             return;
           }
 
@@ -1410,13 +1410,13 @@
               saveFormData();
             });
           } else {
-            console.error('Bouton remove-machine non trouvé dans le HTML généré');
-            console.log('Tous les boutons dans newMachineContainer:', newMachineContainer.querySelectorAll('button'));
+            console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.bouton_remove_machine_non_trou'] || 'Bouton remove-machine non trouvé dans le HTML généré'));
+            console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.tous_les_boutons_dans_newmachi'] || 'Tous les boutons dans newMachineContainer:'), newMachineContainer.querySelectorAll('button'));
           }
 
           setTimeout(() => {
-            console.log('Appel de toggleMachineType pour index:', newIndex);
-            console.log('Recherche des éléments radio...');
+            console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.appel_de_togglemachinetype_pou'] || 'Appel de toggleMachineType pour index:'), newIndex);
+            console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.recherche_des__l_ments_radio'] || 'Recherche des éléments radio...'));
             const duplicopieurRadio = document.querySelector(`input[name="machines[${newIndex}][type]"][value="duplicopieur"]`);
             const photocopieurRadio = document.querySelector(`input[name="machines[${newIndex}][type]"][value="photocopieur"]`);
             console.log('duplicopieurRadio trouvé:', !!duplicopieurRadio);
@@ -1438,11 +1438,11 @@
           calculateTotalPrice();
         })
         .catch(error => {
-          console.error('Erreur AJAX:', error);
+          console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.erreur_ajax'] || 'Erreur AJAX:'), error);
           console.error('Type d\'erreur:', typeof error);
           console.error('Message d\'erreur:', error.message);
           console.error('Stack trace:', error.stack);
-          showAppModal({ message: 'Erreur lors de l\'ajout de la machine: ' + error.message, type: 'danger' });
+          showAppModal({ message: 'Erreur lors de l\(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.ajout_de_la_machine'] || 'ajout de la machine: ') + error.message, type: 'danger' });
         });
     });
   });

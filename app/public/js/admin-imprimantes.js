@@ -47,7 +47,7 @@
         document.getElementById('admin-warning-panel').style.display = 'block';
       }
     } catch (error) {
-      console.error('Erreur lors de la vérification admin:', error);
+      console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_imprimantes.erreur_lors_de_la_v_rification'] || 'Erreur lors de la vérification admin:'), error);
     }
   }
 
@@ -385,10 +385,10 @@
             const selectAll = document.getElementById('select-all-jobs');
             if (selectAll) selectAll.checked = false;
           } else {
-            showAppModal({ type: 'danger', message: 'Erreur lors de la suppression: ' + (result.error || result.message) });
+            showAppModal({ type: 'danger', message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_imprimantes.erreur_lors_de_la_suppression'] || 'Erreur lors de la suppression: ') + (result.error || result.message) });
           }
         } catch (error) {
-          showAppModal({ type: 'danger', message: 'Erreur réseau: ' + error.message });
+          showAppModal({ type: 'danger', message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_imprimantes.erreur_r_seau'] || 'Erreur réseau: ') + error.message });
         }
       }
     });
@@ -398,7 +398,7 @@
     showAppModal({
       type: 'danger',
       title: 'Purger l\'historique',
-      message: 'ATTENTION: Cette action est irréversible !<br><br>Êtes-vous sûr de vouloir supprimer TOUT l\'historique des impressions ?',
+      message: 'ATTENTION: Cette action est irréversible !<br><br>Êtes-vous sûr de vouloir supprimer TOUT l\(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_imprimantes.historique_des_impressions'] || 'historique des impressions ?'),
       confirm: true,
       onConfirm: async function () {
         try {
@@ -412,10 +412,10 @@
             loadPrintJobs();
             loadStats();
           } else {
-            showAppModal({ type: 'danger', message: 'Erreur lors de la purge: ' + (result.error || result.message) });
+            showAppModal({ type: 'danger', message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_imprimantes.erreur_lors_de_la_purge'] || 'Erreur lors de la purge: ') + (result.error || result.message) });
           }
         } catch (error) {
-          showAppModal({ type: 'danger', message: 'Erreur réseau: ' + error.message });
+          showAppModal({ type: 'danger', message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_imprimantes.erreur_r_seau'] || 'Erreur réseau: ') + error.message });
         }
       }
     });
@@ -480,7 +480,7 @@
   window.saveMapping = async function (printerName) {
     const select = document.querySelector('select[data-printer="' + printerName + '"]');
     const value = select.value;
-    if (!value) { showAppModal('Veuillez sélectionner une machine.'); return; }
+    if (!value) { showAppModal((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_imprimantes.veuillez_s_lectionner_une_mach'] || 'Veuillez sélectionner une machine.')); return; }
     const [type, id] = value.split('_');
 
     try {
@@ -505,7 +505,7 @@
         showAppModal({ type: 'danger', message: 'Erreur: ' + result.error });
       }
     } catch (error) {
-      showAppModal({ type: 'danger', message: 'Erreur réseau: ' + error.message });
+      showAppModal({ type: 'danger', message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_imprimantes.erreur_r_seau'] || 'Erreur réseau: ') + error.message });
     }
   };
 

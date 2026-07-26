@@ -485,7 +485,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
             </select>
             <?php endif; ?>
             
-            <button id="btnRescanLibrary" class="btn btn-outline-secondary ml-2" onclick="rescanLibrary('internal')" title="Rafraîchir la bibliothèque" style="border-radius: 10px; height: 45px;">
+            <button id="btnRescanLibrary" class="btn btn-outline-secondary ml-2" onclick="rescanLibrary('internal')" title="<?= __('bibliotheque.refresh_title') ?>" style="border-radius: 10px; height: 45px;">
                 <i class="fa fa-refresh"></i>
             </button>
         </div>
@@ -906,7 +906,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                                                         <strong onclick="openPdfViewer(${src.id}, '${src.title.replace(/'/g, "\\'")}')" style="cursor:pointer; color:var(--primary)">${src.title}</strong>
                                                         ${scoreInfo}
                                                     </div>
-                                                    <button class="btn btn-xs btn-link p-0 text-muted" onclick="$('#${sourceId}').toggle()">Afficher l'extrait</button>
+                                                    <button class="btn btn-xs btn-link p-0 text-muted" onclick="$('#${sourceId}').toggle()"><?php _e('bibliotheque.show_excerpt', [], false); ?></button>
                                                 </div>
                                                 <div id="${sourceId}" style="display:none; margin-top:5px; color:#64748b; border-top:1px dashed #eee; padding-top:5px; font-size: 0.8rem;">
                                                     ${src.content.replace(/\n/g, '<br>')}
@@ -1575,7 +1575,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
 
     <div class="ai-chat-footer">
         <div class="chat-input-wrapper">
-            <input type="text" id="aiChatInput" placeholder="Posez votre question ici..." onkeypress="if(event.key === 'Enter') sendAiMessage()">
+            <input type="text" id="aiChatInput" placeholder="<?= __('bibliotheque.chat_placeholder') ?>" onkeypress="if(event.key === 'Enter') sendAiMessage()">
             <button id="aiChatBtn" onclick="sendAiMessage()">
                 <i id="aiChatIcon" class="fa fa-paper-plane"></i>
             </button>
@@ -1604,7 +1604,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group mb-3">
-                            <label class="font-weight-bold text-muted small uppercase">Pages</label>
+                            <label class="font-weight-bold text-muted small uppercase"><?php _e('bibliotheque.pages_label', [], false); ?></label>
                             <input type="number" id="edit_page_count" class="form-control shadow-sm" style="border-radius: 10px; border: 1px solid #e2e8f0;">
                         </div>
                     </div>
@@ -1737,7 +1737,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
         const actionsHtml = `
             <div class="btn-group">
                 <button class="btn btn-primary" onclick="openLibraryFile(${id})"><i class="fa fa-external-link"></i> Ouvrir</button>
-                <button class="btn btn-info" onclick="printLibraryFile(${id})"><i class="fa fa-print"></i> Imprimer</button>
+                <button class="btn btn-info" onclick="printLibraryFile(${id})"><i class="fa fa-print"></i> <?php _e('common.print', [], false); ?></button>
                 
                 <button class="btn btn-warning" onclick="window.location.href='?studio&file_id=${id}'">
                     <i class="fa fa-magic"></i> Éditer dans le Studio

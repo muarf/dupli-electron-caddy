@@ -185,7 +185,7 @@
                     </button>
                 </div>
                 <p style="margin: 0 0 15px 0; color: #555; font-size: 14px;">
-                    ${error.message || 'Une erreur est survenue lors de la vérification des mises à jour.'}
+                    ${error.message || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.updater_ui.une_erreur_est_survenue_lors_d'] || 'Une erreur est survenue lors de la vérification des mises à jour.')}
                 </p>
                 <button onclick="window.updaterUI.closeNotification()" 
                         class="btn btn-default btn-sm" 

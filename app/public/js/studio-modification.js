@@ -33,7 +33,7 @@
                 btnIdentifyFont.style.background = 'var(--studio-primary)';
                 btnIdentifyFont.style.color = 'white';
                 canvas.defaultCursor = 'crosshair';
-                alert("Tracez un rectangle serré autour du texte dont vous voulez reconnaître la police.");
+                alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.tracez_un_rectangle_serr__auto'] || "Tracez un rectangle serré autour du texte dont vous voulez reconnaître la police."));
             } else {
                 btnIdentifyFont.style.background = '';
                 btnIdentifyFont.style.color = 'var(--studio-primary)';
@@ -257,7 +257,7 @@
               canvas.defaultCursor = (currentTool !== 'none') ? 'crosshair' : 'default';
               
               if (window.showSpinner) window.showSpinner();
-              if ($id('spinnerMsg')) $id('spinnerMsg').textContent = "L'IA analyse la police...";
+              if ($id('spinnerMsg')) $id('spinnerMsg').textContent = "L(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.ia_analyse_la_police'] || 'IA analyse la police...');
               
               function renderFontRecognitionResults(fonts) {
                   $id('fontRecognitionResults').style.display = 'block';
@@ -278,7 +278,7 @@
                           const cssUrl = `https://fonts.googleapis.com/css2?family=${fontNameRaw}&display=swap`;
                           
                           if (window.showSpinner) {
-                              if ($id('spinnerMsg')) $id('spinnerMsg').textContent = "Installation de la police...";
+                              if ($id('spinnerMsg')) $id('spinnerMsg').textContent = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.installation_de_la_police'] || "Installation de la police...");
                               window.showSpinner();
                           }
                           
@@ -302,9 +302,9 @@
                                   if ($id('modifRedactFont')) $id('modifRedactFont').value = json.font_name;
                               } else {
                                   if (json.error === 'offline') {
-                                      alert("⚠️ Pas de connexion internet sur le serveur (ou lien direct introuvable).\n\nL'application n'a pas pu télécharger automatiquement le fichier .ttf pour la génération PDF finale.\n\nVeuillez télécharger la police manuellement sur votre ordinateur (ex: depuis Google Fonts) et l'importer via le bouton avec l'icône de nuage.");
+                                      alert("⚠️ Pas de connexion internet sur le serveur (ou lien direct introuvable).\n\nL'application n'a pas pu télécharger automatiquement le fichier .ttf pour la génération PDF finale.\n\nVeuillez télécharger la police manuellement sur votre ordinateur (ex: depuis Google Fonts) et l(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.importer_via_le_bouton_avec_l'] || 'importer via le bouton avec l')icône de nuage.");
                                   } else {
-                                      alert("Erreur lors de l'installation sur le serveur : " + (json.error || "Inconnue"));
+                                      alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.erreur_lors_de_l'] || "Erreur lors de l")installation sur le serveur : " + (json.error || "Inconnue"));
                                   }
                                   addFontToSelects(fontNameRaw, fontNameRaw);
                               }
@@ -315,7 +315,7 @@
                                   textToolBtn.click();
                               }
                           } catch (e) {
-                              alert("Erreur réseau (téléchargement police): " + e.message);
+                              alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.erreur_r_seau__t_l_chargement'] || "Erreur réseau (téléchargement police): ") + e.message);
                               addFontToSelects(fontNameRaw, fontNameRaw);
                           }
                           
@@ -341,11 +341,11 @@
                               if (finalJson.fonts) {
                                   renderFontRecognitionResults(finalJson.fonts);
                               } else {
-                                  alert("Aucune police détectée dans le résultat.");
+                                  alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.aucune_police_d_tect_e_dans_le'] || "Aucune police détectée dans le résultat."));
                               }
                           }, (errJson) => {
                               if (window.hideSpinner) window.hideSpinner();
-                              alert("Erreur IA: " + (errJson.error || errJson.errors?.join(', ') || 'Inconnue'));
+                              alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.erreur_ia'] || "Erreur IA: ") + (errJson.error || errJson.errors?.join(', ') || 'Inconnue'));
                           });
                       } else if (json.fonts) {
                           if (window.hideSpinner) window.hideSpinner();
@@ -357,11 +357,11 @@
                   } else {
                       if (window.hideSpinner) window.hideSpinner();
                       const errorMsg = json.error || (json.errors ? json.errors.join(', ') : "Inconnue");
-                      alert("Erreur IA: " + errorMsg);
+                      alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.erreur_ia'] || "Erreur IA: ") + errorMsg);
                   }
               } catch (err) {
                   if (window.hideSpinner) window.hideSpinner();
-                  alert("Erreur réseau: " + err.message);
+                  alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.erreur_r_seau'] || "Erreur réseau: ") + err.message);
               }
           } else {
               canvas.remove(fontCropRect);
@@ -422,7 +422,7 @@
         } else {
           isPickingColor = true;
           canvas.defaultCursor = 'crosshair';
-          alert("Pipette activée : cliquez sur l'image du document pour capturer la couleur.");
+          alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.pipette_activ_e___cliquez_sur'] || "Pipette activée : cliquez sur l")image du document pour capturer la couleur.");
         }
       });
     }
@@ -463,7 +463,7 @@
           }
         } catch(err) {
           if (window.hideSpinner) window.hideSpinner();
-          alert("Erreur réseau: " + err.message);
+          alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.erreur_r_seau'] || "Erreur réseau: ") + err.message);
         }
         fontInput.value = ''; // reset
       });
@@ -485,7 +485,7 @@
         }
       }
     } catch(e) {
-      console.error("Erreur chargement polices", e);
+      console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.erreur_chargement_polices'] || "Erreur chargement polices"), e);
     }
   }
 
@@ -495,7 +495,7 @@
       const loaded = await fontFace.load();
       document.fonts.add(loaded);
     } catch(e) {
-      console.error("Erreur injection police", name, e);
+      console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.erreur_injection_police'] || "Erreur injection police"), name, e);
     }
   }
 
@@ -539,7 +539,7 @@
 
   async function applyModification() {
     if (!window.state || !window.state.file) {
-      alert("Aucun document chargé.");
+      alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.aucun_document_charg'] || "Aucun document chargé."));
       return;
     }
     
@@ -613,7 +613,7 @@
     }
 
     if (ops.length === 0) {
-      alert("Aucune modification à appliquer (Dessinez sur le canevas ou activez la numérotation).");
+      alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.aucune_modification___applique'] || "Aucune modification à appliquer (Dessinez sur le canevas ou activez la numérotation)."));
       return;
     }
 
@@ -646,7 +646,7 @@
     const spinner = $id('studioSpinner');
     const spinnerMsg = $id('spinnerMsg');
     if (spinner) {
-      spinnerMsg.textContent = "Application des modifications...";
+      spinnerMsg.textContent = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.application_des_modifications'] || "Application des modifications...");
       spinner.style.display = 'flex';
     }
 
@@ -665,7 +665,7 @@
               window.location.href = finalJson.download_url;
             }
           }, (errJson) => {
-            alert("Erreur: " + (errJson.error || errJson.errors?.join(', ') || 'Erreur inconnue'));
+            alert("Erreur: " + (errJson.error || errJson.errors?.join(', ') || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.erreur_inconnue'] || 'Erreur inconnue')));
           });
         } else {
           if (window.showResultToast) {
@@ -680,7 +680,7 @@
       }
     } catch(err) {
       if (spinner) spinner.style.display = 'none';
-      alert("Erreur de connexion: " + err.message);
+      alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.erreur_de_connexion'] || "Erreur de connexion: ") + err.message);
     }
   }
 

@@ -23,7 +23,7 @@ $(document).ready(function () {
           displaySystemPrinters();
         }
       } catch (err) {
-        console.error('Erreur récupération imprimantes:', err);
+        console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.setup.erreur_r_cup_ration_imprimante'] || 'Erreur récupération imprimantes:'), err);
       }
     }
   }

@@ -266,10 +266,10 @@
               </div>
 
               <div class="form-group">
-                <label class="col-md-3 control-label" for="db_type">Type :</label>
+                <label class="col-md-3 control-label" for="db_type"><?php _e('admin.bdd.type_label', [], false); ?> :</label>
                 <div class="col-md-9">
                   <select class="form-control" name="db_type" id="db_type" required>
-                    <option value="">Choisir un type</option>
+                    <option value=""><?php _e('admin.bdd.choose_type', [], false); ?></option>
                     <option value="dev">Développement</option>
                     <option value="test"><?php _e("auto_clean.admin_bdd_html_php_10", [], false); ?></option>
                     <option value="staging">Staging</option>

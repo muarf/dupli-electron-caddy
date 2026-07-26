@@ -41,14 +41,14 @@ window.triggerVectorization = function (mode = 'missing') {
                     document.getElementById('vectorize-status').style.display = 'block';
                     document.getElementById('vectorize-msg').textContent = data.message;
                 } else {
-                    const err = 'Erreur : ' + (data.error || 'Inconnue');
+                    const err = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.erreur'] || 'Erreur : ') + (data.error || 'Inconnue');
                     if (window.showAppModal) window.showAppModal({ message: err, type: 'danger' }); else alert(err);
                     if (btnAll) btnAll.disabled = false;
                     if (btnMissing) btnMissing.disabled = false;
                 }
             })
             .catch(() => {
-                const err = 'Erreur réseau lors du déclenchement.';
+                const err = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.erreur_r_seau_lors_du_d_clench'] || 'Erreur réseau lors du déclenchement.');
                 if (window.showAppModal) window.showAppModal({ message: err, type: 'danger' }); else alert(err);
                 if (btnAll) btnAll.disabled = false;
                 if (btnMissing) btnMissing.disabled = false;
@@ -84,14 +84,14 @@ window.rescanLibrary = function (mode) {
             if (data.success && data.job_id) {
                 monitorRescan(data.job_id);
             } else {
-                const err = 'Erreur : ' + (data.error || 'Inconnue');
+                const err = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.erreur'] || 'Erreur : ') + (data.error || 'Inconnue');
                 if (window.showAppModal) window.showAppModal({ message: err, type: 'danger' }); else alert(err);
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa fa-refresh"></i> Lancer un scan complet';
             }
         })
         .catch(() => {
-            const err = 'Erreur réseau lors du lancement du scan.';
+            const err = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.erreur_r_seau_lors_du_lancemen'] || 'Erreur réseau lors du lancement du scan.');
             if (window.showAppModal) window.showAppModal({ message: err, type: 'danger' }); else alert(err);
             btn.disabled = false;
             btn.innerHTML = '<i class="fa fa-refresh"></i> Lancer un scan complet';
@@ -100,7 +100,7 @@ window.rescanLibrary = function (mode) {
 
     if (window.showAppModal) {
         window.showAppModal({
-            title: 'Scan Bibliothèque',
+            title: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.scan_biblioth_que'] || 'Scan Bibliothèque'),
             message: '⚠️ Lancer un scan complet de la bibliothèque ?',
             confirm: true,
             type: 'warning',
@@ -152,10 +152,10 @@ function monitorRescan(jobId) {
                     btn.disabled = false;
                     btn.innerHTML = '<i class="fa fa-refresh"></i> Lancer un scan complet';
                 }
-                alert('Erreur lors du scan: ' + (statusData.error_msg || 'Inconnue'));
+                alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.erreur_lors_du_scan'] || 'Erreur lors du scan: ') + (statusData.error_msg || 'Inconnue'));
             }
         } catch (e) {
-            console.error("Erreur polling:", e);
+            console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.erreur_polling'] || "Erreur polling:"), e);
         }
     }, 1000);
 }
@@ -185,7 +185,7 @@ function refreshMarkdownCounts() {
 }
 
 window.stopMarkdownMigration = function () {
-    if (!confirm('Voulez-vous vraiment stopper la migration Markdown en cours ?')) return;
+    if (!confirm((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.voulez_vous_vraiment_stopper_l'] || 'Voulez-vous vraiment stopper la migration Markdown en cours ?'))) return;
     fetch('?stop_markdown_migration', { method: 'POST' })
         .then(r => r.json())
         .then(data => {
@@ -197,7 +197,7 @@ window.stopMarkdownMigration = function () {
 };
 
 window.triggerMarkdownMigration = function (mode) {
-    const labels = { all: 'tous les PDFs non traités', retry: 'les fichiers en erreur', force: 'TOUS les fichiers (y compris déjà traités)' };
+    const labels = { all: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.tous_les_pdfs_non_trait_s'] || 'tous les PDFs non traités'), retry: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.les_fichiers_en_erreur'] || 'les fichiers en erreur'), force: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.tous_les_fichiers__y_compris_d'] || 'TOUS les fichiers (y compris déjà traités)') };
     if (!confirm('⚠️ Lancer la migration Markdown Docling pour ' + (labels[mode] || mode) + ' ?\n\nOpération longue — le RAG reste fonctionnel pendant l\'opération.')) return;
 
     ['btn-markdown-all', 'btn-markdown-retry', 'btn-markdown-force'].forEach(id => {
@@ -220,12 +220,12 @@ window.triggerMarkdownMigration = function (mode) {
                     mdPollInterval = setInterval(pollMarkdownStatus, 3000);
                 }
             } else {
-                alert('Erreur : ' + (data.error || 'Inconnue'));
+                alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.erreur'] || 'Erreur : ') + (data.error || 'Inconnue'));
                 resetMarkdownButtons();
             }
         })
         .catch(() => {
-            alert('Erreur réseau lors du déclenchement.');
+            alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.erreur_r_seau_lors_du_d_clench'] || 'Erreur réseau lors du déclenchement.'));
             resetMarkdownButtons();
         });
 };
@@ -287,7 +287,7 @@ function pollMarkdownStatus() {
                     const e = data.errors    || 0;
                     bar.textContent = '✅ Terminé : ' + p + ' fichiers traités' + (e > 0 ? ', ' + e + ' erreur(s)' : '');
                 }
-                if (msg) msg.textContent = 'Terminé le ' + (data.finished_at || '');
+                if (msg) msg.textContent = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.termin__le'] || 'Terminé le ') + (data.finished_at || '');
                 resetMarkdownButtons();
             }
         }).catch(() => {});
@@ -308,7 +308,7 @@ function resetMarkdownButtons() {
 
 window.installLocalAi = function () {
     const path = document.getElementById('ai_local_path').value.trim();
-    if (!confirm('Cette action va ouvrir un terminal et télécharger environ 1.5 Go de données. Voulez-vous continuer ?')) return;
+    if (!confirm((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.cette_action_va_ouvrir_un_term'] || 'Cette action va ouvrir un terminal et télécharger environ 1.5 Go de données. Voulez-vous continuer ?'))) return;
 
     fetch('?install_local_ai', {
         method: 'POST',
@@ -318,9 +318,9 @@ window.installLocalAi = function () {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            alert('L\'installation a été lancée dans un nouveau terminal ! Veuillez patienter jusqu\'à la fermeture de la fenêtre.');
+            alert('L\'installation a été lancée dans un nouveau terminal ! Veuillez patienter jusqu\(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.la_fermeture_de_la_fen_tre'] || 'à la fermeture de la fenêtre.'));
         } else {
-            alert('Erreur : ' + (data.error || 'Inconnue'));
+            alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.erreur'] || 'Erreur : ') + (data.error || 'Inconnue'));
         }
     })
     .catch(() => alert('Erreur réseau lors du lancement de l\'installation.'));

@@ -152,9 +152,9 @@ function uploadPdf() {
   var file = fileInput.files[0];
 
   const trans = (typeof CONFIG !== 'undefined' && CONFIG.translations) ? CONFIG.translations : {};
-  if (!file) { showMessage(trans.select_pdf_file || 'Veuillez sélectionner un fichier PDF.', 'danger'); return; }
-  if (file.type !== 'application/pdf') { showMessage(trans.select_valid_pdf || 'Veuillez sélectionner un fichier PDF valide.', 'danger'); return; }
-  if (file.size > 10 * 1024 * 1024) { showMessage(trans.pdf_file_too_large || 'Le fichier est trop volumineux (maximum 10MB).', 'danger'); return; }
+  if (!file) { showMessage(trans.select_pdf_file || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_aide.veuillez_s_lectionner_un_fichi'] || 'Veuillez sélectionner un fichier PDF.'), 'danger'); return; }
+  if (file.type !== 'application/pdf') { showMessage(trans.select_valid_pdf || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_aide.veuillez_s_lectionner_un_fichi'] || 'Veuillez sélectionner un fichier PDF valide.'), 'danger'); return; }
+  if (file.size > 10 * 1024 * 1024) { showMessage(trans.pdf_file_too_large || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_aide.le_fichier_est_trop_volumineux'] || 'Le fichier est trop volumineux (maximum 10MB).'), 'danger'); return; }
 
   var formData = new FormData();
   formData.append('pdf_file', file);
@@ -273,7 +273,7 @@ function deletePdf(filename) {
           }
         })
         .catch(function (error) {
-          showMessage('Erreur lors de la suppression: ' + error.message, 'danger');
+          showMessage((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_aide.erreur_lors_de_la_suppression'] || 'Erreur lors de la suppression: ') + error.message, 'danger');
         });
     }
   });

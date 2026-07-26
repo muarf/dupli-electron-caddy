@@ -49,12 +49,12 @@ $(document).ready(function () {
                 onClose: function () { location.reload(); }
               });
             } else {
-              showAppModal({ type: 'danger', message: 'Erreur : ' + response.error });
+              showAppModal({ type: 'danger', message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_machines.erreur'] || 'Erreur : ') + response.error });
               $('.delete-machine[data-id="' + machineId + '"]').prop('disabled', false).html('<i class="fa fa-trash"></i> ' + CONFIG.translations.delete);
             }
           },
           error: function () {
-            showAppModal({ type: 'danger', message: 'Erreur lors de la suppression de la machine. Vérifiez la console pour plus de détails.' });
+            showAppModal({ type: 'danger', message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_machines.erreur_lors_de_la_suppression'] || 'Erreur lors de la suppression de la machine. Vérifiez la console pour plus de détails.') });
             $('.delete-machine[data-id="' + machineId + '"]').prop('disabled', false).html('<i class="fa fa-trash"></i> ' + CONFIG.translations.delete);
           }
         });
@@ -192,7 +192,7 @@ $(document).on('submit', '#edit-tambours-form', function (e) {
   });
 
   if (tambours.length === 0) {
-    showAppModal('Veuillez définir au moins un tambour.');
+    showAppModal((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_machines.veuillez_d_finir_au_moins_un_t'] || 'Veuillez définir au moins un tambour.'));
     return;
   }
 
@@ -214,11 +214,11 @@ $(document).on('submit', '#edit-tambours-form', function (e) {
           onClose: function () { location.reload(); }
         });
       } else {
-        showAppModal({ type: 'danger', message: 'Erreur: ' + (response.error || 'Erreur inconnue') });
+        showAppModal({ type: 'danger', message: 'Erreur: ' + (response.error || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_machines.erreur_inconnue'] || 'Erreur inconnue')) });
       }
     },
     error: function () {
-      showAppModal({ type: 'danger', message: 'Erreur lors de la sauvegarde des tambours.' });
+      showAppModal({ type: 'danger', message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_machines.erreur_lors_de_la_sauvegarde_d'] || 'Erreur lors de la sauvegarde des tambours.') });
     }
   });
 });

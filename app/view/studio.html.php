@@ -61,10 +61,10 @@ window.addEventListener('unhandledrejection', function(e) {
       <div class="toolbar-spacer"></div>
       <button class="toolbar-btn" id="btnNewFile" style="display:none"><i class="fa fa-upload"></i> <?php _e('studio.new_file', [], false); ?></button>
       <button class="toolbar-btn" id="btnExportPng" style="display:none" title="Exporter le canvas (avec filtres) en PNG"><i class="fa fa-file-image-o"></i><?php _e("studio.auto_key_2", [], false); ?></button>
-      <button class="toolbar-btn" id="btnSaveToLibrary" style="display:none" title="Enregistrer dans la Bibliothèque">
+      <button class="toolbar-btn" id="btnSaveToLibrary" style="display:none" title="<?= __('studio.save_to_library_title') ?>">
         <i class="fa fa-bookmark"></i> <?php _e('header.bibliotheque', [], false); ?>
       </button>
-      <button class="toolbar-btn primary" id="btnExportPdf" style="display:none; position: relative;" title="Exporter en PDF via serveur">
+      <button class="toolbar-btn primary" id="btnExportPdf" style="display:none; position: relative;" title="<?= __('studio.export_pdf_title') ?>">
         <i class="fa fa-file-pdf-o"></i> PDF
         <span id="pdfReadyBadge" style="display:none; position: absolute; top: -5px; right: -5px; background: #10b981; color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--studio-surface);"><i class="fa fa-check"></i></span>
       </button>
@@ -90,7 +90,7 @@ window.addEventListener('unhandledrejection', function(e) {
       </div>
       
       <!-- Delete page button overlaid on canvas -->
-      <div id="mainCanvasDeleteBtn" style="display:none; position:absolute; top:10px; right:10px; background:rgba(239,68,68,0.9); color:white; width:36px; height:36px; border-radius:18px; align-items:center; justify-content:center; cursor:pointer; z-index:20; box-shadow:0 2px 5px rgba(0,0,0,0.2); transition:transform 0.2s;" title="Supprimer cette page" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+      <div id="mainCanvasDeleteBtn" style="display:none; position:absolute; top:10px; right:10px; background:rgba(239,68,68,0.9); color:white; width:36px; height:36px; border-radius:18px; align-items:center; justify-content:center; cursor:pointer; z-index:20; box-shadow:0 2px 5px rgba(0,0,0,0.2); transition:transform 0.2s;" title="<?= __('studio.delete_page_title') ?>" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
         <i class="fa fa-trash"></i>
       </div>
 
@@ -798,8 +798,8 @@ window.addEventListener('unhandledrejection', function(e) {
             <option value="times"><?php _e("studio.auto_key_179", [], false); ?></option>
             <option value="courier"><?php _e("studio.auto_key_180", [], false); ?></option>
           </select>
-          <button class="panel-btn" id="btnIdentifyFont" title="Reconnaître la police depuis l'image" style="padding:4px 8px; margin-left:4px; color: var(--studio-primary);"><i class="fa fa-magic"></i></button>
-          <button class="panel-btn btn-upload-font" title="Importer une police" style="padding:4px 8px; margin-left:4px"><i class="fa fa-upload"></i></button>
+          <button class="panel-btn" id="btnIdentifyFont" title="<?= __('studio.identify_font_title') ?>" style="padding:4px 8px; margin-left:4px; color: var(--studio-primary);"><i class="fa fa-magic"></i></button>
+          <button class="panel-btn btn-upload-font" title="<?= __('studio.import_font_title') ?>" style="padding:4px 8px; margin-left:4px"><i class="fa fa-upload"></i></button>
         </div>
         
         <!-- Modal inline pour les résultats de la reconnaissance de police -->
@@ -847,7 +847,7 @@ window.addEventListener('unhandledrejection', function(e) {
             <option value="helvetica"><?php _e("studio.auto_key_199", [], false); ?></option>
             <option value="times"><?php _e("studio.auto_key_200", [], false); ?></option>
           </select>
-          <button class="panel-btn btn-upload-font" title="Importer une police" style="padding:4px 8px; margin-left:4px"><i class="fa fa-upload"></i></button>
+          <button class="panel-btn btn-upload-font" title="<?= __('studio.import_font_title') ?>" style="padding:4px 8px; margin-left:4px"><i class="fa fa-upload"></i></button>
         </div>
         <input type="file" id="customFontUpload" accept=".ttf,.otf" style="display:none">
         <div class="panel-row" style="margin-top:8px">

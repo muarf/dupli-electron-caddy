@@ -21,18 +21,18 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (!window.state.file) {
-      if ($id('metaRawInfo')) $id('metaRawInfo').textContent = "Aucun fichier sélectionné (window.state.file est vide). Si vous êtes dans Montage Libre, exportez le PDF d'abord.";
+      if ($id('metaRawInfo')) $id('metaRawInfo').textContent = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.aucun_fichier_s_lectionn___win'] || "Aucun fichier sélectionné (window.state.file est vide). Si vous êtes dans Montage Libre, exportez le PDF d")abord.";
       return;
     }
 
     const file = window.state.file;
     if (!file) {
-      if ($id('metaRawInfo')) $id('metaRawInfo').textContent = "Aucun fichier sélectionné (window.state.file est vide). Si vous êtes dans Montage Libre, exportez le PDF d'abord.";
+      if ($id('metaRawInfo')) $id('metaRawInfo').textContent = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.aucun_fichier_s_lectionn___win'] || "Aucun fichier sélectionné (window.state.file est vide). Si vous êtes dans Montage Libre, exportez le PDF d")abord.";
       return;
     }
 
     try {
-      if (window.showSpinner) window.showSpinner('Lecture des métadonnées...');
+      if (window.showSpinner) window.showSpinner((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.lecture_des_m_tadonn_es'] || 'Lecture des métadonnées...'));
       
       const formData = new FormData();
       formData.append('action', 'read_metadata');
@@ -69,33 +69,33 @@ document.addEventListener('DOMContentLoaded', () => {
             $id('metaRawInfo').textContent = rawText;
         }
       } else {
-        console.error("Erreur lecture metadata. Données reçues:", data);
+        console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.erreur_lecture_metadata__donn'] || "Erreur lecture metadata. Données reçues:"), data);
         const errStr = data.error ? data.error : JSON.stringify(data);
         if ($id('metaRawInfo')) $id('metaRawInfo').textContent = "Erreur: " + errStr;
-        if (window.showToast) window.showToast("Erreur lors de la lecture des métadonnées", "error");
+        if (window.showToast) window.showToast((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.erreur_lors_de_la_lecture_des'] || "Erreur lors de la lecture des métadonnées"), "error");
       }
     } catch (e) {
       if (window.hideSpinner) window.hideSpinner();
       console.error(e);
-      if (window.showToast) window.showToast("Erreur réseau (Lecture métadonnées)", "error");
+      if (window.showToast) window.showToast((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.erreur_r_seau__lecture_m_tadon'] || "Erreur réseau (Lecture métadonnées)"), "error");
     }
   }
 
   if (btnApplyMetadata) {
     btnApplyMetadata.addEventListener('click', async () => {
       if (!window.state || !window.state.file) {
-        alert("Veuillez charger un fichier PDF d'abord. Si vous êtes dans Montage Libre, exportez d'abord le PDF.");
+        alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.veuillez_charger_un_fichier_pd'] || "Veuillez charger un fichier PDF d")abord. Si vous êtes dans Montage Libre, exportez d(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.abord_le_pdf'] || 'abord le PDF.'));
         return;
       }
       
       const file = window.state.file;
       if (!file) {
-        alert("Veuillez charger un fichier d'abord.");
+        alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.veuillez_charger_un_fichier_d'] || "Veuillez charger un fichier d")abord.");
         return;
       }
 
       try {
-        if (window.showSpinner) window.showSpinner('Application des métadonnées...');
+        if (window.showSpinner) window.showSpinner((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.application_des_m_tadonn_es'] || 'Application des métadonnées...'));
         
         const formData = new FormData();
         formData.append('action', 'update_metadata');
@@ -130,13 +130,13 @@ document.addEventListener('DOMContentLoaded', () => {
               loadCurrentMetadata();
           }
         } else {
-          console.error("Erreur MAJ metadata:", data.error);
-          if (window.showToast) window.showToast("Erreur lors de la mise à jour : " + (data.error || "Inconnue"), "error");
+          console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.erreur_maj_metadata'] || "Erreur MAJ metadata:"), data.error);
+          if (window.showToast) window.showToast((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.erreur_lors_de_la_mise___jour'] || "Erreur lors de la mise à jour : ") + (data.error || "Inconnue"), "error");
         }
       } catch (e) {
         if (window.hideSpinner) window.hideSpinner();
         console.error(e);
-        if (window.showToast) window.showToast("Erreur réseau (MAJ métadonnées)", "error");
+        if (window.showToast) window.showToast((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.erreur_r_seau__maj_m_tadonn_es'] || "Erreur réseau (MAJ métadonnées)"), "error");
       }
     });
   }
@@ -144,22 +144,22 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnClearMetadata) {
     btnClearMetadata.addEventListener('click', async () => {
       if (!window.state || !window.state.file) {
-        alert("Veuillez charger un fichier PDF d'abord. Si vous êtes dans Montage Libre, exportez d'abord le PDF.");
+        alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.veuillez_charger_un_fichier_pd'] || "Veuillez charger un fichier PDF d")abord. Si vous êtes dans Montage Libre, exportez d(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.abord_le_pdf'] || 'abord le PDF.'));
         return;
       }
       
       const file = window.state.file;
       if (!file) {
-        alert("Veuillez charger un fichier d'abord.");
+        alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.veuillez_charger_un_fichier_d'] || "Veuillez charger un fichier d")abord.");
         return;
       }
 
-      if (!confirm("Voulez-vous vraiment effacer TOUTES les métadonnées de ce fichier de manière définitive ?")) {
+      if (!confirm((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.voulez_vous_vraiment_effacer_t'] || "Voulez-vous vraiment effacer TOUTES les métadonnées de ce fichier de manière définitive ?"))) {
         return;
       }
 
       try {
-        if (window.showSpinner) window.showSpinner('Effacement des métadonnées...');
+        if (window.showSpinner) window.showSpinner((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.effacement_des_m_tadonn_es'] || 'Effacement des métadonnées...'));
         
         const formData = new FormData();
         formData.append('action', 'update_metadata');
@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.hideSpinner) window.hideSpinner();
 
         if (data.success) {
-          if (window.showToast) window.showToast("Toutes les métadonnées ont été effacées !", "success");
+          if (window.showToast) window.showToast((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.toutes_les_m_tadonn_es_ont__t'] || "Toutes les métadonnées ont été effacées !"), "success");
           
           if (data.download_url && window.showResultToast) {
               const nameParts = file.name.split('.');
@@ -186,13 +186,13 @@ document.addEventListener('DOMContentLoaded', () => {
               loadCurrentMetadata();
           }
         } else {
-          console.error("Erreur MAJ metadata:", data.error);
-          if (window.showToast) window.showToast("Erreur lors de l'effacement : " + (data.error || "Inconnue"), "error");
+          console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.erreur_maj_metadata'] || "Erreur MAJ metadata:"), data.error);
+          if (window.showToast) window.showToast((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.erreur_lors_de_l'] || "Erreur lors de l")effacement : " + (data.error || "Inconnue"), "error");
         }
       } catch (e) {
         if (window.hideSpinner) window.hideSpinner();
         console.error(e);
-        if (window.showToast) window.showToast("Erreur réseau (Effacement métadonnées)", "error");
+        if (window.showToast) window.showToast((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.erreur_r_seau__effacement_m_ta'] || "Erreur réseau (Effacement métadonnées)"), "error");
       }
     });
   }

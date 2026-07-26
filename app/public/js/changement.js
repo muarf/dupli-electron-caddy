@@ -46,11 +46,11 @@ $(document).ready(function() {
                         options = `<option value="">${trans.machine_type_not_recognized || 'Type de machine non reconnu'}</option>`;
                     }
                     
-                    selectElement.html(`<option value="">${trans.select_type || 'Sélectionner un type'}</option>` + options);
+                    selectElement.html(`<option value="">${trans.select_type || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.s_lectionner_un_type'] || 'Sélectionner un type')}</option>` + options);
                 }
             })
             .fail(function() {
-                selectElement.html(`<option value="">${trans.error_loading || 'Erreur de chargement'}</option>`);
+                selectElement.html(`<option value="">${trans.error_loading || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.erreur_de_chargement'] || 'Erreur de chargement')}</option>`);
             });
     }
     
@@ -66,7 +66,7 @@ $(document).ready(function() {
             tambourField.prop('required', true);
             
             if (duplicopieurs_tambours[machine]) {
-                tambourField.html(`<option value="">${trans.select_drum || 'Sélectionner un tambour'}</option>`);
+                tambourField.html(`<option value="">${trans.select_drum || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.s_lectionner_un_tambour'] || 'Sélectionner un tambour')}</option>`);
                 $.each(duplicopieurs_tambours[machine], function(index, tambour) {
                     tambourField.append('<option value="' + tambour + '">' + tambour + '</option>');
                 });
@@ -84,8 +84,8 @@ $(document).ready(function() {
         var tambourGroup = $('#tambour-group');
         var tambourSelect = $('#tambour');
         
-        typeSelect.html(`<option value="">${trans.select_type || 'Sélectionner un type'}</option>`);
-        tambourSelect.html(`<option value="">${trans.select_drum || 'Sélectionner un tambour'}</option>`);
+        typeSelect.html(`<option value="">${trans.select_type || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.s_lectionner_un_type'] || 'Sélectionner un type')}</option>`);
+        tambourSelect.html(`<option value="">${trans.select_drum || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.s_lectionner_un_tambour'] || 'Sélectionner un tambour')}</option>`);
         
         if (machine) {
             updateTypeOptions(machine, typeSelect);
@@ -95,7 +95,7 @@ $(document).ready(function() {
                 tambourGroup.show();
                 
                 if (duplicopieurs_tambours[machine]) {
-                    tambourSelect.html(`<option value="">${trans.select_drum || 'Sélectionner un tambour'}</option>`);
+                    tambourSelect.html(`<option value="">${trans.select_drum || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.s_lectionner_un_tambour'] || 'Sélectionner un tambour')}</option>`);
                     $.each(duplicopieurs_tambours[machine], function(index, tambour) {
                         tambourSelect.append('<option value="' + tambour + '">' + tambour + '</option>');
                     });
@@ -111,7 +111,7 @@ $(document).ready(function() {
                         }
                     })
                     .fail(function() {
-                        console.log('Erreur lors du chargement des compteurs');
+                        console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.erreur_lors_du_chargement_des'] || 'Erreur lors du chargement des compteurs'));
                     });
             } else {
                 mastersGroup.hide();
@@ -126,7 +126,7 @@ $(document).ready(function() {
                         }
                     })
                     .fail(function() {
-                        console.log('Erreur lors du chargement des compteurs');
+                        console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.erreur_lors_du_chargement_des'] || 'Erreur lors du chargement des compteurs'));
                     });
             }
         } else {
@@ -157,7 +157,7 @@ $(document).ready(function() {
                     $('#nb_m').val(data.counters.master_av);
                 }
             }).fail(function() {
-                console.log('Erreur lors de la récupération des compteurs');
+                console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.erreur_lors_de_la_r_cup_ration'] || 'Erreur lors de la récupération des compteurs'));
             });
         } else {
             $('#nb_m').prop('required', false);
@@ -172,7 +172,7 @@ $(document).ready(function() {
         
         if (!machine || !type || !nb_p) {
             e.preventDefault();
-            const msg = trans.fill_all_required || 'Veuillez remplir tous les champs obligatoires.';
+            const msg = trans.fill_all_required || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.veuillez_remplir_tous_les_cham'] || 'Veuillez remplir tous les champs obligatoires.');
             if (window.showAppModal) {
                 window.showAppModal(msg);
             } else {
@@ -184,7 +184,7 @@ $(document).ready(function() {
         if (duplicopieursNames.indexOf(machine) !== -1) {
             if (type === 'master' && !$('#nb_m').val()) {
                 e.preventDefault();
-                const msg = trans.enter_master_count || 'Veuillez entrer le nombre de masters.';
+                const msg = trans.enter_master_count || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.veuillez_entrer_le_nombre_de_m'] || 'Veuillez entrer le nombre de masters.');
                 if (window.showAppModal) {
                     window.showAppModal(msg);
                 } else {
@@ -209,7 +209,7 @@ $(document).ready(function() {
         var aideContainer = $('#aide-container');
         
         if (!machine) {
-            aideContainer.html(`<div class="alert alert-info"><h4><i class="fa fa-info-circle"></i> ${trans.instructions_title || 'Instructions'}</h4><p>${trans.select_machine_to_see_instructions || 'Sélectionnez une machine pour voir les instructions.'}</p></div>`);
+            aideContainer.html(`<div class="alert alert-info"><h4><i class="fa fa-info-circle"></i> ${trans.instructions_title || 'Instructions'}</h4><p>${trans.select_machine_to_see_instructions || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.s_lectionnez_une_machine_pour'] || 'Sélectionnez une machine pour voir les instructions.')}</p></div>`);
             return;
         }
         
@@ -217,7 +217,7 @@ $(document).ready(function() {
         
         if (aide && aide.length > 0) {
             var html = '<div class="aide-item">';
-            html += `<h4><i class="fa fa-tint"></i> ${trans.instructions_for || 'Instructions pour'} ${machine}</h4>`;
+            html += `<h4><i class="fa fa-tint"></i> ${trans.instructions_for || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.instructions_pour'] || 'Instructions pour')} ${machine}</h4>`;
             
             aide.forEach(function(qa) {
                 html += '<div class="qa-item" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid #007bff; background: #f8f9fa; border-radius: 4px;">';
@@ -230,23 +230,23 @@ $(document).ready(function() {
             aideContainer.html(html);
         } else {
             var defaultAide = '<div class="alert alert-info">' +
-                `<h4><i class="fa fa-info-circle"></i> ${trans.instructions_for || 'Instructions pour'} ${machine}</h4>` +
-                `<p><strong>${trans.how_to_find_count || 'Comment trouver le compteur :'}</strong></p>` +
+                `<h4><i class="fa fa-info-circle"></i> ${trans.instructions_for || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.instructions_pour'] || 'Instructions pour')} ${machine}</h4>` +
+                `<p><strong>${trans.how_to_find_count || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.comment_trouver_le_compteur'] || 'Comment trouver le compteur :')}</strong></p>` +
                 '<ul>' +
-                `<li>${trans.go_to_machine || 'Allez à la machine'}</li>` +
-                `<li>${trans.press_f1 || 'Appuyez sur F1'}</li>` +
-                `<li>${trans.print_counters || 'Imprimez les compteurs'}</li>` +
-                `<li>${trans.note_number || 'Notez le numéro'}</li>` +
+                `<li>${trans.go_to_machine || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.allez___la_machine'] || 'Allez à la machine')}</li>` +
+                `<li>${trans.press_f1 || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.appuyez_sur_f1'] || 'Appuyez sur F1')}</li>` +
+                `<li>${trans.print_counters || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.imprimez_les_compteurs'] || 'Imprimez les compteurs')}</li>` +
+                `<li>${trans.note_number || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.notez_le_num_ro'] || 'Notez le numéro')}</li>` +
                 '</ul>' +
-                `<p><strong>${trans.for_duplicators || 'Pour les duplicopieurs :'}</strong></p>` +
+                `<p><strong>${trans.for_duplicators || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.pour_les_duplicopieurs'] || 'Pour les duplicopieurs :')}</strong></p>` +
                 '<ul>' +
-                `<li>${trans.enter_current_passes || 'Entrez les passages actuels'}</li>` +
-                `<li>${trans.select_consumable_type || 'Sélectionnez le type de consommable'}</li>` +
+                `<li>${trans.enter_current_passes || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.entrez_les_passages_actuels'] || 'Entrez les passages actuels')}</li>` +
+                `<li>${trans.select_consumable_type || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.s_lectionnez_le_type_de_consom'] || 'Sélectionnez le type de consommable')}</li>` +
                 '</ul>' +
-                `<p><strong>${trans.for_photocopiers || 'Pour les photocopieurs :'}</strong></p>` +
+                `<p><strong>${trans.for_photocopiers || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.pour_les_photocopieurs'] || 'Pour les photocopieurs :')}</strong></p>` +
                 '<ul>' +
-                `<li>${trans.enter_total_copies || 'Entrez le nombre total de copies'}</li>` +
-                `<li>${trans.select_consumable_type_photo || 'Sélectionnez le type de consommable'}</li>` +
+                `<li>${trans.enter_total_copies || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.entrez_le_nombre_total_de_copi'] || 'Entrez le nombre total de copies')}</li>` +
+                `<li>${trans.select_consumable_type_photo || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.changement.s_lectionnez_le_type_de_consom'] || 'Sélectionnez le type de consommable')}</li>` +
                 '</ul>' +
                 `<p><em>${trans.no_specific_help || 'Aucune aide spécifique disponible'}</em></p>` +
                 '</div>';

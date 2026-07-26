@@ -36,8 +36,8 @@ function pay(event) {
        
         // recharger la page ou une partie de la page
       } else {
-        console.log("Une erreur s'est produite lors de la mise à jour");
-        alert("Une erreur s'est produite lors de la mise à jour");
+        console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.calcul.une_erreur_s'] || "Une erreur s")est produite lors de la mise à jour");
+        alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.calcul.une_erreur_s'] || "Une erreur s")est produite lors de la mise à jour");
         window.location.reload();
       }
     },
@@ -68,11 +68,11 @@ function pay(event) {
         // recharger la page ou une partie de la page
       } else {
         //traitement en cas d'erreur
-        alert("Une erreur s'est produite lors de la mise à jour");
+        alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.calcul.une_erreur_s'] || "Une erreur s")est produite lors de la mise à jour");
       }
     },
     error: function(xhr, status, error) {
-      console.error("Erreur AJAX: ", status, error);
+      console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.calcul.erreur_ajax'] || "Erreur AJAX: "), status, error);
     }
   })
   .done(function(data) {

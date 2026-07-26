@@ -24,7 +24,7 @@
                 const result = await window.electronAPI.checkAdminStatus();
                 return result.success ? result : { isAdmin: true };
             } catch (error) {
-                console.error('Erreur vérification admin:', error);
+                console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_warning.erreur_v_rification_admin'] || 'Erreur vérification admin:'), error);
                 return { isAdmin: true }; // En cas d'erreur, ne pas afficher l'avertissement
             }
         },
@@ -47,7 +47,7 @@
             try {
                 localStorage.setItem(this.STORAGE_KEY, 'true');
             } catch (e) {
-                console.error('Impossible de sauvegarder dans localStorage:', e);
+                console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_warning.impossible_de_sauvegarder_dans'] || 'Impossible de sauvegarder dans localStorage:'), e);
             }
         },
 
@@ -99,7 +99,7 @@
                     ${dismissButton}
                     <h4><i class="fa fa-exclamation-triangle"></i> Permissions d'impression manquantes</h4>
                     <p>
-                        Pour analyser les impressions (taux de remplissage et couleurs), l'application a besoin d'accéder aux données d'impression. Sur Linux, cela nécessite d'appartenir au groupe système de l'impression.<br>
+                        Pour analyser les impressions (taux de remplissage et couleurs), l'application a besoin d'accéder aux données d(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_warning.impression__sur_linux__cela_n'] || 'impression. Sur Linux, cela nécessite d')appartenir au groupe système de l'impression.<br>
                         <strong>Solution recommandée :</strong> Ajoutez votre utilisateur au groupe <code>lp</code> en exécutant cette commande dans un terminal :
                     </p>
                     <pre style="background: #fff3cd; border: 1px solid #ffeeba; padding: 10px; margin: 10px 0;"><code>sudo usermod -aG lp ${user}</code></pre>
@@ -195,10 +195,10 @@
                 if (window.showAppModal) {
                     window.showAppModal({
                         type: 'danger',
-                        message: 'Erreur lors du redémarrage : ' + error.message
+                        message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_warning.erreur_lors_du_red_marrage'] || 'Erreur lors du redémarrage : ') + error.message
                     });
                 } else {
-                    alert('Erreur lors du redémarrage : ' + error.message);
+                    alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_warning.erreur_lors_du_red_marrage'] || 'Erreur lors du redémarrage : ') + error.message);
                 }
             }
         }

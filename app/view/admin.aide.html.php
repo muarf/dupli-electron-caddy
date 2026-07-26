@@ -113,7 +113,7 @@
                 <div class="form-group">
                   <label><?php _e('admin_aide.select_pdf'); ?> :</label>
                   <input type="file" id="pdf-file-input" class="form-control" accept=".pdf" />
-                  <small class="text-muted">Maximum 10MB, format PDF uniquement</small>
+                  <small class="text-muted"><?php _e('admin_aide.pdf_format_hint', [], false); ?></small>
                 </div>
                 <button type="button" class="btn btn-primary" onclick="uploadPdf()">
                   <i class="fa fa-upload"></i> <?php _e('admin_aide.upload_pdf'); ?>
@@ -132,7 +132,7 @@
             <h4><?php _e('admin_aide.uploaded_pdfs'); ?></h4>
             <div id="pdf-list" class="table-responsive">
               <div class="alert alert-info">
-                <i class="fa fa-spinner fa-spin"></i> Chargement des PDFs...
+                <i class="fa fa-spinner fa-spin"></i> <?php _e('admin_aide.loading_pdfs', [], false); ?>
               </div>
             </div>
           </div>

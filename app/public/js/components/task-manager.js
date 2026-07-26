@@ -51,7 +51,7 @@
                 renderTaskManager(data.jobs);
             }
         } catch (e) {
-            console.error("Erreur Task Manager:", e);
+            console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.task_manager.erreur_task_manager'] || "Erreur Task Manager:"), e);
         }
     }
 
@@ -159,7 +159,7 @@
             }
             fetchActiveJobs();
         } catch(e) {
-            console.error("Erreur deleteJob", e);
+            console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.task_manager.erreur_deletejob'] || "Erreur deleteJob"), e);
         }
     };
 

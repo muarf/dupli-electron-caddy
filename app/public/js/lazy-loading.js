@@ -26,7 +26,7 @@
     function initLazyLoading() {
         // Vérifier si IntersectionObserver est supporté
         if (!('IntersectionObserver' in window)) {
-            console.warn('IntersectionObserver non supporté, chargement normal des images');
+            console.warn((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.lazy_loading.intersectionobserver_non_suppo'] || 'IntersectionObserver non supporté, chargement normal des images'));
             loadAllImages();
             return;
         }

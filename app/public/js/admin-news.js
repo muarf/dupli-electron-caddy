@@ -8,8 +8,8 @@
 window.confirmDeleteNews = function (btn) {
     showAppModal({
         type: 'danger',
-        title: 'Supprimer la news ?',
-        message: 'Êtes-vous sûr de vouloir supprimer cette news ?',
+        title: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_news.supprimer_la_news'] || 'Supprimer la news ?'),
+        message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_news.tes_vous_s_r_de_vouloir_suppr'] || 'Êtes-vous sûr de vouloir supprimer cette news ?'),
         confirm: true,
         onConfirm: function () {
             const form = btn.form;
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ['clean']
                 ]
             },
-            placeholder: 'Rédigez le contenu de votre news...'
+            placeholder: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_news.r_digez_le_contenu_de_votre_ne'] || 'Rédigez le contenu de votre news...')
         });
 
         quillEdit.on('text-change', () => {
@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ['clean']
                 ]
             },
-            placeholder: 'Rédigez le contenu de votre news...'
+            placeholder: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_news.r_digez_le_contenu_de_votre_ne'] || 'Rédigez le contenu de votre news...')
         });
 
         quillCreate.on('text-change', () => {

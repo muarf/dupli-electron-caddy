@@ -340,7 +340,7 @@
       if (p.state && p.state.objects && p.state.objects.length > 0) hasObjects = true;
     }
     if (!hasObjects) {
-      alert("Votre montage est vide !");
+      alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_montage.votre_montage_est_vide'] || "Votre montage est vide !"));
       return;
     }
 
@@ -421,9 +421,9 @@
           }
         }, (errJson) => {
           if (window.showToast) {
-            window.showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (errJson.error || errJson.errors?.join(', ') || 'Erreur inconnue'), true);
+            window.showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (errJson.error || errJson.errors?.join(', ') || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_montage.erreur_inconnue'] || 'Erreur inconnue')), true);
           } else {
-            alert("Erreur: " + (errJson.error || errJson.errors?.join(', ') || 'Erreur inconnue'));
+            alert("Erreur: " + (errJson.error || errJson.errors?.join(', ') || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_montage.erreur_inconnue'] || 'Erreur inconnue')));
           }
         });
       } else {
@@ -446,7 +446,7 @@
       if (window.showToast) {
         window.showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
       } else {
-        alert("Erreur réseau: " + e.message);
+        alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_montage.erreur_r_seau'] || "Erreur réseau: ") + e.message);
       }
     }
   }
@@ -472,7 +472,7 @@
     const spinner = document.getElementById('studioSpinner');
     const spinnerMsg = document.getElementById('spinnerMsg');
     if (spinner) {
-      spinnerMsg.textContent = "Extraction des pages...";
+      spinnerMsg.textContent = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_montage.extraction_des_pages'] || "Extraction des pages...");
       spinner.style.display = 'flex';
     }
 
@@ -524,7 +524,7 @@
       }
     } catch (err) {
       console.error(err);
-      alert('Erreur lors de la lecture du PDF : ' + err.message);
+      alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_montage.erreur_lors_de_la_lecture_du_p'] || 'Erreur lors de la lecture du PDF : ') + err.message);
     } finally {
       if (spinner) spinner.style.display = 'none';
     }

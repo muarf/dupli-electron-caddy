@@ -40,11 +40,11 @@ $(document).ready(function() {
                     alert('Machine renommée avec succès !');
                     location.reload();
                 } else {
-                    alert('Erreur : ' + (response.error || 'Erreur inconnue'));
+                    alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.machine_rename.erreur'] || 'Erreur : ') + (response.error || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.machine_rename.erreur_inconnue'] || 'Erreur inconnue')));
                 }
             },
             error: function() {
-                alert('Erreur lors de la communication avec le serveur.');
+                alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.machine_rename.erreur_lors_de_la_communicatio'] || 'Erreur lors de la communication avec le serveur.'));
             }
         });
     });

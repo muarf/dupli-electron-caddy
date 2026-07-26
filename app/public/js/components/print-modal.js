@@ -92,7 +92,7 @@
                         $('#print-confirm-btn').prop('disabled', false);
                     }
                 } else {
-                    showError((trans.error_loading || 'Erreur lors du chargement') + ' : ' + result.error);
+                    showError((trans.error_loading || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.print_modal.erreur_lors_du_chargement'] || 'Erreur lors du chargement')) + ' : ' + result.error);
                 }
             })
             .catch(err => {
@@ -152,7 +152,7 @@
                     if (window.showAppModal) {
                         window.showAppModal({ message: (trans.error || 'Erreur') + ' : ' + (result.error || 'Inconnue'), type: 'danger' });
                     } else {
-                        console.error('Erreur impression:', result.error);
+                        console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.print_modal.erreur_impression'] || 'Erreur impression:'), result.error);
                     }
                 }
             })
@@ -162,7 +162,7 @@
                 if (window.showAppModal) {
                     window.showAppModal({ title: trans.error || 'Erreur', message: err.message, type: 'danger' });
                 } else {
-                    console.error('Erreur critique:', err);
+                    console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.print_modal.erreur_critique'] || 'Erreur critique:'), err);
                 }
             });
     };

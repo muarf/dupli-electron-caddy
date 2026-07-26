@@ -100,7 +100,7 @@
     const id = idToClose || currentSessionId;
 
     showAppModal({
-      title: "Clôturer la session",
+      title: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.cl_turer_la_session'] || "Clôturer la session"),
       message: "Voulez-vous CLÔTURER définitivement cette session ?<br><br>Cela la retirera de la liste des sessions actives.",
       type: "warning",
       confirm: true
@@ -111,7 +111,7 @@
         try {
           await fetch('?sessions&action=close&id=' + id);
         } catch (e) {
-          console.error('Erreur fermeture session:', e);
+          console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.erreur_fermeture_session'] || 'Erreur fermeture session:'), e);
         }
       }
 
@@ -275,7 +275,7 @@
       processPendingJobs();
 
     } catch (error) {
-      console.error('Erreur polling:', error);
+      console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.erreur_polling'] || 'Erreur polling:'), error);
     }
   }
 
@@ -482,7 +482,7 @@
           }
         } else {
           if (row) row.style.display = '';
-          showAppModal({ message: "Erreur lors de l'ajout à la session. Veuillez réessayer.", type: "danger" });
+          showAppModal({ message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.erreur_lors_de_l'] || "Erreur lors de l")ajout à la session. Veuillez réessayer.", type: "danger" });
         }
       });
     }
@@ -548,7 +548,7 @@
         }
 
       } catch (error) {
-        console.error('Erreur suppression job:', error);
+        console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.erreur_suppression_job'] || 'Erreur suppression job:'), error);
         bufferJobs.delete(spoolJobId);
         bufferJobs.delete(Number(spoolJobId));
         if (rowToHide) rowToHide.remove();
@@ -648,7 +648,7 @@
           showAppModal({ message: S['auto_tirage.delete_error'] + ": " + result.error, type: "danger" });
         }
       } catch (error) {
-        console.error('Erreur suppression jobs:', error);
+        console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.erreur_suppression_jobs'] || 'Erreur suppression jobs:'), error);
         spoolJobIds.forEach(id => {
           const r = document.getElementById('buffer-row-' + id);
           if (r) r.style.opacity = '1';
@@ -745,7 +745,7 @@
             window.electronAPI.deletePrintJob(job.printer_name, job.job_id)
               .then(res => {
                 if (res.success) addLog('success', '🗑️ ' + S['auto_tirage.spooler_cleaned']);
-                else console.warn('Erreur suppression spool:', res.error);
+                else console.warn((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.erreur_suppression_spool'] || 'Erreur suppression spool:'), res.error);
               })
               .catch(err => console.error(err));
           }
@@ -1216,8 +1216,8 @@
         addLog('error', '❌ Échec de la ré-analyse: ' + result.error);
       }
     } catch (e) {
-      console.error('Erreur ré-analyse:', e);
-      addLog('error', '❌ Erreur lors de l\'appel à la ré-analyse');
+      console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.erreur_r__analyse'] || 'Erreur ré-analyse:'), e);
+      addLog('error', '❌ Erreur lors de l\(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.appel___la_r__analyse'] || 'appel à la ré-analyse'));
     } finally {
       icon.classList.remove('fa-spin');
       btn.disabled = false;
@@ -1253,10 +1253,10 @@
           const resp = await fetch('?delete_session_job&id=' + job.id + '&type=' + apiType);
           const result = await resp.json();
           if (!result.success) {
-            console.error('Erreur serveur lors de la suppression:', result.error);
+            console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.erreur_serveur_lors_de_la_supp'] || 'Erreur serveur lors de la suppression:'), result.error);
           }
         } catch (e) {
-          console.error('Erreur réseau lors de la suppression:', e);
+          console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.erreur_r_seau_lors_de_la_suppr'] || 'Erreur réseau lors de la suppression:'), e);
         }
       }
 

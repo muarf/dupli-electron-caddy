@@ -72,7 +72,7 @@
             const result = await window.electronAPI.getPrinters();
 
             if (!result.success) {
-                throw new Error(result.error || 'Erreur lors du chargement des imprimantes');
+                throw new Error(result.error || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.print_dialog.erreur_lors_du_chargement_des'] || 'Erreur lors du chargement des imprimantes'));
             }
 
             printersList = result.printers || [];
@@ -81,7 +81,7 @@
 
             if (printersList.length === 0) {
                 select.append('<option value="">Aucune imprimante disponible</option>');
-                $('#printDialogErrorText').text('Aucune imprimante trouvée sur ce système').show();
+                $('#printDialogErrorText').text((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.print_dialog.aucune_imprimante_trouv_e_sur'] || 'Aucune imprimante trouvée sur ce système')).show();
                 $('#printDialogError').show();
             } else {
                 printersList.forEach(function (printer) {
@@ -104,7 +104,7 @@
             $('#printDialogForm').show();
             $('#printDialogPrintBtn').prop('disabled', false);
         } catch (error) {
-            console.error('Erreur chargement imprimantes:', error);
+            console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.print_dialog.erreur_chargement_imprimantes'] || 'Erreur chargement imprimantes:'), error);
             $('#printDialogLoading').hide();
             $('#printDialogErrorText').text('Erreur: ' + error.message);
             $('#printDialogError').show();
@@ -120,7 +120,7 @@
             const result = await window.electronAPI.getPrinterCapabilities(printerName);
 
             if (!result.success) {
-                console.warn('Impossible de charger les capacités:', result.error);
+                console.warn((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.print_dialog.impossible_de_charger_les_capa'] || 'Impossible de charger les capacités:'), result.error);
                 return;
             }
 
@@ -180,7 +180,7 @@
                 resolutionGroup.hide();
             }
         } catch (error) {
-            console.error('Erreur chargement capacités:', error);
+            console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.print_dialog.erreur_chargement_capacit_s'] || 'Erreur chargement capacités:'), error);
         }
     }
 
@@ -204,14 +204,14 @@
         const printerName = $('#printPrinterSelect').val();
         if (!printerName) {
             if (window.showAppModal) {
-                window.showAppModal({ message: 'Veuillez sélectionner une imprimante', type: 'warning' });
+                window.showAppModal({ message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.print_dialog.veuillez_s_lectionner_une_impr'] || 'Veuillez sélectionner une imprimante'), type: 'warning' });
             }
             return;
         }
 
         if (!currentPdfPath) {
             if (window.showAppModal) {
-                window.showAppModal({ message: 'Aucun fichier PDF spécifié', type: 'warning' });
+                window.showAppModal({ message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.print_dialog.aucun_fichier_pdf_sp_cifi'] || 'Aucun fichier PDF spécifié'), type: 'warning' });
             }
             return;
         }
@@ -265,7 +265,7 @@
                 throw new Error(result.error || 'Erreur lors de l\'impression');
             }
         } catch (error) {
-            console.error('Erreur impression:', error);
+            console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.print_dialog.erreur_impression'] || 'Erreur impression:'), error);
             if (window.showAppModal) {
                 window.showAppModal({ message: 'Erreur lors de l\'impression:\n\n' + error.message, type: 'danger' });
             }
