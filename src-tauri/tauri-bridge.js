@@ -447,7 +447,6 @@
       }
     }),
     onPrintMonitorError:  (cb) => _registerEvent('print-monitor-error',  cb),
-    onPrintMonitorStarted:(cb) => _registerEvent('print-monitor-started', cb),
 
     // ─────────────────────────────────────────────────────────────────
     // Administration & Droits élevés
