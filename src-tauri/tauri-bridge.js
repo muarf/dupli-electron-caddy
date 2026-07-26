@@ -148,10 +148,6 @@
     openFile: (filePath) =>
       invoke('open_file', { filePath }),
 
-    /** Supprime les fichiers temporaires de l'application */
-    cleanupTmpFiles: () =>
-      invoke('cleanup_tmp_files'),
-
     /** Affiche une boîte de dialogue de sélection de fichier */
     showOpenDialog: (options) =>
       invoke('show_open_dialog', { options }),

@@ -63,20 +63,30 @@ pub async fn open_external_file(file_url: String) -> Result<(), String> {
     open_file(path).await
 }
 
-/// Nettoie les fichiers temporaires de l'application
-#[command]
-pub async fn cleanup_tmp_files() -> Result<u32, String> {
+/// Nettoie les fichiers temporaires de l'application âgés de plus d'1 jour
+pub fn cleanup_tmp_files() -> u32 {
     log::info!("[app_commands] cleanup_tmp_files()");
 
     let tmp_dir = std::env::temp_dir();
     let mut count = 0u32;
+    let one_day_ago = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+        .saturating_sub(86400); // 24h en secondes
 
     if let Ok(entries) = std::fs::read_dir(&tmp_dir) {
         for entry in entries.flatten() {
             let name = entry.file_name().to_string_lossy().to_lowercase();
-            // Nettoie uniquement les fichiers temporaires créés par l'application
             if name.starts_with("duplicator_") || name.starts_with("dupli_tmp_") {
-                if std::fs::remove_file(entry.path()).is_ok() {
+                // Vérifier l'âge du fichier via metadata
+                let is_old = entry.metadata()
+                    .and_then(|m| m.modified())
+                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH))
+                    .map(|d| d.as_secs() < one_day_ago)
+                    .unwrap_or(false);
+
+                if is_old && std::fs::remove_file(entry.path()).is_ok() {
                     count += 1;
                 }
             }
@@ -84,7 +94,7 @@ pub async fn cleanup_tmp_files() -> Result<u32, String> {
     }
 
     log::info!("[app_commands] cleanup_tmp_files() : {} fichier(s) supprimé(s)", count);
-    Ok(count)
+    count
 }
 
 #[derive(Serialize)]

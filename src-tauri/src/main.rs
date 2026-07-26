@@ -53,7 +53,6 @@ fn main() {
             // Gestion de l'application et des fichiers
             app_commands::open_file,
             app_commands::open_external_file,
-            app_commands::cleanup_tmp_files,
             app_commands::show_open_dialog,
             app_commands::get_database_path,
             app_commands::get_app_version,
@@ -98,6 +97,12 @@ fn main() {
             app.manage(app_commands::UpdateState {
                 pending_update: std::sync::Mutex::new(None),
             });
+
+            // 1c. Nettoyage des fichiers temporaires obsolètes (> 24h)
+            let cleaned = app_commands::cleanup_tmp_files();
+            if cleaned > 0 {
+                log::info!("[startup] {} fichier(s) temporaire(s) supprimé(s)", cleaned);
+            }
 
             // 2. Enregistrement de l'état du moniteur d'impression
             let monitor_state = printer_commands::PrintMonitorState::new();
