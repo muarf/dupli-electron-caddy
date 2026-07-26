@@ -22,6 +22,9 @@ try {
     $file = $manager->getFile($id);
     
     if ($file) {
+        // Retirer le texte extrait pour alléger la réponse et éviter les problèmes d'encodage UTF-8
+        unset($file['extracted_text']);
+        
         // Décoder le JSON des métadonnées pour plus de facilité en JS
         $file['metadata'] = json_decode($file['metadata_json'] ?? '{}', true);
         echo json_encode(['success' => true, 'file' => $file]);
