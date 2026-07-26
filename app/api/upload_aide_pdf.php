@@ -80,13 +80,7 @@ function resolveAidePdfDir() {
 }
 }
 
-if (!function_exists('normalizePath')) {
-function normalizePath($path) {
-    $path = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $path);
-    $path = trim($path);
-    return rtrim($path, DIRECTORY_SEPARATOR);
-}
-}
+
 
 // Fonction pour récupérer la liste des PDFs
 function getUploadedPdfs() {

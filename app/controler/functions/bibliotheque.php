@@ -6,16 +6,7 @@
 // La fonction getBibliothequeDir() est désormais centralisée dans paths.php
 // Elle est chargée via func.php -> paths.php
 
-/**
- * Normalise un chemin
- */
-if (!function_exists('normalizePath')) {
-    function normalizePath($path) {
-        $path = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $path);
-        $path = trim($path);
-        return rtrim($path, DIRECTORY_SEPARATOR);
-    }
-}
+
 
 /**
  * Scanne un dossier pour trouver des PDF et PNG
