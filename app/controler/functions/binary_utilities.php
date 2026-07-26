@@ -265,10 +265,11 @@ function escape_shell_arg_with_percent(string $arg): string
  *
  * @return string Exemple: "set HF_HOME=D:\IA\hf_cache && " (Windows) ou "export HF_HOME=/opt/IA/hf_cache && " (Linux/Mac)
  */
-function get_hf_home_env(): string
+function get_hf_home_env(?PDO $db = null): string
 {
-    global $db;
-    if (!$db && function_exists('pdo_connect')) {
+    if (!$db && isset($GLOBALS['db']) && $GLOBALS['db'] instanceof PDO) {
+        $db = $GLOBALS['db'];
+    } elseif (!$db && function_exists('pdo_connect')) {
         $db = pdo_connect();
     }
     if ($db) {

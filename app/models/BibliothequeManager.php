@@ -685,12 +685,10 @@ class BibliothequeManager {
                 return [];
             }
             
-            // S'assurer que le texte est en UTF-8 valide
             if (!mb_check_encoding($text, 'UTF-8')) {
                 $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
             }
             
-            // Découper la recherche en mots (filtrer < 2 caractères)
             $words = preg_split('/\s+/', trim($search));
             $words = array_filter($words, function($w) { return strlen($w) >= 2; });
             
@@ -699,16 +697,14 @@ class BibliothequeManager {
             }
             
             $contexts = [];
-            $contextLength = 100; // ~100 caractères avant et après
-            $maxContexts = 3; // Limiter à 3 contextes maximum
+            $contextLength = 100;
+            $maxContexts = 3;
             
-            // Pour chaque mot, trouver toutes les occurrences
             foreach ($words as $word) {
                 if (count($contexts) >= $maxContexts) {
                     break;
                 }
                 
-                // S'assurer que le mot est en UTF-8 valide
                 if (!mb_check_encoding($word, 'UTF-8')) {
                     $word = mb_convert_encoding($word, 'UTF-8', 'UTF-8');
                 }
@@ -717,68 +713,17 @@ class BibliothequeManager {
                 $textLower = mb_strtolower($text, 'UTF-8');
                 $wordLength = mb_strlen($word, 'UTF-8');
                 
-                // Trouver toutes les occurrences du mot (insensible à la casse)
                 $offset = 0;
-                $maxIterations = 100; // Limiter les itérations pour éviter les boucles infinies
+                $maxIterations = 50;
                 $iterationCount = 0;
                 
                 while ($iterationCount < $maxIterations && ($pos = mb_strpos($textLower, $wordLower, $offset, 'UTF-8')) !== false && count($contexts) < $maxContexts) {
                     $iterationCount++;
                     
-                    // Extraire ~100 caractères avant et après
-                    $start = max(0, $pos - $contextLength);
-                    $end = min(mb_strlen($text, 'UTF-8'), $pos + $wordLength + $contextLength);
-                    
-                    $context = mb_substr($text, $start, $end - $start, 'UTF-8');
-                    
-                    // Nettoyer : normaliser les espaces
-                    $context = preg_replace('/\s+/', ' ', $context);
-                    
-                    // Tronquer intelligemment aux limites de phrase si possible
-                    if ($start > 0) {
-                        // Chercher le début de phrase le plus proche
-                        $textBefore = mb_substr($text, 0, $pos, 'UTF-8');
-                        $sentenceStart = mb_strrpos($textBefore, '. ', 0, 'UTF-8');
-                        if ($sentenceStart !== false && $sentenceStart > $start - 50) {
-                            $start = $sentenceStart + 2; // Après ". "
-                            $context = mb_substr($text, $start, $end - $start, 'UTF-8');
-                            $context = preg_replace('/\s+/', ' ', $context);
-                        } else {
-                            // Sinon, tronquer au début si nécessaire
-                            if ($start > 0) {
-                                $context = '...' . ltrim($context);
-                            }
-                        }
-                    }
-                    
-                    if ($end < mb_strlen($text, 'UTF-8')) {
-                        // Chercher la fin de phrase la plus proche
-                        $sentenceEnd = mb_strpos($text, '. ', $pos, 'UTF-8');
-                        if ($sentenceEnd !== false && $sentenceEnd < $end + 50) {
-                            $end = $sentenceEnd + 1;
-                            $context = mb_substr($text, $start, $end - $start, 'UTF-8');
-                            $context = preg_replace('/\s+/', ' ', $context);
-                        } else {
-                            // Sinon, tronquer à la fin si nécessaire
-                            $context = rtrim($context) . '...';
-                        }
-                    }
-                    
-                    // Mettre en évidence le mot trouvé (avec balises HTML <mark>)
-                    // Trouver la position du mot dans le contexte (insensible à la casse)
-                    $contextLower = mb_strtolower($context, 'UTF-8');
-                    $wordPosInContext = mb_strpos($contextLower, $wordLower, 0, 'UTF-8');
-                    if ($wordPosInContext !== false) {
-                        $before = mb_substr($context, 0, $wordPosInContext, 'UTF-8');
-                        $match = mb_substr($context, $wordPosInContext, $wordLength, 'UTF-8');
-                        $after = mb_substr($context, $wordPosInContext + $wordLength, null, 'UTF-8');
-                        $context = $before . '<mark>' . htmlspecialchars($match, ENT_QUOTES, 'UTF-8') . '</mark>' . $after;
-                    }
-                    
-                    // Éviter les doublons
-                    $contextKey = md5($context);
-                    if (!isset($contexts[$contextKey])) {
-                        $contexts[$contextKey] = trim($context);
+                    $formatted = $this->formatSingleContext($text, $pos, $wordLength, $contextLength);
+                    $contextKey = md5($formatted);
+                    if (!isset($contexts[$contextKey]) && !empty($formatted)) {
+                        $contexts[$contextKey] = $formatted;
                     }
                     
                     $offset = $pos + 1;
@@ -788,7 +733,6 @@ class BibliothequeManager {
                 }
             }
             
-            // Retourner les contextes (limiter à 3)
             return array_slice(array_values($contexts), 0, $maxContexts);
             
         } catch (Exception $e) {
@@ -798,6 +742,48 @@ class BibliothequeManager {
             error_log("Erreur fatale dans extractMatchContexts: " . $e->getMessage());
             return [];
         }
+    }
+
+    /**
+     * Formate un extrait de contexte unique avec mise en valeur <mark>
+     */
+    private function formatSingleContext(string $text, int $pos, int $wordLength, int $contextLength): string {
+        $textLen = mb_strlen($text, 'UTF-8');
+        $start = max(0, $pos - $contextLength);
+        $end = min($textLen, $pos + $wordLength + $contextLength);
+        
+        $textBefore = mb_substr($text, 0, $pos, 'UTF-8');
+        $sentenceStart = mb_strrpos($textBefore, '. ', 0, 'UTF-8');
+        if ($sentenceStart !== false && $sentenceStart > $start - 50) {
+            $start = $sentenceStart + 2;
+        }
+        
+        $sentenceEnd = mb_strpos($text, '. ', $pos, 'UTF-8');
+        if ($sentenceEnd !== false && $sentenceEnd < $end + 50) {
+            $end = $sentenceEnd + 1;
+        }
+        
+        $context = mb_substr($text, $start, $end - $start, 'UTF-8');
+        $context = preg_replace('/\s+/', ' ', $context);
+        
+        if ($start > 0) {
+            $context = '...' . ltrim($context);
+        }
+        if ($end < $textLen) {
+            $context = rtrim($context) . '...';
+        }
+        
+        $contextLower = mb_strtolower($context, 'UTF-8');
+        $wordLower = mb_strtolower(mb_substr($text, $pos, $wordLength, 'UTF-8'), 'UTF-8');
+        $wordPosInContext = mb_strpos($contextLower, $wordLower, 0, 'UTF-8');
+        if ($wordPosInContext !== false) {
+            $before = mb_substr($context, 0, $wordPosInContext, 'UTF-8');
+            $match = mb_substr($context, $wordPosInContext, $wordLength, 'UTF-8');
+            $after = mb_substr($context, $wordPosInContext + $wordLength, null, 'UTF-8');
+            $context = $before . '<mark>' . htmlspecialchars($match, ENT_QUOTES, 'UTF-8') . '</mark>' . $after;
+        }
+        
+        return trim($context);
     }
     
     /**
