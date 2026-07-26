@@ -167,7 +167,7 @@ function getSortLink($column, $currentSort, $currentOrder) {
                 <td style="vertical-align: middle; text-align: right;">
                     <div class="d-flex justify-content-end align-items-center" onclick="event.stopPropagation();">
                         <!-- 1. OUVRIR -->
-                        <button class="btn btn-sm btn-outline-primary mr-1" onclick="window.open('?get_bibliotheque_file&id=<?= $file['id'] ?>', '_blank')" title="Ouvrir">
+                        <button class="btn btn-sm btn-outline-primary mr-1" onclick="openLibraryFile(<?= $file['id'] ?>)" title="Ouvrir">
                             <i class="fa fa-external-link"></i>
                         </button>
 
