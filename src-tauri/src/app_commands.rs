@@ -175,7 +175,7 @@ pub async fn check_for_updates(
             log::info!("[app_commands] Update available: {}", version);
 
             // Stocker la mise à jour disponible dans l'état global
-            *state.pending_update.lock().unwrap() = Some(update);
+            *state.pending_update.lock().unwrap_or_else(|e| e.into_inner()) = Some(update);
 
             // Émettre l'événement vers le frontend
             let _ = app.emit("update-available", serde_json::json!({
@@ -191,7 +191,7 @@ pub async fn check_for_updates(
         }
         Ok(None) => {
             log::info!("[app_commands] No update available");
-            *state.pending_update.lock().unwrap() = None;
+            *state.pending_update.lock().unwrap_or_else(|e| e.into_inner()) = None;
             let _ = app.emit("update-not-available", ());
             Ok(UpdateCheckResult {
                 update_available: false,
@@ -215,7 +215,7 @@ pub async fn download_update(
     state: tauri::State<'_, UpdateState>,
 ) -> Result<(), String> {
     log::info!("[app_commands] download_update()");
-    let mut pending_guard = state.pending_update.lock().unwrap();
+    let mut pending_guard = state.pending_update.lock().unwrap_or_else(|e| e.into_inner());
     let update = pending_guard.take().ok_or_else(|| "Aucune mise à jour disponible en attente de téléchargement.".to_string())?;
 
     let app_clone = app.clone();
@@ -233,7 +233,7 @@ pub async fn download_update(
 
         let res = update.download_and_install(
             move |chunk_length, content_length| {
-                let mut t = transferred_clone.lock().unwrap();
+                let mut t = transferred_clone.lock().unwrap_or_else(|e| e.into_inner());
                 *t += chunk_length;
                 let total = content_length.unwrap_or(*t as u64);
                 let percent = if total > 0 {

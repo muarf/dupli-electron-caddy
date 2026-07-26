@@ -71,40 +71,7 @@ if (isset($_POST['id']) && !isset($_POST['singlebutton'])) {
     </div>
   </div>
 
-  <script>
-    // Initialiser Quill.js pour l'édition
-    var quillEdit = new Quill('#editor-edit', {
-      theme: 'snow',
-      modules: {
-        toolbar: [
-          [{ 'header': [1, 2, 3, false] }],
-          ['bold', 'italic', 'underline', 'strike'],
-          [{ 'color': [] }, { 'background': [] }],
-          [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-          [{ 'align': [] }],
-          ['link', 'image'],
-          ['clean']
-        ]
-      },
-      placeholder: 'Rédigez le contenu de votre news...'
-    });
 
-    // Gestionnaire d'événement pour synchroniser le contenu après chaque modification
-    quillEdit.on('text-change', function () {
-      var content = quillEdit.root.innerHTML;
-      document.getElementById('texte-hidden-edit').value = content;
-    });
-
-    // Mettre à jour le champ caché avant soumission
-    document.getElementById('news-form-edit').addEventListener('submit', function (e) {
-      // Forcer la synchronisation finale
-      var content = quillEdit.root.innerHTML;
-      document.getElementById('texte-hidden-edit').value = content;
-
-      // Debug: vérifier le contenu
-      console.log('Contenu à sauvegarder:', content);
-    });
-  </script>
   <?php
 }
 // Formulaire de création
@@ -154,40 +121,7 @@ elseif ($_GET['news'] == "add") {
     </div>
   </div>
 
-  <script>
-    // Initialiser Quill.js pour la création
-    var quillCreate = new Quill('#editor-create', {
-      theme: 'snow',
-      modules: {
-        toolbar: [
-          [{ 'header': [1, 2, 3, false] }],
-          ['bold', 'italic', 'underline', 'strike'],
-          [{ 'color': [] }, { 'background': [] }],
-          [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-          [{ 'align': [] }],
-          ['link', 'image'],
-          ['clean']
-        ]
-      },
-      placeholder: 'Rédigez le contenu de votre news...'
-    });
 
-    // Gestionnaire d'événement pour synchroniser le contenu après chaque modification
-    quillCreate.on('text-change', function () {
-      var content = quillCreate.root.innerHTML;
-      document.getElementById('texte-hidden-create').value = content;
-    });
-
-    // Mettre à jour le champ caché avant soumission
-    document.getElementById('news-form-create').addEventListener('submit', function (e) {
-      // Forcer la synchronisation finale
-      var content = quillCreate.root.innerHTML;
-      document.getElementById('texte-hidden-create').value = content;
-
-      // Debug: vérifier le contenu
-      console.log('Contenu à sauvegarder:', content);
-    });
-  </script>
   <?php
 }
 // Liste des news
@@ -271,23 +205,4 @@ else {
   <?php
 }
 ?>
-<script>
-  function confirmDeleteNews(btn) {
-    showAppModal({
-      type: 'danger',
-      title: 'Supprimer la news ?',
-      message: 'Êtes-vous sûr de vouloir supprimer cette news ?',
-      confirm: true,
-      onConfirm: function () {
-        // Create a hidden input to simulate the button name="singlebutton"
-        var form = btn.form;
-        var hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = 'singlebutton';
-        hiddenInput.value = '';
-        form.appendChild(hiddenInput);
-        form.submit();
-      }
-    });
-  }
-</script>
+<script src="js/admin-news.js" defer></script>

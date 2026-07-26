@@ -56,8 +56,8 @@ pub async fn launch_all_sidecars(app: &AppHandle) -> Result<(), String> {
 
     // Garde atomique : refuse le double démarrage
     {
-        let caddy = state.caddy_child.lock().unwrap();
-        let php = state.php_child.lock().unwrap();
+        let caddy = state.caddy_child.lock().unwrap_or_else(|e| e.into_inner());
+        let php = state.php_child.lock().unwrap_or_else(|e| e.into_inner());
         if caddy.is_some() || php.is_some() {
             log::warn!("[server_manager] Double démarrage refusé : des serveurs tournent déjà.");
             return Err("Les serveurs sont déjà en cours d'exécution.".into());
@@ -80,7 +80,7 @@ pub async fn launch_all_sidecars(app: &AppHandle) -> Result<(), String> {
     .map_err(|e| format!("Impossible de lancer Caddy: {e}"))?;
 
     // Stocke le handle du processus Caddy dans l'état global
-    *caddy_child_ref.lock().unwrap() = Some(caddy_child.0);
+    *caddy_child_ref.lock().unwrap_or_else(|e| e.into_inner()) = Some(caddy_child.0);
 
     // Écoute les logs de Caddy dans une tâche dédiée
     let mut caddy_rx = caddy_child.1;
@@ -107,7 +107,7 @@ pub async fn launch_all_sidecars(app: &AppHandle) -> Result<(), String> {
     .map_err(|e| format!("Impossible de lancer PHP: {e}"))?;
 
     // Stocke le handle du processus PHP dans l'état global
-    *php_child_ref.lock().unwrap() = Some(php_child.0);
+    *php_child_ref.lock().unwrap_or_else(|e| e.into_inner()) = Some(php_child.0);
 
     // Écoute les logs de PHP dans une tâche dédiée
     let mut php_rx = php_child.1;
@@ -136,13 +136,13 @@ pub fn get_server_status(state: tauri::State<AppState>) -> ServerStatus {
     let caddy_running = state
         .caddy_child
         .lock()
-        .unwrap()
+        .unwrap_or_else(|e| e.into_inner())
         .is_some();
 
     let php_running = state
         .php_child
         .lock()
-        .unwrap()
+        .unwrap_or_else(|e| e.into_inner())
         .is_some();
 
     ServerStatus { caddy_running, php_running }
@@ -174,7 +174,7 @@ pub async fn restart_php(app: AppHandle) -> Result<String, String> {
 
     let php_handle = app.clone();
     let php_child_ref = Arc::clone(&state.php_child);
-    *php_child_ref.lock().unwrap() = Some(php_child.0);
+    *php_child_ref.lock().unwrap_or_else(|e| e.into_inner()) = Some(php_child.0);
 
     let mut php_rx = php_child.1;
     tauri::async_runtime::spawn(async move {
@@ -292,7 +292,7 @@ async fn pipe_logs_to_frontend(
 
 /// Tue un processus enfant de manière sécurisée (avec gestion du Mutex).
 fn kill_child(child_ref: &Arc<Mutex<Option<CommandChild>>>, name: &str) {
-    let mut guard = child_ref.lock().unwrap();
+    let mut guard = child_ref.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(child) = guard.take() {
         #[cfg(target_os = "windows")]
         {

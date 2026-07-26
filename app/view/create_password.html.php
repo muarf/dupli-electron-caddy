@@ -152,89 +152,17 @@
     <?php include __DIR__ . '/components/app-modal.html.php'; ?>
 
     <script>
-        /**
-         * Affiche une modale d'information ou de confirmation
-         * Version autonome pour create_password.html.php
-         */
-        function showAppModal(options) {
-            if (typeof options === 'string') {
-                options = { message: options };
+        const CONFIG = {
+            translations: {
+                info: <?= json_encode(__('common.info')) ?>,
+                cancel: <?= json_encode(__('common.cancel')) ?>,
+                passwords_dont_match: <?= json_encode(__('create_password.passwords_dont_match')) ?>,
+                password_too_short: <?= json_encode(__('create_password.password_too_short')) ?>
             }
-
-            const modal = $('#app-global-modal');
-            const title = options.title ||  "<?php echo __js('common.info'); ?>" ;
-            const message = options.message || '';
-            const type = options.type || 'info'; // info, success, warning, danger
-            const confirm = options.confirm || false;
-            const okText = options.okText || 'OK';
-            const cancelText = options.cancelText ||  "<?php echo __js('common.cancel'); ?>" ;
-
-            // Configurer le titre et le message
-            $('#app-global-modal-title-text').text(title);
-            $('#app-global-modal-body').html(message);
-
-            // Gérer les couleurs selon le type
-            const header = modal.find('.modal-header');
-            const okBtn = $('#app-global-modal-ok');
-            const icon = $('#app-global-modal-icon');
-
-            // Reset classes
-            icon.removeClass('text-primary text-success text-warning text-danger');
-            okBtn.removeClass('btn-primary btn-success btn-warning btn-danger');
-
-            // Appliquer le type
-            let color = '#007bff';
-            let iconClass = 'fa-info-circle';
-
-            switch (type) {
-                case 'success': color = '#28a745'; iconClass = 'fa-check-circle'; break;
-                case 'warning': color = '#ffc107'; iconClass = 'fa-exclamation-triangle'; break;
-                case 'danger': color = '#dc3545'; iconClass = 'fa-exclamation-circle'; break;
-            }
-
-            icon.addClass('text-' + (type === 'info' ? 'primary' : type)).addClass(iconClass);
-            okBtn.addClass('btn-' + (type === 'info' ? 'primary' : type));
-            okBtn.text(okText);
-
-            // Gérer le bouton Annuler et Confirmation
-            if (confirm) {
-                $('#app-global-modal-cancel').show().text(cancelText);
-            } else {
-                $('#app-global-modal-cancel').hide();
-            }
-
-            // Callbacks
-            okBtn.off('click').on('click', function() {
-                if (options.onConfirm) options.onConfirm();
-                if (options.onClose) options.onClose();
-            });
-
-            $('#app-global-modal-cancel, .close').off('click').on('click', function() {
-                if (options.onCancel) options.onCancel();
-                if (options.onClose) options.onClose();
-            });
-
-            modal.modal('show');
-        }
-
-        // Vérification côté client que les mots de passe correspondent
-        document.querySelector('form').addEventListener('submit', function(e) {
-            const password = document.getElementById('admin_password').value;
-            const confirm = document.getElementById('admin_password_confirm').value;
-            
-            if (password !== confirm) {
-                e.preventDefault();
-                showAppModal( "<?php echo __js('create_password.passwords_dont_match'); ?>" );
-                return false;
-            }
-            
-            if (password.length < 6) {
-                e.preventDefault();
-                showAppModal( "<?php echo __js('create_password.password_too_short'); ?>" );
-                return false;
-            }
-        });
+        };
     </script>
+    <script src="<?= $base_path ?>js/create-password.js" defer></script>
+
 </body>
 </html>
 

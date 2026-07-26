@@ -153,287 +153,47 @@ if(isset($success_message)): ?>
 </div>
 
 <script>
-$(document).ready(function() {
-    // Variables globales
-    var duplicopieurs_tambours = {};
-    var duplicopieursNames = [];
-    
-    // Ajouter les données des duplicopieurs
-    <?php if(isset($duplicopieurs) && count($duplicopieurs) > 0): ?>
-        <?php foreach($duplicopieurs as $dup): ?>
-            duplicopieurs_tambours['<?= htmlspecialchars($dup['name']) ?>'] = <?= json_encode($dup['tambours']) ?>;
-            duplicopieursNames.push('<?= htmlspecialchars($dup['name']) ?>');
-        <?php endforeach; ?>
-    <?php endif; ?>
-    
-    // Fonction pour mettre à jour les options de type selon la machine
-    function updateTypeOptions(machine, selectElement) {
-        $.get('?changement&ajax=get_machine_type&machine=' + encodeURIComponent(machine) + '&t=' + Date.now())
-            .done(function(response) {
-                if (response.success) {
-                    var type = response.type;
-                    var options = '';
-                    
-                    if (type === 'duplicopieur') {
-                        // Duplicopieurs : master et encre
-                        options = '<option value="master"><?php _ejs('changement.master'); ?></option>' +
-                                 '<option value="encre"><?php _ejs('changement.ink'); ?></option>';
-                    } else if (type === 'photocop_encre') {
-                        // Photocopieurs à encre : 4 couleurs seulement
-                        options = '<option value="noire"><?php _ejs('changement.black_ink'); ?></option>' +
-                                 '<option value="bleue"><?php _ejs('changement.blue_ink'); ?></option>' +
-                                 '<option value="rouge"><?php _ejs('changement.red_ink'); ?></option>' +
-                                 '<option value="jaune"><?php _ejs('changement.yellow_ink'); ?></option>';
-                    } else if (type === 'photocop_toner') {
-                        // Photocopieurs à toner : 4 couleurs + dev + tambour
-                        options = '<option value="noir"><?php _ejs('changement.black'); ?></option>' +
-                                 '<option value="cyan"><?php _ejs('changement.cyan'); ?></option>' +
-                                 '<option value="magenta"><?php _ejs('changement.magenta'); ?></option>' +
-                                 '<option value="yellow"><?php _ejs('changement.yellow'); ?></option>' +
-                                 '<option value="dev"><?php _ejs('changement.dev'); ?></option>' +
-                                 '<option value="tambour"><?php _ejs('changement.drum'); ?></option>';
-                    } else {
-                        options = '<option value=""><?php _ejs('changement.machine_type_not_recognized'); ?></option>';
-                    }
-                    
-                    selectElement.html('<option value=""><?php _ejs('changement.select_type'); ?></option>' + options);
-                }
-            })
-            .fail(function() {
-                selectElement.html('<option value=""><?php _ejs('changement.error_loading'); ?></option>');
-            });
-    }
-    
-    // Fonction pour gérer l'affichage du champ tambour selon le type
-    function toggleTambourField(type, machine) {
-        var tambourField = $('#tambour');
-        var tambourLabel = $('#tambour').prev('label');
-        var tambourGroup = $('#tambour-group');
-        
-        if (type === 'master') {
-            // Pour les masters, pas besoin de tambour
-            tambourGroup.hide();
-            tambourField.prop('required', false);
-        } else if (type === 'encre' || type === 'tambour') {
-            // Pour l'encre et les tambours, on doit choisir le tambour
-            tambourGroup.show();
-            tambourField.prop('required', true);
-            
-            // Remplir les options de tambours
-            if (duplicopieurs_tambours[machine]) {
-                tambourField.html('<option value=""><?php _ejs('changement.select_drum'); ?></option>');
-                $.each(duplicopieurs_tambours[machine], function(index, tambour) {
-                    tambourField.append('<option value="' + tambour + '">' + tambour + '</option>');
-                });
-            }
-        } else {
-            tambourGroup.hide();
-            tambourField.prop('required', false);
-        }
-    }
-    
-    // Gestion du changement de machine
-    $('#machine').change(function() {
-        var machine = $(this).val();
-        var typeSelect = $('#type');
-        var mastersGroup = $('#masters-group');
-        var tambourGroup = $('#tambour-group');
-        var tambourSelect = $('#tambour');
-        
-        // Vider les options
-        typeSelect.html('<option value=""><?php _ejs('changement.select_type'); ?></option>');
-        tambourSelect.html('<option value=""><?php _ejs('changement.select_drum'); ?></option>');
-        
-        if (machine) {
-            // Utiliser la nouvelle fonction pour mettre à jour les types
-            updateTypeOptions(machine, typeSelect);
-            
-            // Afficher/masquer les champs selon le type de machine
-            if (duplicopieursNames.indexOf(machine) !== -1) {
-                mastersGroup.show();
-                tambourGroup.show();
-                
-                // Remplir les options de tambours
-                if (duplicopieurs_tambours[machine]) {
-                    tambourSelect.html('<option value=""><?php _ejs('changement.select_drum'); ?></option>');
-                    $.each(duplicopieurs_tambours[machine], function(index, tambour) {
-                        tambourSelect.append('<option value="' + tambour + '">' + tambour + '</option>');
-                    });
-                }
-                
-                // Le champ masters sera rendu obligatoire seulement si le type "master" est sélectionné
-                $('#nb_m').prop('required', false);
-                
-                // Récupérer les derniers compteurs pour les duplicopieurs
-                $.get('?changement&ajax=get_last_counters&machine=' + encodeURIComponent(machine))
-                    .done(function(response) {
-                        if (response.success) {
-                            $('#nb_p').val(response.counters.passage_av);
-                            $('#nb_m').val(response.counters.master_av);
-                        }
-                    })
-                    .fail(function() {
-                        console.log('Erreur lors du chargement des compteurs');
-                    });
-            } else {
-                // C'est un photocopieur - cacher le champ masters
-                mastersGroup.hide();
-                tambourGroup.hide();
-                $('#nb_m').prop('required', false);
-                
-                // Pour les photocopieurs, récupérer les compteurs depuis la table cons
-                $.get('?changement&ajax=get_last_counters&machine=' + encodeURIComponent(machine))
-                    .done(function(response) {
-                        if (response.success) {
-                            $('#nb_p').val(response.counters.passage_av);
-                            $('#nb_m').val(response.counters.master_av);
-                        }
-                    })
-                    .fail(function() {
-                        console.log('Erreur lors du chargement des compteurs');
-                    });
-            }
-        } else {
-            mastersGroup.hide();
-            tambourGroup.hide();
-            $('#nb_m').prop('required', false);
-        }
-        
-        // Mettre à jour l'aide pour la machine sélectionnée
-        updateAide(machine);
+    window.CONFIG = window.CONFIG || {};
+    window.CONFIG.duplicopieurs = <?= json_encode($duplicopieurs ?? []) ?>;
+    window.CONFIG.aides = <?= json_encode(json_decode($aide_dynamique ?? '{}')) ?>;
+    window.CONFIG.translations = Object.assign(window.CONFIG.translations || {}, {
+        master: <?= json_encode(__('changement.master')) ?>,
+        ink: <?= json_encode(__('changement.ink')) ?>,
+        black_ink: <?= json_encode(__('changement.black_ink')) ?>,
+        blue_ink: <?= json_encode(__('changement.blue_ink')) ?>,
+        red_ink: <?= json_encode(__('changement.red_ink')) ?>,
+        yellow_ink: <?= json_encode(__('changement.yellow_ink')) ?>,
+        black: <?= json_encode(__('changement.black')) ?>,
+        cyan: <?= json_encode(__('changement.cyan')) ?>,
+        magenta: <?= json_encode(__('changement.magenta')) ?>,
+        yellow: <?= json_encode(__('changement.yellow')) ?>,
+        dev: <?= json_encode(__('changement.dev')) ?>,
+        drum: <?= json_encode(__('changement.drum')) ?>,
+        machine_type_not_recognized: <?= json_encode(__('changement.machine_type_not_recognized')) ?>,
+        select_type: <?= json_encode(__('changement.select_type')) ?>,
+        error_loading: <?= json_encode(__('changement.error_loading')) ?>,
+        select_drum: <?= json_encode(__('changement.select_drum')) ?>,
+        fill_all_required: <?= json_encode(__('changement.fill_all_required')) ?>,
+        enter_master_count: <?= json_encode(__('changement.enter_master_count')) ?>,
+        select_drum_for_ink: <?= json_encode(__('changement.select_drum_for_ink')) ?>,
+        instructions_title: <?= json_encode(__('changement.instructions_title')) ?>,
+        select_machine_to_see_instructions: <?= json_encode(__('changement.select_machine_to_see_instructions')) ?>,
+        instructions_for: <?= json_encode(__('changement.instructions_for')) ?>,
+        how_to_find_count: <?= json_encode(__('changement.how_to_find_count')) ?>,
+        go_to_machine: <?= json_encode(__('changement.go_to_machine')) ?>,
+        press_f1: <?= json_encode(__('changement.press_f1')) ?>,
+        print_counters: <?= json_encode(__('changement.print_counters')) ?>,
+        note_number: <?= json_encode(__('changement.note_number')) ?>,
+        for_duplicators: <?= json_encode(__('changement.for_duplicators')) ?>,
+        enter_current_passes: <?= json_encode(__('changement.enter_current_passes')) ?>,
+        select_consumable_type: <?= json_encode(__('changement.select_consumable_type')) ?>,
+        for_photocopiers: <?= json_encode(__('changement.for_photocopiers')) ?>,
+        enter_total_copies: <?= json_encode(__('changement.enter_total_copies')) ?>,
+        select_consumable_type_photo: <?= json_encode(__('changement.select_consumable_type_photo')) ?>,
+        no_specific_help: <?= json_encode(__('changement.no_specific_help')) ?>
     });
-    
-    // Event listener pour le changement de type
-    $('#type').change(function() {
-        var type = $(this).val();
-        var machine = $('#machine').val();
-        toggleTambourField(type, machine);
-        
-        // Gestion du champ masters pour les duplicopieurs
-        if (duplicopieursNames.indexOf(machine) !== -1) {
-            // Toujours afficher le champ masters pour les duplicopieurs
-            $('#masters-group').show();
-            
-            if (type === 'master') {
-                $('#nb_m').prop('required', true);
-            } else {
-                // Pour tous les autres types (tambour, encre), le champ masters est optionnel
-                $('#nb_m').prop('required', false);
-            }
-            
-            // Récupérer la dernière valeur de masters
-            $.get('models/changement.php?ajax=get_last_counters&machine=' + encodeURIComponent(machine), function(data) {
-                if (data.success && data.counters && data.counters.master_av !== undefined) {
-                    $('#nb_m').val(data.counters.master_av);
-                }
-            }).fail(function() {
-                console.log('Erreur lors de la récupération des compteurs');
-            });
-        } else {
-            // Pour les photocopieurs, cacher le champ masters
-            $('#nb_m').prop('required', false);
-            $('#masters-group').hide();
-        }
-    });
-    
-    
-    // Validation du formulaire
-    $('#changement-form').submit(function(e) {
-        var machine = $('#machine').val();
-        var type = $('#type').val();
-        var nb_p = $('#nb_p').val();
-        
-        if (!machine || !type || !nb_p) {
-            e.preventDefault();
-            if (window.showAppModal) {
-                window.showAppModal( "<?php echo __js('changement.fill_all_required'); ?>" );
-            } else {
-                alert( "<?php echo __js('changement.fill_all_required'); ?>" );
-            }
-            return false;
-        }
-        
-        // Validation pour les duplicopieurs
-        if (duplicopieursNames.indexOf(machine) !== -1) {
-            if (type === 'master' && !$('#nb_m').val()) {
-                e.preventDefault();
-                if (window.showAppModal) {
-                    window.showAppModal( "<?php echo __js('changement.enter_master_count'); ?>" );
-                } else {
-                    alert( "<?php echo __js('changement.enter_master_count'); ?>" );
-                }
-                return false;
-            }
-            if (type === 'tambour' && !$('#tambour').val()) {
-                e.preventDefault();
-                if (window.showAppModal) {
-                    window.showAppModal( "<?php echo __js('changement.select_drum_for_ink'); ?>" );
-                } else {
-                    alert( "<?php echo __js('changement.select_drum_for_ink'); ?>" );
-                }
-                return false;
-            }
-        }
-    });
-    
-    // Gestion de l'aide dynamique
-    var aides = <?= json_encode(json_decode($aide_dynamique)) ?>;
-    
-    function updateAide(machine) {
-        var aideContainer = $('#aide-container');
-        
-        if (!machine) {
-            aideContainer.html('<div class="alert alert-info"><h4><i class="fa fa-info-circle"></i> <?php _ejs('changement.instructions_title'); ?></h4><p><?php _ejs('changement.select_machine_to_see_instructions'); ?></p></div>');
-            return;
-        }
-        
-        // Chercher l'aide pour cette machine dans la catégorie 'changement'
-        var aide = aides[machine];
-        
-        if (aide && aide.length > 0) {
-            // Construire l'affichage avec les Q&A
-            var html = '<div class="aide-item">';
-            html += '<h4><i class="fa fa-tint"></i> <?php _ejs('changement.instructions_for'); ?> ' + machine + '</h4>';
-            
-            aide.forEach(function(qa) {
-                html += '<div class="qa-item" style="margin-bottom: 15px; padding: 15px; border-left: 4px solid #007bff; background: #f8f9fa; border-radius: 4px;">';
-                html += '<h5 style="color: #007bff; margin-bottom: 10px;"><i class="fa fa-question-circle"></i> ' + qa.question + '</h5>';
-                html += '<div class="qa-answer" style="color: #333;">' + qa.reponse + '</div>';
-                html += '</div>';
-            });
-            
-            html += '</div>';
-            aideContainer.html(html);
-        } else {
-            // Aide par défaut si aucune aide spécifique
-            var defaultAide = '<div class="alert alert-info">' +
-                '<h4><i class="fa fa-info-circle"></i> <?php _ejs('changement.instructions_for'); ?> ' + machine + '</h4>' +
-                '<p><strong><?php _ejs('changement.how_to_find_count'); ?></strong></p>' +
-                '<ul>' +
-                '<li><?php _ejs('changement.go_to_machine'); ?></li>' +
-                '<li><?php _ejs('changement.press_f1'); ?></li>' +
-                '<li><?php _ejs('changement.print_counters'); ?></li>' +
-                '<li><?php _ejs('changement.note_number'); ?></li>' +
-                '</ul>' +
-                '<p><strong><?php _ejs('changement.for_duplicators'); ?></strong></p>' +
-                '<ul>' +
-                '<li><?php _ejs('changement.enter_current_passes'); ?></li>' +
-                '<li><?php _ejs('changement.select_consumable_type'); ?></li>' +
-                '</ul>' +
-                '<p><strong><?php _ejs('changement.for_photocopiers'); ?></strong></p>' +
-                '<ul>' +
-                '<li><?php _ejs('changement.enter_total_copies'); ?></li>' +
-                '<li><?php _ejs('changement.select_consumable_type_photo'); ?></li>' +
-                '</ul>' +
-                '<p><em><?php _ejs('changement.no_specific_help'); ?></em></p>' +
-                '</div>';
-            aideContainer.html(defaultAide);
-        }
-    }
-    
-    // Mettre à jour l'aide quand la machine change (déjà géré dans le gestionnaire principal)
-    // La fonction updateAide() est appelée dans le gestionnaire principal du changement de machine
-});
 </script>
+<script src="js/changement.js" defer></script>
+
 
 <?php endif; ?>
