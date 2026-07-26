@@ -110,7 +110,7 @@ function getSortLink($column, $currentSort, $currentOrder) {
                     <div class="d-flex align-items-center">
                         <div class="mr-3 overflow-hidden border rounded bg-light d-flex align-items-center justify-content-center" 
                              style="width: 50px; height: 65px; min-width: 50px; cursor: pointer;" 
-                             onclick="event.stopPropagation(); openPdfViewer(<?= $file['id'] ?>, '<?= htmlspecialchars($file['filename'], ENT_QUOTES, 'UTF-8') ?>')"
+                             onclick="event.stopPropagation(); openPdfViewer(<?= $file['id'] ?>, <?= htmlspecialchars(json_encode($file['filename']), ENT_QUOTES, 'UTF-8') ?>)"
                              title="Cliquez pour visualiser">
                             <?php if (!empty($file['thumbnail_path'])): ?>
                                 <img src="?get_bibliotheque_thumbnail&file=<?= urlencode($file['thumbnail_path']) ?>" class="img-fluid" style="max-height: 100%;">
@@ -157,7 +157,7 @@ function getSortLink($column, $currentSort, $currentOrder) {
                     ?>
                         <span class="badge badge-light border text-muted mr-1" 
                               style="font-size: 0.7rem; font-weight:normal; cursor:pointer;" 
-                              onclick="event.stopPropagation(); if(typeof filterByTag === 'function') filterByTag('<?= htmlspecialchars($cleanTag, ENT_QUOTES, 'UTF-8') ?>')"
+                              onclick="event.stopPropagation(); if(typeof filterByTag === 'function') filterByTag(<?= htmlspecialchars(json_encode($cleanTag), ENT_QUOTES, 'UTF-8') ?>)"
                               title="Filtrer par ce tag">
                             <?= htmlspecialchars($cleanTag) ?>
                         </span>
