@@ -121,22 +121,17 @@
   }
 
   // ===========================================================================
-  // Construction de window.electronAPI — Carte exhaustive
+  // Construction de window.electronAPI
   //
-  // 25 méthodes identifiées dans les fichiers du frontend :
-  //   checkAdminStatus, checkForUpdates, cleanupTmpFiles, deletePrintJob,
+  // Méthodes frontend utilisées :
+  //   checkAdminStatus, checkForUpdates, deletePrintJob,
   //   deletePrinter, downloadUpdate, getPrinterCapabilities,
   //   getPrinterMonitorStatus, getPrinters, installUpdate,
   //   onConsoleLog, onDownloadProgress, onPrintJobDetected,
   //   onUpdateAvailable, onUpdateDownloaded, onUpdateError,
   //   onUpdateNotAvailable, openExternalFile, openFile, printFile,
   //   printJob, reanalyzePrintJob, restartAsAdmin, showOpenDialog,
-  //   togglePrinterMonitor
-  //
-  // + méthodes internes préservées depuis preload.js Electron :
-  //   getDatabasePath, getAppVersion, restartPhp, restartApp,
-  //   onPhpLog, onPhpFatal, onPhpStatus, onPrintMonitorError,
-  //   onPrintMonitorStarted
+  //   togglePrinterMonitor, restartPhp, restartApp
   // ===========================================================================
   window.electronAPI = {
 
