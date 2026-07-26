@@ -116,7 +116,7 @@
           </div>
           <div class="panel-body">
             <div class="alert alert-info">
-              <strong>Base actuelle :</strong>
+              <strong><?php _e('admin.bdd.current_db_label', [], false); ?> :</strong>
               <?= htmlspecialchars($GLOBALS['model_variables']['current_db'] ?? 'duplinew') ?>
             </div>
           </div>
@@ -125,7 +125,7 @@
         <!-- Bases de données disponibles -->
         <div class="panel panel-primary">
           <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-list"></i> Fichiers de base de données SQLite disponibles</h3>
+            <h3 class="panel-title"><i class="fa fa-list"></i> <?php _e('admin.bdd.available_sqlite_files', [], false); ?></h3>
           </div>
           <div class="panel-body">
             <?php if (isset($GLOBALS['model_variables']['databases']) && count($GLOBALS['model_variables']['databases']) > 0): ?>
@@ -133,11 +133,11 @@
                 <table class="table table-striped">
                   <thead>
                     <tr>
-                      <th>Nom du fichier</th>
-                      <th>Type</th>
-                      <th>Taille</th>
-                      <th>Dernière modification</th>
-                      <th>Actions</th>
+                      <th><?php _e('admin.bdd.filename_col', [], false); ?></th>
+                      <th><?php _e('changement.type', [], false); ?></th>
+                      <th><?php _e('admin.bdd.size_col', [], false); ?></th>
+                      <th><?php _e('admin.bdd.last_mod_col', [], false); ?></th>
+                      <th><?php _e('common.actions', [], false); ?></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -146,7 +146,7 @@
                         <td>
                           <strong><?= htmlspecialchars($db['name']) ?></strong>
                           <?php if ($db['name'] == ($GLOBALS['model_variables']['current_db'] ?? 'duplinew')): ?>
-                            <span class="label label-success">Actuelle</span>
+                            <span class="label label-success"><?php _e('admin.bdd.current_tag', [], false); ?></span>
                           <?php endif; ?>
                           <br><small
                             class="text-muted"><?= htmlspecialchars($db['file'] ?? $db['name'] . '.sqlite') ?></small>
@@ -182,18 +182,18 @@
                           <form method="post" style="display: inline;">
                             <button type="submit" name="switch_db" value="<?= $db['name'] ?>"
                               class="btn btn-primary btn-xs">
-                              <i class="fa fa-exchange"></i> Utiliser
+                              <i class="fa fa-exchange"></i> <?php _e('admin.bdd.use_btn', [], false); ?>
                             </button>
                           </form>
                           <button type="button" class="btn btn-warning btn-xs"
                             onclick="showRenameForm('<?= htmlspecialchars($db['name']) ?>')">
-                            <i class="fa fa-edit"></i> Renommer
+                            <i class="fa fa-edit"></i> <?php _e('admin.bdd.rename_btn', [], false); ?>
                           </button>
                           <?php if ($db['name'] != ($GLOBALS['model_variables']['current_db'] ?? 'duplinew')): ?>
                             <form method="post" style="display: inline;">
                               <button type="button" name="delete_db" value="<?= $db['name'] ?>" class="btn btn-danger btn-xs"
-                                onclick="confirmDBAction(this, 'Êtes-vous sûr de vouloir supprimer cette base de données ?')">
-                                <i class="fa fa-trash"></i> Supprimer
+                                onclick="confirmDBAction(this, '<?= __js('admin.bdd.confirm_delete_db') ?>')">
+                                <i class="fa fa-trash"></i> <?php _e('common.delete', [], false); ?>
                               </button>
                             </form>
                           <?php endif; ?>
@@ -205,7 +205,7 @@
               </div>
             <?php else: ?>
               <div class="alert alert-warning">
-                <i class="fa fa-exclamation-triangle"></i> Aucune base de données trouvée.
+                <i class="fa fa-exclamation-triangle"></i> <?php _e('admin.bdd.no_db_found', [], false); ?>
               </div>
             <?php endif; ?>
           </div>

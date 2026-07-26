@@ -151,9 +151,10 @@ function uploadPdf() {
   var fileInput = document.getElementById('pdf-file-input');
   var file = fileInput.files[0];
 
-  if (!file) { showMessage('Veuillez sélectionner un fichier PDF.', 'danger'); return; }
-  if (file.type !== 'application/pdf') { showMessage('Veuillez sélectionner un fichier PDF valide.', 'danger'); return; }
-  if (file.size > 10 * 1024 * 1024) { showMessage('Le fichier est trop volumineux (maximum 10MB).', 'danger'); return; }
+  const trans = (typeof CONFIG !== 'undefined' && CONFIG.translations) ? CONFIG.translations : {};
+  if (!file) { showMessage(trans.select_pdf_file || 'Veuillez sélectionner un fichier PDF.', 'danger'); return; }
+  if (file.type !== 'application/pdf') { showMessage(trans.select_valid_pdf || 'Veuillez sélectionner un fichier PDF valide.', 'danger'); return; }
+  if (file.size > 10 * 1024 * 1024) { showMessage(trans.pdf_file_too_large || 'Le fichier est trop volumineux (maximum 10MB).', 'danger'); return; }
 
   var formData = new FormData();
   formData.append('pdf_file', file);

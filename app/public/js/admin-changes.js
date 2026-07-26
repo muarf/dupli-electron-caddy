@@ -39,7 +39,8 @@ $(document).ready(function () {
             options = '<option value="master">Master</option>';
           }
 
-          selectElement.html('<option value="">Sélectionner un type</option>' + options);
+          const selectTypeTxt = (typeof CONFIG !== 'undefined' && CONFIG.translations && CONFIG.translations.select_type) ? CONFIG.translations.select_type : 'Sélectionner un type';
+          selectElement.html('<option value="">' + selectTypeTxt + '</option>' + options);
         }
       });
   }

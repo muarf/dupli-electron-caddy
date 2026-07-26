@@ -43,7 +43,7 @@ if(isset($array['tirage_updated']) && $array['tirage_updated']){?>
     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
         <span aria-hidden="true">&times;</span>
     </button>
-    <strong><i class="glyphicon glyphicon-ok"></i> Succès!</strong> Le tirage a été mis à jour avec succès !
+    <strong><i class="glyphicon glyphicon-ok"></i> <?php _e('common.success', [], false); ?>!</strong> <?php _e('admin.edit.updated_success', [], false); ?>
 </div>
 <?php }
 
@@ -52,7 +52,7 @@ if(isset($_POST['save'])){?>
     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
         <span aria-hidden="true">&times;</span>
     </button>
-    <strong><i class="glyphicon glyphicon-ok"></i> Succès!</strong> Le tirage a été mis à jour avec succès !
+    <strong><i class="glyphicon glyphicon-ok"></i> <?php _e('common.success', [], false); ?>!</strong> <?php _e('admin.edit.updated_success', [], false); ?>
 </div>
 <?php }
 
@@ -61,7 +61,7 @@ if(isset($array['tirage_deleted']) && $array['tirage_deleted']){?>
     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
         <span aria-hidden="true">&times;</span>
     </button>
-    <strong><i class="glyphicon glyphicon-ok"></i> Succès!</strong> Le tirage a été supprimé avec succès !
+    <strong><i class="glyphicon glyphicon-ok"></i> <?php _e('common.success', [], false); ?>!</strong> <?php _e('admin.edit.deleted_success', [], false); ?>
 </div>
 <?php }
 
@@ -70,7 +70,7 @@ if(isset($_POST['delete'])){?>
     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
         <span aria-hidden="true">&times;</span>
     </button>
-    <strong><i class="glyphicon glyphicon-ok"></i> Succès!</strong> Le tirage a été supprimé avec succès !
+    <strong><i class="glyphicon glyphicon-ok"></i> <?php _e('common.success', [], false); ?>!</strong> <?php _e('admin.edit.deleted_success', [], false); ?>
 </div>
 <div class="section">
       <div class="container">
@@ -92,7 +92,7 @@ if(isset($_POST['delete'])){?>
                     <div class="panel-heading">
                         <h3 class="panel-title">
                             <i class="glyphicon glyphicon-edit"></i> 
-                            Édition du tirage #<?= $tirage['id'] ?> 
+                            <?php _e('admin.edit.edit_tirage_title', [], false); ?> #<?= $tirage['id'] ?> 
                             <span class="label label-info"><?= $tirage['machine'] ?></span>
                         </h3>
                     </div>
@@ -107,20 +107,20 @@ if(isset($_POST['delete'])){?>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="contact" class="col-sm-4 control-label">
-                                            <i class="glyphicon glyphicon-user"></i> Contact
+                                            <i class="glyphicon glyphicon-user"></i> <?php _e('common.contact', [], false); ?>
                                         </label>
                                         <div class="col-sm-8">
                                             <input id="contact" name="contact" value="<?= htmlspecialchars($tirage['contact']) ?>" 
                                                    class="form-control" required type="text" 
                                                    data-toggle="tooltip" data-placement="top" 
-                                                   title="Nom du client ou contact">
+                                                   title="<?php _e('admin.edit.contact_tooltip', [], false); ?>">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label class="col-sm-4 control-label">
-                                            <i class="glyphicon glyphicon-calendar"></i> Date
+                                            <i class="glyphicon glyphicon-calendar"></i> <?php _e('common.date', [], false); ?>
                                         </label>
                                         <div class="col-sm-8">
                                             <p class="form-control-static">
@@ -140,52 +140,52 @@ if(isset($_POST['delete'])){?>
                             <!-- Duplicopieur -->
                             <div class="row">
                                 <div class="col-md-12">
-                                    <h4><i class="glyphicon glyphicon-print"></i> Paramètres du duplicopieur</h4>
+                                    <h4><i class="glyphicon glyphicon-print"></i> <?php _e('admin.edit.dupli_params', [], false); ?></h4>
                                     <hr>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label for="passage_av" class="col-sm-6 control-label">Passage avant</label>
+                                        <label for="passage_av" class="col-sm-6 control-label"><?php _e('admin.edit.pass_before', [], false); ?></label>
                                         <div class="col-sm-6">
                                             <input id="passage_av" name="passage_av" value="<?= $tirage['passage_av'] ?>" 
                                                    class="form-control" required type="number" min="0"
                                                    data-toggle="tooltip" data-placement="top" 
-                                                   title="Nombre de passages avant">
+                                                   title="<?php _e('admin.edit.pass_before_tooltip', [], false); ?>">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label for="passage_ap" class="col-sm-6 control-label">Passage après</label>
+                                        <label for="passage_ap" class="col-sm-6 control-label"><?php _e('admin.edit.pass_after', [], false); ?></label>
                                         <div class="col-sm-6">
                                             <input id="passage_ap" name="passage_ap" value="<?= $tirage['passage_ap'] ?>" 
                                                    class="form-control" required type="number" min="0"
                                                    data-toggle="tooltip" data-placement="top" 
-                                                   title="Nombre de passages après">
+                                                   title="<?php _e('admin.edit.pass_after_tooltip', [], false); ?>">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label for="master_av" class="col-sm-6 control-label">Master avant</label>
+                                        <label for="master_av" class="col-sm-6 control-label"><?php _e('admin.edit.master_before', [], false); ?></label>
                                         <div class="col-sm-6">
                                             <input id="master_av" name="master_av" value="<?= $tirage['master_av'] ?>" 
                                                    class="form-control" required type="number" min="0"
                                                    data-toggle="tooltip" data-placement="top" 
-                                                   title="Nombre de masters avant">
+                                                   title="<?php _e('admin.edit.master_before_tooltip', [], false); ?>">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="form-group">
-                                        <label for="master_ap" class="col-sm-6 control-label">Master après</label>
+                                        <label for="master_ap" class="col-sm-6 control-label"><?php _e('admin.edit.master_after', [], false); ?></label>
                                         <div class="col-sm-6">
                                             <input id="master_ap" name="master_ap" value="<?= $tirage['master_ap'] ?>" 
                                                    class="form-control" required type="number" min="0"
                                                    data-toggle="tooltip" data-placement="top" 
-                                                   title="Nombre de masters après">
+                                                   title="<?php _e('admin.edit.master_after_tooltip', [], false); ?>">
                                         </div>
                                     </div>
                                 </div>
@@ -194,7 +194,7 @@ if(isset($_POST['delete'])){?>
                             <!-- Photocopieur -->
                             <div class="row">
                                 <div class="col-md-12">
-                                    <h4><i class="glyphicon glyphicon-print"></i> Paramètres du photocopieur</h4>
+                                    <h4><i class="glyphicon glyphicon-print"></i> <?php _e('admin.edit.photo_params', [], false); ?></h4>
                                     <hr>
                                 </div>
                             </div>
@@ -202,13 +202,13 @@ if(isset($_POST['delete'])){?>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="nb_f" class="col-sm-4 control-label">
-                                            <i class="glyphicon glyphicon-file"></i> Nombre de feuilles
+                                            <i class="glyphicon glyphicon-file"></i> <?php _e('admin.edit.sheets_count', [], false); ?>
                                         </label>
                                         <div class="col-sm-8">
                                             <input id="nb_f" name="nb_f" value="<?= isset($tirage['nb_f']) ? $tirage['nb_f'] : (intval($tirage['passage_ap']) - intval($tirage['passage_av'])) ?>" 
                                                    class="form-control" required type="number" min="1"
                                                    data-toggle="tooltip" data-placement="top" 
-                                                   title="Nombre total de feuilles imprimées">
+                                                   title="<?php _e('admin.edit.sheets_count_tooltip', [], false); ?>">
                                         </div>
                                     </div>
                                 </div>
@@ -217,7 +217,7 @@ if(isset($_POST['delete'])){?>
 
                             <div class="row">
                                 <div class="col-md-12">
-                                    <h4><i class="glyphicon glyphicon-euro"></i> Informations de facturation</h4>
+                                    <h4><i class="glyphicon glyphicon-euro"></i> <?php _e('admin.edit.billing_info', [], false); ?></h4>
                                     <hr>
                                 </div>
                             </div>
@@ -225,7 +225,7 @@ if(isset($_POST['delete'])){?>
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="rv" class="col-sm-4 control-label">
-                                            <i class="glyphicon glyphicon-refresh"></i> Recto/Verso
+                                            <i class="glyphicon glyphicon-refresh"></i> <?php _e('admin.edit.recto_verso', [], false); ?>
                                         </label>
                                         <div class="col-sm-8">
                                             <select id="rv" name="rv" class="form-control" required>
@@ -247,10 +247,10 @@ if(isset($_POST['delete'])){?>
                                                     }
                                                 }
                                                 ?>
-                                                <option value="non" <?= $is_recto_seulement ? 'selected' : '' ?>>Recto seulement</option>
-                                                <option value="oui" <?= $is_recto_verso ? 'selected' : '' ?>>Recto-Verso</option>
+                                                <option value="non" <?= $is_recto_seulement ? 'selected' : '' ?>><?php _e('admin.edit.recto_only', [], false); ?></option>
+                                                <option value="oui" <?= $is_recto_verso ? 'selected' : '' ?>><?php _e('admin.edit.recto_verso_option', [], false); ?></option>
                                                 <?php if (!$is_recto_seulement && !$is_recto_verso): ?>
-                                                <option value="non" selected>Recto seulement (valeur non reconnue: <?= htmlspecialchars($tirage['rv']) ?>)</option>
+                                                <option value="non" selected><?php _e('admin.edit.recto_only', [], false); ?> (<?= htmlspecialchars($tirage['rv']) ?>)</option>
                                                 <?php endif; ?>
                                             </select>
                                         </div>
@@ -259,14 +259,14 @@ if(isset($_POST['delete'])){?>
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="prix" class="col-sm-4 control-label">
-                                            <i class="glyphicon glyphicon-euro"></i> Prix
+                                            <i class="glyphicon glyphicon-euro"></i> <?php _e('common.price', [], false); ?>
                                         </label>
                                         <div class="col-sm-8">
                                             <div class="input-group">
                                                 <input id="prix" name="prix" value="<?= $tirage['prix'] ?>" 
                                                        class="form-control" required type="number" step="0.01" min="0"
                                                        data-toggle="tooltip" data-placement="top" 
-                                                       title="Prix total en euros">
+                                                       title="<?php _e('admin.edit.price_tooltip', [], false); ?>">
                                                 <span class="input-group-addon">€</span>
                                             </div>
                                         </div>
@@ -275,13 +275,13 @@ if(isset($_POST['delete'])){?>
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="paye" class="col-sm-4 control-label">
-                                            <i class="glyphicon glyphicon-credit-card"></i> Payé
+                                            <i class="glyphicon glyphicon-credit-card"></i> <?php _e('admin.edit.paid_status', [], false); ?>
                                         </label>
                                         <div class="col-sm-8">
                                             <select id="paye" name="paye" class="form-control" required>
-                                                <option value="oui" <?= ($tirage['paye'] == 'oui') ? 'selected' : '' ?>>Oui</option>
-                                                <option value="non" <?= ($tirage['paye'] == 'non') ? 'selected' : '' ?>>Non</option>
-                                                <option value="partiel" <?= ($tirage['paye'] == 'partiel') ? 'selected' : '' ?>>Partiel</option>
+                                                <option value="oui" <?= ($tirage['paye'] == 'oui') ? 'selected' : '' ?>><?php _e('common.yes', [], false); ?></option>
+                                                <option value="non" <?= ($tirage['paye'] == 'non') ? 'selected' : '' ?>><?php _e('common.no', [], false); ?></option>
+                                                <option value="partiel" <?= ($tirage['paye'] == 'partiel') ? 'selected' : '' ?>><?php _e('admin.edit.partial', [], false); ?></option>
                                             </select>
                                         </div>
                                     </div>
@@ -289,14 +289,14 @@ if(isset($_POST['delete'])){?>
                                 <div class="col-md-3">
                                     <div class="form-group">
                                         <label for="cb" class="col-sm-4 control-label">
-                                            <i class="glyphicon glyphicon-credit-card"></i> Montant payé
+                                            <i class="glyphicon glyphicon-credit-card"></i> <?php _e('admin.edit.paid_amount', [], false); ?>
                                         </label>
                                         <div class="col-sm-8">
                                             <div class="input-group">
                                                 <input id="cb" name="cb" value="<?= $tirage['cb'] ?>" 
                                                        class="form-control" type="number" step="0.01" min="0"
                                                        data-toggle="tooltip" data-placement="top" 
-                                                       title="Montant déjà payé (optionnel)">
+                                                       title="<?php _e('admin.edit.paid_amount_tooltip', [], false); ?>">
                                                 <span class="input-group-addon">€</span>
                                             </div>
                                         </div>
@@ -308,13 +308,13 @@ if(isset($_POST['delete'])){?>
                                 <div class="col-md-12">
                                     <div class="form-group">
                                         <label for="mot" class="col-sm-2 control-label">
-                                            <i class="glyphicon glyphicon-comment"></i> Message
+                                            <i class="glyphicon glyphicon-comment"></i> <?php _e('common.message', [], false); ?>
                                         </label>
                                         <div class="col-sm-10">
                                             <textarea id="mot" name="mot" class="form-control" rows="3" 
-                                                      placeholder="Message ou notes supplémentaires..."
+                                                      placeholder="<?php _e('admin.edit.message_placeholder', [], false); ?>"
                                                       data-toggle="tooltip" data-placement="top" 
-                                                      title="Message ou notes optionnelles"><?= htmlspecialchars($tirage['mot']) ?></textarea>
+                                                      title="<?php _e('admin.edit.message_placeholder', [], false); ?>"><?= htmlspecialchars($tirage['mot']) ?></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -326,18 +326,18 @@ if(isset($_POST['delete'])){?>
                                     <div class="btn-group btn-group-justified" role="group">
                                         <div class="btn-group" role="group">
                                             <button type="submit" id="saveBtn" name="save" class="btn btn-success btn-lg">
-                                                <i class="glyphicon glyphicon-floppy-save"></i> Sauvegarder
+                                                <i class="glyphicon glyphicon-floppy-save"></i> <?php _e('common.save', [], false); ?>
                                             </button>
                                         </div>
                                         <div class="btn-group" role="group">
                                             <button type="button" id="deleteBtn" name="delete" class="btn btn-danger btn-lg"
                                                     onclick="confirmDeleteTirage(this)">
-                                                <i class="glyphicon glyphicon-trash"></i> Supprimer
+                                                <i class="glyphicon glyphicon-trash"></i> <?php _e('common.delete', [], false); ?>
                                             </button>
                                         </div>
                                         <div class="btn-group" role="group">
                                             <a href="?admin&tirages" class="btn btn-default btn-lg">
-                                                <i class="glyphicon glyphicon-arrow-left"></i> Annuler
+                                                <i class="glyphicon glyphicon-arrow-left"></i> <?php _e('common.cancel', [], false); ?>
                                             </a>
                                         </div>
                                     </div>
