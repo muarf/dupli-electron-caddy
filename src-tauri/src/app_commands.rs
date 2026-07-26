@@ -63,20 +63,29 @@ pub async fn open_external_file(file_url: String) -> Result<(), String> {
     open_file(path).await
 }
 
-/// Nettoie les fichiers temporaires de l'application
-#[command]
-pub async fn cleanup_tmp_files() -> Result<u32, String> {
+/// Nettoie les fichiers temporaires de l'application âgés de plus d'1 jour
+pub fn cleanup_tmp_files() -> u32 {
     log::info!("[app_commands] cleanup_tmp_files()");
 
     let tmp_dir = std::env::temp_dir();
     let mut count = 0u32;
+    let one_day_ago = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+        .saturating_sub(86400); // 24h en secondes
 
     if let Ok(entries) = std::fs::read_dir(&tmp_dir) {
         for entry in entries.flatten() {
             let name = entry.file_name().to_string_lossy().to_lowercase();
-            // Nettoie uniquement les fichiers temporaires créés par l'application
             if name.starts_with("duplicator_") || name.starts_with("dupli_tmp_") {
-                if std::fs::remove_file(entry.path()).is_ok() {
+                // Vérifier l'âge du fichier via metadata
+                let is_old = entry.metadata()
+                    .and_then(|m| m.modified())
+                    .map(|t| t.duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs() < one_day_ago)
+                    .unwrap_or(false);
+
+                if is_old && std::fs::remove_file(entry.path()).is_ok() {
                     count += 1;
                 }
             }
@@ -84,7 +93,7 @@ pub async fn cleanup_tmp_files() -> Result<u32, String> {
     }
 
     log::info!("[app_commands] cleanup_tmp_files() : {} fichier(s) supprimé(s)", count);
-    Ok(count)
+    count
 }
 
 #[derive(Serialize)]
@@ -118,34 +127,6 @@ pub async fn show_open_dialog(options: serde_json::Value) -> Result<DialogResult
 // =============================================================================
 // Informations de l'application
 // =============================================================================
-
-/// Retourne le chemin de la base de données SQLite principale (partagée avec Electron)
-#[command]
-pub fn get_database_path(_app: tauri::AppHandle) -> Result<String, String> {
-    log::info!("[app_commands] get_database_path()");
-
-    #[cfg(target_os = "windows")]
-    let db_path = std::env::var("APPDATA")
-        .map(|p| std::path::PathBuf::from(p).join("Duplicator").join("duplinew.sqlite").to_string_lossy().to_string())
-        .map_err(|e| format!("Impossible de localiser le répertoire APPDATA : {e}"));
-
-    #[cfg(not(target_os = "windows"))]
-    let db_path = _app.path()
-        .app_data_dir()
-        .map(|p| p.join("duplinew.sqlite").to_string_lossy().to_string())
-        .map_err(|e| format!("Impossible de localiser le répertoire de données : {e}"));
-
-    let db_path_ok = db_path?;
-
-    log::info!("[app_commands] get_database_path() : {}", db_path_ok);
-    Ok(db_path_ok)
-}
-
-/// Retourne la version de l'application (depuis Cargo.toml)
-#[command]
-pub fn get_app_version() -> String {
-    env!("CARGO_PKG_VERSION").to_string()
-}
 
 /// Redémarre l'application
 #[command]

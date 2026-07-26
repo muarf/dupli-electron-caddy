@@ -166,7 +166,28 @@ class DatabaseMigrationManager
 
             $query = $this->db->prepare('SELECT COUNT(*) FROM schema_migrations WHERE migration_name = ?');
             $query->execute([$migrationName]);
-            return $query->fetchColumn() > 0;
+            $isMarkedApplied = $query->fetchColumn() > 0;
+
+            if (!$isMarkedApplied) {
+                return false;
+            }
+
+            // --- AUTO-CORRECTION / SELF-HEALING ---
+            // Si la migration est marquée appliquée historiquement, on double-check
+            // la présence physique de sa table principale.
+            if ($migrationName === 'add_bibliotheque_chunks') {
+                $check = $this->db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='bibliotheque_chunks_fts'");
+                if (!$check || !$check->fetch()) {
+                    error_log("[MIGRATION] ALERTE : 'add_bibliotheque_chunks' est marqué appliquée mais 'bibliotheque_chunks_fts' est manquante. Réexécution forcée.");
+                    
+                    // Supprimer l'enregistrement obsolète pour forcer la réapplication propre
+                    $del = $this->db->prepare("DELETE FROM schema_migrations WHERE migration_name = ?");
+                    $del->execute([$migrationName]);
+                    return false;
+                }
+            }
+
+            return true;
         } catch (Exception $e) {
             error_log("[MIGRATION] Erreur vérification migration $migrationName: " . $e->getMessage());
             return false;

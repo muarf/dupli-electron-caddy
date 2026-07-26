@@ -1175,8 +1175,20 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
         });
     }
 
-    function viewFile(id) {
-        window.open('?get_bibliotheque_file&id=' + id, '_blank');
+    async function openLibraryFile(id) {
+        if (window.electronAPI && window.electronAPI.openFile) {
+            try {
+                const res = await fetch('?get_bibliotheque_file_info&id=' + id);
+                const data = await res.json();
+                if (data.success && data.file && data.file.filepath) {
+                    window.electronAPI.openFile(data.file.filepath);
+                }
+            } catch (e) {
+                console.error('Erreur ouverture fichier:', e);
+            }
+        } else {
+            window.open('?get_bibliotheque_file&id=' + id, '_blank');
+        }
     }
 
     function openDeleteModal(id, filename) {
@@ -1724,7 +1736,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
         // Préparer les boutons d'action sous le PDF
         const actionsHtml = `
             <div class="btn-group">
-                <button class="btn btn-primary" onclick="window.open('?get_bibliotheque_file&id=${id}', '_blank')"><i class="fa fa-external-link"></i> Ouvrir</button>
+                <button class="btn btn-primary" onclick="openLibraryFile(${id})"><i class="fa fa-external-link"></i> Ouvrir</button>
                 <button class="btn btn-info" onclick="printLibraryFile(${id})"><i class="fa fa-print"></i> Imprimer</button>
                 
                 <button class="btn btn-warning" onclick="window.location.href='?studio&file_id=${id}'">

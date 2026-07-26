@@ -28,14 +28,6 @@ pub struct ServerStatus {
     pub php_running: bool,
 }
 
-/// Payload d'un message de log, sérialisable pour envoi au frontend
-#[derive(Debug, Clone, Serialize)]
-pub struct LogMessage {
-    pub source: String, // "caddy" | "php"
-    pub level: String,  // "stdout" | "stderr"
-    pub message: String,
-}
-
 /// État global des processus enfants, partagé entre les commandes Tauri.
 /// Encapsulé dans Arc<Mutex<>> pour être thread-safe et muable.
 pub struct AppState {
@@ -267,8 +259,7 @@ async fn spawn_sidecar(
     Ok((child, rx))
 }
 
-/// Lit en continu les événements stdout/stderr d'un processus et les émet
-/// vers le frontend sous forme d'événements "log-message".
+/// Lit en continu les événements stdout/stderr d'un processus sidecar.
 async fn pipe_logs_to_frontend(
     app: &AppHandle,
     source: &str,
@@ -281,20 +272,10 @@ async fn pipe_logs_to_frontend(
             CommandEvent::Stdout(line) => {
                 let message = String::from_utf8_lossy(&line).to_string();
                 log::debug!("[{source}][stdout] {message}");
-                let _ = app.emit("log-message", LogMessage {
-                    source: source.to_string(),
-                    level: "stdout".to_string(),
-                    message,
-                });
             }
             CommandEvent::Stderr(line) => {
                 let message = String::from_utf8_lossy(&line).to_string();
                 log::warn!("[{source}][stderr] {message}");
-                let _ = app.emit("log-message", LogMessage {
-                    source: source.to_string(),
-                    level: "stderr".to_string(),
-                    message,
-                });
             }
             CommandEvent::Terminated(status) => {
                 log::warn!("Sidecar '{source}' terminé avec le code: {:?}", status.code);

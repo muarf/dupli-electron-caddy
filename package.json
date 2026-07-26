@@ -52,12 +52,9 @@
     ]
   },
   "dependencies": {
-    "bcryptjs": "^3.0.3",
     "node-addon-api": "^7.0.0",
-    "pdfjs-dist": "^3.11.174",
     "pdfkit": "^0.17.2",
-    "sharp": "^0.33.3",
-    "sqlite3": "^5.1.7"
+    "sharp": "^0.33.3"
   },
   "productName": "Duplicator Alpha"
 }
