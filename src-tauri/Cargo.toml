@@ -49,16 +49,11 @@ tokio = { version = "1", features = ["full"] }
 
 # Dépendances pour le script autonome de téléchargement en Rust
 ureq = "2.9"
-zip = "0.6"
-tar = "0.4"
-flate2 = "1.0"
 
 # Logging
 log = "0.4"
 tauri-plugin-log = "2"
 
-# SQLite (pour accéder à duplinew.sqlite)
-rusqlite = { version = "0.31", features = ["bundled"] }
 url = "2.5.8"
 
 # Crate libc pour Unix (UID check)
