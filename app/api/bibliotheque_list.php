@@ -13,9 +13,10 @@ $db = pdo_connect();
 $settingsManager = new SettingsManager($db);
 $ai_enabled = (int)$settingsManager->get('ai_enabled', 0);
 
-// Debug
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+if (defined('DEVELOPMENT_MODE') && DEVELOPMENT_MODE) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+}
 
 $search = $_GET['query'] ?? '';
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
@@ -109,7 +110,7 @@ function getSortLink($column, $currentSort, $currentOrder) {
                     <div class="d-flex align-items-center">
                         <div class="mr-3 overflow-hidden border rounded bg-light d-flex align-items-center justify-content-center" 
                              style="width: 50px; height: 65px; min-width: 50px; cursor: pointer;" 
-                             onclick="event.stopPropagation(); openPdfViewer(<?= $file['id'] ?>, '<?= addslashes($file['filename']) ?>')"
+                             onclick="event.stopPropagation(); openPdfViewer(<?= $file['id'] ?>, '<?= htmlspecialchars($file['filename'], ENT_QUOTES, 'UTF-8') ?>')"
                              title="Cliquez pour visualiser">
                             <?php if (!empty($file['thumbnail_path'])): ?>
                                 <img src="?get_bibliotheque_thumbnail&file=<?= urlencode($file['thumbnail_path']) ?>" class="img-fluid" style="max-height: 100%;">
@@ -124,7 +125,7 @@ function getSortLink($column, $currentSort, $currentOrder) {
                             <?php if (!empty($file['match_contexts'])): ?>
                                 <div class="file-match-contexts">
                                     <?php foreach ($file['match_contexts'] as $ctx): ?>
-                                        <div class="context-item font-italic">...<?= $ctx ?>...</div>
+                                        <div class="context-item font-italic">...<?= htmlspecialchars($ctx, ENT_QUOTES, 'UTF-8') ?>...</div>
                                     <?php endforeach; ?>
                                 </div>
                             <?php endif; ?>
@@ -156,7 +157,7 @@ function getSortLink($column, $currentSort, $currentOrder) {
                     ?>
                         <span class="badge badge-light border text-muted mr-1" 
                               style="font-size: 0.7rem; font-weight:normal; cursor:pointer;" 
-                              onclick="event.stopPropagation(); if(typeof filterByTag === 'function') filterByTag('<?= addslashes($cleanTag) ?>')"
+                              onclick="event.stopPropagation(); if(typeof filterByTag === 'function') filterByTag('<?= htmlspecialchars($cleanTag, ENT_QUOTES, 'UTF-8') ?>')"
                               title="Filtrer par ce tag">
                             <?= htmlspecialchars($cleanTag) ?>
                         </span>
