@@ -898,5 +898,53 @@
         "inches": "Zoll",
         "points": "Punkte",
         "pixels": "Pixel"
+    },
+    "bibliotheque_login": {
+        "title": "Secured Library",
+        "description": "Access to this library is restricted. Please enter the password.",
+        "password": "Password",
+        "password_placeholder": "Enter password...",
+        "submit": "Access Library",
+        "back_to_home": "Back to Home"
+    },
+    "admin_imprimantes": {
+        "title": "Printer Monitor Management",
+        "status_title": "Monitor Status",
+        "checking_status": "Checking status...",
+        "start_monitor": "Start Monitor",
+        "stop_monitor": "Stop Monitor",
+        "refresh": "Refresh",
+        "available_printers": "Available Printers",
+        "loading_printers": "Loading printers...",
+        "stats_title": "Print Statistics",
+        "loading_stats": "Loading statistics...",
+        "recent_jobs": "Recent Print Jobs",
+        "loading_jobs": "Loading print jobs..."
+    },
+    "print_dialog": {
+        "title": "Print Document",
+        "loading_printers": "Loading printers...",
+        "printer": "Printer",
+        "loading": "Loading...",
+        "select_printer_help": "Select the printer to use",
+        "copies_count": "Number of copies",
+        "copies_help": "Number of copies to print",
+        "advanced_options": "Advanced Options",
+        "paper_tray": "Paper Tray",
+        "default": "Default",
+        "tray_help": "Select tray to use",
+        "paper_size": "Paper Size",
+        "size_help": "Paper size to use",
+        "color_mode": "Color Mode",
+        "color_help": "Color or Black & White",
+        "duplex": "Duplex",
+        "simplex": "Simplex (Single Sided)",
+        "duplex_long": "Duplex (Long Edge)",
+        "duplex_short": "Duplex (Short Edge)",
+        "duplex_help": "Duplex printing mode",
+        "resolution": "Resolution",
+        "resolution_help": "Print resolution",
+        "cancel": "Cancel",
+        "print_btn": "Print"
     }
 }

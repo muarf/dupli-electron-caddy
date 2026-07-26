@@ -1709,5 +1709,53 @@
         "empty_msg": "Glissez ou ajoutez un fichier PDF pour commencer.",
         "clear_all": "Tout effacer",
         "processing_files": "Analyse des fichiers et génération des vignettes..."
+    },
+    "bibliotheque_login": {
+        "title": "Bibliothèque Sécurisée",
+        "description": "L'accès à cette bibliothèque est restreint. Veuillez saisir le mot de passe.",
+        "password": "Mot de passe",
+        "password_placeholder": "Saisissez le mot de passe...",
+        "submit": "Accéder à la bibliothèque",
+        "back_to_home": "Retour à l'accueil"
+    },
+    "admin_imprimantes": {
+        "title": "Gestion du Moniteur d'Imprimantes",
+        "status_title": "Statut du Moniteur",
+        "checking_status": "Vérification du statut...",
+        "start_monitor": "Démarrer le moniteur",
+        "stop_monitor": "Arrêter le moniteur",
+        "refresh": "Actualiser",
+        "available_printers": "Imprimantes Disponibles",
+        "loading_printers": "Chargement des imprimantes...",
+        "stats_title": "Statistiques d'Impression",
+        "loading_stats": "Chargement des statistiques...",
+        "recent_jobs": "Impressions Récentes",
+        "loading_jobs": "Chargement des impressions..."
+    },
+    "print_dialog": {
+        "title": "Imprimer le document",
+        "loading_printers": "Chargement des imprimantes...",
+        "printer": "Imprimante",
+        "loading": "Chargement...",
+        "select_printer_help": "Sélectionnez l'imprimante à utiliser",
+        "copies_count": "Nombre de copies",
+        "copies_help": "Nombre de copies à imprimer",
+        "advanced_options": "Options avancées",
+        "paper_tray": "Bac à papier",
+        "default": "Par défaut",
+        "tray_help": "Sélectionnez le bac à utiliser",
+        "paper_size": "Format papier",
+        "size_help": "Format de papier à utiliser",
+        "color_mode": "Mode couleur",
+        "color_help": "Couleur ou noir et blanc",
+        "duplex": "Recto-verso",
+        "simplex": "Recto uniquement",
+        "duplex_long": "Recto-verso (long bord)",
+        "duplex_short": "Recto-verso (court bord)",
+        "duplex_help": "Mode d'impression recto-verso",
+        "resolution": "Résolution",
+        "resolution_help": "Résolution d'impression",
+        "cancel": "Annuler",
+        "print_btn": "Imprimer"
     }
 }
