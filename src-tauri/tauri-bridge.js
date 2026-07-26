@@ -446,7 +446,6 @@
         cb(payload);
       }
     }),
-    onPrintMonitorError:  (cb) => _registerEvent('print-monitor-error',  cb),
 
     // ─────────────────────────────────────────────────────────────────
     // Administration & Droits élevés
