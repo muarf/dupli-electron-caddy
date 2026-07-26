@@ -43,7 +43,8 @@ window.refreshStatus = async function () {
 
 window.toggleMonitor = async function (enable) {
     if (!hasElectronAPI) {
-        alert('API Electron non disponible');
+        const msg = 'API Electron non disponible';
+        if (window.showAppModal) window.showAppModal(msg); else alert(msg);
         return;
     }
     
@@ -56,14 +57,17 @@ window.toggleMonitor = async function (enable) {
         }
         
         if (result.success) {
-            alert(enable ? 'Moniteur démarré avec succès' : 'Moniteur arrêté avec succès');
+            const msg = enable ? 'Moniteur démarré avec succès' : 'Moniteur arrêté avec succès';
+            if (window.showAppModal) window.showAppModal({ message: msg, type: 'success' }); else alert(msg);
             window.refreshStatus();
             window.loadPrinters();
         } else {
-            alert('Erreur: ' + result.error);
+            const msg = 'Erreur: ' + result.error;
+            if (window.showAppModal) window.showAppModal({ message: msg, type: 'danger' }); else alert(msg);
         }
     } catch (error) {
-        alert('Erreur: ' + error.message);
+        const msg = 'Erreur: ' + error.message;
+        if (window.showAppModal) window.showAppModal({ message: msg, type: 'danger' }); else alert(msg);
     }
 };
 
@@ -192,25 +196,39 @@ window.loadPrintJobs = async function () {
 };
 
 window.deletePrinter = async function (printerName) {
-    if (!confirm(`Êtes-vous sûr de vouloir supprimer l'imprimante "${printerName}" ?\n\nCette action nécessite des droits administrateur.`)) {
-        return;
-    }
-    
-    if (!hasElectronAPI) {
-        alert('API Electron non disponible');
-        return;
-    }
-    
-    try {
-        const result = await window.electronAPI.deletePrinter(printerName);
-        if (result.success) {
-            alert('Imprimante supprimée avec succès');
-            window.loadPrinters();
-        } else {
-            alert('Erreur lors de la suppression: ' + result.error);
+    const doDelete = async () => {
+        if (!hasElectronAPI) {
+            const msg = 'API Electron non disponible';
+            if (window.showAppModal) window.showAppModal(msg); else alert(msg);
+            return;
         }
-    } catch (error) {
-        alert('Erreur: ' + error.message);
+        
+        try {
+            const result = await window.electronAPI.deletePrinter(printerName);
+            if (result.success) {
+                const msg = 'Imprimante supprimée avec succès';
+                if (window.showAppModal) window.showAppModal({ message: msg, type: 'success' }); else alert(msg);
+                window.loadPrinters();
+            } else {
+                const msg = 'Erreur lors de la suppression: ' + result.error;
+                if (window.showAppModal) window.showAppModal({ message: msg, type: 'danger' }); else alert(msg);
+            }
+        } catch (error) {
+            const msg = 'Erreur: ' + error.message;
+            if (window.showAppModal) window.showAppModal({ message: msg, type: 'danger' }); else alert(msg);
+        }
+    };
+
+    if (window.showAppModal) {
+        window.showAppModal({
+            title: 'Suppression d\'imprimante',
+            message: `Êtes-vous sûr de vouloir supprimer l'imprimante "${printerName}" ?\n\nCette action nécessite des droits administrateur.`,
+            confirm: true,
+            type: 'warning',
+            onConfirm: function() { doDelete(); }
+        });
+    } else if (confirm(`Êtes-vous sûr de vouloir supprimer l'imprimante "${printerName}" ?`)) {
+        doDelete();
     }
 };
 

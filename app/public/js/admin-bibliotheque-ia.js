@@ -22,66 +22,93 @@ window.triggerVectorization = function (mode = 'missing') {
         ? '⚠️ ATTENTION : Vous allez effacer TOUS les vecteurs existants et tout recommencer à zéro.\n\nCette opération peut durer plusieurs heures.\nÊtes-vous absolument sûr ?'
         : 'Lancer la vectorisation pour compléter uniquement les blocs manquants ?\n\n(L\'opération se fera en arrière-plan).';
 
-    if (!confirm(msg)) return;
+    const execute = () => {
+        const btnAll = document.getElementById('btn-vectorize-all');
+        const btnMissing = document.getElementById('btn-vectorize-missing');
+        if (btnAll) btnAll.disabled = true;
+        if (btnMissing) btnMissing.disabled = true;
+        
+        document.getElementById('vectorize-status').style.display = 'block';
+        document.getElementById('vectorize-msg').innerText = 'Démarrage en cours...';
 
-    // Désactiver les deux boutons
-    const btnAll = document.getElementById('btn-vectorize-all');
-    const btnMissing = document.getElementById('btn-vectorize-missing');
-    if (btnAll) btnAll.disabled = true;
-    if (btnMissing) btnMissing.disabled = true;
-    
-    document.getElementById('vectorize-status').style.display = 'block';
-    document.getElementById('vectorize-msg').innerText = 'Démarrage en cours...';
+        const form = new FormData();
+        form.append('mode', mode);
 
-    const form = new FormData();
-    form.append('mode', mode);
-
-    fetch('?trigger_vectorization', { method: 'POST', body: form })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('vectorize-status').style.display = 'block';
-                document.getElementById('vectorize-msg').textContent = data.message;
-            } else {
-                alert('Erreur : ' + (data.error || 'Inconnue'));
+        fetch('?trigger_vectorization', { method: 'POST', body: form })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('vectorize-status').style.display = 'block';
+                    document.getElementById('vectorize-msg').textContent = data.message;
+                } else {
+                    const err = 'Erreur : ' + (data.error || 'Inconnue');
+                    if (window.showAppModal) window.showAppModal({ message: err, type: 'danger' }); else alert(err);
+                    if (btnAll) btnAll.disabled = false;
+                    if (btnMissing) btnMissing.disabled = false;
+                }
+            })
+            .catch(() => {
+                const err = 'Erreur réseau lors du déclenchement.';
+                if (window.showAppModal) window.showAppModal({ message: err, type: 'danger' }); else alert(err);
                 if (btnAll) btnAll.disabled = false;
                 if (btnMissing) btnMissing.disabled = false;
-            }
-        })
-        .catch(() => {
-            alert('Erreur réseau lors du déclenchement.');
-            if (btnAll) btnAll.disabled = false;
-            if (btnMissing) btnMissing.disabled = false;
+            });
+    };
+
+    if (window.showAppModal) {
+        window.showAppModal({
+            title: 'Vectorisation IA',
+            message: msg,
+            confirm: true,
+            type: mode === 'all' ? 'warning' : 'info',
+            onConfirm: execute
         });
+    } else if (confirm(msg)) {
+        execute();
+    }
 };
 
 window.rescanLibrary = function (mode) {
-    if (!confirm('⚠️ Lancer un scan complet de la bibliothèque ?')) return;
+    const execute = () => {
+        const btn = document.getElementById('btn-rescan');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Démarrage...';
 
-    const btn = document.getElementById('btn-rescan');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Démarrage...';
-
-    fetch('?bibliotheque_maintenance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'rescan', params: { mode: mode } })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success && data.job_id) {
-            monitorRescan(data.job_id);
-        } else {
-            alert('Erreur : ' + (data.error || 'Inconnue'));
+        fetch('?bibliotheque_maintenance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'rescan', params: { mode: mode } })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.job_id) {
+                monitorRescan(data.job_id);
+            } else {
+                const err = 'Erreur : ' + (data.error || 'Inconnue');
+                if (window.showAppModal) window.showAppModal({ message: err, type: 'danger' }); else alert(err);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa fa-refresh"></i> Lancer un scan complet';
+            }
+        })
+        .catch(() => {
+            const err = 'Erreur réseau lors du lancement du scan.';
+            if (window.showAppModal) window.showAppModal({ message: err, type: 'danger' }); else alert(err);
             btn.disabled = false;
             btn.innerHTML = '<i class="fa fa-refresh"></i> Lancer un scan complet';
-        }
-    })
-    .catch(() => {
-        alert('Erreur réseau lors du lancement du scan.');
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa fa-refresh"></i> Lancer un scan complet';
-    });
+        });
+    };
+
+    if (window.showAppModal) {
+        window.showAppModal({
+            title: 'Scan Bibliothèque',
+            message: '⚠️ Lancer un scan complet de la bibliothèque ?',
+            confirm: true,
+            type: 'warning',
+            onConfirm: execute
+        });
+    } else if (confirm('⚠️ Lancer un scan complet de la bibliothèque ?')) {
+        execute();
+    }
 };
 
 function monitorRescan(jobId) {

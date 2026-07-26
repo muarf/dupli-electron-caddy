@@ -30,7 +30,10 @@
         if (data.success && data.job_id) {
           monitorIndexing(data.job_id);
         } else {
-          alert('Erreur: ' + (data.error || 'Erreur inconnue'));
+          const msg = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations.error)
+            ? window.CONFIG.translations.error + ': ' + (data.error || 'Erreur inconnue')
+            : 'Erreur: ' + (data.error || 'Erreur inconnue');
+          if (window.showAppModal) window.showAppModal(msg); else alert(msg);
           if (btn) btn.disabled = false;
         }
       })
@@ -91,7 +94,8 @@
         } else if (statusData.status === 'error' || statusData.status === 'fatal_error') {
           clearInterval(pollInterval);
           if (btn) btn.disabled = false;
-          alert('Erreur lors du scan: ' + (statusData.error_msg || 'Inconnue'));
+          const msg = 'Erreur lors du scan: ' + (statusData.error_msg || 'Inconnue');
+          if (window.showAppModal) window.showAppModal(msg); else alert(msg);
           if (progress) progress.style.display = 'none';
         } else if (statusData.status === 'none' || statusData.status === 'unknown') {
           clearInterval(pollInterval);
@@ -544,7 +548,8 @@
         window.loadLibrary();
       },
       error: function (xhr) {
-        alert("Erreur lors de la suppression : " + (xhr.responseJSON?.error || "Erreur inconnue"));
+        const msg = "Erreur lors de la suppression : " + (xhr.responseJSON?.error || "Erreur inconnue");
+        if (window.showAppModal) window.showAppModal(msg); else alert(msg);
       },
       complete: function () {
         btn.prop('disabled', false).html(oldHtml);
@@ -571,11 +576,13 @@
 
           $('#editFileModal').modal('show');
         } else {
-          alert('Erreur: ' + response.error);
+          const msg = 'Erreur: ' + response.error;
+          if (window.showAppModal) window.showAppModal(msg); else alert(msg);
         }
       },
       error: function () {
-        alert('Erreur lors de la récupération des informations du fichier.');
+        const msg = 'Erreur lors de la récupération des informations du fichier.';
+        if (window.showAppModal) window.showAppModal(msg); else alert(msg);
       }
     });
   };
@@ -605,11 +612,13 @@
           $('#editFileModal').modal('hide');
           window.loadLibrary(1);
         } else {
-          alert('Erreur: ' + response.message);
+          const msg = 'Erreur: ' + response.message;
+          if (window.showAppModal) window.showAppModal(msg); else alert(msg);
         }
       },
       error: function (xhr) {
-        alert('Erreur lors de l\'enregistrement : ' + (xhr.responseJSON ? xhr.responseJSON.error : 'Erreur inconnue'));
+        const msg = 'Erreur lors de l\'enregistrement : ' + (xhr.responseJSON ? xhr.responseJSON.error : 'Erreur inconnue');
+        if (window.showAppModal) window.showAppModal(msg); else alert(msg);
       },
       complete: function () {
         btn.prop('disabled', false).html(originalText);
