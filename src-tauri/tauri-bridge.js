@@ -191,14 +191,6 @@
     restartApp: () =>
       invoke('restart_app'),
 
-    // Événements PHP (logs en temps réel)
-    onPhpLog:    (cb) => _registerEvent('log-message', (payload) => {
-      // Filtre les messages du source 'php' uniquement
-      if (payload && payload.source === 'php') cb(payload);
-    }),
-    onPhpFatal:  (cb) => _registerEvent('php-fatal',  cb),
-    onPhpStatus: (cb) => _registerEvent('php-process-status', cb),
-
     // Log générique de la console de debug
     onConsoleLog: (cb) => _registerEvent('console-log', cb),
 
