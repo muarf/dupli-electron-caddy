@@ -82,8 +82,7 @@ pub fn cleanup_tmp_files() -> u32 {
                 // Vérifier l'âge du fichier via metadata
                 let is_old = entry.metadata()
                     .and_then(|m| m.modified())
-                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH))
-                    .map(|d| d.as_secs() < one_day_ago)
+                    .map(|t| t.duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs() < one_day_ago)
                     .unwrap_or(false);
 
                 if is_old && std::fs::remove_file(entry.path()).is_ok() {
