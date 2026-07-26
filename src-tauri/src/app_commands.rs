@@ -129,28 +129,6 @@ pub async fn show_open_dialog(options: serde_json::Value) -> Result<DialogResult
 // Informations de l'application
 // =============================================================================
 
-/// Retourne le chemin de la base de données SQLite principale (partagée avec Electron)
-#[command]
-pub fn get_database_path(_app: tauri::AppHandle) -> Result<String, String> {
-    log::info!("[app_commands] get_database_path()");
-
-    #[cfg(target_os = "windows")]
-    let db_path = std::env::var("APPDATA")
-        .map(|p| std::path::PathBuf::from(p).join("Duplicator").join("duplinew.sqlite").to_string_lossy().to_string())
-        .map_err(|e| format!("Impossible de localiser le répertoire APPDATA : {e}"));
-
-    #[cfg(not(target_os = "windows"))]
-    let db_path = _app.path()
-        .app_data_dir()
-        .map(|p| p.join("duplinew.sqlite").to_string_lossy().to_string())
-        .map_err(|e| format!("Impossible de localiser le répertoire de données : {e}"));
-
-    let db_path_ok = db_path?;
-
-    log::info!("[app_commands] get_database_path() : {}", db_path_ok);
-    Ok(db_path_ok)
-}
-
 /// Retourne la version de l'application (depuis Cargo.toml)
 #[command]
 pub fn get_app_version() -> String {

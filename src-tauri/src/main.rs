@@ -54,7 +54,6 @@ fn main() {
             app_commands::open_file,
             app_commands::open_external_file,
             app_commands::show_open_dialog,
-            app_commands::get_database_path,
             app_commands::get_app_version,
             app_commands::restart_app,
             // Mises à jour
