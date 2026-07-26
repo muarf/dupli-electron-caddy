@@ -53,10 +53,8 @@ pub fn handle_menu_event(app_handle: &AppHandle, event: tauri::menu::MenuEvent) 
                 .title("À propos de Duplicator")
                 .buttons(MessageDialogButtons::OkCustom("Ouvrir GitHub".into()))
                 .show(move |result| {
-                    if !result {
-                        // L'utilisateur a cliqué sur "Ouvrir GitHub" (le bouton custom)
+                        #[allow(deprecated)]
                         let _ = app_handle_clone.shell().open("https://github.com/muarf/dupli-electron-caddy", None);
-                    }
                 });
         }
         "check_updates" => {
