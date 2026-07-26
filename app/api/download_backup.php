@@ -24,7 +24,7 @@ if (ob_get_length() !== false) {
 if (session_status() === PHP_SESSION_NONE) {
     $session_path = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_sessions';
     if (!is_dir($session_path)) {
-        mkdir($session_path, 0777, true);
+        mkdir($session_path, 0700, true);
     }
     session_save_path($session_path);
     session_start();
