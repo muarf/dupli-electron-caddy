@@ -129,12 +129,6 @@ pub async fn show_open_dialog(options: serde_json::Value) -> Result<DialogResult
 // Informations de l'application
 // =============================================================================
 
-/// Retourne la version de l'application (depuis Cargo.toml)
-#[command]
-pub fn get_app_version() -> String {
-    env!("CARGO_PKG_VERSION").to_string()
-}
-
 /// Redémarre l'application
 #[command]
 pub fn restart_app() {

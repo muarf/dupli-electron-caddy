@@ -156,10 +156,6 @@
     openExternalFile: (fileUrl) =>
       invoke('open_external_file', { fileUrl }),
 
-    /** Retourne la version de l'application */
-    getAppVersion: () =>
-      invoke('get_app_version'),
-
     // ─────────────────────────────────────────────────────────────────
     // Mises à jour (Auto-Updater)
     // ─────────────────────────────────────────────────────────────────
