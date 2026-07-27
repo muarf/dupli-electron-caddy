@@ -31,17 +31,17 @@ jobs:
         id: get-version
         run: |
           git fetch --tags
-          LAST_TAG=$(git tag -l "v2.0.*-alpha*" | sort -V | tail -n 1)
+          LAST_TAG=$(git tag -l "v3.0.*-alpha*" | sort -V | tail -n 1)
           if [ -z "$LAST_TAG" ]; then
             NEXT_PATCH=1
           else
-            LAST_PATCH=$(echo $LAST_TAG | sed -nE 's/v2\.0\.([0-9]+)-alpha.*/\1/p')
+            LAST_PATCH=$(echo $LAST_TAG | sed -nE 's/v3\.0\.([0-9]+)-alpha.*/\1/p')
             NEXT_PATCH=$((LAST_PATCH + 1))
           fi
           SHORT_SHA=$(git rev-parse --short HEAD)
           BUILD_NUM=$(date +%Y%m%d%H%M%S)
-          VERSION="2.0.${NEXT_PATCH}-alpha.${BUILD_NUM}+${SHORT_SHA}"
-          TAG="v2.0.${NEXT_PATCH}-alpha.${BUILD_NUM}"
+          VERSION="3.0.${NEXT_PATCH}-alpha.${BUILD_NUM}+${SHORT_SHA}"
+          TAG="v3.0.${NEXT_PATCH}-alpha.${BUILD_NUM}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 

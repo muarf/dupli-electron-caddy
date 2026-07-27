@@ -1,6 +1,6 @@
 [package]
 name = "duplicator"
-version = "1.0.0"
+version = "3.0.0"
 description = "Application Duplicateur - Gestion d'impression cross-platform"
 authors = ["Duplicator Team"]
 edition = "2021"
