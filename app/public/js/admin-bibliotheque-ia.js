@@ -19,8 +19,8 @@ window.toggleToken = function () {
 
 window.triggerVectorization = function (mode = 'missing') {
     let msg = mode === 'all' 
-        ? '⚠️ ATTENTION : Vous allez effacer TOUS les vecteurs existants et tout recommencer à zéro.\n\nCette opération peut durer plusieurs heures.\nÊtes-vous absolument sûr ?'
-        : 'Lancer la vectorisation pour compléter uniquement les blocs manquants ?\n\n(L\'opération se fera en arrière-plan).';
+        ? (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.attention___vous_allez_effa'] || '⚠️ ATTENTION : Vous allez effacer TOUS les vecteurs existants et tout recommencer à zéro.\n\nCette opération peut durer plusieurs heures.\nÊtes-vous absolument sûr ?')
+        : (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.lancer_la_vectorisation_pour_c'] || 'Lancer la vectorisation pour compléter uniquement les blocs manquants ?\n\n(L\'opération se fera en arrière-plan).');
 
     const execute = () => {
         const btnAll = document.getElementById('btn-vectorize-all');
@@ -101,12 +101,12 @@ window.rescanLibrary = function (mode) {
     if (window.showAppModal) {
         window.showAppModal({
             title: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.scan_biblioth_que'] || 'Scan Bibliothèque'),
-            message: '⚠️ Lancer un scan complet de la bibliothèque ?',
+            message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.lancer_un_scan_complet_de_l'] || '⚠️ Lancer un scan complet de la bibliothèque ?'),
             confirm: true,
             type: 'warning',
             onConfirm: execute
         });
-    } else if (confirm('⚠️ Lancer un scan complet de la bibliothèque ?')) {
+    } else if (confirm((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.lancer_un_scan_complet_de_l'] || '⚠️ Lancer un scan complet de la bibliothèque ?'))) {
         execute();
     }
 };
@@ -193,12 +193,12 @@ window.stopMarkdownMigration = function () {
                 alert('Migration stoppée.');
                 pollMarkdownStatus();
             }
-        }).catch(() => alert('Erreur réseau lors de l\'arrêt.'));
+        }).catch(() => alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.erreur_r_seau_lors_de_l__arr_t'] || 'Erreur réseau lors de l\'arrêt.')));
 };
 
 window.triggerMarkdownMigration = function (mode) {
     const labels = { all: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.tous_les_pdfs_non_trait_s'] || 'tous les PDFs non traités'), retry: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.les_fichiers_en_erreur'] || 'les fichiers en erreur'), force: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.tous_les_fichiers__y_compris_d'] || 'TOUS les fichiers (y compris déjà traités)') };
-    if (!confirm('⚠️ Lancer la migration Markdown Docling pour ' + (labels[mode] || mode) + ' ?\n\nOpération longue — le RAG reste fonctionnel pendant l\'opération.')) return;
+    if (!confirm((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.lancer_la_migration_markdow'] || '⚠️ Lancer la migration Markdown Docling pour ') + (labels[mode] || mode) + (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.n_nop_ration_longue___le_ra'] || ' ?\n\nOpération longue — le RAG reste fonctionnel pendant l\'opération.'))) return;
 
     ['btn-markdown-all', 'btn-markdown-retry', 'btn-markdown-force'].forEach(id => {
         const b = document.getElementById(id);
@@ -295,9 +295,9 @@ function pollMarkdownStatus() {
 
 function resetMarkdownButtons() {
     const btnAll = document.getElementById('btn-markdown-all');
-    if (btnAll) btnAll.innerHTML = '<i class="fa fa-magic"></i> Migrer tous les PDFs (raw)';
+    if (btnAll) btnAll.innerHTML = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.i_class__fa_fa_magic____i__mi'] || '<i class="fa fa-magic"></i> Migrer tous les PDFs (raw)');
     const btnRetry = document.getElementById('btn-markdown-retry');
-    if (btnRetry) btnRetry.innerHTML = '<i class="fa fa-refresh"></i> Relancer les erreurs';
+    if (btnRetry) btnRetry.innerHTML = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.i_class__fa_fa_refresh____i'] || '<i class="fa fa-refresh"></i> Relancer les erreurs');
     const btnStop = document.getElementById('btn-markdown-stop');
     if (btnStop) btnStop.style.display = 'none';
     ['btn-markdown-all', 'btn-markdown-retry', 'btn-markdown-force'].forEach(id => {
@@ -318,12 +318,12 @@ window.installLocalAi = function () {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            alert('L\'installation a été lancée dans un nouveau terminal ! Veuillez patienter jusqu\(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.la_fermeture_de_la_fen_tre'] || 'à la fermeture de la fenêtre.'));
+            alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.l__installation_a__t__lanc_e_d'] || 'L\'installation a été lancée dans un nouveau terminal ! Veuillez patienter jusqu\'à la fermeture de la fenêtre.'));
         } else {
             alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.erreur'] || 'Erreur : ') + (data.error || 'Inconnue'));
         }
     })
-    .catch(() => alert('Erreur réseau lors du lancement de l\'installation.'));
+    .catch(() => alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.erreur_r_seau_lors_du_lancemen'] || 'Erreur réseau lors du lancement de l\'installation.')));
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -346,7 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         alertEl.innerHTML = '<i class="fa fa-check"></i> ' + data.message;
                     } else {
                         alertEl.className = 'alert alert-danger';
-                        alertEl.innerHTML = '<i class="fa fa-times"></i> Erreur : ' + (data.error || 'Inconnue');
+                        alertEl.innerHTML = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.i_class__fa_fa_times____i__er'] || '<i class="fa fa-times"></i> Erreur : ') + (data.error || 'Inconnue');
                     }
                     alertEl.style.display = 'block';
                     window.scrollTo(0, 0);
@@ -354,12 +354,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 .catch(err => {
                     const alertEl = document.getElementById('ai-save-alert');
                     alertEl.className = 'alert alert-danger';
-                    alertEl.innerHTML = '<i class="fa fa-times"></i> Erreur réseau : ' + err;
+                    alertEl.innerHTML = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.i_class__fa_fa_times____i__er'] || '<i class="fa fa-times"></i> Erreur réseau : ') + err;
                     alertEl.style.display = 'block';
                 })
                 .finally(() => {
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="fa fa-save"></i> Sauvegarder les réglages IA';
+                    btn.innerHTML = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_bibliotheque_ia.i_class__fa_fa_save____i__sau'] || '<i class="fa fa-save"></i> Sauvegarder les réglages IA');
                 });
         });
     }

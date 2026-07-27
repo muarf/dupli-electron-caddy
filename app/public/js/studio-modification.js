@@ -257,7 +257,7 @@
               canvas.defaultCursor = (currentTool !== 'none') ? 'crosshair' : 'default';
               
               if (window.showSpinner) window.showSpinner();
-              if ($id('spinnerMsg')) $id('spinnerMsg').textContent = "L(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.ia_analyse_la_police'] || 'IA analyse la police...');
+              if ($id('spinnerMsg')) $id('spinnerMsg').textContent = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.l_ia_analyse_la_police'] || "L'IA analyse la police...");
               
               function renderFontRecognitionResults(fonts) {
                   $id('fontRecognitionResults').style.display = 'block';
@@ -302,9 +302,9 @@
                                   if ($id('modifRedactFont')) $id('modifRedactFont').value = json.font_name;
                               } else {
                                   if (json.error === 'offline') {
-                                      alert("⚠️ Pas de connexion internet sur le serveur (ou lien direct introuvable).\n\nL'application n'a pas pu télécharger automatiquement le fichier .ttf pour la génération PDF finale.\n\nVeuillez télécharger la police manuellement sur votre ordinateur (ex: depuis Google Fonts) et l(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.importer_via_le_bouton_avec_l'] || 'importer via le bouton avec l')icône de nuage.");
+                                      alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.pas_de_connexion_internet_s'] || "⚠️ Pas de connexion internet sur le serveur (ou lien direct introuvable).\n\nL'application n'a pas pu télécharger automatiquement le fichier .ttf pour la génération PDF finale.\n\nVeuillez télécharger la police manuellement sur votre ordinateur (ex: depuis Google Fonts) et l(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.importer_via_le_bouton_avec_l'] || 'importer via le bouton avec l')icône de nuage."));
                                   } else {
-                                      alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.erreur_lors_de_l'] || "Erreur lors de l")installation sur le serveur : " + (json.error || "Inconnue"));
+                                      alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.erreur_lors_de_l_installation'] || "Erreur lors de l'installation sur le serveur : ") + (json.error || "Inconnue"));
                                   }
                                   addFontToSelects(fontNameRaw, fontNameRaw);
                               }
@@ -422,7 +422,7 @@
         } else {
           isPickingColor = true;
           canvas.defaultCursor = 'crosshair';
-          alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.pipette_activ_e___cliquez_sur'] || "Pipette activée : cliquez sur l")image du document pour capturer la couleur.");
+          alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.pipette_activ_e___cliquez_sur'] || "Pipette activée : cliquez sur l'image du document pour capturer la couleur."));
         }
       });
     }

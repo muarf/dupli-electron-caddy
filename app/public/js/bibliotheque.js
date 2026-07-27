@@ -387,7 +387,7 @@
       error: function (xhr, status, error) {
         console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.erreur_ajax'] || "Erreur AJAX:"), status, error);
         console.log("Response text:", xhr.responseText);
-        $('#library_content').html('<div class="alert alert-danger">Erreur lors du chargement (voir console).</div>').css('opacity', '1');
+        $('#library_content').html((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.div_class__alert_alert_danger'] || '<div class="alert alert-danger">Erreur lors du chargement (voir console).</div>')).css('opacity', '1');
       }
     });
   };
@@ -617,7 +617,7 @@
         }
       },
       error: function (xhr) {
-        const msg = 'Erreur lors de l\'enregistrement : ' + (xhr.responseJSON ? xhr.responseJSON.error : (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.erreur_inconnue'] || 'Erreur inconnue'));
+        const msg = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.erreur_lors_de_l__enregistreme'] || 'Erreur lors de l\'enregistrement : ') + (xhr.responseJSON ? xhr.responseJSON.error : (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.erreur_inconnue'] || 'Erreur inconnue'));
         if (window.showAppModal) window.showAppModal(msg); else alert(msg);
       },
       complete: function () {
@@ -836,7 +836,7 @@
       if (err.name !== 'AbortError') {
         const scSpan = document.getElementById('aiStreamingContent');
         const lSpan = document.getElementById('aiOverviewLoading');
-        if (scSpan) scSpan.innerHTML = '<span class="text-danger">Erreur lors de la génération.</span>';
+        if (scSpan) scSpan.innerHTML = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.span_class__text_danger__erre'] || '<span class="text-danger">Erreur lors de la génération.</span>');
         if (lSpan) lSpan.style.display = 'none';
       }
     }
@@ -868,7 +868,7 @@
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
       } catch (e) {
-        console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.erreur_lors_de_l'] || "Erreur lors de l")impression système:", e);
+        console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.erreur_lors_de_l_impression_sy'] || "Erreur lors de l'impression système:"), e);
         window.open(url + '&print=1', '_blank');
       }
     };
@@ -947,7 +947,7 @@
       $('#pdfCanvas').show();
       renderPage(pageNum);
     }).catch(() => {
-      $('#pdfLoading').html('<i class="fa fa-exclamation-triangle fa-2x text-warning"></i><p class="mt-2">Erreur : Impossible de charger le PDF</p>');
+      $('#pdfLoading').html((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.bibliotheque.i_class__fa_fa_exclamation_tr'] || '<i class="fa fa-exclamation-triangle fa-2x text-warning"></i><p class="mt-2">Erreur : Impossible de charger le PDF</p>'));
     });
   };
 

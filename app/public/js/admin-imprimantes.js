@@ -385,10 +385,10 @@
             const selectAll = document.getElementById('select-all-jobs');
             if (selectAll) selectAll.checked = false;
           } else {
-            showAppModal({ type: 'danger', message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_imprimantes.erreur_lors_de_la_suppression'] || 'Erreur lors de la suppression: ') + (result.error || result.message) });
+            showAppModal({ type: 'danger', message: 'Erreur lors de la suppression: ' + (result.error || result.message) });
           }
         } catch (error) {
-          showAppModal({ type: 'danger', message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_imprimantes.erreur_r_seau'] || 'Erreur réseau: ') + error.message });
+          showAppModal({ type: 'danger', message: 'Erreur réseau: ' + error.message });
         }
       }
     });
@@ -398,7 +398,7 @@
     showAppModal({
       type: 'danger',
       title: 'Purger l\'historique',
-      message: 'ATTENTION: Cette action est irréversible !<br><br>Êtes-vous sûr de vouloir supprimer TOUT l\(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_imprimantes.historique_des_impressions'] || 'historique des impressions ?'),
+      message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_imprimantes.attention__cette_action_est_ir'] || 'ATTENTION: Cette action est irréversible !<br><br>Êtes-vous sûr de vouloir supprimer TOUT l\'historique des impressions ?'),
       confirm: true,
       onConfirm: async function () {
         try {
@@ -412,10 +412,10 @@
             loadPrintJobs();
             loadStats();
           } else {
-            showAppModal({ type: 'danger', message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_imprimantes.erreur_lors_de_la_purge'] || 'Erreur lors de la purge: ') + (result.error || result.message) });
+            showAppModal({ type: 'danger', message: 'Erreur lors de la purge: ' + (result.error || result.message) });
           }
         } catch (error) {
-          showAppModal({ type: 'danger', message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_imprimantes.erreur_r_seau'] || 'Erreur réseau: ') + error.message });
+          showAppModal({ type: 'danger', message: 'Erreur réseau: ' + error.message });
         }
       }
     });
@@ -505,7 +505,7 @@
         showAppModal({ type: 'danger', message: 'Erreur: ' + result.error });
       }
     } catch (error) {
-      showAppModal({ type: 'danger', message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.admin_imprimantes.erreur_r_seau'] || 'Erreur réseau: ') + error.message });
+      showAppModal({ type: 'danger', message: 'Erreur réseau: ' + error.message });
     }
   };
 

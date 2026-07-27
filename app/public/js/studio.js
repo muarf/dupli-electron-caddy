@@ -7,8 +7,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window._reopenInStudio) {
       window._reopenInStudio('?get_bibliotheque_file&id=' + fileId);
     } else {
-      // Fallback si _reopenInStudio n'est pas encore prêt (normalement impossible car défini globalement)
-      setTimeout(() => { if (window._reopenInStudio) window._reopenInStudio('?get_bibliotheque_file&id=' + fileId); }, 500);
+      // Fallback si _reopenInStudio n(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.est_pas_encore_pr_t__normaleme"] || 'est pas encore prêt (normalement impossible car défini globalement)
+      setTimeout(() => { if (window._reopenInStudio) window._reopenInStudio(')?get_bibliotheque_file&id=' + fileId); }, 500);
     }
   }
 
@@ -91,8 +91,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // === SIDEBAR TOOL SWITCHING ===
   document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+    btn.addEventListener('click(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.document_query"] || ', () => {
+      document.querySelectorAll(').tool-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const tool = btn.dataset.tool;
       // Show/hide panels
@@ -160,9 +160,9 @@ document.addEventListener('DOMContentLoaded', function() {
     e.preventDefault(); uploadZone.classList.remove('dragover');
     if (e.dataTransfer.files.length > 0) loadFile(e.dataTransfer.files[0]);
   });
-  fileInput.addEventListener('change', e => { if (e.target.files.length > 0) loadFile(e.target.files[0]); });
-  document.addEventListener('dragover', e => e.preventDefault());
-  document.addEventListener('drop', e => e.preventDefault());
+  fileInput.addEventListener('change(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.e______if__e_target_files_le"] || ', e => { if (e.target.files.length > 0) loadFile(e.target.files[0]); });
+  document.addEventListener(')dragover(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.e____e_preventdefault"] || ', e => e.preventDefault());
+  document.addEventListener(')drop', e => e.preventDefault());
   
   $('btnNewFile').addEventListener('click', () => {
     resetStudio();
@@ -233,14 +233,14 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
               clearInterval(checkInterval);
               console.error("Ink analysis error:", stData.error);
-              badge.style.display = 'none';
+              badge.style.display = 'none(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.ca"] || ';
             }
           } catch(err) {
-            console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_polling_ink'] || "Erreur polling ink"), err);
+            console.error("Erreur polling ink", err);
           }
         }, 3000);
         
-        if (typeof fetchActiveJobs === 'function') fetchActiveJobs(); // Ajouter le job au manager
+        if (typeof fetchActiveJobs === ')function') fetchActiveJobs(); // Ajouter le job au manager
       } else if (json.success && json.result) {
         state.inkData = json.result;
         badge.innerHTML = '<i class="fa fa-tint" style="color:var(--studio-primary)"></i> Enc: ' + json.result.fill_rate + '%';
@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', function() {
         canvas.style.display = 'block';
         if ($('mainCanvasDeleteBtn')) $('mainCanvasDeleteBtn').style.display = 'flex';
         state.orgSelectedIndex = 0;
-      } catch(err) { alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_pdf'] || 'Erreur PDF: ') + err.message); }
+      } catch(err) { alert('Erreur PDF: ' + err.message); }
     };
     reader.readAsArrayBuffer(file);
   }
@@ -380,8 +380,8 @@ document.addEventListener('DOMContentLoaded', function() {
         div.draggable = true;
         div.dataset.index = i;
 
-        if (item.type === 'blank') {
-          const tc = document.createElement('div');
+        if (item.type === 'blank(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.const_tc___docum"] || ') {
+          const tc = document.createElement(')div');
           tc.style.width = '60px'; tc.style.height = '85px'; tc.style.background = '#fff'; tc.style.border = '1px solid #ccc';
           tc.style.display = 'flex'; tc.style.alignItems = 'center'; tc.style.justifyContent = 'center'; tc.style.fontSize = '10px'; tc.style.color = '#999';
           tc.textContent = 'BLANK';
@@ -406,14 +406,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (item.flipH) transforms.push('scaleX(-1)');
                 if (item.flipV) transforms.push('scaleY(-1)');
                 if (transforms.length) {
-                  tc.style.transform = transforms.join(' ');
+                  tc.style.transform = transforms.join(' (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio."] || ');
                 }
               }
             } catch(e) { console.error("Error rendering thumbnail", e); }
           });
         }
 
-        const lbl = document.createElement('div');
+        const lbl = document.createElement(')div');
         lbl.className = 'thumb-label'; lbl.textContent = i + 1;
         div.appendChild(lbl);
 
@@ -441,13 +441,13 @@ document.addEventListener('DOMContentLoaded', function() {
         acts.className = 'thumb-actions';
         acts.innerHTML = `
           <i class="fa fa-rotate-right" onclick="event.stopPropagation(); orgRotate(${i}, 90)" title="Pivoter"></i>
-          <i class="fa fa-trash" style="color:#ef4444" onclick="event.stopPropagation(); orgDelete(${i})" title=(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.supprimer'] || "Supprimer")></i>
+          <i class="fa fa-trash" style="color:#ef4444" onclick="event.stopPropagation(); orgDelete(${i})" title="Supprimer"></i>
         `;
         div.appendChild(acts);
 
         // Click to view
         div.addEventListener('click', async () => { 
-          state.orgSelectedIndex = i; // Suivre l(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.index_s_lectionn__dans_l'] || 'index sélectionné dans l')organiseur
+          state.orgSelectedIndex = i; // Suivre l'index sélectionné dans l'organiseur
           console.log('[Studio] Thumb clicked:', i, '| type:', item.type, '| file_idx:', item.file_idx);
           if (item.type === 'page') {
             const doc = window.orgDocs[item.file_idx];
@@ -529,8 +529,8 @@ document.addEventListener('DOMContentLoaded', function() {
         fragment.appendChild(div);
       }
 
-      // Appliquer le fragment d'un coup pour éviter les duplications (race condition)
-      thumbsBar.innerHTML = '';
+      // Appliquer le fragment d(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.un_coup_pour__viter_les_duplic"] || 'un coup pour éviter les duplications (race condition)
+      thumbsBar.innerHTML = ')';
       thumbsBar.style.display = 'flex'; // FORCE L'AFFICHAGE (contourne les éventuels style.display = 'none')
       thumbsBar.classList.add('visible');
       thumbsBar.appendChild(fragment);
@@ -543,7 +543,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }, 50);
     } catch (err) {
-      console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_critique_lors_du_rendu'] || "Erreur critique lors du rendu des vignettes"), err);
+      console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.erreur_critique_lors_du_rendu"] || "Erreur critique lors du rendu des vignettes"), err);
     }
   }
 
@@ -1108,7 +1108,7 @@ document.addEventListener('DOMContentLoaded', function() {
           showResultToast(finalJson.download_url);
         }
       }, (errJson) => {
-        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (errJson.error || errJson.errors?.join(', ') || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_inconnue'] || 'Erreur inconnue')), true);
+        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (errJson.error || errJson.errors?.join(', ') || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.erreur_inconnue"] || 'Erreur inconnue')), true);
       });
     } catch(e) {
       hideSpinner();
@@ -1183,7 +1183,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
 
-    showSpinner((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.enregistrement_dans_la_bibliot'] || 'Enregistrement dans la bibliothèque...'));
+    showSpinner((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.enregistrement_dans_la_bibliot"] || 'Enregistrement dans la bibliothèque...'));
     try {
       const fd = new FormData();
       let filename = $('fileNameDisplay').value || (state.file ? state.file.name : 'studio_export.pdf');
@@ -1240,7 +1240,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (json.success) {
         showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>Enregistré !</b> Le fichier a été ajouté à la bibliothèque.', false);
       } else {
-        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (json.error || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_inconnue'] || 'Erreur inconnue')), true);
+        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (json.error || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.erreur_inconnue"] || 'Erreur inconnue')), true);
       }
     } catch(e) {
       hideSpinner();
@@ -1287,7 +1287,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showResultToast(finalJson.download_url);
           }
         }, (errJson) => {
-          showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (errJson.error || errJson.errors?.join(', ') || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_inconnue'] || 'Erreur inconnue')), true);
+          showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (errJson.error || errJson.errors?.join(', ') || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.erreur_inconnue"] || 'Erreur inconnue')), true);
         });
       } catch(e) {
         hideSpinner();
@@ -1312,7 +1312,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showResultToast(finalJson.download_url);
           }
         }, (errJson) => {
-          showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (errJson.error || errJson.errors?.join(', ') || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_inconnue'] || 'Erreur inconnue')), true);
+          showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (errJson.error || errJson.errors?.join(', ') || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.erreur_inconnue"] || 'Erreur inconnue')), true);
         });
     } catch(e) {
       hideSpinner();
@@ -1379,7 +1379,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Charge un PDF/image depuis une URL dans le studio
   window._reopenInStudio = async function(url) {
     try {
-      showSpinner((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.chargement_dans_le_studio'] || 'Chargement dans le Studio...'));
+      showSpinner('Chargement dans le Studio...');
       const resp = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
 
       if (resp.status === 403) {
@@ -1392,7 +1392,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!resp.ok) {
         hideSpinner();
         const text = await resp.text();
-        alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_lors_du_chargement_du_f'] || 'Erreur lors du chargement du fichier: ') + (text || resp.statusText));
+        alert('Erreur lors du chargement du fichier: ' + (text || resp.statusText));
         return;
       }
 
@@ -1414,8 +1414,8 @@ document.addEventListener('DOMContentLoaded', function() {
       const filtersBtn = document.querySelector('.tool-btn[data-tool="filters"]');
       if (filtersBtn) filtersBtn.click();
       loadFile(file);
-      // Mémoriser l'ID bibliothèque APRÈS loadFile (qui reset libraryId)
-      const urlParams = new URLSearchParams(url.split('?')[1]);
+      // Mémoriser l(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.id_biblioth_que_apr_s_loadfile"] || 'ID bibliothèque APRÈS loadFile (qui reset libraryId)
+      const urlParams = new URLSearchParams(url.split(')?')[1]);
       const libId = urlParams.get('id');
       if (libId && url.includes('get_bibliotheque_file')) {
         state.libraryId = libId;
@@ -1428,9 +1428,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // === MODAL MOT DE PASSE BIBLIOTHÈQUE ===
   function showBibPasswordModal(retryUrl) {
-    let modal = document.getElementById('bibPasswordModal');
+    let modal = document.getElementById('bibPasswordModal(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.if___modal__________mod"] || ');
     if (!modal) {
-      modal = document.createElement('div');
+      modal = document.createElement(')div');
       modal.id = 'bibPasswordModal';
       modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;';
       modal.innerHTML = `
@@ -1446,11 +1446,11 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>`;
       document.body.appendChild(modal);
     }
-    modal.style.display = 'flex';
-    const input = document.getElementById('bibPasswordInput');
-    const errDiv = document.getElementById('bibPasswordError');
-    const submitBtn = document.getElementById('bibPasswordSubmit');
-    const cancelBtn = document.getElementById('bibPasswordCancel');
+    modal.style.display = 'flex(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.const_input___document_g"] || ';
+    const input = document.getElementById(')bibPasswordInput(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.const_errdiv___document"] || ');
+    const errDiv = document.getElementById(')bibPasswordError(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.const_submitbtn___docum"] || ');
+    const submitBtn = document.getElementById(')bibPasswordSubmit(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.const_cancelbtn___docum"] || ');
+    const cancelBtn = document.getElementById(')bibPasswordCancel');
     input.value = '';
     errDiv.textContent = '';
     setTimeout(() => input.focus(), 50);
@@ -1522,7 +1522,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
         } catch (e) {
           clearInterval(interval);
-          onError({error: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_r_seau_lors_de_la_v_rif'] || "Erreur réseau lors de la vérification du statut")});
+          onError({error: "Erreur réseau lors de la vérification du statut"});
         }
       }, 2000);
       return;
@@ -1555,7 +1555,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div style="padding:16px 20px;border-top:1px solid #e2e5ea;display:flex;justify-content:flex-end;gap:12px;background:#f8fafc;">
               <button onclick="navigator.clipboard.writeText(document.getElementById('errorModalContent').innerText); showToast('<i class=\\'fa fa-check\\'></i> Message copié', false);" style="padding:8px 16px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:#374151;display:flex;align-items:center;gap:6px;"><i class="fa fa-copy"></i> Copier le message</button>
-              <button onclick="document.getElementById('errorModalOverlay').remove()" style="padding:8px 16px;background:#ef4444;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;font-weight:500;">Fermer</button>
+              <button onclick=(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.document_getelementbyid__error"] || "document.getElementById('errorModalOverlay').remove()") style="padding:8px 16px;background:#ef4444;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;font-weight:500;">Fermer</button>
             </div>
           </div>
         </div>
@@ -1593,7 +1593,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
         }
       }, (errJson) => {
-        const errs = errJson.error || (errJson.errors && errJson.errors.join('<br>')) || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_inconnue'] || 'Erreur inconnue');
+        const errs = errJson.error || (errJson.errors && errJson.errors.join('<br>')) || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.erreur_inconnue"] || 'Erreur inconnue');
         showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b><br>' + errs, true);
       });
     } catch(e) {
@@ -1621,7 +1621,7 @@ document.addEventListener('DOMContentLoaded', function() {
           showResultToast(finalJson.download_url);
         }
       }, (errJson) => {
-        const errs = errJson.error || (errJson.errors && errJson.errors.join('<br>')) || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_inconnue'] || 'Erreur inconnue');
+        const errs = errJson.error || (errJson.errors && errJson.errors.join('<br>')) || 'Erreur inconnue';
         showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b><br>' + errs, true);
       });
     } catch(e) {
@@ -1806,7 +1806,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // === PAGES PANEL ===
   $('sliderDpi').addEventListener('input', () => $('valDpi').textContent = $('sliderDpi').value);
   $('btnPdfToImg').addEventListener('click', () => {
-    serverProcess('pdf_to_images', { dpi: $('sliderDpi').value }, (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.extraction_des_images_en_cours'] || 'Extraction des images en cours...'));
+    serverProcess('pdf_to_images', { dpi: $('sliderDpi').value }, (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.extraction_des_images_en_cours"] || 'Extraction des images en cours...'));
   });
 
   let mergeFilesList = [];
@@ -1866,7 +1866,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if ($('btnApplyMerge')) {
     $('btnApplyMerge').addEventListener('click', () => {
       if (mergeFilesList.length === 0) return;
-      serverProcessMerge(mergeFilesList, (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.fusion_des_pdf_en_cours'] || 'Fusion des PDF en cours...'));
+      serverProcessMerge(mergeFilesList, (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.fusion_des_pdf_en_cours"] || 'Fusion des PDF en cours...'));
     });
   }
 
@@ -1997,7 +1997,7 @@ document.addEventListener('DOMContentLoaded', function() {
           showResultToast(finalJson.download_url);
         }
       }, (errJson) => {
-        const errs = errJson.error || (errJson.errors && errJson.errors.join('<br>')) || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_inconnue'] || 'Erreur inconnue');
+        const errs = errJson.error || (errJson.errors && errJson.errors.join('<br>')) || 'Erreur inconnue';
         showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b><br>' + errs, true);
       });
     } catch(e) {
@@ -2041,7 +2041,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       if (lbCanvas.width === 0 || lbCanvas.height === 0) {
-        throw new Error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.impossible_de_g_n_rer_l'] || "Impossible de générer l")aperçu : dimensions nulles.");
+        throw new Error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.impossible_de_g_n_rer_l_aper_u"] || "Impossible de générer l'aperçu : dimensions nulles."));
       }
 
       hideSpinner();
@@ -2139,7 +2139,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       if (hiResCanvas.width === 0 || hiResCanvas.height === 0) {
-        throw new Error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.dimensions_source_invalides__0'] || "Dimensions source invalides (0x0). Attendez le chargement complet."));
+        throw new Error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.dimensions_source_invalides__0"] || "Dimensions source invalides (0x0). Attendez le chargement complet."));
       }
 
       state.filteredImageData = hiResCtx.getImageData(0, 0, hiResCanvas.width, hiResCanvas.height);
@@ -2164,7 +2164,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (err) {
       console.error('[Studio] Riso Init Error:', err);
       hideSpinner();
-      showToast((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_initialisation_riso'] || 'Erreur initialisation Riso: ') + err.message, true);
+      showToast((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.erreur_initialisation_riso"] || 'Erreur initialisation Riso: ') + err.message, true);
     }
   }
 
@@ -2313,7 +2313,7 @@ document.addEventListener('DOMContentLoaded', function() {
       Object.keys(RISO_COLORS).forEach(cKey => {
         const opt = document.createElement('option');
         opt.value = cKey;
-        opt.textContent = RISO_COLORS[cKey] ? RISO_COLORS[cKey].name : 'Aucun';
+        opt.textContent = RISO_COLORS[cKey] ? RISO_COLORS[cKey].name : (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.aucun"] || 'Aucun');
         if (mode !== 'PIPETTE' && cKey === defaults[key]) opt.selected = true;
         if (mode === 'PIPETTE' && activeChans[key].color === cKey) opt.selected = true;
         sel.appendChild(opt);
@@ -2667,8 +2667,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         let pChannels;
-        // Pour la page courante ou si ce n'est pas un PDF, utiliser les calques déjà générés (et la Pipette)
-        if (p === state.currentPage || !state.isPdf || mode === 'PIPETTE') {
+        // Pour la page courante ou si ce n(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.est_pas_un_pdf__utiliser_les_c"] || 'est pas un PDF, utiliser les calques déjà générés (et la Pipette)
+        if (p === state.currentPage || !state.isPdf || mode === ')PIPETTE') {
           pChannels = window.risoChannels[mode];
         } else {
           // Rendu de la page PDF
@@ -2736,7 +2736,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (count === 0) {
         hideSpinner();
-        showToast((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.aucun_calque_actif___exporter'] || 'Aucun calque actif à exporter.'), true);
+        showToast('Aucun calque actif à exporter.', true);
         return;
       }
       
@@ -2811,9 +2811,9 @@ document.addEventListener('DOMContentLoaded', function() {
     formData.append('to_docx_flow', outFormat === 'docx_linear' ? '1' : '0');
     formData.append('to_docx_docling', outFormat === 'docx_ia' ? '1' : '0');
     formData.append('to_docx', outFormat === 'docx_layout' ? '1' : '0');
-    formData.append('to_odt', '0'); // Plus d'option ODT dans la nouvelle liste
+    formData.append('to_odt', '0'); // Plus d(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.option_odt_dans_la_nouvelle_li"] || 'option ODT dans la nouvelle liste
 
-    showSpinner('Traitement OCR en cours... (peut prendre plusieurs minutes)');
+    showSpinner(')Traitement OCR en cours... (peut prendre plusieurs minutes)');
     try {
       const res = await fetch('?studio_process', { method: 'POST', body: formData });
       const data = await res.json();
@@ -2864,7 +2864,7 @@ document.addEventListener('DOMContentLoaded', function() {
           showResultToast(data.download_url, data.filename);
         }
       } else {
-        const errorMsg = data.error || (data.errors && data.errors[0]) || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio.erreur_inconnue'] || 'Erreur inconnue');
+        const errorMsg = data.error || (data.errors && data.errors[0]) || 'Erreur inconnue';
         showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> ' + errorMsg, true);
       }
     } catch (e) {

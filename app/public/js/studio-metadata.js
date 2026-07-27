@@ -21,13 +21,13 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     if (!window.state.file) {
-      if ($id('metaRawInfo')) $id('metaRawInfo').textContent = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.aucun_fichier_s_lectionn___win'] || "Aucun fichier sélectionné (window.state.file est vide). Si vous êtes dans Montage Libre, exportez le PDF d")abord.";
+      if ($id('metaRawInfo')) $id('metaRawInfo').textContent = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.aucun_fichier_s_lectionn___win'] || "Aucun fichier sélectionné (window.state.file est vide). Si vous êtes dans Montage Libre, exportez le PDF d'abord.");
       return;
     }
 
     const file = window.state.file;
     if (!file) {
-      if ($id('metaRawInfo')) $id('metaRawInfo').textContent = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.aucun_fichier_s_lectionn___win'] || "Aucun fichier sélectionné (window.state.file est vide). Si vous êtes dans Montage Libre, exportez le PDF d")abord.";
+      if ($id('metaRawInfo')) $id('metaRawInfo').textContent = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.aucun_fichier_s_lectionn___win'] || "Aucun fichier sélectionné (window.state.file est vide). Si vous êtes dans Montage Libre, exportez le PDF d'abord.");
       return;
     }
 
@@ -84,13 +84,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnApplyMetadata) {
     btnApplyMetadata.addEventListener('click', async () => {
       if (!window.state || !window.state.file) {
-        alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.veuillez_charger_un_fichier_pd'] || "Veuillez charger un fichier PDF d")abord. Si vous êtes dans Montage Libre, exportez d(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.abord_le_pdf'] || 'abord le PDF.'));
+        alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.veuillez_charger_un_fichier_pd'] || "Veuillez charger un fichier PDF d(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.abord__si_vous__tes_dans_monta'] || 'abord. Si vous êtes dans Montage Libre, exportez d')abord le PDF."));
         return;
       }
       
       const file = window.state.file;
       if (!file) {
-        alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.veuillez_charger_un_fichier_d'] || "Veuillez charger un fichier d")abord.");
+        alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.veuillez_charger_un_fichier_d'] || "Veuillez charger un fichier d'abord."));
         return;
       }
 
@@ -144,13 +144,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnClearMetadata) {
     btnClearMetadata.addEventListener('click', async () => {
       if (!window.state || !window.state.file) {
-        alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.veuillez_charger_un_fichier_pd'] || "Veuillez charger un fichier PDF d")abord. Si vous êtes dans Montage Libre, exportez d(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.abord_le_pdf'] || 'abord le PDF.'));
+        alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.veuillez_charger_un_fichier_pd'] || "Veuillez charger un fichier PDF d(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.abord__si_vous__tes_dans_monta'] || 'abord. Si vous êtes dans Montage Libre, exportez d')abord le PDF."));
         return;
       }
       
       const file = window.state.file;
       if (!file) {
-        alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.veuillez_charger_un_fichier_d'] || "Veuillez charger un fichier d")abord.");
+        alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.veuillez_charger_un_fichier_d'] || "Veuillez charger un fichier d'abord."));
         return;
       }
 
@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         } else {
           console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.erreur_maj_metadata'] || "Erreur MAJ metadata:"), data.error);
-          if (window.showToast) window.showToast((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.erreur_lors_de_l'] || "Erreur lors de l")effacement : " + (data.error || "Inconnue"), "error");
+          if (window.showToast) window.showToast((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_metadata.erreur_lors_de_l_effacement'] || "Erreur lors de l'effacement : ") + (data.error || "Inconnue"), "error");
         }
       } catch (e) {
         if (window.hideSpinner) window.hideSpinner();

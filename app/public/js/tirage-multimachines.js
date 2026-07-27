@@ -91,7 +91,7 @@
       sessionStorage.setItem('tirage_multimachines_form_data', JSON.stringify(data));
       console.log('✅ Données du formulaire sauvegardées');
     } catch (e) {
-      console.error('❌ Erreur lors de la sauvegarde:', e);
+      console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.erreur_lors_de_la_sauvegarde'] || '❌ Erreur lors de la sauvegarde:'), e);
     }
   }
 
@@ -183,7 +183,7 @@
 
     try {
       const data = JSON.parse(saved);
-      console.log('🔄 Restauration des données du formulaire...');
+      console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.restauration_des_donn_es_du'] || '🔄 Restauration des données du formulaire...'));
 
       const savedMachineIndices = new Set();
       Object.keys(data).forEach(key => {
@@ -216,7 +216,7 @@
       });
 
       const restoreFields = () => {
-        console.log('🔄 Début de la restauration des champs...');
+        console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.d_but_de_la_restauration_des'] || '🔄 Début de la restauration des champs...'));
         let restoredCount = 0;
         let missingCount = 0;
 
@@ -299,7 +299,7 @@
               try {
                 select.dispatchEvent(event);
               } catch (e) {
-                console.error('❌ Erreur lors du déclenchement de l\'événement change:', e);
+                console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.erreur_lors_du_d_clenchement'] || '❌ Erreur lors du déclenchement de l\'événement change:'), e);
               }
             }, 100);
           }
@@ -326,7 +326,7 @@
           }
         }, 500);
 
-        console.log('✅ Restauration des données terminée');
+        console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.restauration_des_donn_es_ter'] || '✅ Restauration des données terminée'));
       };
 
       if (missingIndices.length > 0) {
@@ -353,19 +353,19 @@
           });
           console.log(`🔍 Vérification finale: machines avec indices ${Array.from(finalIndices).sort((a, b) => a - b).join(', ')}`);
 
-          console.log('✅ Toutes les machines créées, restauration des données...');
+          console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.toutes_les_machines_cr__es'] || '✅ Toutes les machines créées, restauration des données...'));
           setTimeout(restoreFields, 600);
         };
 
         createMachinesSequentially();
       } else {
-        console.log('✅ Toutes les machines sont déjà présentes, restauration directe...');
+        console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.toutes_les_machines_sont_d_j'] || '✅ Toutes les machines sont déjà présentes, restauration directe...'));
         restoreFields();
       }
 
       return true;
     } catch (e) {
-      console.error('❌ Erreur lors de la restauration:', e);
+      console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.erreur_lors_de_la_restaurati'] || '❌ Erreur lors de la restauration:'), e);
       return false;
     }
   }
@@ -399,7 +399,7 @@
   // =========================================================================
 
   function findMachinePriceKey(machineName) {
-    console.log('🔍 Recherche de la clé pour la machine:', machineName);
+    console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.recherche_de_la_cl__pour_la'] || '🔍 Recherche de la clé pour la machine:'), machineName);
 
     for (const key in prixData) {
       if (key.startsWith('photocop_')) {
@@ -415,7 +415,7 @@
 
     for (const key in prixData) {
       if (key.startsWith('photocop_') && prixData[key]) {
-        console.log('🔍 Utilisation de la clé de fallback:', key);
+        console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.utilisation_de_la_cl__de_fal'] || '🔍 Utilisation de la clé de fallback:'), key);
         return key;
       }
     }
@@ -549,14 +549,14 @@
     var machineElement = document.querySelector(`[data-index="${machineIndex}"]`);
     console.log("🔍 machineElement trouvé:", machineElement ? "oui" : "non");
     if (!machineElement) {
-      console.log("❌ ERREUR: machineElement non trouvé pour index", machineIndex);
+      console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.erreur__machineelement_non_t'] || "❌ ERREUR: machineElement non trouvé pour index"), machineIndex);
       return 0;
     }
 
     var typeRadio = machineElement.querySelector(`input[name="machines[${machineIndex}][type]"]:checked`);
     console.log("🔍 typeRadio trouvé:", typeRadio ? typeRadio.value : "non");
     if (!typeRadio) {
-      console.log("❌ ERREUR: typeRadio non trouvé pour index", machineIndex);
+      console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.erreur__typeradio_non_trouv'] || "❌ ERREUR: typeRadio non trouvé pour index"), machineIndex);
       return 0;
     }
 
@@ -564,7 +564,7 @@
     var detailCalcul = '';
 
     if (typeRadio.value === 'duplicopieur') {
-      console.log("🔍 Calcul duplicopieur pour index:", machineIndex);
+      console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.calcul_duplicopieur_pour_ind'] || "🔍 Calcul duplicopieur pour index:"), machineIndex);
       var modeSaisieRadio = machineElement.querySelector(`input[name="machines[${machineIndex}][mode_saisie]"]:checked`);
       console.log("🔍 modeSaisieRadio trouvé:", modeSaisieRadio ? modeSaisieRadio.value : "non");
       var nbMasters = 0;
@@ -596,7 +596,7 @@
         var passageAv = parseFloat(passageAvElement ? passageAvElement.value : 0) || 0;
         var passageAp = parseFloat(passageApElement ? passageApElement.value : 0) || 0;
 
-        console.log("🔍 Valeurs brutes des champs:", {
+        console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.valeurs_brutes_des_champs'] || "🔍 Valeurs brutes des champs:"), {
           masterAvElement_value: masterAvElement ? masterAvElement.value : "élément non trouvé",
           masterApElement_value: masterApElement ? masterApElement.value : "élément non trouvé",
           passageAvElement_value: passageAvElement ? passageAvElement.value : "élément non trouvé",
@@ -650,7 +650,7 @@
         prixPassage = prixData[machineKey]['tambour_noir']['unite'] || 0;
         console.log('✅ Prix passage (tambour noir fallback):', prixPassage);
       } else {
-        console.log('❌ Aucun prix trouvé pour machineKey:', machineKey);
+        console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.aucun_prix_trouv__pour_machi'] || '❌ Aucun prix trouvé pour machineKey:'), machineKey);
       }
 
       var prixPapier = prixData['papier'] && prixData['papier'][taille] ? prixData['papier'][taille] : 0;
@@ -721,7 +721,7 @@
         var fillRateMultiplier = couleur ? (fillRate / 0.5) : 1.0;
 
         var machineKey = findMachinePriceKey(photocopName);
-        console.log('🔑 Clé trouvée pour', photocopName, ':', machineKey);
+        console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.cl__trouv_e_pour'] || '🔑 Clé trouvée pour'), photocopName, ':', machineKey);
 
         if (machineKey && prixData[machineKey]) {
           var machinePrices = prixData[machineKey];
@@ -803,7 +803,7 @@
         var fillRateMultiplier = couleur ? (fillRate / 0.5) : 1.0;
 
         var machineKey = findMachinePriceKey(photocopName);
-        console.log('🔑 Clé trouvée pour le détail', photocopName, ':', machineKey);
+        console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.cl__trouv_e_pour_le_d_tail'] || '🔑 Clé trouvée pour le détail'), photocopName, ':', machineKey);
 
         if (machineKey && prixData[machineKey]) {
           var machinePrices = prixData[machineKey];
@@ -923,9 +923,9 @@
     console.log("🔍 Élément .machine-price trouvé:", priceElement ? "oui" : "non");
     if (priceElement) {
       priceElement.innerHTML = price.toFixed(2) + '€' + detailCalcul;
-      console.log("✅ Prix mis à jour dans l'élément:", price.toFixed(2) + '€');
+      console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.prix_mis___jour_dans_l__l_me'] || "✅ Prix mis à jour dans l'élément:"), price.toFixed(2) + '€');
     } else {
-      console.log("❌ ERREUR: Élément .machine-price non trouvé pour machine", machineIndex);
+      console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.erreur___l_ment__machine_pri'] || "❌ ERREUR: Élément .machine-price non trouvé pour machine"), machineIndex);
       var priceElementById = document.getElementById('machine-price-' + machineIndex);
       console.log("🔍 Élément #machine-price-" + machineIndex + " trouvé:", priceElementById ? "oui" : "non");
       if (priceElementById) {
@@ -945,7 +945,7 @@
     console.log("🔍 machineElements trouvés:", machineElements.length);
 
     if (machineElements.length === 0) {
-      console.log("❌ ERREUR: Aucune machine trouvée avec la classe .machine-item");
+      console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.erreur__aucune_machine_trouv'] || "❌ ERREUR: Aucune machine trouvée avec la classe .machine-item"));
       return;
     }
 
@@ -953,7 +953,7 @@
       var machineIndex = machineElement.getAttribute('data-index');
       console.log("🔍 machineIndex:", machineIndex);
       var price = calculateMachinePrice(machineIndex);
-      console.log("🔍 prix calculé pour index", machineIndex, ":", price);
+      console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.prix_calcul__pour_index'] || "🔍 prix calculé pour index"), machineIndex, ":", price);
       total += price;
 
       updatePanelPreview(machineIndex);
@@ -980,9 +980,9 @@
   }
 
   function initializeMachinePriceCache() {
-    console.log('🔄 Initialisation du cache des mappings machine...');
+    console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.initialisation_du_cache_des'] || '🔄 Initialisation du cache des mappings machine...'));
     window.machinePriceCache = CONFIG.machine_price_mappings || {};
-    console.log('✅ Cache des mappings initialisé côté serveur:', window.machinePriceCache);
+    console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.cache_des_mappings_initialis'] || '✅ Cache des mappings initialisé côté serveur:'), window.machinePriceCache);
   }
 
   // =========================================================================
@@ -1006,7 +1006,7 @@
         var cleanedTotal = cleanNumberString(totalText);
         if (!isNaN(cleanedTotal)) {
           cbField.value = cleanedTotal.toFixed(2);
-          console.log("Prix total trouvé dans #prix-total:", cleanedTotal);
+          console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.prix_total_trouv__dans__prix_t'] || "Prix total trouvé dans #prix-total:"), cleanedTotal);
           return;
         }
       }
@@ -1054,7 +1054,7 @@
     var selectedOption = selectElement.options[selectElement.selectedIndex];
     var machineName = selectedOption.getAttribute('data-name');
 
-    console.log('🔍 Nom de la machine récupéré:', machineName);
+    console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.nom_de_la_machine_r_cup_r'] || '🔍 Nom de la machine récupéré:'), machineName);
 
     if (!machineName) {
       console.log('❌ Pas de nom de machine trouvé');
@@ -1083,7 +1083,7 @@
         }
       })
       .fail(function (xhr, status, error) {
-        console.log('❌ Erreur AJAX:', xhr.responseText);
+        console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.erreur_ajax'] || '❌ Erreur AJAX:'), xhr.responseText);
         console.log('❌ Status:', status);
         console.log('❌ Error:', error);
       });
@@ -1101,7 +1101,7 @@
   }
 
   function loadTamboursForDuplicopieur(duplicopieurId, machineIndex) {
-    console.log('🥁 Chargement des tambours pour duplicopieur ID:', duplicopieurId);
+    console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.chargement_des_tambours_pour'] || '🥁 Chargement des tambours pour duplicopieur ID:'), duplicopieurId);
 
     $.get('?tirage_multimachines&ajax=get_tambours&duplicopieur_id=' + duplicopieurId)
       .done(function (response) {
@@ -1137,7 +1137,7 @@
           console.log('🎯 Tambours chargés:', response.tambours.length, 'tambour(s)');
 
           tambourSelect.off('change.tambour').on('change.tambour', function () {
-            console.log('🥁 Tambour changé, recalcul du prix pour index:', machineIndex);
+            console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.tambour_chang___recalcul_du'] || '🥁 Tambour changé, recalcul du prix pour index:'), machineIndex);
             if (typeof calculateTotalPrice === 'function') {
               calculateTotalPrice();
             }
@@ -1149,11 +1149,11 @@
           }
           updatePanelPreview(machineIndex);
         } else {
-          console.log('❌ Erreur lors du chargement des tambours:', response.error);
+          console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.erreur_lors_du_chargement_de'] || '❌ Erreur lors du chargement des tambours:'), response.error);
         }
       })
       .fail(function (xhr, status, error) {
-        console.log('❌ Erreur AJAX pour les tambours:', status, error);
+        console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.erreur_ajax_pour_les_tambour'] || '❌ Erreur AJAX pour les tambours:'), status, error);
       });
   }
 
@@ -1212,7 +1212,7 @@
   }
 
   function updatePanelPreview(machineIndex) {
-    console.log("🔍 updatePanelPreview appelé pour machine", machineIndex);
+    console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.updatepanelpreview_appel__po'] || "🔍 updatePanelPreview appelé pour machine"), machineIndex);
     const pricePreview = document.getElementById('price-preview-' + machineIndex);
     const typeBadge = document.getElementById('type-badge-' + machineIndex);
 
@@ -1285,14 +1285,14 @@
     if (btnStay) {
       btnStay.onclick = function () {
         modal.style.display = 'none';
-        console.log('✅ Utilisateur a choisi de rester sur la page');
+        console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.utilisateur_a_choisi_de_rest'] || '✅ Utilisateur a choisi de rester sur la page'));
       };
     }
 
     const btnLeave = document.getElementById('btnLeave');
     if (btnLeave) {
       btnLeave.onclick = function () {
-        console.log('⚠️ Utilisateur a choisi de quitter - désactivation de la protection');
+        console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.utilisateur_a_choisi_de_qui'] || '⚠️ Utilisateur a choisi de quitter - désactivation de la protection'));
         isOnPaymentForm = false;
         modal.style.display = 'none';
         window.location.href = targetUrl;
@@ -1319,7 +1319,7 @@
   // =========================================================================
 
   document.addEventListener('DOMContentLoaded', function () {
-    console.log('🔍 DOM chargé, initialisation des prix...');
+    console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.dom_charg___initialisation_d'] || '🔍 DOM chargé, initialisation des prix...'));
 
     initializeMachinePriceCache();
     initAutoSave();
@@ -1328,7 +1328,7 @@
     const shouldRestore = urlParams.get('retour') === '1' && sessionStorage.getItem('tirage_multimachines_form_data');
 
     if (shouldRestore) {
-      console.log('🔄 Restauration des données du formulaire depuis la page de confirmation...');
+      console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.restauration_des_donn_es_du'] || '🔄 Restauration des données du formulaire depuis la page de confirmation...'));
       setTimeout(() => {
         const restored = restoreFormData();
         if (restored) {
@@ -1362,7 +1362,7 @@
         .then(data => {
           if (data.error) {
             console.error('Erreur:', data.error);
-            showAppModal({ message: 'Erreur lors de l\(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.ajout_de_la_machine'] || 'ajout de la machine: ') + data.error, type: 'danger' });
+            showAppModal({ message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.erreur_lors_de_l__ajout_de_la'] || 'Erreur lors de l\'ajout de la machine: ') + data.error, type: 'danger' });
             return;
           }
 
@@ -1378,7 +1378,7 @@
 
           if (!newMachineContainer) {
             console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.aucun__l_ment_trouv__dans_le_h'] || 'Aucun élément trouvé dans le HTML généré'));
-            showAppModal({ message: 'Erreur lors de l\(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.ajout_de_la_machine__html_inva'] || 'ajout de la machine: HTML invalide'), type: 'danger' });
+            showAppModal({ message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.erreur_lors_de_l__ajout_de_la'] || 'Erreur lors de l\'ajout de la machine: HTML invalide'), type: 'danger' });
             return;
           }
 
@@ -1390,9 +1390,9 @@
 
           if (addButtonContainer && container.contains(addButtonContainer)) {
             container.insertBefore(newMachineContainer, addButtonContainer);
-            console.log('✅ Machine ajoutée avec succès avant le bouton!');
+            console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.machine_ajout_e_avec_succ_s'] || '✅ Machine ajoutée avec succès avant le bouton!'));
           } else {
-            console.log('⚠️ Fallback: ajout à la fin');
+            console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.fallback__ajout___la_fin'] || '⚠️ Fallback: ajout à la fin'));
             container.appendChild(newMachineContainer);
           }
           machineCount++;
@@ -1426,10 +1426,10 @@
             const duplicopieurIdField = document.querySelector(`select[name="machines[${newIndex}][duplicopieur_id]"]`) || document.querySelector(`input[name="machines[${newIndex}][duplicopieur_id]"]`);
             if (duplicopieurIdField && duplicopieurIdField.value) {
               const duplicopieurId = duplicopieurIdField.value;
-              console.log('🎯 Chargement des tambours pour machine', newIndex, ', duplicopieur ID:', duplicopieurId);
+              console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.chargement_des_tambours_pour'] || '🎯 Chargement des tambours pour machine'), newIndex, ', duplicopieur ID:', duplicopieurId);
               loadTamboursForDuplicopieur(duplicopieurId, newIndex);
             } else {
-              console.log('⚠️ Pas de duplicopieur sélectionné pour machine', newIndex);
+              console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.pas_de_duplicopieur_s_lecti'] || '⚠️ Pas de duplicopieur sélectionné pour machine'), newIndex);
             }
 
             saveFormData();
@@ -1442,7 +1442,7 @@
           console.error('Type d\'erreur:', typeof error);
           console.error('Message d\'erreur:', error.message);
           console.error('Stack trace:', error.stack);
-          showAppModal({ message: 'Erreur lors de l\(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.ajout_de_la_machine'] || 'ajout de la machine: ') + error.message, type: 'danger' });
+          showAppModal({ message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.erreur_lors_de_l__ajout_de_la'] || 'Erreur lors de l\'ajout de la machine: ') + error.message, type: 'danger' });
         });
     });
   });
@@ -1477,7 +1477,7 @@
     }
 
     if (duplicopieurId0) {
-      console.log('🎯 Chargement initial des tambours pour machine 0, duplicopieur ID:', duplicopieurId0);
+      console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.chargement_initial_des_tambo'] || '🎯 Chargement initial des tambours pour machine 0, duplicopieur ID:'), duplicopieurId0);
       loadTamboursForDuplicopieur(duplicopieurId0, 0);
     }
 
@@ -1499,7 +1499,7 @@
     const confirmationForm = document.getElementById('form-enregistrement');
     if (confirmationForm) {
       confirmationForm.addEventListener('submit', function () {
-        console.log('🧹 Validation finale : Nettoyage de la session auto_tirage et de l\'utilisateur...');
+        console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.validation_finale___nettoyag'] || '🧹 Validation finale : Nettoyage de la session auto_tirage et de l\'utilisateur...'));
         sessionStorage.removeItem('auto_tirage_session_jobs');
         sessionStorage.removeItem('auto_tirage_session_user');
         localStorage.removeItem('auto_tirage_user');
@@ -1549,14 +1549,14 @@
   const paymentFormElement = document.getElementById('form-enregistrement');
   if (paymentFormElement) {
     paymentFormElement.addEventListener('submit', function () {
-      console.log('📤 Formulaire soumis - désactivation de la protection');
+      console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.formulaire_soumis___d_sactiv'] || '📤 Formulaire soumis - désactivation de la protection'));
       isOnPaymentForm = false;
     });
   }
 
   const originalReturnToForm = window.returnToForm;
   window.returnToForm = function () {
-    console.log('◀️ Retour au formulaire - désactivation de la protection');
+    console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.tirage_multimachines.retour_au_formulaire___d_sa'] || '◀️ Retour au formulaire - désactivation de la protection'));
     isOnPaymentForm = false;
 
     if (typeof originalReturnToForm === 'function') {

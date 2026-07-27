@@ -71,7 +71,7 @@
         await loadActiveSessions();
       }
     } catch (error) {
-      console.error('[AutoTirage] Erreur création session:', error);
+      console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.autotirage__erreur_cr_ation_s'] || '[AutoTirage] Erreur création session:'), error);
     }
 
     document.getElementById('step-identity').style.display = 'none';
@@ -101,7 +101,7 @@
 
     showAppModal({
       title: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.cl_turer_la_session'] || "Clôturer la session"),
-      message: "Voulez-vous CLÔTURER définitivement cette session ?<br><br>Cela la retirera de la liste des sessions actives.",
+      message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.voulez_vous_cl_turer_d_finitiv'] || "Voulez-vous CLÔTURER définitivement cette session ?<br><br>Cela la retirera de la liste des sessions actives."),
       type: "warning",
       confirm: true
     }, async function (confirmed) {
@@ -482,7 +482,7 @@
           }
         } else {
           if (row) row.style.display = '';
-          showAppModal({ message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.erreur_lors_de_l'] || "Erreur lors de l")ajout à la session. Veuillez réessayer.", type: "danger" });
+          showAppModal({ message: (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.erreur_lors_de_l_ajout___la_se'] || "Erreur lors de l'ajout à la session. Veuillez réessayer."), type: "danger" });
         }
       });
     }
@@ -762,7 +762,7 @@
       }
 
     } catch (e) {
-      console.error('Erreur lors de la simulation/sauvegarde du job:', e);
+      console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.erreur_lors_de_la_simulation_s'] || 'Erreur lors de la simulation/sauvegarde du job:'), e);
       addLog('error', '❌ ' + S['auto_tirage.communication_error']);
       if (bufferJobId) {
         console.log('Échec sauvegarde job du buffer, annulation mouvement.');
@@ -1184,7 +1184,7 @@
     btn.disabled = true;
 
     try {
-      addLog('process', '🔄 Ré-analyse forcée pour le job ' + jobId + ' (' + printerName + ')...');
+      addLog('process', (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.r__analyse_forc_e_pour_le_jo'] || '🔄 Ré-analyse forcée pour le job ') + jobId + ' (' + printerName + ')...');
       const result = await window.electronAPI.reanalyzePrintJob(jobId);
 
       if (result.success) {
@@ -1213,11 +1213,11 @@
 
         await checkPrintJobs();
       } else {
-        addLog('error', '❌ Échec de la ré-analyse: ' + result.error);
+        addLog('error', (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.chec_de_la_r__analyse'] || '❌ Échec de la ré-analyse: ') + result.error);
       }
     } catch (e) {
       console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.erreur_r__analyse'] || 'Erreur ré-analyse:'), e);
-      addLog('error', '❌ Erreur lors de l\(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.appel___la_r__analyse'] || 'appel à la ré-analyse'));
+      addLog('error', (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.erreur_lors_de_l__appel___la'] || '❌ Erreur lors de l\'appel à la ré-analyse'));
     } finally {
       icon.classList.remove('fa-spin');
       btn.disabled = false;
@@ -1235,11 +1235,11 @@
 
       if (job.job_id && window.electronAPI && window.electronAPI.deletePrintJob) {
         try {
-          console.log('[DELETE SESSION] Appel IPC deletePrintJob pour job Windows:', job.job_id);
+          console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.delete_session__appel_ipc_del'] || '[DELETE SESSION] Appel IPC deletePrintJob pour job Windows:'), job.job_id);
           const ipcResult = await window.electronAPI.deletePrintJob(job.printer_name || null, job.job_id);
           console.log('[DELETE SESSION] Résultat IPC:', ipcResult);
         } catch (ipcError) {
-          console.warn('[DELETE SESSION] Erreur IPC (non bloquante):', ipcError);
+          console.warn((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.delete_session__erreur_ipc__n'] || '[DELETE SESSION] Erreur IPC (non bloquante):'), ipcError);
         }
       }
 
@@ -1331,7 +1331,7 @@
         switchSession(sessionToSelect);
       }
     } catch (error) {
-      console.error('[AutoTirage] Erreur chargement sessions:', error);
+      console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.autotirage__erreur_chargement'] || '[AutoTirage] Erreur chargement sessions:'), error);
     }
   }
 
@@ -1465,7 +1465,7 @@
         if (sessionJobs.length === 0) renderSessionTable();
       }
     } catch (error) {
-      console.error('[AutoTirage] Erreur chargement jobs session:', error);
+      console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.autotirage__erreur_chargement'] || '[AutoTirage] Erreur chargement jobs session:'), error);
     }
   }
 
