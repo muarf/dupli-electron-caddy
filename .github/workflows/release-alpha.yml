@@ -140,7 +140,7 @@ jobs:
         run: |
           $phpPath = (Get-Command php).Source
           $pestPath = "vendor\bin\pest.bat"
-          & $phpPath $pestPath --group=unit --display-deprecations --display-errors
+          & $phpPath $pestPath --display-deprecations --display-errors --display-notices
 
       - name: Run JS Tests (Jest)
         run: npm test -- --runInBand --forceExit
