@@ -208,21 +208,21 @@
 <script>
   var CONFIG = {
     translations: {
-      default_instructions: <?php echo __js('admin_aide.default_instructions'); ?>,
-      edit_aide: <?php echo __js('admin_aide.edit_aide'); ?>,
-      add_aide: <?php echo __js('admin_aide.add_aide'); ?>,
-      add_aide_for: <?php echo __js('admin_aide.add_aide_for'); ?>,
-      error_loading_content: <?php echo __js('admin_aide.error_loading_content'); ?>,
-      error_loading_aide: <?php echo __js('admin_aide.error_loading_aide'); ?>,
-      confirm_delete: <?php echo __js('admin_aide.confirm_delete'); ?>,
-      confirm_delete_pdf: <?php echo __js('admin_aide.confirm_delete_pdf'); ?>,
-      pdf_name: <?php echo __js('admin_aide.pdf_name'); ?>,
-      upload_date: <?php echo __js('admin_aide.upload_date'); ?>,
-      pdf_size: <?php echo __js('admin_aide.pdf_size'); ?>,
-      insert_pdf: <?php echo __js('admin_aide.insert_pdf'); ?>,
-      delete_pdf: <?php echo __js('admin_aide.delete_pdf'); ?>,
-      no_pdfs: <?php echo __js('admin_aide.no_pdfs'); ?>,
-      pdf_inserted: <?php echo __js('admin_aide.pdf_inserted'); ?>
+      default_instructions: "<?php echo __js('admin_aide.default_instructions'); ?>",
+      edit_aide: "<?php echo __js('admin_aide.edit_aide'); ?>",
+      add_aide: "<?php echo __js('admin_aide.add_aide'); ?>",
+      add_aide_for: "<?php echo __js('admin_aide.add_aide_for'); ?>",
+      error_loading_content: "<?php echo __js('admin_aide.error_loading_content'); ?>",
+      error_loading_aide: "<?php echo __js('admin_aide.error_loading_aide'); ?>",
+      confirm_delete: "<?php echo __js('admin_aide.confirm_delete'); ?>",
+      confirm_delete_pdf: "<?php echo __js('admin_aide.confirm_delete_pdf'); ?>",
+      pdf_name: "<?php echo __js('admin_aide.pdf_name'); ?>",
+      upload_date: "<?php echo __js('admin_aide.upload_date'); ?>",
+      pdf_size: "<?php echo __js('admin_aide.pdf_size'); ?>",
+      insert_pdf: "<?php echo __js('admin_aide.insert_pdf'); ?>",
+      delete_pdf: "<?php echo __js('admin_aide.delete_pdf'); ?>",
+      no_pdfs: "<?php echo __js('admin_aide.no_pdfs'); ?>",
+      pdf_inserted: "<?php echo __js('admin_aide.pdf_inserted'); ?>"
     }
   };
 </script>

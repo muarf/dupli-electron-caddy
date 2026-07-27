@@ -565,13 +565,13 @@
 <script>
   var CONFIG = {
     translations: {
-      delete_confirm_title: <?php echo __js('admin_machines.delete_confirm_title'); ?>,
-      delete_confirm_msg: <?php echo __js('admin_machines.delete_confirm_msg', ['name' => '']); ?>,
-      deleting: <?php echo __js('admin_machines.deleting'); ?>,
-      delete: <?php echo __js('admin_machines.delete'); ?>,
-      edit_tambours: <?php echo __js('admin_machines.edit_tambours'); ?>,
-      unit_price: <?php echo __js('common.unit_price'); ?>,
-      price_pack: <?php echo __js('admin_machines.price_pack'); ?>
+      delete_confirm_title: "<?php echo __js('admin_machines.delete_confirm_title'); ?>",
+      delete_confirm_msg: "<?php echo __js('admin_machines.delete_confirm_msg', ['name' => '']); ?>",
+      deleting: "<?php echo __js('admin_machines.deleting'); ?>",
+      delete: "<?php echo __js('admin_machines.delete'); ?>",
+      edit_tambours: "<?php echo __js('admin_machines.edit_tambours'); ?>",
+      unit_price: "<?php echo __js('common.unit_price'); ?>",
+      price_pack: "<?php echo __js('admin_machines.price_pack'); ?>"
     }
   };
 </script>
