@@ -219,7 +219,7 @@ $duplicopieurs_list = $db->query("SELECT id, marque, modele FROM duplicopieurs W
         </div>
 
         <script>
-            const CONFIG = <?= json_encode([
+            var CONFIG = <?= json_encode([
                 'lang' => $lang ?? 'fr',
                 'photocopieurs' => $photocopieurs_list,
                 'duplicopieurs' => $duplicopieurs_list,
