@@ -91,8 +91,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // === SIDEBAR TOOL SWITCHING ===
   document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
-    btn.addEventListener('click(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.document_query"] || ', () => {
-      document.querySelectorAll(').tool-btn').forEach(b => b.classList.remove('active'));
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const tool = btn.dataset.tool;
       // Show/hide panels
@@ -160,9 +160,9 @@ document.addEventListener('DOMContentLoaded', function() {
     e.preventDefault(); uploadZone.classList.remove('dragover');
     if (e.dataTransfer.files.length > 0) loadFile(e.dataTransfer.files[0]);
   });
-  fileInput.addEventListener('change(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.e______if__e_target_files_le"] || ', e => { if (e.target.files.length > 0) loadFile(e.target.files[0]); });
-  document.addEventListener(')dragover(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.e____e_preventdefault"] || ', e => e.preventDefault());
-  document.addEventListener(')drop', e => e.preventDefault());
+  fileInput.addEventListener('change', e => { if (e.target.files.length > 0) loadFile(e.target.files[0]); });
+  document.addEventListener('dragover', e => e.preventDefault());
+  document.addEventListener('drop', e => e.preventDefault());
   
   $('btnNewFile').addEventListener('click', () => {
     resetStudio();
@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
               clearInterval(checkInterval);
               console.error("Ink analysis error:", stData.error);
-              badge.style.display = 'none(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.ca"] || ';
+              badge.style.display = 'none';
             }
           } catch(err) {
             console.error("Erreur polling ink", err);
@@ -380,8 +380,8 @@ document.addEventListener('DOMContentLoaded', function() {
         div.draggable = true;
         div.dataset.index = i;
 
-        if (item.type === 'blank(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.const_tc___docum"] || ') {
-          const tc = document.createElement(')div');
+        if (item.type === 'blank') {
+          const tc = document.createElement('div');
           tc.style.width = '60px'; tc.style.height = '85px'; tc.style.background = '#fff'; tc.style.border = '1px solid #ccc';
           tc.style.display = 'flex'; tc.style.alignItems = 'center'; tc.style.justifyContent = 'center'; tc.style.fontSize = '10px'; tc.style.color = '#999';
           tc.textContent = 'BLANK';
@@ -406,14 +406,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (item.flipH) transforms.push('scaleX(-1)');
                 if (item.flipV) transforms.push('scaleY(-1)');
                 if (transforms.length) {
-                  tc.style.transform = transforms.join(' (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio."] || ');
+                  tc.style.transform = transforms.join(' ');
                 }
               }
             } catch(e) { console.error("Error rendering thumbnail", e); }
           });
         }
 
-        const lbl = document.createElement(')div');
+        const lbl = document.createElement('div');
         lbl.className = 'thumb-label'; lbl.textContent = i + 1;
         div.appendChild(lbl);
 
@@ -529,8 +529,8 @@ document.addEventListener('DOMContentLoaded', function() {
         fragment.appendChild(div);
       }
 
-      // Appliquer le fragment d(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.un_coup_pour__viter_les_duplic"] || 'un coup pour éviter les duplications (race condition)
-      thumbsBar.innerHTML = ')';
+      // Appliquer le fragment d'un coup pour éviter les duplications
+      thumbsBar.innerHTML = '';
       thumbsBar.style.display = 'flex'; // FORCE L'AFFICHAGE (contourne les éventuels style.display = 'none')
       thumbsBar.classList.add('visible');
       thumbsBar.appendChild(fragment);
@@ -1186,6 +1186,7 @@ document.addEventListener('DOMContentLoaded', function() {
     showSpinner((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.enregistrement_dans_la_bibliot"] || 'Enregistrement dans la bibliothèque...'));
     try {
       const fd = new FormData();
+      let fileToUpload;
       let filename = $('fileNameDisplay').value || (state.file ? state.file.name : 'studio_export.pdf');
       if (!filename.toLowerCase().endsWith('.pdf') && !filename.toLowerCase().endsWith('.png')) {
           filename += '.pdf';
@@ -1428,9 +1429,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // === MODAL MOT DE PASSE BIBLIOTHÈQUE ===
   function showBibPasswordModal(retryUrl) {
-    let modal = document.getElementById('bibPasswordModal(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.if___modal__________mod"] || ');
+    let modal = document.getElementById('bibPasswordModal');
     if (!modal) {
-      modal = document.createElement(')div');
+      modal = document.createElement('div');
       modal.id = 'bibPasswordModal';
       modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;';
       modal.innerHTML = `
@@ -1446,11 +1447,11 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>`;
       document.body.appendChild(modal);
     }
-    modal.style.display = 'flex(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.const_input___document_g"] || ';
-    const input = document.getElementById(')bibPasswordInput(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.const_errdiv___document"] || ');
-    const errDiv = document.getElementById(')bibPasswordError(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.const_submitbtn___docum"] || ');
-    const submitBtn = document.getElementById(')bibPasswordSubmit(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.const_cancelbtn___docum"] || ');
-    const cancelBtn = document.getElementById(')bibPasswordCancel');
+    modal.style.display = 'flex';
+    const input = document.getElementById('bibPasswordInput');
+    const errDiv = document.getElementById('bibPasswordError');
+    const submitBtn = document.getElementById('bibPasswordSubmit');
+    const cancelBtn = document.getElementById('bibPasswordCancel');
     input.value = '';
     errDiv.textContent = '';
     setTimeout(() => input.focus(), 50);

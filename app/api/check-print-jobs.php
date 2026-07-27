@@ -6,7 +6,7 @@
 // NOUVEAU: Proxy pour les miniatures sur Linux (car dossier app/public est en lecture seule sur AppImage)
 if (isset($_GET['get_linux_thumb'])) {
     $filename = basename($_GET['get_linux_thumb']);
-    $thumbPath = "/tmp/dupli_thumbnails/" . $filename;
+    $thumbPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dupli_thumbnails' . DIRECTORY_SEPARATOR . $filename;
     if (file_exists($thumbPath)) {
         header('Content-Type: image/png');
         header('Cache-Control: public, max-age=86400');

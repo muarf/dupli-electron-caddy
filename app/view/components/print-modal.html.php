@@ -163,7 +163,7 @@
 </div>
 
 <script>
-    if (typeof CONFIG === 'undefined') window.CONFIG = {};
+    window.CONFIG = window.CONFIG || {};
     window.CONFIG.translations = Object.assign(window.CONFIG.translations || {}, {
         no_printers_found: <?= json_encode(__('print_modal.no_printers_found')) ?>,
         default_suffix: <?= json_encode(__('print_modal.default_suffix')) ?>,

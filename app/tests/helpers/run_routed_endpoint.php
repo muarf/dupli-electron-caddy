@@ -61,11 +61,15 @@ if (!empty($config['env']) && is_array($config['env'])) {
 }
 
 // Configuration des sessions pour les tests
-// Utiliser le même chemin que index.php pour éviter les conflits
-$sessionPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_sessions';
+// Utiliser un dossier dédié aux tests pour éviter les conflits avec le serveur web
+$uid = (PHP_OS_FAMILY === 'Windows') ? get_current_user() : getmyuid();
+$sessionPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_test_sessions_' . $uid;
 if (!is_dir($sessionPath)) {
     mkdir($sessionPath, 0777, true);
 }
+
+// Passer le chemin de session à index.php via variable d'environnement
+putenv('DUPLICATOR_SESSION_PATH=' . $sessionPath);
 
 // Configurer le chemin de session AVANT que index.php ne le fasse
 ini_set('session.save_path', $sessionPath);

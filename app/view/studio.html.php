@@ -62,7 +62,7 @@ window.addEventListener('unhandledrejection', function(e) {
       <button class="toolbar-btn" id="btnNewFile" style="display:none"><i class="fa fa-upload"></i> <?php _e('studio.new_file', [], false); ?></button>
       <button class="toolbar-btn" id="btnExportPng" style="display:none" title="Exporter le canvas (avec filtres) en PNG"><i class="fa fa-file-image-o"></i><?php _e("studio.auto_key_2", [], false); ?></button>
       <button class="toolbar-btn" id="btnSaveToLibrary" style="display:none" title="<?= __('studio.save_to_library_title') ?>">
-        <i class="fa fa-bookmark"></i> <?php _e('header.bibliotheque', [], false); ?>
+        <i class="fa fa-bookmark"></i> <?php _e('header.library', [], false); ?>
       </button>
       <button class="toolbar-btn primary" id="btnExportPdf" style="display:none; position: relative;" title="<?= __('studio.export_pdf_title') ?>">
         <i class="fa fa-file-pdf-o"></i> PDF

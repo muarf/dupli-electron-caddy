@@ -13,6 +13,12 @@ require_once(__DIR__ . '/../controler/functions/utilities.php');
 $filename = basename($_GET['file']);
 $dir = $_GET['dir'] ?? '';
 
+// Vérifier l'extension AVANT toute autre vérification
+if (substr(strtolower($filename), -4) !== '.pdf') {
+    http_response_code(400);
+    die(json_encode(['success' => false, 'error' => 'Type de fichier non autorisé']));
+}
+
 // Déterminer le répertoire temporaire selon le contexte (même logique que download_pdf.php)
 if ($dir === 'png_to_pdf') {
     $tmp_dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'duplicator_png_to_pdf' . DIRECTORY_SEPARATOR;
@@ -33,12 +39,6 @@ $real_tmp_dir = realpath($tmp_dir);
 if (!file_exists($filepath) || !$real_filepath || !$real_tmp_dir || strpos($real_filepath, $real_tmp_dir) !== 0) {
     http_response_code(404);
     die(json_encode(['success' => false, 'error' => 'Fichier non trouvé ou expiré']));
-}
-
-// Vérifier l'extension
-if (substr(strtolower($filename), -4) !== '.pdf') {
-    http_response_code(400);
-    die(json_encode(['success' => false, 'error' => 'Type de fichier non autorisé']));
 }
 
 // Retourner le chemin absolu

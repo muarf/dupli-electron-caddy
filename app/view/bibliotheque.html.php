@@ -442,7 +442,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
     </style>
 
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0 font-weight-bold"><i class="fa fa-book-open text-primary"></i> <?php _e('header.bibliotheque', [], false); ?></h2>
+        <h2 class="mb-0 font-weight-bold"><i class="fa fa-book-open text-primary"></i> <?php _e('header.library', [], false); ?></h2>
         <div class="text-muted"><?php _e('bibliotheque.available_docs_count', [], false); ?></div>
     </div>
 

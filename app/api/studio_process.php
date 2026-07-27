@@ -153,7 +153,12 @@ if (!defined('IS_BACKGROUND') && in_array($action, $background_actions)) {
 
     $phpExe = get_php_executable();
     $scriptPath = __DIR__ . '/background_studio_task.php';
-    exec($phpExe . ' ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($jobId) . ' > /dev/null 2>&1 &');
+    if (PHP_OS_FAMILY === 'Windows') {
+        $cmd = 'start /B ' . $phpExe . ' ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($jobId);
+        pclose(popen($cmd, 'r'));
+    } else {
+        exec($phpExe . ' ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($jobId) . ' > /dev/null 2>&1 &');
+    }
 
     echo json_encode(['success' => true, 'job_id' => $jobId]);
     exit;
@@ -1165,7 +1170,12 @@ if ($action === 'ocr_cleanup') {
     
     $phpExe = get_php_executable();
     $scriptPath = __DIR__ . '/background_studio_ocr.php';
-    exec($phpExe . ' ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($jobId) . ' > /dev/null 2>&1 &');
+    if (PHP_OS_FAMILY === 'Windows') {
+        $cmd = 'start /B ' . $phpExe . ' ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($jobId);
+        pclose(popen($cmd, 'r'));
+    } else {
+        exec($phpExe . ' ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($jobId) . ' > /dev/null 2>&1 &');
+    }
     
     echo json_encode(['success' => true, 'job_id' => $jobId]);
     exit;
