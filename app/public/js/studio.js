@@ -1727,6 +1727,8 @@ document.addEventListener('DOMContentLoaded', function() {
         gutter_num_offset_x: $('bro_folio_x').value,
         gutter_num_offset_y: $('bro_folio_y').value,
         tete_beche:     $('bro_tumble').checked ? '1' : '0',
+        signature_size: $('bro_signature_size').value,
+        signature_marks: $('bro_signature_marks').checked ? '1' : '0',
       };
     } else if (activeTab === 'livre') {
       const resizeMode = document.querySelector('input[name="liv_resize_mode"]:checked')?.value || 'percent';
@@ -1796,6 +1798,20 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   $('bro_scale').addEventListener('input', () => $('bro_scale_val').textContent = $('bro_scale').value);
   $('liv_scale').addEventListener('input', () => $('liv_scale_val').textContent = $('liv_scale').value);
+
+  // == Brochure: un cahier de 8 pages est impossible avec 8 pages par feuille (nUp=8)
+  const updateSignatureOptions = () => {
+    const nUp = $('bro_n_up').value;
+    const opt8 = Array.from($('bro_signature_size').options).find(o => o.value === '8');
+    if (opt8) {
+      opt8.disabled = (nUp === '8');
+      if (opt8.disabled && $('bro_signature_size').value === '8') {
+        $('bro_signature_size').value = '16';
+      }
+    }
+  };
+  $('bro_n_up').addEventListener('change', updateSignatureOptions);
+  updateSignatureOptions();
 
 
   $('btnApplyResize').addEventListener('click', () => {

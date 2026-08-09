@@ -218,6 +218,18 @@ window.addEventListener('unhandledrejection', function(e) {
               <option value="8"><?php _e("studio.imposition_nup_8", [], false); ?></option>
             </select>
           </div>
+          <div class="panel-row" style="margin-top:8px">
+            <div class="panel-label"><?php _e("studio.imposition_signature_size", [], false); ?></div>
+            <select class="panel-select" id="bro_signature_size">
+              <option value="0" selected><?php _e("studio.imposition_signature_0", [], false); ?></option>
+              <option value="8">8</option>
+              <option value="16">16</option>
+              <option value="32">32</option>
+            </select>
+          </div>
+          <div style="font-size:9px; color:var(--studio-text-muted); margin-top:2px">
+            <?php _e("studio.imposition_signature_hint", [], false); ?>
+          </div>
         </div>
 
         <div class="panel-section">
@@ -317,6 +329,13 @@ window.addEventListener('unhandledrejection', function(e) {
 
           <div class="panel-row" style="margin-top:10px">
             <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_tumble"><?php _e("studio.imposition_tete_beche", [], false); ?></label>
+          </div>
+
+          <div class="panel-row" style="margin-top:10px">
+            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_signature_marks"><?php _e("studio.imposition_signature_marks", [], false); ?></label>
+          </div>
+          <div style="font-size:9px; color:var(--studio-text-muted); margin-bottom:6px; margin-top:-2px">
+            <?php _e("studio.imposition_signature_marks_hint", [], false); ?>
           </div>
           
 

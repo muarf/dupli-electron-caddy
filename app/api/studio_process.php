@@ -400,6 +400,8 @@ if ($action === 'impose') {
             'tete_beche'                  => ($_POST['tete_beche'] ?? '0') === '1',
             'output_format'               => $_POST['output_format'] ?? 'A3',
             'addPageNumberCallback'        => null,
+            'signature_size'              => intval($_POST['signature_size'] ?? 0),
+            'signature_marks'             => ($_POST['signature_marks'] ?? '0') === '1',
         ];
 
         $outFilename = $safeName . '_studio_brochure.pdf';

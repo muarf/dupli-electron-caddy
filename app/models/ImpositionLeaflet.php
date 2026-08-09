@@ -26,7 +26,9 @@ class ImpositionLeaflet
             'gutter_strategy' => 'reduce', // reduce, crop
             'preview_mode' => false,
             'add_page_numbers_in_gutters' => false,
-            'addPageNumberCallback' => null // Callback pour ajouter les numéros de pages
+            'addPageNumberCallback' => null, // Callback pour ajouter les numéros de pages
+            'signature_size' => 0, // 0 = document entier, sinon 8/16/32 (pages par cahier)
+            'signature_marks' => false // Marques d'ordre des cahiers
         ], $settings);
 
         $this->pdf = new FpdiRotated();
@@ -74,7 +76,15 @@ class ImpositionLeaflet
         if ($nUp == 4) $multiple = 8;
         if ($nUp == 8) $multiple = 16;
 
-        $totalPages = ceil($this->pageCount / $multiple) * $multiple;
+        // Mode signatures (cahiers) : découpe le document en blocs indépendants de $signatureSize pages
+        $signatureSize = intval($this->settings['signature_size'] ?? 0);
+        if ($signatureSize > 0) {
+            // Un cahier doit contenir un nombre entier de feuilles : arrondir au multiple du nUp
+            $signatureSize = max($multiple, ceil($signatureSize / $multiple) * $multiple);
+            $totalPages = ceil($this->pageCount / $signatureSize) * $signatureSize;
+        } else {
+            $totalPages = ceil($this->pageCount / $multiple) * $multiple;
+        }
 
         // Configuration
         if ($nUp == 4) {
@@ -119,13 +129,22 @@ class ImpositionLeaflet
         }
 
         // Pre-calculate logical sheets (Leaflet Spreads)
-        $sheetsToPrint = $this->calculateImposition($totalPages, $nUp);
+        if ($signatureSize > 0) {
+            $sheetsToPrint = $this->calculateSignatureSheets($totalPages, $nUp, $signatureSize);
+        } else {
+            $sheetsToPrint = $this->calculateImposition($totalPages, $nUp);
+        }
 
         foreach ($sheetsToPrint as $sheetIdx => $sheetData) {
+            $signature = isset($sheetData['signature']) ? $sheetData['signature'] : 0;
+
             // Front Side
             $this->pdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
             if ($this->previewPdf) {
                 $this->previewPdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
+            }
+            if ($this->settings['signature_marks'] && $signature > 0) {
+                $this->drawSignatureMark($signature, $sheetWidth, $sheetHeight);
             }
             $this->renderSheetSide($sheetData['front'], $cols, $rows, $sheetWidth, $sheetHeight);
 
@@ -749,6 +768,64 @@ class ImpositionLeaflet
         // BR
         $this->pdf->Line($bx + $bw + $offset, $by + $bh, $bx + $bw + $offset + $len, $by + $bh);
         $this->pdf->Line($bx + $bw, $by + $bh + $offset, $bx + $bw, $by + $bh + $offset + $len);
+    }
+
+    /**
+     * Découpe le document en cahiers (signatures) de $signatureSize pages et
+     * impose chaque cahier indépendamment, dans l'ordre de reliure.
+     *
+     * Chaque bloc est un mini-livret complet (même formule que calculateImposition),
+     * décalé du nombre de pages déjà traitées. La numérotation source reste continue.
+     */
+    public function calculateSignatureSheets($totalPages, $nUp, $signatureSize)
+    {
+        $sheets = [];
+        $signatureIndex = 0;
+        for ($blockStart = 1; $blockStart <= $totalPages; $blockStart += $signatureSize) {
+            $signatureIndex++;
+            $blockSheets = $this->calculateImposition($signatureSize, $nUp);
+            $offset = $blockStart - 1;
+            foreach ($blockSheets as $sheetData) {
+                $shifted = [];
+                foreach (['front', 'back'] as $side) {
+                    $shifted[$side] = [];
+                    foreach ($sheetData[$side] as $row) {
+                        $shifted[$side][] = [
+                            'pages' => array_map(function ($p) use ($offset) {
+                                return $p + $offset;
+                            }, $row['pages']),
+                            'rotated' => $row['rotated'],
+                        ];
+                    }
+                }
+                $shifted['signature'] = $signatureIndex;
+                $sheets[] = $shifted;
+            }
+        }
+        return $sheets;
+    }
+
+    /**
+     * Dessine une petite étiquette d'ordre du cahier dans le coin haut-gauche
+     * de chaque feuille (recto), pour assembler les cahiers dans le bon ordre
+     * avant couture.
+     */
+    private function drawSignatureMark($signature, $sheetWidth, $sheetHeight)
+    {
+        $label = 'Cahier ' . $signature;
+        $this->pdf->setAutoPageBreak(false);
+        $this->pdf->SetFont('helvetica', '', 9);
+        $this->pdf->SetTextColor(0, 0, 0);
+        $this->pdf->SetXY(5, 2);
+        $this->pdf->Cell(40, 5, $label, 0, 0, 'L');
+
+        if ($this->previewPdf) {
+            $this->previewPdf->setAutoPageBreak(false);
+            $this->previewPdf->SetFont('helvetica', '', 9);
+            $this->previewPdf->SetTextColor(0, 0, 0);
+            $this->previewPdf->SetXY(5, 2);
+            $this->previewPdf->Cell(40, 5, $label, 0, 0, 'L');
+        }
     }
 
     private function calculateImposition($N, $nUp)

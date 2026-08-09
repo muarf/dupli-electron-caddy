@@ -97,13 +97,49 @@ it('impose un PDF en brochure (brochure_type = booklet/leaflet)', function () {
         // Analyser le fichier généré
         preg_match('/file=([^&]+)/', $response['download_url'], $matches);
         $fileName = urldecode($matches[1]);
-        $outputFile = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR . $fileName;
+        $outputFile = getenv('DUPLICATOR_TEMP_DIR') . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR . $fileName;
 
         expect(file_exists($outputFile))->toBeTrue();
         $inspector = new TCPDI();
         $pageCount = $inspector->setSourceFile($outputFile);
         // 3 pages + 1 page blanche (padded to 4) = 2 planches (feuilles A4)
         expect($pageCount)->toBe(2);
+    } finally {
+        cleanupPath($pdfPath);
+    }
+});
+
+it('impose un PDF en brochure avec découpage en cahiers de signatures', function () {
+    $pdfPath = createSamplePdf(40);
+
+    try {
+        $response = runStudioProcess('impose', [
+            'impose_type' => 'brochure',
+            'n_up' => 2,
+            'resize_mode' => 'percent',
+            'scale' => 100,
+            'signature_size' => '16',
+            'signature_marks' => '1',
+        ], [
+            'file' => [
+                'name' => 'signatures.pdf',
+                'type' => 'application/pdf',
+                'tmp_name' => $pdfPath,
+            ],
+        ]);
+
+        expect($response['success'])->toBeTrue();
+        expect($response['download_url'])->toMatch('/download_studio/');
+
+        preg_match('/file=([^&]+)/', $response['download_url'], $matches);
+        $fileName = urldecode($matches[1]);
+        $outputFile = getenv('DUPLICATOR_TEMP_DIR') . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR . $fileName;
+
+        expect(file_exists($outputFile))->toBeTrue();
+        $inspector = new TCPDI();
+        $pageCount = $inspector->setSourceFile($outputFile);
+        // 40 pages → 3 cahiers de 16 = 48 pages → 48/4 = 12 feuilles × 2 faces = 24 planches
+        expect($pageCount)->toBe(24);
     } finally {
         cleanupPath($pdfPath);
     }
@@ -131,7 +167,7 @@ it('impose un PDF en livre (cut & stack)', function () {
 
         preg_match('/file=([^&]+)/', $response['download_url'], $matches);
         $fileName = urldecode($matches[1]);
-        $outputFile = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR . $fileName;
+        $outputFile = getenv('DUPLICATOR_TEMP_DIR') . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR . $fileName;
 
         expect(file_exists($outputFile))->toBeTrue();
     } finally {
