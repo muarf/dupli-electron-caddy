@@ -45,6 +45,11 @@ tmp/
 Thumbs.db
 
 # App specific
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
+*.sqlite.corrupt
 app/duplinew.sqlite
 app/sessions/
 app/public/tmp/*
