@@ -68,7 +68,7 @@ if (!$uploadedFile) {
     // --- Récupérer le fichier uploadé (sauf pour certaines actions) ---
     if (!in_array($action, ['organize_pages', 'merge', 'riso_pdf', 'montage_libre', 'crop_pdf', 'modification', 'upload_font', 'list_fonts', 'recognize_font', 'passthrough_pdf', 'download_google_font', 'ocr_status', 'analyze_ink_status', 'task_status', 'get_active_jobs', 'delete_job'])) {
         if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
-            echo json_encode(['success' => false, 'errors' => ['Aucun fichier valide reçu.']]);
+            echo json_encode(['success' => false, 'errors' => [__('studio.no_valid_file')]]);
             exit;
         }
         $uploadedFile  = $_FILES['file']['tmp_name'];
@@ -180,7 +180,7 @@ if ($action === 'impose') {
         // Convertir l'image en PDF avant imposition
         $sz = getimagesize($uploadedFile);
         if (!$sz) {
-            echo json_encode(['success' => false, 'errors' => ["Impossible de lire les dimensions de l'image."]]);
+            echo json_encode(['success' => false, 'errors' => [__('studio.cant_read_image')]]);
             exit;
         }
         $dpi  = 96;
@@ -201,14 +201,14 @@ if ($action === 'impose') {
         $pdfConv->Output($imposeTempPdf, 'F');
 
         if (!file_exists($imposeTempPdf)) {
-            echo json_encode(['success' => false, 'errors' => ["Échec de la conversion image → PDF."]]);
+            echo json_encode(['success' => false, 'errors' => [__('studio.img_to_pdf_failed')]]);
             exit;
         }
         $uploadedFile = $imposeTempPdf; // remplacer le fichier source pour la suite
         $mimeType     = 'application/pdf';
 
     } elseif ($mimeType !== 'application/pdf') {
-        echo json_encode(['success' => false, 'errors' => ["Format non supporté : $mimeType. Veuillez fournir un PDF ou une image (PNG, JPG, WebP)."]]);
+        echo json_encode(['success' => false, 'errors' => [sprintf(__('studio.format_not_supported'), $mimeType)]]);
         exit;
     }
 
@@ -219,7 +219,7 @@ if ($action === 'impose') {
             // Copier le fichier uploadé en temp pour utiliser le mode "bibliothèque"
             // (évite les contraintes de move_uploaded_file sur l'alias $_FILES)
             $tempCopy = $tmpBase . 'studio_tracts_' . time() . '_' . uniqid() . '.pdf';
-            if (!copy($uploadedFile, $tempCopy)) throw new Exception("Impossible de copier le fichier.");
+            if (!copy($uploadedFile, $tempCopy)) throw new Exception(__('studio.cant_copy_file'));
             $_FILES['pdf_file'] = [
                 'name'     => $originalName,
                 'type'     => 'application/pdf',
@@ -313,7 +313,7 @@ if ($action === 'impose') {
             $imposition->process($outPath, null);
 
             if ($paddingResult['temp_file'] && file_exists($paddingResult['temp_file'])) @unlink($paddingResult['temp_file']);
-            if (!file_exists($outPath)) throw new Exception("Le fichier livre n'a pas été créé.");
+            if (!file_exists($outPath)) throw new Exception(__('studio.book_file_not_created'));
 
             if ($imposeTempPdf && file_exists($imposeTempPdf)) @unlink($imposeTempPdf);
 
@@ -329,7 +329,7 @@ if ($action === 'impose') {
             try {
                 $cleanedPath = $tmpBase . 'cleaned_livre_' . time() . '.pdf';
                 $gs = run_ghostscript("-dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -sOutputFile=" . escapeshellarg($cleanedPath) . " " . escapeshellarg($uploadedFile));
-                if (!$gs['success'] || !file_exists($cleanedPath)) throw new Exception("GS: " . $gs['output']);
+                if (!$gs['success'] || !file_exists($cleanedPath)) throw new Exception(sprintf(__('studio.gs_error'), $gs['output']));
                 $pad2 = padPdfToMultiple($cleanedPath, 2 * intval($_POST['n_up'] ?? 2));
                 $imp2 = new Imposition($pad2['file'], $settings ?? []);
                 $out2 = $tmpBase . $safeName . '_studio_livre.pdf';
@@ -397,7 +397,7 @@ if ($action === 'impose') {
         $imposition->process($outPath, null);
 
         if ($paddingResult['temp_file'] && file_exists($paddingResult['temp_file'])) @unlink($paddingResult['temp_file']);
-        if (!file_exists($outPath)) throw new Exception("Le fichier brochure n'a pas été créé.");
+        if (!file_exists($outPath)) throw new Exception(__('studio.brochure_file_not_created'));
 
         if ($imposeTempPdf && file_exists($imposeTempPdf)) @unlink($imposeTempPdf);
 
@@ -416,7 +416,7 @@ if ($action === 'impose') {
         try {
             $cleanedPath = $tmpBase . 'cleaned_brochure_' . time() . '.pdf';
             $gs = run_ghostscript("-dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -sOutputFile=" . escapeshellarg($cleanedPath) . " " . escapeshellarg($uploadedFile));
-            if (!$gs['success'] || !file_exists($cleanedPath)) throw new Exception("GS: " . $gs['output']);
+            if (!$gs['success'] || !file_exists($cleanedPath)) throw new Exception(sprintf(__('studio.gs_error'), $gs['output']));
             $pad2 = padPdfToMultiple($cleanedPath, $multiple);
             $imp2 = new ImpositionLeaflet($pad2['file'], $settings ?? []);
             $out2 = $tmpBase . $safeName . '_studio_brochure.pdf';
@@ -443,7 +443,7 @@ if ($action === 'resize') {
             'A3' => ['w' => 297, 'h' => 420],
             'A5' => ['w' => 148, 'h' => 210],
         ];
-        if (!isset($formats[$format])) throw new Exception("Format inconnu : $format");
+        if (!isset($formats[$format])) throw new Exception(sprintf(__('studio.unknown_format'), $format));
         $target_w = $formats[$format]['w'];
         $target_h = $formats[$format]['h'];
 
@@ -475,7 +475,7 @@ if ($action === 'resize') {
             }
         } else {
             $sz = getimagesize($uploadedFile);
-            if (!$sz) throw new Exception("Impossible de lire les dimensions de l'image.");
+            if (!$sz) throw new Exception(__('studio.cant_read_image'));
             $sw = $sz[0] * 25.4 / 300; $sh = $sz[1] * 25.4 / 300;
             $orientation = ($sw > $sh) ? 'L' : 'P';
             $tw = ($orientation === 'L') ? $target_h : $target_w;
@@ -490,7 +490,7 @@ if ($action === 'resize') {
         $outPath     = $tmpBase . $outFilename;
         $pdf->Output($outPath, 'F');
 
-        if (!file_exists($outPath)) throw new Exception("Le fichier redimensionné n'a pas été créé.");
+        if (!file_exists($outPath)) throw new Exception(__('studio.resized_file_not_created'));
 
         echo json_encode([
             'success'      => true,
@@ -515,11 +515,11 @@ if ($action === 'to_pdf') {
 
         $allowed = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
         if (!in_array($mimeType, $allowed)) {
-            throw new Exception("Format d'image non supporté : $mimeType");
+            throw new Exception(sprintf(__('studio.image_format_not_supported'), $mimeType));
         }
 
         $sz = getimagesize($uploadedFile);
-        if (!$sz) throw new Exception("Impossible de lire les dimensions de l'image.");
+        if (!$sz) throw new Exception(__('studio.cant_read_image'));
 
         // Dimensions en mm (on suppose 96 dpi pour le canvas navigateur)
         $dpi = floatval($_POST['dpi'] ?? 96);
@@ -540,7 +540,7 @@ if ($action === 'to_pdf') {
         $outPath     = $tmpBase . $outFilename;
         $pdf->Output($outPath, 'F');
 
-        if (!file_exists($outPath)) throw new Exception("Le PDF n'a pas pu être créé.");
+        if (!file_exists($outPath)) throw new Exception(__('studio.pdf_not_created'));
 
         echo json_encode([
             'success'      => true,
@@ -565,13 +565,13 @@ if ($action === 'passthrough_pdf') {
         finfo_close($finfo);
 
         if ($mimeType !== 'application/pdf') {
-            throw new Exception("Le fichier doit être un PDF pour le passthrough.");
+            throw new Exception(__('studio.must_be_pdf_passthrough'));
         }
 
         $outFilename = $safeName . '_studio.pdf';
         $outPath     = $tmpBase . $outFilename;
         if (!copy($uploadedFile, $outPath)) {
-            throw new Exception("Impossible de copier le fichier PDF.");
+            throw new Exception(__('studio.cant_copy_pdf'));
         }
 
         echo json_encode([
@@ -594,7 +594,7 @@ if ($action === "riso_pdf") {
         $layers = $_FILES["layers"] ?? null;
         $colors = $_POST["colors"] ?? [];
         if (!$layers || !is_array($layers["tmp_name"])) {
-            throw new Exception("Aucun calque reçu.");
+            throw new Exception(__('studio.no_layers_received'));
         }
 
         $pdf = new TCPDI();
@@ -671,7 +671,7 @@ if ($action === 'pdf_to_images') {
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime  = finfo_file($finfo, $uploadedFile);
         finfo_close($finfo);
-        if ($mime !== 'application/pdf') throw new Exception("Le fichier doit être un PDF.");
+        if ($mime !== 'application/pdf') throw new Exception(__('studio.must_be_pdf'));
 
         $dpi     = max(72, min(300, intval($_POST['dpi'] ?? 150)));
         $outDir  = $tmpBase . $safeName . '_pages_' . time() . DIRECTORY_SEPARATOR;
@@ -679,7 +679,7 @@ if ($action === 'pdf_to_images') {
 
         $created = convert_pdf_to_png($uploadedFile, $outDir, $dpi, $safeName);
 
-        if (empty($created)) throw new Exception("Aucune image générée.");
+        if (empty($created)) throw new Exception(__('studio.no_images_generated'));
 
         // Créer un ZIP
         $zipName = $safeName . '_pages.zip';
@@ -754,14 +754,14 @@ if ($action === 'merge') {
         });
         $pdfPaths = array_values($pdfPaths);
 
-        if (count($pdfPaths) < 2) throw new Exception("Au moins 2 PDFs valides sont requis pour la fusion.");
+        if (count($pdfPaths) < 2) throw new Exception(__('studio.need_two_pdfs_for_merge'));
 
         $outFilename = $safeName . '_merged.pdf';
         $outPath     = $tmpBase . $outFilename;
 
         merge_pdfs($pdfPaths, $outPath);
 
-        if (!file_exists($outPath)) throw new Exception("Le fichier fusionné n'a pas été créé.");
+        if (!file_exists($outPath)) throw new Exception(__('studio.merged_file_not_created'));
 
         $previewPng = generateImpositionPreview($outPath, $tmpBase, $safeName . '_merged');
 
@@ -786,7 +786,7 @@ if ($action === 'unimpose') {
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime  = finfo_file($finfo, $uploadedFile);
         finfo_close($finfo);
-        if ($mime !== 'application/pdf') throw new Exception("Le fichier doit être un PDF.");
+        if ($mime !== 'application/pdf') throw new Exception(__('studio.must_be_pdf'));
 
         $mode        = $_POST['unimpose_mode'] ?? 'booklet'; // booklet | doubles | sequential
         $outFilename = $safeName . '_unimposed.pdf';
@@ -802,7 +802,7 @@ if ($action === 'unimpose') {
             $result = $un->unimposeBooklet();
         }
 
-        if (!$result || !file_exists($outPath)) throw new Exception("La dés-imposition a échoué. Vérifiez que le PDF est bien un livret imposé.");
+        if (!$result || !file_exists($outPath)) throw new Exception(__('studio.unimpose_failed'));
 
         $previewPng = generateImpositionPreview($outPath, $tmpBase, $safeName . '_unimposed');
 
@@ -822,7 +822,7 @@ if ($action === 'unimpose') {
 if ($action === 'organize_pages') {
     try {
         $structure = json_decode($_POST['structure'] ?? '[]', true);
-        if (empty($structure)) throw new Exception("Structure de pages invalide.");
+        if (empty($structure)) throw new Exception(__('studio.invalid_page_structure'));
 
         $files = []; // Map file_idx => temp path
         
@@ -927,7 +927,7 @@ if (!$res['success']) { file_put_contents('/tmp/duplicator/duplicator_studio/mag
             }
         }
 
-        if (empty($images)) throw new Exception("Aucune page à inclure");
+        if (empty($images)) throw new Exception(__('studio.no_pages_to_include'));
 
         $outFilename = 'organized_' . time() . '.pdf';
         $outPath = $tmpBase . $outFilename;
@@ -937,7 +937,7 @@ if (!$res['success']) { file_put_contents('/tmp/duplicator/duplicator_studio/mag
 
         foreach ($images as $img) @unlink($img);
 
-        if (!file_exists($outPath)) throw new Exception("Erreur génération PDF");
+        if (!file_exists($outPath)) throw new Exception(__('studio.pdf_generation_error_short'));
 
         echo json_encode([
             'success'      => true,
@@ -958,7 +958,7 @@ if (session_id()) session_write_close();
     try {
         $payloadRaw = $_POST['payload'] ?? '';
         $payload = json_decode($payloadRaw, true);
-        if (!$payload || !isset($payload['planches'])) throw new Exception("Payload invalide");
+        if (!$payload || !isset($payload['planches'])) throw new Exception(__('studio.invalid_payload'));
 
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi('P', 'mm', 'A4');
         $pdf->SetAutoPageBreak(false);
@@ -1066,8 +1066,8 @@ if ($action === 'crop_pdf') {
 if (session_id()) session_write_close();
     try {
         $crop = json_decode($_POST['crop'] ?? 'null', true);
-        if (!$crop) throw new Exception('Paramètres de crop invalides.');
-        if (!$uploadedFile || !file_exists($uploadedFile)) throw new Exception('Fichier invalide.');
+        if (!$crop) throw new Exception(__('studio.invalid_crop_params'));
+        if (!$uploadedFile || !file_exists($uploadedFile)) throw new Exception(__('studio.invalid_file'));
 
         $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
         $isPdf = ($ext === 'pdf');
@@ -1097,7 +1097,7 @@ if (!$res['success']) { file_put_contents('/tmp/duplicator/duplicator_studio/mag
                 list($imgW, $imgH) = getimagesize($page_png);
                 $newW = $imgW - $cropL - $cropR;
                 $newH = $imgH - $cropT - $cropB;
-                if ($newW <= 0 || $newH <= 0) throw new Exception("Marge de crop trop grande pour la page " . ($p + 1));
+                if ($newW <= 0 || $newH <= 0) throw new Exception(sprintf(__('studio.crop_margin_too_large_page'), ($p + 1)));
 
                 $cropped = $tmpBase . 'crop_result_' . $p . '_' . uniqid() . '.png';
                 run_imagemagick(escapeshellarg($page_png) . " -crop {$newW}x{$newH}+{$cropL}+{$cropT} +repage " . escapeshellarg($cropped));
@@ -1111,14 +1111,14 @@ if (!$res['success']) { file_put_contents('/tmp/duplicator/duplicator_studio/mag
             list($imgW, $imgH) = getimagesize($page_png);
             $newW = $imgW - $cropL - $cropR;
             $newH = $imgH - $cropT - $cropB;
-            if ($newW <= 0 || $newH <= 0) throw new Exception('Marge de crop trop grande.');
+            if ($newW <= 0 || $newH <= 0) throw new Exception(__('studio.crop_margin_too_large'));
             $cropped = $tmpBase . 'crop_result_' . uniqid() . '.png';
             run_imagemagick(escapeshellarg($page_png) . " -crop {$newW}x{$newH}+{$cropL}+{$cropT} +repage " . escapeshellarg($cropped));
             @unlink($page_png);
             if (file_exists($cropped)) $images[] = $cropped;
         }
 
-        if (empty($images)) throw new Exception('Aucune page rognée générée.');
+        if (empty($images)) throw new Exception(__('studio.no_cropped_pages'));
 
         $outFilename = $safeName . '_cropped_' . time() . '.pdf';
         $outPath = $tmpBase . $outFilename;
@@ -1127,7 +1127,7 @@ if (!$res['success']) { file_put_contents('/tmp/duplicator/duplicator_studio/mag
 
         foreach ($images as $img) @unlink($img);
 
-        if (!file_exists($outPath)) throw new Exception('Erreur génération PDF rogné.');
+        if (!file_exists($outPath)) throw new Exception(__('studio.cropped_pdf_generation_error'));
 
         echo json_encode([
             'success'      => true,
@@ -1144,7 +1144,7 @@ if ($action === 'ocr_cleanup') {
     header('Content-Type: application/json');
 
     if (!$uploadedFile || !file_exists($uploadedFile)) {
-        echo json_encode(['success' => false, 'error' => 'Fichier source introuvable.']);
+        echo json_encode(['success' => false, 'error' => __('studio.source_file_not_found')]);
         exit;
     }
 
@@ -1155,7 +1155,7 @@ if ($action === 'ocr_cleanup') {
     // Sinon (upload tmp PHP), on le copie aussi pour survivre à la fin du script.
     $persistentFile = $tmpBase . $jobId . '_input.pdf';
     if (!copy($uploadedFile, $persistentFile)) {
-        echo json_encode(['success' => false, 'error' => 'Impossible de préparer le fichier pour le traitement.']);
+        echo json_encode(['success' => false, 'error' => __('studio.cant_prepare_file')]);
         exit;
     }
 
@@ -1184,12 +1184,12 @@ if ($action === 'ocr_cleanup') {
 if ($action === 'ocr_status' || $action === 'analyze_ink_status' || $action === 'task_status') {
     $jobId = $_POST['job_id'] ?? '';
     if (!$jobId) {
-        echo json_encode(['success' => false, 'error' => 'Job ID manquant']);
+        echo json_encode(['success' => false, 'error' => __('studio.job_id_missing')]);
         exit;
     }
     $jobFile = $tmpBase . $jobId . '.json';
     if (!file_exists($jobFile)) {
-        echo json_encode(['success' => false, 'error' => 'Job introuvable']);
+        echo json_encode(['success' => false, 'error' => __('studio.job_not_found')]);
         exit;
     }
     $jobData = json_decode(file_get_contents($jobFile), true);
@@ -1273,7 +1273,7 @@ if ($action === 'pdf_to_images') {
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime  = finfo_file($finfo, $uploadedFile);
         finfo_close($finfo);
-        if ($mime !== 'application/pdf') throw new Exception("Le fichier doit être un PDF.");
+        if ($mime !== 'application/pdf') throw new Exception(__('studio.must_be_pdf'));
 
         $dpi     = max(72, min(300, intval($_POST['dpi'] ?? 150)));
         $outDir  = $tmpBase . $safeName . '_pages_' . time() . DIRECTORY_SEPARATOR;
@@ -1281,7 +1281,7 @@ if ($action === 'pdf_to_images') {
 
         $created = convert_pdf_to_png($uploadedFile, $outDir, $dpi, $safeName);
 
-        if (empty($created)) throw new Exception("Aucune image générée.");
+        if (empty($created)) throw new Exception(__('studio.no_images_generated'));
 
         // Créer un ZIP
         $zipName = $safeName . '_pages.zip';
@@ -1356,14 +1356,14 @@ if ($action === 'merge') {
         });
         $pdfPaths = array_values($pdfPaths);
 
-        if (count($pdfPaths) < 2) throw new Exception("Au moins 2 PDFs valides sont requis pour la fusion.");
+        if (count($pdfPaths) < 2) throw new Exception(__('studio.need_two_pdfs_for_merge'));
 
         $outFilename = $safeName . '_merged.pdf';
         $outPath     = $tmpBase . $outFilename;
 
         merge_pdfs($pdfPaths, $outPath);
 
-        if (!file_exists($outPath)) throw new Exception("Le fichier fusionné n'a pas été créé.");
+        if (!file_exists($outPath)) throw new Exception(__('studio.merged_file_not_created'));
 
         $previewPng = generateImpositionPreview($outPath, $tmpBase, $safeName . '_merged');
 
@@ -1388,7 +1388,7 @@ if ($action === 'unimpose') {
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime  = finfo_file($finfo, $uploadedFile);
         finfo_close($finfo);
-        if ($mime !== 'application/pdf') throw new Exception("Le fichier doit être un PDF.");
+        if ($mime !== 'application/pdf') throw new Exception(__('studio.must_be_pdf'));
 
         $mode        = $_POST['unimpose_mode'] ?? 'booklet'; // booklet | doubles | sequential
         $outFilename = $safeName . '_unimposed.pdf';
@@ -1404,7 +1404,7 @@ if ($action === 'unimpose') {
             $result = $un->unimposeBooklet();
         }
 
-        if (!$result || !file_exists($outPath)) throw new Exception("La dés-imposition a échoué. Vérifiez que le PDF est bien un livret imposé.");
+        if (!$result || !file_exists($outPath)) throw new Exception(__('studio.unimpose_failed'));
 
         $previewPng = generateImpositionPreview($outPath, $tmpBase, $safeName . '_unimposed');
 
@@ -1424,7 +1424,7 @@ if ($action === 'unimpose') {
 if ($action === 'organize_pages') {
     try {
         $structure = json_decode($_POST['structure'] ?? '[]', true);
-        if (empty($structure)) throw new Exception("Structure de pages invalide.");
+        if (empty($structure)) throw new Exception(__('studio.invalid_page_structure'));
 
         $files = []; // Map file_idx => temp path
         
@@ -1497,7 +1497,7 @@ if (!$res['success']) { file_put_contents('/tmp/duplicator/duplicator_studio/mag
             }
         }
 
-        if (empty($images)) throw new Exception("Aucune page à inclure");
+        if (empty($images)) throw new Exception(__('studio.no_pages_to_include'));
 
         $outFilename = 'organized_' . time() . '.pdf';
         $outPath = $tmpBase . $outFilename;
@@ -1507,7 +1507,7 @@ if (!$res['success']) { file_put_contents('/tmp/duplicator/duplicator_studio/mag
 
         foreach ($images as $img) @unlink($img);
 
-        if (!file_exists($outPath)) throw new Exception("Erreur génération PDF");
+        if (!file_exists($outPath)) throw new Exception(__('studio.pdf_generation_error_short'));
 
         echo json_encode([
             'success'      => true,
@@ -1528,7 +1528,7 @@ if (session_id()) session_write_close();
     try {
         $payloadRaw = $_POST['payload'] ?? '';
         $payload = json_decode($payloadRaw, true);
-        if (!$payload || !isset($payload['planches'])) throw new Exception("Payload invalide");
+        if (!$payload || !isset($payload['planches'])) throw new Exception(__('studio.invalid_payload'));
 
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi('P', 'mm', 'A4');
         $pdf->SetAutoPageBreak(false);
@@ -1636,8 +1636,8 @@ if ($action === 'crop_pdf') {
 if (session_id()) session_write_close();
     try {
         $crop = json_decode($_POST['crop'] ?? 'null', true);
-        if (!$crop) throw new Exception('Paramètres de crop invalides.');
-        if (!$uploadedFile || !file_exists($uploadedFile)) throw new Exception('Fichier invalide.');
+        if (!$crop) throw new Exception(__('studio.invalid_crop_params'));
+        if (!$uploadedFile || !file_exists($uploadedFile)) throw new Exception(__('studio.invalid_file'));
 
         $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
         $isPdf = ($ext === 'pdf');
@@ -1667,7 +1667,7 @@ if (!$res['success']) { file_put_contents('/tmp/duplicator/duplicator_studio/mag
                 list($imgW, $imgH) = getimagesize($page_png);
                 $newW = $imgW - $cropL - $cropR;
                 $newH = $imgH - $cropT - $cropB;
-                if ($newW <= 0 || $newH <= 0) throw new Exception("Marge de crop trop grande pour la page " . ($p + 1));
+                if ($newW <= 0 || $newH <= 0) throw new Exception(sprintf(__('studio.crop_margin_too_large_page'), ($p + 1)));
 
                 $cropped = $tmpBase . 'crop_result_' . $p . '_' . uniqid() . '.png';
                 run_imagemagick(escapeshellarg($page_png) . " -crop {$newW}x{$newH}+{$cropL}+{$cropT} +repage " . escapeshellarg($cropped));
@@ -1681,14 +1681,14 @@ if (!$res['success']) { file_put_contents('/tmp/duplicator/duplicator_studio/mag
             list($imgW, $imgH) = getimagesize($page_png);
             $newW = $imgW - $cropL - $cropR;
             $newH = $imgH - $cropT - $cropB;
-            if ($newW <= 0 || $newH <= 0) throw new Exception('Marge de crop trop grande.');
+            if ($newW <= 0 || $newH <= 0) throw new Exception(__('studio.crop_margin_too_large'));
             $cropped = $tmpBase . 'crop_result_' . uniqid() . '.png';
             run_imagemagick(escapeshellarg($page_png) . " -crop {$newW}x{$newH}+{$cropL}+{$cropT} +repage " . escapeshellarg($cropped));
             @unlink($page_png);
             if (file_exists($cropped)) $images[] = $cropped;
         }
 
-        if (empty($images)) throw new Exception('Aucune page rognée générée.');
+        if (empty($images)) throw new Exception(__('studio.no_cropped_pages'));
 
         $outFilename = $safeName . '_cropped_' . time() . '.pdf';
         $outPath = $tmpBase . $outFilename;
@@ -1697,7 +1697,7 @@ if (!$res['success']) { file_put_contents('/tmp/duplicator/duplicator_studio/mag
 
         foreach ($images as $img) @unlink($img);
 
-        if (!file_exists($outPath)) throw new Exception('Erreur génération PDF rogné.');
+        if (!file_exists($outPath)) throw new Exception(__('studio.cropped_pdf_generation_error'));
 
         echo json_encode([
             'success'      => true,
@@ -1715,14 +1715,14 @@ if ($action === 'ocr_cleanup') {
 
 if (session_id()) session_write_close();
     try {
-        if (!$uploadedFile || !file_exists($uploadedFile)) throw new Exception('Fichier invalide ou manquant.');
+        if (!$uploadedFile || !file_exists($uploadedFile)) throw new Exception(__('studio.invalid_or_missing_file'));
         $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
         
         // Si c'est une image, on la convertit d'abord en PDF
         if ($ext !== 'pdf') {
             $newPdf = $tmpBase . 'temp_ocr_input_' . uniqid() . '.pdf';
             run_imagemagick(escapeshellarg($uploadedFile) . ' ' . escapeshellarg($newPdf));
-            if (!file_exists($newPdf)) throw new Exception("Impossible de préparer l'image pour l'OCR.");
+            if (!file_exists($newPdf)) throw new Exception(__('studio.cant_prepare_image_ocr'));
             $uploadedFile = $newPdf;
         }
 
@@ -1786,7 +1786,7 @@ if (session_id()) session_write_close();
         $output = shell_exec($fullCmd);
 
         if (!file_exists($outPath) || filesize($outPath) === 0) {
-            throw new Exception("Erreur lors du traitement OCR. Logs : " . htmlspecialchars((string)$output, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+            throw new Exception(sprintf(__('studio.ocr_treatment_error'), htmlspecialchars((string)$output, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')));
         }
 
         $toOdt = ($_POST['to_odt'] ?? '0') === '1';
@@ -1814,7 +1814,7 @@ if (session_id()) session_write_close();
                 curl_close($ch);
 
                 if ($httpCode !== 200 || !$vpsResponse) {
-                    throw new Exception("L'API Docling VPS est inaccessible (HTTP $httpCode). Vérifiez studio_api_docling_url dans les réglages.");
+                    throw new Exception(sprintf(__('studio.docling_api_unreachable'), $httpCode));
                 }
                 $vpsData = json_decode($vpsResponse, true);
                 if ($vpsData && isset($vpsData['docx'])) {
@@ -1833,12 +1833,12 @@ if (session_id()) session_write_close();
                 $doclingOutput = shell_exec($doclingCmd);
 
                 if (!file_exists($docxPath) || filesize($docxPath) === 0) {
-                    throw new Exception("Aucune URL Docling VPS configurée et l'environnement local est indisponible. Configurez studio_api_docling_url dans les réglages IA.");
+                    throw new Exception(__('studio.no_docling_url_configured'));
                 }
             }
 
             if (!file_exists($docxPath) || filesize($docxPath) === 0) {
-                throw new Exception("Erreur lors de l'extraction Copyfit IA (Docling). Vérifiez les logs serveur.");
+                throw new Exception(__('studio.docling_extraction_error'));
             }
 
             $outFilename = $outFilenameDocx;
@@ -1849,7 +1849,7 @@ if (session_id()) session_write_close();
             shell_exec(escapeshellarg($pdftotextExe) . ' -enc UTF-8 ' . escapeshellarg($outPath) . ' ' . escapeshellarg($sidecarPath));
             
             if (!file_exists($sidecarPath) || filesize($sidecarPath) === 0) {
-                throw new Exception("Aucun texte n'a pu être extrait du document.");
+                throw new Exception(__('studio.no_text_extracted'));
             }
             
             $outFilenameDocx = str_replace('.pdf', '_fluide.docx', $outFilename);
@@ -1867,7 +1867,7 @@ if (session_id()) session_write_close();
                 $outFilename = $outFilenameDocx;
                 $outPath = $docxPath;
             } else {
-                throw new Exception("Erreur lors de la conversion du texte fluide. Logs : " . htmlspecialchars($docxOutput));
+                throw new Exception(sprintf(__('studio.fluid_text_conversion_error'), htmlspecialchars($docxOutput)));
             }
             
         } else if ($toDocx) {
@@ -1885,7 +1885,7 @@ if (session_id()) session_write_close();
                 $outFilename = $outFilenameDocx;
                 $outPath = $docxPath;
             } else {
-                throw new Exception("Erreur lors de la conversion DOCX par pdf2docx. Logs : " . htmlspecialchars($docxOutput));
+                throw new Exception(sprintf(__('studio.docx_conversion_error'), htmlspecialchars($docxOutput)));
             }
         }
 
@@ -1907,7 +1907,7 @@ if ($action === 'modification') {
 
         $dataRaw = $_POST['data'] ?? '{}';
         $data = json_decode($dataRaw, true);
-        if (!$data) throw new Exception("Données de modification invalides.");
+        if (!$data) throw new Exception(__('studio.invalid_modification_data'));
         
         $scope = $data['scope'] ?? 'current';
         $currentPage = intval($data['currentPage'] ?? 1);
@@ -1917,13 +1917,13 @@ if ($action === 'modification') {
         $sourcePdf = $uploadedFile;
 
         if (!$sourcePdf || !file_exists($sourcePdf)) {
-            throw new Exception("Fichier source introuvable.");
+            throw new Exception(__('studio.source_file_not_found'));
         }
 
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime  = finfo_file($finfo, $sourcePdf);
         finfo_close($finfo);
-        if ($mime !== 'application/pdf') throw new Exception("Le fichier doit être un PDF.");
+        if ($mime !== 'application/pdf') throw new Exception(__('studio.must_be_pdf'));
 
         $pdf = new TCPDI();
         $pdf->SetCreator('Dupli Studio');
@@ -1941,7 +1941,7 @@ if ($action === 'modification') {
                     $sourcePdf = $downgraded;
                     $pageCount = $pdf->setSourceFile($sourcePdf);
                 } else {
-                    throw new Exception("Le PDF utilise une compression non supportée et la conversion a échoué.");
+                    throw new Exception(__('studio.unsupported_pdf_compression'));
                 }
             } else {
                 throw $e;
@@ -2025,7 +2025,7 @@ if ($action === 'modification') {
         $outPath = $tmpBase . $outFilename;
         $pdf->Output($outPath, 'F');
         
-        if (!file_exists($outPath)) throw new Exception("Erreur lors de la génération du PDF modifié.");
+        if (!file_exists($outPath)) throw new Exception(__('studio.modified_pdf_generation_error'));
         
         echo json_encode([
             'success'      => true,
@@ -2061,7 +2061,7 @@ if ($action === 'list_fonts') {
 if ($action === 'upload_font') {
     try {
         if (!isset($_FILES['font']) || $_FILES['font']['error'] !== UPLOAD_ERR_OK) {
-            throw new Exception("Erreur lors de l'upload de la police.");
+            throw new Exception(__('studio.font_upload_error'));
         }
         
         $tmpName = $_FILES['font']['tmp_name'];
@@ -2069,7 +2069,7 @@ if ($action === 'upload_font') {
         $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
         
         if (!in_array($ext, ['ttf', 'otf'])) {
-            throw new Exception("Seuls les formats .ttf et .otf sont supportés.");
+            throw new Exception(__('studio.ttf_otf_only'));
         }
         
         $fontsDir = __DIR__ . '/../public/custom_fonts';
@@ -2080,7 +2080,7 @@ if ($action === 'upload_font') {
         $destPath = $fontsDir . '/' . $safeName . '.' . $ext;
         
         if (!move_uploaded_file($tmpName, $destPath)) {
-            throw new Exception("Impossible de sauvegarder la police.");
+            throw new Exception(__('studio.cant_save_font'));
         }
         
         // Convert for TCPDF
@@ -2089,7 +2089,7 @@ if ($action === 'upload_font') {
         if (!$fontname) {
             // Rollback
             @unlink($destPath);
-            throw new Exception("Le moteur interne a rejeté cette police.");
+            throw new Exception(__('studio.internal_engine_rejected_font'));
         }
         
         echo json_encode(['success' => true, 'font_name' => $fontname, 'url' => 'custom_fonts/' . basename($destPath)]);
@@ -2103,7 +2103,7 @@ if ($action === 'upload_font') {
 if ($action === 'read_metadata') {
     try {
         if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
-            throw new Exception("Fichier introuvable.");
+            throw new Exception(__('studio.file_not_found'));
         }
         $file = escapeshellarg($_FILES['file']['tmp_name']);
         $exiftoolExe = escapeshellarg(get_exiftool_path());
@@ -2113,7 +2113,7 @@ if ($action === 'read_metadata') {
         if ($data && is_array($data) && count($data) > 0) {
             echo json_encode(['success' => true, 'metadata' => $data[0]]);
         } else {
-            throw new Exception("Impossible de lire les métadonnées.");
+            throw new Exception(__('studio.cant_read_metadata'));
         }
     } catch (Exception $e) {
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
@@ -2125,7 +2125,7 @@ if ($action === 'read_metadata') {
 if ($action === 'update_metadata') {
     try {
         if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
-            throw new Exception("Fichier introuvable.");
+            throw new Exception(__('studio.file_not_found'));
         }
         
         $fields = ['Title', 'Author', 'Subject', 'Keywords', 'Creator', 'Producer', 'CreateDate', 'ModifyDate'];
@@ -2156,7 +2156,7 @@ if ($action === 'update_metadata') {
         
         $tmpCopy = $tmpBase . 'meta_' . uniqid() . '.' . $ext;
         if (!move_uploaded_file($_FILES['file']['tmp_name'], $tmpCopy) && !copy($_FILES['file']['tmp_name'], $tmpCopy)) {
-            throw new Exception("Erreur copie temporaire.");
+            throw new Exception(__('studio.temp_copy_error'));
         }
         
         $exiftoolExe = escapeshellarg(get_exiftool_path());
@@ -2172,7 +2172,7 @@ if ($action === 'update_metadata') {
         rename($tmpCopy, $outPath);
         
         if (!file_exists($outPath)) {
-            throw new Exception("Erreur d'écriture : " . $output);
+            throw new Exception(sprintf(__('studio.write_error'), $output));
         }
         
         echo json_encode([
@@ -2189,7 +2189,7 @@ if ($action === 'update_metadata') {
 if ($action === 'recognize_font') {
     try {
         if (!isset($_POST['image'])) {
-            throw new Exception("Aucune image (Base64) reçue.");
+            throw new Exception(__('studio.no_base64_image'));
         }
         $imgData = $_POST['image'];
         if (strpos($imgData, ',') !== false) {
@@ -2197,7 +2197,7 @@ if ($action === 'recognize_font') {
         }
         $imgDecoded = base64_decode($imgData);
         if ($imgDecoded === false) {
-            throw new Exception("L'image n'a pas pu être décodée.");
+            throw new Exception(__('studio.image_decoding_failed'));
         }
 
         $studioSettings = getStudioSettings();
@@ -2223,12 +2223,12 @@ if ($action === 'recognize_font') {
             curl_close($ch);
 
             if ($httpCode !== 200 || !$response) {
-                throw new Exception("L'API WhatFontIs est inaccessible (HTTP $httpCode).");
+                throw new Exception(sprintf(__('studio.whatfontis_api_unreachable'), $httpCode));
             }
 
             $wfiData = json_decode($response, true);
             if ($wfiData === null) {
-                throw new Exception("Réponse invalide de WhatFontIs: " . $response);
+                throw new Exception(sprintf(__('studio.invalid_whatfontis_response'), $response));
             }
 
             $formatted = [];
@@ -2270,11 +2270,11 @@ if ($action === 'recognize_font') {
             curl_close($ch);
 
             if ($httpCode !== 200 || !$vpsResponse) {
-                throw new Exception("L'API de reconnaissance de police est inaccessible (HTTP $httpCode). Vérifiez studio_api_fonts_url dans les réglages.");
+                throw new Exception(sprintf(__('studio.font_api_unreachable'), $httpCode));
             }
             $resultData = json_decode($vpsResponse, true);
             if ($resultData === null) {
-                throw new Exception("Réponse invalide du serveur VPS.");
+                throw new Exception(__('studio.invalid_vps_response'));
             }
             echo json_encode(['success' => true, 'fonts' => $resultData]);
         } else {
@@ -2307,10 +2307,10 @@ if ($action === 'recognize_font') {
             }
 
             if ($resultData === null) {
-                throw new Exception("Erreur de l'IA (JSON invalide): " . $output);
+                throw new Exception(sprintf(__('studio.ai_json_error'), $output));
             }
             if (isset($resultData['error'])) {
-                throw new Exception("Erreur Python: " . $resultData['error']);
+                throw new Exception(sprintf(__('studio.python_error'), $resultData['error']));
             }
             echo json_encode(['success' => true, 'fonts' => $resultData]);
         }
@@ -2324,7 +2324,7 @@ if ($action === 'recognize_font') {
 if ($action === 'download_google_font') {
     try {
         $fontNameRaw = $_POST['font_name'] ?? '';
-        if (empty($fontNameRaw)) throw new Exception("Nom de police manquant.");
+        if (empty($fontNameRaw)) throw new Exception(__('studio.font_name_missing'));
         
         $url = 'https://fonts.googleapis.com/css?family=' . urlencode($fontNameRaw);
         
@@ -2339,11 +2339,11 @@ if ($action === 'download_google_font') {
         curl_close($ch);
         
         if ($httpCode !== 200 || empty($css)) {
-            throw new Exception("offline"); // Mot-clé pour déclencher l'alerte spécifique JS
+            throw new Exception('offline'); // Mot-clé pour déclencher l'alerte spécifique JS
         }
         
         if (!preg_match('/url\((https:\/\/[^)]+\.ttf)\)/i', $css, $matches)) {
-             throw new Exception("offline"); // On considère comme erreur de téléchargement
+             throw new Exception('offline'); // On considère comme erreur de téléchargement
         }
         $ttfUrl = $matches[1];
         
@@ -2351,7 +2351,7 @@ if ($action === 'download_google_font') {
         $ctx = stream_context_create(['http' => ['timeout' => 15]]);
         $ttfData = @file_get_contents($ttfUrl, false, $ctx);
         if (empty($ttfData)) {
-            throw new Exception("offline");
+            throw new Exception('offline');
         }
         
         $fontsDir = __DIR__ . '/../public/custom_fonts';

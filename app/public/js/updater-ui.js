@@ -9,6 +9,8 @@
 (function() {
     'use strict';
     
+    const T = (key, fb) => (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations[key]) || fb;
+    
     // Vérifier si on est dans Electron
     const isElectron = typeof window !== 'undefined' && window.electronAPI;
     
@@ -59,7 +61,7 @@
                     <i class="fa fa-download" style="font-size: 24px; color: #007bff; margin-right: 12px;"></i>
                     <div style="flex: 1;">
                         <h4 style="margin: 0; color: #333; font-size: 16px; font-weight: bold;">
-                            Mise à jour disponible
+                            ${T('js.updater.mise___jour_disponible', 'Mise à jour disponible')}
                         </h4>
                         <p style="margin: 5px 0 0 0; color: #666; font-size: 13px;">
                             Version ${info.version}
@@ -71,18 +73,18 @@
                     </button>
                 </div>
                 <p style="margin: 0 0 15px 0; color: #555; font-size: 14px;">
-                    Une nouvelle version de Duplicator est disponible.
+                    ${T('js.updater.une_nouvelle_version_de_duplica', 'Une nouvelle version de Duplicator est disponible.')}
                 </p>
                 <div style="display: flex; gap: 10px;">
                     <button onclick="window.updaterUI.downloadUpdate()" 
                             class="btn btn-primary btn-sm" 
                             style="flex: 1; border-radius: 4px;">
-                        <i class="fa fa-download"></i> Télécharger
+                        <i class="fa fa-download"></i> ${T('js.updater.t_l_charger', 'Télécharger')}
                     </button>
                     <button onclick="window.updaterUI.closeNotification()" 
                             class="btn btn-default btn-sm" 
                             style="border-radius: 4px;">
-                        Plus tard
+                        ${T('js.updater.plus_tard', 'Plus tard')}
                     </button>
                 </div>
             </div>
@@ -104,8 +106,8 @@
                     <i class="fa fa-spinner fa-spin" style="font-size: 24px; color: #28a745; margin-right: 12px;"></i>
                     <div style="flex: 1;">
                         <h4 style="margin: 0; color: #333; font-size: 16px; font-weight: bold;">
-                            Téléchargement en cours
-                        </h4>
+                        ${T('js.updater.t_l_chargement_en_cours', 'Téléchargement en cours')}
+                    </h4>
                         <p style="margin: 5px 0 0 0; color: #666; font-size: 13px;">
                             ${percent}% - ${formatBytes(progress.transferred)} / ${formatBytes(progress.total)}
                         </p>
@@ -132,8 +134,8 @@
                     <i class="fa fa-check-circle" style="font-size: 24px; color: #28a745; margin-right: 12px;"></i>
                     <div style="flex: 1;">
                         <h4 style="margin: 0; color: #333; font-size: 16px; font-weight: bold;">
-                            Mise à jour prête
-                        </h4>
+                        ${T('js.updater.mise___jour_pr_t', 'Mise à jour prête')}
+                    </h4>
                         <p style="margin: 5px 0 0 0; color: #666; font-size: 13px;">
                             Version ${info.version} téléchargée
                         </p>
@@ -144,18 +146,18 @@
                     </button>
                 </div>
                 <p style="margin: 0 0 15px 0; color: #555; font-size: 14px;">
-                    La mise à jour sera installée au redémarrage de l'application.
+                    ${T('js.updater.la_mise___jour_sera_install_e_au', 'La mise à jour sera installée au redémarrage de l\'application.')}
                 </p>
                 <div style="display: flex; gap: 10px;">
                     <button onclick="window.updaterUI.installUpdate()" 
                             class="btn btn-success btn-sm" 
                             style="flex: 1; border-radius: 4px;">
-                        <i class="fa fa-refresh"></i> Redémarrer maintenant
+                        <i class="fa fa-refresh"></i> ${T('js.updater.red_marrer_maintenant', 'Redémarrer maintenant')}
                     </button>
                     <button onclick="window.updaterUI.closeNotification()" 
                             class="btn btn-default btn-sm" 
                             style="border-radius: 4px;">
-                        Plus tard
+                        ${T('js.updater.plus_tard', 'Plus tard')}
                     </button>
                 </div>
             </div>
@@ -176,8 +178,8 @@
                     <i class="fa fa-exclamation-triangle" style="font-size: 24px; color: #dc3545; margin-right: 12px;"></i>
                     <div style="flex: 1;">
                         <h4 style="margin: 0; color: #333; font-size: 16px; font-weight: bold;">
-                            Erreur de mise à jour
-                        </h4>
+                        ${T('js.updater.erreur_de_mise___jour', 'Erreur de mise à jour')}
+                    </h4>
                     </div>
                     <button onclick="window.updaterUI.closeNotification()" 
                             style="background: none; border: none; color: #999; font-size: 20px; cursor: pointer; padding: 0; width: 24px; height: 24px; line-height: 1;">
@@ -190,7 +192,7 @@
                 <button onclick="window.updaterUI.closeNotification()" 
                         class="btn btn-default btn-sm" 
                         style="border-radius: 4px;">
-                    Fermer
+                    ${T('common.close', 'Fermer')}
                 </button>
             </div>
         `;

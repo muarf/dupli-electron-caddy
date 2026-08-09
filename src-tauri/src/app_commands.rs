@@ -21,7 +21,7 @@ pub async fn open_file(file_path: String) -> Result<(), String> {
     log::info!("[app_commands] open_file('{}')", file_path);
 
     if !std::path::Path::new(&file_path).exists() {
-        return Err(format!("Fichier introuvable : {}", file_path));
+        return Err(format!("File not found: {}", file_path));
     }
 
     #[cfg(target_os = "windows")]
@@ -29,21 +29,21 @@ pub async fn open_file(file_path: String) -> Result<(), String> {
         std::process::Command::new("cmd")
             .args(["/c", "start", "", &file_path])
             .spawn()
-            .map_err(|e| format!("Impossible d'ouvrir le fichier : {e}"))?;
+            .map_err(|e| format!("Cannot open file: {e}"))?;
     }
     #[cfg(target_os = "linux")]
     {
         std::process::Command::new("xdg-open")
             .arg(&file_path)
             .spawn()
-            .map_err(|e| format!("Impossible d'ouvrir le fichier : {e}"))?;
+            .map_err(|e| format!("Cannot open file: {e}"))?;
     }
     #[cfg(target_os = "macos")]
     {
         std::process::Command::new("open")
             .arg(&file_path)
             .spawn()
-            .map_err(|e| format!("Impossible d'ouvrir le fichier : {e}"))?;
+            .map_err(|e| format!("Cannot open file: {e}"))?;
     }
     Ok(())
 }
@@ -215,7 +215,7 @@ pub async fn download_update(
 ) -> Result<(), String> {
     log::info!("[app_commands] download_update()");
     let mut pending_guard = state.pending_update.lock().unwrap_or_else(|e| e.into_inner());
-    let update = pending_guard.take().ok_or_else(|| "Aucune mise à jour disponible en attente de téléchargement.".to_string())?;
+    let update = pending_guard.take().ok_or_else(|| "No pending update available for download.".to_string())?;
 
     let app_clone = app.clone();
     let version = update.version.clone();

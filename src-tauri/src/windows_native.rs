@@ -580,32 +580,32 @@ fn to_wide_null(s: &str) -> Vec<u16> {
 /// Traduit un code d'erreur Win32 en message lisible
 fn win32_error_message(code: u32) -> &'static str {
     match code {
-        2   => "Fichier introuvable",
-        5   => "Accès refusé (droits insuffisants ?)",
-        122 => "Buffer trop petit",
-        1801 => "Nom d'imprimante invalide",
-        1802 => "L'imprimante n'existe pas",
-        1804 => "Nom de datatype invalide",
-        1722 => "Le serveur RPC est indisponible (spouleur arrêté ?)",
-        _   => "Erreur système inconnue",
+        2   => "File not found",
+        5   => "Access denied (insufficient rights?)",
+        122 => "Buffer too small",
+        1801 => "Invalid printer name",
+        1802 => "Printer does not exist",
+        1804 => "Invalid datatype name",
+        1722 => "RPC server unavailable (spooler stopped?)",
+        _   => "Unknown system error",
     }
 }
 
 /// Transforme le champ `Status` (bitmask) d'une PRINTER_INFO_2W en libellé lisible
 fn printer_status_to_label(status: u32) -> String {
     if status == 0 {
-        return "Prête".to_string();
+        return "Ready".to_string();
     }
     let mut labels = Vec::new();
-    if status & 0x00000001 != 0 { labels.push("En pause"); }
-    if status & 0x00000002 != 0 { labels.push("Erreur"); }
-    if status & 0x00000008 != 0 { labels.push("Hors ligne"); }
-    if status & 0x00000010 != 0 { labels.push("Bourrage papier"); }
-    if status & 0x00000080 != 0 { labels.push("Impression en cours"); }
-    if status & 0x00000400 != 0 { labels.push("Porte ouverte"); }
-    if status & 0x00000800 != 0 { labels.push("Papier manquant"); }
+    if status & 0x00000001 != 0 { labels.push("Paused"); }
+    if status & 0x00000002 != 0 { labels.push("Error"); }
+    if status & 0x00000008 != 0 { labels.push("Offline"); }
+    if status & 0x00000010 != 0 { labels.push("Paper jam"); }
+    if status & 0x00000080 != 0 { labels.push("Printing"); }
+    if status & 0x00000400 != 0 { labels.push("Door open"); }
+    if status & 0x00000800 != 0 { labels.push("Out of paper"); }
     if labels.is_empty() {
-        format!("Statut inconnu (0x{:08X})", status)
+        format!("Unknown status (0x{:08X})", status)
     } else {
         labels.join(", ")
     }
@@ -614,20 +614,20 @@ fn printer_status_to_label(status: u32) -> String {
 /// Transforme le champ `Status` (bitmask) d'une JOB_INFO_2W en libellé lisible
 fn job_status_to_label(status: u32) -> String {
     if status == 0 {
-        return "En attente".to_string();
+        return "Pending".to_string();
     }
     let mut labels = Vec::new();
-    if status & 0x00000001 != 0 { labels.push("En pause"); }
-    if status & 0x00000002 != 0 { labels.push("Erreur"); }
-    if status & 0x00000004 != 0 { labels.push("Suppression en cours"); }
-    if status & 0x00000008 != 0 { labels.push("Spoule en cours"); }
-    if status & 0x00000010 != 0 { labels.push("Impression en cours"); }
-    if status & 0x00000020 != 0 { labels.push("Hors ligne"); }
-    if status & 0x00000040 != 0 { labels.push("Papier manquant"); }
-    if status & 0x00000080 != 0 { labels.push("Supprimé"); }
-    if status & 0x00000100 != 0 { labels.push("Bloqué"); }
+    if status & 0x00000001 != 0 { labels.push("Paused"); }
+    if status & 0x00000002 != 0 { labels.push("Error"); }
+    if status & 0x00000004 != 0 { labels.push("Deleting"); }
+    if status & 0x00000008 != 0 { labels.push("Spooling"); }
+    if status & 0x00000010 != 0 { labels.push("Printing"); }
+    if status & 0x00000020 != 0 { labels.push("Offline"); }
+    if status & 0x00000040 != 0 { labels.push("Out of paper"); }
+    if status & 0x00000080 != 0 { labels.push("Deleted"); }
+    if status & 0x00000100 != 0 { labels.push("Blocked"); }
     if labels.is_empty() {
-        format!("Statut inconnu (0x{:08X})", status)
+        format!("Unknown status (0x{:08X})", status)
     } else {
         labels.join(", ")
     }

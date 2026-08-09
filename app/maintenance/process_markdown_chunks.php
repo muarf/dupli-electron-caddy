@@ -48,6 +48,9 @@ $db = pdo_connect();
 // → garantit que DELETE sur bibliotheque_chunks déclenche CASCADE sur bibliotheque_vectors
 $db->exec("PRAGMA foreign_keys = ON;");
 
+// Réinitialiser les fichiers restés en 'processing' suite à un arrêt brutal précédent
+$db->exec("UPDATE bibliotheque_files SET markdown_status = 'raw' WHERE markdown_status = 'processing'");
+
 $settingsManager = new SettingsManager($db);
 
 // ─── Chemins ──────────────────────────────────────────────────────────────────
@@ -82,7 +85,10 @@ if ($singleId) {
 } else {
     $statuses = ["'raw'"];
     if ($retryErrors) $statuses[] = "'error'";
-    if ($forceRedo)   $statuses[] = "'done'";
+    if ($forceRedo) {
+        $statuses[] = "'done'";
+        $statuses[] = "'error'"; // Force retraite aussi les fichiers en erreur
+    }
     $inClause = implode(',', $statuses);
     $stmt = $db->query("SELECT id, filename, filepath FROM bibliotheque_files
                         WHERE file_type = 'pdf'
@@ -165,7 +171,7 @@ foreach ($files as $idx => $file) {
          . ' ' . escapeshellarg($tmpJson)
          . ' 2>&1';
 
-    $timeoutSeconds = 300; // 5 min max par fichier
+    $timeoutSeconds = 900; // 15 min max par fichier (Docling peut être long sur les PDF complexes)
 
     // proc_open pour pouvoir lire stdout+stderr et gérer le timeout
     $descriptors = [
@@ -197,6 +203,12 @@ foreach ($files as $idx => $file) {
         $stderr .= (string)fread($pipes[2], 4096);
 
         $status = proc_get_status($proc);
+        // Proc_get_status peut retourner false si l'état a déjà été récupéré
+        if (!is_array($status)) {
+            $stdout .= stream_get_contents($pipes[1]);
+            $stderr .= stream_get_contents($pipes[2]);
+            break;
+        }
         if (!$status['running']) {
             // Lire le reste
             $stdout .= stream_get_contents($pipes[1]);

@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadCurrentMetadata() {
     if (!window.state) {
-      if ($id('metaRawInfo')) $id('metaRawInfo').textContent = "Erreur: window.state est indéfini.";
+      if ($id('metaRawInfo')) $id('metaRawInfo').textContent = CONFIG.translations['studio_studio-metadata.window_state_undefined'] || 'Erreur: window.state est indéfini.';
       return;
     }
     if (!window.state.file) {
@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.hideSpinner) window.hideSpinner();
 
         if (data.success) {
-          if (window.showToast) window.showToast("Métadonnées mises à jour avec succès !", "success");
+          if (window.showToast) window.showToast(CONFIG.translations['studio_studio-metadata.metadata_updated'] || 'Métadonnées mises à jour avec succès !', "success");
           
           if (data.download_url && window.showResultToast) {
               const nameParts = file.name.split('.');

@@ -457,9 +457,9 @@
           if (json.success && json.font_name) {
             await injectFont(json.font_name, json.url);
             addFontToSelects(json.font_name, json.font_name);
-            alert("Police ajoutée avec succès !");
+            alert(CONFIG.translations['studio_studio-modification.font_added'] || 'Police ajoutée avec succès !');
           } else {
-            alert("Erreur: " + (json.error || "Upload échoué"));
+            alert("Erreur: " + (json.error || CONFIG.translations['studio_studio-modification.upload_failed'] || 'Upload échoué'));
           }
         } catch(err) {
           if (window.hideSpinner) window.hideSpinner();
@@ -661,7 +661,7 @@
             if (window.showResultToast) {
               window.showResultToast(finalJson.download_url);
             } else {
-              alert("Modifications appliquées avec succès !");
+              alert(CONFIG.translations['studio_studio-modification.modifications_applied'] || 'Modifications appliquées avec succès !');
               window.location.href = finalJson.download_url;
             }
           }, (errJson) => {
@@ -671,7 +671,7 @@
           if (window.showResultToast) {
             window.showResultToast(json.download_url);
           } else {
-            alert("Modifications appliquées avec succès !");
+            alert(CONFIG.translations['studio_studio-modification.modifications_applied'] || 'Modifications appliquées avec succès !');
             window.location.href = json.download_url;
           }
         }

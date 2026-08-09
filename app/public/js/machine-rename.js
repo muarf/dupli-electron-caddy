@@ -1,5 +1,6 @@
 $(document).ready(function() {
-    // Gestion du renommage de machines
+    const T = (key, fb) => (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations[key]) || fb;
+
     $('.rename-machine').click(function() {
         var machineName = $(this).data('name');
         var machineType = $(this).data('type');
@@ -9,7 +10,6 @@ $(document).ready(function() {
         $('#rename-machine-modal').modal('show');
     });
     
-    // Soumission du formulaire de renommage
     $('#rename-machine-form').submit(function(e) {
         e.preventDefault();
         
@@ -17,16 +17,14 @@ $(document).ready(function() {
         var newName = $('#new-machine-name').val().trim();
         
         if (newName === '' || newName === oldName) {
-            alert('Veuillez saisir un nouveau nom différent de l\'ancien.');
+            alert(T('js.machine_rename.veuillez_saisir_nom', 'Veuillez saisir un nouveau nom différent de l\'ancien.'));
             return;
         }
         
-        // Confirmation
-        if (!confirm('Êtes-vous sûr de vouloir renommer "' + oldName + '" en "' + newName + '" ?\n\nCette action mettra à jour toutes les références dans la base de données.')) {
+        if (!confirm(T('js.machine_rename.confirmer_renommage', 'Êtes-vous sûr de vouloir renommer "' + oldName + '" en "' + newName + '" ?\n\nCette action mettra à jour toutes les références dans la base de données.').replace('{oldName}', oldName).replace('{newName}', newName))) {
             return;
         }
         
-        // Envoyer la requête AJAX
         $.ajax({
             url: '?admin&machines&action=rename',
             type: 'POST',
@@ -37,14 +35,14 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(response) {
                 if (response.success) {
-                    alert('Machine renommée avec succès !');
+                    alert(T('js.machine_rename.succes', 'Machine renommée avec succès !'));
                     location.reload();
                 } else {
-                    alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.machine_rename.erreur'] || 'Erreur : ') + (response.error || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.machine_rename.erreur_inconnue'] || 'Erreur inconnue')));
+                    alert(T('js.machine_rename.erreur', 'Erreur : ') + (response.error || T('js.machine_rename.erreur_inconnue', 'Erreur inconnue')));
                 }
             },
             error: function() {
-                alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.machine_rename.erreur_lors_de_la_communicatio'] || 'Erreur lors de la communication avec le serveur.'));
+                alert(T('js.machine_rename.erreur_communication', 'Erreur lors de la communication avec le serveur.'));
             }
         });
     });

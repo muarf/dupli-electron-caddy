@@ -19,7 +19,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
 
     if (isset($_SESSION[$lockoutKey]) && time() < $_SESSION[$lockoutKey]) {
         $waitTime = $_SESSION[$lockoutKey] - time();
-        $bib_error = "Trop de tentatives. Veuillez réessayez dans {$waitTime} seconde(s).";
+        $bib_error = __("bibliotheque.too_many_attempts_wait", ["waitTime" => $waitTime]);
     } elseif (isset($_SESSION[$lockoutKey]) && time() >= $_SESSION[$lockoutKey]) {
         // Lockout expired — reset counters
         unset($_SESSION[$attemptsKey], $_SESSION[$lockoutKey]);
@@ -29,7 +29,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
         $attempts = (int)($_SESSION[$attemptsKey] ?? 0);
         if ($attempts >= $maxAttempts) {
             $_SESSION[$lockoutKey] = time() + 60; // Verrouillé 60 sec
-            $bib_error = "Trop de tentatives échouées. Accès bloqué pendant 60 secondes.";
+            $bib_error = __("bibliotheque.too_many_failed_attempts");
         } else {
             $inputPass = $_POST['bib_pass'];
             $isValid = password_verify($inputPass, $bib_password) || ($inputPass === $bib_password);
@@ -46,7 +46,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
             } else {
                 $_SESSION[$attemptsKey] = $attempts + 1;
                 $remaining = $maxAttempts - $_SESSION[$attemptsKey];
-                $bib_error = "Mot de passe incorrect. ({$remaining} tentative(s) restante(s))";
+                $bib_error = __("bibliotheque.wrong_password", ["remaining" => $remaining]);
             }
         }
     }
@@ -705,7 +705,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
             if(data.success && data.job_id) {
                 monitorIndexing(data.job_id);
             } else {
-                alert('Erreur: ' + (data.error || 'Erreur inconnue'));
+                alert('<?= __("bibliotheque.scan_error") ?>: ' + (data.error || '<?= __("common.unknown") ?>'));
                 if(btn) btn.disabled = false;
             }
         })
@@ -758,7 +758,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                     if (progressBar) {
                         progressBar.classList.remove('progress-bar-animated', 'progress-bar-striped');
                         progressBar.classList.add('bg-success');
-                        progressBar.textContent = 'Terminé !';
+                        progressBar.textContent = '<?= __("bibliotheque.completed") ?> !';
                     }
                     if(btn) btn.disabled = false;
                     setTimeout(() => { if (progress) progress.style.display = 'none'; }, 3000);
@@ -766,7 +766,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                 } else if (statusData.status === 'error' || statusData.status === 'fatal_error') {
                     clearInterval(pollInterval);
                     if(btn) btn.disabled = false;
-                    alert('Erreur lors du scan: ' + (statusData.error_msg || 'Inconnue'));
+                    alert('<?= __("bibliotheque.scan_error") ?>: ' + (statusData.error_msg || '<?= __("common.unknown") ?>'));
                     if (progress) progress.style.display = 'none';
                 } else if (statusData.status === 'none' || statusData.status === 'unknown') {
                     clearInterval(pollInterval);
@@ -1204,7 +1204,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
         
         const btn = $('#deleteFileModal .btn-danger');
         const oldHtml = btn.html();
-        btn.prop('disabled', true).html('<i class="fa fa-circle-notch fa-spin"></i> Suppression...');
+        btn.prop('disabled', true).html('<i class="fa fa-circle-notch fa-spin"></i> <?= __("bibliotheque.deleting") ?>...');
         
         $.ajax({
             url: '?delete_bibliotheque_file',
@@ -1216,7 +1216,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                 loadLibrary();
             },
             error: function(xhr) {
-                alert("Erreur lors de la suppression : " + (xhr.responseJSON?.error || "Erreur inconnue"));
+                alert("<?= __("bibliotheque.delete_error") ?>: " + (xhr.responseJSON?.error || "<?= __("common.unknown") ?>"));
             },
             complete: function() {
                 btn.prop('disabled', false).html(oldHtml);
@@ -1244,11 +1244,11 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                     
                     $('#editFileModal').modal('show');
                 } else {
-                    alert('Erreur: ' + response.error);
+                    alert('<?= __("common.error") ?>: ' + response.error);
                 }
             },
             error: function() {
-                alert('Erreur lors de la récupération des informations du fichier.');
+                alert('<?= __("bibliotheque.file_info_error") ?>');
             }
         });
     }
@@ -1266,7 +1266,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
 
         const btn = $('#btnSaveMetadata');
         const originalText = btn.html();
-        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Enregistrement...');
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> <?= __("bibliotheque.saving") ?>...');
 
         $.ajax({
             url: '?update_bibliotheque_metadata',
@@ -1278,11 +1278,11 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                     $('#editFileModal').modal('hide');
                     loadLibrary(1); // Recharger la liste
                 } else {
-                    alert('Erreur: ' + response.message);
+                    alert('<?= __("common.error") ?>: ' + response.message);
                 }
             },
             error: function(xhr) {
-                alert('Erreur lors de l\'enregistrement : ' + (xhr.responseJSON ? xhr.responseJSON.error : 'Erreur inconnue'));
+                alert('<?= __("bibliotheque.save_error") ?>: ' + (xhr.responseJSON ? xhr.responseJSON.error : '<?= __("common.unknown") ?>'));
             },
             complete: function() {
                 btn.prop('disabled', false).html(originalText);
@@ -1300,7 +1300,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
         const id = 'up_' + Date.now();
         progress.insertAdjacentHTML('beforeend',
             `<div id="${id}" class="alert alert-info py-1 px-2 mt-1" style="font-size:0.85rem;">
-                <i class="fa fa-spinner fa-spin"></i> <strong>${file.name}</strong> — Téléchargement en cours...
+                <i class="fa fa-spinner fa-spin"></i> <strong>${file.name}</strong> — <?= __("bibliotheque.uploading") ?>...
             </div>`
         );
         const formData = new FormData();
@@ -1312,18 +1312,18 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                 const el = document.getElementById(id);
                 if (data.success) {
                     el.className = 'alert alert-success py-1 px-2 mt-1';
-                    el.innerHTML = `<i class="fa fa-check"></i> <strong>${file.name}</strong> — Ajouté.`;
+                    el.innerHTML = '<i class="fa fa-check"></i> <strong>' + file.name + '</strong> — <?= __("bibliotheque.added") ?>.';
                     loadLibrary(1);
                 } else {
                     el.className = 'alert alert-danger py-1 px-2 mt-1';
-                    el.innerHTML = `<i class="fa fa-times"></i> <strong>${file.name}</strong> — Erreur : ${data.error || 'Inconnue'}`;
+                    el.innerHTML = '<i class="fa fa-times"></i> <strong>' + file.name + '</strong> — <?= __("common.error") ?>: ' + (data.error || '<?= __("common.unknown") ?>');
                 }
                 setTimeout(() => el.remove(), 5000);
             })
             .catch(err => {
                 const el = document.getElementById(id);
                 el.className = 'alert alert-danger py-1 px-2 mt-1';
-                el.innerHTML = `<i class="fa fa-times"></i> <strong>${file.name}</strong> — Erreur réseau.`;
+                el.innerHTML = '<i class="fa fa-times"></i> <strong>' + file.name + '</strong> — <?= __("bibliotheque.network_error") ?>.';
             });
     }
 
@@ -1540,8 +1540,8 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
         <div>
             <h5 class="mb-1"><i class="fa fa-robot"></i><?php _e("auto_clean.bibliotheque_html_php_15", [], false); ?></h5>
             <div class="btn-group btn-group-toggle" style="background: rgba(255,255,255,0.1); border-radius: 8px; padding: 2px;">
-                <label class="btn btn-xs text-white px-3 active" id="modeFastLabel" onclick="setAiMode('fast')" style="font-size: 0.7rem; border: none;">Rapide</label>
-                <label class="btn btn-xs text-white px-3" id="modeProLabel" onclick="setAiMode('pro')" style="font-size: 0.7rem; border: none;">Expert</label>
+                <label class="btn btn-xs text-white px-3 active" id="modeFastLabel" onclick="setAiMode('fast')" style="font-size: 0.7rem; border: none;"><?= __("bibliotheque.ai_mode_fast") ?></label>
+                <label class="btn btn-xs text-white px-3" id="modeProLabel" onclick="setAiMode('pro')" style="font-size: 0.7rem; border: none;"><?= __("bibliotheque.ai_mode_expert") ?></label>
             </div>
             <div id="ai-selection-info" class="text-warning mt-1 font-weight-bold" style="font-size: 0.75rem; display: none;"></div>
         </div>
@@ -1550,7 +1550,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
     
     <div class="ai-chat-body" id="aiChatBody">
         <div class="chat-message ai">
-            Bonjour ! Je suis l'intelligence de la bibliothèque. Posez-moi vos questions sur le contenu de vos brochures.
+            <?= __("bibliotheque.chat_welcome") ?>
         </div>
     </div>
 
@@ -1558,19 +1558,19 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
     <div id="aiContextArea" class="px-3 py-2 bg-light" style="display:none; font-size: 0.75rem;">
         <div class="d-flex justify-content-between align-items-center mb-1">
             <b><i class="fa fa-link"></i><?php _e("auto_clean.bibliotheque_html_php_16", [], false); ?></b>
-            <button class="btn btn-xs btn-link p-0 text-primary" onclick="$('#aiContextDetails').toggle()">Détails</button>
+            <button class="btn btn-xs btn-link p-0 text-primary" onclick="$('#aiContextDetails').toggle()"><?= __("bibliotheque.details") ?></button>
         </div>
         <div id="aiContextDetails" style="display:none; max-height: 120px; overflow-y: auto;"></div>
     </div>
 
     <!-- Zone de Réflexion -->
     <div id="aiThoughtArea" class="px-3 py-2" style="display:none; font-size: 0.8rem; color: #64748b; font-style: italic;">
-        <div class="mb-1"><b><i class="fa fa-brain fa-pulse"></i> Analyse...</b></div>
+        <div class="mb-1"><b><i class="fa fa-brain fa-pulse"></i> <?= __("bibliotheque.analyzing") ?>...</b></div>
         <div id="aiThoughtContent"></div>
     </div>
 
     <div id="aiChatStatus" class="px-3 py-1 text-center" style="font-size: 0.7rem; color: #94a3b8; display: none;">
-        <i class="fa fa-circle-notch fa-spin"></i> <span id="aiStatusText">En cours...</span>
+        <i class="fa fa-circle-notch fa-spin"></i>         <span id="aiStatusText"><?= __("bibliotheque.in_progress") ?>...</span>
     </div>
 
     <div class="ai-chat-footer">
@@ -1639,7 +1639,7 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
             <div class="modal-footer bg-light" style="border-radius: 0 0 15px 15px;">
                 <button type="button" class="btn btn-secondary px-4 shadow-sm" data-dismiss="modal" style="border-radius: 10px;"><?php _e('common.cancel', [], false); ?></button>
                 <button type="button" id="btnSaveMetadata" onclick="saveMetadata()" class="btn btn-primary px-4 shadow-sm" style="border-radius: 10px;">
-                    <i class="fa fa-check"></i> Enregistrer
+                    <i class="fa fa-check"></i> <?= __("bibliotheque.save") ?>
                 </button>
             </div>
         </div>
@@ -1736,11 +1736,11 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
         // Préparer les boutons d'action sous le PDF
         const actionsHtml = `
             <div class="btn-group">
-                <button class="btn btn-primary" onclick="openLibraryFile(${id})"><i class="fa fa-external-link"></i> Ouvrir</button>
-                <button class="btn btn-info" onclick="printLibraryFile(${id})"><i class="fa fa-print"></i> <?php _e('common.print', [], false); ?></button>
+                <button class="btn btn-primary" onclick="openLibraryFile(${id})"><i class="fa fa-external-link"></i> <?= __("bibliotheque.open") ?></button>
+                <button class="btn btn-info" onclick="printLibraryFile(${id})"><i class="fa fa-print"></i> <?= __('common.print', [], false); ?></button>
                 
                 <button class="btn btn-warning" onclick="window.location.href='?studio&file_id=${id}'">
-                    <i class="fa fa-magic"></i> Éditer dans le Studio
+                    <i class="fa fa-magic"></i> <?= __("bibliotheque.edit_in_studio") ?>
                 </button>
             </div>
         `;

@@ -451,10 +451,10 @@
     <!-- En-tête avec statistiques -->
     <div class="header-section">
         <h1>
-            <i class="fa fa-globe"></i> Gestion des Traductions
+            <i class="fa fa-globe"></i> <?php _e('admin_translations.title'); ?>
         </h1>
         <p style="margin: 0; opacity: 0.9; font-size: 1.1em;">
-            Interface améliorée avec organisation par pages et langues
+            <?php _e('admin_translations.description'); ?>
         </p>
         
         <div class="stats-grid">
@@ -463,7 +463,7 @@
                     <h4><?= $translation_stats[$lang]['name'] ?></h4>
                     <div class="stat-percentage"><?= $translation_stats[$lang]['percentage'] ?>%</div>
                     <small style="opacity: 0.8;">
-                        <?= $translation_stats[$lang]['translated_keys'] ?> / <?= $translation_stats[$lang]['total_keys'] ?> traductions
+                        <?= $translation_stats[$lang]['translated_keys'] ?> / <?= $translation_stats[$lang]['total_keys'] ?> <?php _e('admin_translations.translations_count'); ?>
                     </small>
                     <div class="progress-bar">
                         <div class="progress-fill" style="width: <?= $translation_stats[$lang]['percentage'] ?>%"></div>
@@ -499,7 +499,7 @@
             <input type="hidden" name="action" value="export_csv">
             <input type="hidden" name="language" value="<?= $selected_language ?>">
             <button type="submit" class="btn btn-info">
-                <i class="fa fa-download"></i> Exporter CSV
+                <i class="fa fa-download"></i> <?php _e('admin_translations.export_csv'); ?>
             </button>
         </form>
         
@@ -508,7 +508,7 @@
             <input type="hidden" name="language" value="<?= $selected_language ?>">
             <input type="file" name="csv_file" accept=".csv" style="display: none;" id="csv-file" onchange="this.form.submit()">
             <button type="button" class="btn btn-success" onclick="document.getElementById('csv-file').click()">
-                <i class="fa fa-upload"></i> Importer CSV
+                <i class="fa fa-upload"></i> <?php _e('admin_translations.import_csv'); ?>
             </button>
         </form>
     </div>
@@ -535,7 +535,7 @@
                     <div class="search-box">
                         <input type="text" 
                                id="search-<?= $lang ?>" 
-                               placeholder="Rechercher dans les traductions <?= $translation_stats[$lang]['name'] ?>..." 
+                               placeholder="<?= htmlspecialchars(__('admin_translations.search_placeholder')) ?> <?= $translation_stats[$lang]['name'] ?>..." 
                                class="form-control">
                         <i class="fa fa-search"></i>
                     </div>
@@ -581,7 +581,7 @@
                                                         class="btn-save" 
                                                         data-key="<?= htmlspecialchars($key) ?>"
                                                         data-language="<?= $lang ?>">
-                                                    <i class="fa fa-save"></i> Sauver
+                                                    <i class="fa fa-save"></i> <?php _e('admin_translations.save'); ?>
                                                 </button>
                                             </div>
                                         </div>

@@ -172,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function loadFile(file) {
     state.libraryId = null; // Reset unless explicitly set after
     const valid = ['image/png','image/jpeg','image/jpg','image/gif','image/webp','application/pdf'];
-    if (!valid.includes(file.type)) { alert('Format non supporté'); return; }
+    if (!valid.includes(file.type)) { alert(CONFIG.translations['studio_js.format_not_supported'] || 'Format non supporté'); return; }
     state.file = file;
     state.isPdf = (file.type === 'application/pdf');
     state.rotation = 0; state.flipH = false; state.flipV = false;
@@ -293,7 +293,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const reader = new FileReader();
     reader.onload = async e => {
       try {
-        if (typeof pdfjsLib === 'undefined') { alert('PDF.js non chargé'); return; }
+        if (typeof pdfjsLib === 'undefined') { alert(CONFIG.translations['studio_js.pdfjs_not_loaded'] || 'PDF.js not loaded'); return; }
         if (!pdfjsLib.GlobalWorkerOptions.workerSrc) pdfjsLib.GlobalWorkerOptions.workerSrc = 'js/build/pdf.worker.js';
         const data = new Uint8Array(e.target.result);
         state.pdfDoc = await pdfjsLib.getDocument({data}).promise;
@@ -1066,11 +1066,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Activer l'aperçu crop
   $('btnActivateCrop') && $('btnActivateCrop').addEventListener('click', () => {
-    if (!state.originalImageData) { showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> Chargez d\'abord un fichier.', true); return; }
+    if (!state.originalImageData) { showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> ' + (CONFIG.translations['studio_js.load_file_first'] || 'Chargez d\'abord un fichier.'), true); return; }
     state.cropMode = true;
     updateCropFromInputs();
     initCropOverlay(); // Positionne et affiche cropContainer par-dessus le canvas
-    $('btnActivateCrop').innerHTML = '<i class="fa fa-eye"></i> Aperçu crop actif';
+    $('btnActivateCrop').innerHTML = '<i class="fa fa-eye"></i> ' + (CONFIG.translations['studio_js.crop_preview_active'] || 'Aperçu crop actif');
     $('btnActivateCrop').style.background = '#059669';
   });
 
@@ -1083,18 +1083,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const cc = $('cropContainer');
     if (cc) cc.style.display = 'none';
     if (cropOverlayCtx) cropOverlayCtx.clearRect(0, 0, cropOverlay.width, cropOverlay.height);
-    $('btnActivateCrop').innerHTML = '<i class="fa fa-crop"></i> Activer l\'aperçu crop';
+    $('btnActivateCrop').innerHTML = '<i class="fa fa-crop"></i> ' + (CONFIG.translations['studio_js.activate_crop_preview'] || 'Activer l\'aperçu crop');
     $('btnActivateCrop').style.background = '';
   });
 
   // Appliquer & Exporter (crop export)
   $('btnApplyCropExport') && $('btnApplyCropExport').addEventListener('click', async () => {
-    if (!state.file) { showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> Chargez d\'abord un fichier.', true); return; }
+    if (!state.file) { showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> ' + (CONFIG.translations['studio_js.load_file_first'] || 'Chargez d\'abord un fichier.'), true); return; }
     const c = state.crop;
     const hasAnyCrop = c.top > 0 || c.bottom > 0 || c.left > 0 || c.right > 0;
-    if (!hasAnyCrop) { showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> Aucune marge de crop définie.', true); return; }
+    if (!hasAnyCrop) { showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> ' + (CONFIG.translations['studio_js.no_crop_margin'] || 'Aucune marge de crop définie.'), true); return; }
 
-    showSpinner('Rognage en cours...');
+    showSpinner(CONFIG.translations['studio_js.cropping_in_progress'] || 'Cropping in progress...');
     const fd = new FormData();
     fd.append('action', 'crop_pdf');
     fd.append('file', state.file, $('fileNameDisplay').value || state.file.name);
@@ -1112,7 +1112,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     } catch(e) {
       hideSpinner();
-      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
+      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>' + (CONFIG.translations['studio_js.network_error_bold'] || 'Erreur réseau :') + '</b> ' + e.message, true);
     }
   });
 
@@ -1145,20 +1145,20 @@ document.addEventListener('DOMContentLoaded', function() {
   // === ENREGISTRER DANS LA BIBLIOTHEQUE ===
   $('btnSaveToLibrary') && $('btnSaveToLibrary').addEventListener('click', async () => {
     if (!state.file && !state.lastServerResultUrl) {
-      showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> Aucun fichier à enregistrer.', true);
+      showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> ' + (CONFIG.translations['studio_js.no_file_to_save'] || 'Aucun fichier à enregistrer.'), true);
       return;
     }
     
     // Si on est en mode montage, inviter à générer le PDF d'abord si pas déjà fait
     if ($('panelMontage') && $('panelMontage').style.display !== 'none' && !state.lastServerResultUrl) {
-      showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> Veuillez générer le PDF du montage d\'abord.', true);
+      showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> ' + (CONFIG.translations['studio_js.generate_pdf_first'] || 'Veuillez générer le PDF du montage d\'abord.'), true);
       return;
     }
 
     // === Détection OCR / Texte ===
     // Vérifier si le PDF a du texte extractible (couche OCR)
     if (state.isPdf && state.pdfDoc) {
-      showSpinner('Vérification OCR...');
+      showSpinner(CONFIG.translations['studio_js.ocr_checking'] || 'Checking OCR...');
       let hasText = false;
       const maxPages = Math.min(state.pdfDoc.numPages, 3); // Vérifier les 3 premières pages
       for (let p = 1; p <= maxPages; p++) {
@@ -1174,7 +1174,7 @@ document.addEventListener('DOMContentLoaded', function() {
       hideSpinner();
       if (!hasText) {
         const proceed = await new Promise(resolve => {
-          const msg = '<i class="fa fa-exclamation-triangle" style="color:#f59e0b"></i> <b>Ce PDF ne contient pas de texte (pas de couche OCR détectée).</b><br>Pour une meilleure indexation, pensez à l\'OCRiser d\'abord (onglet Texte › OCR).<br><br><button id="btnLibConfirmOk" class="toolbar-btn primary" style="margin-right:8px">Ajouter quand même</button><button id="btnLibConfirmCancel" class="toolbar-btn">Annuler</button>';
+          const msg = '<i class="fa fa-exclamation-triangle" style="color:#f59e0b"></i> <b>' + (CONFIG.translations['studio_js.no_ocr_layer'] || 'Ce PDF ne contient pas de texte (pas de couche OCR détectée).') + '</b><br>' + (CONFIG.translations['studio_js.no_ocr_hint'] || 'Pour une meilleure indexation, pensez à l\'OCRiser d\'abord (onglet Texte \u203a OCR).') + '<br><br><button id="btnLibConfirmOk" class="toolbar-btn primary" style="margin-right:8px">' + (CONFIG.translations['studio_js.add_anyway'] || 'Ajouter quand même') + '</button><button id="btnLibConfirmCancel" class="toolbar-btn">' + (CONFIG.translations['studio_js.cancel_btn'] || 'Annuler') + '</button>';
           showToast(msg, false, 15000);
           document.getElementById('btnLibConfirmOk').onclick = () => { resolve(true); };
           document.getElementById('btnLibConfirmCancel').onclick = () => { resolve(false); };
@@ -1228,9 +1228,9 @@ document.addEventListener('DOMContentLoaded', function() {
         hideSpinner();
         if (typeof showBibPasswordModal === 'function') {
             showBibPasswordModal();
-            showToast('<i class="fa fa-info-circle" style="color:#3b82f6"></i> <b>Authentification requise</b> Veuillez entrer le mot de passe puis réessayer.', false);
+            showToast('<i class="fa fa-info-circle" style="color:#3b82f6"></i> <b>' + (CONFIG.translations['studio_js.auth_required_title'] || 'Authentification requise') + '</b> ' + (CONFIG.translations['studio_js.auth_required_body'] || 'Veuillez entrer le mot de passe puis réessayer.'), false);
         } else {
-            showToast('<i class="fa fa-lock" style="color:#f59e0b"></i> <b>Accès refusé</b> Vous devez être connecté à la bibliothèque.', true);
+            showToast('<i class="fa fa-lock" style="color:#f59e0b"></i> <b>' + (CONFIG.translations['studio_js.access_denied'] || 'Accès refusé') + '</b> ' + (CONFIG.translations['studio_js.access_denied_body'] || 'Vous devez être connecté à la bibliothèque.'), true);
         }
         return;
       }
@@ -1239,13 +1239,13 @@ document.addEventListener('DOMContentLoaded', function() {
       hideSpinner();
       
       if (json.success) {
-        showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>Enregistré !</b> Le fichier a été ajouté à la bibliothèque.', false);
+        showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>' + (CONFIG.translations['studio_js.saved_title'] || 'Enregistré !') + '</b> ' + (CONFIG.translations['studio_js.saved_to_library'] || 'Le fichier a été ajouté à la bibliothèque.'), false);
       } else {
         showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> ' + (json.error || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.erreur_inconnue"] || 'Erreur inconnue')), true);
       }
     } catch(e) {
       hideSpinner();
-      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
+      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>' + (CONFIG.translations['studio_js.network_error_bold'] || 'Erreur réseau :') + '</b> ' + e.message, true);
     }
   });
 
@@ -1278,7 +1278,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const fd = new FormData();
       appendStudioFile(fd, customName);
       fd.append('action', 'passthrough_pdf');
-      showSpinner('Préparation du PDF...');
+      showSpinner(CONFIG.translations['studio_js.preparing_pdf'] || 'Preparing PDF...');
       try {
         const res = await fetch('?studio_process', { method: 'POST', body: fd });
         const json = await res.json();
@@ -1292,13 +1292,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
       } catch(e) {
         hideSpinner();
-        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
+        showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>' + (CONFIG.translations['studio_js.network_error_bold'] || 'Erreur réseau :') + '</b> ' + e.message, true);
       }
       return;
     }
 
     // Sinon, exporter le canvas (avec filtres appliqués)
-    showSpinner('Génération du PDF...');
+    showSpinner(CONFIG.translations['studio_js.generating_pdf'] || 'Generating PDF...');
     try {
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
       const fd = new FormData();
@@ -1317,7 +1317,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     } catch(e) {
       hideSpinner();
-      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
+      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>' + (CONFIG.translations['studio_js.network_error_bold'] || 'Erreur réseau :') + '</b> ' + e.message, true);
     }
   });
 
@@ -1496,7 +1496,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.pollStudioTask = async function(json, onSuccess, onError) {
     if (json.job_id && (json.status === 'pending' || !json.download_url)) {
       hideSpinner();
-      showToast('<i class="fa fa-spinner fa-spin" style="color:#4f46e5"></i> <b>Traitement en arrière-plan :</b> En cours...', false);
+      showToast('<i class="fa fa-spinner fa-spin" style="color:#4f46e5"></i> <b>' + (CONFIG.translations['studio_js.background_processing'] || 'Traitement en arrière-plan :') + '</b> ' + (CONFIG.translations['studio_js.in_progress'] || 'En cours...'), false);
       const interval = setInterval(async () => {
         try {
           const stFd = new FormData();
@@ -1515,7 +1515,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (job.last_log) {
               let txt = job.last_log.substring(0, 60);
               if (job.last_log.length > 60) txt += '...';
-              showToast('<i class="fa fa-spinner fa-spin" style="color:#4f46e5"></i> <b>En arrière-plan :</b> ' + txt, false);
+              showToast('<i class="fa fa-spinner fa-spin" style="color:#4f46e5"></i> <b>' + (CONFIG.translations['studio_js.background_label'] || 'En arrière-plan :') + '</b> ' + txt, false);
             }
           } else if (!stData.success) {
             clearInterval(interval);
@@ -1523,7 +1523,7 @@ document.addEventListener('DOMContentLoaded', function() {
           }
         } catch (e) {
           clearInterval(interval);
-          onError({error: "Erreur réseau lors de la vérification du statut"});
+          onError({error: CONFIG.translations["studio_js.status_check_network_error"] || "Network error while checking status"});
         }
       }, 2000);
       return;
@@ -1555,8 +1555,8 @@ document.addEventListener('DOMContentLoaded', function() {
               </div>
             </div>
             <div style="padding:16px 20px;border-top:1px solid #e2e5ea;display:flex;justify-content:flex-end;gap:12px;background:#f8fafc;">
-              <button onclick="navigator.clipboard.writeText(document.getElementById('errorModalContent').innerText); showToast('<i class=\\'fa fa-check\\'></i> Message copié', false);" style="padding:8px 16px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:#374151;display:flex;align-items:center;gap:6px;"><i class="fa fa-copy"></i> Copier le message</button>
-              <button onclick=(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.document_getelementbyid__error"] || "document.getElementById('errorModalOverlay').remove()") style="padding:8px 16px;background:#ef4444;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;font-weight:500;">Fermer</button>
+              <button onclick="navigator.clipboard.writeText(document.getElementById('errorModalContent').innerText); showToast('<i class=\\'fa fa-check\\'></i> ' + CONFIG.translations['studio_js.message_copied'] || 'Message copié', false);" style="padding:8px 16px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:#374151;display:flex;align-items:center;gap:6px;"><i class="fa fa-copy"></i> ' + CONFIG.translations['studio_js.copy_message'] || 'Copier le message</button>
+              <button onclick=(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.document_getelementbyid__error"] || "document.getElementById('errorModalOverlay').remove()") style="padding:8px 16px;background:#ef4444;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;font-weight:500;">' + CONFIG.translations['studio_js.close'] || 'Fermer' + '</button>
             </div>
           </div>
         </div>
@@ -1575,7 +1575,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   async function serverProcess(action, extraFields, spinnerMsg) {
-    if (!state.file) { showToast('<b>Aucun fichier chargé.</b> Déposez un fichier d\'abord.', true); return; }
+    if (!state.file) { showToast('<b>' + (CONFIG.translations['studio_js.no_file_loaded'] || 'Aucun fichier chargé.') + '</b> ' + (CONFIG.translations['studio_js.drop_file_first'] || 'Déposez un fichier d\'abord.'), true); return; }
     showSpinner(spinnerMsg);
     const fd = new FormData();
     fd.append('file', state.file, $('fileNameDisplay').value || state.file.name);
@@ -1599,7 +1599,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     } catch(e) {
       hideSpinner();
-      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
+      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>' + (CONFIG.translations['studio_js.network_error_bold'] || 'Erreur réseau :') + '</b> ' + e.message, true);
     }
   }
 
@@ -1627,7 +1627,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     } catch(e) {
       hideSpinner();
-      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
+      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>' + (CONFIG.translations['studio_js.network_error_bold'] || 'Erreur réseau :') + '</b> ' + e.message, true);
     }
   }
 
@@ -1654,7 +1654,7 @@ document.addEventListener('DOMContentLoaded', function() {
           const response = await fetch(downloadUrl);
           if (!response.ok) throw new Error('Network error');
           const blob = await response.blob();
-          const filename = state.file ? ($('fileNameDisplay').value || state.file.name).replace(/\.[^.]+$/, '') + '_imposé.pdf' : 'document_imposé.pdf';
+          const filename = state.file ? ($('fileNameDisplay').value || state.file.name).replace(/\.[^.]+$/, '') + '_' + (CONFIG.translations['studio_js.imposed_suffix'] || 'imposed') + '.pdf' : 'document_imposé.pdf';
           const newFile = new File([blob], filename, { type: 'application/pdf' });
           
           $('impPreviewModal').style.display = 'none';
@@ -1666,7 +1666,7 @@ document.addEventListener('DOMContentLoaded', function() {
           const btnFilters = document.querySelector('.tool-btn[data-tool="filters"]');
           if (btnFilters) btnFilters.click();
           
-          showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>Fichier chargé dans le Studio avec succès.</b>', false);
+          showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>' + (CONFIG.translations['studio_js.file_loaded_successfully'] || 'Fichier chargé dans le Studio avec succès.') + '</b>', false);
         } catch (e) {
           showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur lors du chargement :</b> ' + e.message, true);
         } finally {
@@ -1681,7 +1681,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Charger l'image
     img.onload  = () => { loading.style.display = 'none'; img.style.display = 'block'; };
     img.onerror = () => {
-      loading.innerHTML = '<i class="fa fa-exclamation-triangle" style="color:#f59e0b;font-size:24px"></i><br>Aperçu indisponible';
+      loading.innerHTML = '<i class="fa fa-exclamation-triangle" style="color:#f59e0b;font-size:24px"></i><br>' + (CONFIG.translations['studio_js.preview_unavailable'] || 'Aperçu indisponible');
     };
     img.src = previewUrl + '&_t=' + Date.now();
   }
@@ -1699,7 +1699,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   $('btnApplyImposition').addEventListener('click', () => {
     if (!state.file || !state.isPdf) {
-      showToast('<b>L\'imposition nécessite un PDF.</b>', true); return;
+      showToast('<b>' + (CONFIG.translations['studio_js.imposition_needs_pdf'] || 'L\'imposition nécessite un PDF.') + '</b>', true); return;
     }
     // Détecter quel onglet est actif
     const activeTab = document.querySelector('.imp-tab.active')?.dataset?.tab || 'brochure';
@@ -1829,7 +1829,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!list) return;
     list.innerHTML = '';
     if (mergeFilesList.length === 0) {
-      list.innerHTML = '<div style="padding:4px;color:#9ca3af;font-style:italic">Aucun fichier sélectionné</div>';
+      list.innerHTML = '<div style="padding:4px;color:#9ca3af;font-style:italic">' + (CONFIG.translations['studio_js.no_file_selected'] || 'Aucun fichier sélectionné') + '</div>';
       if ($('btnApplyMerge')) $('btnApplyMerge').disabled = true;
       return;
     }
@@ -1872,7 +1872,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   $('btnApplyUnimpose').addEventListener('click', () => {
-    serverProcess('unimpose', { unimpose_mode: $('selUnimposeMode').value }, 'Désimposition en cours...');
+    serverProcess('unimpose', { unimpose_mode: $('selUnimposeMode').value }, CONFIG.translations['studio_js.unimposing_in_progress'] || 'Unimposing in progress...');
   });
 
   // Organizer Events
@@ -1979,7 +1979,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   $('btnApplyOrg').addEventListener('click', async () => {
     if (window.orgSequence.length === 0) return;
-    showSpinner("Génération du PDF réorganisé...");
+    showSpinner(CONFIG.translations["studio_js.generating_reorganized_pdf"] || "Generating reorganized PDF...");
     const fd = new FormData();
     fd.append('action', 'organize_pages');
     fd.append('structure', JSON.stringify(window.orgSequence));
@@ -2003,7 +2003,7 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     } catch(e) {
       hideSpinner();
-      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
+      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>' + (CONFIG.translations['studio_js.network_error_bold'] || 'Erreur réseau :') + '</b> ' + e.message, true);
     }
   });
 
@@ -2018,7 +2018,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const lbCanvas = $('lightboxCanvas');
     const lbCtx = lbCanvas.getContext('2d');
     
-    showSpinner("Préparation de l'aperçu haute résolution...");
+    showSpinner(CONFIG.translations["studio_js.preparing_high_res_preview"] || "Preparing high resolution preview...");
     
     try {
       let renderW, renderH;
@@ -2186,7 +2186,7 @@ document.addEventListener('DOMContentLoaded', function() {
       activeChans = { cyan: 'Cyan', magenta: 'Magenta', yellow: 'Jaune', black: 'Noir' };
       defaults = { cyan: 'blue', magenta: 'red', yellow: 'yellow', black: 'black' };
     } else if (mode === '2COLOR') {
-      activeChans = { dark: 'Tons Foncés', light: 'Tons Clairs' };
+      activeChans = { dark: CONFIG.translations['studio_js.dark_tones'] || 'Dark Tones', light: CONFIG.translations['studio_js.light_tones'] || 'Light Tones' };
       defaults = { dark: 'black', light: 'red' };
     } else if (mode === 'AUTO_BICHROMIE') {
       const data = window.risoChannels['AUTO_BICHROMIE'];
@@ -2214,13 +2214,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const colorRow = document.createElement('div');
       colorRow.style.display = 'flex'; colorRow.style.alignItems = 'center'; colorRow.style.gap = '8px'; colorRow.style.marginBottom = '8px';
-      const colorLbl = document.createElement('span'); colorLbl.style.fontSize = '12px'; colorLbl.textContent = 'Couleur sélectionnée :';
+      const colorLbl = document.createElement('span'); colorLbl.style.fontSize = '12px'; colorLbl.textContent = CONFIG.translations['studio_js.selected_color'] || 'Selected color:';
       const colorBox = document.createElement('div'); colorBox.id = 'risoPipetteColorBox'; colorBox.style.width = '24px'; colorBox.style.height = '24px'; colorBox.style.borderRadius = '50%'; colorBox.style.border = '1px solid #ccc';
       colorRow.appendChild(colorLbl); colorRow.appendChild(colorBox);
       infoDiv.appendChild(colorRow);
 
       const tolDiv = document.createElement('div');
-      const tolLbl = document.createElement('div'); tolLbl.style.fontSize = '12px'; tolLbl.innerHTML = 'Tolérance: <span id="valRisoPipetteTol">60</span>';
+      const tolLbl = document.createElement('div'); tolLbl.style.fontSize = '12px'; tolLbl.innerHTML = (CONFIG.translations['studio_js.tolerance_prefix'] || 'Tolérance: ') + '<span id="valRisoPipetteTol">60</span>';
       const tolSlider = document.createElement('input'); tolSlider.type = 'range'; tolSlider.className = 'panel-slider'; tolSlider.id = 'sliderRisoPipetteTol'; tolSlider.min = '5'; tolSlider.max = '200'; tolSlider.value = '60';
       tolSlider.addEventListener('input', () => { $('valRisoPipetteTol').textContent = tolSlider.value; if (window.risoPickedColor) window.performPipetteIsolation(true); });
       tolDiv.appendChild(tolLbl); tolDiv.appendChild(tolSlider);
@@ -2231,7 +2231,7 @@ document.addEventListener('DOMContentLoaded', function() {
       extraDiv.innerHTML = `
         <div style="font-size:11px;">Contraste: <span id="valRisoPipetteCst">0</span></div>
         <input type="range" id="sliderRisoPipetteCst" min="-100" max="100" value="0" class="panel-slider">
-        <div style="font-size:11px;">Luminosité: <span id="valRisoPipetteBrt">0</span></div>
+        <div style="font-size:11px;">(CONFIG.translations['studio_js.brightness_prefix'] || 'Luminosité: ')<span id="valRisoPipetteBrt">0</span></div>
         <input type="range" id="sliderRisoPipetteBrt" min="-100" max="100" value="0" class="panel-slider">
       `;
       infoDiv.appendChild(extraDiv);
@@ -2331,7 +2331,7 @@ document.addEventListener('DOMContentLoaded', function() {
       sliders.style.display = 'flex'; sliders.style.flexDirection = 'column'; sliders.style.gap = '4px';
       
       const opcBox = document.createElement('div');
-      opcBox.innerHTML = `<div style="font-size:10px;">Opacité: <span class="val">100%</span></div>`;
+      opcBox.innerHTML = `<div style="font-size:10px;">${CONFIG.translations['studio_js.opacity_prefix'] || 'Opacité: '}<span class="val">100%</span></div>`;
       const opc = document.createElement('input');
       opc.type = 'range'; opc.className = 'panel-slider'; opc.min = '0'; opc.max = '100'; opc.value = '100';
       opc.dataset.channel = key;
@@ -2646,11 +2646,11 @@ document.addEventListener('DOMContentLoaded', function() {
     chanList.forEach(sel => { if(sel.value !== 'none') hasActiveLayer = true; });
 
     if (!window.risoChannels || !hasActiveLayer) {
-      showToast('Aucune donnée Riso à exporter. Veuillez d\'abord choisir un mode de séparation.', true);
+      showToast(CONFIG.translations['studio_js.no_riso_data'] || 'Aucune donnée Riso à exporter. Veuillez d\'abord choisir un mode de séparation.', true);
       return;
     }
     
-    showSpinner('Génération du PDF Riso...');
+    showSpinner(CONFIG.translations['studio_js.generating_riso_pdf'] || 'Generating Riso PDF...');
     const fd = new FormData();
     fd.append('action', 'riso_pdf');
     
@@ -2737,7 +2737,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       if (count === 0) {
         hideSpinner();
-        showToast('Aucun calque actif à exporter.', true);
+        showToast(CONFIG.translations['studio_js.no_active_layer'] || 'No active layer to export.', true);
         return;
       }
       
@@ -2748,7 +2748,7 @@ document.addEventListener('DOMContentLoaded', function() {
       try {
         json = JSON.parse(text);
       } catch (err) {
-        throw new Error("Réponse serveur invalide: " + text.substring(0, 100));
+        throw new Error((CONFIG.translations["studio_js.invalid_server_response"] || "Invalid server response: ") + text.substring(0, 100));
       }
       hideSpinner();
       
@@ -2760,7 +2760,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     } catch(e) {
       hideSpinner();
-      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
+      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>' + (CONFIG.translations['studio_js.network_error_bold'] || 'Erreur réseau :') + '</b> ' + e.message, true);
     }
   });
 
@@ -2783,7 +2783,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Reset crop inputs & info
     ['cropTop','cropBottom','cropLeft','cropRight'].forEach(id => { const el = $(id); if(el) el.value = '0'; });
     if ($('cropSizeInfo')) $('cropSizeInfo').textContent = '—';
-    if ($('btnActivateCrop')) { $('btnActivateCrop').innerHTML = '<i class="fa fa-crop"></i> Activer l\'aperçu crop'; $('btnActivateCrop').style.background = ''; }
+    if ($('btnActivateCrop')) { $('btnActivateCrop').innerHTML = '<i class="fa fa-crop"></i> ' + (CONFIG.translations['studio_js.activate_crop_preview'] || 'Activer l\'aperçu crop'); $('btnActivateCrop').style.background = ''; }
     const co = $('cropOverlay'); if (co) co.getContext('2d').clearRect(0, 0, co.width, co.height);
     fileInput.value = '';
     mergeFilesList = [];
@@ -2844,7 +2844,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     } catch(e) {}
                     showResultToast(job.download_url, dlName);
                   } else {
-                    showToast('<i class="fa fa-check"></i> Terminé', false);
+                    showToast('<i class="fa fa-check"></i> ' + (CONFIG.translations['studio_js.done'] || 'Done'), false);
                   }
                 } else if (job.status === 'error') {
                   clearInterval(checkInterval);
@@ -2870,7 +2870,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     } catch (e) {
       hideSpinner();
-      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> Erreur réseau : ' + e.message, true);
+      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> ' + (CONFIG.translations['studio_js.network_error_toast'] || 'Erreur réseau : ') + e.message, true);
     }
   });
 

@@ -383,7 +383,7 @@
     const spinner = document.getElementById('studioSpinner');
     const spinnerMsg = document.getElementById('spinnerMsg');
     if (spinner) {
-      spinnerMsg.textContent = "Génération du PDF...";
+      spinnerMsg.textContent = CONFIG.translations['studio_studio-montage.generating_pdf'] || 'Génération du PDF...';
       spinner.style.display = 'flex';
     }
 
@@ -444,7 +444,7 @@
     } catch(e) {
       if (spinner) spinner.style.display = 'none';
       if (window.showToast) {
-        window.showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur réseau :</b> ' + e.message, true);
+        window.showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>' + (CONFIG.translations['studio_montage.network_error'] || 'Erreur réseau :') + '</b> ' + e.message, true);
       } else {
         alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_montage.erreur_r_seau'] || "Erreur réseau: ") + e.message);
       }
