@@ -64,7 +64,7 @@ pub fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
         }
         "open_data_folder" => {
             if let Ok(dir) = app.path().app_data_dir() {
-                let _ = app.shell().open(&dir, None);
+                let _ = app.shell().open(dir.to_string_lossy().to_string(), None);
             }
         }
         "open_devtools" => {
