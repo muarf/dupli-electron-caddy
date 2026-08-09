@@ -27,34 +27,53 @@ pub fn build_menu(app_handle: &AppHandle) -> tauri::Result<Menu<Wry>> {
     Ok(menu)
 }
 
-pub fn handle_menu_event(app: &AppHandle, event: &str) {
-    match event {
+pub fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
+    match event.id().as_ref() {
         "about" => {
-            let _ = app.dialog().message("Dupli Electron Caddy").title("About").blocking_show();
+            let version = app.package_info().version.to_string();
+            let app_clone = app.clone();
+            app.dialog()
+                .message(format!(
+                    "Duplicator\n\nVersion {}\n\nApplication de duplication de documents\n\nGitHub: https://github.com/muarf/dupli-electron-caddy",
+                    version
+                ))
+                .title("About Duplicator")
+                .buttons(MessageDialogButtons::OkCustom("Open GitHub".into()))
+                .show(move |_| {
+                    #[allow(deprecated)]
+                    let _ = app_clone.shell().open("https://github.com/muarf/dupli-electron-caddy", None);
+                });
         }
         "check_updates" => {
-            let window = app.get_webview_window("main").unwrap();
-            let _ = window.emit("check-updates-now", ());
+            let app_clone = app.clone();
+            tauri::async_runtime::spawn(async move {
+                let state = app_clone.state::<crate::app_commands::UpdateState>();
+                let _ = crate::app_commands::check_for_updates(app_clone.clone(), state).await;
+            });
         }
         "restart" => {
-            let window = app.get_webview_window("main").unwrap();
-            let _ = window.emit("request-restart", ());
+            crate::app_commands::restart_app();
         }
         "quit" => {
-            std::process::exit(0);
+            app.exit(0);
         }
         "reload" => {
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.reload();
+                let _ = window.eval("window.location.reload();");
             }
         }
         "open_data_folder" => {
-            let window = app.get_webview_window("main").unwrap();
-            let _ = window.emit("open-data-folder", ());
+            if let Ok(dir) = app.path().app_data_dir() {
+                let _ = app.shell().open(&dir, None);
+            }
         }
         "open_devtools" => {
             if let Some(window) = app.get_webview_window("main") {
-                window.open_devtools();
+                if window.is_devtools_open() {
+                    window.close_devtools();
+                } else {
+                    window.open_devtools();
+                }
             }
         }
         _ => {}
