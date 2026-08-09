@@ -12,7 +12,7 @@ header('X-Accel-Buffering: no');
 header('Content-Encoding: none');
 ini_set('memory_limit', '2G');
 set_time_limit(0); // Empêche PHP de tuer le script (max_execution_time)
-ignore_user_abort(true); // Continue le script même si le client se déconnecte
+ignore_user_abort(false); // Arrête le script si le client se déconnecte / clique sur Stop
 
 
 function sendStreamEvent($data) {
@@ -189,11 +189,15 @@ try {
                 $headersR[] = 'Authorization: Bearer ' . $token;
             }
             curl_setopt($chR, CURLOPT_HTTPHEADER, $headersR);
-            curl_setopt($chR, CURLOPT_TIMEOUT, 45); // Augmenté à 45s pour le VPS
+            curl_setopt($chR, CURLOPT_TIMEOUT, 90); // Porté à 90s pour le traitement des gros documents
             
             // Heartbeat progressif pendant le tri (toutes les 10s) - COMMENTAIRE SSE
             curl_setopt($chR, CURLOPT_NOPROGRESS, false);
             curl_setopt($chR, CURLOPT_PROGRESSFUNCTION, function($resource, $downloadSize, $downloaded, $uploadSize, $uploaded) {
+                if (connection_aborted()) {
+                    ragDebug("Requête interrompue par l'utilisateur pendant le tri. Arrêt cURL Reranker.");
+                    return 1; // Arrête cURL Reranker immédiatement
+                }
                 static $lastH = 0;
                 if (time() - $lastH >= 10) {
                     $lastH = time();
@@ -344,7 +348,7 @@ try {
         $prompt = "<|im_start|>system\n" . $systemPromptText . "<|im_end|>\n<|im_start|>user\n$question<|im_end|>\n<|im_start|>assistant\n";
         $llmUrl = $settingsManager->get('ai_llm_url_nemotron', 'http://localhost:11438/completion');
     } else {
-        $prompt = "<|turn|>system\n" . $systemPromptText . "<|turn|>\n<|turn|>user\n$question<|turn|>\n<|turn|>model\n<|think|>\n";
+        $prompt = "<|turn|>system\n" . $systemPromptText . "<|turn|>\n<|turn|>user\n$question<|turn|>\n<|turn|>model\n<|channel|>thought\n";
         $llmUrl = $settingsManager->get('ai_llm_url_pro', 'http://localhost:11435/completion');
     }
 
@@ -393,6 +397,10 @@ try {
     curl_setopt($ch, CURLOPT_NOPROGRESS, false);
     $lastHeartbeat = microtime(true);
     curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, function($ch, $download_size, $downloaded, $upload_size, $uploaded) use (&$lastHeartbeat) {
+        if (connection_aborted()) {
+            ragDebug("Requête interrompue par l'utilisateur (AbortController). Arrêt cURL.");
+            return 1; // Arrête cURL immédiatement
+        }
         $now = microtime(true);
         if ($now - $lastHeartbeat > 10.0) { // Send heartbeat every 10 seconds
             ragDebug("Heartbeat LLM progressif (réflexion en cours...)");
@@ -402,6 +410,10 @@ try {
         return 0; // Return 0 to continue
     });
     curl_setopt($ch, CURLOPT_WRITEFUNCTION, function($ch, $data) use (&$fullResponse) {
+        if (connection_aborted()) {
+            ragDebug("Requête interrompue par l'utilisateur (AbortController). Arrêt cURL.");
+            return 0; // Stoppe la réception cURL
+        }
         $lines = explode("\n", $data);
         foreach ($lines as $line) {
             if (strpos($line, 'data: ') === 0) {

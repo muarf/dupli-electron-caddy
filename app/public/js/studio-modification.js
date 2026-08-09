@@ -629,6 +629,8 @@
 
     if (window.currentStudioFile) {
       formData.append('file_id', window.currentStudioFile);
+    } else if (window.currentStudioTempFile) {
+      formData.append('studio_temp_file', window.currentStudioTempFile);
     } else {
       // It's a local file upload, get the File object from state
       if (window.state.rawFile) {

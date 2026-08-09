@@ -872,18 +872,20 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
             let aiMsgDiv = null;
             let fullContent = "";
             let isThinking = true;
+            let streamBuffer = "";
 
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
                 
-                const chunk = decoder.decode(value);
-                const lines = chunk.split("\n");
+                streamBuffer += decoder.decode(value, { stream: true });
+                const lines = streamBuffer.split("\n");
+                streamBuffer = lines.pop();
                 
                 for (const line of lines) {
-                    if (line.startsWith("data: ")) {
+                    if (line.trim().startsWith("data: ")) {
                         try {
-                            const data = JSON.parse(line.substring(6));
+                            const data = JSON.parse(line.trim().substring(6));
                             if (data.type === 'status') {
                                 updateAiStatus(data.message);
                                 if (data.sources && data.sources.length > 0) {
@@ -918,22 +920,21 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                             if (data.type === 'content') {
                                 let text = data.content;
                                 if (isThinking && currentAiMode === 'pro') {
-                                    // Si ça ne commence pas par <think>, on arrête de penser immédiatement
-                                    if (fullContent === "" && !text.includes("<think>") && !text.startsWith("<")) {
+                                    thoughtArea.style.display = 'block';
+                                    let endTag = null;
+                                    if (text.includes("</think>")) endTag = "</think>";
+                                    else if (text.includes("<channel|>")) endTag = "<channel|>";
+
+                                    if (endTag) {
+                                        const parts = text.split(endTag);
+                                        thoughtContent.innerHTML += parts[0].replace(/<\|channel>|thought/g, '').replace(/\n/g, '<br>');
                                         isThinking = false;
+                                        updateAiStatus("Rédaction...");
+                                        text = parts[1] || "";
+                                        if (text.trim() === "") continue;
                                     } else {
-                                        thoughtArea.style.display = 'block';
-                                        if (text.includes("</think>")) {
-                                            const parts = text.split("</think>");
-                                            thoughtContent.innerHTML += parts[0].replace(/\n/g, '<br>');
-                                            isThinking = false;
-                                            updateAiStatus("Rédaction...");
-                                            text = parts[1] || "";
-                                            if (text.trim() === "") return;
-                                        } else {
-                                            thoughtContent.innerHTML += text.replace(/\n/g, '<br>');
-                                            return;
-                                        }
+                                        thoughtContent.innerHTML += text.replace(/<\|channel>|thought/g, '').replace(/\n/g, '<br>');
+                                        continue;
                                     }
                                 }
                                 
@@ -1451,17 +1452,18 @@ if (!empty($bib_password) && !$is_admin && !$is_authenticated) {
                                 fullContent += data.content;
                                 
                                 let displayContent = fullContent;
-                                if (fullContent.includes('<think>')) {
-                                    let parts = fullContent.split('</think>');
-                                    if (parts.length > 1) {
-                                        let thoughtText = parts[0].replace('<think>', '').trim();
+                                if (fullContent.includes('<think>') || fullContent.includes('<channel|>') || fullContent.includes('<|channel>')) {
+                                    let splitTag = fullContent.includes('</think>') ? '</think>' : (fullContent.includes('<channel|>') ? '<channel|>' : null);
+                                    if (splitTag) {
+                                        let parts = fullContent.split(splitTag);
+                                        let thoughtText = parts[0].replace(/<think>|<\|channel>|thought/g, '').trim();
                                         if (tDiv) {
                                             tDiv.innerHTML = thoughtText.replace(/\n/g, '<br>');
                                             tDiv.style.display = 'block';
                                         }
                                         displayContent = parts[1].trim();
                                     } else {
-                                        let thoughtText = fullContent.replace('<think>', '').trim();
+                                        let thoughtText = fullContent.replace(/<think>|<\|channel>|thought/g, '').trim();
                                         if (tDiv) {
                                             tDiv.innerHTML = thoughtText.replace(/\n/g, '<br>');
                                             tDiv.style.display = 'block';

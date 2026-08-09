@@ -99,8 +99,11 @@ function requireBibliothequeAuth() {
     }
     
     // Sinon, on refuse l'accès
-    // Si c'est une requête AJAX (fetch, xhr) on renvoie 403
-    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+    // Si c'est une requête AJAX/fetch (headers X-Requested-With, Accept json/event-stream) on renvoie 403
+    $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')
+           || (!empty($_SERVER['HTTP_ACCEPT']) && (strpos($_SERVER['HTTP_ACCEPT'], 'json') !== false || strpos($_SERVER['HTTP_ACCEPT'], 'text/event-stream') !== false));
+
+    if ($isAjax) {
         http_response_code(403);
         echo json_encode(['error' => 'Authentication required for library', 'auth_required' => true]);
         exit;

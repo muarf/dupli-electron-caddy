@@ -64,6 +64,18 @@ if (isset($_POST['file_id']) && !empty($_POST['file_id'])) {
     }
 }
 
+// Si studio_temp_file est fourni, on réutilise le fichier temporaire déjà présent sur le serveur (évite l'upload réseau)
+if (!$uploadedFile && isset($_POST['studio_temp_file']) && !empty($_POST['studio_temp_file'])) {
+    $tmpDir = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR;
+    $tempFilename = basename($_POST['studio_temp_file']);
+    $tempPath = $tmpDir . $tempFilename;
+    if (file_exists($tempPath) && strpos(realpath($tempPath), realpath($tmpDir)) === 0) {
+        $uploadedFile = $tempPath;
+        $originalName = $tempFilename;
+        $safeName     = preg_replace('/[^a-zA-Z0-9_-]/', '_', pathinfo($originalName, PATHINFO_FILENAME));
+    }
+}
+
 if (!$uploadedFile) {
     // --- Récupérer le fichier uploadé (sauf pour certaines actions) ---
     if (!in_array($action, ['organize_pages', 'merge', 'riso_pdf', 'montage_libre', 'crop_pdf', 'modification', 'upload_font', 'list_fonts', 'recognize_font', 'passthrough_pdf', 'download_google_font', 'ocr_status', 'analyze_ink_status', 'task_status', 'get_active_jobs', 'delete_job'])) {
