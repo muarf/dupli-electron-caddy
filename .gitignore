@@ -9,6 +9,18 @@ dist/
 build/config.gypi
 # Note: php.exe and caddy.exe are needed for Windows builds, so not ignored
 
+# C++ build artifacts (node-gyp / MSVC)
+src/print-engine/windows/build/
+src/print-processor/build/
+*.obj
+*.pdb
+*.iobj
+*.ipdb
+*.tlog
+*.exp
+*.node
+*.lib
+
 # Binaries
 bin/*
 !bin/win-x64/
@@ -32,6 +44,10 @@ app/logs/
 temp/
 tmp/
 *.tmp
+temp.cpp
+temp_utf8.cpp
+runs.json
+semgrep_results.json
 
 # IDE
 .vscode/
