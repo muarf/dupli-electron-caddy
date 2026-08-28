@@ -801,7 +801,15 @@ window.addEventListener('unhandledrejection', function(e) {
           <button class="panel-btn modif-tool-btn" data-tool="redact_text"><i class="fa fa-font" style="width: 20px;"></i><?php _e("studio.modification_tool_redact", [], false); ?></button>
           <button class="panel-btn modif-tool-btn" data-tool="page_number"><i class="fa fa-hashtag" style="width: 20px;"></i><?php _e("studio.modification_tool_page_number", [], false); ?></button>
           <button class="panel-btn modif-tool-btn" data-tool="strikeout"><i class="fa fa-strikethrough" style="width: 20px;"></i><?php _e("studio.modification_tool_strikeout", [], false); ?></button>
+          <button class="panel-btn modif-tool-btn" data-tool="negative"><i class="fa fa-adjust" style="width: 20px;"></i><?php _e("studio.modification_tool_negative", [], false); ?></button>
         </div>
+      </div>
+      
+      <!-- Outil : Négatif -->
+      <div id="modifToolNegative" class="panel-section" style="display:none">
+        <div class="panel-section-title"><?php _e("studio.modification_negative", [], false); ?></div>
+        <p style="font-size:10px; color:#6b7280; margin-bottom:8px"><?php _e("studio.modification_negative_hint", [], false); ?></p>
+        <button class="panel-btn" id="btnModifNegativeFullPage" style="width:100%"><i class="fa fa-arrows-alt"></i> <?php _e("studio.modification_negative_full_page", [], false); ?></button>
       </div>
       
       <!-- Outil : Carré blanc + Texte -->

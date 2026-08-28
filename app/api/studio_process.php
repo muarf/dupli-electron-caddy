@@ -1983,7 +1983,7 @@ if ($action === 'modification') {
             if ($apply) {
                 foreach ($ops as $op) {
                     $type = $op['type'] ?? '';
-                    if ($type === 'redact_text' || $type === 'strikeout') {
+                    if ($type === 'redact_text' || $type === 'strikeout' || $type === 'negative') {
                         $x = ($op['relX'] ?? 0) * $size['width'];
                         $y = ($op['relY'] ?? 0) * $size['height'];
                         $w = ($op['relW'] ?? 0) * $size['width'];
@@ -1992,6 +1992,8 @@ if ($action === 'modification') {
                         if ($type === 'redact_text') {
                             addTextAndBox($pdf, $x, $y, $w, $h, 
                                           $op['text'], $op['font'] ?? 'helvetica', intval($op['size'] ?? 12), $op['bg']);
+                        } elseif ($type === 'negative') {
+                            addNegativeBox($pdf, $x, $y, $w, $h);
                         } else {
                             addRedaction($pdf, $x, $y, $w, $h, $op['color'] ?? 'black');
                         }

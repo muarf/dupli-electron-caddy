@@ -49,6 +49,31 @@
         });
     }
 
+    const btnModifNegativeFullPage = $id('btnModifNegativeFullPage');
+    if (btnModifNegativeFullPage) {
+        btnModifNegativeFullPage.addEventListener('click', () => {
+            if (!canvas) return;
+            const fullRect = new fabric.Rect({
+                left: 0,
+                top: 0,
+                originX: 'left',
+                originY: 'top',
+                width: canvas.getWidth(),
+                height: canvas.getHeight(),
+                fill: '#ffffff',
+                globalCompositeOperation: 'difference',
+                stroke: '#3b82f6',
+                strokeWidth: 1,
+                strokeDashArray: [4, 4],
+                transparentCorners: false
+            });
+            fullRect.set('modifType', 'negative');
+            canvas.add(fullRect);
+            canvas.setActiveObject(fullRect);
+            canvas.renderAll();
+        });
+    }
+
     // Tool selection via buttons
     const toolBtns = document.querySelectorAll('.modif-tool-btn');
     toolBtns.forEach(btn => {
@@ -62,6 +87,7 @@
         $id('modifToolRedact').style.display = (currentTool === 'redact_text') ? 'block' : 'none';
         $id('modifToolPageNum').style.display = (currentTool === 'page_number') ? 'block' : 'none';
         $id('modifToolStrikeout').style.display = (currentTool === 'strikeout') ? 'block' : 'none';
+        if ($id('modifToolNegative')) $id('modifToolNegative').style.display = (currentTool === 'negative') ? 'block' : 'none';
         
         canvas.defaultCursor = (currentTool !== 'none') ? 'crosshair' : 'default';
         canvas.isDrawingMode = false;
@@ -153,8 +179,9 @@
         canvas.setActiveObject(textObj);
         canvas.renderAll();
         isDrawing = false; // Just click to add text
-      } else if (currentTool === 'strikeout') {
-        const color = $id('modifStrikeColor').value || 'black';
+      } else if (currentTool === 'strikeout' || currentTool === 'negative') {
+        const isNegative = (currentTool === 'negative');
+        const color = isNegative ? '#ffffff' : ($id('modifStrikeColor').value || 'black');
         rect = new fabric.Rect({
           left: origX,
           top: origY,
@@ -163,6 +190,10 @@
           width: pointer.x - origX,
           height: pointer.y - origY,
           fill: color,
+          globalCompositeOperation: isNegative ? 'difference' : 'source-over',
+          stroke: isNegative ? '#3b82f6' : 'transparent',
+          strokeWidth: isNegative ? 1 : 0,
+          strokeDashArray: isNegative ? [4, 4] : null,
           transparentCorners: false
         });
         rect.set('modifType', currentTool);
@@ -206,7 +237,7 @@
       }
       
       if (!rect) return;
-      if (currentTool === 'strikeout') {
+      if (currentTool === 'strikeout' || currentTool === 'negative') {
         if (origX > pointer.x) {
           rect.set({ left: Math.abs(pointer.x) });
         }
@@ -581,6 +612,11 @@
           relX, relY, relW, relH,
           color: obj.fill
         });
+      } else if (obj.modifType === 'negative') {
+        ops.push({
+          type: 'negative',
+          relX, relY, relW, relH
+        });
       } else if (obj.modifType === 'page_number') {
         ops.push({
           type: 'page_number',
@@ -596,6 +632,17 @@
       }
     });
     
+    // Fallback: si l'outil est negative mais que l'utilisateur n'a rien dessiné, on inverse toute la page
+    if (currentTool === 'negative' && !ops.some(o => o.type === 'negative')) {
+      ops.push({
+        type: 'negative',
+        relX: 0,
+        relY: 0,
+        relW: 1,
+        relH: 1
+      });
+    }
+
     // Fallback: si l'outil est page_number mais que l'utilisateur n'a rien dessiné, 
     // on l'ajoute automatiquement via les paramètres globaux (préréglages)
     if (currentTool === 'page_number' && !ops.some(o => o.type === 'page_number')) {

@@ -168,6 +168,19 @@ function addRedaction($pdf, $x, $y, $w, $h, $color) {
 }
 
 /**
+ * Ajoute une zone négative (inverse les couleurs).
+ */
+if (!function_exists('addNegativeBox')) {
+function addNegativeBox($pdf, $x, $y, $w, $h) {
+    $pdf->setAutoPageBreak(false);
+    $pdf->SetAlpha(1, 'Difference');
+    $pdf->SetFillColor(255, 255, 255);
+    $pdf->Rect($x, $y, $w, $h, 'F');
+    $pdf->SetAlpha(1, 'Normal');
+}
+}
+
+/**
  * Downgrade un PDF vers la version 1.4 en utilisant Ghostscript.
  * Utile pour contourner l'erreur de compression de FPDI.
  */
