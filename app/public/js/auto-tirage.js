@@ -45,7 +45,7 @@
 
   // ── Session lifecycle ─────────────────────────────────────────────────────
 
-  async function startSession() {
+  window.startSession = async function () {
     const pseudo = document.getElementById('pseudo-input').value.trim();
     if (!pseudo) return showAppModal({ message: "Merci d'entrer un nom", type: "warning" });
 
@@ -782,7 +782,7 @@
 
   function addJobToSession(details, jobId, printerName) {
     if (sessionJobs.some(existingJob =>
-      existingJob.originalJobId == jobId &&
+      (existingJob.originalJobId == jobId || existingJob.job_id == jobId) &&
       (existingJob.printerName || existingJob.machine) === (printerName || details.machine)
     )) {
       console.warn('[AUTO_TIRAGE] Job (' + jobId + ', ' + printerName + ') déjà présent dans la session, ignoré.');
@@ -791,8 +791,10 @@
 
     details.localId = Date.now() + Math.random().toString(36).substr(2, 9);
     details.originalJobId = jobId;
-    details.printerName = printerName;
+    details.job_id = jobId;
+    details.printerName = printerName || details.machine;
     details.feuilles_payees = false;
+    details.staged = true;
 
     if (details.type === 'duplicopieur') {
       details.unit_master = details.nb_masters > 0 ? (details.cout_masters / details.nb_masters) : 0;
@@ -1226,6 +1228,8 @@
 
   window.removeJob = async function (index) {
     const job = sessionJobs[index];
+    if (!job) return;
+
     showAppModal({
       message: S['common.delete'] + ' ?',
       confirm: true,
@@ -1233,10 +1237,13 @@
     }, async (confirmed) => {
       if (!confirmed) return;
 
-      if (job.job_id && window.electronAPI && window.electronAPI.deletePrintJob) {
+      const spoolJobId = job.originalJobId || job.job_id;
+      const printerName = job.printerName || job.printer_name || job.machine || null;
+
+      if (spoolJobId && window.electronAPI && window.electronAPI.deletePrintJob) {
         try {
-          console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.delete_session__appel_ipc_del'] || '[DELETE SESSION] Appel IPC deletePrintJob pour job Windows:'), job.job_id);
-          const ipcResult = await window.electronAPI.deletePrintJob(job.printer_name || null, job.job_id);
+          console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.delete_session__appel_ipc_del'] || '[DELETE SESSION] Appel IPC deletePrintJob pour job Windows:'), spoolJobId);
+          const ipcResult = await window.electronAPI.deletePrintJob(printerName, spoolJobId);
           console.log('[DELETE SESSION] Résultat IPC:', ipcResult);
         } catch (ipcError) {
           console.warn((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.delete_session__erreur_ipc__n'] || '[DELETE SESSION] Erreur IPC (non bloquante):'), ipcError);
@@ -1257,6 +1264,21 @@
           }
         } catch (e) {
           console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.auto_tirage.erreur_r_seau_lors_de_la_suppr'] || 'Erreur réseau lors de la suppression:'), e);
+        }
+      }
+
+      if (spoolJobId) {
+        try {
+          await fetch('?check_print_jobs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'delete_by_job_id',
+              job_id: spoolJobId
+            })
+          });
+        } catch (e) {
+          console.warn('[DELETE SESSION] Nettoyage secondaire par job_id ignoré:', e);
         }
       }
 
@@ -1442,8 +1464,11 @@
           if (!exists) {
             sessionJobs.push({
               id: job.id,
+              job_id: job.job_id,
+              originalJobId: job.job_id,
               type: job.table_source,
               machine: job.printerName,
+              printerName: job.printerName,
               machine_id: job.printerName,
               copies: parseInt(job.copies) || 1,
               pages: parseInt(job.pages) || 0,

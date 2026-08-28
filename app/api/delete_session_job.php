@@ -8,8 +8,12 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+$remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
+$isLocalServer = in_array($remoteAddr, ['127.0.0.1', '::1', 'localhost'], true) || strpos($remoteAddr, '127.0.0.1') !== false;
+
 if ((!isset($_SESSION['admin']) || $_SESSION['admin'] !== true) && 
-    (!isset($_SESSION['user']) || $_SESSION['user'] !== "1")) {
+    (!isset($_SESSION['user']) || $_SESSION['user'] !== "1") &&
+    !$isLocalServer) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => __('api.delete_session_job.access_denied')]);
     exit;

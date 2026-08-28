@@ -343,7 +343,21 @@ function get_python_path(): string
 function get_php_executable(): string
 {
     if (PHP_OS_FAMILY === 'Windows') {
+        if (defined('PHP_BINARY') && !empty(PHP_BINARY) && file_exists(PHP_BINARY)) {
+            $bin = PHP_BINARY;
+            if (strpos(strtolower($bin), 'php-cgi.exe') !== false) {
+                $cliBin = dirname($bin) . DIRECTORY_SEPARATOR . 'php.exe';
+                if (file_exists($cliBin)) {
+                    return $cliBin;
+                }
+            } else {
+                return $bin;
+            }
+        }
         $local_paths = [
+            __DIR__ . '/../../../php/php.exe',
+            __DIR__ . '/../../php/php.exe',
+            __DIR__ . '/../php/php.exe',
             __DIR__ . '/../../../bin/win-x64/php/php.exe',
             __DIR__ . '/../../bin/win-x64/php/php.exe',
             __DIR__ . '/../../../../../../../bin/win-x64/php/php.exe'
