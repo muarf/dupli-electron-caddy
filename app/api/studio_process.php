@@ -12,7 +12,9 @@
 
 set_time_limit(600);
 ini_set('memory_limit', '2048M');
-ini_set('display_errors', 0);
+if (!defined('IS_BACKGROUND')) {
+    ini_set('display_errors', 0);
+}
 header('Content-Type: application/json');
 
 if (session_id()) session_write_close();
@@ -167,8 +169,10 @@ if (!defined('IS_BACKGROUND') && in_array($action, $background_actions)) {
     $scriptPath = __DIR__ . '/background_studio_task.php';
     $phpIni = realpath(__DIR__ . '/../php.ini') ?: (__DIR__ . '/../php.ini');
     $iniFlag = (PHP_OS_FAMILY === 'Windows' && file_exists($phpIni)) ? ' -c ' . escapeshellarg($phpIni) : '';
+    $currentExtDir = ini_get('extension_dir');
+    $extFlag = (PHP_OS_FAMILY === 'Windows' && !empty($currentExtDir) && is_dir($currentExtDir)) ? ' -d extension_dir=' . escapeshellarg($currentExtDir) : '';
     if (PHP_OS_FAMILY === 'Windows') {
-        $cmd = 'start /B "" ' . escapeshellarg($phpExe) . $iniFlag . ' ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($jobId);
+        $cmd = 'start /B "" ' . escapeshellarg($phpExe) . $iniFlag . $extFlag . ' ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($jobId);
         pclose(popen($cmd, 'r'));
     } else {
         exec(escapeshellarg($phpExe) . $iniFlag . ' ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($jobId) . ' > /dev/null 2>&1 &');
@@ -1188,8 +1192,10 @@ if ($action === 'ocr_cleanup') {
     $scriptPath = __DIR__ . '/background_studio_ocr.php';
     $phpIni = realpath(__DIR__ . '/../php.ini') ?: (__DIR__ . '/../php.ini');
     $iniFlag = (PHP_OS_FAMILY === 'Windows' && file_exists($phpIni)) ? ' -c ' . escapeshellarg($phpIni) : '';
+    $currentExtDir = ini_get('extension_dir');
+    $extFlag = (PHP_OS_FAMILY === 'Windows' && !empty($currentExtDir) && is_dir($currentExtDir)) ? ' -d extension_dir=' . escapeshellarg($currentExtDir) : '';
     if (PHP_OS_FAMILY === 'Windows') {
-        $cmd = 'start /B "" ' . escapeshellarg($phpExe) . $iniFlag . ' ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($jobId);
+        $cmd = 'start /B "" ' . escapeshellarg($phpExe) . $iniFlag . $extFlag . ' ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($jobId);
         pclose(popen($cmd, 'r'));
     } else {
         exec(escapeshellarg($phpExe) . $iniFlag . ' ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($jobId) . ' > /dev/null 2>&1 &');

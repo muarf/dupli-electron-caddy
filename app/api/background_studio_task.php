@@ -87,7 +87,17 @@ register_shutdown_function(function() use ($jobId, $jobFile, $logFile) {
             }
         } else {
             $jobData['status'] = 'error';
-            $jobData['error'] = 'Crash silencieux, timeout PHP, ou réponse JSON invalide.';
+            $lastError = error_get_last();
+            if ($lastError && in_array($lastError['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+                $errDetail = $lastError['message'] . ' dans ' . basename($lastError['file']) . ' (ligne ' . $lastError['line'] . ')';
+                $jobData['error'] = "Erreur fatale PHP : $errDetail";
+                file_put_contents($logFile, "\n[Fatal Error]: $errDetail\n", FILE_APPEND);
+            } else {
+                $jobData['error'] = 'Crash silencieux, timeout PHP, ou réponse JSON invalide.';
+                if ($out) {
+                    file_put_contents($logFile, "\n[Unexpected output]: $out\n", FILE_APPEND);
+                }
+            }
         }
         
         file_put_contents($jobFile, json_encode($jobData));

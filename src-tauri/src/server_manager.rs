@@ -578,4 +578,26 @@ fn copy_php_dlls(app: &AppHandle) {
             }
         }
     }
+
+    // S'assurer également de la présence du sous-dossier ext/ à côté de l'exécutable
+    // afin que PHP CLI (qui résout extension_dir = "ext" par défaut dans php.ini) trouve ses extensions
+    let ext_src = src_dir.join("ext");
+    if ext_src.exists() && ext_src.is_dir() {
+        let ext_dst = dst.join("ext");
+        if !ext_dst.exists() {
+            let _ = std::fs::create_dir_all(&ext_dst);
+        }
+        if let Ok(entries) = std::fs::read_dir(&ext_src) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().map_or(false, |e| e == "dll") {
+                    let name = path.file_name().unwrap();
+                    let target = ext_dst.join(name);
+                    if !target.exists() {
+                        let _ = std::fs::copy(&path, &target);
+                    }
+                }
+            }
+        }
+    }
 }
