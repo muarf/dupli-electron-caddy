@@ -1402,6 +1402,8 @@
 
     document.querySelectorAll('.session-tab').forEach(t => t.classList.remove('active'));
   }
+  // Expose createNewSessionClick globally for HTML onclick handlers
+  window.createNewSessionClick = createNewSessionClick;
 
   async function switchSession(sessionId) {
     if (sessionId) {
