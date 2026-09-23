@@ -22,6 +22,7 @@ require_once __DIR__ . '/functions/machines.php';
 require_once __DIR__ . '/functions/tirage.php';
 require_once __DIR__ . '/functions/consommation.php';
 require_once __DIR__ . '/functions/utilities.php';
+require_once __DIR__ . '/functions/i18n.php';
 
 // Définir le mode développement
 if (!defined('DEVELOPMENT_MODE')) {

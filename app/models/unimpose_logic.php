@@ -6,6 +6,7 @@
  */
 
 require_once(__DIR__ . '/../vendor/autoload.php');
+require_once(__DIR__ . '/../controler/functions/binary_utilities.php');
 
 use Smalot\PdfParser\Parser;
 
@@ -32,11 +33,10 @@ class UnimposeBooklet {
             // CONTOURNEMENT FPDI : Dégrader la version du PDF à 1.4 via Ghostscript
             // FPDI gratuit ne supporte pas les PDF > 1.4, ce qui fait planter l'importation.
             $safeInputFile = tempnam(sys_get_temp_dir(), 'gs_downgrade_');
-            $gsCommand = "gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dQUIET -dBATCH -sOutputFile=" . escapeshellarg($safeInputFile) . " " . escapeshellarg($this->inputFile);
-            exec($gsCommand, $output, $returnVar);
+            $gsResult = run_ghostscript("-sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dQUIET -dBATCH -sOutputFile=" . escapeshellarg($safeInputFile) . " " . escapeshellarg($this->inputFile));
             
-            if ($returnVar !== 0 || !file_exists($safeInputFile)) {
-                throw new Exception("Échec de la conversion Ghostscript (downgrade) du fichier PDF.");
+            if (!$gsResult['success'] || !file_exists($safeInputFile)) {
+                throw new Exception("Échec de la conversion Ghostscript (downgrade) du fichier PDF : " . ($gsResult['error'] ?? 'erreur inconnue'));
             }
             
             // Remplacer temporairement le inputFile par la version dégradée
@@ -192,11 +192,10 @@ class UnimposeBooklet {
             
             // CONTOURNEMENT FPDI : Dégrader la version du PDF à 1.4 via Ghostscript
             $safeInputFile = tempnam(sys_get_temp_dir(), 'gs_downgrade_');
-            $gsCommand = "gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dQUIET -dBATCH -sOutputFile=" . escapeshellarg($safeInputFile) . " " . escapeshellarg($this->inputFile);
-            exec($gsCommand, $output, $returnVar);
+            $gsResult = run_ghostscript("-sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dQUIET -dBATCH -sOutputFile=" . escapeshellarg($safeInputFile) . " " . escapeshellarg($this->inputFile));
             
-            if ($returnVar !== 0 || !file_exists($safeInputFile)) {
-                throw new Exception("Échec de la conversion Ghostscript (downgrade) du fichier PDF.");
+            if (!$gsResult['success'] || !file_exists($safeInputFile)) {
+                throw new Exception("Échec de la conversion Ghostscript (downgrade) du fichier PDF : " . ($gsResult['error'] ?? 'erreur inconnue'));
             }
             
             $originalInputFile = $this->inputFile;
@@ -326,11 +325,10 @@ class UnimposeBooklet {
             
             // CONTOURNEMENT FPDI : Dégrader la version du PDF à 1.4 via Ghostscript
             $safeInputFile = tempnam(sys_get_temp_dir(), 'gs_downgrade_');
-            $gsCommand = "gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dQUIET -dBATCH -sOutputFile=" . escapeshellarg($safeInputFile) . " " . escapeshellarg($this->inputFile);
-            exec($gsCommand, $output, $returnVar);
+            $gsResult = run_ghostscript("-sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dNOPAUSE -dQUIET -dBATCH -sOutputFile=" . escapeshellarg($safeInputFile) . " " . escapeshellarg($this->inputFile));
             
-            if ($returnVar !== 0 || !file_exists($safeInputFile)) {
-                throw new Exception("Échec de la conversion Ghostscript (downgrade) du fichier PDF.");
+            if (!$gsResult['success'] || !file_exists($safeInputFile)) {
+                throw new Exception("Échec de la conversion Ghostscript (downgrade) du fichier PDF : " . ($gsResult['error'] ?? 'erreur inconnue'));
             }
             
             $originalInputFile = $this->inputFile;

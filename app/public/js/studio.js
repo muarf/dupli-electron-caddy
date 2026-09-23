@@ -1555,13 +1555,30 @@ document.addEventListener('DOMContentLoaded', function() {
               </div>
             </div>
             <div style="padding:16px 20px;border-top:1px solid #e2e5ea;display:flex;justify-content:flex-end;gap:12px;background:#f8fafc;">
-              <button onclick="navigator.clipboard.writeText(document.getElementById('errorModalContent').innerText); showToast('<i class=\\'fa fa-check\\'></i> ' + CONFIG.translations['studio_js.message_copied'] || 'Message copié', false);" style="padding:8px 16px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:#374151;display:flex;align-items:center;gap:6px;"><i class="fa fa-copy"></i> ' + CONFIG.translations['studio_js.copy_message'] || 'Copier le message</button>
-              <button onclick=(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.document_getelementbyid__error"] || "document.getElementById('errorModalOverlay').remove()") style="padding:8px 16px;background:#ef4444;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;font-weight:500;">' + CONFIG.translations['studio_js.close'] || 'Fermer' + '</button>
+              <button id="btnCopyErrorModal" style="padding:8px 16px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:#374151;display:flex;align-items:center;gap:6px;"><i class="fa fa-copy"></i> ${(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['studio_js.copy_message']) || 'Copier le message'}</button>
+              <button id="btnCloseErrorModal" style="padding:8px 16px;background:#ef4444;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;font-weight:500;">${(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['studio_js.close']) || 'Fermer'}</button>
             </div>
           </div>
         </div>
       `;
       document.body.insertAdjacentHTML('beforeend', modalHtml);
+      const copyBtn = document.getElementById('btnCopyErrorModal');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+          const content = document.getElementById('errorModalContent');
+          if (content) {
+            navigator.clipboard.writeText(content.innerText);
+            showToast('<i class="fa fa-check"></i> ' + ((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['studio_js.message_copied']) || 'Message copié'), false);
+          }
+        });
+      }
+      const closeBtn = document.getElementById('btnCloseErrorModal');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          const overlay = document.getElementById('errorModalOverlay');
+          if (overlay) overlay.remove();
+        });
+      }
       return;
     }
 
