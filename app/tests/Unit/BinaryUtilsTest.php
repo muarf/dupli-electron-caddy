@@ -37,3 +37,12 @@ it('get_imagick_path() retourne un chemin si disponible', function () {
         expect(true)->toBeTrue();
     }
 });
+
+it('get_php_executable() retourne un exécutable valide sans commande composite', function () {
+    expect(function_exists('get_php_executable'))->toBeTrue();
+    $bin = get_php_executable();
+    expect($bin)->toBeString()->not->toBeEmpty();
+    if (PHP_OS_FAMILY !== 'Windows') {
+        expect($bin)->not->toContain(' ');
+    }
+});

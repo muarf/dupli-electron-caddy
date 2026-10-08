@@ -374,12 +374,23 @@ function get_php_executable(): string
     // Server Linux / macOS
     if (defined('PHP_BINARY') && !empty(PHP_BINARY)) {
         // PHP-FPM and CGI cannot execute CLI scripts directly via arguments
-        if (strpos(PHP_BINARY, 'fpm') !== false || strpos(PHP_BINARY, 'cgi') !== false) {
-            return '/usr/bin/env php';
+        if (strpos(PHP_BINARY, 'fpm') === false && strpos(PHP_BINARY, 'cgi') === false) {
+            return PHP_BINARY;
         }
-        return PHP_BINARY;
     }
-    return '/usr/bin/env php';
+
+    $cli = trim((string)(shell_exec('which php 2>/dev/null') ?? ''));
+    if (!empty($cli) && file_exists($cli)) {
+        return $cli;
+    }
+
+    foreach (['/usr/bin/php', '/usr/local/bin/php', '/opt/homebrew/bin/php'] as $path) {
+        if (file_exists($path) && is_executable($path)) {
+            return $path;
+        }
+    }
+
+    return 'php';
 }
 
 /**

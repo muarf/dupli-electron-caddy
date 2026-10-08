@@ -14,8 +14,14 @@ def convert_pdf_to_docx(pdf_path, docx_path):
         
     print(f"Conversion de {pdf_path} en {docx_path}...")
     try:
+        # Se placer dans le dossier de destination pour permettre au multiprocessing
+        # d'écrire ses fichiers temporaires de pages sans conflit de permissions
+        dest_dir = os.path.dirname(docx_path)
+        if dest_dir and os.path.exists(dest_dir):
+            os.chdir(dest_dir)
+
         cv = Converter(pdf_path)
-        cv.convert(docx_path, start=0, pages=None)
+        cv.convert(docx_path, multi_processing=True, cpu_count=0)
         cv.close()
         print("Conversion terminee avec succes.")
     except Exception as e:

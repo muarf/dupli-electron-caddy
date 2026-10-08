@@ -132,18 +132,62 @@
             const res = await fetch('index.php?studio_process', { method: 'POST', body: fd });
             const data = await res.json();
             
+            const tmLogsWrapper = document.getElementById('task-manager-logs-wrapper');
             const tmLogs = document.getElementById('task-manager-logs');
             if (data.success && data.job && data.job.logs) {
-                tmLogs.style.display = 'block';
-                tmLogs.innerText = data.job.logs;
-                tmLogs.scrollTop = tmLogs.scrollHeight;
-            } else if (tmLogs) {
-                tmLogs.style.display = 'none';
+                if (tmLogsWrapper) tmLogsWrapper.style.display = 'block';
+                else if (tmLogs) tmLogs.style.display = 'block';
+
+                // Ne mettre à jour le DOM que si le contenu a réellement changé
+                // pour ne pas écraser la sélection souris de l'utilisateur
+                if (tmLogs && tmLogs.innerText !== data.job.logs) {
+                    const shouldAutoScroll = (tmLogs.scrollTop + tmLogs.clientHeight >= tmLogs.scrollHeight - 30) || tmLogs.innerText === '';
+                    tmLogs.innerText = data.job.logs;
+                    if (shouldAutoScroll) {
+                        tmLogs.scrollTop = tmLogs.scrollHeight;
+                    }
+                }
+            } else {
+                if (tmLogsWrapper) tmLogsWrapper.style.display = 'none';
+                else if (tmLogs) tmLogs.style.display = 'none';
             }
         } catch (e) {
             // Ignore errors
         }
     }
+
+    window.copyTaskLogs = async function (e) {
+        if (e) e.stopPropagation();
+        const tmLogs = document.getElementById('task-manager-logs');
+        const copyBtn = document.getElementById('task-manager-copy-btn');
+        if (!tmLogs || !tmLogs.innerText) return;
+
+        const textToCopy = tmLogs.innerText;
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(textToCopy);
+            } else {
+                const ta = document.createElement('textarea');
+                ta.value = textToCopy;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+            }
+            if (copyBtn) {
+                const origHtml = copyBtn.innerHTML;
+                const copiedLabel = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['global_task_manager.copied']) || 'Copié !';
+                copyBtn.innerHTML = '<i class="fa fa-check text-success"></i> ' + copiedLabel;
+                setTimeout(() => {
+                    copyBtn.innerHTML = origHtml;
+                }, 2000);
+            }
+        } catch (err) {
+            console.error('Erreur lors de la copie des logs :', err);
+        }
+    };
 
     window.deleteJob = async function (jobId) {
         try {
@@ -154,8 +198,13 @@
             
             if (currentTrackingJobId === jobId) {
                 currentTrackingJobId = null;
+                const tmLogsWrapper = document.getElementById('task-manager-logs-wrapper');
                 const tmLogs = document.getElementById('task-manager-logs');
-                if (tmLogs) tmLogs.style.display = 'none';
+                if (tmLogsWrapper) tmLogsWrapper.style.display = 'none';
+                if (tmLogs) {
+                    tmLogs.style.display = 'none';
+                    tmLogs.innerText = '';
+                }
             }
             fetchActiveJobs();
         } catch(e) {

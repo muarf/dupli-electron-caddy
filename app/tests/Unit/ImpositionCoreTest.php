@@ -56,3 +56,40 @@ it('découpe correctement les cahiers pour une imposition 4-up', function () {
     expect($sheets[0]['signature'])->toBe(1);
     expect($sheets[2]['signature'])->toBe(2);
 });
+
+it('gère l orientation pied-contre-pied (défaut) et tête-contre-tête en 4-up', function () {
+    // 1) Pied contre pied (foot_to_foot) : ligne 1 droite, ligne 2 tournée 180°
+    $leafletDefault = new ImpositionLeaflet(__FILE__, [
+        'n_up' => 4,
+        'tumble_direction' => 'foot_to_foot'
+    ]);
+    $sheetsDefault = $leafletDefault->calculateSignatureSheets(16, 4, 16);
+    expect($sheetsDefault[0]['front'][0]['rotated'])->toBeFalse();
+    expect($sheetsDefault[0]['front'][1]['rotated'])->toBeTrue();
+    // En pied contre pied, ligne 1 = [16, 1], ligne 2 = [9, 8] (inversé de [8, 9])
+    expect($sheetsDefault[0]['front'][0]['pages'])->toBe([16, 1]);
+    expect($sheetsDefault[0]['front'][1]['pages'])->toBe([9, 8]);
+
+    // 2) Tête contre tête (head_to_head) : ligne 1 tournée 180°, ligne 2 droite
+    $leafletHeadToHead = new ImpositionLeaflet(__FILE__, [
+        'n_up' => 4,
+        'tumble_direction' => 'head_to_head'
+    ]);
+    $sheetsHeadToHead = $leafletHeadToHead->calculateSignatureSheets(16, 4, 16);
+    expect($sheetsHeadToHead[0]['front'][0]['rotated'])->toBeTrue();
+    expect($sheetsHeadToHead[0]['front'][1]['rotated'])->toBeFalse();
+    // En tête contre tête, ligne 1 = [1, 16] (inversé de [16, 1]), ligne 2 = [8, 9] (droit)
+    expect($sheetsHeadToHead[0]['front'][0]['pages'])->toBe([1, 16]);
+    expect($sheetsHeadToHead[0]['front'][1]['pages'])->toBe([8, 9]);
+
+    // 3) Tête-bêche désactivé (tete_beche = false) : les deux lignes droites
+    $leafletNoTumble = new ImpositionLeaflet(__FILE__, [
+        'n_up' => 4,
+        'tete_beche' => false
+    ]);
+    $sheetsNoTumble = $leafletNoTumble->calculateSignatureSheets(16, 4, 16);
+    expect($sheetsNoTumble[0]['front'][0]['rotated'])->toBeFalse();
+    expect($sheetsNoTumble[0]['front'][1]['rotated'])->toBeFalse();
+    expect($sheetsNoTumble[0]['front'][0]['pages'])->toBe([16, 1]);
+    expect($sheetsNoTumble[0]['front'][1]['pages'])->toBe([8, 9]);
+});

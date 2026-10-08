@@ -28,7 +28,9 @@ class ImpositionLeaflet
             'add_page_numbers_in_gutters' => false,
             'addPageNumberCallback' => null, // Callback pour ajouter les numéros de pages
             'signature_size' => 0, // 0 = document entier, sinon 8/16/32 (pages par cahier)
-            'signature_marks' => false // Marques d'ordre des cahiers
+            'signature_marks' => false, // Marques d'ordre des cahiers
+            'tete_beche' => true,
+            'tumble_direction' => 'foot_to_foot' // 'foot_to_foot' (bas au centre) ou 'head_to_head' (bas à l'extérieur)
         ], $settings);
 
         $this->pdf = new FpdiRotated();
@@ -843,6 +845,8 @@ class ImpositionLeaflet
             $b2 = $N - 2*($i-1) - 1;
             $lsheets[$i] = ['front' => [$f1, $f2], 'back' => [$b1, $b2]];
         }
+        $isTeteBeche = !isset($this->settings['tete_beche']) || !empty($this->settings['tete_beche']);
+        $tumbleDirection = $this->settings['tumble_direction'] ?? 'foot_to_foot';
 
         $result = [];
 
@@ -861,28 +865,53 @@ class ImpositionLeaflet
         } elseif ($nUp == 4) {
             $numSheets = $M / 2;
             for ($k = 1; $k <= $numSheets; $k++) {
-                // Front
-                // Row 1: lsheets[k][front]
-                // Row 2: lsheets[M - k + 1][back] (Rotated -> Reversed)
-                $r1_pages = $lsheets[$k]['front'];
+                $r1_src = $lsheets[$k]['front'];
                 $r2_src = $lsheets[$M - $k + 1]['back'];
-                $r2_pages = array_reverse($r2_src);
-                
-                // Back
-                // Row 1: lsheets[k][back]
-                // Row 2: lsheets[M - k + 1][front] (Rotated -> Reversed)
-                $br1_pages = $lsheets[$k]['back'];
+                $br1_src = $lsheets[$k]['back'];
                 $br2_src = $lsheets[$M - $k + 1]['front'];
-                $br2_pages = array_reverse($br2_src);
+
+                if (!$isTeteBeche) {
+                    $r1_pages = $r1_src;
+                    $r1_rot = false;
+                    $r2_pages = $r2_src;
+                    $r2_rot = false;
+
+                    $br1_pages = $br1_src;
+                    $br1_rot = false;
+                    $br2_pages = $br2_src;
+                    $br2_rot = false;
+                } elseif ($tumbleDirection === 'head_to_head') {
+                    // Tête contre tête : hauts au centre, bas de page à l'extérieur
+                    $r1_pages = array_reverse($r1_src);
+                    $r1_rot = true;
+                    $r2_pages = $r2_src;
+                    $r2_rot = false;
+
+                    $br1_pages = array_reverse($br1_src);
+                    $br1_rot = true;
+                    $br2_pages = $br2_src;
+                    $br2_rot = false;
+                } else {
+                    // Pied contre pied (défaut) : bas au centre, hauts à l'extérieur
+                    $r1_pages = $r1_src;
+                    $r1_rot = false;
+                    $r2_pages = array_reverse($r2_src);
+                    $r2_rot = true;
+
+                    $br1_pages = $br1_src;
+                    $br1_rot = false;
+                    $br2_pages = array_reverse($br2_src);
+                    $br2_rot = true;
+                }
 
                 $result[] = [
                     'front' => [
-                        ['pages' => $r1_pages, 'rotated' => false],
-                        ['pages' => $r2_pages, 'rotated' => true]
+                        ['pages' => $r1_pages, 'rotated' => $r1_rot],
+                        ['pages' => $r2_pages, 'rotated' => $r2_rot]
                     ],
                     'back' => [
-                        ['pages' => $br1_pages, 'rotated' => false],
-                        ['pages' => $br2_pages, 'rotated' => true]
+                        ['pages' => $br1_pages, 'rotated' => $br1_rot],
+                        ['pages' => $br2_pages, 'rotated' => $br2_rot]
                     ]
                 ];
             }
@@ -893,7 +922,7 @@ class ImpositionLeaflet
                 // Row 1: lsheets[M/2 - k + 1][back] + lsheets[k][front]
                 $pair1 = $lsheets[$M/2 - $k + 1]['back'];
                 $pair2 = $lsheets[$k]['front'];
-                $r1_pages = array_merge($pair1, $pair2);
+                $r1_src = array_merge($pair1, $pair2);
                 
                 // Row 2: lsheets[M - k + 1][back] + lsheets[M/2 + k][front] (Rotated -> Reversed)
                 $pair3 = $lsheets[$M - $k + 1]['back'];
@@ -905,7 +934,7 @@ class ImpositionLeaflet
                 // Row 1: lsheets[k][back] + lsheets[M/2 - k + 1][front]
                 $pair1b = $lsheets[$k]['back'];
                 $pair2b = $lsheets[$M/2 - $k + 1]['front'];
-                $br1_pages = array_merge($pair1b, $pair2b);
+                $br1_src = array_merge($pair1b, $pair2b);
                 
                 // Row 2: lsheets[M/2 + k][back] + lsheets[M - k + 1][front] (Rotated -> Reversed)
                 $pair3b = $lsheets[$M/2 + $k]['back'];

@@ -727,13 +727,8 @@ if ($page === 'download_studio') {
     header('Cache-Control: no-cache, must-revalidate');
     readfile($realFile);
     
-    $jobId = $_GET['job_id'] ?? '';
-    if (!empty($jobId) && preg_match('/^[a-zA-Z0-9_]+$/', $jobId)) {
-        @unlink($realFile);
-        @unlink($tmpDir . $jobId . '.json');
-        @unlink($tmpDir . $jobId . '.log');
-    }
-    
+    // Note: Le fichier et le job sont conservés pour permettre le téléchargement depuis plusieurs appareils.
+    // La suppression est gérée explicitement par l'utilisateur via le bouton Fermer (delete_job) ou la purge temp.
     exit;
 }
 

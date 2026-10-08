@@ -392,3 +392,123 @@ it('organise les pages (organize_pages)', function () {
         cleanupPath($pdfPath);
     }
 });
+
+it('rogne un PDF avec portée paritaire (crop_pdf)', function () {
+    $pdfPath = createSamplePdf(4);
+
+    try {
+        $response = runStudioProcess('crop_pdf', [
+            'crop' => json_encode([
+                'top' => 0,
+                'bottom' => 0,
+                'left' => 5,
+                'right' => 0,
+            ]),
+            'scope' => 'odd',
+            'currentPage' => 1,
+        ], [
+            'file' => [
+                'name' => 'sample_4p.pdf',
+                'type' => 'application/pdf',
+                'tmp_name' => $pdfPath,
+            ],
+        ]);
+
+        expect($response['success'])->toBeTrue();
+        expect($response['download_url'])->toMatch('/download_studio/');
+    } finally {
+        cleanupPath($pdfPath);
+    }
+});
+
+it('rogne un PDF en mode livre avec alternance gauche/droite (crop_pdf scope book)', function () {
+    $pdfPath = createSamplePdf(2);
+
+    try {
+        $response = runStudioProcess('crop_pdf', [
+            'crop' => json_encode([
+                'top' => 5,
+                'bottom' => 5,
+                'left' => 10,
+                'right' => 20,
+            ]),
+            'scope' => 'book',
+            'currentPage' => 1,
+        ], [
+            'file' => [
+                'name' => 'sample_book.pdf',
+                'type' => 'application/pdf',
+                'tmp_name' => $pdfPath,
+            ],
+        ]);
+
+        expect($response['success'])->toBeTrue();
+        expect($response['download_url'])->toMatch('/download_studio/');
+
+        preg_match('/file=([^&]+)/', $response['download_url'], $matches);
+        $fileName = urldecode($matches[1]);
+        $outputFile = getenv('DUPLICATOR_TEMP_DIR') . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR . $fileName;
+
+        expect(file_exists($outputFile))->toBeTrue();
+
+        $pdf = new TCPDI();
+        $pageCount = $pdf->setSourceFile($outputFile);
+        expect($pageCount)->toBe(2);
+
+        // A4 = 210 x 297mm -> cropped: w = 210 - 10 - 20 = 180mm, h = 297 - 5 - 5 = 287mm
+        for ($p = 1; $p <= 2; $p++) {
+            $tpl = $pdf->importPage($p);
+            $size = $pdf->getTemplateSize($tpl);
+            expect(round($size['width']))->toEqual(180.0);
+            expect(round($size['height']))->toEqual(287.0);
+        }
+    } finally {
+        cleanupPath($pdfPath);
+    }
+});
+
+it('ajoute des marges blanches à un PDF (crop_pdf valeurs négatives)', function () {
+    $pdfPath = createSamplePdf(1);
+
+    try {
+        $response = runStudioProcess('crop_pdf', [
+            'crop' => json_encode([
+                'top' => -10,
+                'bottom' => -10,
+                'left' => -15,
+                'right' => -15,
+            ]),
+            'scope' => 'all',
+            'currentPage' => 1,
+        ], [
+            'file' => [
+                'name' => 'sample_expand.pdf',
+                'type' => 'application/pdf',
+                'tmp_name' => $pdfPath,
+            ],
+        ]);
+
+        expect($response['success'])->toBeTrue();
+        expect($response['download_url'])->toMatch('/download_studio/');
+
+        preg_match('/file=([^&]+)/', $response['download_url'], $matches);
+        $fileName = urldecode($matches[1]);
+        $outputFile = getenv('DUPLICATOR_TEMP_DIR') . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR . $fileName;
+
+        expect(file_exists($outputFile))->toBeTrue();
+
+        $pdf = new TCPDI();
+        $pageCount = $pdf->setSourceFile($outputFile);
+        expect($pageCount)->toBe(1);
+
+        // A4 = 210 x 297mm -> expanded: w = 210 + 15 + 15 = 240mm, h = 297 + 10 + 10 = 317mm
+        $tpl = $pdf->importPage(1);
+        $size = $pdf->getTemplateSize($tpl);
+        expect(round($size['width']))->toEqual(240.0);
+        expect(round($size['height']))->toEqual(317.0);
+    } finally {
+        cleanupPath($pdfPath);
+    }
+});
+
+

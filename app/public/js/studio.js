@@ -138,10 +138,33 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
           if ($('modificationContainer')) $('modificationContainer').style.display = 'none';
         }
+
+        if (tool !== 'geometry') {
+          const cc = $('cropContainer');
+          if (cc) cc.style.display = 'none';
+          state.cropMode = false;
+          if ($('btnActivateCrop')) {
+            $('btnActivateCrop').innerHTML = '<i class="fa fa-eye"></i> ' + (CONFIG.translations['studio_js.show_crop_grid'] || 'Afficher la grille de rognage');
+            $('btnActivateCrop').style.background = '';
+            $('btnActivateCrop').style.color = '';
+          }
+        }
         
         if (tool === 'filters') $('panelFilters').style.display = '';
         else if (tool === 'imposition') $('panelImposition').style.display = '';
-        else if (tool === 'geometry') $('panelGeometry').style.display = '';
+        else if (tool === 'geometry') {
+          $('panelGeometry').style.display = '';
+          if (state.file && state.originalImageData) {
+            state.cropMode = true;
+            updateCropFromInputs();
+            initCropOverlay();
+            if ($('btnActivateCrop')) {
+              $('btnActivateCrop').innerHTML = '<i class="fa fa-eye-slash"></i> ' + (CONFIG.translations['studio_js.hide_crop_grid'] || 'Masquer la grille de rognage');
+              $('btnActivateCrop').style.background = '#059669';
+              $('btnActivateCrop').style.color = '#fff';
+            }
+          }
+        }
         else if (tool === 'pages') $('panelPages').style.display = '';
         else if (tool === 'ocr') $('panelOcr').style.display = '';
         else if (tool === 'riso') {
@@ -261,8 +284,8 @@ document.addEventListener('DOMContentLoaded', function() {
       const img = new Image();
       img.onload = () => {
         // Fit to canvas area
-        const maxW = canvasArea.clientWidth - 48;
-        const maxH = canvasArea.clientHeight - 48;
+        const maxW = canvasArea.clientWidth - 100;
+        const maxH = canvasArea.clientHeight - 100;
         let w = img.width, h = img.height;
         if (w > maxW) { h = h * maxW / w; w = maxW; }
         if (h > maxH) { w = w * maxH / h; h = maxH; }
@@ -331,8 +354,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!state.pdfDoc) return;
     const page = await state.pdfDoc.getPage(num);
     const vp = page.getViewport({scale: 1});
-    const maxW = canvasArea.clientWidth - 48;
-    const maxH = canvasArea.clientHeight - 48;
+    const maxW = canvasArea.clientWidth - 100;
+    const maxH = canvasArea.clientHeight - 100;
     const scale = Math.min(maxW / vp.width, maxH / vp.height, 2);
     const svp = page.getViewport({scale});
     
@@ -353,6 +376,9 @@ document.addEventListener('DOMContentLoaded', function() {
     thumbsBar.querySelectorAll('.thumb-item').forEach((t,i) => {
       t.classList.toggle('active', i === state.orgSelectedIndex);
     });
+    if (state.cropMode) {
+      setTimeout(() => initCropOverlay(), 50);
+    }
   }
 
   async function renderThumbnails() {
@@ -757,8 +783,8 @@ document.addEventListener('DOMContentLoaded', function() {
     setPdfReady(null);
   }
 
-  // === CROP ===
-  // État du crop (marges en mm depuis chaque bord)
+  // === CROP & MARGES ===
+  // État du cadrage (marges en mm depuis chaque bord : >0 rogner, <0 ajouter du blanc)
   state.crop = { top: 0, bottom: 0, left: 0, right: 0 };
   state.cropMode = false; // true quand l'overlay est visible
 
@@ -766,128 +792,182 @@ document.addEventListener('DOMContentLoaded', function() {
   const cropContainer   = $('cropContainer');
   const cropOverlay     = $('cropOverlay');
   const cropOverlayCtx  = cropOverlay ? cropOverlay.getContext('2d') : null;
-  const cropRulerX      = $('cropRulerX');
-  const cropRulerY      = $('cropRulerY');
 
-  // Convertit des px canvas → mm réels
+  // Calcule la taille réelle affichée du canvas à l'écran (pixels CSS)
+  function getCanvasDisplaySize() {
+    if (canvas) {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        return { w: Math.round(rect.width), h: Math.round(rect.height) };
+      }
+      if (canvas.clientWidth > 0 && canvas.clientHeight > 0) {
+        return { w: canvas.clientWidth, h: canvas.clientHeight };
+      }
+    }
+    return { w: canvas.width || 800, h: canvas.height || 600 };
+  }
+
+  // Convertit des px d'affichage → mm réels
   function canvasPxToMm(px, axis) {
     if (!state.dims) return 0;
-    const totalPx = axis === 'x' ? canvas.width : canvas.height;
+    const disp = getCanvasDisplaySize();
+    const totalPx = axis === 'x' ? disp.w : disp.h;
     const totalMm = axis === 'x' ? state.dims.wMm : state.dims.hMm;
     return (px / totalPx) * totalMm;
   }
-  // Convertit des mm réels → px canvas
+  // Convertit des mm réels → px d'affichage
   function mmToCanvasPx(mm, axis) {
     if (!state.dims) return 0;
-    const totalPx = axis === 'x' ? canvas.width : canvas.height;
+    const disp = getCanvasDisplaySize();
+    const totalPx = axis === 'x' ? disp.w : disp.h;
     const totalMm = axis === 'x' ? state.dims.wMm : state.dims.hMm;
     return (mm / totalMm) * totalPx;
   }
 
-  // Dessine une règle graduée en cm sur un canvas
-  function drawCropRuler(rulerCanvas, totalMm, isVertical) {
-    if (!rulerCanvas) return;
-    const thickness = 30;
-    const length = isVertical ? canvas.height : canvas.width;
-    if (isVertical) { rulerCanvas.width = thickness; rulerCanvas.height = length; }
-    else             { rulerCanvas.width = length;    rulerCanvas.height = thickness; }
-
-    const rc = rulerCanvas.getContext('2d');
-    rc.clearRect(0, 0, rulerCanvas.width, rulerCanvas.height);
-    rc.fillStyle = '#f0f2f5';
-    rc.fillRect(0, 0, rulerCanvas.width, rulerCanvas.height);
-
-    rc.fillStyle = '#555';
-    rc.font = '9px Inter, sans-serif';
-    rc.textAlign = 'center';
-
-    const pxPerMm = length / totalMm;
-    const stepMm = totalMm > 200 ? 10 : (totalMm > 80 ? 5 : 2);
-
-    for (let mm = 0; mm <= totalMm; mm += stepMm) {
-      const pos = mm * pxPerMm;
-      const isCm = (mm % 10 === 0);
-      const tickLen = isCm ? 10 : (mm % 5 === 0 ? 7 : 4);
-
-      rc.beginPath();
-      rc.strokeStyle = '#999';
-      rc.lineWidth = 1;
-      if (!isVertical) {
-        rc.moveTo(pos, thickness); rc.lineTo(pos, thickness - tickLen);
-      } else {
-        rc.moveTo(thickness, pos); rc.lineTo(thickness - tickLen, pos);
-      }
-      rc.stroke();
-
-      if (isCm && mm > 0) {
-        const label = (mm / 10) + 'cm';
-        if (!isVertical) {
-          rc.fillText(label, pos, thickness - tickLen - 2);
-        } else {
-          rc.save();
-          rc.translate(thickness - tickLen - 2, pos);
-          rc.rotate(-Math.PI / 2);
-          rc.fillText(label, 0, 0);
-          rc.restore();
-        }
-      }
+  // Calcule le crop effectif selon la page et le mode (Livre : alternance gauche / droite)
+  function getEffectiveCropForPage(pageNum) {
+    const scope = $('cropScope') ? $('cropScope').value : 'all';
+    const c = state.crop;
+    if (scope === 'book' && (pageNum % 2 === 0)) {
+      return {
+        top: c.top,
+        bottom: c.bottom,
+        left: c.right,
+        right: c.left
+      };
     }
+    return { ...c };
   }
 
-  // Dessine l'overlay de crop (zones rouges + lignes pointillées + poignées)
+  // Dessine l'overlay de crop & marges (zones coupées sombres, zones étendues blanches, poignées)
   function drawCropOverlay() {
-    if (!cropOverlayCtx || !canvas.width || !canvas.height) return;
-    const w = canvas.width, h = canvas.height;
-    cropOverlay.width = w; cropOverlay.height = h;
+    if (!cropOverlayCtx || !canvas || !canvasArea) return;
+    const areaW = canvasArea.clientWidth;
+    const areaH = canvasArea.clientHeight;
+    if (areaW <= 0 || areaH <= 0) return;
 
-    const c = state.crop;
+    if (cropOverlay.width !== areaW || cropOverlay.height !== areaH) {
+      cropOverlay.width = areaW;
+      cropOverlay.height = areaH;
+      cropOverlay.style.width = areaW + 'px';
+      cropOverlay.style.height = areaH + 'px';
+    }
+
+    const canvasRect = canvas.getBoundingClientRect();
+    const areaRect   = canvasArea.getBoundingClientRect();
+
+    // Coordonnées du document original sur l'overlay (dans le repère de canvasArea)
+    const docX0 = canvasRect.left - areaRect.left;
+    const docY0 = canvasRect.top  - areaRect.top;
+    const docW  = canvasRect.width;
+    const docH  = canvasRect.height;
+    const docX1 = docX0 + docW;
+    const docY1 = docY0 + docH;
+
+    const curPage = (state.currentPage !== undefined) ? state.currentPage : 1;
+    const c = getEffectiveCropForPage(curPage);
     const topPx    = mmToCanvasPx(c.top,    'y');
     const bottomPx = mmToCanvasPx(c.bottom, 'y');
     const leftPx   = mmToCanvasPx(c.left,   'x');
     const rightPx  = mmToCanvasPx(c.right,  'x');
 
-    const x0 = leftPx, y0 = topPx;
-    const x1 = w - rightPx, y1 = h - bottomPx;
-    const cw = x1 - x0, ch = y1 - y0;
+    // Coordonnées de la boîte active (rognée ou étendue)
+    const boxX0 = docX0 + leftPx;
+    const boxY0 = docY0 + topPx;
+    const boxX1 = docX1 - rightPx;
+    const boxY1 = docY1 - bottomPx;
+    const boxW  = Math.max(10, boxX1 - boxX0);
+    const boxH  = Math.max(10, boxY1 - boxY0);
 
-    cropOverlayCtx.clearRect(0, 0, w, h);
+    cropOverlayCtx.clearRect(0, 0, areaW, areaH);
 
-    // ── 1. Masque sombre sur les zones exclues (style éditeur pro)
-    cropOverlayCtx.fillStyle = 'rgba(0, 0, 0, 0.60)';
-    cropOverlayCtx.fillRect(0,  0,  w,  y0);          // Haut
-    cropOverlayCtx.fillRect(0,  y1, w,  h - y1);       // Bas
-    cropOverlayCtx.fillRect(0,  y0, x0, ch);           // Gauche
-    cropOverlayCtx.fillRect(x1, y0, w - x1, ch);       // Droite
-
-    // ── 2. Bordure extérieure (blanc opaque) + intérieure (noir fin)
-    cropOverlayCtx.strokeStyle = 'rgba(0,0,0,0.6)';
-    cropOverlayCtx.lineWidth = 1;
-    cropOverlayCtx.setLineDash([]);
-    cropOverlayCtx.strokeRect(x0 - 1, y0 - 1, cw + 2, ch + 2);
-
-    cropOverlayCtx.strokeStyle = '#ffffff';
-    cropOverlayCtx.lineWidth = 2;
-    cropOverlayCtx.strokeRect(x0, y0, cw, ch);
-
-    // ── 3. Lignes de tiers (règle des tiers - 3×3 grille)
-    if (cw > 40 && ch > 40) {
-      cropOverlayCtx.strokeStyle = 'rgba(255,255,255,0.25)';
-      cropOverlayCtx.lineWidth = 1;
-      cropOverlayCtx.setLineDash([]);
-      // Verticales
-      for (let i = 1; i <= 2; i++) {
-        const x = x0 + (cw / 3) * i;
-        cropOverlayCtx.beginPath(); cropOverlayCtx.moveTo(x, y0); cropOverlayCtx.lineTo(x, y1); cropOverlayCtx.stroke();
+    // ── 1. Fond blanc pour les marges ajoutées (zones extérieures au document d'origine)
+    if (boxX0 < docX0 || boxY0 < docY0 || boxX1 > docX1 || boxY1 > docY1) {
+      cropOverlayCtx.save();
+      cropOverlayCtx.fillStyle = '#ffffff';
+      // Marge en haut
+      if (boxY0 < docY0) {
+        cropOverlayCtx.fillRect(boxX0, boxY0, boxW, docY0 - boxY0);
       }
-      // Horizontales
-      for (let i = 1; i <= 2; i++) {
-        const y = y0 + (ch / 3) * i;
-        cropOverlayCtx.beginPath(); cropOverlayCtx.moveTo(x0, y); cropOverlayCtx.lineTo(x1, y); cropOverlayCtx.stroke();
+      // Marge en bas
+      if (boxY1 > docY1) {
+        cropOverlayCtx.fillRect(boxX0, docY1, boxW, boxY1 - docY1);
       }
+      // Marge à gauche
+      if (boxX0 < docX0) {
+        const ty = Math.max(boxY0, docY0), by = Math.min(boxY1, docY1);
+        if (by > ty) cropOverlayCtx.fillRect(boxX0, ty, docX0 - boxX0, by - ty);
+      }
+      // Marge à droite
+      if (boxX1 > docX1) {
+        const ty = Math.max(boxY0, docY0), by = Math.min(boxY1, docY1);
+        if (by > ty) cropOverlayCtx.fillRect(docX1, ty, boxX1 - docX1, by - ty);
+      }
+      cropOverlayCtx.restore();
     }
 
-    // ── 4. Poignées circulaires sur les 4 bords (avec ombre)
-    const handles = getCropHandles(x0, y0, x1, y1);
+    // ── 2. Masque sombre sur les zones coupées (à l'intérieur du document d'origine)
+    cropOverlayCtx.save();
+    cropOverlayCtx.fillStyle = 'rgba(0, 0, 0, 0.60)';
+    if (boxY0 > docY0) {
+      cropOverlayCtx.fillRect(docX0, docY0, docW, Math.min(boxY0, docY1) - docY0);
+    }
+    if (boxY1 < docY1) {
+      const cutY = Math.max(boxY1, docY0);
+      cropOverlayCtx.fillRect(docX0, cutY, docW, docY1 - cutY);
+    }
+    if (boxX0 > docX0) {
+      const ty = Math.max(boxY0, docY0), by = Math.min(boxY1, docY1);
+      if (by > ty) cropOverlayCtx.fillRect(docX0, ty, Math.min(boxX0, docX1) - docX0, by - ty);
+    }
+    if (boxX1 < docX1) {
+      const ty = Math.max(boxY0, docY0), by = Math.min(boxY1, docY1);
+      const cutX = Math.max(boxX1, docX0);
+      if (by > ty) cropOverlayCtx.fillRect(cutX, ty, docX1 - cutX, by - ty);
+    }
+    cropOverlayCtx.restore();
+
+    // ── 3. Repère pointillé du document original si marges étendues
+    if (boxX0 < docX0 || boxY0 < docY0 || boxX1 > docX1 || boxY1 > docY1) {
+      cropOverlayCtx.save();
+      cropOverlayCtx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
+      cropOverlayCtx.setLineDash([4, 4]);
+      cropOverlayCtx.lineWidth = 1;
+      cropOverlayCtx.strokeRect(docX0, docY0, docW, docH);
+      cropOverlayCtx.restore();
+    }
+
+    // ── 4. Bordure de la nouvelle feuille / boîte active
+    cropOverlayCtx.save();
+    cropOverlayCtx.strokeStyle = 'rgba(0, 0, 0, 0.4)';
+    cropOverlayCtx.lineWidth = 1;
+    cropOverlayCtx.setLineDash([]);
+    cropOverlayCtx.strokeRect(boxX0 - 1, boxY0 - 1, boxW + 2, boxH + 2);
+
+    cropOverlayCtx.strokeStyle = '#2563eb';
+    cropOverlayCtx.lineWidth = 2;
+    cropOverlayCtx.strokeRect(boxX0, boxY0, boxW, boxH);
+    cropOverlayCtx.restore();
+
+    // ── 5. Grille de tiers (règle des tiers)
+    if (boxW > 60 && boxH > 60) {
+      cropOverlayCtx.save();
+      cropOverlayCtx.strokeStyle = 'rgba(37, 99, 235, 0.25)';
+      cropOverlayCtx.lineWidth = 1;
+      cropOverlayCtx.setLineDash([]);
+      for (let i = 1; i <= 2; i++) {
+        const x = boxX0 + (boxW / 3) * i;
+        cropOverlayCtx.beginPath(); cropOverlayCtx.moveTo(x, boxY0); cropOverlayCtx.lineTo(x, boxY1); cropOverlayCtx.stroke();
+      }
+      for (let i = 1; i <= 2; i++) {
+        const y = boxY0 + (boxH / 3) * i;
+        cropOverlayCtx.beginPath(); cropOverlayCtx.moveTo(boxX0, y); cropOverlayCtx.lineTo(boxX1, y); cropOverlayCtx.stroke();
+      }
+      cropOverlayCtx.restore();
+    }
+
+    // ── 6. Poignées circulaires sur les 4 bords
+    const handles = getCropHandles(boxX0, boxY0, boxX1, boxY1);
     handles.forEach(hnd => {
       cropOverlayCtx.save();
       cropOverlayCtx.shadowColor = 'rgba(0,0,0,0.5)';
@@ -897,36 +977,177 @@ document.addEventListener('DOMContentLoaded', function() {
       cropOverlayCtx.fillStyle = '#ffffff';
       cropOverlayCtx.fill();
       cropOverlayCtx.shadowBlur = 0;
-      cropOverlayCtx.strokeStyle = 'rgba(0,0,0,0.4)';
-      cropOverlayCtx.lineWidth = 1.5;
+      cropOverlayCtx.strokeStyle = '#2563eb';
+      cropOverlayCtx.lineWidth = 2;
       cropOverlayCtx.stroke();
       cropOverlayCtx.restore();
     });
 
-    // ── 5. Étiquette dimensions (mm) au centre de la zone conservée
-    if (state.dims && cw > 60 && ch > 30) {
+    // ── 7. Étiquette dimensions en mm au centre
+    if (state.dims && boxW > 60 && boxH > 30) {
       const wFinal = Math.max(0, state.dims.wMm - c.left - c.right);
       const hFinal = Math.max(0, state.dims.hMm - c.top  - c.bottom);
-      const label = wFinal.toFixed(1) + ' × ' + hFinal.toFixed(1) + ' mm';
-      const cx = x0 + cw / 2, cy = y0 + ch / 2;
+      let label = wFinal.toFixed(1) + ' × ' + hFinal.toFixed(1) + ' mm';
+      const scope = $('cropScope') ? $('cropScope').value : 'all';
+      if (scope === 'book') {
+        label += (curPage % 2 === 0) ? ' (p. paire)' : ' (p. impaire)';
+      }
+      const cx = boxX0 + boxW / 2, cy = boxY0 + boxH / 2;
 
       cropOverlayCtx.save();
-      cropOverlayCtx.font = 'bold 13px Inter, sans-serif';
+      cropOverlayCtx.font = 'bold 12px Inter, sans-serif';
       cropOverlayCtx.textAlign = 'center';
       cropOverlayCtx.textBaseline = 'middle';
       const tw = cropOverlayCtx.measureText(label).width + 20;
-      // Fond de l'étiquette
-      cropOverlayCtx.fillStyle = 'rgba(0,0,0,0.55)';
+      cropOverlayCtx.fillStyle = 'rgba(0,0,0,0.65)';
       const rr = 6;
       const rx = cx - tw / 2, ry = cy - 13;
       cropOverlayCtx.beginPath();
       cropOverlayCtx.roundRect(rx, ry, tw, 26, rr);
       cropOverlayCtx.fill();
-      // Texte blanc
       cropOverlayCtx.fillStyle = '#ffffff';
       cropOverlayCtx.fillText(label, cx, cy);
       cropOverlayCtx.restore();
     }
+
+    // ── 8. Règles graduées en cm / mm avec repères dynamiques
+    drawRulers(cropOverlayCtx, areaW, areaH, docX0, docY0, docW, docH, boxX0, boxY0, boxX1, boxY1);
+  }
+
+  // Dessine les règles graduées en cm / mm le long des bords de canvasArea
+  function drawRulers(rc, areaW, areaH, docX0, docY0, docW, docH, boxX0, boxY0, boxX1, boxY1) {
+    if (!state.dims) return;
+    const RULER = 22; // épaisseur de la règle en pixels
+    const pxPerMmX = docW / state.dims.wMm;
+    const pxPerMmY = docH / state.dims.hMm;
+
+    rc.save();
+
+    // ── Règle Horizontale (haut)
+    rc.fillStyle = '#f8fafc';
+    rc.fillRect(RULER, 0, areaW - RULER, RULER);
+    rc.strokeStyle = '#cbd5e1';
+    rc.lineWidth = 1;
+    rc.beginPath();
+    rc.moveTo(RULER, RULER - 0.5);
+    rc.lineTo(areaW, RULER - 0.5);
+    rc.stroke();
+
+    // ── Règle Verticale (gauche)
+    rc.fillStyle = '#f8fafc';
+    rc.fillRect(0, RULER, RULER, areaH - RULER);
+    rc.strokeStyle = '#cbd5e1';
+    rc.lineWidth = 1;
+    rc.beginPath();
+    rc.moveTo(RULER - 0.5, RULER);
+    rc.lineTo(RULER - 0.5, areaH);
+    rc.stroke();
+
+    // ── Coin (0, 0)
+    rc.fillStyle = '#e2e8f0';
+    rc.fillRect(0, 0, RULER, RULER);
+    rc.strokeStyle = '#cbd5e1';
+    rc.strokeRect(0, 0, RULER, RULER);
+    rc.fillStyle = '#64748b';
+    rc.font = 'bold 8px Inter, sans-serif';
+    rc.textAlign = 'center';
+    rc.textBaseline = 'middle';
+    rc.fillText('cm', RULER / 2, RULER / 2);
+
+    // Graduations Horizontales
+    rc.font = '8px Inter, sans-serif';
+    rc.textAlign = 'center';
+    rc.textBaseline = 'top';
+
+    const minMmX = Math.floor((RULER - docX0) / pxPerMmX);
+    const maxMmX = Math.ceil((areaW - docX0) / pxPerMmX);
+
+    for (let mm = minMmX; mm <= maxMmX; mm++) {
+      const x = Math.round(docX0 + mm * pxPerMmX);
+      if (x < RULER || x > areaW) continue;
+      const isCm = (mm % 10 === 0);
+      const isHalfCm = (mm % 5 === 0);
+      const tickLen = isCm ? 10 : (isHalfCm ? 6 : 3);
+
+      rc.beginPath();
+      rc.strokeStyle = isCm ? '#334155' : (isHalfCm ? '#94a3b8' : '#e2e8f0');
+      rc.lineWidth = 1;
+      rc.moveTo(x + 0.5, RULER);
+      rc.lineTo(x + 0.5, RULER - tickLen);
+      rc.stroke();
+
+      if (isCm) {
+        rc.fillStyle = '#475569';
+        rc.fillText((mm / 10).toString(), x, 2);
+      }
+    }
+
+    // Indicateurs boîte active sur la règle horizontale
+    [boxX0, boxX1].forEach(bx => {
+      if (bx >= RULER && bx <= areaW) {
+        rc.fillStyle = '#2563eb';
+        rc.beginPath();
+        rc.moveTo(bx - 3.5, 0);
+        rc.lineTo(bx + 3.5, 0);
+        rc.lineTo(bx, 5);
+        rc.closePath();
+        rc.fill();
+        rc.strokeStyle = '#2563eb';
+        rc.lineWidth = 1.5;
+        rc.beginPath();
+        rc.moveTo(bx + 0.5, 5);
+        rc.lineTo(bx + 0.5, RULER);
+        rc.stroke();
+      }
+    });
+
+    // Graduations Verticales
+    rc.textAlign = 'right';
+    rc.textBaseline = 'middle';
+
+    const minMmY = Math.floor((RULER - docY0) / pxPerMmY);
+    const maxMmY = Math.ceil((areaH - docY0) / pxPerMmY);
+
+    for (let mm = minMmY; mm <= maxMmY; mm++) {
+      const y = Math.round(docY0 + mm * pxPerMmY);
+      if (y < RULER || y > areaH) continue;
+      const isCm = (mm % 10 === 0);
+      const isHalfCm = (mm % 5 === 0);
+      const tickLen = isCm ? 10 : (isHalfCm ? 6 : 3);
+
+      rc.beginPath();
+      rc.strokeStyle = isCm ? '#334155' : (isHalfCm ? '#94a3b8' : '#e2e8f0');
+      rc.lineWidth = 1;
+      rc.moveTo(RULER, y + 0.5);
+      rc.lineTo(RULER - tickLen, y + 0.5);
+      rc.stroke();
+
+      if (isCm) {
+        rc.fillStyle = '#475569';
+        rc.fillText((mm / 10).toString(), RULER - tickLen - 1, y);
+      }
+    }
+
+    // Indicateurs boîte active sur la règle verticale
+    [boxY0, boxY1].forEach(by => {
+      if (by >= RULER && by <= areaH) {
+        rc.fillStyle = '#2563eb';
+        rc.beginPath();
+        rc.moveTo(0, by - 3.5);
+        rc.lineTo(0, by + 3.5);
+        rc.lineTo(5, by);
+        rc.closePath();
+        rc.fill();
+        rc.strokeStyle = '#2563eb';
+        rc.lineWidth = 1.5;
+        rc.beginPath();
+        rc.moveTo(5, by + 0.5);
+        rc.lineTo(RULER, by + 0.5);
+        rc.stroke();
+      }
+    });
+
+    rc.restore();
   }
 
   // Retourne les positions des 4 poignées (centres des 4 bords)
@@ -940,60 +1161,51 @@ document.addEventListener('DOMContentLoaded', function() {
     ];
   }
 
-  // Initialise l'overlay de crop (taille + règles + rendu)
+  // Initialise l'overlay de cadrage & marges
   function initCropOverlay() {
-    if (!canvas.width || !canvas.height || !state.dims) return;
+    if (!canvas || !state.dims || !canvasArea) return;
+    const areaW = canvasArea.clientWidth;
+    const areaH = canvasArea.clientHeight;
+    if (areaW <= 0 || areaH <= 0) return;
 
-    // Positionner le cropContainer par-dessus le canvas
-    const canvasRect = canvas.getBoundingClientRect();
-    const areaRect   = canvasArea.getBoundingClientRect();
-    const relLeft = canvasRect.left - areaRect.left;
-    const relTop  = canvasRect.top  - areaRect.top;
-
-    cropContainer.style.left   = (relLeft - 30) + 'px'; // -30 pour la règle Y
-    cropContainer.style.top    = (relTop  - 30) + 'px'; // -30 pour la règle X
-    cropContainer.style.width  = (canvas.width  + 30) + 'px';
-    cropContainer.style.height = (canvas.height + 30) + 'px';
+    cropContainer.style.top = '0px';
+    cropContainer.style.left = '0px';
+    cropContainer.style.width = areaW + 'px';
+    cropContainer.style.height = areaH + 'px';
     cropContainer.style.display = 'block';
 
-    // Dimensionner les règles
-    if (cropRulerX) {
-      cropRulerX.style.width = canvas.width + 'px';
-      cropRulerX.width  = canvas.width;
-      cropRulerX.height = 30;
-    }
-    if (cropRulerY) {
-      cropRulerY.style.height = canvas.height + 'px';
-      cropRulerY.width  = 30;
-      cropRulerY.height = canvas.height;
-    }
-    // Dimensionner l'overlay
-    if (cropOverlay) {
-      cropOverlay.style.width  = canvas.width  + 'px';
-      cropOverlay.style.height = canvas.height + 'px';
-    }
+    cropOverlay.width = areaW;
+    cropOverlay.height = areaH;
+    cropOverlay.style.width = areaW + 'px';
+    cropOverlay.style.height = areaH + 'px';
 
-    drawCropRuler(cropRulerX, state.dims.wMm, false);
-    drawCropRuler(cropRulerY, state.dims.hMm, true);
     drawCropOverlay();
     updateCropSizeInfo();
   }
 
-  // Met à jour l'indicateur de taille finale après crop
+  // Met à jour l'indicateur de taille finale après crop / marges
   function updateCropSizeInfo() {
     if (!state.dims) { $('cropSizeInfo').textContent = '—'; return; }
     const c = state.crop;
     const wFinal = Math.max(0, state.dims.wMm - c.left - c.right);
     const hFinal = Math.max(0, state.dims.hMm - c.top - c.bottom);
-    $('cropSizeInfo').textContent = '→ ' + wFinal.toFixed(1) + ' × ' + hFinal.toFixed(1) + ' mm';
+    const diffW = (wFinal - state.dims.wMm).toFixed(1);
+    const diffH = (hFinal - state.dims.hMm).toFixed(1);
+    let diffStr = '';
+    if (parseFloat(diffW) !== 0 || parseFloat(diffH) !== 0) {
+      const signW = parseFloat(diffW) > 0 ? '+' : '';
+      const signH = parseFloat(diffH) > 0 ? '+' : '';
+      diffStr = ` (${signW}${diffW} × ${signH}${diffH} mm)`;
+    }
+    $('cropSizeInfo').textContent = '→ ' + wFinal.toFixed(1) + ' × ' + hFinal.toFixed(1) + ' mm' + diffStr;
   }
 
   // Lit les inputs mm et met à jour state.crop
   function updateCropFromInputs() {
-    state.crop.top    = Math.max(0, parseFloat($('cropTop').value)    || 0);
-    state.crop.bottom = Math.max(0, parseFloat($('cropBottom').value) || 0);
-    state.crop.left   = Math.max(0, parseFloat($('cropLeft').value)   || 0);
-    state.crop.right  = Math.max(0, parseFloat($('cropRight').value)  || 0);
+    state.crop.top    = parseFloat($('cropTop').value)    || 0;
+    state.crop.bottom = parseFloat($('cropBottom').value) || 0;
+    state.crop.left   = parseFloat($('cropLeft').value)   || 0;
+    state.crop.right  = parseFloat($('cropRight').value)  || 0;
     drawCropOverlay();
     updateCropSizeInfo();
   }
@@ -1013,26 +1225,56 @@ document.addEventListener('DOMContentLoaded', function() {
     if (el) el.addEventListener('input', updateCropFromInputs);
   });
 
+  // Changement de portée (scope)
+  const cropScopeSelect = $('cropScope');
+  if (cropScopeSelect) {
+    cropScopeSelect.addEventListener('change', () => {
+      drawCropOverlay();
+      updateCropSizeInfo();
+    });
+  }
+
+  // Redimensionnement de fenêtre : adapter l'overlay
+  window.addEventListener('resize', () => {
+    if (state.cropMode) {
+      initCropOverlay();
+    }
+  });
+
   // Drag des poignées sur l'overlay
-  let _cropDrag = null; // { id, startX, startY, startCrop }
+  let _cropDrag = null; // { id, startMx, startMy, startCrop, isMirrored }
 
   if (cropOverlay) {
     cropOverlay.addEventListener('mousedown', e => {
       if (!state.cropMode || !state.dims) return;
       const rect = cropOverlay.getBoundingClientRect();
       const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-      const c = state.crop;
+      const curPage = (state.currentPage !== undefined) ? state.currentPage : 1;
+      const c = getEffectiveCropForPage(curPage);
+
+      const canvasRect = canvas.getBoundingClientRect();
+      const areaRect   = canvasArea.getBoundingClientRect();
+      const docX0 = canvasRect.left - areaRect.left;
+      const docY0 = canvasRect.top  - areaRect.top;
+      const docX1 = docX0 + canvasRect.width;
+      const docY1 = docY0 + canvasRect.height;
+
       const topPx    = mmToCanvasPx(c.top,    'y');
       const bottomPx = mmToCanvasPx(c.bottom, 'y');
       const leftPx   = mmToCanvasPx(c.left,   'x');
       const rightPx  = mmToCanvasPx(c.right,  'x');
-      const x0 = leftPx, y0 = topPx;
-      const x1 = canvas.width - rightPx, y1 = canvas.height - bottomPx;
-      const handles = getCropHandles(x0, y0, x1, y1);
-      const HIT = 12;
+      const boxX0 = docX0 + leftPx;
+      const boxY0 = docY0 + topPx;
+      const boxX1 = docX1 - rightPx;
+      const boxY1 = docY1 - bottomPx;
+
+      const handles = getCropHandles(boxX0, boxY0, boxX1, boxY1);
+      const HIT = 18;
       const hit = handles.find(h => Math.abs(mx - h.x) < HIT && Math.abs(my - h.y) < HIT);
       if (hit) {
-        _cropDrag = { id: hit.id, startMx: mx, startMy: my, startCrop: {...state.crop} };
+        const scope = $('cropScope') ? $('cropScope').value : 'all';
+        const isMirrored = (scope === 'book' && (curPage % 2 === 0));
+        _cropDrag = { id: hit.id, startMx: mx, startMy: my, startCrop: {...state.crop}, isMirrored };
         e.preventDefault();
       }
     });
@@ -1044,61 +1286,131 @@ document.addEventListener('DOMContentLoaded', function() {
       const dx = mx - _cropDrag.startMx, dy = my - _cropDrag.startMy;
       const sc = _cropDrag.startCrop;
       const c = state.crop;
+      const isMirrored = _cropDrag.isMirrored;
+
       if (_cropDrag.id === 'top') {
-        c.top = Math.max(0, sc.top + canvasPxToMm(dy, 'y'));
+        c.top = sc.top + canvasPxToMm(dy, 'y');
       } else if (_cropDrag.id === 'bottom') {
-        c.bottom = Math.max(0, sc.bottom - canvasPxToMm(dy, 'y'));
+        c.bottom = sc.bottom - canvasPxToMm(dy, 'y');
       } else if (_cropDrag.id === 'left') {
-        c.left = Math.max(0, sc.left + canvasPxToMm(dx, 'x'));
+        if (isMirrored) {
+          c.right = sc.right - canvasPxToMm(dx, 'x');
+        } else {
+          c.left = sc.left + canvasPxToMm(dx, 'x');
+        }
       } else if (_cropDrag.id === 'right') {
-        c.right = Math.max(0, sc.right - canvasPxToMm(dx, 'x'));
+        if (isMirrored) {
+          c.left = sc.left + canvasPxToMm(dx, 'x');
+        } else {
+          c.right = sc.right - canvasPxToMm(dx, 'x');
+        }
       }
-      // Sécurité : ne pas dépasser les bords opposés
-      const safeMargin = 5; // mm min
-      if (c.top + c.bottom >= state.dims.hMm - safeMargin) { c.top = sc.top; c.bottom = sc.bottom; }
-      if (c.left + c.right >= state.dims.wMm - safeMargin)  { c.left = sc.left; c.right = sc.right; }
+
+      // Sécurité : taille minimum restante de 5 mm
+      const minPageSize = 5;
+      if (state.dims.hMm - c.top - c.bottom < minPageSize) {
+        c.top = sc.top;
+        c.bottom = sc.bottom;
+      }
+      if (state.dims.wMm - c.left - c.right < minPageSize) {
+        c.left = sc.left;
+        c.right = sc.right;
+      }
+
+      // Arrondir au 0.5 mm
+      c.top    = Math.round(c.top * 2) / 2;
+      c.bottom = Math.round(c.bottom * 2) / 2;
+      c.left   = Math.round(c.left * 2) / 2;
+      c.right  = Math.round(c.right * 2) / 2;
+
       drawCropOverlay();
       updateInputsFromCrop();
     });
 
     document.addEventListener('mouseup', () => { _cropDrag = null; });
+
+    // Changement de curseur au survol des poignées
+    cropOverlay.addEventListener('mousemove', e => {
+      if (_cropDrag) return;
+      if (!state.cropMode || !state.dims) {
+        cropOverlay.style.cursor = 'default';
+        return;
+      }
+      const rect = cropOverlay.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      if (mx <= 22 || my <= 22) {
+        cropOverlay.style.cursor = 'default';
+        return;
+      }
+      const curPage = (state.currentPage !== undefined) ? state.currentPage : 1;
+      const c = getEffectiveCropForPage(curPage);
+      const canvasRect = canvas.getBoundingClientRect();
+      const areaRect   = canvasArea.getBoundingClientRect();
+      const docX0 = canvasRect.left - areaRect.left;
+      const docY0 = canvasRect.top  - areaRect.top;
+      const docX1 = docX0 + canvasRect.width;
+      const docY1 = docY0 + canvasRect.height;
+      const boxX0 = docX0 + mmToCanvasPx(c.left, 'x');
+      const boxY0 = docY0 + mmToCanvasPx(c.top, 'y');
+      const boxX1 = docX1 - mmToCanvasPx(c.right, 'x');
+      const boxY1 = docY1 - mmToCanvasPx(c.bottom, 'y');
+      const handles = getCropHandles(boxX0, boxY0, boxX1, boxY1);
+      const HIT = 18;
+      const hit = handles.find(h => Math.abs(mx - h.x) < HIT && Math.abs(my - h.y) < HIT);
+      if (hit) {
+        if (hit.id === 'top' || hit.id === 'bottom') cropOverlay.style.cursor = 'ns-resize';
+        else cropOverlay.style.cursor = 'ew-resize';
+      } else {
+        cropOverlay.style.cursor = 'crosshair';
+      }
+    });
   }
 
-  // Activer l'aperçu crop
+  // Activer / masquer l'aperçu crop & marges
   $('btnActivateCrop') && $('btnActivateCrop').addEventListener('click', () => {
-    if (!state.originalImageData) { showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> ' + (CONFIG.translations['studio_js.load_file_first'] || 'Chargez d\'abord un fichier.'), true); return; }
-    state.cropMode = true;
-    updateCropFromInputs();
-    initCropOverlay(); // Positionne et affiche cropContainer par-dessus le canvas
-    $('btnActivateCrop').innerHTML = '<i class="fa fa-eye"></i> ' + (CONFIG.translations['studio_js.crop_preview_active'] || 'Aperçu crop actif');
-    $('btnActivateCrop').style.background = '#059669';
+    if (!state.originalImageData) {
+      showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> ' + (CONFIG.translations['studio_js.load_file_first'] || 'Chargez d\'abord un fichier.'), true);
+      return;
+    }
+    state.cropMode = !state.cropMode;
+    const cc = $('cropContainer');
+    if (state.cropMode) {
+      updateCropFromInputs();
+      initCropOverlay();
+      $('btnActivateCrop').innerHTML = '<i class="fa fa-eye-slash"></i> ' + (CONFIG.translations['studio_js.hide_crop_grid'] || 'Masquer la grille de cadrage');
+      $('btnActivateCrop').style.background = '#059669';
+      $('btnActivateCrop').style.color = '#fff';
+    } else {
+      if (cc) cc.style.display = 'none';
+      $('btnActivateCrop').innerHTML = '<i class="fa fa-eye"></i> ' + (CONFIG.translations['studio_js.show_crop_grid'] || 'Afficher la grille de cadrage');
+      $('btnActivateCrop').style.background = '';
+      $('btnActivateCrop').style.color = '';
+    }
   });
 
   // Réinitialiser le crop
   $('btnResetCrop') && $('btnResetCrop').addEventListener('click', () => {
     state.crop = { top: 0, bottom: 0, left: 0, right: 0 };
     updateInputsFromCrop();
-    state.cropMode = false;
-    // Cacher l'overlay crop
-    const cc = $('cropContainer');
-    if (cc) cc.style.display = 'none';
-    if (cropOverlayCtx) cropOverlayCtx.clearRect(0, 0, cropOverlay.width, cropOverlay.height);
-    $('btnActivateCrop').innerHTML = '<i class="fa fa-crop"></i> ' + (CONFIG.translations['studio_js.activate_crop_preview'] || 'Activer l\'aperçu crop');
-    $('btnActivateCrop').style.background = '';
+    drawCropOverlay();
   });
 
-  // Appliquer & Exporter (crop export)
+  // Appliquer & Exporter (crop / marges export)
   $('btnApplyCropExport') && $('btnApplyCropExport').addEventListener('click', async () => {
     if (!state.file) { showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> ' + (CONFIG.translations['studio_js.load_file_first'] || 'Chargez d\'abord un fichier.'), true); return; }
     const c = state.crop;
-    const hasAnyCrop = c.top > 0 || c.bottom > 0 || c.left > 0 || c.right > 0;
-    if (!hasAnyCrop) { showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> ' + (CONFIG.translations['studio_js.no_crop_margin'] || 'Aucune marge de crop définie.'), true); return; }
+    const hasAnyChange = Math.abs(c.top) > 0.01 || Math.abs(c.bottom) > 0.01 || Math.abs(c.left) > 0.01 || Math.abs(c.right) > 0.01;
+    if (!hasAnyChange) { showToast('<i class="fa fa-exclamation-circle" style="color:#f59e0b"></i> ' + (CONFIG.translations['studio_js.no_crop_margin'] || 'Aucune modification de cadrage définie.'), true); return; }
 
     showSpinner(CONFIG.translations['studio_js.cropping_in_progress'] || 'Cropping in progress...');
     const fd = new FormData();
     fd.append('action', 'crop_pdf');
     fd.append('file', state.file, $('fileNameDisplay').value || state.file.name);
+    const cropScope = $('cropScope') ? $('cropScope').value : 'all';
+    const currentPage = (state.currentPage !== undefined) ? state.currentPage : 1;
     fd.append('crop', JSON.stringify(c));
+    fd.append('scope', cropScope);
+    fd.append('currentPage', currentPage);
     try {
       const res = await fetch('?studio_process', { method: 'POST', body: fd });
       const json = await res.json();
@@ -1555,8 +1867,8 @@ document.addEventListener('DOMContentLoaded', function() {
               </div>
             </div>
             <div style="padding:16px 20px;border-top:1px solid #e2e5ea;display:flex;justify-content:flex-end;gap:12px;background:#f8fafc;">
-              <button id="btnCopyErrorModal" style="padding:8px 16px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:#374151;display:flex;align-items:center;gap:6px;"><i class="fa fa-copy"></i> ${(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['studio_js.copy_message']) || 'Copier le message'}</button>
-              <button id="btnCloseErrorModal" style="padding:8px 16px;background:#ef4444;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;font-weight:500;">${(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['studio_js.close']) || 'Fermer'}</button>
+              <button id="btnCopyErrorModal" style="padding:8px 16px;background:#fff;border:1px solid #d1d5db;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:#374151;display:flex;align-items:center;gap:6px;"><i class="fa fa-copy"></i> ${(window.CONFIG && window.CONFIG.translations && (window.CONFIG.translations['studio_js.copy_message'] || window.CONFIG.translations['copy_message'])) || 'Copier le message'}</button>
+              <button id="btnCloseErrorModal" style="padding:8px 16px;background:#ef4444;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:13px;font-weight:500;">${(window.CONFIG && window.CONFIG.translations && (window.CONFIG.translations['studio_js.close'] || window.CONFIG.translations['close'])) || 'Fermer'}</button>
             </div>
           </div>
         </div>
@@ -1568,7 +1880,7 @@ document.addEventListener('DOMContentLoaded', function() {
           const content = document.getElementById('errorModalContent');
           if (content) {
             navigator.clipboard.writeText(content.innerText);
-            showToast('<i class="fa fa-check"></i> ' + ((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['studio_js.message_copied']) || 'Message copié'), false);
+            showToast('<i class="fa fa-check"></i> ' + ((window.CONFIG && window.CONFIG.translations && (window.CONFIG.translations['studio_js.message_copied'] || window.CONFIG.translations['message_copied'])) || 'Message copié'), false);
           }
         });
       }
@@ -1743,7 +2055,8 @@ document.addEventListener('DOMContentLoaded', function() {
         add_page_numbers_manual_offset: $('bro_page_nums_manual').checked ? '1' : '0',
         gutter_num_offset_x: $('bro_folio_x').value,
         gutter_num_offset_y: $('bro_folio_y').value,
-        tete_beche:     $('bro_tumble').checked ? '1' : '0',
+        tete_beche:     $('bro_tumble') && $('bro_tumble').checked ? '1' : '0',
+        tumble_direction: $('bro_tumble_direction') ? $('bro_tumble_direction').value : 'foot_to_foot',
         signature_size: $('bro_signature_size').value,
         signature_marks: $('bro_signature_marks').checked ? '1' : '0',
       };
@@ -1761,7 +2074,8 @@ document.addEventListener('DOMContentLoaded', function() {
         gutter_y:       $('liv_gutter_y').value,
         gutter_strategy:$('liv_gutter_strategy').value,
         duplex:         '1',
-        tete_beche:     $('liv_tete_beche').checked ? '1' : '0',
+        tete_beche:     $('liv_tete_beche') && $('liv_tete_beche').checked ? '1' : '0',
+        tumble_direction: $('liv_tumble_direction') ? $('liv_tumble_direction').value : 'foot_to_foot',
         crop_marks:     $('liv_crop_marks').checked ? '1' : '0',
         collation_marks: $('liv_collation_marks').checked ? '1' : '0',
         crop_style:     $('liv_crop_style').value,
@@ -1825,6 +2139,9 @@ document.addEventListener('DOMContentLoaded', function() {
       if (opt8.disabled && $('bro_signature_size').value === '8') {
         $('bro_signature_size').value = '16';
       }
+    }
+    if ($('bro_tumble_section')) {
+      $('bro_tumble_section').style.display = (nUp === '2') ? 'none' : '';
     }
   };
   $('bro_n_up').addEventListener('change', updateSignatureOptions);
@@ -2109,6 +2426,13 @@ document.addEventListener('DOMContentLoaded', function() {
     $('bro_folio_manual_settings').style.display = e.target.checked ? 'block' : 'none';
     $('bro_folio_position_row').style.display = e.target.checked ? 'none' : '';
   });
+  if ($('bro_tumble')) {
+    $('bro_tumble').addEventListener('change', e => {
+      if ($('bro_tumble_direction_row')) {
+        $('bro_tumble_direction_row').style.display = e.target.checked ? '' : 'none';
+      }
+    });
+  }
 
   document.querySelectorAll('input[name="liv_resize_mode"]').forEach(radio => {
     radio.addEventListener('change', e => {
@@ -2126,6 +2450,13 @@ document.addEventListener('DOMContentLoaded', function() {
     $('liv_folio_manual_settings').style.display = e.target.checked ? 'block' : 'none';
     $('liv_folio_position_row').style.display = e.target.checked ? 'none' : '';
   });
+  if ($('liv_tete_beche')) {
+    $('liv_tete_beche').addEventListener('change', e => {
+      if ($('liv_tumble_direction_row')) {
+        $('liv_tumble_direction_row').style.display = e.target.checked ? '' : 'none';
+      }
+    });
+  }
 
   // Imposition Tab switching
   document.querySelectorAll('.imp-tab').forEach(btn => {
@@ -2264,7 +2595,7 @@ document.addEventListener('DOMContentLoaded', function() {
       extraDiv.innerHTML = `
         <div style="font-size:11px;">Contraste: <span id="valRisoPipetteCst">0</span></div>
         <input type="range" id="sliderRisoPipetteCst" min="-100" max="100" value="0" class="panel-slider">
-        <div style="font-size:11px;">(CONFIG.translations['studio_js.brightness_prefix'] || 'Luminosité: ')<span id="valRisoPipetteBrt">0</span></div>
+        <div style="font-size:11px;">${(window.CONFIG && window.CONFIG.translations && (window.CONFIG.translations['studio_js.brightness_prefix'] || window.CONFIG.translations['brightness_prefix'])) || 'Luminosité: '}<span id="valRisoPipetteBrt">0</span></div>
         <input type="range" id="sliderRisoPipetteBrt" min="-100" max="100" value="0" class="panel-slider">
       `;
       infoDiv.appendChild(extraDiv);
