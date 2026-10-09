@@ -56,3 +56,52 @@ it('découpe correctement les cahiers pour une imposition 4-up', function () {
     expect($sheets[0]['signature'])->toBe(1);
     expect($sheets[2]['signature'])->toBe(2);
 });
+
+it('gère l orientation pied-contre-pied et tête-contre-tête (défaut) en 4-up', function () {
+    // 1) Tête contre tête (défaut, head_to_head) : ligne 1 tournée 180°, ligne 2 droite
+    $leafletDefault = new ImpositionLeaflet(__FILE__, [
+        'n_up' => 4
+    ]);
+    $sheetsDefault = $leafletDefault->calculateSignatureSheets(16, 4, 16);
+    expect($sheetsDefault[0]['front'][0]['rotated'])->toBeTrue();
+    expect($sheetsDefault[0]['front'][1]['rotated'])->toBeFalse();
+    expect($sheetsDefault[0]['back'][0]['rotated'])->toBeTrue();
+    expect($sheetsDefault[0]['back'][1]['rotated'])->toBeFalse();
+    // En tête contre tête, ligne 1 = [1, 16] (inversé de [16, 1]), ligne 2 = [8, 9] (droit)
+    expect($sheetsDefault[0]['front'][0]['pages'])->toBe([1, 16]);
+    expect($sheetsDefault[0]['front'][1]['pages'])->toBe([8, 9]);
+    // Verso: [2, 15] devient [15, 2] en head_to_head
+    expect($sheetsDefault[0]['back'][0]['pages'])->toBe([15, 2]);
+    expect($sheetsDefault[0]['back'][1]['pages'])->toBe([10, 7]);
+
+    // 2) Pied contre pied (foot_to_foot) : ligne 1 droite, ligne 2 tournée 180°
+    $leafletFootToFoot = new ImpositionLeaflet(__FILE__, [
+        'n_up' => 4,
+        'tumble_direction' => 'foot_to_foot'
+    ]);
+    $sheetsFootToFoot = $leafletFootToFoot->calculateSignatureSheets(16, 4, 16);
+    expect($sheetsFootToFoot[0]['front'][0]['rotated'])->toBeFalse();
+    expect($sheetsFootToFoot[0]['front'][1]['rotated'])->toBeTrue();
+    expect($sheetsFootToFoot[0]['back'][0]['rotated'])->toBeFalse();
+    expect($sheetsFootToFoot[0]['back'][1]['rotated'])->toBeTrue();
+    // En pied contre pied, ligne 1 = [16, 1], ligne 2 = [9, 8] (inversé de [8, 9])
+    expect($sheetsFootToFoot[0]['front'][0]['pages'])->toBe([16, 1]);
+    expect($sheetsFootToFoot[0]['front'][1]['pages'])->toBe([9, 8]);
+    expect($sheetsFootToFoot[0]['back'][0]['pages'])->toBe([2, 15]);
+    expect($sheetsFootToFoot[0]['back'][1]['pages'])->toBe([7, 10]);
+
+    // 3) Tête-bêche désactivé (tete_beche = false) : les deux lignes droites
+    $leafletNoTumble = new ImpositionLeaflet(__FILE__, [
+        'n_up' => 4,
+        'tete_beche' => false
+    ]);
+    $sheetsNoTumble = $leafletNoTumble->calculateSignatureSheets(16, 4, 16);
+    expect($sheetsNoTumble[0]['front'][0]['rotated'])->toBeFalse();
+    expect($sheetsNoTumble[0]['front'][1]['rotated'])->toBeFalse();
+    expect($sheetsNoTumble[0]['back'][0]['rotated'])->toBeFalse();
+    expect($sheetsNoTumble[0]['back'][1]['rotated'])->toBeFalse();
+    expect($sheetsNoTumble[0]['front'][0]['pages'])->toBe([16, 1]);
+    expect($sheetsNoTumble[0]['front'][1]['pages'])->toBe([8, 9]);
+    expect($sheetsNoTumble[0]['back'][0]['pages'])->toBe([2, 15]);
+    expect($sheetsNoTumble[0]['back'][1]['pages'])->toBe([10, 7]);
+});

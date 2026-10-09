@@ -52,6 +52,7 @@ class Imposition
             'gutter_num_offset_x' => 0.0,
             'gutter_num_offset_y' => -2.0,
             'tete_beche' => false,
+            'tumble_direction' => 'head_to_head',
             'addPageNumberCallback' => null // Callback pour ajouter les numéros de pages
         ], $settings);
 
@@ -72,6 +73,9 @@ class Imposition
         $this->previewMode = $this->settings['preview_mode'];
         $this->addPageNumbersInGutters = $this->settings['add_page_numbers_in_gutters'];
         $this->teteBeche = $this->settings['tete_beche'];
+        if (isset($this->settings['tumble_direction']) && !in_array($this->settings['tumble_direction'], ['head_to_head', 'foot_to_foot'])) {
+            throw new Exception("Invalid tumble_direction: " . $this->settings['tumble_direction']);
+        }
         $this->addPageNumberCallback = $this->settings['addPageNumberCallback'];
         $this->outputFormat = isset($this->settings['output_format']) ? $this->settings['output_format'] : 'SRA3';
         $this->gutterNumOffsetX = isset($this->settings['gutter_num_offset_x']) ? $this->settings['gutter_num_offset_x'] : 0.0;
@@ -371,8 +375,19 @@ class Imposition
 
         // Rotation Tête-bêche (180°)
         $applyRotation = false;
-        if (!empty($this->settings['tete_beche']) && $rowIndex == 0 && $totalRows > 1) {
-            $applyRotation = true;
+        if (!empty($this->settings['tete_beche']) && $totalRows > 1) {
+            $tumbleDir = $this->settings['tumble_direction'] ?? 'head_to_head';
+            if ($tumbleDir === 'head_to_head') {
+                // Tête contre tête : hauts au centre, bas de page à l'extérieur (défaut)
+                if ($rowIndex % 2 == 0) {
+                    $applyRotation = true;
+                }
+            } else {
+                // Pied contre pied : bas au centre, hauts à l'extérieur
+                if ($rowIndex % 2 == 1) {
+                    $applyRotation = true;
+                }
+            }
         }
 
         // Ajout de la page dans le PDF final

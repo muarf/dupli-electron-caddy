@@ -2013,6 +2013,9 @@
         "imposition_folio_offset_y": "Décalage Y",
         "imposition_folio_offset_y_hint": "Positif = vers le bas, Négatif = vers le haut",
         "imposition_tete_beche": "Tête-bêche",
+        "imposition_tumble_direction": "Disposition",
+        "imposition_tumble_foot_to_foot": "Bas au centre (Pied contre pied)",
+        "imposition_tumble_head_to_head": "Bas à l'extérieur (Tête contre tête)",
         "imposition_signature_size": "Pages par cahier",
         "imposition_signature_0": "Document entier",
         "imposition_signature_hint": "Reliure à la main : 16 pages = recommandé. Chaque cahier est imposé séparément puis cousu sur la pliure.",
@@ -2269,7 +2272,10 @@
         "whatfontis_placeholder": "Votre clé API WhatFontIs"
     },
     "global_task_manager": {
-        "title": "Tâches en arrière-plan ("
+        "title": "Tâches en arrière-plan (",
+        "logs": "Console de logs",
+        "copy_logs": "Copier les logs",
+        "copied": "Copié !"
     },
     "auto_clean": {
         "setup_html_php_1": "Configuration initiale - Dupli",
@@ -2639,10 +2645,13 @@
         "cropping_in_progress": "Rognage en cours...",
         "generating_reorganized_pdf": "Génération du PDF réorganisé...",
         "preparing_high_res_preview": "Préparation de l'aperçu haute résolution...",
-        "crop_preview_active": "Aperçu crop actif",
-        "activate_crop_preview": "Activer l'aperçu crop",
+        "activate_crop_preview": "Afficher la grille de cadrage",
+        "show_crop_grid": "Afficher la grille de cadrage",
+        "hide_crop_grid": "Masquer la grille de cadrage",
+        "scope_book": "Livre (gauche / droite alterné)",
+        "crop_hint": "Glissez vers l'intérieur (rogner) ou l'extérieur (ajouter du blanc).",
         "no_active_layer": "Aucun calque actif à exporter.",
-        "no_crop_margin": "Aucune marge de crop définie.",
+        "no_crop_margin": "Aucune modification de cadrage définie.",
         "no_file_to_save": "Aucun fichier à enregistrer.",
         "load_file_first": "Chargez d'abord un fichier.",
         "generate_pdf_first": "Veuillez générer le PDF du montage d'abord.",

@@ -303,6 +303,7 @@ if ($action === 'impose') {
                 'n_up'                        => $n_up,
                 'duplex'                      => ($_POST['duplex']    ?? '0') === '1',
                 'tete_beche'                  => ($_POST['tete_beche'] ?? '0') === '1',
+                'tumble_direction'            => $_POST['tumble_direction'] ?? 'foot_to_foot',
                 'scale'                       => $scale,
                 'target_width'                => $target_w,
                 'target_height'               => $target_h,
@@ -404,6 +405,7 @@ if ($action === 'impose') {
             'gutter_num_offset_x'         => (float)($_POST['gutter_num_offset_x'] ?? 0),
             'gutter_num_offset_y'         => floatval($_POST['gutter_num_offset_y'] ?? -2.0),
             'tete_beche'                  => ($_POST['tete_beche'] ?? '0') === '1',
+            'tumble_direction'            => $_POST['tumble_direction'] ?? 'foot_to_foot',
             'output_format'               => $_POST['output_format'] ?? 'A3',
             'addPageNumberCallback'        => null,
             'signature_size'              => intval($_POST['signature_size'] ?? 0),
@@ -1023,37 +1025,23 @@ if (session_id()) session_write_close();
                     $ext = strtolower(pathinfo($tempSourcePdfs[$fileId], PATHINFO_EXTENSION));
                     $isImage = (isset($obj['is_image']) && $obj['is_image']) || in_array($ext, ['png', 'jpg', 'jpeg', 'webp', 'gif']);
                     
+                    $pdf->StartTransform();
+                    if ($angle != 0) {
+                        $pdf->Rotate(-$angle, $cx, $cy);
+                    }
+                    if ($scale_x != 1 || $scale_y != 1) {
+                        $pdf->Scale($scale_x * 100, $scale_y * 100, $cx, $cy);
+                    }
+
                     if ($isImage) {
-                        $pdf->StartTransform();
-                        $pdf->Translate($cx, $cy);
-                        if ($angle != 0) {
-                            $pdf->Rotate(-$angle);
-                        }
-                        if ($scale_x != 1 || $scale_y != 1) {
-                            $pdf->ScaleX($scale_x * 100, 0, 0);
-                            $pdf->ScaleY($scale_y * 100, 0, 0);
-                        }
-                        
-                        $pdf->Image($tempSourcePdfs[$fileId], -$original_w / 2, -$original_h / 2, $original_w, $original_h);
-                        $pdf->StopTransform();
+                        $pdf->Image($tempSourcePdfs[$fileId], $cx - $original_w / 2, $cy - $original_h / 2, $original_w, $original_h);
                     } else {
                         $pageNum = $obj['page_num'];
                         $pdf->setSourceFile($tempSourcePdfs[$fileId]);
                         $tplId = $pdf->importPage($pageNum);
-                        
-                        $pdf->StartTransform();
-                        $pdf->Translate($cx, $cy);
-                        if ($angle != 0) {
-                            $pdf->Rotate(-$angle);
-                        }
-                        if ($scale_x != 1 || $scale_y != 1) {
-                            $pdf->ScaleX($scale_x * 100, 0, 0);
-                            $pdf->ScaleY($scale_y * 100, 0, 0);
-                        }
-                        
-                        $pdf->useTemplate($tplId, -$original_w / 2, -$original_h / 2, $original_w, $original_h);
-                        $pdf->StopTransform();
+                        $pdf->useTemplate($tplId, $cx - $original_w / 2, $cy - $original_h / 2, $original_w, $original_h);
                     }
+                    $pdf->StopTransform();
                 }
             }
         }
@@ -1079,73 +1067,143 @@ if (session_id()) session_write_close();
 }
 
 // === ACTION : CROP_PDF ===
-// Rogne toutes les pages d'un PDF ou image selon les marges en mm
+// Rogne un PDF (vectoriel sans perte) ou une image selon les marges en mm et la portée (toutes, paires, impaires, courante)
 if ($action === 'crop_pdf') {
     header('Content-Type: application/json');
 
-if (session_id()) session_write_close();
+    if (session_id()) session_write_close();
     try {
         $crop = json_decode($_POST['crop'] ?? 'null', true);
         if (!$crop) throw new Exception(__('studio.invalid_crop_params'));
         if (!$uploadedFile || !file_exists($uploadedFile)) throw new Exception(__('studio.invalid_file'));
 
+        $scope = $_POST['scope'] ?? 'all';
+        $currentPage = max(1, intval($_POST['currentPage'] ?? 1));
+
+        $cropTop = floatval($crop['top'] ?? 0);
+        $cropBottom = floatval($crop['bottom'] ?? 0);
+        $cropLeft = floatval($crop['left'] ?? 0);
+        $cropRight = floatval($crop['right'] ?? 0);
+
         $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
         $isPdf = ($ext === 'pdf');
 
-        // 150 DPI : 1 mm = 150/25.4 px ≈ 5.906 px
-        $dpi = 150;
-        $pxPerMm = $dpi / 25.4;
-        $cropL = max(0, round(floatval($crop['left'])   * $pxPerMm));
-        $cropT = max(0, round(floatval($crop['top'])    * $pxPerMm));
-        $cropR = max(0, round(floatval($crop['right'])  * $pxPerMm));
-        $cropB = max(0, round(floatval($crop['bottom']) * $pxPerMm));
-
-        $images = [];
+        $outFilename = $safeName . '_cropped_' . time() . '.pdf';
+        $outPath = $tmpBase . $outFilename;
 
         if ($isPdf) {
-            // Compter les pages via ImageMagick identify
-            $page_count_raw = shell_exec('identify ' . escapeshellarg($uploadedFile) . ' 2>/dev/null | wc -l');
-            $numPages = max(1, intval(trim($page_count_raw)));
+            // Traitement vectoriel direct via FPDI / TCPDF (PHP natif sans dépendance externe)
+            $pdf = new TCPDI();
+            $pdf->SetCreator('Dupli Studio');
+            $pdf->setPrintHeader(false);
+            $pdf->setPrintFooter(false);
+            $pdf->SetAutoPageBreak(false, 0);
 
-            for ($p = 0; $p < $numPages; $p++) {
-                $page_png = $tmpBase . 'crop_page_' . $p . '_' . uniqid() . '.png';
-                $magick_args = "-density {$dpi} " . escapeshellarg($uploadedFile . "[$p]") . ' ' . escapeshellarg($page_png);
-                $res = run_imagemagick($magick_args);
-if (!$res['success']) { file_put_contents('/tmp/duplicator/duplicator_studio/magick_debug.log', print_r($res, true) . "\nArgs: $magick_args\n", FILE_APPEND); }
-                if (!file_exists($page_png)) continue;
+            $sourceFile = $uploadedFile;
+            $downgradedFile = null;
+            try {
+                $pageCount = $pdf->setSourceFile($sourceFile);
+            } catch (\Exception $e) {
+                // Si le PDF utilise une compression de flux non supportée, tenter un downgrade Ghostscript
+                require_once __DIR__ . '/../models/pdf_utils.php';
+                if (function_exists('downgradePdfTo14')) {
+                    $downgraded = downgradePdfTo14($sourceFile);
+                    if ($downgraded && file_exists($downgraded)) {
+                        $downgradedFile = $downgraded;
+                        $sourceFile = $downgraded;
+                        $pdf = new TCPDI();
+                        $pdf->SetCreator('Dupli Studio');
+                        $pdf->setPrintHeader(false);
+                        $pdf->setPrintFooter(false);
+                        $pdf->SetAutoPageBreak(false, 0);
+                        $pageCount = $pdf->setSourceFile($sourceFile);
+                    } else {
+                        throw $e;
+                    }
+                } else {
+                    throw $e;
+                }
+            }
 
-                list($imgW, $imgH) = getimagesize($page_png);
-                $newW = $imgW - $cropL - $cropR;
-                $newH = $imgH - $cropT - $cropB;
-                if ($newW <= 0 || $newH <= 0) throw new Exception(sprintf(__('studio.crop_margin_too_large_page'), ($p + 1)));
+            for ($p = 1; $p <= $pageCount; $p++) {
+                $tpl = $pdf->importPage($p);
+                $size = $pdf->getTemplateSize($tpl);
+                $sw = floatval($size['width']);
+                $sh = floatval($size['height']);
 
-                $cropped = $tmpBase . 'crop_result_' . $p . '_' . uniqid() . '.png';
-                run_imagemagick(escapeshellarg($page_png) . " -crop {$newW}x{$newH}+{$cropL}+{$cropT} +repage " . escapeshellarg($cropped));
-                @unlink($page_png);
-                if (file_exists($cropped)) $images[] = $cropped;
+                $shouldCrop = false;
+                $pCropL = $cropLeft;
+                $pCropR = $cropRight;
+                $pCropT = $cropTop;
+                $pCropB = $cropBottom;
+
+                if ($scope === 'all') {
+                    $shouldCrop = true;
+                } elseif ($scope === 'book') {
+                    $shouldCrop = true;
+                    // En mode livre (pages en vis-à-vis) :
+                    // Pages impaires (1, 3, 5... recto) : Gauche = Intérieur (reliure), Droite = Extérieur
+                    // Pages paires (2, 4, 6... verso) : Droite = Intérieur (reliure), Gauche = Extérieur
+                    if ($p % 2 === 0) {
+                        $pCropL = $cropRight;
+                        $pCropR = $cropLeft;
+                    }
+                } elseif ($scope === 'even' && ($p % 2 === 0)) {
+                    $shouldCrop = true;
+                } elseif ($scope === 'odd' && ($p % 2 === 1)) {
+                    $shouldCrop = true;
+                } elseif ($scope === 'current' && ($p === $currentPage)) {
+                    $shouldCrop = true;
+                }
+
+                if ($shouldCrop) {
+                    $newW = $sw - $pCropL - $pCropR;
+                    $newH = $sh - $pCropT - $pCropB;
+                    if ($newW <= 0 || $newH <= 0) {
+                        throw new Exception(__('studio.crop_margin_too_large'));
+                    }
+                    $orientation = ($newW > $newH) ? 'L' : 'P';
+                    $pdf->AddPage($orientation, [$newW, $newH]);
+                    // -$pCropL décale vers la gauche en cas de coupe (>0) ou vers la droite en cas d'ajout de marge (<0)
+                    $pdf->useTemplate($tpl, -$pCropL, -$pCropT, $sw, $sh, false);
+                } else {
+                    $orientation = ($sw > $sh) ? 'L' : 'P';
+                    $pdf->AddPage($orientation, [$sw, $sh]);
+                    $pdf->useTemplate($tpl, 0, 0, $sw, $sh, false);
+                }
+            }
+
+            $pdf->Output($outPath, 'F');
+            if ($downgradedFile && file_exists($downgradedFile)) {
+                @unlink($downgradedFile);
             }
         } else {
-            // Image simple (PNG/JPG/etc.)
+            // Image simple (PNG/JPG/etc.) via ImageMagick
+            $dpi = 150;
+            $pxPerMm = $dpi / 25.4;
+            $cropL = round($cropLeft * $pxPerMm);
+            $cropT = round($cropTop * $pxPerMm);
+            $cropR = round($cropRight * $pxPerMm);
+            $cropB = round($cropBottom * $pxPerMm);
+
             $page_png = $tmpBase . 'crop_img_' . uniqid() . '.png';
             run_imagemagick(escapeshellarg($uploadedFile) . ' ' . escapeshellarg($page_png));
             list($imgW, $imgH) = getimagesize($page_png);
             $newW = $imgW - $cropL - $cropR;
             $newH = $imgH - $cropT - $cropB;
             if ($newW <= 0 || $newH <= 0) throw new Exception(__('studio.crop_margin_too_large'));
+
             $cropped = $tmpBase . 'crop_result_' . uniqid() . '.png';
-            run_imagemagick(escapeshellarg($page_png) . " -crop {$newW}x{$newH}+{$cropL}+{$cropT} +repage " . escapeshellarg($cropped));
+            $offsetX = -$cropL;
+            $offsetY = -$cropT;
+            $geom = "{$newW}x{$newH}" . ($offsetX >= 0 ? "+{$offsetX}" : "{$offsetX}") . ($offsetY >= 0 ? "+{$offsetY}" : "{$offsetY}");
+            run_imagemagick(escapeshellarg($page_png) . " -background white -extent {$geom} " . escapeshellarg($cropped));
             @unlink($page_png);
-            if (file_exists($cropped)) $images[] = $cropped;
+
+            if (!file_exists($cropped)) throw new Exception(__('studio.no_cropped_pages'));
+            run_imagemagick(escapeshellarg($cropped) . ' ' . escapeshellarg($outPath));
+            @unlink($cropped);
         }
-
-        if (empty($images)) throw new Exception(__('studio.no_cropped_pages'));
-
-        $outFilename = $safeName . '_cropped_' . time() . '.pdf';
-        $outPath = $tmpBase . $outFilename;
-        $img_list = implode(' ', array_map('escapeshellarg', $images));
-        run_imagemagick("$img_list " . escapeshellarg($outPath));
-
-        foreach ($images as $img) @unlink($img);
 
         if (!file_exists($outPath)) throw new Exception(__('studio.cropped_pdf_generation_error'));
 
@@ -1233,7 +1291,7 @@ if ($action === 'ocr_status' || $action === 'analyze_ink_status' || $action === 
 
 if ($action === 'get_active_jobs') {
     $jobs = [];
-    foreach (glob($tmpBase . 'ocr_job_*.json') as $file) {
+    foreach (glob($tmpBase . '{ocr_job_,task_stu_}*.json', GLOB_BRACE) as $file) {
         $data = json_decode(file_get_contents($file), true);
         if ($data) {
             $data['job_id'] = basename($file, '.json');
@@ -1255,10 +1313,12 @@ if ($action === 'get_active_jobs') {
 
 if ($action === 'delete_job') {
     $jobId = $_POST['job_id'] ?? '';
-    if ($jobId) {
-        @unlink($tmpBase . $jobId . '.json');
-        @unlink($tmpBase . $jobId . '.log');
-        @unlink($tmpBase . $jobId . '_input.pdf');
+    // Sécuriser l'input pour éviter la suppression de masse (jobId doit avoir le préfixe attendu et une longueur adéquate)
+    if ($jobId && preg_match('/^(task_stu_|ocr_job_)[a-zA-Z0-9_\-]+$/', $jobId) && strlen($jobId) > 10) {
+        // Supprimer toutes les sorties et métadonnées associées à ce job
+        foreach (glob($tmpBase . $jobId . '*') as $f) {
+            @unlink($f);
+        }
     }
     echo json_encode(['success' => true]);
     exit;
@@ -1597,37 +1657,23 @@ if (session_id()) session_write_close();
                     $ext = strtolower(pathinfo($tempSourcePdfs[$fileId], PATHINFO_EXTENSION));
                     $isImage = (isset($obj['is_image']) && $obj['is_image']) || in_array($ext, ['png', 'jpg', 'jpeg', 'webp', 'gif']);
                     
+                    $pdf->StartTransform();
+                    if ($angle != 0) {
+                        $pdf->Rotate(-$angle, $cx, $cy);
+                    }
+                    if ($scale_x != 1 || $scale_y != 1) {
+                        $pdf->Scale($scale_x * 100, $scale_y * 100, $cx, $cy);
+                    }
+
                     if ($isImage) {
-                        $pdf->StartTransform();
-                        $pdf->Translate($cx, $cy);
-                        if ($angle != 0) {
-                            $pdf->Rotate(-$angle);
-                        }
-                        if ($scale_x != 1 || $scale_y != 1) {
-                            $pdf->ScaleX($scale_x * 100, 0, 0);
-                            $pdf->ScaleY($scale_y * 100, 0, 0);
-                        }
-                        
-                        $pdf->Image($tempSourcePdfs[$fileId], -$original_w / 2, -$original_h / 2, $original_w, $original_h);
-                        $pdf->StopTransform();
+                        $pdf->Image($tempSourcePdfs[$fileId], $cx - $original_w / 2, $cy - $original_h / 2, $original_w, $original_h);
                     } else {
                         $pageNum = $obj['page_num'];
                         $pdf->setSourceFile($tempSourcePdfs[$fileId]);
                         $tplId = $pdf->importPage($pageNum);
-                        
-                        $pdf->StartTransform();
-                        $pdf->Translate($cx, $cy);
-                        if ($angle != 0) {
-                            $pdf->Rotate(-$angle);
-                        }
-                        if ($scale_x != 1 || $scale_y != 1) {
-                            $pdf->ScaleX($scale_x * 100, 0, 0);
-                            $pdf->ScaleY($scale_y * 100, 0, 0);
-                        }
-                        
-                        $pdf->useTemplate($tplId, -$original_w / 2, -$original_h / 2, $original_w, $original_h);
-                        $pdf->StopTransform();
+                        $pdf->useTemplate($tplId, $cx - $original_w / 2, $cy - $original_h / 2, $original_w, $original_h);
                     }
+                    $pdf->StopTransform();
                 }
             }
         }
@@ -1652,87 +1698,6 @@ if (session_id()) session_write_close();
     exit;
 }
 
-// === ACTION : CROP_PDF ===
-// Rogne toutes les pages d'un PDF ou image selon les marges en mm
-if ($action === 'crop_pdf') {
-    header('Content-Type: application/json');
-
-if (session_id()) session_write_close();
-    try {
-        $crop = json_decode($_POST['crop'] ?? 'null', true);
-        if (!$crop) throw new Exception(__('studio.invalid_crop_params'));
-        if (!$uploadedFile || !file_exists($uploadedFile)) throw new Exception(__('studio.invalid_file'));
-
-        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-        $isPdf = ($ext === 'pdf');
-
-        // 150 DPI : 1 mm = 150/25.4 px ≈ 5.906 px
-        $dpi = 150;
-        $pxPerMm = $dpi / 25.4;
-        $cropL = max(0, round(floatval($crop['left'])   * $pxPerMm));
-        $cropT = max(0, round(floatval($crop['top'])    * $pxPerMm));
-        $cropR = max(0, round(floatval($crop['right'])  * $pxPerMm));
-        $cropB = max(0, round(floatval($crop['bottom']) * $pxPerMm));
-
-        $images = [];
-
-        if ($isPdf) {
-            // Compter les pages via ImageMagick identify
-            $page_count_raw = shell_exec('identify ' . escapeshellarg($uploadedFile) . ' 2>/dev/null | wc -l');
-            $numPages = max(1, intval(trim($page_count_raw)));
-
-            for ($p = 0; $p < $numPages; $p++) {
-                $page_png = $tmpBase . 'crop_page_' . $p . '_' . uniqid() . '.png';
-                $magick_args = "-density {$dpi} " . escapeshellarg($uploadedFile . "[$p]") . ' ' . escapeshellarg($page_png);
-                $res = run_imagemagick($magick_args);
-if (!$res['success']) { file_put_contents('/tmp/duplicator/duplicator_studio/magick_debug.log', print_r($res, true) . "\nArgs: $magick_args\n", FILE_APPEND); }
-                if (!file_exists($page_png)) continue;
-
-                list($imgW, $imgH) = getimagesize($page_png);
-                $newW = $imgW - $cropL - $cropR;
-                $newH = $imgH - $cropT - $cropB;
-                if ($newW <= 0 || $newH <= 0) throw new Exception(sprintf(__('studio.crop_margin_too_large_page'), ($p + 1)));
-
-                $cropped = $tmpBase . 'crop_result_' . $p . '_' . uniqid() . '.png';
-                run_imagemagick(escapeshellarg($page_png) . " -crop {$newW}x{$newH}+{$cropL}+{$cropT} +repage " . escapeshellarg($cropped));
-                @unlink($page_png);
-                if (file_exists($cropped)) $images[] = $cropped;
-            }
-        } else {
-            // Image simple (PNG/JPG/etc.)
-            $page_png = $tmpBase . 'crop_img_' . uniqid() . '.png';
-            run_imagemagick(escapeshellarg($uploadedFile) . ' ' . escapeshellarg($page_png));
-            list($imgW, $imgH) = getimagesize($page_png);
-            $newW = $imgW - $cropL - $cropR;
-            $newH = $imgH - $cropT - $cropB;
-            if ($newW <= 0 || $newH <= 0) throw new Exception(__('studio.crop_margin_too_large'));
-            $cropped = $tmpBase . 'crop_result_' . uniqid() . '.png';
-            run_imagemagick(escapeshellarg($page_png) . " -crop {$newW}x{$newH}+{$cropL}+{$cropT} +repage " . escapeshellarg($cropped));
-            @unlink($page_png);
-            if (file_exists($cropped)) $images[] = $cropped;
-        }
-
-        if (empty($images)) throw new Exception(__('studio.no_cropped_pages'));
-
-        $outFilename = $safeName . '_cropped_' . time() . '.pdf';
-        $outPath = $tmpBase . $outFilename;
-        $img_list = implode(' ', array_map('escapeshellarg', $images));
-        run_imagemagick("$img_list " . escapeshellarg($outPath));
-
-        foreach ($images as $img) @unlink($img);
-
-        if (!file_exists($outPath)) throw new Exception(__('studio.cropped_pdf_generation_error'));
-
-        echo json_encode([
-            'success'      => true,
-            'download_url' => '?download_studio&file=' . urlencode($outFilename),
-            'errors'       => [],
-        ]);
-    } catch (Exception $e) {
-        echo json_encode(['success' => false, 'errors' => [$e->getMessage()]]);
-    }
-    exit;
-}
 
 if ($action === 'ocr_cleanup') {
     header('Content-Type: application/json');

@@ -1973,6 +1973,9 @@
         "imposition_folio_offset_y": "Offset Y",
         "imposition_folio_offset_y_hint": "Positive = down, Negative = up",
         "imposition_tete_beche": "Tête-bêche (tumble)",
+        "imposition_tumble_direction": "Layout",
+        "imposition_tumble_foot_to_foot": "Bottom at center (Foot-to-foot)",
+        "imposition_tumble_head_to_head": "Bottom outside (Head-to-head)",
         "imposition_signature_size": "Pages per signature",
         "imposition_signature_0": "Whole document",
         "imposition_signature_hint": "Hand binding: 16 pages = recommended. Each signature is imposed separately then sewn on the fold.",
@@ -2229,7 +2232,10 @@
         "whatfontis_placeholder": "Your WhatFontIs API key"
     },
     "global_task_manager": {
-        "title": "Background tasks ("
+        "title": "Background tasks (",
+        "logs": "Log console",
+        "copy_logs": "Copy logs",
+        "copied": "Copied!"
     },
     "auto_clean": {
         "setup_html_php_1": "Configuration initiale - Dupli",
@@ -2594,10 +2600,13 @@
         "cropping_in_progress": "Cropping in progress...",
         "generating_reorganized_pdf": "Generating reorganized PDF...",
         "preparing_high_res_preview": "Preparing high resolution preview...",
-        "crop_preview_active": "Crop preview active",
-        "activate_crop_preview": "Activate crop preview",
+        "activate_crop_preview": "Show framing grid",
+        "show_crop_grid": "Show framing grid",
+        "hide_crop_grid": "Hide framing grid",
+        "scope_book": "Book (alternating left / right)",
+        "crop_hint": "Slide inwards (crop) or outwards (add white space).",
         "no_active_layer": "No active layer to export.",
-        "no_crop_margin": "No crop margin defined.",
+        "no_crop_margin": "No crop or margin adjustment defined.",
         "no_file_to_save": "No file to save.",
         "load_file_first": "Load a file first.",
         "generate_pdf_first": "Please generate the montage PDF first.",
