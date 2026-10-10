@@ -1122,7 +1122,12 @@
         "whatfontis_placeholder": "Su clave API WhatFontIs",
         "force_all_title": "También reprocesa archivos ya migrados"
     },
-    "global_task_manager": {},
+    "global_task_manager": {
+        "title": "Tareas en segundo plano (",
+        "logs": "Consola de registros",
+        "copy_logs": "Copiar registros",
+        "copied": "¡Copiado!"
+    },
     "auto_clean": {
         "setup_html_php_1": "Configuration initiale - Dupli",
         "admin_tirage_html_php_1": "sur",

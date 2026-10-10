@@ -104,7 +104,7 @@
                 <i class="fa fa-copy"></i> <span id="task-manager-copy-text"><?php _e("global_task_manager.copy_logs", [], false); ?></span>
             </button>
         </div>
-        <div class="task-logs-container" id="task-manager-logs" style="height: 140px; overflow-y: auto; padding: 10px; background: #1e1e1e; color: #00ff00; font-family: monospace; font-size: 11px; white-space: pre-wrap; border-top: none;">
+        <div class="task-logs-container" id="task-manager-logs" style="height: 140px; border-top: none;">
             <!-- Les logs seront injectés ici -->
         </div>
     </div>

@@ -611,7 +611,7 @@ var CONFIG = window.CONFIG;
           <div class="panel-label" style="font-size:11px;"><?php _e("studio.modification_scope", [], false); ?></div>
           <select class="panel-select" id="cropScope" style="width:100%;">
             <option value="all"><?php _e("studio.modification_scope_all", [], false); ?></option>
-            <option value="book">📖 <?= __('studio_js.scope_book') !== 'studio_js.scope_book' ? __('studio_js.scope_book') : 'Livre (gauche / droite alterné)' ?></option>
+            <option value="book">📖 <?= __('studio_js.scope_book') !== 'studio_js.scope_book' ? __('studio_js.scope_book') : 'Livre (alternance gauche / droite)' ?></option>
             <option value="even"><?php _e("studio.modification_scope_even", [], false); ?></option>
             <option value="odd"><?php _e("studio.modification_scope_odd", [], false); ?></option>
             <option value="current"><?php _e("studio.modification_scope_current", [], false); ?></option>
