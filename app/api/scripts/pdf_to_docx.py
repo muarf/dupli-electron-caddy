@@ -1,5 +1,7 @@
 import sys
 import os
+import tempfile
+import shutil
 
 try:
     from pdf2docx import Converter
@@ -13,17 +15,20 @@ def convert_pdf_to_docx(pdf_path, docx_path):
         sys.exit(1)
         
     print(f"Conversion de {pdf_path} en {docx_path}...")
-    dest_dir = os.path.dirname(docx_path)
+    abs_pdf_path = os.path.abspath(pdf_path)
+    abs_docx_path = os.path.abspath(docx_path)
+    dest_dir = os.path.dirname(abs_docx_path)
     old_cwd = os.getcwd()
+    work_dir = None
     cv = None
     try:
-        # Se placer dans le dossier de destination pour permettre au multiprocessing
-        # d'écrire ses fichiers temporaires de pages sans conflit de permissions
-        if dest_dir and os.path.exists(dest_dir):
-            os.chdir(dest_dir)
+        # Isoler les fichiers temporaires du multiprocessing dans un sous-dossier dédié
+        base_temp_dir = dest_dir if (dest_dir and os.path.exists(dest_dir)) else None
+        work_dir = tempfile.mkdtemp(prefix="pdf2docx_", dir=base_temp_dir)
+        os.chdir(work_dir)
 
-        cv = Converter(pdf_path)
-        cv.convert(docx_path, multi_processing=True, cpu_count=0)
+        cv = Converter(abs_pdf_path)
+        cv.convert(abs_docx_path, multi_processing=True, cpu_count=0)
         print("Conversion terminee avec succes.")
     except Exception as e:
         print(f"Erreur lors de la conversion : {str(e)}")
@@ -34,17 +39,12 @@ def convert_pdf_to_docx(pdf_path, docx_path):
                 cv.close()
             except Exception:
                 pass
-        if dest_dir and os.path.exists(dest_dir):
-            import glob
-            for temp_json in glob.glob(os.path.join(dest_dir, "pages-*.json")):
-                try:
-                    os.remove(temp_json)
-                except OSError:
-                    pass
         try:
             os.chdir(old_cwd)
         except OSError:
             pass
+        if work_dir and os.path.exists(work_dir):
+            shutil.rmtree(work_dir, ignore_errors=True)
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
