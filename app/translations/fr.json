@@ -2648,7 +2648,7 @@
         "activate_crop_preview": "Afficher la grille de cadrage",
         "show_crop_grid": "Afficher la grille de cadrage",
         "hide_crop_grid": "Masquer la grille de cadrage",
-        "scope_book": "Livre (alternance gauche / droite)",
+        "scope_book": "Livre (gauche / droite alterné)",
         "crop_hint": "Glissez vers l'intérieur (rogner) ou l'extérieur (ajouter du blanc).",
         "no_active_layer": "Aucun calque actif à exporter.",
         "no_crop_margin": "Aucune modification de cadrage définie.",

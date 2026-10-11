@@ -1122,12 +1122,7 @@
         "whatfontis_placeholder": "Ihr WhatFontIs API-Schlüssel",
         "force_all_title": "Verarbeitet auch bereits migrierte Dateien"
     },
-    "global_task_manager": {
-        "title": "Hintergrundaufgaben (",
-        "logs": "Protokollkonsole",
-        "copy_logs": "Protokolle kopieren",
-        "copied": "Kopiert!"
-    },
+    "global_task_manager": {},
     "auto_clean": {
         "setup_html_php_1": "Configuration initiale - Dupli",
         "admin_tirage_html_php_1": "sur",

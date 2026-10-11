@@ -1892,12 +1892,7 @@
         "whatfontis_placeholder": "La tua chiave API WhatFontIs",
         "force_all_title": "Rielabora anche i file già migrati"
     },
-    "global_task_manager": {
-        "title": "Attività in background (",
-        "logs": "Console dei log",
-        "copy_logs": "Copia log",
-        "copied": "Copiato!"
-    },
+    "global_task_manager": {},
     "auto_clean": {
         "setup_html_php_1": "Configuration initiale - Dupli",
         "admin_tirage_html_php_1": "sur",

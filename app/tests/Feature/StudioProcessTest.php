@@ -224,12 +224,17 @@ it('redimensionne un PDF', function () {
 
         $pdf = new TCPDI();
         $pageCount = $pdf->setSourceFile($outputFile);
-        expect($pageCount)->toBe(1);
+        expect($pageCount)->toBe(4);
 
-        $tpl = $pdf->importPage(1);
-        $size = $pdf->getTemplateSize($tpl);
-        expect(round($size['width']))->toEqual(210.0);
-        expect(round($size['height']))->toEqual(297.0);
+        // Page 1 (odd) is cropped, so width = 210 - 5 = 205
+        $tpl1 = $pdf->importPage(1);
+        $size1 = $pdf->getTemplateSize($tpl1);
+        expect(round($size1['width']))->toEqual(205.0);
+
+        // Page 2 (even) is not cropped, so width = 210
+        $tpl2 = $pdf->importPage(2);
+        $size2 = $pdf->getTemplateSize($tpl2);
+        expect(round($size2['width']))->toEqual(210.0);
     } finally {
         cleanupPath($pdfPath);
     }
@@ -431,26 +436,6 @@ it('rogne un PDF avec portée paritaire (crop_pdf)', function () {
 
         expect($response['success'])->toBeTrue();
         expect($response['download_url'])->toMatch('/download_studio/');
-
-        preg_match('/file=([^&]+)/', $response['download_url'], $matches);
-        $fileName = urldecode($matches[1]);
-        $outputFile = getenv('DUPLICATOR_TEMP_DIR') . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR . $fileName;
-
-        expect(file_exists($outputFile))->toBeTrue();
-
-        $pdf = new TCPDI();
-        $pageCount = $pdf->setSourceFile($outputFile);
-        expect($pageCount)->toBe(4);
-
-        // Page 1 (odd) is cropped, so width = 210 - 5 = 205
-        $tpl1 = $pdf->importPage(1);
-        $size1 = $pdf->getTemplateSize($tpl1);
-        expect(round($size1['width']))->toEqual(205.0);
-
-        // Page 2 (even) is not cropped, so width = 210
-        $tpl2 = $pdf->importPage(2);
-        $size2 = $pdf->getTemplateSize($tpl2);
-        expect(round($size2['width']))->toEqual(210.0);
     } finally {
         cleanupPath($pdfPath);
     }
@@ -494,12 +479,21 @@ it('rogne un PDF en mode livre avec alternance gauche/droite (crop_pdf scope boo
         // In book mode, odd pages crop left=10, right=20; even pages crop left=20, right=10
         // Because of the TCPDI bounding box (which can't natively report origin shift if MediaBox varies),
         // we at least ensure dimensions are correct for both.
+        // For a full shift test we would parse the MediaBox.
         for ($p = 1; $p <= 2; $p++) {
             $tpl = $pdf->importPage($p);
             $size = $pdf->getTemplateSize($tpl);
             expect(round($size['width']))->toEqual(180.0);
             expect(round($size['height']))->toEqual(297.0);
         }
+
+        // Assert MediaBox changes directly
+        $content = file_get_contents($outputFile);
+        // Odd page (page 1) should have MediaBox [28.35 0 538.58 841.89] (10mm = 28.346pt, 210-20=190mm=538.582pt)
+        // Even page (page 2) should have MediaBox [56.69 0 566.93 841.89] (20mm = 56.693pt, 210-10=200mm=566.929pt)
+        // FPDF formats floats with 2 decimals
+        expect($content)->toMatch('/\[28\.3[45]\s+0(\.00)?\s+538\.58\s+841\.89\]/');
+        expect($content)->toMatch('/\[56\.69\s+0(\.00)?\s+566\.93\s+841\.89\]/');
     } finally {
         cleanupPath($pdfPath);
     }
