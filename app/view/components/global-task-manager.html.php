@@ -21,8 +21,9 @@
 }
 
 #global-task-manager.minimized .task-manager-body,
-#global-task-manager.minimized .task-manager-logs {
-    display: none;
+#global-task-manager.minimized .task-manager-logs,
+#global-task-manager.minimized #task-manager-logs-wrapper {
+    display: none !important;
 }
 
 .task-manager-header {
@@ -96,8 +97,16 @@
     <div class="task-manager-body" id="task-manager-body">
         <!-- Les tâches seront injectées ici par JS -->
     </div>
-    <div class="task-logs-container" id="task-manager-logs" style="display: none;">
-        <!-- Les logs seront injectés ici -->
+    <div id="task-manager-logs-wrapper" class="task-manager-logs" style="display: none; border-top: 1px solid #333;">
+        <div style="background: #252526; padding: 4px 10px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #aaa;">
+            <span><i class="fa fa-terminal"></i> <?php _e("global_task_manager.logs", [], false); ?></span>
+            <button type="button" id="task-manager-copy-btn" class="btn btn-default btn-xs" style="padding: 1px 7px; font-size: 10px; background: #333; color: #eee; border: 1px solid #555; border-radius: 3px;" onclick="copyTaskLogs(event)" data-copied-label="<?php _e('global_task_manager.copied', [], false); ?>">
+                <i class="fa fa-copy"></i> <span id="task-manager-copy-text"><?php _e("global_task_manager.copy_logs", [], false); ?></span>
+            </button>
+        </div>
+        <div class="task-logs-container" id="task-manager-logs" style="height: 140px; overflow-y: auto; padding: 10px; background: #1e1e1e; color: #00ff00; font-family: monospace; font-size: 11px; white-space: pre-wrap; border-top: none;">
+            <!-- Les logs seront injectés ici -->
+        </div>
     </div>
 </div>
 

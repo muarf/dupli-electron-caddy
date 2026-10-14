@@ -26,6 +26,26 @@ window.addEventListener('unhandledrejection', function(e) {
   document.body.appendChild(errDiv);
 });
 </script>
+<?php
+$i18n = I18nManager::getInstance();
+$allTranslations = $i18n->getAllTranslations();
+$studioTranslations = $allTranslations['studio_js'] ?? [];
+$jsTranslations = [];
+foreach ($studioTranslations as $k => $v) {
+    $jsTranslations["studio_js.$k"] = $v;
+    $jsTranslations[$k] = $v;
+}
+if (isset($allTranslations['js']) && is_array($allTranslations['js'])) {
+    foreach ($allTranslations['js'] as $k => $v) {
+        $jsTranslations["js.$k"] = $v;
+    }
+}
+?>
+<script>
+window.CONFIG = window.CONFIG || {};
+window.CONFIG.translations = Object.assign(window.CONFIG.translations || {}, <?= json_encode($jsTranslations, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>);
+var CONFIG = window.CONFIG;
+</script>
 <script src="js/riso-tools.js?v=<?php echo time(); ?>" defer></script>
 <script src="js/studio-montage.js?v=<?php echo time(); ?>" defer></script>
 <script src="js/studio-modification.js?v=<?php echo time(); ?>" defer></script>
@@ -108,16 +128,9 @@ window.addEventListener('unhandledrejection', function(e) {
       <!-- Canvas standard (rendu du PDF/image) -->
       <canvas id="studioCanvas" style="display:none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 4px; transition: transform 0.2s;"></canvas>
       
-      <!-- Crop overlay container (position:absolute par-dessus le canvas, seulement en mode crop) -->
-      <div id="cropContainer" style="display:none; position:absolute; pointer-events:none; z-index:15;">
-        <!-- Coin spacer -->
-        <div id="cropCorner" style="position:absolute; top:0; left:0; width:30px; height:30px; background:#f0f2f5; border-bottom:1px solid #ccc; border-right:1px solid #ccc; z-index:5;"></div>
-        <!-- Règle X (haut) -->
-        <canvas id="cropRulerX" style="position:absolute; top:0; left:30px; height:30px; display:block; background:#f0f2f5; border-bottom:1px solid #ccc; max-width:none !important; max-height:none !important; object-fit:fill !important; box-shadow:none !important; z-index:5;"></canvas>
-        <!-- Règle Y (gauche) -->
-        <canvas id="cropRulerY" style="position:absolute; top:30px; left:0; width:30px; display:block; background:#f0f2f5; border-right:1px solid #ccc; max-width:none !important; max-height:none !important; object-fit:fill !important; box-shadow:none !important; z-index:5;"></canvas>
-        <!-- Overlay de crop (poignées + zones rouges) - pointer-events actif -->
-        <canvas id="cropOverlay" style="position:absolute; top:30px; left:30px; cursor:crosshair; z-index:10; pointer-events:auto; background:transparent !important; box-shadow:none !important;"></canvas>
+      <!-- Crop / Margins overlay container -->
+      <div id="cropContainer" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:15;">
+        <canvas id="cropOverlay" style="position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair; z-index:10; pointer-events:auto; background:transparent !important; box-shadow:none !important; max-width:none !important; max-height:none !important;"></canvas>
       </div>
 
       <!-- Container pour l'édition de Modification (Fabric.js) -->
@@ -327,8 +340,17 @@ window.addEventListener('unhandledrejection', function(e) {
              </div>
           </div>
 
-          <div class="panel-row" style="margin-top:10px">
-            <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_tumble"><?php _e("studio.imposition_tete_beche", [], false); ?></label>
+          <div id="bro_tumble_section">
+            <div class="panel-row" style="margin-top:10px">
+              <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="bro_tumble" checked><?php _e("studio.imposition_tete_beche", [], false); ?></label>
+            </div>
+            <div id="bro_tumble_direction_row" class="panel-row" style="margin-top:5px; margin-left:15px;">
+              <div class="panel-label"><?php _e("studio.imposition_tumble_direction", [], false); ?></div>
+              <select class="panel-select" id="bro_tumble_direction" style="width:200px">
+                <option value="foot_to_foot"><?php _e("studio.imposition_tumble_foot_to_foot", [], false); ?></option>
+                <option value="head_to_head"><?php _e("studio.imposition_tumble_head_to_head", [], false); ?></option>
+              </select>
+            </div>
           </div>
 
           <div class="panel-row" style="margin-top:10px">
@@ -460,6 +482,13 @@ window.addEventListener('unhandledrejection', function(e) {
           <div class="panel-row" style="margin-top:10px">
             <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_tete_beche"><?php _e("studio.imposition_tete_beche", [], false); ?></label>
           </div>
+          <div id="liv_tumble_direction_row" class="panel-row" style="margin-top:5px; margin-left:15px; display:none;">
+            <div class="panel-label"><?php _e("studio.imposition_tumble_direction", [], false); ?></div>
+            <select class="panel-select" id="liv_tumble_direction" style="width:200px">
+              <option value="foot_to_foot"><?php _e("studio.imposition_tumble_foot_to_foot", [], false); ?></option>
+              <option value="head_to_head"><?php _e("studio.imposition_tumble_head_to_head", [], false); ?></option>
+            </select>
+          </div>
           <div class="panel-row" style="margin-top:10px">
             <label style="font-size:11px; cursor:pointer"><input type="checkbox" id="liv_collation_marks"><?php _e("studio.imposition_collation_marks", [], false); ?></label>
           </div>
@@ -554,29 +583,42 @@ window.addEventListener('unhandledrejection', function(e) {
           <button class="toolbar-btn primary" id="btnApplyResize" style="width:100%"><i class="fa fa-expand"></i><?php _e("studio.geometry_apply_resize", [], false); ?></button>
         </div>
       </div>
-      <!-- Section Crop -->
+      <!-- Section Crop & Marges -->
       <div class="panel-section">
         <div class="panel-section-title"><?php _e("studio.geometry_crop", [], false); ?></div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:6px;">
           <div>
             <div class="panel-label" style="font-size:11px;"><?php _e("studio.geometry_crop_top", [], false); ?></div>
-            <input type="number" class="panel-select" id="cropTop" value="0" min="0" step="0.5" style="padding:6px 8px;">
+            <input type="number" class="panel-select" id="cropTop" value="0" min="-200" max="200" step="0.5" style="padding:6px 8px;">
           </div>
           <div>
             <div class="panel-label" style="font-size:11px;"><?php _e("studio.geometry_crop_bottom", [], false); ?></div>
-            <input type="number" class="panel-select" id="cropBottom" value="0" min="0" step="0.5" style="padding:6px 8px;">
+            <input type="number" class="panel-select" id="cropBottom" value="0" min="-200" max="200" step="0.5" style="padding:6px 8px;">
           </div>
           <div>
             <div class="panel-label" style="font-size:11px;"><?php _e("studio.geometry_crop_left", [], false); ?></div>
-            <input type="number" class="panel-select" id="cropLeft" value="0" min="0" step="0.5" style="padding:6px 8px;">
+            <input type="number" class="panel-select" id="cropLeft" value="0" min="-200" max="200" step="0.5" style="padding:6px 8px;">
           </div>
           <div>
             <div class="panel-label" style="font-size:11px;"><?php _e("studio.geometry_crop_right", [], false); ?></div>
-            <input type="number" class="panel-select" id="cropRight" value="0" min="0" step="0.5" style="padding:6px 8px;">
+            <input type="number" class="panel-select" id="cropRight" value="0" min="-200" max="200" step="0.5" style="padding:6px 8px;">
           </div>
         </div>
+        <div style="font-size:10px; color:var(--studio-text-muted); margin-bottom:10px; line-height:1.3;">
+          💡 <em><?php _e("studio_js.crop_hint", [], false); ?></em>
+        </div>
+        <div style="margin-bottom:10px;">
+          <div class="panel-label" style="font-size:11px;"><?php _e("studio.modification_scope", [], false); ?></div>
+          <select class="panel-select" id="cropScope" style="width:100%;">
+            <option value="all"><?php _e("studio.modification_scope_all", [], false); ?></option>
+            <option value="book">📖 <?= __('studio_js.scope_book') !== 'studio_js.scope_book' ? __('studio_js.scope_book') : 'Livre (gauche / droite alterné)' ?></option>
+            <option value="even"><?php _e("studio.modification_scope_even", [], false); ?></option>
+            <option value="odd"><?php _e("studio.modification_scope_odd", [], false); ?></option>
+            <option value="current"><?php _e("studio.modification_scope_current", [], false); ?></option>
+          </select>
+        </div>
         <div id="cropSizeInfo" style="font-size:11px; color:var(--studio-text-muted); text-align:center; margin-bottom:10px; font-weight:500;">—</div>
-        <button class="toolbar-btn primary" id="btnActivateCrop" style="width:100%; margin-bottom:8px;"><i class="fa fa-crop"></i><?php _e("studio.geometry_apply_crop", [], false); ?></button>
+        <button class="toolbar-btn" id="btnActivateCrop" style="width:100%; margin-bottom:8px;"><i class="fa fa-eye"></i> <span id="lblActivateCrop"><?php _e("studio_js.show_crop_grid", [], false); ?></span></button>
         <button class="toolbar-btn" id="btnResetCrop" style="width:100%; margin-bottom:8px;"><i class="fa fa-undo"></i><?php _e("studio.geometry_reset_crop", [], false); ?></button>
         <button class="toolbar-btn primary" id="btnApplyCropExport" style="width:100%; background:#10b981; border-color:#10b981;"><i class="fa fa-scissors"></i> <?php _e("studio.geometry_crop_and_export", [], false); ?></button>
       </div>
@@ -1035,6 +1077,6 @@ window.addEventListener('unhandledrejection', function(e) {
   </div>
 </div>
 
-<script src="<?= $base_path ?>js/studio.js" defer></script>
+<script src="<?= $base_path ?>js/studio.js?v=<?php echo time(); ?>" defer></script>
 </body>
 </html>
