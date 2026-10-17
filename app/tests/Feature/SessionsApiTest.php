@@ -31,6 +31,13 @@ it('14.1-14.9 Teste tous les endpoints de l API sessions.php', function () {
     $json = json_decode($output, true);
     expect($json['success'])->toBeTrue();
     expect($json['sessions'])->toBeArray();
+    expect($json['sessions'])->toHaveCount(1);
+    expect($json['sessions'][0]['contact'])->toBe('TestContact');
+    expect($json['sessions'][0]['session_name'])->toBe('TestSession');
+    expect($json['sessions'][0]['status'])->toBe('active');
+    expect($json['sessions'][0]['notes'])->toBe('Test notes');
+    expect($json['sessions'][0]['job_count'])->toBe(0);
+    expect($json['sessions'][0]['total_price'])->toEqual(0);
 });
 
 function seed_sessions_schema(PDO $pdo): void {

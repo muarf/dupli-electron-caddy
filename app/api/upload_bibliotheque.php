@@ -44,11 +44,12 @@ try {
         $logFile = __DIR__ . '/../../logs/background_indexer.log';
         if ($scriptPath) {
             require_once __DIR__ . '/../controler/functions/binary_utilities.php';
-            $phpPath = escapeshellarg(get_php_executable());
             if (PHP_OS_FAMILY === 'Windows') {
-                $cmd = 'start /B "" ' . $phpPath . ' ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($result['id']) . ' >> ' . escapeshellarg($logFile) . ' 2>&1';
+                $phpPath = escape_shell_arg_with_percent(get_php_executable());
+                $cmd = 'start /B "" ' . $phpPath . ' ' . escape_shell_arg_with_percent($scriptPath) . ' ' . escape_shell_arg_with_percent((string)$result['id']) . ' >> ' . escape_shell_arg_with_percent($logFile) . ' 2>&1';
                 pclose(popen($cmd, 'r'));
             } else {
+                $phpPath = escapeshellarg(get_php_executable());
                 $cmd = sprintf(
                     'nohup %s %s %s >> %s 2>&1 &',
                     $phpPath,
