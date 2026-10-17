@@ -21,8 +21,9 @@
 }
 
 #global-task-manager.minimized .task-manager-body,
-#global-task-manager.minimized .task-manager-logs {
-    display: none;
+#global-task-manager.minimized .task-manager-logs,
+#global-task-manager.minimized #task-manager-logs-wrapper {
+    display: none !important;
 }
 
 .task-manager-header {
@@ -90,174 +91,24 @@
 
 <div id="global-task-manager">
     <div class="task-manager-header" onclick="toggleTaskManager()">
-        <span><i class="fa fa-tasks"></i> Tâches en arrière-plan (<span id="task-manager-count">0</span>)</span>
+        <span><i class="fa fa-tasks"></i><?php _e("global_task_manager.title", [], false); ?><span id="task-manager-count">0</span>)</span>
         <i id="task-manager-toggle-icon" class="fa fa-chevron-down"></i>
     </div>
     <div class="task-manager-body" id="task-manager-body">
         <!-- Les tâches seront injectées ici par JS -->
     </div>
-    <div class="task-logs-container" id="task-manager-logs" style="display: none;">
-        <!-- Les logs seront injectés ici -->
+    <div id="task-manager-logs-wrapper" class="task-manager-logs" style="display: none; border-top: 1px solid #333;">
+        <div style="background: #252526; padding: 4px 10px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #aaa;">
+            <span><i class="fa fa-terminal"></i> <?php _e("global_task_manager.logs", [], false); ?></span>
+            <button type="button" id="task-manager-copy-btn" class="btn btn-default btn-xs" style="padding: 1px 7px; font-size: 10px; background: #333; color: #eee; border: 1px solid #555; border-radius: 3px;" onclick="copyTaskLogs(event)" data-copied-label="<?php _e('global_task_manager.copied', [], false); ?>">
+                <i class="fa fa-copy"></i> <span id="task-manager-copy-text"><?php _e("global_task_manager.copy_logs", [], false); ?></span>
+            </button>
+        </div>
+        <div class="task-logs-container" id="task-manager-logs" style="height: 140px; overflow-y: auto; padding: 10px; background: #1e1e1e; color: #00ff00; font-family: monospace; font-size: 11px; white-space: pre-wrap; border-top: none;">
+            <!-- Les logs seront injectés ici -->
+        </div>
     </div>
 </div>
 
-<script>
-let globalTaskInterval = null;
-let currentTrackingJobId = null; // ID du job dont on affiche les logs
-let taskManagerMinimized = true; // Minimisé par défaut
+<script src="js/components/task-manager.js" defer></script>
 
-function toggleTaskManager() {
-    const tm = document.getElementById('global-task-manager');
-    const icon = document.getElementById('task-manager-toggle-icon');
-    if (taskManagerMinimized) {
-        tm.classList.remove('minimized');
-        icon.classList.remove('fa-chevron-up');
-        icon.classList.add('fa-chevron-down');
-    } else {
-        tm.classList.add('minimized');
-        icon.classList.remove('fa-chevron-down');
-        icon.classList.add('fa-chevron-up');
-    }
-    taskManagerMinimized = !taskManagerMinimized;
-}
-
-function startGlobalTaskTracking() {
-    if (globalTaskInterval) return;
-    
-    // Fermer par défaut au démarrage
-    document.getElementById('global-task-manager').classList.add('minimized');
-    document.getElementById('task-manager-toggle-icon').className = 'fa fa-chevron-up';
-    taskManagerMinimized = true;
-
-    globalTaskInterval = setInterval(fetchActiveJobs, 3000);
-    fetchActiveJobs(); // Premier appel immédiat
-}
-
-async function fetchActiveJobs() {
-    try {
-        const fd = new FormData();
-        fd.append('action', 'get_active_jobs');
-        const res = await fetch('index.php?studio_process', { method: 'POST', body: fd });
-        const data = await res.json();
-        
-        if (data.success && data.jobs) {
-            renderTaskManager(data.jobs);
-        }
-    } catch (e) {
-        console.error("Erreur Task Manager:", e);
-    }
-}
-
-function renderTaskManager(jobs) {
-    const tm = document.getElementById('global-task-manager');
-    const tmBody = document.getElementById('task-manager-body');
-    const tmCount = document.getElementById('task-manager-count');
-    const tmLogs = document.getElementById('task-manager-logs');
-    
-    if (jobs.length === 0) {
-        tm.style.display = 'none';
-        currentTrackingJobId = null;
-        return;
-    }
-    
-    tm.style.display = 'flex';
-    tmCount.innerText = jobs.length;
-    
-    let html = '';
-    let trackingJobExists = false;
-
-    jobs.forEach(job => {
-        let statusHtml = '';
-        let actionHtml = '';
-        
-        if (job.status === 'processing' || job.status === 'pending') {
-            statusHtml = '<i class="fa fa-spinner fa-spin text-primary"></i> Traitement en cours...';
-        } else if (job.status === 'done') {
-            statusHtml = '<i class="fa fa-check-circle text-success"></i> Terminé';
-            if (job.download_url && job.download_url !== 'null' && job.download_url !== 'undefined') {
-                actionHtml += `<a href="${job.download_url}" class="btn btn-success btn-xs task-download-btn" target="_blank" onclick="setTimeout(fetchActiveJobs, 1000)"><i class="fa fa-download"></i> Télécharger</a>`;
-                try {
-                    const fileParam = new URLSearchParams(job.download_url.split('?')[1]).get('file');
-                    if (fileParam && fileParam.toLowerCase().endsWith('.pdf')) {
-                        actionHtml += ` <a href="?studio&file=${encodeURIComponent(fileParam)}" class="btn btn-primary btn-xs task-download-btn"><i class="fa fa-edit"></i> Ouvrir dans le Studio</a>`;
-                    }
-                } catch(e) {}
-            }
-            actionHtml += ` <button type="button" class="btn btn-default btn-xs task-download-btn" onclick="deleteJob('${job.job_id}'); event.stopPropagation();"><i class="fa fa-times"></i> Fermer</button>`;
-        } else if (job.status === 'error') {
-            statusHtml = '<i class="fa fa-times-circle text-danger"></i> Erreur';
-            actionHtml += ` <button type="button" class="btn btn-default btn-xs task-download-btn" onclick="deleteJob('${job.job_id}'); event.stopPropagation();"><i class="fa fa-times"></i> Fermer</button>`;
-        }
-
-        let displayName = job.filename || job.originalName || job.job_id || 'Tâche';
-        
-        html += `
-            <div class="task-item">
-                <div class="task-title" title="${displayName}">${displayName.length > 30 ? displayName.substring(0,27)+'...' : displayName}</div>
-                <div class="task-status">${statusHtml}</div>
-                ${actionHtml}
-            </div>
-        `;
-        
-        if (currentTrackingJobId === job.job_id) {
-            trackingJobExists = true;
-        }
-    });
-    
-    tmBody.innerHTML = html;
-    
-    // Si on ne traque pas de job précis mais qu'il y en a un en cours, on traque le premier
-    if (!trackingJobExists && jobs.length > 0) {
-        // Traquer le premier job en cours, sinon le premier job
-        const pendingJob = jobs.find(j => j.status === 'processing' || j.status === 'pending');
-        currentTrackingJobId = pendingJob ? pendingJob.job_id : jobs[0].job_id;
-    }
-    
-    // Mettre à jour les logs du job en cours de traquage
-    if (currentTrackingJobId && !taskManagerMinimized) {
-        fetchJobLogs(currentTrackingJobId);
-    }
-}
-
-async function fetchJobLogs(jobId) {
-    try {
-        const fd = new FormData();
-        fd.append('action', 'ocr_status'); // Utilisation de l'endpoint enrichi
-        fd.append('job_id', jobId);
-        const res = await fetch('index.php?studio_process', { method: 'POST', body: fd });
-        const data = await res.json();
-        
-        const tmLogs = document.getElementById('task-manager-logs');
-        if (data.success && data.job && data.job.logs) {
-            tmLogs.style.display = 'block';
-            tmLogs.innerText = data.job.logs;
-            tmLogs.scrollTop = tmLogs.scrollHeight;
-        } else {
-            tmLogs.style.display = 'none';
-        }
-    } catch (e) {
-        // Ignore errors
-    }
-}
-
-async function deleteJob(jobId) {
-    try {
-        const fd = new FormData();
-        fd.append('action', 'delete_job');
-        fd.append('job_id', jobId);
-        await fetch('index.php?studio_process', { method: 'POST', body: fd });
-        
-        // Si c'était le job qu'on affichait en logs, on ferme les logs
-        if (currentTrackingJobId === jobId) {
-            currentTrackingJobId = null;
-            document.getElementById('task-manager-logs').style.display = 'none';
-        }
-        fetchActiveJobs();
-    } catch(e) {
-        console.error("Erreur deleteJob", e);
-    }
-}
-
-// Initialiser le gestionnaire au chargement
-document.addEventListener('DOMContentLoaded', startGlobalTaskTracking);
-</script>

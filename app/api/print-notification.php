@@ -25,7 +25,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
 // Vérifier que la requête est en POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['error' => 'Méthode non autorisée']);
+    echo json_encode(['error' => __('api.print_notification.method_not_allowed')]);
     exit;
 }
 
@@ -35,7 +35,7 @@ $data = json_decode($input, true);
 
 if (json_last_error() !== JSON_ERROR_NONE) {
     http_response_code(400);
-    echo json_encode(['error' => 'JSON invalide: ' . json_last_error_msg()]);
+    echo json_encode(['error' => __('api.print_notification.invalid_json') . ': ' . json_last_error_msg()]);
     exit;
 }
 
@@ -44,7 +44,7 @@ $requiredFields = ['jobId', 'document', 'printerName', 'status', 'timestamp'];
 foreach ($requiredFields as $field) {
     if (!isset($data[$field])) {
         http_response_code(400);
-        echo json_encode(['error' => "Champ manquant: $field"]);
+        echo json_encode(['error' => __('api.print_notification.missing_field', ['field' => $field])]);
         exit;
     }
 }
@@ -60,6 +60,7 @@ try {
     // Inclure les fichiers nécessaires
     require_once(__DIR__ . '/../controler/functions/database.php');
     require_once(__DIR__ . '/../controler/functions/utilities.php');
+    require_once(__DIR__ . '/../controler/functions/i18n.php');
 
     // Créer le gestionnaire de base de données
     $db = create_database_manager();
@@ -314,7 +315,7 @@ try {
     error_log('Erreur lors de l\'enregistrement de la notification d\'impression: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode([
-        'error' => 'Erreur serveur',
+        'error' => __('api.print_notification.server_error'),
         'message' => $e->getMessage()
     ]);
 }

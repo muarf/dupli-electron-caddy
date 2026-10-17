@@ -6,16 +6,7 @@
 // La fonction getBibliothequeDir() est désormais centralisée dans paths.php
 // Elle est chargée via func.php -> paths.php
 
-/**
- * Normalise un chemin
- */
-if (!function_exists('normalizePath')) {
-    function normalizePath($path) {
-        $path = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $path);
-        $path = trim($path);
-        return rtrim($path, DIRECTORY_SEPARATOR);
-    }
-}
+
 
 /**
  * Scanne un dossier pour trouver des PDF et PNG
@@ -108,8 +99,11 @@ function requireBibliothequeAuth() {
     }
     
     // Sinon, on refuse l'accès
-    // Si c'est une requête AJAX (fetch, xhr) on renvoie 403
-    if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+    // Si c'est une requête AJAX/fetch (headers X-Requested-With, Accept json/event-stream) on renvoie 403
+    $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')
+           || (!empty($_SERVER['HTTP_ACCEPT']) && (strpos($_SERVER['HTTP_ACCEPT'], 'json') !== false || strpos($_SERVER['HTTP_ACCEPT'], 'text/event-stream') !== false));
+
+    if ($isAjax) {
         http_response_code(403);
         echo json_encode(['error' => 'Authentication required for library', 'auth_required' => true]);
         exit;

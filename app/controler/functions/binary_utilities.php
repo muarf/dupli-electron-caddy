@@ -265,10 +265,11 @@ function escape_shell_arg_with_percent(string $arg): string
  *
  * @return string Exemple: "set HF_HOME=D:\IA\hf_cache && " (Windows) ou "export HF_HOME=/opt/IA/hf_cache && " (Linux/Mac)
  */
-function get_hf_home_env(): string
+function get_hf_home_env(?PDO $db = null): string
 {
-    global $db;
-    if (!$db && function_exists('pdo_connect')) {
+    if (!$db && isset($GLOBALS['db']) && $GLOBALS['db'] instanceof PDO) {
+        $db = $GLOBALS['db'];
+    } elseif (!$db && function_exists('pdo_connect')) {
         $db = pdo_connect();
     }
     if ($db) {
@@ -342,7 +343,21 @@ function get_python_path(): string
 function get_php_executable(): string
 {
     if (PHP_OS_FAMILY === 'Windows') {
+        if (defined('PHP_BINARY') && !empty(PHP_BINARY) && file_exists(PHP_BINARY)) {
+            $bin = PHP_BINARY;
+            if (strpos(strtolower($bin), 'php-cgi.exe') !== false) {
+                $cliBin = dirname($bin) . DIRECTORY_SEPARATOR . 'php.exe';
+                if (file_exists($cliBin)) {
+                    return $cliBin;
+                }
+            } else {
+                return $bin;
+            }
+        }
         $local_paths = [
+            __DIR__ . '/../../../php/php.exe',
+            __DIR__ . '/../../php/php.exe',
+            __DIR__ . '/../php/php.exe',
             __DIR__ . '/../../../bin/win-x64/php/php.exe',
             __DIR__ . '/../../bin/win-x64/php/php.exe',
             __DIR__ . '/../../../../../../../bin/win-x64/php/php.exe'
@@ -359,12 +374,26 @@ function get_php_executable(): string
     // Server Linux / macOS
     if (defined('PHP_BINARY') && !empty(PHP_BINARY)) {
         // PHP-FPM and CGI cannot execute CLI scripts directly via arguments
-        if (strpos(PHP_BINARY, 'fpm') !== false || strpos(PHP_BINARY, 'cgi') !== false) {
-            return '/usr/bin/env php';
+        if (strpos(PHP_BINARY, 'fpm') === false && strpos(PHP_BINARY, 'cgi') === false) {
+            return PHP_BINARY;
         }
-        return PHP_BINARY;
     }
-    return '/usr/bin/env php';
+
+    if (function_exists('shell_exec') && !in_array('shell_exec', array_map('trim', explode(',', ini_get('disable_functions'))))) {
+        $cli = trim((string)(shell_exec('which php 2>/dev/null') ?? ''));
+        if (!empty($cli) && file_exists($cli)) {
+            return $cli;
+        }
+    }
+
+    foreach (['/usr/bin/php', '/usr/local/bin/php', '/opt/homebrew/bin/php'] as $path) {
+        if (file_exists($path) && is_executable($path)) {
+            return $path;
+        }
+    }
+
+    error_log("Duplicator Studio: Could not find PHP CLI executable. Falling back to 'php'. Background jobs may fail if 'php' is not in PATH.");
+    return 'php';
 }
 
 /**

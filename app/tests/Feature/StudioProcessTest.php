@@ -97,13 +97,49 @@ it('impose un PDF en brochure (brochure_type = booklet/leaflet)', function () {
         // Analyser le fichier généré
         preg_match('/file=([^&]+)/', $response['download_url'], $matches);
         $fileName = urldecode($matches[1]);
-        $outputFile = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR . $fileName;
+        $outputFile = getenv('DUPLICATOR_TEMP_DIR') . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR . $fileName;
 
         expect(file_exists($outputFile))->toBeTrue();
         $inspector = new TCPDI();
         $pageCount = $inspector->setSourceFile($outputFile);
         // 3 pages + 1 page blanche (padded to 4) = 2 planches (feuilles A4)
         expect($pageCount)->toBe(2);
+    } finally {
+        cleanupPath($pdfPath);
+    }
+});
+
+it('impose un PDF en brochure avec découpage en cahiers de signatures', function () {
+    $pdfPath = createSamplePdf(40);
+
+    try {
+        $response = runStudioProcess('impose', [
+            'impose_type' => 'brochure',
+            'n_up' => 2,
+            'resize_mode' => 'percent',
+            'scale' => 100,
+            'signature_size' => '16',
+            'signature_marks' => '1',
+        ], [
+            'file' => [
+                'name' => 'signatures.pdf',
+                'type' => 'application/pdf',
+                'tmp_name' => $pdfPath,
+            ],
+        ]);
+
+        expect($response['success'])->toBeTrue();
+        expect($response['download_url'])->toMatch('/download_studio/');
+
+        preg_match('/file=([^&]+)/', $response['download_url'], $matches);
+        $fileName = urldecode($matches[1]);
+        $outputFile = getenv('DUPLICATOR_TEMP_DIR') . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR . $fileName;
+
+        expect(file_exists($outputFile))->toBeTrue();
+        $inspector = new TCPDI();
+        $pageCount = $inspector->setSourceFile($outputFile);
+        // 40 pages → 3 cahiers de 16 = 48 pages → 48/4 = 12 feuilles × 2 faces = 24 planches
+        expect($pageCount)->toBe(24);
     } finally {
         cleanupPath($pdfPath);
     }
@@ -131,7 +167,7 @@ it('impose un PDF en livre (cut & stack)', function () {
 
         preg_match('/file=([^&]+)/', $response['download_url'], $matches);
         $fileName = urldecode($matches[1]);
-        $outputFile = resolveTempDir() . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR . $fileName;
+        $outputFile = getenv('DUPLICATOR_TEMP_DIR') . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR . $fileName;
 
         expect(file_exists($outputFile))->toBeTrue();
     } finally {
@@ -179,6 +215,26 @@ it('redimensionne un PDF', function () {
 
         expect($response['success'])->toBeTrue();
         expect($response['download_url'])->toMatch('/download_studio/');
+
+        preg_match('/file=([^&]+)/', $response['download_url'], $matches);
+        $fileName = urldecode($matches[1]);
+        $outputFile = getenv('DUPLICATOR_TEMP_DIR') . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR . $fileName;
+
+        expect(file_exists($outputFile))->toBeTrue();
+
+        $pdf = new TCPDI();
+        $pageCount = $pdf->setSourceFile($outputFile);
+        expect($pageCount)->toBe(4);
+
+        // Page 1 (odd) is cropped, so width = 210 - 5 = 205
+        $tpl1 = $pdf->importPage(1);
+        $size1 = $pdf->getTemplateSize($tpl1);
+        expect(round($size1['width']))->toEqual(205.0);
+
+        // Page 2 (even) is not cropped, so width = 210
+        $tpl2 = $pdf->importPage(2);
+        $size2 = $pdf->getTemplateSize($tpl2);
+        expect(round($size2['width']))->toEqual(210.0);
     } finally {
         cleanupPath($pdfPath);
     }
@@ -352,6 +408,136 @@ it('organise les pages (organize_pages)', function () {
 
         expect($response['success'])->toBeTrue();
         expect($response['download_url'])->toMatch('/download_studio/');
+    } finally {
+        cleanupPath($pdfPath);
+    }
+});
+
+it('rogne un PDF avec portée paritaire (crop_pdf)', function () {
+    $pdfPath = createSamplePdf(4);
+
+    try {
+        $response = runStudioProcess('crop_pdf', [
+            'crop' => json_encode([
+                'top' => 0,
+                'bottom' => 0,
+                'left' => 5,
+                'right' => 0,
+            ]),
+            'scope' => 'odd',
+            'currentPage' => 1,
+        ], [
+            'file' => [
+                'name' => 'sample_4p.pdf',
+                'type' => 'application/pdf',
+                'tmp_name' => $pdfPath,
+            ],
+        ]);
+
+        expect($response['success'])->toBeTrue();
+        expect($response['download_url'])->toMatch('/download_studio/');
+    } finally {
+        cleanupPath($pdfPath);
+    }
+});
+
+it('rogne un PDF en mode livre avec alternance gauche/droite (crop_pdf scope book)', function () {
+    $pdfPath = createSamplePdf(2);
+
+    try {
+        $response = runStudioProcess('crop_pdf', [
+            'crop' => json_encode([
+                'top' => 0,
+                'bottom' => 0,
+                'left' => 10,
+                'right' => 20,
+            ]),
+            'scope' => 'book',
+            'currentPage' => 1,
+        ], [
+            'file' => [
+                'name' => 'sample_book.pdf',
+                'type' => 'application/pdf',
+                'tmp_name' => $pdfPath,
+            ],
+        ]);
+
+        expect($response['success'])->toBeTrue();
+        expect($response['download_url'])->toMatch('/download_studio/');
+
+        preg_match('/file=([^&]+)/', $response['download_url'], $matches);
+        $fileName = urldecode($matches[1]);
+        $outputFile = getenv('DUPLICATOR_TEMP_DIR') . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR . $fileName;
+
+        expect(file_exists($outputFile))->toBeTrue();
+
+        $pdf = new TCPDI();
+        $pageCount = $pdf->setSourceFile($outputFile);
+        expect($pageCount)->toBe(2);
+
+        // A4 = 210 x 297mm -> cropped: w = 210 - 10 - 20 = 180mm
+        // In book mode, odd pages crop left=10, right=20; even pages crop left=20, right=10
+        // Because of the TCPDI bounding box (which can't natively report origin shift if MediaBox varies),
+        // we at least ensure dimensions are correct for both.
+        // For a full shift test we would parse the MediaBox.
+        for ($p = 1; $p <= 2; $p++) {
+            $tpl = $pdf->importPage($p);
+            $size = $pdf->getTemplateSize($tpl);
+            expect(round($size['width']))->toEqual(180.0);
+            expect(round($size['height']))->toEqual(297.0);
+        }
+
+        // Assert MediaBox changes directly
+        $content = file_get_contents($outputFile);
+        // Odd page (page 1) should have MediaBox [28.35 0 538.58 841.89] (10mm = 28.346pt, 210-20=190mm=538.582pt)
+        // Even page (page 2) should have MediaBox [56.69 0 566.93 841.89] (20mm = 56.693pt, 210-10=200mm=566.929pt)
+        // FPDF formats floats with 2 decimals
+        expect($content)->toMatch('/\[28\.3[45]\s+0(\.00)?\s+538\.58\s+841\.89\]/');
+        expect($content)->toMatch('/\[56\.69\s+0(\.00)?\s+566\.93\s+841\.89\]/');
+    } finally {
+        cleanupPath($pdfPath);
+    }
+});
+
+it('ajoute des marges blanches à un PDF (crop_pdf valeurs négatives)', function () {
+    $pdfPath = createSamplePdf(1);
+
+    try {
+        $response = runStudioProcess('crop_pdf', [
+            'crop' => json_encode([
+                'top' => -10,
+                'bottom' => -10,
+                'left' => -15,
+                'right' => -15,
+            ]),
+            'scope' => 'all',
+            'currentPage' => 1,
+        ], [
+            'file' => [
+                'name' => 'sample_expand.pdf',
+                'type' => 'application/pdf',
+                'tmp_name' => $pdfPath,
+            ],
+        ]);
+
+        expect($response['success'])->toBeTrue();
+        expect($response['download_url'])->toMatch('/download_studio/');
+
+        preg_match('/file=([^&]+)/', $response['download_url'], $matches);
+        $fileName = urldecode($matches[1]);
+        $outputFile = getenv('DUPLICATOR_TEMP_DIR') . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR . $fileName;
+
+        expect(file_exists($outputFile))->toBeTrue();
+
+        $pdf = new TCPDI();
+        $pageCount = $pdf->setSourceFile($outputFile);
+        expect($pageCount)->toBe(1);
+
+        // A4 = 210 x 297mm -> expanded: w = 210 + 15 + 15 = 240mm, h = 297 + 10 + 10 = 317mm
+        $tpl = $pdf->importPage(1);
+        $size = $pdf->getTemplateSize($tpl);
+        expect(round($size['width']))->toEqual(240.0);
+        expect(round($size['height']))->toEqual(317.0);
     } finally {
         cleanupPath($pdfPath);
     }

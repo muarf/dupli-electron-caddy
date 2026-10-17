@@ -451,10 +451,10 @@
     <!-- En-tête avec statistiques -->
     <div class="header-section">
         <h1>
-            <i class="fa fa-globe"></i> Gestion des Traductions
+            <i class="fa fa-globe"></i> <?php _e('admin_translations.title'); ?>
         </h1>
         <p style="margin: 0; opacity: 0.9; font-size: 1.1em;">
-            Interface améliorée avec organisation par pages et langues
+            <?php _e('admin_translations.description'); ?>
         </p>
         
         <div class="stats-grid">
@@ -463,7 +463,7 @@
                     <h4><?= $translation_stats[$lang]['name'] ?></h4>
                     <div class="stat-percentage"><?= $translation_stats[$lang]['percentage'] ?>%</div>
                     <small style="opacity: 0.8;">
-                        <?= $translation_stats[$lang]['translated_keys'] ?> / <?= $translation_stats[$lang]['total_keys'] ?> traductions
+                        <?= $translation_stats[$lang]['translated_keys'] ?> / <?= $translation_stats[$lang]['total_keys'] ?> <?php _e('admin_translations.translations_count'); ?>
                     </small>
                     <div class="progress-bar">
                         <div class="progress-fill" style="width: <?= $translation_stats[$lang]['percentage'] ?>%"></div>
@@ -499,7 +499,7 @@
             <input type="hidden" name="action" value="export_csv">
             <input type="hidden" name="language" value="<?= $selected_language ?>">
             <button type="submit" class="btn btn-info">
-                <i class="fa fa-download"></i> Exporter CSV
+                <i class="fa fa-download"></i> <?php _e('admin_translations.export_csv'); ?>
             </button>
         </form>
         
@@ -508,7 +508,7 @@
             <input type="hidden" name="language" value="<?= $selected_language ?>">
             <input type="file" name="csv_file" accept=".csv" style="display: none;" id="csv-file" onchange="this.form.submit()">
             <button type="button" class="btn btn-success" onclick="document.getElementById('csv-file').click()">
-                <i class="fa fa-upload"></i> Importer CSV
+                <i class="fa fa-upload"></i> <?php _e('admin_translations.import_csv'); ?>
             </button>
         </form>
     </div>
@@ -535,7 +535,7 @@
                     <div class="search-box">
                         <input type="text" 
                                id="search-<?= $lang ?>" 
-                               placeholder="Rechercher dans les traductions <?= $translation_stats[$lang]['name'] ?>..." 
+                               placeholder="<?= htmlspecialchars(__('admin_translations.search_placeholder')) ?> <?= $translation_stats[$lang]['name'] ?>..." 
                                class="form-control">
                         <i class="fa fa-search"></i>
                     </div>
@@ -581,7 +581,7 @@
                                                         class="btn-save" 
                                                         data-key="<?= htmlspecialchars($key) ?>"
                                                         data-language="<?= $lang ?>">
-                                                    <i class="fa fa-save"></i> Sauver
+                                                    <i class="fa fa-save"></i> <?php _e('admin_translations.save'); ?>
                                                 </button>
                                             </div>
                                         </div>
@@ -596,135 +596,4 @@
     </div>
 </div>
 
-<script>
-$(document).ready(function() {
-    // Gestion des onglets de langue
-    $('.language-tab').on('click', function() {
-        var language = $(this).data('language');
-        
-        // Changer l'URL sans recharger la page
-        var url = new URL(window.location);
-        url.searchParams.set('lang', language);
-        window.history.pushState({}, '', url);
-        
-        // Mettre à jour l'affichage
-        $('.language-tab').removeClass('active');
-        $('.language-content').removeClass('active');
-        
-        $(this).addClass('active');
-        $('#content-' + language).addClass('active');
-    });
-    
-    // Recherche dans les traductions
-    $('.search-box input').on('input', function() {
-        var searchTerm = $(this).val().toLowerCase();
-        var language = $(this).attr('id').replace('search-', '');
-        
-        $('.language-content[data-language="' + language + '"] .translation-item').each(function() {
-            var key = $(this).find('.translation-key').text().toLowerCase();
-            var value = $(this).find('.translation-value input').val().toLowerCase();
-            
-            if (key.includes(searchTerm) || value.includes(searchTerm)) {
-                $(this).show();
-                $(this).closest('.page-accordion-content').show();
-                $(this).closest('.page-accordion').show();
-            } else {
-                $(this).hide();
-            }
-        });
-        
-        // Masquer les accordéons vides
-        $('.page-accordion-content').each(function() {
-            var visibleItems = $(this).find('.translation-item:visible').length;
-            if (visibleItems === 0 && searchTerm !== '') {
-                $(this).hide();
-                $(this).closest('.page-accordion').hide();
-            } else {
-                $(this).closest('.page-accordion').show();
-            }
-        });
-    });
-    
-    // Sauvegarde des traductions
-    $('.btn-save').on('click', function() {
-        var key = $(this).data('key');
-        var language = $(this).data('language');
-        var value = $(this).closest('.translation-item').find('.translation-input').val();
-        var button = $(this);
-        
-        // Permettre la modification de toutes les langues
-        
-        // Animation de sauvegarde
-        button.removeClass('btn-save success error').addClass('btn-save saving');
-        button.html('<i class="fa fa-spinner fa-spin"></i> Sauvegarde...');
-        button.prop('disabled', true);
-        
-        $.ajax({
-            url: '?admin_translations',
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            data: {
-                action: 'update_translation',
-                language: language,
-                key: key,
-                value: value
-            },
-            success: function(response) {
-                console.log('Sauvegarde réussie:', response);
-                button.removeClass('saving').addClass('success');
-                button.html('<i class="fa fa-check"></i> Sauvé');
-                
-                setTimeout(function() {
-                    button.removeClass('success').addClass('btn-save');
-                    button.html('<i class="fa fa-save"></i> Sauver');
-                    button.prop('disabled', false);
-                }, 2000);
-            },
-            error: function(xhr, status, error) {
-                console.error('Erreur de sauvegarde:', xhr.responseText, status, error);
-                button.removeClass('saving').addClass('error');
-                button.html('<i class="fa fa-times"></i> Erreur');
-                
-                setTimeout(function() {
-                    button.removeClass('error').addClass('btn-save');
-                    button.html('<i class="fa fa-save"></i> Sauver');
-                    button.prop('disabled', false);
-                }, 2000);
-            }
-        });
-    });
-    
-    // Sauvegarde automatique avec Ctrl+S
-    $(document).on('keydown', function(e) {
-        if (e.ctrlKey && e.keyCode === 83) {
-            e.preventDefault();
-            $('.translation-item:visible .btn-save:enabled').first().click();
-        }
-    });
-});
-
-// Fonction pour basculer les accordéons
-function toggleAccordion(language, page) {
-    var content = $('#content-' + language + '-' + page);
-    var arrow = $('#arrow-' + language + '-' + page);
-    var header = arrow.closest('.page-accordion-header');
-    
-    if (content.hasClass('active')) {
-        content.removeClass('active');
-        header.removeClass('active');
-        arrow.removeClass('fa-chevron-up').addClass('fa-chevron-down');
-    } else {
-        // Fermer tous les autres accordéons de cette langue
-        $('#accordions-' + language + ' .page-accordion-content.active').removeClass('active');
-        $('#accordions-' + language + ' .page-accordion-header.active').removeClass('active');
-        $('#accordions-' + language + ' .accordion-arrow').removeClass('fa-chevron-up').addClass('fa-chevron-down');
-        
-        // Ouvrir celui-ci
-        content.addClass('active');
-        header.addClass('active');
-        arrow.removeClass('fa-chevron-down').addClass('fa-chevron-up');
-    }
-}
-</script>
+<script src="js/admin-translations.js" defer></script>

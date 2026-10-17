@@ -94,6 +94,7 @@ if (!function_exists('create_essential_tables')) {
                 document_name TEXT DEFAULT '',
                 thumbnail_url TEXT DEFAULT NULL,
                 nb_exemplaires INTEGER DEFAULT 1,
+                taille TEXT DEFAULT '',
                 tirage_global_id TEXT DEFAULT NULL,
                 session_id INTEGER DEFAULT NULL
             )",

@@ -878,16 +878,7 @@ function handleDatabaseSection($array, $dbManager, $backupManager) {
     // Stocker les variables dans $GLOBALS pour les préserver
     $GLOBALS['model_variables'] = $array;
     
-    // Extraire les variables pour la vue
-    extract($array);
-    
-    // Capturer le contenu de la vue
-    ob_start();
-    include(__DIR__ . "/../view/admin.bdd.html.php");
-    $content = ob_get_contents();
-    ob_end_clean();
-    
-    return $content;
+    return template(__DIR__ . "/../view/admin.bdd.html.php", $array);
 }
 
 

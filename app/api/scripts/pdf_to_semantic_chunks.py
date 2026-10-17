@@ -37,6 +37,28 @@ import sys
 import json
 import re
 import time
+import signal
+
+# Timeout global pour le script (le parent PHP a 900s, on se met 850s pour être sûr)
+TIMEOUT_SECONDS = 850
+
+def _timeout_handler(signum, frame):
+    raise TimeoutError(f"Script interrompu après {TIMEOUT_SECONDS}s (dépassement du timeout interne)")
+
+# Configurer le signal d'alarme (Unix seulement)
+try:
+    signal.signal(signal.SIGALRM, _timeout_handler)
+    signal.alarm(TIMEOUT_SECONDS)
+except (AttributeError, ValueError):
+    pass  # Windows ou environnement sans signal.alarm
+
+# Limiter la mémoire vive (8 Go max) pour éviter l'OOM killer
+try:
+    import resource
+    GB = 1024 * 1024 * 1024
+    resource.setrlimit(resource.RLIMIT_AS, (8 * GB, 8 * GB))
+except (ImportError, ValueError, resource.error):
+    pass  # Windows ou limite non applicable
 
 # ─── Paramètres de chunking ───────────────────────────────────────────────────
 MIN_WORDS   = 80    # Fusionner avec le chunk suivant si trop court
@@ -287,6 +309,12 @@ def main():
         result = converter.convert(pdf_path)
         markdown_full = result.document.export_to_markdown()
 
+    except MemoryError as e:
+        print(f"ERREUR Mémoire insuffisante pour Docling: {e}", file=sys.stderr)
+        sys.exit(1)
+    except TimeoutError as e:
+        print(f"ERREUR {e}", file=sys.stderr)
+        sys.exit(1)
     except Exception as e:
         print(f"ERREUR conversion Docling: {e}", file=sys.stderr)
         sys.exit(1)
@@ -320,6 +348,13 @@ def main():
 
     # Résumé sur stdout pour le worker PHP
     print(f"SUCCESS: {len(chunks)} chunks, {total_words} mots, {elapsed}s")
+
+    # Désactiver l'alarme en cas de succès
+    try:
+        signal.alarm(0)
+    except (AttributeError, ValueError):
+        pass
+
     sys.exit(0)
 
 

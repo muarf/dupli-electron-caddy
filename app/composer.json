@@ -20,10 +20,8 @@
     },
     "autoload": {
         "classmap": [
+            "models/",
             "models/admin/",
-            "models/BibliothequeManager.php",
-            "models/ImpositionLeaflet.php",
-            "controler/functions/SpoolManager.php",
             "controler/functions/"
         ]
     },

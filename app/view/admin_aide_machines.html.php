@@ -35,7 +35,7 @@
                 <div class="form-group">
                   <label><?php _e('admin_aide.select_pdf'); ?> :</label>
                   <input type="file" id="pdf-file-input" class="form-control" accept=".pdf" />
-                  <small class="text-muted">Maximum 10MB, format PDF uniquement</small>
+                  <small class="text-muted"><?php _e("admin_aide.pdf_file_hint", [], false); ?></small>
                 </div>
                 <button type="button" class="btn btn-primary" onclick="uploadPdf()">
                   <i class="fa fa-upload"></i> <?php _e('admin_aide.upload_pdf'); ?>
@@ -54,7 +54,7 @@
             <h4><?php _e('admin_aide.uploaded_pdfs'); ?></h4>
             <div id="pdf-list" class="table-responsive">
               <div class="alert alert-info">
-                <i class="fa fa-spinner fa-spin"></i> Chargement des PDFs...
+                <i class="fa fa-spinner fa-spin"></i> <?php _e("admin_aide.loading_pdfs"); ?>
               </div>
             </div>
           </div>
@@ -550,10 +550,10 @@
           var html = '<table class="table table-striped table-hover">' +
             '<thead>' +
             '<tr>' +
-            '<th>Nom du PDF</th>' +
-            '<th>Date d\'upload</th>' +
-            '<th>Taille</th>' +
-            '<th>Actions</th>' +
+            '<th><?php _e("admin_aide.pdf_name", [], false); ?></th>' +
+            '<th><?php _e("admin_aide.upload_date", [], false); ?></th>' +
+            '<th><?php _e("admin_aide.pdf_size", [], false); ?></th>' +
+            '<th><?php _e("admin_aide.actions", [], false); ?></th>' +
             '</tr>' +
             '</thead>' +
             '<tbody>';
@@ -593,7 +593,7 @@
         }
       })
       .catch(error => {
-        document.getElementById('pdf-list').innerHTML = '<div class="alert alert-danger">Erreur lors du chargement des PDFs</div>';
+        document.getElementById('pdf-list').innerHTML = '<div class="alert alert-danger"><?php _e("admin_aide.pdf_list_error", [], false); ?></div>';
       });
   }
 
@@ -608,7 +608,7 @@
         '<i class="fa fa-file-pdf-o" style="color: #d32f2f; margin-right: 5px;"></i>' +
         '<strong>' + name + '</strong>' +
         '<a href="' + url + '" target="_blank" style="float: right; color: #1976d2; text-decoration: none;">' +
-        '<i class="fa fa-external-link"></i> Ouvrir dans un nouvel onglet</a>' +
+        '<i class="fa fa-external-link"></i><?php _e("admin_aide.open_in_new_tab", [], false); ?></a>' +
         '</div>' +
         '<iframe src="' + url + '" width="100%" height="500px" style="border: none;"></iframe>' +
         '</div>';

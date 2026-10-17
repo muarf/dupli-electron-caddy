@@ -8,21 +8,26 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+$remoteAddr = $_SERVER['REMOTE_ADDR'] ?? '';
+$isLocalServer = in_array($remoteAddr, ['127.0.0.1', '::1', 'localhost'], true) || strpos($remoteAddr, '127.0.0.1') !== false;
+
 if ((!isset($_SESSION['admin']) || $_SESSION['admin'] !== true) && 
-    (!isset($_SESSION['user']) || $_SESSION['user'] !== "1")) {
+    (!isset($_SESSION['user']) || $_SESSION['user'] !== "1") &&
+    !$isLocalServer) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Accès réservé à l\'administrateur']);
+    echo json_encode(['success' => false, 'error' => __('api.delete_session_job.access_denied')]);
     exit;
 }
 
 require_once __DIR__ . '/../controler/functions/database.php';
+require_once __DIR__ . '/../controler/functions/i18n.php';
 
 try {
     $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
     $type = isset($_GET['type']) ? $_GET['type'] : ''; // 'photocop', 'dupli' ou 'print_jobs'
 
     if (!$id || !in_array($type, ['photocop', 'dupli', 'print_jobs'])) {
-        throw new Exception("Paramètres ID ou Type manquants ou invalides.");
+        throw new Exception(__('api.delete_session_job.invalid_params'));
     }
 
     $db = create_database_manager()->connect();
@@ -37,7 +42,7 @@ try {
 
     echo json_encode([
         'success' => $success,
-        'message' => $success ? "Job supprimé avec succès." : "Erreur lors de la suppression."
+        'message' => $success ? __('api.delete_session_job.success') : __('api.delete_session_job.error')
     ]);
 
 } catch (Exception $e) {

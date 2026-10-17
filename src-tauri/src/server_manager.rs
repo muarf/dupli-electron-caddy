@@ -28,14 +28,6 @@ pub struct ServerStatus {
     pub php_running: bool,
 }
 
-/// Payload d'un message de log, sérialisable pour envoi au frontend
-#[derive(Debug, Clone, Serialize)]
-pub struct LogMessage {
-    pub source: String, // "caddy" | "php"
-    pub level: String,  // "stdout" | "stderr"
-    pub message: String,
-}
-
 /// État global des processus enfants, partagé entre les commandes Tauri.
 /// Encapsulé dans Arc<Mutex<>> pour être thread-safe et muable.
 pub struct AppState {
@@ -64,8 +56,8 @@ pub async fn launch_all_sidecars(app: &AppHandle) -> Result<(), String> {
 
     // Garde atomique : refuse le double démarrage
     {
-        let caddy = state.caddy_child.lock().unwrap();
-        let php = state.php_child.lock().unwrap();
+        let caddy = state.caddy_child.lock().unwrap_or_else(|e| e.into_inner());
+        let php = state.php_child.lock().unwrap_or_else(|e| e.into_inner());
         if caddy.is_some() || php.is_some() {
             log::warn!("[server_manager] Double démarrage refusé : des serveurs tournent déjà.");
             return Err("Les serveurs sont déjà en cours d'exécution.".into());
@@ -88,7 +80,7 @@ pub async fn launch_all_sidecars(app: &AppHandle) -> Result<(), String> {
     .map_err(|e| format!("Impossible de lancer Caddy: {e}"))?;
 
     // Stocke le handle du processus Caddy dans l'état global
-    *caddy_child_ref.lock().unwrap() = Some(caddy_child.0);
+    *caddy_child_ref.lock().unwrap_or_else(|e| e.into_inner()) = Some(caddy_child.0);
 
     // Écoute les logs de Caddy dans une tâche dédiée
     let mut caddy_rx = caddy_child.1;
@@ -115,7 +107,7 @@ pub async fn launch_all_sidecars(app: &AppHandle) -> Result<(), String> {
     .map_err(|e| format!("Impossible de lancer PHP: {e}"))?;
 
     // Stocke le handle du processus PHP dans l'état global
-    *php_child_ref.lock().unwrap() = Some(php_child.0);
+    *php_child_ref.lock().unwrap_or_else(|e| e.into_inner()) = Some(php_child.0);
 
     // Écoute les logs de PHP dans une tâche dédiée
     let mut php_rx = php_child.1;
@@ -144,13 +136,13 @@ pub fn get_server_status(state: tauri::State<AppState>) -> ServerStatus {
     let caddy_running = state
         .caddy_child
         .lock()
-        .unwrap()
+        .unwrap_or_else(|e| e.into_inner())
         .is_some();
 
     let php_running = state
         .php_child
         .lock()
-        .unwrap()
+        .unwrap_or_else(|e| e.into_inner())
         .is_some();
 
     ServerStatus { caddy_running, php_running }
@@ -182,7 +174,7 @@ pub async fn restart_php(app: AppHandle) -> Result<String, String> {
 
     let php_handle = app.clone();
     let php_child_ref = Arc::clone(&state.php_child);
-    *php_child_ref.lock().unwrap() = Some(php_child.0);
+    *php_child_ref.lock().unwrap_or_else(|e| e.into_inner()) = Some(php_child.0);
 
     let mut php_rx = php_child.1;
     tauri::async_runtime::spawn(async move {
@@ -267,8 +259,7 @@ async fn spawn_sidecar(
     Ok((child, rx))
 }
 
-/// Lit en continu les événements stdout/stderr d'un processus et les émet
-/// vers le frontend sous forme d'événements "log-message".
+/// Lit en continu les événements stdout/stderr d'un processus sidecar.
 async fn pipe_logs_to_frontend(
     app: &AppHandle,
     source: &str,
@@ -281,20 +272,10 @@ async fn pipe_logs_to_frontend(
             CommandEvent::Stdout(line) => {
                 let message = String::from_utf8_lossy(&line).to_string();
                 log::debug!("[{source}][stdout] {message}");
-                let _ = app.emit("log-message", LogMessage {
-                    source: source.to_string(),
-                    level: "stdout".to_string(),
-                    message,
-                });
             }
             CommandEvent::Stderr(line) => {
                 let message = String::from_utf8_lossy(&line).to_string();
                 log::warn!("[{source}][stderr] {message}");
-                let _ = app.emit("log-message", LogMessage {
-                    source: source.to_string(),
-                    level: "stderr".to_string(),
-                    message,
-                });
             }
             CommandEvent::Terminated(status) => {
                 log::warn!("Sidecar '{source}' terminé avec le code: {:?}", status.code);
@@ -311,7 +292,7 @@ async fn pipe_logs_to_frontend(
 
 /// Tue un processus enfant de manière sécurisée (avec gestion du Mutex).
 fn kill_child(child_ref: &Arc<Mutex<Option<CommandChild>>>, name: &str) {
-    let mut guard = child_ref.lock().unwrap();
+    let mut guard = child_ref.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(child) = guard.take() {
         #[cfg(target_os = "windows")]
         {
@@ -345,9 +326,18 @@ fn kill_child(child_ref: &Arc<Mutex<Option<CommandChild>>>, name: &str) {
 /// Retourne le chemin absolu vers le répertoire racine de l'application PHP (app/public).
 /// Cherche dans l'ordre : bundle Tauri resources, puis chemin de développement.
 fn get_php_docroot(app: &AppHandle) -> std::path::PathBuf {
-    // En mode bundle : les ressources sont dans resource_dir()
+    // 1. En mode développement : prioritaire pour toujours exécuter les fichiers sources modifiés en direct
+    if let Ok(exe) = std::env::current_exe() {
+        let dev_path = exe
+            .ancestors()
+            .nth(4)
+            .map(|p| p.join("app").join("public"));
+        if let Some(p) = dev_path {
+            if p.exists() { return p; }
+        }
+    }
+    // 2. En mode bundle : les ressources sont dans resource_dir()
     if let Ok(res) = app.path().resource_dir() {
-        // Fallback avec le préfixe _up_ généré par Tauri pour les chemins avec '..'
         let candidate_up = res.join("_up_").join("app").join("public");
         if candidate_up.exists() {
             return candidate_up;
@@ -357,32 +347,13 @@ fn get_php_docroot(app: &AppHandle) -> std::path::PathBuf {
             return candidate;
         }
     }
-    // En mode développement : relatif au Cargo.toml (src-tauri/../app/public)
-    // On utilise l'exécutable courant comme point de référence
-    if let Ok(exe) = std::env::current_exe() {
-        // dev: .../src-tauri/target/debug/duplicator -> remonter 3 niveaux
-        let dev_path = exe
-            .ancestors()
-            .nth(4)
-            .map(|p| p.join("app").join("public"));
-        if let Some(p) = dev_path {
-            if p.exists() { return p; }
-        }
-    }
     // Fallback absolu
     std::path::PathBuf::from("app/public")
 }
 
 /// Retourne le chemin absolu vers le répertoire racine de l'application PHP (app/).
 fn get_php_app_base(app: &AppHandle) -> std::path::PathBuf {
-    // En mode bundle
-    if let Ok(res) = app.path().resource_dir() {
-        let candidate_up = res.join("_up_").join("app");
-        if candidate_up.exists() { return candidate_up; }
-        let candidate = res.join("app");
-        if candidate.exists() { return candidate; }
-    }
-    // En mode développement
+    // 1. En mode développement : prioritaire pour toujours exécuter les fichiers sources modifiés en direct
     if let Ok(exe) = std::env::current_exe() {
         let dev_path = exe
             .ancestors()
@@ -392,12 +363,29 @@ fn get_php_app_base(app: &AppHandle) -> std::path::PathBuf {
             if p.exists() { return p; }
         }
     }
+    // 2. En mode bundle
+    if let Ok(res) = app.path().resource_dir() {
+        let candidate_up = res.join("_up_").join("app");
+        if candidate_up.exists() { return candidate_up; }
+        let candidate = res.join("app");
+        if candidate.exists() { return candidate; }
+    }
     std::path::PathBuf::from("app")
 }
 
 /// Retourne le chemin absolu du Caddyfile.
 fn get_caddyfile_path(app: &AppHandle) -> String {
-    // En mode bundle : ressource bundlée
+    // 1. En mode développement : à la racine du projet
+    if let Ok(exe) = std::env::current_exe() {
+        let dev_path = exe
+            .ancestors()
+            .nth(4)
+            .map(|p| p.join("Caddyfile"));
+        if let Some(p) = dev_path {
+            if p.exists() { return p.to_string_lossy().to_string(); }
+        }
+    }
+    // 2. En mode bundle : ressource bundlée
     if let Ok(res) = app.path().resource_dir() {
         let candidate_up = res.join("_up_").join("Caddyfile");
         if candidate_up.exists() {
@@ -406,16 +394,6 @@ fn get_caddyfile_path(app: &AppHandle) -> String {
         let candidate = res.join("Caddyfile");
         if candidate.exists() {
             return candidate.to_string_lossy().to_string();
-        }
-    }
-    // En mode développement : à la racine du projet
-    if let Ok(exe) = std::env::current_exe() {
-        let dev_path = exe
-            .ancestors()
-            .nth(4)
-            .map(|p| p.join("Caddyfile"));
-        if let Some(p) = dev_path {
-            if p.exists() { return p.to_string_lossy().to_string(); }
         }
     }
     "Caddyfile".to_string()
@@ -592,6 +570,28 @@ fn copy_php_dlls(app: &AppHandle) {
                         }
                     } else {
                         log::debug!("[server_manager] DLL already at {:?}", target);
+                    }
+                }
+            }
+        }
+    }
+
+    // S'assurer également de la présence du sous-dossier ext/ à côté de l'exécutable
+    // afin que PHP CLI (qui résout extension_dir = "ext" par défaut dans php.ini) trouve ses extensions
+    let ext_src = src_dir.join("ext");
+    if ext_src.exists() && ext_src.is_dir() {
+        let ext_dst = dst.join("ext");
+        if !ext_dst.exists() {
+            let _ = std::fs::create_dir_all(&ext_dst);
+        }
+        if let Ok(entries) = std::fs::read_dir(&ext_src) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().map_or(false, |e| e == "dll") {
+                    let name = path.file_name().unwrap();
+                    let target = ext_dst.join(name);
+                    if !target.exists() {
+                        let _ = std::fs::copy(&path, &target);
                     }
                 }
             }

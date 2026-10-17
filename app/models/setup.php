@@ -31,17 +31,9 @@ function Action($conf = null){
     // Détecter si mode standalone (pas Electron)
     $is_standalone = !isset($_SERVER['ELECTRON_RUNNING']) && php_sapi_name() === 'cli-server';
     $base_path = $is_standalone ? '' : 'public/';
-    
-    $result = array(
-        'step' => 'setup',
-        'mode' => $mode,
-        'errors' => $errors,
-        'success' => $success,
-        'base_path' => $base_path
-    );
+    $step = 'setup';
     
     // Rendu direct sans template() pour éviter double encapsulation HTML
-    extract($result);
     include(__DIR__ . '/../view/setup.html.php');
     return '';
 }

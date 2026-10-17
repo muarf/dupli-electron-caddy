@@ -16,6 +16,7 @@ module.exports = defineConfig({
   workers: 1, // Electron tests should run serially
   reporter: 'html',
   use: {
+    baseURL: 'http://127.0.0.1:8000',
     headless: true,
     trace: 'on-first-retry',
   },

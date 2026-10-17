@@ -9,8 +9,7 @@
 use tauri::command;
 use serde::Serialize;
 
-#[cfg(not(target_os = "windows"))]
-use tauri::Manager;
+
 
 // =============================================================================
 // Commandes Fichiers & Dialogue
@@ -22,7 +21,7 @@ pub async fn open_file(file_path: String) -> Result<(), String> {
     log::info!("[app_commands] open_file('{}')", file_path);
 
     if !std::path::Path::new(&file_path).exists() {
-        return Err(format!("Fichier introuvable : {}", file_path));
+        return Err(format!("File not found: {}", file_path));
     }
 
     #[cfg(target_os = "windows")]
@@ -30,21 +29,21 @@ pub async fn open_file(file_path: String) -> Result<(), String> {
         std::process::Command::new("cmd")
             .args(["/c", "start", "", &file_path])
             .spawn()
-            .map_err(|e| format!("Impossible d'ouvrir le fichier : {e}"))?;
+            .map_err(|e| format!("Cannot open file: {e}"))?;
     }
     #[cfg(target_os = "linux")]
     {
         std::process::Command::new("xdg-open")
             .arg(&file_path)
             .spawn()
-            .map_err(|e| format!("Impossible d'ouvrir le fichier : {e}"))?;
+            .map_err(|e| format!("Cannot open file: {e}"))?;
     }
     #[cfg(target_os = "macos")]
     {
         std::process::Command::new("open")
             .arg(&file_path)
             .spawn()
-            .map_err(|e| format!("Impossible d'ouvrir le fichier : {e}"))?;
+            .map_err(|e| format!("Cannot open file: {e}"))?;
     }
     Ok(())
 }
@@ -63,20 +62,29 @@ pub async fn open_external_file(file_url: String) -> Result<(), String> {
     open_file(path).await
 }
 
-/// Nettoie les fichiers temporaires de l'application
-#[command]
-pub async fn cleanup_tmp_files() -> Result<u32, String> {
+/// Nettoie les fichiers temporaires de l'application âgés de plus d'1 jour
+pub fn cleanup_tmp_files() -> u32 {
     log::info!("[app_commands] cleanup_tmp_files()");
 
     let tmp_dir = std::env::temp_dir();
     let mut count = 0u32;
+    let one_day_ago = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+        .saturating_sub(86400); // 24h en secondes
 
     if let Ok(entries) = std::fs::read_dir(&tmp_dir) {
         for entry in entries.flatten() {
             let name = entry.file_name().to_string_lossy().to_lowercase();
-            // Nettoie uniquement les fichiers temporaires créés par l'application
             if name.starts_with("duplicator_") || name.starts_with("dupli_tmp_") {
-                if std::fs::remove_file(entry.path()).is_ok() {
+                // Vérifier l'âge du fichier via metadata
+                let is_old = entry.metadata()
+                    .and_then(|m| m.modified())
+                    .map(|t| t.duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs() < one_day_ago)
+                    .unwrap_or(false);
+
+                if is_old && std::fs::remove_file(entry.path()).is_ok() {
                     count += 1;
                 }
             }
@@ -84,7 +92,7 @@ pub async fn cleanup_tmp_files() -> Result<u32, String> {
     }
 
     log::info!("[app_commands] cleanup_tmp_files() : {} fichier(s) supprimé(s)", count);
-    Ok(count)
+    count
 }
 
 #[derive(Serialize)]
@@ -118,34 +126,6 @@ pub async fn show_open_dialog(options: serde_json::Value) -> Result<DialogResult
 // =============================================================================
 // Informations de l'application
 // =============================================================================
-
-/// Retourne le chemin de la base de données SQLite principale (partagée avec Electron)
-#[command]
-pub fn get_database_path(_app: tauri::AppHandle) -> Result<String, String> {
-    log::info!("[app_commands] get_database_path()");
-
-    #[cfg(target_os = "windows")]
-    let db_path = std::env::var("APPDATA")
-        .map(|p| std::path::PathBuf::from(p).join("Duplicator").join("duplinew.sqlite").to_string_lossy().to_string())
-        .map_err(|e| format!("Impossible de localiser le répertoire APPDATA : {e}"));
-
-    #[cfg(not(target_os = "windows"))]
-    let db_path = _app.path()
-        .app_data_dir()
-        .map(|p| p.join("duplinew.sqlite").to_string_lossy().to_string())
-        .map_err(|e| format!("Impossible de localiser le répertoire de données : {e}"));
-
-    let db_path_ok = db_path?;
-
-    log::info!("[app_commands] get_database_path() : {}", db_path_ok);
-    Ok(db_path_ok)
-}
-
-/// Retourne la version de l'application (depuis Cargo.toml)
-#[command]
-pub fn get_app_version() -> String {
-    env!("CARGO_PKG_VERSION").to_string()
-}
 
 /// Redémarre l'application
 #[command]
@@ -194,7 +174,7 @@ pub async fn check_for_updates(
             log::info!("[app_commands] Update available: {}", version);
 
             // Stocker la mise à jour disponible dans l'état global
-            *state.pending_update.lock().unwrap() = Some(update);
+            *state.pending_update.lock().unwrap_or_else(|e| e.into_inner()) = Some(update);
 
             // Émettre l'événement vers le frontend
             let _ = app.emit("update-available", serde_json::json!({
@@ -210,7 +190,7 @@ pub async fn check_for_updates(
         }
         Ok(None) => {
             log::info!("[app_commands] No update available");
-            *state.pending_update.lock().unwrap() = None;
+            *state.pending_update.lock().unwrap_or_else(|e| e.into_inner()) = None;
             let _ = app.emit("update-not-available", ());
             Ok(UpdateCheckResult {
                 update_available: false,
@@ -234,8 +214,8 @@ pub async fn download_update(
     state: tauri::State<'_, UpdateState>,
 ) -> Result<(), String> {
     log::info!("[app_commands] download_update()");
-    let mut pending_guard = state.pending_update.lock().unwrap();
-    let update = pending_guard.take().ok_or_else(|| "Aucune mise à jour disponible en attente de téléchargement.".to_string())?;
+    let mut pending_guard = state.pending_update.lock().unwrap_or_else(|e| e.into_inner());
+    let update = pending_guard.take().ok_or_else(|| "No pending update available for download.".to_string())?;
 
     let app_clone = app.clone();
     let version = update.version.clone();
@@ -252,7 +232,7 @@ pub async fn download_update(
 
         let res = update.download_and_install(
             move |chunk_length, content_length| {
-                let mut t = transferred_clone.lock().unwrap();
+                let mut t = transferred_clone.lock().unwrap_or_else(|e| e.into_inner());
                 *t += chunk_length;
                 let total = content_length.unwrap_or(*t as u64);
                 let percent = if total > 0 {

@@ -165,8 +165,7 @@ function processTable($db, $tableName, $columnName, $backup = true) {
 /**
  * Fonction principale
  */
-function main() {
-    global $db, $backup;
+function main($db, $backup = true) {
     
     echo "🚀 Début de la compression des images base64\n";
     echo "============================================\n";
@@ -205,5 +204,5 @@ function main() {
 }
 
 // Exécuter le script
-main();
+main($db, $backup);
 ?>

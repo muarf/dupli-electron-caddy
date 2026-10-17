@@ -40,7 +40,7 @@ error_reporting(E_ALL);
 
 // Configuration cross-platform des chemins temporaires (avant session_start)
 $temp_dir = sys_get_temp_dir();
-$session_path = $temp_dir . DIRECTORY_SEPARATOR . 'duplicator_sessions';
+$session_path = getenv('DUPLICATOR_SESSION_PATH') ?: ($temp_dir . DIRECTORY_SEPARATOR . 'duplicator_sessions');
 $error_log_path = $temp_dir . DIRECTORY_SEPARATOR . 'duplicator_errors.log';
 
 // Créer le répertoire de sessions s'il n'existe pas
@@ -468,6 +468,19 @@ if ($page === 'upload_aide_pdf') {
     }
 }
 
+if ($page === 'get_pdf_path') {
+    $api_file = __DIR__ . '/../api/get_pdf_path.php';
+    if (file_exists($api_file)) {
+        require_once $api_file;
+        exit;
+    } else {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Fichier API non trouvé']);
+        exit;
+    }
+}
+
 if ($page === 'upload_bibliotheque') {
     $api_file = __DIR__ . '/../api/upload_bibliotheque.php';
     if (file_exists($api_file)) {
@@ -714,13 +727,8 @@ if ($page === 'download_studio') {
     header('Cache-Control: no-cache, must-revalidate');
     readfile($realFile);
     
-    $jobId = $_GET['job_id'] ?? '';
-    if (!empty($jobId) && preg_match('/^[a-zA-Z0-9_]+$/', $jobId)) {
-        @unlink($realFile);
-        @unlink($tmpDir . $jobId . '.json');
-        @unlink($tmpDir . $jobId . '.log');
-    }
-    
+    // Note: Le fichier et le job sont conservés pour permettre le téléchargement depuis plusieurs appareils.
+    // La suppression est gérée explicitement par l'utilisateur via le bouton Fermer (delete_job) ou la purge temp.
     exit;
 }
 
@@ -1226,7 +1234,7 @@ if ($page === 'logout') {
     exit;
 }
 
-$page_secure = array('base', 'accueil', 'devis', 'tirage_multimachines', 'changement', 'admin', 'admin_aide_machines', 'admin_translations', 'installation', 'setup', 'setup_save', 'setup_upload', 'create_password', 'stats', 'aide_machines', 'error', 'lang', 'ajax_edit_tambours', 'ajax_get_tambour_prices', 'download_pdf', 'download_png', 'download_organized', 'organizer_thumb', 'download_merged', 'download_resized', 'download_unimposed', 'download_processed', 'download_backup', 'view_pdf', 'get-machine-template', 'upload_aide_pdf', 'view_aide_pdf', 'bibliotheque', 'bibliotheque_list', 'get_bibliotheque_file_info', 'update_bibliotheque_metadata', 'upload_bibliotheque', 'search_bibliotheque', 'preview_directory', 'index_file', 'start_indexing', 'get_indexing_status', 'delete_bibliotheque_file', 'get_bibliotheque_thumbnail', 'get_bibliotheque_file', 'get_bibliotheque_tags', 'chat_rag', 'check_print_jobs', 'print_notification', 'auto_tirage', 'sessions', 'get_session_jobs', 'get_session_staging_jobs', 'get_pending_jobs', 'convert_emf_to_png', 'convert_pcl_to_png', 'convert_xps_to_png', 'secure_purge', 'get_linux_thumb', 'admin_bibliotheque_ia', 'save_ai_settings', 'trigger_vectorization', 'trigger_markdown_migration', 'get_markdown_migration_status', 'studio', 'studio_process', 'download_studio', 'preview_studio', 'install_local_ai', 'logout');
+$page_secure = array('base', 'accueil', 'devis', 'tirage_multimachines', 'changement', 'admin', 'admin_aide_machines', 'admin_translations', 'installation', 'setup', 'setup_save', 'setup_upload', 'create_password', 'stats', 'aide_machines', 'error', 'lang', 'ajax_edit_tambours', 'ajax_get_tambour_prices', 'download_pdf', 'download_png', 'download_organized', 'organizer_thumb', 'download_merged', 'download_resized', 'download_unimposed', 'download_processed', 'download_backup', 'view_pdf', 'get-machine-template', 'upload_aide_pdf', 'get_pdf_path', 'view_aide_pdf', 'bibliotheque', 'bibliotheque_list', 'get_bibliotheque_file_info', 'update_bibliotheque_metadata', 'upload_bibliotheque', 'search_bibliotheque', 'preview_directory', 'index_file', 'start_indexing', 'get_indexing_status', 'delete_bibliotheque_file', 'get_bibliotheque_thumbnail', 'get_bibliotheque_file', 'get_bibliotheque_tags', 'chat_rag', 'check_print_jobs', 'print_notification', 'auto_tirage', 'sessions', 'get_session_jobs', 'get_session_staging_jobs', 'get_pending_jobs', 'convert_emf_to_png', 'convert_pcl_to_png', 'convert_xps_to_png', 'secure_purge', 'get_linux_thumb', 'admin_bibliotheque_ia', 'save_ai_settings', 'trigger_vectorization', 'trigger_markdown_migration', 'get_markdown_migration_status', 'studio', 'studio_process', 'download_studio', 'preview_studio', 'install_local_ai', 'logout');
 
 error_log("[PASSWORD_CHECK] ===== DEBUT VERIFICATION =====");
 error_log("[PASSWORD_CHECK] Page demandée (avant vérification): " . $page);

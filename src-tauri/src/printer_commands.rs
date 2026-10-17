@@ -480,7 +480,6 @@ impl PrintMonitorState {
 
         let handle = tauri::async_runtime::spawn(async move {
             log::info!("[PrintMonitorState] Moniteur démarré — polling toutes les 2 secondes");
-            let _ = app_handle.emit("print-monitor-started", ());
 
             // Cache des états vus : clé composite → état courant.
             // Clé   = "{printerName}_{jobId}_{timeSubmitted}" (comme la branche beta C++)

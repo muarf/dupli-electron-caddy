@@ -117,7 +117,7 @@ $photocopieur_checked = 'checked';
                         <div class="checkbox">
                             <label for="A4_<?= $index ?>">
                                 <input name="machines[<?= $index ?>][A4]" value="A4" type="checkbox" onchange="calculateTotalPrice()" id="A4_<?= $index ?>">
-                                <i class="fa fa-file-text-o"></i> Format A4
+                                <i class="fa fa-file-text-o"></i> <?php _e('tirage_multimachines.format_a4', [], false); ?>
                             </label>
                         </div>
                     </div>
@@ -212,7 +212,7 @@ $photocopieur_checked = 'checked';
                             <label class="col-xs-4 control-label" for="nb_masters_<?= $index ?>"><?php _e('tirage_multimachines.masters_label'); ?></label>  
                             <div class="col-xs-8">
                                 <input id="nb_masters_<?= $index ?>" name="machines[<?= $index ?>][nb_masters]" class="form-control input-sm" type="number" min="0" value="0" onchange="calculateTotalPrice()" style="max-width: 120px;">
-                                <span class="help-block">Nombre utilisé</span>  
+                                <span class="help-block"><?php _e("auto_clean.partials_machine_item_html_php_1", [], false); ?></span>  
                             </div>
                         </div>
                     </div>
@@ -221,7 +221,7 @@ $photocopieur_checked = 'checked';
                             <label class="col-xs-4 control-label" for="nb_passages_<?= $index ?>"><?php _e('tirage_multimachines.passes_label'); ?></label>  
                             <div class="col-xs-8">
                                 <input id="nb_passages_<?= $index ?>" name="machines[<?= $index ?>][nb_passages]" class="form-control input-sm" type="number" min="0" value="0" onchange="calculateTotalPrice()" style="max-width: 120px;">
-                                <span class="help-block">Nombre effectué</span>
+                                <span class="help-block"><?php _e("auto_clean.partials_machine_item_html_php_2", [], false); ?></span>
                             </div>
                         </div>
                     </div>
@@ -248,7 +248,7 @@ $photocopieur_checked = 'checked';
                             $first_photocop = false;
                         }
                     } else {
-                        echo '<option value="">-- Aucune photocopieuse disponible --</option>';
+                        echo '<option value="">-- ' . __('tirage_multimachines.no_photocopier') . ' --</option>';
                     }
                     ?>
                 </select>
@@ -321,7 +321,7 @@ $photocopieur_checked = 'checked';
                         <div class="checkbox-inline" style="margin-right: 20px;">
                             <label for="couleur_<?= $index ?>_0">
                                 <input name="machines[<?= $index ?>][brochures][0][couleur]" value="oui" type="checkbox" onchange="calculateTotalPrice(); toggleFillRateDisplay(<?= $index ?>);" id="couleur_<?= $index ?>_0">
-                                <i class="fa fa-tint"></i> Couleur
+                                <i class="fa fa-tint"></i> <?php _e('tirage_multimachines.color', [], false); ?>
                             </label>
                         </div>
                         <div class="checkbox-inline">

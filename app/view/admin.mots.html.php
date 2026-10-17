@@ -58,16 +58,16 @@
               <div class="panel-body">
                 <p><strong><?php _e('admin_mots.security'); ?> :</strong></p>
                 <ul>
-                  <li>Le mot de passe est stocké de manière sécurisée</li>
-                  <li>Utilisation de hachage bcrypt</li>
-                  <li>Anciens mots de passe supprimés</li>
+                  <li><?php _e('admin_mots.secure_storage', [], false); ?></li>
+                  <li><?php _e('admin_mots.bcrypt_hash', [], false); ?></li>
+                  <li><?php _e('admin_mots.old_pass_deleted', [], false); ?></li>
                 </ul>
 
                 <p><strong><?php _e('admin_mots.recommendations'); ?> :</strong></p>
                 <ul>
-                  <li>Utilisez au moins 8 caractères</li>
-                  <li>Mélangez lettres, chiffres et symboles</li>
-                  <li>Évitez les mots de passe courants</li>
+                  <li><?php _e('admin_mots.rec_length', [], false); ?></li>
+                  <li><?php _e('admin_mots.rec_mix', [], false); ?></li>
+                  <li><?php _e('admin_mots.rec_avoid_common', [], false); ?></li>
                 </ul>
               </div>
             </div>

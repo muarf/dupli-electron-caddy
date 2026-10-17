@@ -121,22 +121,17 @@
   }
 
   // ===========================================================================
-  // Construction de window.electronAPI — Carte exhaustive
+  // Construction de window.electronAPI
   //
-  // 25 méthodes identifiées dans les fichiers du frontend :
-  //   checkAdminStatus, checkForUpdates, cleanupTmpFiles, deletePrintJob,
+  // Méthodes frontend utilisées :
+  //   checkAdminStatus, checkForUpdates, deletePrintJob,
   //   deletePrinter, downloadUpdate, getPrinterCapabilities,
   //   getPrinterMonitorStatus, getPrinters, installUpdate,
   //   onConsoleLog, onDownloadProgress, onPrintJobDetected,
   //   onUpdateAvailable, onUpdateDownloaded, onUpdateError,
   //   onUpdateNotAvailable, openExternalFile, openFile, printFile,
   //   printJob, reanalyzePrintJob, restartAsAdmin, showOpenDialog,
-  //   togglePrinterMonitor
-  //
-  // + méthodes internes préservées depuis preload.js Electron :
-  //   getDatabasePath, getAppVersion, restartPhp, restartApp,
-  //   onPhpLog, onPhpFatal, onPhpStatus, onPrintMonitorError,
-  //   onPrintMonitorStarted
+  //   togglePrinterMonitor, restartPhp, restartApp
   // ===========================================================================
   window.electronAPI = {
 
@@ -148,10 +143,6 @@
     openFile: (filePath) =>
       invoke('open_file', { filePath }),
 
-    /** Supprime les fichiers temporaires de l'application */
-    cleanupTmpFiles: () =>
-      invoke('cleanup_tmp_files'),
-
     /** Affiche une boîte de dialogue de sélection de fichier */
     showOpenDialog: (options) =>
       invoke('show_open_dialog', { options }),
@@ -159,18 +150,6 @@
     /** Ouvre un fichier avec l'application système (URL encodée) */
     openExternalFile: (fileUrl) =>
       invoke('open_external_file', { fileUrl }),
-
-    // ─────────────────────────────────────────────────────────────────
-    // Informations de l'application
-    // ─────────────────────────────────────────────────────────────────
-
-    /** Retourne le chemin de la base de données SQLite */
-    getDatabasePath: () =>
-      invoke('get_database_path'),
-
-    /** Retourne la version de l'application */
-    getAppVersion: () =>
-      invoke('get_app_version'),
 
     // ─────────────────────────────────────────────────────────────────
     // Mises à jour (Auto-Updater)
@@ -206,14 +185,6 @@
     /** Redémarre l'application complète */
     restartApp: () =>
       invoke('restart_app'),
-
-    // Événements PHP (logs en temps réel)
-    onPhpLog:    (cb) => _registerEvent('log-message', (payload) => {
-      // Filtre les messages du source 'php' uniquement
-      if (payload && payload.source === 'php') cb(payload);
-    }),
-    onPhpFatal:  (cb) => _registerEvent('php-fatal',  cb),
-    onPhpStatus: (cb) => _registerEvent('php-process-status', cb),
 
     // Log générique de la console de debug
     onConsoleLog: (cb) => _registerEvent('console-log', cb),
@@ -470,8 +441,6 @@
         cb(payload);
       }
     }),
-    onPrintMonitorError:  (cb) => _registerEvent('print-monitor-error',  cb),
-    onPrintMonitorStarted:(cb) => _registerEvent('print-monitor-started', cb),
 
     // ─────────────────────────────────────────────────────────────────
     // Administration & Droits élevés

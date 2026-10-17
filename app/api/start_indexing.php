@@ -26,7 +26,7 @@ $isRunning = false;
 if (file_exists($pidFile)) {
     $oldPid = (int)trim(file_get_contents($pidFile));
     if ($oldPid > 0) {
-        if (posix_kill($oldPid, 0) || (PHP_OS_FAMILY === 'Windows' && `tasklist /FI "PID eq $oldPid" 2>NUL | find /I "$oldPid"`)) {
+        if ((function_exists('posix_kill') && posix_kill($oldPid, 0)) || (PHP_OS_FAMILY === 'Windows' && `tasklist /FI "PID eq $oldPid" 2>NUL | find /I "$oldPid"`)) {
             $isRunning = true;
         } else {
             @unlink($pidFile);

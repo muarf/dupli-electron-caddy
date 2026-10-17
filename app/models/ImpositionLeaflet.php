@@ -26,7 +26,11 @@ class ImpositionLeaflet
             'gutter_strategy' => 'reduce', // reduce, crop
             'preview_mode' => false,
             'add_page_numbers_in_gutters' => false,
-            'addPageNumberCallback' => null // Callback pour ajouter les numéros de pages
+            'addPageNumberCallback' => null, // Callback pour ajouter les numéros de pages
+            'signature_size' => 0, // 0 = document entier, sinon 8/16/32 (pages par cahier)
+            'signature_marks' => false, // Marques d'ordre des cahiers
+            'tete_beche' => true,
+            'tumble_direction' => 'head_to_head' // 'foot_to_foot' (bas au centre) ou 'head_to_head' (bas à l'extérieur)
         ], $settings);
 
         $this->pdf = new FpdiRotated();
@@ -74,7 +78,15 @@ class ImpositionLeaflet
         if ($nUp == 4) $multiple = 8;
         if ($nUp == 8) $multiple = 16;
 
-        $totalPages = ceil($this->pageCount / $multiple) * $multiple;
+        // Mode signatures (cahiers) : découpe le document en blocs indépendants de $signatureSize pages
+        $signatureSize = intval($this->settings['signature_size'] ?? 0);
+        if ($signatureSize > 0) {
+            // Un cahier doit contenir un nombre entier de feuilles : arrondir au multiple du nUp
+            $signatureSize = max($multiple, ceil($signatureSize / $multiple) * $multiple);
+            $totalPages = ceil($this->pageCount / $signatureSize) * $signatureSize;
+        } else {
+            $totalPages = ceil($this->pageCount / $multiple) * $multiple;
+        }
 
         // Configuration
         if ($nUp == 4) {
@@ -119,13 +131,22 @@ class ImpositionLeaflet
         }
 
         // Pre-calculate logical sheets (Leaflet Spreads)
-        $sheetsToPrint = $this->calculateImposition($totalPages, $nUp);
+        if ($signatureSize > 0) {
+            $sheetsToPrint = $this->calculateSignatureSheets($totalPages, $nUp, $signatureSize);
+        } else {
+            $sheetsToPrint = $this->calculateImposition($totalPages, $nUp);
+        }
 
         foreach ($sheetsToPrint as $sheetIdx => $sheetData) {
+            $signature = isset($sheetData['signature']) ? $sheetData['signature'] : 0;
+
             // Front Side
             $this->pdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
             if ($this->previewPdf) {
                 $this->previewPdf->AddPage($this->settings['orientation'], array($sheetWidth, $sheetHeight));
+            }
+            if ($this->settings['signature_marks'] && $signature > 0) {
+                $this->drawSignatureMark($signature, $sheetWidth, $sheetHeight);
             }
             $this->renderSheetSide($sheetData['front'], $cols, $rows, $sheetWidth, $sheetHeight);
 
@@ -751,6 +772,64 @@ class ImpositionLeaflet
         $this->pdf->Line($bx + $bw, $by + $bh + $offset, $bx + $bw, $by + $bh + $offset + $len);
     }
 
+    /**
+     * Découpe le document en cahiers (signatures) de $signatureSize pages et
+     * impose chaque cahier indépendamment, dans l'ordre de reliure.
+     *
+     * Chaque bloc est un mini-livret complet (même formule que calculateImposition),
+     * décalé du nombre de pages déjà traitées. La numérotation source reste continue.
+     */
+    public function calculateSignatureSheets($totalPages, $nUp, $signatureSize)
+    {
+        $sheets = [];
+        $signatureIndex = 0;
+        for ($blockStart = 1; $blockStart <= $totalPages; $blockStart += $signatureSize) {
+            $signatureIndex++;
+            $blockSheets = $this->calculateImposition($signatureSize, $nUp);
+            $offset = $blockStart - 1;
+            foreach ($blockSheets as $sheetData) {
+                $shifted = [];
+                foreach (['front', 'back'] as $side) {
+                    $shifted[$side] = [];
+                    foreach ($sheetData[$side] as $row) {
+                        $shifted[$side][] = [
+                            'pages' => array_map(function ($p) use ($offset) {
+                                return $p + $offset;
+                            }, $row['pages']),
+                            'rotated' => $row['rotated'],
+                        ];
+                    }
+                }
+                $shifted['signature'] = $signatureIndex;
+                $sheets[] = $shifted;
+            }
+        }
+        return $sheets;
+    }
+
+    /**
+     * Dessine une petite étiquette d'ordre du cahier dans le coin haut-gauche
+     * de chaque feuille (recto), pour assembler les cahiers dans le bon ordre
+     * avant couture.
+     */
+    private function drawSignatureMark($signature, $sheetWidth, $sheetHeight)
+    {
+        $label = 'Cahier ' . $signature;
+        $this->pdf->setAutoPageBreak(false);
+        $this->pdf->SetFont('helvetica', '', 9);
+        $this->pdf->SetTextColor(0, 0, 0);
+        $this->pdf->SetXY(5, 2);
+        $this->pdf->Cell(40, 5, $label, 0, 0, 'L');
+
+        if ($this->previewPdf) {
+            $this->previewPdf->setAutoPageBreak(false);
+            $this->previewPdf->SetFont('helvetica', '', 9);
+            $this->previewPdf->SetTextColor(0, 0, 0);
+            $this->previewPdf->SetXY(5, 2);
+            $this->previewPdf->Cell(40, 5, $label, 0, 0, 'L');
+        }
+    }
+
     private function calculateImposition($N, $nUp)
     {
         // Logic from simulate_imposition.py
@@ -766,6 +845,8 @@ class ImpositionLeaflet
             $b2 = $N - 2*($i-1) - 1;
             $lsheets[$i] = ['front' => [$f1, $f2], 'back' => [$b1, $b2]];
         }
+        $isTeteBeche = !isset($this->settings['tete_beche']) || !empty($this->settings['tete_beche']);
+        $tumbleDirection = $this->settings['tumble_direction'] ?? 'foot_to_foot';
 
         $result = [];
 
@@ -784,28 +865,53 @@ class ImpositionLeaflet
         } elseif ($nUp == 4) {
             $numSheets = $M / 2;
             for ($k = 1; $k <= $numSheets; $k++) {
-                // Front
-                // Row 1: lsheets[k][front]
-                // Row 2: lsheets[M - k + 1][back] (Rotated -> Reversed)
-                $r1_pages = $lsheets[$k]['front'];
+                $r1_src = $lsheets[$k]['front'];
                 $r2_src = $lsheets[$M - $k + 1]['back'];
-                $r2_pages = array_reverse($r2_src);
-                
-                // Back
-                // Row 1: lsheets[k][back]
-                // Row 2: lsheets[M - k + 1][front] (Rotated -> Reversed)
-                $br1_pages = $lsheets[$k]['back'];
+                $br1_src = $lsheets[$k]['back'];
                 $br2_src = $lsheets[$M - $k + 1]['front'];
-                $br2_pages = array_reverse($br2_src);
+
+                if (!$isTeteBeche) {
+                    $r1_pages = $r1_src;
+                    $r1_rot = false;
+                    $r2_pages = $r2_src;
+                    $r2_rot = false;
+
+                    $br1_pages = $br1_src;
+                    $br1_rot = false;
+                    $br2_pages = $br2_src;
+                    $br2_rot = false;
+                } elseif ($tumbleDirection === 'head_to_head') {
+                    // Tête contre tête : hauts au centre, bas de page à l'extérieur
+                    $r1_pages = array_reverse($r1_src);
+                    $r1_rot = true;
+                    $r2_pages = $r2_src;
+                    $r2_rot = false;
+
+                    $br1_pages = array_reverse($br1_src);
+                    $br1_rot = true;
+                    $br2_pages = $br2_src;
+                    $br2_rot = false;
+                } else {
+                    // Pied contre pied (défaut) : bas au centre, hauts à l'extérieur
+                    $r1_pages = $r1_src;
+                    $r1_rot = false;
+                    $r2_pages = array_reverse($r2_src);
+                    $r2_rot = true;
+
+                    $br1_pages = $br1_src;
+                    $br1_rot = false;
+                    $br2_pages = array_reverse($br2_src);
+                    $br2_rot = true;
+                }
 
                 $result[] = [
                     'front' => [
-                        ['pages' => $r1_pages, 'rotated' => false],
-                        ['pages' => $r2_pages, 'rotated' => true]
+                        ['pages' => $r1_pages, 'rotated' => $r1_rot],
+                        ['pages' => $r2_pages, 'rotated' => $r2_rot]
                     ],
                     'back' => [
-                        ['pages' => $br1_pages, 'rotated' => false],
-                        ['pages' => $br2_pages, 'rotated' => true]
+                        ['pages' => $br1_pages, 'rotated' => $br1_rot],
+                        ['pages' => $br2_pages, 'rotated' => $br2_rot]
                     ]
                 ];
             }
@@ -816,34 +922,66 @@ class ImpositionLeaflet
                 // Row 1: lsheets[M/2 - k + 1][back] + lsheets[k][front]
                 $pair1 = $lsheets[$M/2 - $k + 1]['back'];
                 $pair2 = $lsheets[$k]['front'];
-                $r1_pages = array_merge($pair1, $pair2);
+                $r1_src = array_merge($pair1, $pair2);
                 
                 // Row 2: lsheets[M - k + 1][back] + lsheets[M/2 + k][front] (Rotated -> Reversed)
                 $pair3 = $lsheets[$M - $k + 1]['back'];
                 $pair4 = $lsheets[$M/2 + $k]['front'];
                 $r2_src = array_merge($pair3, $pair4);
-                $r2_pages = array_reverse($r2_src);
                 
                 // Back
                 // Row 1: lsheets[k][back] + lsheets[M/2 - k + 1][front]
                 $pair1b = $lsheets[$k]['back'];
                 $pair2b = $lsheets[$M/2 - $k + 1]['front'];
-                $br1_pages = array_merge($pair1b, $pair2b);
+                $br1_src = array_merge($pair1b, $pair2b);
                 
                 // Row 2: lsheets[M/2 + k][back] + lsheets[M - k + 1][front] (Rotated -> Reversed)
                 $pair3b = $lsheets[$M/2 + $k]['back'];
                 $pair4b = $lsheets[$M - $k + 1]['front'];
                 $br2_src = array_merge($pair3b, $pair4b);
-                $br2_pages = array_reverse($br2_src);
+
+                if (!$isTeteBeche) {
+                    $r1_pages = $r1_src;
+                    $r1_rot = false;
+                    $r2_pages = $r2_src;
+                    $r2_rot = false;
+
+                    $br1_pages = $br1_src;
+                    $br1_rot = false;
+                    $br2_pages = $br2_src;
+                    $br2_rot = false;
+                } elseif ($tumbleDirection === 'head_to_head') {
+                    // Tête contre tête : hauts au centre, bas de page à l'extérieur
+                    $r1_pages = array_reverse($r1_src);
+                    $r1_rot = true;
+                    $r2_pages = $r2_src;
+                    $r2_rot = false;
+
+                    $br1_pages = array_reverse($br1_src);
+                    $br1_rot = true;
+                    $br2_pages = $br2_src;
+                    $br2_rot = false;
+                } else {
+                    // Pied contre pied (défaut) : bas au centre, hauts à l'extérieur
+                    $r1_pages = $r1_src;
+                    $r1_rot = false;
+                    $r2_pages = array_reverse($r2_src);
+                    $r2_rot = true;
+
+                    $br1_pages = $br1_src;
+                    $br1_rot = false;
+                    $br2_pages = array_reverse($br2_src);
+                    $br2_rot = true;
+                }
                 
                 $result[] = [
                     'front' => [
-                        ['pages' => $r1_pages, 'rotated' => false],
-                        ['pages' => $r2_pages, 'rotated' => true]
+                        ['pages' => $r1_pages, 'rotated' => $r1_rot],
+                        ['pages' => $r2_pages, 'rotated' => $r2_rot]
                     ],
                     'back' => [
-                        ['pages' => $br1_pages, 'rotated' => false],
-                        ['pages' => $br2_pages, 'rotated' => true]
+                        ['pages' => $br1_pages, 'rotated' => $br1_rot],
+                        ['pages' => $br2_pages, 'rotated' => $br2_rot]
                     ]
                 ];
             }

@@ -197,7 +197,7 @@ try {
     
     file_put_contents($jobFile, json_encode($jobData));
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
     $jobData['status'] = 'error';
     $jobData['error'] = $e->getMessage();
     file_put_contents($jobFile, json_encode($jobData));

@@ -1,6 +1,6 @@
 {
   "name": "dupli-tauri-alpha",
-  "version": "2.0.1-alpha.local",
+  "version": "3.0.0-alpha.local",
   "scripts": {
     "download-caddy": "node scripts/download-caddy.js",
     "download-binaries": "node scripts/download-binaries.js",
@@ -52,12 +52,9 @@
     ]
   },
   "dependencies": {
-    "bcryptjs": "^3.0.3",
     "node-addon-api": "^7.0.0",
-    "pdfjs-dist": "^3.11.174",
     "pdfkit": "^0.17.2",
-    "sharp": "^0.33.3",
-    "sqlite3": "^5.1.7"
+    "sharp": "^0.33.3"
   },
   "productName": "Duplicator Alpha"
 }

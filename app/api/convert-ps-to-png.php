@@ -10,9 +10,9 @@ require_once __DIR__ . '/../controler/functions/database.php';
 require_once __DIR__ . '/../controler/functions/SpoolManager.php';
 require_once __DIR__ . '/../controler/functions/binary_utilities.php';
 
-$job_id = $_GET['job_id'] ?? null;
+$job_id = isset($_GET['job_id']) ? intval($_GET['job_id']) : 0;
 
-if (!$job_id) {
+if ($job_id <= 0) {
     echo json_encode(['success' => false, 'error' => 'Job ID manquant']);
     exit;
 }

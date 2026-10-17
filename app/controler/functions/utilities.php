@@ -233,6 +233,8 @@ function update_site_setting($setting_name, $setting_value)
  */
 function template($template_file, $variables = array())
 {
+    $array = $variables;
+    
     // Extraire les variables pour les rendre disponibles dans le template
     if (is_array($variables)) {
         extract($variables);

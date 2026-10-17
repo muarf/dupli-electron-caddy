@@ -12,7 +12,7 @@
 
                     <?php if (isset($global_install_command)): ?>
                         <div style="background: rgba(0,0,0,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px dashed rgba(220,53,69,0.5);">
-                            <p style="margin-bottom: 8px; font-weight: bold;"><i class="fa fa-terminal"></i> Commande d'installation groupée :</p>
+                            <p style="margin-bottom: 8px; font-weight: bold;"><i class="fa fa-terminal"></i> <?php _e('accueil.install_command', [], false); ?> :</p>
                             <div class="input-group">
                                 <input type="text" class="form-control" value="<?= htmlspecialchars($global_install_command) ?>" readonly id="global-install-cmd">
                                 <span class="input-group-btn">

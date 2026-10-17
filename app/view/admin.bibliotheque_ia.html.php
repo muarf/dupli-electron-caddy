@@ -24,7 +24,7 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
     <div class="row">
       <div class="col-md-10 col-md-offset-1">
 
-        <h1 class="text-center"><i class="fa fa-robot"></i> Intelligence Artificielle &amp; Bibliothèque</h1>
+        <h1 class="text-center"><i class="fa fa-robot"></i><?php _e("admin_bibliotheque_ia.page_title", [], false); ?></h1>
         <hr>
 
         <div id="ai-save-alert" class="alert" style="display:none;"></div>
@@ -34,17 +34,17 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
           <!-- Section 1 : Activation -->
           <div class="panel panel-<?php echo $ai_enabled ? 'success' : 'default'; ?>" id="panel-enabled">
             <div class="panel-heading">
-              <h3 class="panel-title"><i class="fa fa-power-off"></i> Activation</h3>
+              <h3 class="panel-title"><i class="fa fa-power-off"></i><?php _e("admin_bibliotheque_ia.activation_title", [], false); ?></h3>
             </div>
             <div class="panel-body">
               <div class="form-group">
                 <label class="switch-label">
                   <input type="checkbox" id="ai_enabled" name="ai_enabled" value="1" <?php echo $ai_enabled ? 'checked' : ''; ?>>
                   <span class="switch-slider"></span>
-                  Activer l'IA pour la Bibliothèque
+                  <?php _e("admin_bibliotheque_ia.activation_checkbox_label", [], false); ?>
                 </label>
                 <p class="text-muted" style="margin-top:8px;">
-                  Si désactivé, la bibliothèque fonctionne en mode classique (recherche SQL uniquement). Aucun bloc IA n'est visible pour les utilisateurs.
+                  <?php _e("admin_bibliotheque_ia.activation_disabled_help", [], false); ?>
                 </p>
               </div>
             </div>
@@ -53,31 +53,31 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
           <!-- Section 2 : LLM -->
           <div class="panel panel-info">
             <div class="panel-heading">
-              <h3 class="panel-title"><i class="fa fa-comments"></i> Endpoints LLM (Synthèse / RAG)</h3>
+              <h3 class="panel-title"><i class="fa fa-comments"></i><?php _e("admin_bibliotheque_ia.llm_title", [], false); ?></h3>
             </div>
             <div class="panel-body">
-              <p class="text-muted">Compatible : llama.cpp, Ollama, OpenRouter, Claude, OpenAI, et tout endpoint au format <code>/completion</code> ou <code>/v1/chat/completions</code>.</p>
+              <p class="text-muted"><?php _e("admin_bibliotheque_ia.llm_use_endpoint", [], false); ?><code>http://localhost:11436/completion</code> ou <code>http://localhost:11436/api/generate</code>.</p>
               <div class="form-group">
-                <label for="ai_llm_url">URL LLM Rapide (mode "Fast")</label>
+                <label for="ai_llm_url"><?php _e("admin_bibliotheque_ia.llm_url_label", [], false); ?></label>
                 <input type="url" class="form-control" id="ai_llm_url" name="ai_llm_url"
                        value="<?php echo htmlspecialchars($ai_llm_url); ?>"
                        placeholder="http://localhost:11436/completion">
-                <small class="text-muted">Ex : Luth via llama.cpp. Port actuel : 11436.</small>
+                <small class="text-muted"><?php _e("admin_bibliotheque_ia.llm_url_help", [], false); ?></small>
               </div>
               <div class="form-group mb-4">
-                <label for="ai_llm_url_pro">URL LLM Avancé (mode "Pro")</label>
+                <label for="ai_llm_url_pro"><?php _e("admin_bibliotheque_ia.llm_url_pro_label", [], false); ?></label>
                 <input type="url" class="form-control" id="ai_llm_url_pro" name="ai_llm_url_pro"
                        value="<?php echo htmlspecialchars($ai_llm_url_pro); ?>"
                        placeholder="http://localhost:11435/completion">
-                <small class="form-text text-muted">Ex: Gemma 2 27B / Llama 3 70B</small>
+                <small class="form-text text-muted"><?php _e("admin_bibliotheque_ia.llm_url_pro_help", [], false); ?></small>
             </div>
             
             <div class="form-group mb-4">
-                <label for="ai_llm_url_nemotron">URL LLM Nemotron (mode "Nemotron")</label>
+                <label for="ai_llm_url_nemotron"><?php _e("admin_bibliotheque_ia.llm_url_nemotron_label", [], false); ?></label>
                 <input type="url" class="form-control" id="ai_llm_url_nemotron" name="ai_llm_url_nemotron"
                        value="<?php echo htmlspecialchars($ai_llm_url_nemotron); ?>"
                        placeholder="http://localhost:11438/completion">
-                <small class="form-text text-muted">Ex: Nemotron-Mini-4B / Nemotron 70B</small>
+                <small class="form-text text-muted"><?php _e("admin_bibliotheque_ia.llm_url_nemotron_help", [], false); ?></small>
             </div>
             </div>
           </div>
@@ -85,23 +85,23 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
           <!-- Section 3 : Embedding -->
           <div class="panel panel-info">
             <div class="panel-heading">
-              <h3 class="panel-title"><i class="fa fa-database"></i> Endpoint Embedding (Vectorisation)</h3>
+              <h3 class="panel-title"><i class="fa fa-database"></i><?php _e("admin_bibliotheque_ia.embedding_title", [], false); ?></h3>
             </div>
             <div class="panel-body">
               <div class="alert alert-warning">
                 <i class="fa fa-exclamation-triangle"></i>
-                <strong>Attention :</strong> Changer de modèle d'embedding rend les vecteurs existants <strong>incompatibles</strong>.
-                Si vous modifiez ces champs, relancez impérativement la vectorisation complète ci-dessous.
+                <strong><?php _e("admin_bibliotheque_ia.embedding_warning_important", [], false); ?></strong><?php _e("admin_bibliotheque_ia.embedding_warning_mid", [], false); ?><strong><?php _e("admin_bibliotheque_ia.embedding_warning_bold_end", [], false); ?></strong>.
+                <?php _e("admin_bibliotheque_ia.embedding_warning_rerun", [], false); ?>
               </div>
               <div class="form-group">
-                <label for="ai_embedding_url">URL Endpoint Embedding</label>
+                <label for="ai_embedding_url"><?php _e("admin_bibliotheque_ia.embedding_url_label", [], false); ?></label>
                 <input type="url" class="form-control" id="ai_embedding_url" name="ai_embedding_url"
                        value="<?php echo htmlspecialchars($ai_embedding_url); ?>"
                        placeholder="http://localhost:11434/api/embeddings">
-                <small class="text-muted">Ex : Ollama local (port 11434) ou endpoint distant compatible.</small>
+                <small class="text-muted"><?php _e("admin_bibliotheque_ia.embedding_url_help", [], false); ?></small>
               </div>
               <div class="form-group">
-                <label for="ai_embedding_model">Nom du modèle d'embedding</label>
+                <label for="ai_embedding_model"><?php _e("admin_bibliotheque_ia.embedding_model_label", [], false); ?></label>
                 <input type="text" class="form-control" id="ai_embedding_model" name="ai_embedding_model"
                        value="<?php echo htmlspecialchars($ai_embedding_model); ?>"
                        placeholder="bge-m3">
@@ -112,15 +112,15 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
           <!-- Section 4 : Re-ranker -->
           <div class="panel panel-info">
             <div class="panel-heading">
-              <h3 class="panel-title"><i class="fa fa-sort-amount-desc"></i> Re-ranker (optionnel)</h3>
+              <h3 class="panel-title"><i class="fa fa-sort-amount-desc"></i><?php _e("admin_bibliotheque_ia.reranker_title", [], false); ?></h3>
             </div>
             <div class="panel-body">
               <div class="form-group">
-                <label for="ai_reranker_url">URL Re-ranker</label>
+                <label for="ai_reranker_url"><?php _e("admin_bibliotheque_ia.reranker_url_label", [], false); ?></label>
                 <input type="url" class="form-control" id="ai_reranker_url" name="ai_reranker_url"
                        value="<?php echo htmlspecialchars($ai_reranker_url); ?>"
                        placeholder="http://localhost:11437/rerank">
-                <small class="text-muted">Si vide ou indisponible, le système utilise automatiquement le mode dégradé (similarité vectorielle seule).</small>
+                <small class="text-muted"><?php _e("admin_bibliotheque_ia.reranker_url_help", [], false); ?></small>
               </div>
             </div>
           </div>
@@ -128,22 +128,22 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
           <!-- Section 5 : Authentification -->
           <div class="panel panel-warning">
             <div class="panel-heading">
-              <h3 class="panel-title"><i class="fa fa-key"></i> Authentification</h3>
+              <h3 class="panel-title"><i class="fa fa-key"></i><?php _e("admin_bibliotheque_ia.auth_title", [], false); ?></h3>
             </div>
             <div class="panel-body">
               <div class="form-group">
-                <label for="ai_token">Token / API Key</label>
+                <label for="ai_token"><?php _e("admin_bibliotheque_ia.auth_token_label", [], false); ?></label>
                 <div class="input-group">
                   <input type="password" class="form-control" id="ai_token" name="ai_token"
                          value="<?php echo htmlspecialchars($ai_token); ?>"
-                         placeholder="sk-... ou Bearer token">
+                                                   placeholder="<?= __('admin_bibliotheque_ia.auth_token_placeholder') ?>">
                   <span class="input-group-btn">
                     <button class="btn btn-default" type="button" onclick="toggleToken()">
                       <i class="fa fa-eye" id="token-eye"></i>
                     </button>
                   </span>
                 </div>
-                <small class="text-muted">Laisser vide pour les endpoints locaux (Ollama, llama.cpp). Requis pour OpenAI, OpenRouter, OVH, etc.</small>
+                <small class="text-muted"><?php _e("admin_bibliotheque_ia.auth_token_help", [], false); ?></small>
               </div>
             </div>
           </div>
@@ -151,16 +151,15 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
           <!-- Section 6 : Prompt Système -->
           <div class="panel panel-info">
             <div class="panel-heading">
-              <h3 class="panel-title"><i class="fa fa-pencil"></i> Prompt Système</h3>
+              <h3 class="panel-title"><i class="fa fa-pencil"></i><?php _e("admin_bibliotheque_ia.system_prompt_title", [], false); ?></h3>
             </div>
             <div class="panel-body">
               <div class="form-group">
-                <label for="ai_system_prompt">Instructions pour l'IA</label>
+                <label for="ai_system_prompt"><?php _e("admin_bibliotheque_ia.system_prompt_label", [], false); ?></label>
                 <textarea class="form-control" id="ai_system_prompt" name="ai_system_prompt" rows="6"
-                          placeholder="Tu es un assistant expert..."><?php echo htmlspecialchars($ai_system_prompt); ?></textarea>
+                          placeholder="<?= __('admin_bibliotheque_ia.system_prompt_placeholder') ?>"><?php echo htmlspecialchars($ai_system_prompt); ?></textarea>
                 <small class="text-muted">
-                  Ce texte définit le comportement et la "personnalité" de l'IA.
-                  Le contexte documentaire et la question de l'utilisateur sont ajoutés automatiquement.
+                  <?php _e("admin_bibliotheque_ia.system_prompt_help", [], false); ?>
                 </small>
               </div>
             </div>
@@ -169,17 +168,16 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
           <!-- Section 7 : Sécurité de la Bibliothèque -->
           <div class="panel panel-warning">
             <div class="panel-heading">
-              <h3 class="panel-title"><i class="fa fa-lock"></i> Accès Sécurisé</h3>
+              <h3 class="panel-title"><i class="fa fa-lock"></i><?php _e("admin_bibliotheque_ia.security_title", [], false); ?></h3>
             </div>
             <div class="panel-body">
               <div class="form-group">
-                <label for="bibliotheque_password">Mot de passe de la Bibliothèque</label>
+                <label for="bibliotheque_password"><?php _e("admin_bibliotheque_ia.security_password_label", [], false); ?></label>
                 <input type="text" class="form-control" id="bibliotheque_password" name="bibliotheque_password"
                        value="<?php echo htmlspecialchars($_ai['bibliotheque_password'] ?? ''); ?>"
-                       placeholder="Laisser vide pour un accès libre">
+                       placeholder="<?= __('admin_bibliotheque_ia.password_placeholder') ?>">
                 <small class="text-muted">
-                  Si défini, un mot de passe sera demandé pour accéder à la bibliothèque. 
-                  L'administrateur (vous) a toujours accès s'il est connecté.
+                  <?php _e("admin_bibliotheque_ia.security_password_help", [], false); ?>
                 </small>
               </div>
             </div>
@@ -188,45 +186,40 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
           <!-- Section Studio IA : Endpoints VPS -->
           <div class="panel panel-info">
             <div class="panel-heading">
-              <h3 class="panel-title"><i class="fa fa-magic"></i> Studio — Outils IA (VPS)</h3>
+              <h3 class="panel-title"><i class="fa fa-magic"></i><?php _e("admin_bibliotheque_ia.studio_vps_title", [], false); ?></h3>
             </div>
             <div class="panel-body">
               <p class="text-muted">
-                Ces outils utilisent des modèles d'IA lourds (reconnaissance de polices, conversion Docling)
-                qui doivent tourner sur un serveur distant. Laissez vide pour désactiver la fonctionnalité
-                ou pour utiliser un environnement local de développement.
+                <?php _e("admin_bibliotheque_ia.studio_vps_desc", [], false); ?>
               </p>
 
               <div class="form-group">
-                <label for="studio_api_fonts_url">URL API — Reconnaissance de police</label>
+                <label for="studio_api_fonts_url"><?php _e("admin_bibliotheque_ia.studio_fonts_url_label", [], false); ?></label>
                 <input type="url" class="form-control" id="studio_api_fonts_url" name="studio_api_fonts_url"
                        value="<?php echo htmlspecialchars($studio_api_fonts_url); ?>"
                        placeholder="https://vps.example.com/api/font-recognizer">
                 <small class="text-muted">
-                  Endpoint POST JSON <code>{"image": "&lt;base64&gt;"}</code> → réponse <code>[{"label": "...", "score": 0.xx}]</code>.
-                  Si vide, le bouton "Reconnaître" sera inopérant sur Windows.
+                  <?php _e("admin_bibliotheque_ia.studio_fonts_url_help", [], false); ?>
                 </small>
               </div>
 
               <div class="form-group">
-                <label for="whatfontis_api_key">Clé API — WhatFontIs (Optionnel)</label>
+                <label for="whatfontis_api_key"><?php _e("admin_bibliotheque_ia.studio_whatfontis_label", [], false); ?></label>
                 <input type="text" class="form-control" id="whatfontis_api_key" name="whatfontis_api_key"
                        value="<?php echo htmlspecialchars($whatfontis_api_key); ?>"
-                       placeholder="Votre clé API WhatFontIs">
+                       placeholder="<?= __('admin_bibliotheque_ia.whatfontis_placeholder') ?>">
                 <small class="text-muted">
-                  Si renseignée, l'API commerciale tierce WhatFontIs.com sera utilisée pour la reconnaissance de police au lieu du modèle local/VPS.
+                  <?php _e("admin_bibliotheque_ia.studio_whatfontis_help", [], false); ?>
                 </small>
               </div>
 
               <div class="form-group">
-                <label for="studio_api_docling_url">URL API — Conversion Docling (PDF → DOCX)</label>
+                <label for="studio_api_docling_url"><?php _e("admin_bibliotheque_ia.studio_docling_url_label", [], false); ?></label>
                 <input type="url" class="form-control" id="studio_api_docling_url" name="studio_api_docling_url"
                        value="<?php echo htmlspecialchars($studio_api_docling_url); ?>"
                        placeholder="https://vps.example.com/api/docling-convert">
                 <small class="text-muted">
-                  Endpoint POST JSON <code>{"pdf": "&lt;base64&gt;", "filename": "doc.pdf"}</code>
-                  → réponse <code>{"docx": "&lt;base64&gt;"}</code> ou binaire .docx direct.
-                  Si vide, seul l'environnement local <code>/opt/docling-venv/</code> est utilisé.
+                  <?php _e("admin_bibliotheque_ia.studio_docling_url_help", [], false); ?>
                 </small>
               </div>
             </div>
@@ -235,25 +228,24 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
           <!-- Section Studio IA : Installation Locale -->
           <div class="panel panel-default">
             <div class="panel-heading">
-              <h3 class="panel-title"><i class="fa fa-download"></i> Studio — Installation IA Locale (Optionnel)</h3>
+              <h3 class="panel-title"><i class="fa fa-download"></i><?php _e("admin_bibliotheque_ia.local_install_title", [], false); ?></h3>
             </div>
             <div class="panel-body">
               <p class="text-muted">
-                Si vous ne disposez pas d'un VPS, vous pouvez télécharger les modèles lourds (PyTorch, Docling, etc.)
-                sur cette machine. <strong>Attention : Le téléchargement pèse environ 1.5 Go.</strong>
+                <?php _e("admin_bibliotheque_ia.local_install_desc", [], false); ?>
               </p>
               
               <div class="form-group">
-                <label for="ai_local_path">Dossier d'installation des modèles (Optionnel)</label>
+                <label for="ai_local_path"><?php _e("admin_bibliotheque_ia.local_path_label", [], false); ?></label>
                 <input type="text" class="form-control" id="ai_local_path" name="ai_local_path"
                        value="<?php echo htmlspecialchars($_ai['ai_local_path'] ?? ''); ?>"
-                       placeholder="Ex: D:\Duplicator_IA (Laissez vide pour le dossier par défaut)">
-                <small class="text-muted">Utile si vous n'avez plus de place sur le disque principal (C:).</small>
+                       placeholder="<?= __('admin_bibliotheque_ia.local_path_placeholder') ?>">
+                <small class="text-muted"><?php _e("admin_bibliotheque_ia.local_path_help", [], false); ?></small>
               </div>
 
               <div class="form-group" style="margin-top: 15px;">
                 <button type="button" class="btn btn-default" onclick="installLocalAi()">
-                  <i class="fa fa-terminal"></i> Installer / Mettre à jour l'IA Locale
+                  <?php _e("admin_bibliotheque_ia.local_install_button", [], false); ?>
                 </button>
               </div>
             </div>
@@ -262,7 +254,7 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
           <!-- Bouton Sauvegarde -->
           <div class="form-group">
             <button type="submit" class="btn btn-success btn-lg btn-block" id="btn-save">
-              <i class="fa fa-save"></i> Sauvegarder les réglages IA
+              <?php _e("admin_bibliotheque_ia.save_button", [], false); ?>
             </button>
           </div>
 
@@ -273,80 +265,79 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
         <!-- Section 7 : Maintenance -->
         <div class="panel panel-danger">
           <div class="panel-heading">
-            <h3 class="panel-title"><i class="fa fa-cog fa-spin-hover"></i> Maintenance de la Bibliothèque</h3>
+            <h3 class="panel-title"><i class="fa fa-cog fa-spin-hover"></i><?php _e("admin_bibliotheque_ia.maintenance_title", [], false); ?></h3>
           </div>
           <div class="panel-body">
             <div class="alert alert-info">
               <i class="fa fa-info-circle"></i>
-              <strong>Deux modes disponibles :</strong>
+              <strong><?php _e("admin_bibliotheque_ia.maintenance_vectorize_desc", [], false); ?></strong>
               <ul>
-                <li><strong>Compléter les manquants :</strong> Très rapide, ne traite que les PDFs récemment ajoutés ou migrés.</li>
-                <li><strong>Tout réinitialiser (Force-all) :</strong> Efface tous les vecteurs existants et recommence à zéro. <strong>Indispensable si vous avez changé de modèle d'embedding</strong>. Peut durer très longtemps.</li>
+                <li><strong><?php _e("admin_bibliotheque_ia.maintenance_vectorize_missing_bold", [], false); ?></strong><?php _e("admin_bibliotheque_ia.maintenance_vectorize_missing_text", [], false); ?></li>
+                <li><strong><?php _e("admin_bibliotheque_ia.maintenance_vectorize_rerun_bold", [], false); ?></strong><?php _e("admin_bibliotheque_ia.maintenance_vectorize_rerun_text1", [], false); ?><strong><?php _e("admin_bibliotheque_ia.maintenance_vectorize_rerun_bold_end", [], false); ?></strong><?php _e("admin_bibliotheque_ia.maintenance_vectorize_rerun_text2", [], false); ?></li>
               </ul>
             </div>
             
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;">
               <button class="btn btn-warning" id="btn-vectorize-missing" onclick="triggerVectorization('missing')">
-                <i class="fa fa-search-plus"></i> Compléter les vecteurs manquants
+                <?php _e("admin_bibliotheque_ia.maintenance_vectorize_missing_button", [], false); ?>
               </button>
               <button class="btn btn-danger" id="btn-vectorize-all" onclick="triggerVectorization('all')">
-                <i class="fa fa-refresh"></i> Réinitialiser et TOUT re-vectoriser
+                <?php _e("admin_bibliotheque_ia.maintenance_vectorize_all_button", [], false); ?>
               </button>
             </div>
             
             <div id="vectorize-status" style="display:none; margin-top:15px;">
               <div class="progress">
                 <div class="progress-bar progress-bar-striped active" style="width:100%">
-                  Vectorisation en cours en arrière-plan...
+                  <?php _e("admin_bibliotheque_ia.maintenance_vectorize_progress", [], false); ?>
                 </div>
               </div>
               <p class="text-muted text-center" id="vectorize-msg"></p>
             </div>
             <hr>
-            <h4><i class="fa fa-file-text-o"></i> Migrer la bibliothèque en Markdown (Docling)</h4>
+            <h4><i class="fa fa-file-text-o"></i><?php _e("admin_bibliotheque_ia.maintenance_markdown_title", [], false); ?></h4>
             <p>
-              Retraite tous les PDF avec <strong>Docling</strong> pour générer des chunks sémantiques par sections (titres, chapitres…) au lieu du découpage naïf par mots.
-              Les anciens chunks sont <strong>préservés jusqu'au commit atomique</strong> — le RAG reste fonctionnel pendant l'opération.
+              <?php _e("admin_bibliotheque_ia.maintenance_markdown_desc", [], false); ?>
             </p>
             <div id="markdown-counts" class="row" style="margin-bottom:12px;">
-              <div class="col-xs-3 text-center"><span class="badge" style="background:#777;" id="md-count-raw">…</span><br><small>À traiter</small></div>
-              <div class="col-xs-3 text-center"><span class="badge" style="background:#5bc0de;" id="md-count-processing">…</span><br><small>En cours</small></div>
-              <div class="col-xs-3 text-center"><span class="badge" style="background:#5cb85c;" id="md-count-done">…</span><br><small>Terminés</small></div>
-              <div class="col-xs-3 text-center"><span class="badge" style="background:#d9534f;" id="md-count-error">…</span><br><small>En erreur</small></div>
+              <div class="col-xs-3 text-center"><span class="badge" style="background:#777;" id="md-count-raw">…</span><br><small><?php _e("admin_bibliotheque_ia.maintenance_markdown_raw", [], false); ?></small></div>
+              <div class="col-xs-3 text-center"><span class="badge" style="background:#5bc0de;" id="md-count-processing">…</span><br><small><?php _e("admin_bibliotheque_ia.maintenance_markdown_processing", [], false); ?></small></div>
+              <div class="col-xs-3 text-center"><span class="badge" style="background:#5cb85c;" id="md-count-done">…</span><br><small><?php _e("admin_bibliotheque_ia.maintenance_markdown_done", [], false); ?></small></div>
+              <div class="col-xs-3 text-center"><span class="badge" style="background:#d9534f;" id="md-count-error">…</span><br><small><?php _e("admin_bibliotheque_ia.maintenance_markdown_error", [], false); ?></small></div>
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
               <button class="btn btn-primary" id="btn-markdown-all" onclick="triggerMarkdownMigration('all')">
-                <i class="fa fa-magic"></i> Migrer tous les PDFs (raw)
+                <?php _e("admin_bibliotheque_ia.maintenance_markdown_migrate_all_button", [], false); ?>
               </button>
               <button class="btn btn-warning" id="btn-markdown-retry" onclick="triggerMarkdownMigration('retry')">
-                <i class="fa fa-refresh"></i> Relancer les erreurs
+                <?php _e("admin_bibliotheque_ia.maintenance_markdown_retry_button", [], false); ?>
               </button>
-              <button class="btn btn-default" id="btn-markdown-force" onclick="triggerMarkdownMigration('force')" title="Retraite aussi les fichiers déjà migrés">
-                <i class="fa fa-repeat"></i> Tout retraiter
+              <button class="btn btn-default" id="btn-markdown-force" onclick="triggerMarkdownMigration('force')" title="<?= __('admin_bibliotheque_ia.force_all_title') ?>">
+                <?php _e("admin_bibliotheque_ia.maintenance_markdown_force_button", [], false); ?>
               </button>
               <button class="btn btn-danger" id="btn-markdown-stop" onclick="stopMarkdownMigration()" style="display:none;">
-                <i class="fa fa-stop"></i> Stopper la migration
+                <?php _e("admin_bibliotheque_ia.maintenance_markdown_stop_button", [], false); ?>
               </button>
             </div>
             <div id="markdown-status" style="display:none; margin-top:10px;">
               <div class="progress">
                 <div class="progress-bar progress-bar-striped active" id="markdown-progress-bar" style="width:100%">
-                  Migration en cours en arrière-plan…
+                  <?php _e("admin_bibliotheque_ia.maintenance_markdown_progress", [], false); ?>
                 </div>
               </div>
               <p class="text-muted text-center" id="markdown-msg" style="font-size:0.9em;"></p>
             </div>
             
             <div id="markdown-logs-container" style="display:none; margin-top:15px;">
-              <p><strong><i class="fa fa-terminal"></i> Logs en direct :</strong></p>
+              <p><strong><i class="fa fa-terminal"></i><?php _e("admin_bibliotheque_ia.maintenance_markdown_logs", [], false); ?></strong></p>
               <pre id="markdown-logs" style="font-size: 0.85em; background: #222; color: #0f0; max-height: 250px; overflow-y: auto; border: 1px solid #000; padding: 10px;"></pre>
             </div>
 
             <hr>
-            <h4><i class="fa fa-search"></i> Scanner les nouveaux fichiers</h4>
-            <p>Utilisez ce bouton pour forcer un scan complet de la bibliothèque (y compris les dossiers externes s'il y en a) et indexer les nouveaux fichiers.</p>
+            <h4><i class="fa fa-search"></i><?php _e("admin_bibliotheque_ia.maintenance_rescan_title", [], false); ?></h4>
+            <p><?php _e("admin_bibliotheque_ia.maintenance_rescan_desc", [], false); ?></p>
             <button class="btn btn-warning btn-lg" id="btn-rescan" onclick="rescanLibrary('all')">
-              <i class="fa fa-refresh"></i> Lancer un scan complet
+              <?php _e("admin_bibliotheque_ia.maintenance_rescan_button", [], false); ?>
             </button>
             <div id="rescan-status" style="display:none; margin-top:15px;">
               <div class="progress">
@@ -360,7 +351,7 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
         <div class="row">
           <div class="col-md-12">
             <a href="?admin" class="btn btn-default btn-block">
-              <i class="fa fa-arrow-left"></i> Retour à l'administration
+              <?php _e("admin_bibliotheque_ia.back_button", [], false); ?>
             </a>
           </div>
         </div>
@@ -414,343 +405,4 @@ $whatfontis_api_key     = $_ai['whatfontis_api_key'] ?? '';
 }
 </style>
 
-<script>
-function toggleToken() {
-    const field = document.getElementById('ai_token');
-    const eye = document.getElementById('token-eye');
-    if (field.type === 'password') {
-        field.type = 'text';
-        eye.classList.replace('fa-eye', 'fa-eye-slash');
-    } else {
-        field.type = 'password';
-        eye.classList.replace('fa-eye-slash', 'fa-eye');
-    }
-}
-
-document.getElementById('ai-settings-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const btn = document.getElementById('btn-save');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Sauvegarde...';
-
-    const formData = new FormData(this);
-
-    fetch('?save_ai_settings', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(data => {
-            const alert = document.getElementById('ai-save-alert');
-            if (data.success) {
-                alert.className = 'alert alert-success';
-                alert.innerHTML = '<i class="fa fa-check"></i> ' + data.message;
-            } else {
-                alert.className = 'alert alert-danger';
-                alert.innerHTML = '<i class="fa fa-times"></i> Erreur : ' + (data.error || 'Inconnue');
-            }
-            alert.style.display = 'block';
-            window.scrollTo(0, 0);
-        })
-        .catch(err => {
-            const alert = document.getElementById('ai-save-alert');
-            alert.className = 'alert alert-danger';
-            alert.innerHTML = '<i class="fa fa-times"></i> Erreur réseau : ' + err;
-            alert.style.display = 'block';
-        })
-        .finally(() => {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa fa-save"></i> Sauvegarder les réglages IA';
-        });
-});
-
-function triggerVectorization(mode = 'missing') {
-    let msg = mode === 'all' 
-        ? '⚠️ ATTENTION : Vous allez effacer TOUS les vecteurs existants et tout recommencer à zéro.\n\nCette opération peut durer plusieurs heures.\nÊtes-vous absolument sûr ?'
-        : 'Lancer la vectorisation pour compléter uniquement les blocs manquants ?\n\n(L\'opération se fera en arrière-plan).';
-
-    if (!confirm(msg)) return;
-
-    // Désactiver les deux boutons
-    const btnAll = document.getElementById('btn-vectorize-all');
-    const btnMissing = document.getElementById('btn-vectorize-missing');
-    if (btnAll) btnAll.disabled = true;
-    if (btnMissing) btnMissing.disabled = true;
-    
-    document.getElementById('vectorize-status').style.display = 'block';
-    document.getElementById('vectorize-msg').innerText = 'Démarrage en cours...';
-
-    const form = new FormData();
-    form.append('mode', mode);
-
-    fetch('?trigger_vectorization', { method: 'POST', body: form })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('vectorize-status').style.display = 'block';
-                document.getElementById('vectorize-msg').textContent = data.message;
-            } else {
-                alert('Erreur : ' + (data.error || 'Inconnue'));
-                if (btnAll) btnAll.disabled = false;
-                if (btnMissing) btnMissing.disabled = false;
-            }
-        })
-        .catch(() => {
-            alert('Erreur réseau lors du déclenchement.');
-            if (btnAll) btnAll.disabled = false;
-            if (btnMissing) btnMissing.disabled = false;
-        });
-}
-
-function rescanLibrary(mode) {
-    if (!confirm('⚠️ Lancer un scan complet de la bibliothèque ?')) return;
-
-    const btn = document.getElementById('btn-rescan');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Démarrage...';
-
-    fetch('?bibliotheque_maintenance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'rescan', params: { mode: mode } })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success && data.job_id) {
-            monitorRescan(data.job_id);
-        } else {
-            alert('Erreur : ' + (data.error || 'Inconnue'));
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa fa-refresh"></i> Lancer un scan complet';
-        }
-    })
-    .catch(() => {
-        alert('Erreur réseau lors du lancement du scan.');
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa fa-refresh"></i> Lancer un scan complet';
-    });
-}
-
-function monitorRescan(jobId) {
-    const btn = document.getElementById('btn-rescan');
-    const statusDiv = document.getElementById('rescan-status');
-    const progressBar = document.getElementById('rescan-progress-bar');
-    
-    if (statusDiv) statusDiv.style.display = 'block';
-    if (progressBar) {
-        progressBar.classList.add('active');
-        progressBar.classList.remove('progress-bar-success');
-    }
-    
-    const pollInterval = setInterval(async () => {
-        try {
-            const statusRes = await fetch('?get_indexing_status&job_id=' + jobId);
-            const statusData = await statusRes.json();
-            
-            if (statusData.percent && progressBar) {
-                progressBar.style.width = statusData.percent + '%';
-                progressBar.textContent = statusData.percent + '%';
-            }
-            if (statusData.status === 'scanning' && progressBar) {
-                progressBar.textContent = 'Scan... (' + (statusData.scanned_count || 0) + ')';
-            }
-
-            if (statusData.status === 'completed') {
-                clearInterval(pollInterval);
-                if (progressBar) {
-                    progressBar.classList.remove('active');
-                    progressBar.classList.add('progress-bar-success');
-                    progressBar.textContent = 'Terminé !';
-                }
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fa fa-refresh"></i> Lancer un scan complet';
-                }
-            } else if (statusData.status === 'error' || statusData.status === 'fatal_error') {
-                clearInterval(pollInterval);
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fa fa-refresh"></i> Lancer un scan complet';
-                }
-                alert('Erreur lors du scan: ' + (statusData.error_msg || 'Inconnue'));
-            }
-        } catch (e) {
-            console.error("Erreur polling:", e);
-        }
-    }, 1000);
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    fetch('?get_indexing_status&job_id=latest')
-        .then(res => res.json())
-        .then(data => {
-            if (data && (data.status === 'indexing' || data.status === 'scanning')) {
-                const btn = document.getElementById('btn-rescan');
-                if(btn) btn.disabled = true;
-                monitorRescan(data.job_id);
-            }
-        }).catch(e => {});
-
-    // Charger les compteurs Markdown au chargement de la page
-    refreshMarkdownCounts();
-});
-
-// ─── Migration Markdown ───────────────────────────────────────────────────────
-
-let mdPollInterval = null;
-
-function refreshMarkdownCounts() {
-    fetch('?get_markdown_migration_status')
-        .then(r => r.json())
-        .then(data => {
-            if (!data.counts) return;
-            const c = data.counts;
-            document.getElementById('md-count-raw').textContent        = c.raw + (c.null ? '+'+c.null : '');
-            document.getElementById('md-count-processing').textContent = c.processing;
-            document.getElementById('md-count-done').textContent       = c.done;
-            document.getElementById('md-count-error').textContent      = c.error;
-
-            // Reprendre le polling si une migration est en cours
-            if (data.running && !mdPollInterval) {
-                document.getElementById('markdown-status').style.display = 'block';
-                document.getElementById('btn-markdown-stop').style.display = 'inline-block';
-                mdPollInterval = setInterval(pollMarkdownStatus, 3000);
-            }
-        }).catch(() => {});
-}
-
-function stopMarkdownMigration() {
-    if (!confirm('Voulez-vous vraiment stopper la migration Markdown en cours ?')) return;
-    fetch('?stop_markdown_migration', { method: 'POST' })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                alert('Migration stoppée.');
-                pollMarkdownStatus();
-            }
-        }).catch(() => alert('Erreur réseau lors de l\'arrêt.'));
-}
-
-function triggerMarkdownMigration(mode) {
-    const labels = { all: 'tous les PDFs non traités', retry: 'les fichiers en erreur', force: 'TOUS les fichiers (y compris déjà traités)' };
-    if (!confirm('⚠️ Lancer la migration Markdown Docling pour ' + (labels[mode] || mode) + ' ?\n\nOpération longue — le RAG reste fonctionnel pendant l\'opération.')) return;
-
-    ['btn-markdown-all', 'btn-markdown-retry', 'btn-markdown-force'].forEach(id => {
-        const b = document.getElementById(id);
-        if (b) b.disabled = true;
-    });
-    document.getElementById('btn-markdown-stop').style.display = 'inline-block';
-    document.getElementById('btn-markdown-all').innerHTML = '<i class="fa fa-spinner fa-spin"></i> Lancement…';
-
-    const form = new FormData();
-    form.append('mode', mode);
-
-    fetch('?trigger_markdown_migration', { method: 'POST', body: form })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('markdown-status').style.display = 'block';
-                document.getElementById('markdown-msg').textContent = data.message;
-                if (!mdPollInterval) {
-                    mdPollInterval = setInterval(pollMarkdownStatus, 3000);
-                }
-            } else {
-                alert('Erreur : ' + (data.error || 'Inconnue'));
-                resetMarkdownButtons();
-            }
-        })
-        .catch(() => {
-            alert('Erreur réseau lors du déclenchement.');
-            resetMarkdownButtons();
-        });
-}
-
-function pollMarkdownStatus() {
-    fetch('?get_markdown_migration_status')
-        .then(r => r.json())
-        .then(data => {
-            const bar = document.getElementById('markdown-progress-bar');
-            const msg = document.getElementById('markdown-msg');
-
-            // Mettre à jour les compteurs
-            if (data.counts) {
-                const c = data.counts;
-                document.getElementById('md-count-raw').textContent        = c.raw + (c.null ? '+'+c.null : '');
-                document.getElementById('md-count-processing').textContent = c.processing;
-                document.getElementById('md-count-done').textContent       = c.done;
-                document.getElementById('md-count-error').textContent      = c.error;
-            }
-
-            if (data.running) {
-                const total     = data.total || 1;
-                const processed = data.processed || 0;
-                const pct       = total > 0 ? Math.round((processed / total) * 100) : 0;
-                if (bar) {
-                    bar.style.width = Math.max(10, pct) + '%';
-                    bar.textContent = processed + '/' + total + ' fichiers (' + pct + '%)';
-                }
-                if (msg && data.current) {
-                    msg.textContent = '⚙️ ' + (data.current.name || '');
-                }
-                
-                // --- AJOUT LOGS ---
-                document.getElementById('markdown-logs-container').style.display = 'block';
-                fetch('?get_markdown_migration_logs')
-                    .then(r => r.text())
-                    .then(logs => {
-                        const logsEl = document.getElementById('markdown-logs');
-                        if (logsEl) {
-                            const isScrolledToBottom = logsEl.scrollHeight - logsEl.clientHeight <= logsEl.scrollTop + 10;
-                            logsEl.textContent = logs;
-                            if (isScrolledToBottom) {
-                                logsEl.scrollTop = logsEl.scrollHeight;
-                            }
-                        }
-                    }).catch(() => {});
-                // ------------------
-                
-            } else {
-                // Migration terminée
-                clearInterval(mdPollInterval);
-                mdPollInterval = null;
-                if (bar) {
-                    bar.classList.remove('active');
-                    bar.classList.add('progress-bar-success');
-                    bar.style.width = '100%';
-                    const p = data.processed || 0;
-                    const e = data.errors    || 0;
-                    bar.textContent = '✅ Terminé : ' + p + ' fichiers traités' + (e > 0 ? ', ' + e + ' erreur(s)' : '');
-                }
-                if (msg) msg.textContent = 'Terminé le ' + (data.finished_at || '');
-                resetMarkdownButtons();
-            }
-        }).catch(() => {});
-}
-
-function resetMarkdownButtons() {
-    document.getElementById('btn-markdown-all').innerHTML   = '<i class="fa fa-magic"></i> Migrer tous les PDFs (raw)';
-    document.getElementById('btn-markdown-retry').innerHTML = '<i class="fa fa-refresh"></i> Relancer les erreurs';
-    document.getElementById('btn-markdown-stop').style.display = 'none';
-    ['btn-markdown-all', 'btn-markdown-retry', 'btn-markdown-force'].forEach(id => {
-        const b = document.getElementById(id);
-        if (b) b.disabled = false;
-    });
-}
-
-function installLocalAi() {
-    const path = document.getElementById('ai_local_path').value.trim();
-    if (!confirm('Cette action va ouvrir un terminal et télécharger environ 1.5 Go de données. Voulez-vous continuer ?')) return;
-
-    fetch('?install_local_ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'target_dir=' + encodeURIComponent(path)
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            alert('L\'installation a été lancée dans un nouveau terminal ! Veuillez patienter jusqu\'à la fermeture de la fenêtre.');
-        } else {
-            alert('Erreur : ' + (data.error || 'Inconnue'));
-        }
-    })
-    .catch(() => alert('Erreur réseau lors du lancement de l\'installation.'));
-}
-</script>
+<script src="js/admin-bibliotheque-ia.js" defer></script>

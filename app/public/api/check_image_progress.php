@@ -11,7 +11,7 @@ ini_set('zlib.output_compression', 0);
 // Headers CORS et JSON
 header('Content-Type: application/json');
 header('Cache-Control: no-cache, no-store, must-revalidate');
-header('Access-Control-Allow-Origin: *');
+header_remove('Access-Control-Allow-Origin');
 
 // Récupérer la clé
 $key = isset($_GET['key']) ? $_GET['key'] : '';

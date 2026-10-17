@@ -78,7 +78,7 @@ class InlineTranslationEditor {
                 editableElement.classList.add('editing-enabled');
                 editableElement.style.setProperty('cursor', 'pointer', 'important');
                 
-                console.log('Clic sur élément édiéable:', editableElement);
+                console.log((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.inline_translation.clic_sur__l_ment__di_able'] || 'Clic sur élément édiéable:'), editableElement);
                 this.startEdit(editableElement);
                 return false;
             }
@@ -310,11 +310,11 @@ class InlineTranslationEditor {
                     this.finishEdit();
                 }, 1500);
             } else {
-                throw new Error(result.message || 'Erreur de sauvegarde');
+                throw new Error(result.message || (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.inline_translation.erreur_de_sauvegarde'] || 'Erreur de sauvegarde'));
             }
         } catch (error) {
-            console.error('Erreur de sauvegarde:', error);
-            this.showFeedback('Erreur de sauvegarde: ' + error.message, 'error');
+            console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.inline_translation.erreur_de_sauvegarde'] || 'Erreur de sauvegarde:'), error);
+            this.showFeedback((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.inline_translation.erreur_de_sauvegarde'] || 'Erreur de sauvegarde: ') + error.message, 'error');
             saveBtn.classList.remove('saving');
             saveBtn.classList.add('error');
             saveBtn.innerHTML = '<i class="fa fa-times"></i> Erreur';
@@ -405,14 +405,14 @@ window.toggleAdminMode = function() {
 // Fonction pour ajouter des éléments éditables dynamiquement
 window.makeEditable = function(element, key, lang) {
     if (!element || !key || !lang) {
-        console.error('Paramètres manquants pour makeEditable');
+        console.error((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.inline_translation.param_tres_manquants_pour_make'] || 'Paramètres manquants pour makeEditable'));
         return;
     }
 
     element.classList.add('translation-editable');
     element.dataset.key = key;
     element.dataset.lang = lang;
-    element.title = 'Cliquer pour éditer';
+    element.title = (window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.inline_translation.cliquer_pour__diter'] || 'Cliquer pour éditer');
     
     // Ajouter l'icône d'édition si elle n'existe pas
     if (!element.querySelector('.edit-icon')) {

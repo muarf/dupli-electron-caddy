@@ -3,7 +3,7 @@
     <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Duplicator</title>
+    <title><?php _e("auto_clean.base_html_php_1", [], false); ?></title>
     <?php $base_path = $base_path ?? ''; ?>
     <script type="text/javascript" src="<?= $base_path ?>js/jquery.min.js"></script>
     <script type="text/javascript" src="<?= $base_path ?>js/bootstrap.min.js"></script>

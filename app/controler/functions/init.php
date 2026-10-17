@@ -12,6 +12,7 @@ require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/machines.php';
 require_once __DIR__ . '/health_check.php';
 require_once __DIR__ . '/binary_utilities.php';
+require_once __DIR__ . '/security.php';
 
 // Initialiser les gestionnaires principaux
 if (!function_exists('init_application')) {

@@ -337,13 +337,22 @@ try {
                 $printerName
             ]);
 
+            $staged_db_id = $internal_id;
+            if (!$staged_db_id && $original_job_id) {
+                $stmt_find = $con_pdo->prepare("SELECT id FROM print_jobs WHERE job_id = ? AND printer_name = ? LIMIT 1");
+                $stmt_find->execute([strval($original_job_id), $printerName]);
+                $staged_db_id = $stmt_find->fetchColumn();
+            }
+
             $message = "Ajouté à la session : $total_pages pages ($taille) -> $price €";
         } else {
             $message = "Simulation : $total_pages pages ($taille)";
         }
 
         $details = [
-            'id' => $inserted_id ?? null,
+            'id' => isset($staged_db_id) && $staged_db_id ? intval($staged_db_id) : ($inserted_id ?? null),
+            'job_id' => $original_job_id,
+            'staged' => !$simulate,
             'type' => 'photocop',
             'machine' => $marque,
             'machine_id' => $machine_id,
@@ -451,6 +460,13 @@ try {
                 $printerName
             ]);
 
+            $staged_db_id = $internal_id;
+            if (!$staged_db_id && $original_job_id) {
+                $stmt_find = $con_pdo->prepare("SELECT id FROM print_jobs WHERE job_id = ? AND printer_name = ? LIMIT 1");
+                $stmt_find->execute([strval($original_job_id), $printerName]);
+                $staged_db_id = $stmt_find->fetchColumn();
+            }
+
             $message = "Ajouté à la session : 1 Master, $nb_passages Passages -> $price €";
         } else {
             $message = "Simulation : $nb_masters M, $nb_passages P";
@@ -476,6 +492,9 @@ try {
         }
 
         $details = [
+            'id' => isset($staged_db_id) && $staged_db_id ? intval($staged_db_id) : null,
+            'job_id' => $original_job_id,
+            'staged' => !$simulate,
             'type' => 'duplicopieur',
             'machine' => $nom_machine,
             'machine_id' => $machine_id,
