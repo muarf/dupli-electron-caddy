@@ -182,6 +182,28 @@ if (!defined('IS_BACKGROUND') && in_array($action, $background_actions)) {
     exit;
 }
 
+// Appliquer la structure des pages si fournie (pages supprimées, réorganisées, tournées)
+if (in_array($action, ['impose', 'resize', 'pdf_to_images'])) {
+    if (isset($_POST['structure']) && !empty($_POST['structure'])) {
+        $rawStructure = json_decode($_POST['structure'], true);
+        if (is_array($rawStructure) && !empty($rawStructure)) {
+            $sourceFiles = [0 => $uploadedFile];
+            if (isset($_FILES) && is_array($_FILES)) {
+                foreach ($_FILES as $key => $fileData) {
+                    if (strpos($key, 'file_') === 0 && !empty($fileData['tmp_name'])) {
+                        $idx = (int)str_replace('file_', '', $key);
+                        $sourceFiles[$idx] = $fileData['tmp_name'];
+                    }
+                }
+            }
+            $reorganized = StudioImpositionService::applyPageStructure($sourceFiles, $rawStructure, $tmpBase);
+            if ($reorganized && file_exists($reorganized)) {
+                $uploadedFile = $reorganized;
+            }
+        }
+    }
+}
+
 // === ACTION : IMPOSE ===
 if ($action === 'impose') {
     $impose_type = $_POST['impose_type'] ?? 'brochure'; // brochure | livre | tracts

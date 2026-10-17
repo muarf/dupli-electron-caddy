@@ -1903,12 +1903,39 @@ document.addEventListener('DOMContentLoaded', function() {
     t._tid = setTimeout(() => t.style.display = 'none', 5000);
   }
 
+  function isOrgSequenceModified() {
+    if (!window.orgSequence || !window.orgSequence.length) return false;
+    if (!state.totalPages) return false;
+    if (window.orgFiles && window.orgFiles.length > 1) return true;
+    if (window.orgSequence.length !== state.totalPages) return true;
+    for (let i = 0; i < window.orgSequence.length; i++) {
+      const s = window.orgSequence[i];
+      if (s.type !== 'page') return true;
+      if (s.file_idx !== 0) return true;
+      if (s.page_num !== (i + 1)) return true;
+      if (s.rotation && (s.rotation % 360 !== 0)) return true;
+      if (s.flipH || s.flipV) return true;
+    }
+    return false;
+  }
+
   async function serverProcess(action, extraFields, spinnerMsg) {
     if (!state.file) { showToast('<b>' + (CONFIG.translations['studio_js.no_file_loaded'] || 'Aucun fichier chargé.') + '</b> ' + (CONFIG.translations['studio_js.drop_file_first'] || 'Déposez un fichier d\'abord.'), true); return; }
     showSpinner(spinnerMsg);
     const fd = new FormData();
     fd.append('file', state.file, $('fileNameDisplay').value || state.file.name);
     fd.append('action', action);
+    if (!extraFields.structure && isOrgSequenceModified()) {
+      fd.append('structure', JSON.stringify(window.orgSequence));
+      if (window.orgFiles && window.orgFiles.length > 0) {
+        let neededIdxs = new Set(window.orgSequence.filter(s => s.type === 'page' && s.file_idx !== null && s.file_idx !== undefined).map(s => s.file_idx));
+        neededIdxs.forEach(idx => {
+          if (window.orgFiles[idx]) {
+            fd.append('file_' + idx, window.orgFiles[idx]);
+          }
+        });
+      }
+    }
     Object.entries(extraFields).forEach(([k, v]) => fd.append(k, v));
     try {
       const res = await fetch('?studio_process', { method: 'POST', body: fd });

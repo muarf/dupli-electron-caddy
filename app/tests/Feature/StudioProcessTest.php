@@ -542,3 +542,93 @@ it('ajoute des marges blanches à un PDF (crop_pdf valeurs négatives)', functio
         cleanupPath($pdfPath);
     }
 });
+
+it('impose un PDF en brochure en respectant les pages supprimées via structure', function () {
+    // PDF de 8 pages
+    $pdfPath = createSamplePdf(8);
+
+    try {
+        // Supprimer 4 pages : ne garder que les pages 1, 3, 5, 7
+        $structure = [
+            ['type' => 'page', 'file_idx' => 0, 'page_num' => 1, 'rotation' => 0],
+            ['type' => 'page', 'file_idx' => 0, 'page_num' => 3, 'rotation' => 0],
+            ['type' => 'page', 'file_idx' => 0, 'page_num' => 5, 'rotation' => 0],
+            ['type' => 'page', 'file_idx' => 0, 'page_num' => 7, 'rotation' => 0],
+        ];
+
+        $response = runStudioProcess('impose', [
+            'impose_type' => 'brochure',
+            'n_up' => 2,
+            'resize_mode' => 'percent',
+            'scale' => 100,
+            'structure' => json_encode($structure),
+        ], [
+            'file' => [
+                'name' => 'doc_8pages.pdf',
+                'type' => 'application/pdf',
+                'tmp_name' => $pdfPath,
+            ],
+        ]);
+
+        expect($response['success'])->toBeTrue();
+        expect($response['download_url'])->toMatch('/download_studio/');
+
+        preg_match('/file=([^&]+)/', $response['download_url'], $matches);
+        $fileName = urldecode($matches[1]);
+        $outputFile = getenv('DUPLICATOR_TEMP_DIR') . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR . $fileName;
+
+        expect(file_exists($outputFile))->toBeTrue();
+        $inspector = new TCPDI();
+        $pageCount = $inspector->setSourceFile($outputFile);
+        // 4 pages conservées (multiples de 4) en brochure 2-up = exactement 2 feuilles (au lieu de 4 feuilles pour 8 pages)
+        expect($pageCount)->toBe(2);
+    } finally {
+        cleanupPath($pdfPath);
+    }
+});
+
+it('impose un PDF en livre en respectant les pages supprimées via structure', function () {
+    // PDF de 8 pages
+    $pdfPath = createSamplePdf(8);
+
+    try {
+        // Supprimer la moitié des pages (garder 4 pages)
+        $structure = [
+            ['type' => 'page', 'file_idx' => 0, 'page_num' => 1, 'rotation' => 0],
+            ['type' => 'page', 'file_idx' => 0, 'page_num' => 2, 'rotation' => 0],
+            ['type' => 'page', 'file_idx' => 0, 'page_num' => 3, 'rotation' => 0],
+            ['type' => 'page', 'file_idx' => 0, 'page_num' => 4, 'rotation' => 0],
+        ];
+
+        $response = runStudioProcess('impose', [
+            'impose_type' => 'livre',
+            'n_up' => 2,
+            'resize_mode' => 'percent',
+            'scale' => 100,
+            'duplex' => '1',
+            'structure' => json_encode($structure),
+        ], [
+            'file' => [
+                'name' => 'livre_8pages.pdf',
+                'type' => 'application/pdf',
+                'tmp_name' => $pdfPath,
+            ],
+        ]);
+
+        expect($response['success'])->toBeTrue();
+        expect($response['download_url'])->toMatch('/download_studio/');
+
+        preg_match('/file=([^&]+)/', $response['download_url'], $matches);
+        $fileName = urldecode($matches[1]);
+        $outputFile = getenv('DUPLICATOR_TEMP_DIR') . DIRECTORY_SEPARATOR . 'duplicator_studio' . DIRECTORY_SEPARATOR . $fileName;
+
+        expect(file_exists($outputFile))->toBeTrue();
+        $inspector = new TCPDI();
+        $pageCount = $inspector->setSourceFile($outputFile);
+        // 4 pages en 2-up cut&stack recto-verso = 1 feuille recto + 1 feuille verso = 2 pages dans le PDF imposé (au lieu de 4 pages)
+        expect($pageCount)->toBe(2);
+    } finally {
+        cleanupPath($pdfPath);
+    }
+});
+
