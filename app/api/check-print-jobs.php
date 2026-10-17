@@ -26,7 +26,11 @@ ini_set('log_errors', 1);
 // Définir la gestion CORS sécurisée
 $allowedOrigins = ['http://127.0.0.1:8000', 'http://localhost:8000', 'http://tauri.localhost', 'tauri://localhost', 'https://tauri.localhost'];
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if (in_array($origin, $allowedOrigins, true)) {
+$host = $_SERVER['HTTP_HOST'] ?? '';
+$scheme = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+$hostOrigin = $scheme . '://' . $host;
+
+if (in_array($origin, $allowedOrigins, true) || $origin === $hostOrigin) {
     header("Access-Control-Allow-Origin: $origin");
 }
 header('Content-Type: application/json; charset=utf-8');

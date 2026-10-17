@@ -80,21 +80,21 @@ function listActiveSessions($db) {
             s.session_name,
             s.opened_at,
             s.status,
-            s.total_price,
             s.notes,
             (
-                SELECT COUNT(*) 
-                FROM photocop p 
-                WHERE p.session_id = s.id
+                SELECT COUNT(*) FROM photocop p WHERE p.session_id = s.id
             ) + (
-                SELECT COUNT(*) 
-                FROM dupli d 
-                WHERE d.session_id = s.id
+                SELECT COUNT(*) FROM dupli d WHERE d.session_id = s.id
             ) + (
-                SELECT COUNT(*) 
-                FROM print_jobs pj 
-                WHERE pj.session_id = s.id AND pj.staged = 1
-            ) as job_count
+                SELECT COUNT(*) FROM print_jobs pj WHERE pj.session_id = s.id AND pj.staged = 1
+            ) as job_count,
+            (
+                SELECT COALESCE(SUM(CAST(prix AS REAL)), 0) FROM photocop WHERE session_id = s.id
+            ) + (
+                SELECT COALESCE(SUM(CAST(prix AS REAL)), 0) FROM dupli WHERE session_id = s.id
+            ) + (
+                SELECT COALESCE(SUM(CAST(calculated_price AS REAL)), 0) FROM print_jobs WHERE session_id = s.id AND staged = 1
+            ) as calculated_total_price
         FROM print_sessions s
         WHERE s.status = 'active'
         ORDER BY s.opened_at DESC
@@ -102,20 +102,10 @@ function listActiveSessions($db) {
     
     $sessions = $query->fetchAll(PDO::FETCH_ASSOC);
     
-    // Calculer le prix total réel depuis les jobs (finalisés + stagés)
     foreach ($sessions as &$session) {
         $session['job_count'] = (int)$session['job_count'];
-        
-        // Recalculer le prix total depuis les tables (finalisées + stagées)
-        $priceQuery = $db->prepare("
-            SELECT 
-                (SELECT COALESCE(SUM(CAST(prix AS REAL)), 0) FROM photocop WHERE session_id = ?) +
-                (SELECT COALESCE(SUM(CAST(prix AS REAL)), 0) FROM dupli WHERE session_id = ?) +
-                (SELECT COALESCE(SUM(CAST(calculated_price AS REAL)), 0) FROM print_jobs WHERE session_id = ? AND staged = 1) as total
-        ");
-        $priceQuery->execute([$session['id'], $session['id'], $session['id']]);
-        $priceResult = $priceQuery->fetch(PDO::FETCH_ASSOC);
-        $session['total_price'] = (float)$priceResult['total'];
+        $session['total_price'] = (float)$session['calculated_total_price'];
+        unset($session['calculated_total_price']);
     }
     
     echo json_encode(['success' => true, 'sessions' => $sessions]);
