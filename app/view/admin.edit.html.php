@@ -3,12 +3,15 @@ require_once __DIR__ . '/../controler/functions/database.php';
 
 // Fonction pour déterminer le type de machine
 function getTableForMachine($machine) {
-    $db = pdo_connect();
+    if ($machine === 'dupli' || $machine === 'A3' || $machine === 'A4') {
+        return 'duplicopieur';
+    }
+
     $db = pdo_connect();
     
-    // Vérifier si c'est un duplicopieur (SQLite compatible)
-    $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND TRIM(marque) || " " || TRIM(modele) = ?');
-    $query->execute([$machine]);
+    // Vérifier si c'est un duplicopieur (SQLite et MySQL compatible)
+    $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (TRIM(marque) || " " || TRIM(modele) = ? OR marque = ? OR modele = ?)');
+    $query->execute([$machine, $machine, $machine]);
     
     if ($query->fetchColumn() > 0) {
         // Pour les duplicopieurs, retourner le type
