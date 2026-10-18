@@ -4,6 +4,15 @@
  */
 
 // Headers CORS et JSON
+$allowedOrigins = ['http://127.0.0.1:8000', 'http://localhost:8000', 'http://tauri.localhost', 'tauri://localhost', 'https://tauri.localhost'];
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$host = $_SERVER['HTTP_HOST'] ?? '';
+$scheme = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+$hostOrigin = $scheme . '://' . $host;
+
+if (in_array($origin, $allowedOrigins, true) || $origin === $hostOrigin) {
+    header("Access-Control-Allow-Origin: $origin");
+}
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');

@@ -43,24 +43,16 @@ try {
         $scriptPath = realpath(__DIR__ . '/../maintenance/background_indexer.php');
         $logFile = __DIR__ . '/../../logs/background_indexer.log';
         if ($scriptPath) {
-            $phpPath = 'php';
+            require_once __DIR__ . '/../controler/functions/binary_utilities.php';
             if (PHP_OS_FAMILY === 'Windows') {
-                $candidates = [
-                    __DIR__ . '/../../src-tauri/binaries/php-x86_64-pc-windows-msvc.exe',
-                    dirname(__DIR__, 2) . '/binaries/php-x86_64-pc-windows-msvc.exe'
-                ];
-                foreach ($candidates as $candidate) {
-                    $real = realpath($candidate);
-                    if ($real && file_exists($real)) {
-                        $phpPath = $real;
-                        break;
-                    }
-                }
-                $cmd = 'start /B ' . $phpPath . ' ' . escapeshellarg($scriptPath) . ' ' . escapeshellarg($result['id']) . ' >> ' . escapeshellarg($logFile) . ' 2>&1';
+                $phpPath = escape_shell_arg_with_percent(get_php_executable());
+                $cmd = 'start /B "" ' . $phpPath . ' ' . escape_shell_arg_with_percent($scriptPath) . ' ' . escape_shell_arg_with_percent((string)$result['id']) . ' >> ' . escape_shell_arg_with_percent($logFile) . ' 2>&1';
                 pclose(popen($cmd, 'r'));
             } else {
+                $phpPath = escapeshellarg(get_php_executable());
                 $cmd = sprintf(
-                    'nohup php %s %s >> %s 2>&1 &',
+                    'nohup %s %s %s >> %s 2>&1 &',
+                    $phpPath,
                     escapeshellarg($scriptPath),
                     escapeshellarg($result['id']),
                     escapeshellarg($logFile)

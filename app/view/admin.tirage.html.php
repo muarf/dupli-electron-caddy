@@ -2,10 +2,14 @@
 // Fonction pour déterminer le nom de la machine pour l'édition
 function getTableForMachine($machine)
 {
+  if ($machine === 'dupli' || $machine === 'A3' || $machine === 'A4') {
+    return 'duplicopieur';
+  }
+
   $db = pdo_connect();
 
-  // Vérifier si c'est un duplicopieur (SQLite compatible)
-  $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (TRIM(marque) || " " || TRIM(modele) = ? OR (marque = ? AND modele = ?))');
+  // Vérifier si c'est un duplicopieur (SQLite et MySQL compatible)
+  $query = $db->prepare('SELECT COUNT(*) FROM duplicopieurs WHERE actif = 1 AND (TRIM(marque) || " " || TRIM(modele) = ? OR marque = ? OR modele = ?)');
   $query->execute([$machine, $machine, $machine]);
 
   if ($query->fetchColumn() > 0) {
