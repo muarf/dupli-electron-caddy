@@ -1,735 +1,560 @@
 /**
  * tapis-tri.js
- * 
- * Gestion interactive du Tapis de Tri des impressions.
- * Permet la sélection libre multi-documents, l'encaissement direct au comptoir,
- * l'assignation à un compte/session et l'ajout de tirages manuels.
+ * Logique client du Tapis de Tri des impressions.
+ * - Rafraîchissement automatique (IPC Electron onPrintJobDetected ou Polling HTTP léger)
+ * - Sélection multi-cartes réactive
+ * - Barre inférieure de synthèse et calcul du total en direct
+ * - Modal d'enregistrement direct (Contact libre, Payé/Non payé en espèces, Ajout manuel facultatif)
+ * - Suppression / annulation de jobs
  */
+
 (function () {
   'use strict';
 
-  const S = (window.CONFIG && window.CONFIG.strings) || {};
+  // État local du tapis
+  let jobs = [];
+  let selectedJobIds = new Set();
+  let isPolling = false;
+  let pollInterval = null;
+  let isSaving = false;
 
-  function translate(key, fallback) {
-    return S[key] || fallback || key;
-  }
-
-  // État du Tapis de Tri
-  let allJobs = [];
-  const selectedJobIds = new Set();
-  const manualItems = []; // Tirages manuels ajoutés au panier en cours
-  let pollingTimer = null;
-  let isFetching = false;
-  let activeSessions = [];
-
-  document.addEventListener('DOMContentLoaded', () => {
-    initTapisTri();
+  // Initialisation au chargement du DOM
+  document.addEventListener('DOMContentLoaded', async () => {
+    initEventListeners();
+    setupRealtimeEvents();
+    await syncSpoolerJobs();
+    await loadJobs();
   });
 
-  function initTapisTri() {
-    loadJobs();
-    loadActiveSessions();
-    startPolling();
-    initEventListeners();
-
-    // Écoute des événements IPC si on est sous Electron / Tauri
+  /**
+   * Écoute des événements IPC Electron ou Polling HTTP
+   */
+  function setupRealtimeEvents() {
     if (window.electronAPI && typeof window.electronAPI.onPrintJobDetected === 'function') {
-      try {
-        window.electronAPI.onPrintJobDetected(() => {
-          console.log('[TapisTri] Impression détectée via IPC, rafraîchissement immédiat...');
-          loadJobs();
-        });
-      } catch (err) {
-        console.warn('[TapisTri] Erreur init IPC onPrintJobDetected:', err);
-      }
+      console.log('[TapisTri] Mode Electron détecté : écoute IPC active');
+      window.electronAPI.onPrintJobDetected((jobData) => {
+        console.log('[TapisTri] Nouvelle impression détectée via IPC :', jobData);
+        // Léger debounce pour laisser le temps au spooler d'écrire en BDD et générer la miniature
+        setTimeout(() => loadJobs(true), 800);
+      });
     }
+
+    // Polling HTTP (toutes les 2.5 secondes si non Electron, ou en filet de sécurité)
+    startPolling(3000);
   }
 
-  function startPolling() {
-    if (pollingTimer) clearInterval(pollingTimer);
-    pollingTimer = setInterval(() => {
-      loadJobs(true);
-    }, 3000);
+  function startPolling(intervalMs) {
+    if (pollInterval) clearInterval(pollInterval);
+    pollInterval = setInterval(() => {
+      // Ne pas recharger si le modal est ouvert
+      const isModalOpen = $('#saveModal').hasClass('in');
+      if (!isModalOpen) {
+        loadJobs(true);
+      }
+    }, intervalMs);
   }
 
-  async function loadJobs(isBackground = false) {
-    if (isFetching) return;
-    isFetching = true;
+  /**
+   * Charge la liste des jobs depuis l'API tapis_tri
+   */
+  async function loadJobs(silent = false) {
+    if (isPolling) return;
+    isPolling = true;
 
     try {
-      const response = await fetch('?tapis_tri&action=list');
+      const response = await fetch('?tapis_tri&action=list', {
+        headers: { 'Accept': 'application/json' }
+      });
       const data = await response.json();
 
-      if (data && data.success && Array.isArray(data.jobs)) {
-        allJobs = data.jobs;
-        renderTapisGrid();
+      if (data.success && Array.isArray(data.jobs)) {
+        jobs = data.jobs;
+        renderJobsGrid();
         updateBottomBar();
+        updateStatsCounters();
+      } else if (data.error && !silent) {
+        console.error('[TapisTri] Erreur API:', data.error);
       }
-    } catch (e) {
-      if (!isBackground) {
-        console.error('[TapisTri] Erreur chargement jobs:', e);
-      }
+    } catch (err) {
+      if (!silent) console.error('[TapisTri] Erreur de chargement des impressions:', err);
     } finally {
-      isFetching = false;
+      isPolling = false;
     }
   }
 
-  async function loadActiveSessions() {
-    try {
-      const response = await fetch('?sessions&action=list');
-      const data = await response.json();
-      if (data && data.success && Array.isArray(data.sessions)) {
-        activeSessions = data.sessions;
-        renderSessionSelect();
-      }
-    } catch (e) {
-      console.warn('[TapisTri] Erreur chargement sessions actives:', e);
-    }
-  }
-
-  function renderSessionSelect() {
-    const select = document.getElementById('assign-session-select');
-    if (!select) return;
-
-    select.innerHTML = '<option value="">-- Créer un nouveau compte / session --</option>';
-    activeSessions.forEach(sess => {
-      const opt = document.createElement('option');
-      opt.value = sess.id;
-      const count = sess.job_count || 0;
-      const total = parseFloat(sess.total_price || 0).toFixed(2);
-      opt.textContent = `${sess.contact} ${sess.session_name ? '(' + sess.session_name + ')' : ''} — ${count} jobs (${total} €)`;
-      select.appendChild(opt);
-    });
-  }
-
-  function renderTapisGrid() {
+  /**
+   * Rendu de la grille des cartes du Tapis de Tri
+   */
+  function renderJobsGrid() {
     const grid = document.getElementById('tapis-grid');
-    const emptyState = document.getElementById('tapis-empty-state');
-    const badgeCount = document.getElementById('tapis-badge-count');
-
+    const emptyState = document.getElementById('empty-state');
     if (!grid) return;
 
-    if (badgeCount) {
-      badgeCount.textContent = allJobs.length;
-    }
-
-    if (allJobs.length === 0) {
-      grid.style.display = 'none';
+    if (!jobs || jobs.length === 0) {
+      grid.innerHTML = '';
       if (emptyState) emptyState.style.display = 'block';
       return;
     }
 
     if (emptyState) emptyState.style.display = 'none';
-    grid.style.display = 'grid';
 
-    // Conserver les cartes existantes et mettre à jour le DOM pour éviter de clignoter
-    const currentDomJobIds = new Set();
-    grid.querySelectorAll('.tapis-card').forEach(card => {
-      const id = parseInt(card.getAttribute('data-job-id'), 10);
-      if (!allJobs.some(j => j.id === id)) {
-        card.remove();
-      } else {
-        currentDomJobIds.add(id);
-      }
-    });
-
-    allJobs.forEach(job => {
+    // Conserver la sélection existante
+    let html = '';
+    jobs.forEach(job => {
       const isSelected = selectedJobIds.has(job.id);
+      const thumb = job.thumbnail_url || 'img/document-placeholder.png';
+      const docName = escapeHtml(job.document_display_name || job.document || 'Document');
+      const printer = escapeHtml(job.printer_name || 'Imprimante');
+      const price = parseFloat(job.calculated_price || 0).toFixed(2);
+      const pages = parseInt(job.total_pages || 1, 10);
+      const copies = parseInt(job.copies || 1, 10);
+      const isDuplex = parseInt(job.duplex || 0, 10) === 1;
+      const isColor = (job.color_mode || '').toLowerCase().includes('color');
+      const timeStr = formatJobTime(job.created_at || job.timestamp);
 
-      if (currentDomJobIds.has(job.id)) {
-        // Mettre à jour l'état sélectionné
-        const card = grid.querySelector(`.tapis-card[data-job-id="${job.id}"]`);
-        if (card) {
-          if (isSelected) {
-            card.classList.add('selected');
-          } else {
-            card.classList.remove('selected');
-          }
-          const checkbox = card.querySelector('.tapis-card-checkbox');
-          if (checkbox) checkbox.checked = isSelected;
-        }
-      } else {
-        // Créer une nouvelle carte
-        const card = createJobCard(job, isSelected);
-        grid.appendChild(card);
-      }
-    });
-  }
+      html += `
+        <div class="tapis-card ${isSelected ? 'selected' : ''}" data-id="${job.id}" onclick="window.tapisToggleJob(${job.id}, event)">
+          <div class="card-selection-check">
+            <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); window.tapisToggleJob(${job.id});">
+          </div>
 
-  function createJobCard(job, isSelected) {
-    const card = document.createElement('div');
-    card.className = 'tapis-card' + (isSelected ? ' selected' : '');
-    card.setAttribute('data-job-id', job.id);
+          <div class="card-thumb-container">
+            <img src="${thumb}" alt="${docName}" class="card-thumb" onerror="this.onerror=null;this.src='img/document-placeholder.png';" onclick="event.stopPropagation(); window.tapisPreviewThumb('${thumb}', '${docName}')">
+          </div>
 
-    const price = parseFloat(job.calculated_price || 0).toFixed(2);
-    const dateStr = formatTime(job.created_at || job.timestamp);
-    const copies = job.copies > 1 ? `x${job.copies}` : '';
-    const isDuplex = (job.duplex == 1 || job.duplex === true || job.duplex === '1');
-    const duplexLabel = isDuplex ? 'R/V' : 'Recto';
-    const isColor = (String(job.color_mode || '').toLowerCase().includes('color') || String(job.color_mode) === '2');
-    const colorLabel = isColor ? 'Couleur' : 'N&B';
-    const colorBadgeClass = isColor ? 'badge-color' : 'badge-mono';
-    const paperSize = (job.paper_size || 'A4').toUpperCase();
-    const docName = job.document_display_name || job.document || 'Document sans titre';
+          <div class="card-body-content">
+            <div class="card-title-row" title="${docName}">
+              <span class="card-doc-name">${docName}</span>
+            </div>
 
-    let thumbHtml = '';
-    if (job.thumbnail_url) {
-      thumbHtml = `<div class="tapis-card-thumb-wrapper">
-        <img src="${job.thumbnail_url}" alt="Aperçu" class="tapis-card-thumb" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'tapis-card-thumb-placeholder\\'><i class=\\'fa fa-file-pdf-o\\'></i></div>';">
-      </div>`;
-    } else {
-      thumbHtml = `<div class="tapis-card-thumb-placeholder">
-        <i class="fa fa-file-text-o"></i>
-      </div>`;
-    }
+            <div class="card-badges-row">
+              <span class="tapis-badge badge-printer">${printer}</span>
+              <span class="tapis-badge ${isColor ? 'badge-color' : 'badge-mono'}">${isColor ? 'Couleur' : 'N&B'}</span>
+              <span class="tapis-badge ${isDuplex ? 'badge-duplex' : 'badge-simplex'}">${isDuplex ? 'R/V' : 'Recto'}</span>
+              ${copies > 1 ? `<span class="tapis-badge badge-copies">${copies} ex.</span>` : ''}
+              <span class="tapis-badge badge-pages">${pages} p.</span>
+            </div>
 
-    card.innerHTML = `
-      <div class="tapis-card-header">
-        <label class="tapis-checkbox-container" onclick="event.stopPropagation()">
-          <input type="checkbox" class="tapis-card-checkbox" ${isSelected ? 'checked' : ''}>
-          <span class="tapis-checkbox-checkmark"></span>
-        </label>
-        <span class="tapis-card-time"><i class="fa fa-clock-o"></i> ${dateStr}</span>
-        <div class="tapis-card-actions" onclick="event.stopPropagation()">
-          ${job.thumbnail_url ? `<button class="tapis-btn-icon" title="Agrandir l'aperçu" onclick="window.tapisPreviewThumb('${job.thumbnail_url}', '${escapeHtml(docName)}')"><i class="fa fa-search-plus"></i></button>` : ''}
-          <button class="tapis-btn-icon text-danger" title="Supprimer" onclick="window.tapisDeleteSingleJob(${job.id})"><i class="fa fa-trash-o"></i></button>
+            <div class="card-footer-row">
+              <div class="card-time"><i class="fa fa-clock-o"></i> ${timeStr}</div>
+              <div class="card-price">${price} €</div>
+            </div>
+          </div>
         </div>
-      </div>
-
-      ${thumbHtml}
-
-      <div class="tapis-card-body">
-        <h5 class="tapis-card-title" title="${escapeHtml(docName)}">${escapeHtml(docName)}</h5>
-        <div class="tapis-card-machine text-muted"><i class="fa fa-print"></i> ${escapeHtml(job.printer_name || job.machine_name || 'Imprimante')}</div>
-
-        <div class="tapis-card-badges">
-          <span class="tapis-badge badge-paper">${paperSize}</span>
-          <span class="tapis-badge ${colorBadgeClass}">${colorLabel}</span>
-          <span class="tapis-badge badge-duplex">${duplexLabel}</span>
-          <span class="tapis-badge badge-pages">${job.total_pages || 1} p. ${copies}</span>
-        </div>
-      </div>
-
-      <div class="tapis-card-footer">
-        <span class="tapis-card-price-label">Prix calculé :</span>
-        <span class="tapis-card-price">${price} €</span>
-      </div>
-    `;
-
-    // Clic sur toute la carte = toggle sélection
-    card.addEventListener('click', () => {
-      toggleJobSelection(job.id);
+      `;
     });
 
-    const chk = card.querySelector('.tapis-card-checkbox');
-    if (chk) {
-      chk.addEventListener('change', (e) => {
-        e.stopPropagation();
-        setJobSelection(job.id, chk.checked);
-      });
-    }
-
-    return card;
+    grid.innerHTML = html;
   }
 
-  function toggleJobSelection(jobId) {
+  /**
+   * Bascule de sélection d'un job
+   */
+  window.tapisToggleJob = function (jobId, event) {
+    if (event && event.target && event.target.tagName === 'IMG') {
+      return; // Ne pas cocher si on clique sur la loupe/miniature
+    }
+
     if (selectedJobIds.has(jobId)) {
       selectedJobIds.delete(jobId);
     } else {
       selectedJobIds.add(jobId);
     }
-    updateCardSelectionVisuals();
-    updateBottomBar();
-  }
 
-  function setJobSelection(jobId, isSelected) {
-    if (isSelected) {
-      selectedJobIds.add(jobId);
-    } else {
-      selectedJobIds.delete(jobId);
+    // Mise à jour visuelle ciblée
+    const card = document.querySelector(`.tapis-card[data-id="${jobId}"]`);
+    if (card) {
+      const isSel = selectedJobIds.has(jobId);
+      card.classList.toggle('selected', isSel);
+      const chk = card.querySelector('input[type="checkbox"]');
+      if (chk) chk.checked = isSel;
     }
-    updateCardSelectionVisuals();
+
     updateBottomBar();
-  }
+  };
 
-  function updateCardSelectionVisuals() {
-    const grid = document.getElementById('tapis-grid');
-    if (!grid) return;
+  /**
+   * Tout sélectionner / Tout désélectionner
+   */
+  window.tapisToggleSelectAll = function () {
+    if (selectedJobIds.size === jobs.length) {
+      selectedJobIds.clear();
+    } else {
+      jobs.forEach(j => selectedJobIds.add(j.id));
+    }
+    renderJobsGrid();
+    updateBottomBar();
+  };
 
-    grid.querySelectorAll('.tapis-card').forEach(card => {
-      const id = parseInt(card.getAttribute('data-job-id'), 10);
-      const isSelected = selectedJobIds.has(id);
-      if (isSelected) {
-        card.classList.add('selected');
-      } else {
-        card.classList.remove('selected');
-      }
-      const checkbox = card.querySelector('.tapis-card-checkbox');
-      if (checkbox) checkbox.checked = isSelected;
-    });
-  }
-
+  /**
+   * Mise à jour de la barre inférieure flottante
+   */
   function updateBottomBar() {
-    const bar = document.getElementById('tapis-bottom-bar');
-    if (!bar) return;
+    const bottomBar = document.getElementById('bottom-action-bar');
+    const countBadge = document.getElementById('bar-selected-count');
+    const totalAmountSpan = document.getElementById('bar-total-amount');
+    const saveBtn = document.getElementById('btn-open-save');
+    const deleteBtn = document.getElementById('btn-delete-selected');
 
-    const count = selectedJobIds.size + manualItems.length;
-    if (count > 0) {
-      bar.classList.add('visible');
-    } else {
-      bar.classList.remove('visible');
-    }
+    const selectedCount = selectedJobIds.size;
 
-    const countEl = document.getElementById('tapis-selected-count');
-    const totalEl = document.getElementById('tapis-selected-total');
-    const btnPay = document.getElementById('tapis-btn-checkout');
-
-    let total = 0;
-    allJobs.forEach(j => {
+    // Calcul du total
+    let total = 0.0;
+    jobs.forEach(j => {
       if (selectedJobIds.has(j.id)) {
         total += parseFloat(j.calculated_price || 0);
       }
     });
 
-    manualItems.forEach(m => {
-      total += parseFloat(m.prix || 0);
-    });
-
-    total = Math.round(total * 100) / 100;
-    const formattedTotal = total.toFixed(2);
-
-    if (countEl) {
-      countEl.textContent = `${count} ${translate('auto_tirage.selected_docs', 'document(s) sélectionné(s)')}`;
-    }
-    if (totalEl) {
-      totalEl.textContent = `${formattedTotal} €`;
-    }
-    if (btnPay) {
-      btnPay.innerHTML = `<i class="fa fa-credit-card"></i> <strong>ENCAISSER DIRECT (${formattedTotal} €)</strong>`;
+    if (selectedCount > 0) {
+      bottomBar.classList.add('visible');
+    } else {
+      bottomBar.classList.remove('visible');
     }
 
-    // Mise à jour du checkbox select-all
-    const selectAllChk = document.getElementById('tapis-select-all');
-    if (selectAllChk) {
-      selectAllChk.checked = (allJobs.length > 0 && selectedJobIds.size === allJobs.length);
-      selectAllChk.indeterminate = (selectedJobIds.size > 0 && selectedJobIds.size < allJobs.length);
+    if (countBadge) countBadge.textContent = selectedCount;
+    if (totalAmountSpan) totalAmountSpan.textContent = total.toFixed(2) + ' €';
+
+    if (saveBtn) {
+      saveBtn.disabled = (selectedCount === 0);
+    }
+    if (deleteBtn) {
+      deleteBtn.disabled = (selectedCount === 0);
     }
   }
 
-  // ── Modale Encaissement Express ───────────────────────────────────────────
+  /**
+   * Compteurs d'en-tête
+   */
+  function updateStatsCounters() {
+    const totalJobsElem = document.getElementById('stat-total-jobs');
+    if (totalJobsElem) totalJobsElem.textContent = jobs.length;
+  }
 
-  window.tapisOpenCheckoutModal = function () {
-    const count = selectedJobIds.size + manualItems.length;
-    if (count === 0) {
-      if (typeof showAppModal === 'function') {
-        showAppModal({ message: "Veuillez sélectionner au moins un document sur le tapis.", type: "warning" });
+  /**
+   * Ouverture du modal d'enregistrement direct
+   */
+  window.tapisOpenSaveModal = function () {
+    const selectedCount = selectedJobIds.size;
+    if (selectedCount === 0) return;
+
+    // Calcul du montant final
+    let total = 0.0;
+    jobs.forEach(j => {
+      if (selectedJobIds.has(j.id)) total += parseFloat(j.calculated_price || 0);
+    });
+
+    document.getElementById('modal-final-total').textContent = total.toFixed(2) + ' €';
+    document.getElementById('modal-contact-input').value = '';
+    document.getElementById('modal-mot-input').value = '';
+    
+    const cbInput = document.getElementById('modal-cb-input');
+    if (cbInput) {
+      cbInput.value = total.toFixed(2);
+    }
+
+    // Par défaut : Payé sélectionné
+    setPaymentStatus('oui');
+
+    $('#saveModal').modal('show');
+    setTimeout(() => {
+      document.getElementById('modal-contact-input').focus();
+    }, 400);
+  };
+
+  /**
+   * Statut de paiement dans le modal (Payé ou Non payé)
+   */
+  let currentPaymentStatus = 'oui';
+  window.setPaymentStatus = function (status) {
+    currentPaymentStatus = status;
+    const btnOui = document.getElementById('btn-paye-oui');
+    const btnNon = document.getElementById('btn-paye-non');
+    const groupCb = document.getElementById('group-cb-montant');
+
+    if (groupCb) {
+      groupCb.style.display = (status === 'oui') ? 'block' : 'none';
+    }
+
+    if (btnOui && btnNon) {
+      if (status === 'oui') {
+        btnOui.classList.add('active', 'btn-success');
+        btnOui.classList.remove('btn-default');
+        btnNon.classList.remove('active', 'btn-warning');
+        btnNon.classList.add('btn-default');
       } else {
-        alert("Veuillez sélectionner au moins un document sur le tapis.");
+        btnNon.classList.add('active', 'btn-warning');
+        btnNon.classList.remove('btn-default');
+        btnOui.classList.remove('active', 'btn-success');
+        btnOui.classList.add('btn-default');
       }
+    }
+  };
+
+  /**
+   * Validation finale de l'enregistrement
+   */
+  window.tapisConfirmSave = async function () {
+    if (isSaving) return;
+
+    const contactInput = document.getElementById('modal-contact-input');
+    const contact = contactInput.value.trim();
+
+    if (!contact) {
+      contactInput.style.borderColor = '#e74c3c';
+      contactInput.focus();
       return;
     }
+    contactInput.style.borderColor = '';
 
-    let total = 0;
-    const itemsSummary = [];
+    const mot = document.getElementById('modal-mot-input').value.trim();
+    const btnConfirm = document.getElementById('btn-confirm-save');
 
-    allJobs.forEach(j => {
-      if (selectedJobIds.has(j.id)) {
-        const p = parseFloat(j.calculated_price || 0);
-        total += p;
-        itemsSummary.push({
-          title: j.document_display_name || j.document,
-          detail: `${j.paper_size || 'A4'} • ${j.total_pages || 1} pages`,
-          price: p.toFixed(2)
-        });
-      }
-    });
+    const cbInput = document.getElementById('modal-cb-input');
+    const cbVal = (currentPaymentStatus === 'oui')
+      ? (cbInput && cbInput.value !== '' ? parseFloat(cbInput.value) : null)
+      : 0;
 
-    manualItems.forEach(m => {
-      const p = parseFloat(m.prix || 0);
-      total += p;
-      itemsSummary.push({
-        title: m.label || 'Tirage manuel',
-        detail: `${m.taille || 'A4'} • ${m.nb_f || 1} f.`,
-        price: p.toFixed(2)
-      });
-    });
-
-    total = Math.round(total * 100) / 100;
-
-    // Remplir le modal
-    const totalDisplay = document.getElementById('checkout-modal-total');
-    if (totalDisplay) totalDisplay.textContent = total.toFixed(2) + ' €';
-
-    const inputReceived = document.getElementById('checkout-amount-received');
-    if (inputReceived) {
-      inputReceived.value = total.toFixed(2);
-    }
-
-    const changeDisplay = document.getElementById('checkout-change-due');
-    if (changeDisplay) changeDisplay.textContent = '0.00 €';
-
-    const listContainer = document.getElementById('checkout-modal-items-list');
-    if (listContainer) {
-      listContainer.innerHTML = itemsSummary.map(item => `
-        <div class="checkout-item-row">
-          <div>
-            <strong>${escapeHtml(item.title)}</strong>
-            <small class="text-muted d-block">${escapeHtml(item.detail)}</small>
-          </div>
-          <span class="badge badge-light border">${item.price} €</span>
-        </div>
-      `).join('');
-    }
-
-    // Réinitialiser les choix de paiement
-    setPaymentMethod('especes');
-
-    if (window.$ && typeof $('#modal-checkout-direct').modal === 'function') {
-      $('#modal-checkout-direct').modal('show');
-      setTimeout(() => {
-        if (inputReceived) inputReceived.select();
-      }, 300);
-    }
-  };
-
-  window.tapisSetQuickAmount = function (amount) {
-    const inputReceived = document.getElementById('checkout-amount-received');
-    if (!inputReceived) return;
-
-    if (amount === 'exact') {
-      let total = getSelectedTotal();
-      inputReceived.value = total.toFixed(2);
-    } else {
-      inputReceived.value = parseFloat(amount).toFixed(2);
-    }
-    tapisComputeChange();
-  };
-
-  window.tapisComputeChange = function () {
-    const inputReceived = document.getElementById('checkout-amount-received');
-    const changeDisplay = document.getElementById('checkout-change-due');
-    if (!inputReceived || !changeDisplay) return;
-
-    const received = parseFloat(inputReceived.value.replace(',', '.')) || 0;
-    const total = getSelectedTotal();
-    const change = Math.max(0, received - total);
-
-    changeDisplay.textContent = change.toFixed(2) + ' €';
-    if (received < total) {
-      changeDisplay.classList.add('text-danger');
-      changeDisplay.classList.remove('text-success');
-    } else {
-      changeDisplay.classList.remove('text-danger');
-      changeDisplay.classList.add('text-success');
-    }
-  };
-
-  function getSelectedTotal() {
-    let total = 0;
-    allJobs.forEach(j => {
-      if (selectedJobIds.has(j.id)) {
-        total += parseFloat(j.calculated_price || 0);
-      }
-    });
-    manualItems.forEach(m => {
-      total += parseFloat(m.prix || 0);
-    });
-    return Math.round(total * 100) / 100;
-  }
-
-  let selectedPaymentMethod = 'especes';
-  window.tapisSetPaymentMethod = function (method) {
-    selectedPaymentMethod = method;
-    document.querySelectorAll('.btn-payment-method').forEach(btn => {
-      if (btn.getAttribute('data-method') === method) {
-        btn.classList.add('active', 'btn-primary');
-        btn.classList.remove('btn-outline-secondary');
-      } else {
-        btn.classList.remove('active', 'btn-primary');
-        btn.classList.add('btn-outline-secondary');
-      }
-    });
-
-    const cashDetails = document.getElementById('checkout-cash-details');
-    if (cashDetails) {
-      cashDetails.style.display = (method === 'especes') ? 'block' : 'none';
-    }
-  };
-
-  function setPaymentMethod(method) {
-    window.tapisSetPaymentMethod(method);
-  }
-
-  window.tapisSubmitCheckout = async function () {
-    const btnSubmit = document.getElementById('btn-submit-checkout');
-    if (btnSubmit) {
-      btnSubmit.disabled = true;
-      btnSubmit.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Validation...';
-    }
-
-    const contactInput = document.getElementById('checkout-client-name');
-    const contact = (contactInput && contactInput.value.trim()) ? contactInput.value.trim() : 'Passage';
-    const amountReceivedInput = document.getElementById('checkout-amount-received');
-    const amountReceived = parseFloat(amountReceivedInput ? amountReceivedInput.value.replace(',', '.') : 0) || 0;
-
-    const payload = {
-      job_ids: Array.from(selectedJobIds),
-      contact: contact,
-      payment_method: selectedPaymentMethod,
-      amount_received: amountReceived,
-      manual_items: manualItems
-    };
+    isSaving = true;
+    btnConfirm.disabled = true;
+    btnConfirm.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Enregistrement...';
 
     try {
-      const response = await fetch('?tapis_tri&action=checkout_direct', {
+      const payload = {
+        action: 'save',
+        contact: contact,
+        paye: currentPaymentStatus,
+        cb: cbVal,
+        mot: mot,
+        job_ids: Array.from(selectedJobIds)
+      };
+
+      const res = await fetch('?tapis_tri&action=save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      const data = await res.json();
 
-      const result = await response.json();
-
-      if (result && result.success) {
-        if (window.$ && typeof $('#modal-checkout-direct').modal === 'function') {
-          $('#modal-checkout-direct').modal('hide');
-        }
-
-        // Vider la sélection
+      if (data.success) {
+        $('#saveModal').modal('hide');
         selectedJobIds.clear();
-        manualItems.length = 0;
-
-        let successMsg = `✅ <strong>Encaissement validé (${result.total_price.toFixed(2)} €)</strong>`;
-        if (selectedPaymentMethod === 'especes' && result.change > 0) {
-          successMsg += `<br><span class="badge badge-success" style="font-size: 16px; margin-top: 8px;">Rendu monnaie : ${result.change.toFixed(2)} €</span>`;
-        }
-
-        if (typeof showAppModal === 'function') {
-          showAppModal({
-            title: "Paiement réussi",
-            message: successMsg,
-            type: "success"
-          });
-        }
-
-        // Rafraîchir les jobs immédiatement
+        showFeedback(data.message || 'Tirage enregistré !', 'success');
         await loadJobs();
       } else {
-        const err = (result && result.error) ? result.error : "Erreur inconnue lors du paiement.";
-        if (typeof showAppModal === 'function') {
-          showAppModal({ message: err, type: "danger" });
-        } else {
-          alert(err);
-        }
+        alert(data.error || 'Erreur lors de l\'enregistrement.');
       }
-    } catch (e) {
-      console.error('[TapisTri] Erreur encaissement:', e);
-      alert("Erreur de communication avec le serveur.");
+    } catch (err) {
+      console.error('[TapisTri] Erreur enregistrement:', err);
+      alert('Erreur réseau ou serveur lors de l\'enregistrement.');
     } finally {
-      if (btnSubmit) {
-        btnSubmit.disabled = false;
-        btnSubmit.innerHTML = '<i class="fa fa-check"></i> Valider et libérer';
-      }
+      isSaving = false;
+      btnConfirm.disabled = false;
+      btnConfirm.innerHTML = '<i class="fa fa-check"></i> Valider et enregistrer';
     }
   };
 
-  // ── Modale Assignation à un compte / session ──────────────────────────────
-
-  window.tapisOpenAssignModal = function () {
-    if (selectedJobIds.size === 0) return;
-    renderSessionSelect();
-    const contactInput = document.getElementById('assign-new-contact-name');
-    if (contactInput) contactInput.value = '';
-
-    if (window.$ && typeof $('#modal-assign-session').modal === 'function') {
-      $('#modal-assign-session').modal('show');
-    }
-  };
-
-  window.tapisSubmitAssign = async function () {
-    const select = document.getElementById('assign-session-select');
-    const contactInput = document.getElementById('assign-new-contact-name');
-    const sessionId = select ? select.value : '';
-    const contactName = contactInput ? contactInput.value.trim() : '';
-
-    if (!sessionId && !contactName) {
-      alert("Veuillez sélectionner une session existante ou saisir un nom de contact.");
-      return;
-    }
-
-    const payload = {
-      job_ids: Array.from(selectedJobIds),
-      session_id: sessionId ? parseInt(sessionId, 10) : null,
-      contact: contactName
-    };
-
-    try {
-      const response = await fetch('?tapis_tri&action=assign_to_session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const result = await response.json();
-
-      if (result && result.success) {
-        if (window.$ && typeof $('#modal-assign-session').modal === 'function') {
-          $('#modal-assign-session').modal('hide');
-        }
-        selectedJobIds.clear();
-        await loadJobs();
-        await loadActiveSessions();
-        if (typeof showAppModal === 'function') {
-          showAppModal({
-            title: "Impressions assignées",
-            message: `Les documents ont été transférés sur le compte de <strong>${escapeHtml(result.contact)}</strong>.`,
-            type: "success"
-          });
-        }
-      } else {
-        alert(result.error || "Erreur lors de l'assignation.");
-      }
-    } catch (e) {
-      console.error('[TapisTri] Erreur assignation:', e);
-      alert("Erreur serveur.");
-    }
-  };
-
-  // ── Modale Ajout Manuel ───────────────────────────────────────────────────
-
-  window.tapisOpenManualModal = function () {
-    if (window.$ && typeof $('#modal-add-manual').modal === 'function') {
-      $('#modal-add-manual').modal('show');
-    }
-  };
-
-  window.tapisSubmitManual = function () {
-    const machine = document.getElementById('manual-machine-select').value;
-    const taille = document.getElementById('manual-taille-select').value;
-    const couleur = document.getElementById('manual-couleur-select').value;
-    const rv = document.getElementById('manual-rv-select').value;
-    const nbF = parseInt(document.getElementById('manual-nbf-input').value, 10) || 1;
-    const prix = parseFloat(document.getElementById('manual-prix-input').value) || 0.10;
-
-    manualItems.push({
-      type: 'photocop',
-      marque: machine,
-      taille: taille,
-      couleur: couleur,
-      rv: rv,
-      nb_f: nbF,
-      prix: prix,
-      label: `Manuel: ${nbF}x ${taille} ${couleur === 'oui' ? 'Couleur' : 'N&B'}`
-    });
-
-    if (window.$ && typeof $('#modal-add-manual').modal === 'function') {
-      $('#modal-add-manual').modal('hide');
-    }
-
-    updateBottomBar();
-  };
-
-  // ── Suppression ───────────────────────────────────────────────────────────
-
-  window.tapisDeleteSingleJob = async function (jobId) {
-    if (!confirm("Voulez-vous supprimer cette impression du tapis de tri ?")) return;
-
-    try {
-      const response = await fetch('?tapis_tri&action=delete_jobs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ job_ids: [jobId] })
-      });
-      const result = await response.json();
-      if (result.success) {
-        selectedJobIds.delete(jobId);
-        loadJobs();
-      }
-    } catch (e) {
-      console.error('[TapisTri] Erreur suppression job:', e);
-    }
-  };
-
-  window.tapisDeleteSelected = async function () {
+  /**
+   * Suppression des documents sélectionnés
+   */
+  window.tapisDeleteSelected = function () {
     const count = selectedJobIds.size;
     if (count === 0) return;
 
-    if (!confirm(`Voulez-vous vraiment supprimer les ${count} impression(s) sélectionnée(s) ?`)) return;
+    if (!confirm(`Supprimer ${count} document(s) du tapis de tri ?`)) {
+      return;
+    }
 
-    try {
-      const response = await fetch('?tapis_tri&action=delete_jobs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ job_ids: Array.from(selectedJobIds) })
-      });
-      const result = await response.json();
-      if (result.success) {
+    fetch('?tapis_tri&action=delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'delete',
+        job_ids: Array.from(selectedJobIds)
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
         selectedJobIds.clear();
         loadJobs();
+        showFeedback(`${count} document(s) supprimé(s)`, 'info');
+      } else {
+        alert(data.error || 'Erreur de suppression');
       }
-    } catch (e) {
-      console.error('[TapisTri] Erreur suppression multiple:', e);
-    }
+    })
+    .catch(err => {
+      console.error('[TapisTri] Erreur delete:', err);
+    });
   };
 
-  // ── Aperçu Miniature ──────────────────────────────────────────────────────
-
-  window.tapisPreviewThumb = function (url, title) {
-    const modalImg = document.getElementById('tapis-preview-img');
-    const modalTitle = document.getElementById('tapis-preview-title');
-    if (modalImg) modalImg.src = url;
+  /**
+   * Aperçu grande miniature
+   */
+  window.tapisPreviewThumb = function (src, title) {
+    const modalImg = document.getElementById('preview-modal-img');
+    const modalTitle = document.getElementById('preview-modal-title');
+    if (modalImg) modalImg.src = src;
     if (modalTitle) modalTitle.textContent = title;
-
-    if (window.$ && typeof $('#modal-tapis-preview').modal === 'function') {
-      $('#modal-tapis-preview').modal('show');
-    }
+    $('#previewModal').modal('show');
   };
 
-  // ── Événements globaux ────────────────────────────────────────────────────
-
-  function initEventListeners() {
-    const selectAll = document.getElementById('tapis-select-all');
-    if (selectAll) {
-      selectAll.addEventListener('change', () => {
-        if (selectAll.checked) {
-          allJobs.forEach(j => selectedJobIds.add(j.id));
-        } else {
-          selectedJobIds.clear();
-        }
-        updateCardSelectionVisuals();
-        updateBottomBar();
-      });
-    }
-
-    const inputReceived = document.getElementById('checkout-amount-received');
-    if (inputReceived) {
-      inputReceived.addEventListener('input', window.tapisComputeChange);
-      inputReceived.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          window.tapisSubmitCheckout();
-        }
-      });
-    }
+  /**
+   * Notification feedback visuelle
+   */
+  function showFeedback(msg, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `tapis-toast toast-${type}`;
+    toast.innerHTML = `<i class="fa fa-info-circle"></i> ${escapeHtml(msg)}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('visible'), 10);
+    setTimeout(() => {
+      toast.classList.remove('visible');
+      setTimeout(() => toast.remove(), 400);
+    }, 2800);
   }
 
-  function formatTime(timestamp) {
-    if (!timestamp) return '';
+  function formatJobTime(isoOrTimestamp) {
+    if (!isoOrTimestamp) return '';
     try {
-      const d = new Date(timestamp);
-      if (isNaN(d.getTime())) return timestamp;
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } catch (e) {
-      return timestamp;
+      const d = new Date(isoOrTimestamp);
+      if (isNaN(d.getTime())) return isoOrTimestamp;
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      return `${hh}:${mm}`;
+    } catch {
+      return isoOrTimestamp;
     }
   }
 
   function escapeHtml(text) {
     if (!text) return '';
-    return String(text)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+    return text.toString().replace(/[&<>"']/g, m => map[m]);
+  }
+
+  /**
+   * Synchronise les impressions actuellement dans la file d'attente du spouleur
+   */
+  async function syncSpoolerJobs() {
+    if (!window.electronAPI || typeof window.electronAPI.getPrintJobs !== 'function') {
+      return;
+    }
+    try {
+      const spoolJobs = await window.electronAPI.getPrintJobs('');
+      if (Array.isArray(spoolJobs) && spoolJobs.length > 0) {
+        console.log('[TapisTri] Spooler jobs trouvés :', spoolJobs.length);
+        for (const sj of spoolJobs) {
+          try {
+            await fetch('?print_notification', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                jobId: sj.jobId || sj.job_id,
+                document: sj.document || 'Sans nom',
+                printerName: sj.printerName || sj.printer_name || 'RISO ComColor FW5230',
+                status: sj.status || 0,
+                totalPages: sj.totalPages || sj.total_pages || 0,
+                paperSize: sj.paperSize || sj.paper_size || 'A4',
+                duplex: sj.isDuplex !== undefined ? sj.isDuplex : false,
+                colorMode: sj.isColor ? 'Color' : 'Monochrome',
+                isGrayscale: !sj.isColor,
+                copies: sj.copies || 1,
+                timestamp: sj.timeSubmitted || sj.time_submitted || new Date().toISOString(),
+                timeSubmitted: sj.timeSubmitted || sj.time_submitted || new Date().toISOString(),
+                eventType: 'job_detected',
+                platform: 'windows'
+              })
+            });
+          } catch (e) {
+            console.warn('[TapisTri] Erreur sync print_notification pour job', sj, e);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[TapisTri] Impossible d\'interroger le spouleur :', err);
+    }
+  }
+
+  /**
+   * Actualise le tapis de tri et resynchronise le spouleur
+   */
+  window.tapisRefresh = async function () {
+    const btn = document.getElementById('btn-tapis-refresh');
+    if (btn) btn.classList.add('fa-spin');
+    try {
+      await syncSpoolerJobs();
+      await loadJobs();
+      showFeedback('Tapis de tri synchronisé', 'info');
+    } finally {
+      if (btn) btn.classList.remove('fa-spin');
+    }
+  };
+
+  /**
+   * Suppression des jobs cochés
+   */
+  window.tapisDeleteSelected = async function () {
+    if (selectedJobIds.size === 0) return;
+
+    const count = selectedJobIds.size;
+    if (!confirm(`Supprimer ${count} document(s) du tapis de tri ?`)) {
+      return;
+    }
+
+    const selectedList = jobs.filter(j => selectedJobIds.has(j.id));
+    const btn = document.getElementById('btn-delete-selected');
+    if (btn) btn.disabled = true;
+
+    try {
+      // 1. Supprimer du spouleur Windows si disponible
+      if (window.electronAPI && typeof window.electronAPI.deletePrintJob === 'function') {
+        for (const j of selectedList) {
+          if (j.job_id) {
+            try {
+              await window.electronAPI.deletePrintJob(j.printer_name || '', Number(j.job_id));
+            } catch (err) {
+              console.warn('[TapisTri] Erreur suppression spouleur pour job', j.job_id, err);
+            }
+          }
+        }
+      }
+
+      // 2. Supprimer de la table print_jobs
+      const res = await fetch('?tapis_tri&action=delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          job_ids: Array.from(selectedJobIds)
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        showFeedback(data.message || `${count} document(s) supprimé(s)`, 'info');
+        selectedJobIds.clear();
+        await loadJobs();
+      } else {
+        alert('Erreur lors de la suppression : ' + (data.error || 'Erreur inconnue'));
+      }
+    } catch (e) {
+      console.error('[TapisTri] Erreur deleteSelected:', e);
+      alert('Erreur réseau lors de la suppression.');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  };
+
+  function initEventListeners() {
+    // Raccourci Entrée dans le champ contact du modal
+    const contactInput = document.getElementById('modal-contact-input');
+    if (contactInput) {
+      contactInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          window.tapisConfirmSave();
+        }
+      });
+    }
   }
 
 })();

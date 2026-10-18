@@ -651,6 +651,19 @@ if ($page === 'manage_mappings' || isset($_GET['manage_mappings'])) {
     }
 }
 
+if ($page === 'tapis_tri' || isset($_GET['tapis_tri'])) {
+    $api_file = __DIR__ . '/../api/tapis_tri.php';
+    if (file_exists($api_file)) {
+        require_once $api_file;
+        exit;
+    } else {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'API file not found']);
+        exit;
+    }
+}
+
 if ($page === 'save_auto_print' || isset($_GET['save_auto_print'])) {
     $api_file = __DIR__ . '/../api/save_auto_print.php';
     if (file_exists($api_file)) {

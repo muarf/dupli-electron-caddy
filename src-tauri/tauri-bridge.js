@@ -420,6 +420,10 @@
     printFile: (fileUrl, printOptions) =>
       invoke('print_file', { filePath: fileUrl, printerName: printOptions?.printerName || '' }),
 
+    /** Récupère les jobs en attente dans le spouleur d'impression */
+    getPrintJobs: (printerName) =>
+      invoke('get_print_jobs', { printerName: printerName || '' }),
+
     // Événements du moniteur d'impression
     onPrintJobDetected:   (cb) => _registerEvent('print-job-detected', (payload) => {
       if (payload) {

@@ -506,6 +506,7 @@ try {
             pj.copies,
             pj.fill_rate,
             pj.thumbnail_url,
+            pj.calculated_price,
             pj.time_submitted,
             pj.event_type,
             pj.timestamp,
