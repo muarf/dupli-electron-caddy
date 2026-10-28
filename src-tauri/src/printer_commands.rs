@@ -44,7 +44,6 @@ pub struct PrinterDto {
 pub struct PrintJobDto {
     pub job_id: u32,
     pub document: String,
-    pub printer_name: String,
     pub machine_name: String,
     pub user_name: String,
     pub datatype: String,
@@ -57,7 +56,6 @@ pub struct PrintJobDto {
     pub is_duplex: bool,
     pub paper_size: String,
     pub is_color: bool,
-    pub time_submitted: String,
 }
 
 // =============================================================================
@@ -154,57 +152,44 @@ pub fn get_printers() -> Result<Vec<PrinterDto>, String> {
 /// Récupère les jobs d'impression pour une imprimante donnée.
 ///
 /// Côté frontend : `await invoke('get_print_jobs', { printerName: 'HP LaserJet' })`
-/// Si printerName est vide ou omis, retourne tous les jobs de toutes les imprimantes ayant des jobs.
 /// Retourne : `PrintJobDto[]` (ou une erreur string)
 #[command]
 pub fn get_print_jobs(printer_name: String) -> Result<Vec<PrintJobDto>, String> {
     log::info!("[printer_commands] get_print_jobs('{}') : demande de jobs", printer_name);
 
+    if printer_name.trim().is_empty() {
+        return Err("Le nom de l'imprimante ne peut pas être vide.".to_string());
+    }
+
     #[cfg(target_os = "windows")]
     {
-        let target_printers: Vec<String> = if printer_name.trim().is_empty() {
-            match crate::windows_native::enum_printers() {
-                Ok(printers) => printers
-                    .into_iter()
-                    .filter(|p| p.jobs_count > 0)
-                    .map(|p| p.name)
-                    .collect(),
-                Err(e) => return Err(format!("Impossible de lister les imprimantes : {}", e)),
-            }
-        } else {
-            vec![printer_name.trim().to_string()]
-        };
-
-        let mut all_jobs = Vec::new();
-        for p_name in target_printers {
-            if let Ok(jobs) = crate::windows_native::get_print_jobs(&p_name) {
+        crate::windows_native::get_print_jobs(&printer_name)
+            .map(|jobs| {
                 log::info!(
                     "[printer_commands] get_print_jobs('{}') : {} job(s) retourné(s)",
-                    p_name, jobs.len()
+                    printer_name, jobs.len()
                 );
-                for j in jobs {
-                    all_jobs.push(PrintJobDto {
-                        job_id: j.job_id,
-                        document: j.document,
-                        printer_name: p_name.clone(),
-                        machine_name: j.machine_name,
-                        user_name: j.user_name,
-                        datatype: j.datatype,
-                        status: j.status,
-                        status_label: j.status_label,
-                        pages_printed: j.pages_printed,
-                        total_pages: j.total_pages,
-                        size_bytes: j.size_bytes,
-                        priority: j.priority,
-                        is_duplex: j.is_duplex,
-                        paper_size: j.paper_size.clone(),
-                        is_color: j.is_color,
-                        time_submitted: j.time_submitted,
-                    });
-                }
-            }
-        }
-        Ok(all_jobs)
+                jobs.into_iter().map(|j| PrintJobDto {
+                    job_id: j.job_id,
+                    document: j.document,
+                    machine_name: j.machine_name,
+                    user_name: j.user_name,
+                    datatype: j.datatype,
+                    status: j.status,
+                    status_label: j.status_label,
+                    pages_printed: j.pages_printed,
+                    total_pages: j.total_pages,
+                    size_bytes: j.size_bytes,
+                    priority: j.priority,
+                    is_duplex: j.is_duplex,
+                    paper_size: j.paper_size.clone(),
+                    is_color: j.is_color,
+                }).collect()
+            })
+            .map_err(|e| {
+                log::error!("[printer_commands] get_print_jobs('{}') : erreur Win32 — {e}", printer_name);
+                format!("Impossible de récupérer les jobs de '{}' : {}", printer_name, e)
+            })
     }
 
     #[cfg(not(target_os = "windows"))]
@@ -234,7 +219,14 @@ pub fn delete_print_job(printer_name: String, job_id: u32) -> Result<(), String>
             if let Ok(printers) = crate::windows_native::enum_printers() {
                 for printer in &printers {
                     if printer.jobs_count == 0 { continue; }
-                    // Les jobs sont gérés par le spouleur local Windows, on peut interroger les jobs même si status a 0x80
+                    // Ignorer les imprimantes réseau hors ligne / inaccessibles pour éviter le timeout Win32 (30-60s)
+                    if (printer.status & (0x00000080 | 0x00001000)) != 0
+                        || printer.status_label.to_lowercase().contains("offline")
+                        || printer.status_label.to_lowercase().contains("hors ligne")
+                    {
+                        log::info!("[printer_commands] delete_print_job : saut de l'imprimante hors ligne '{}'", printer.name);
+                        continue;
+                    }
                     if let Ok(jobs) = crate::windows_native::get_print_jobs(&printer.name) {
                         if jobs.into_iter().any(|j| j.job_id == job_id) {
                             resolved_printer_name = printer.name.clone();
@@ -508,8 +500,6 @@ impl PrintMonitorState {
                 // Sur Windows : récupérer tous les jobs de toutes les imprimantes
                 #[cfg(target_os = "windows")]
                 {
-                    let mut current_keys: std::collections::HashSet<String> = std::collections::HashSet::new();
-
                     match crate::windows_native::enum_printers() {
                         Ok(printers) => {
                             for printer in &printers {
@@ -521,8 +511,6 @@ impl PrintMonitorState {
                                             let job_key = format!(
                                                 "{}_{}_{}", printer.name, job.job_id, job.time_submitted
                                             );
-                                            current_keys.insert(job_key.clone());
-
                                             // État courant : statut + pages pour détecter les mises à jour
                                             let job_state = format!("{}|{}", job.status, job.total_pages);
 
@@ -559,32 +547,6 @@ impl PrintMonitorState {
                                                     "timeSubmitted": job.time_submitted,
                                                 });
                                                 let _ = app_handle.emit("print-job-detected", payload);
-
-                                                // Notification directe du backend PHP via ureq pour garantir
-                                                // l'enregistrement en base SQLite même si le frontend web est indisponible ou rechargé
-                                                let notif_body = serde_json::json!({
-                                                    "jobId": job.job_id,
-                                                    "document": job.document,
-                                                    "printerName": printer.name,
-                                                    "status": job.status,
-                                                    "totalPages": job.total_pages,
-                                                    "paperSize": job.paper_size,
-                                                    "duplex": job.is_duplex,
-                                                    "colorMode": if job.is_color { "Color" } else { "Monochrome" },
-                                                    "isGrayscale": !job.is_color,
-                                                    "copies": job.copies,
-                                                    "timestamp": job.time_submitted,
-                                                    "timeSubmitted": job.time_submitted,
-                                                    "platform": "windows",
-                                                    "eventType": "job_detected",
-                                                });
-                                                let body_str = notif_body.to_string();
-                                                tauri::async_runtime::spawn_blocking(move || {
-                                                    let _ = ureq::post("http://127.0.0.1:8001/?print_notification")
-                                                        .set("Content-Type", "application/json")
-                                                        .timeout(std::time::Duration::from_millis(2000))
-                                                        .send_string(&body_str);
-                                                });
                                             }
                                         }
                                     }
@@ -597,9 +559,6 @@ impl PrintMonitorState {
                         }
                         Err(e) => log::error!("[PrintMonitorState] enum_printers() échoué : {}", e),
                     }
-
-                    // Nettoyer seen_states pour les jobs qui ne sont plus dans le spouleur
-                    seen_states.retain(|k, _| current_keys.contains(k));
                 }
 
                 // Sur non-Windows : polling CUPS via lpstat
@@ -803,6 +762,14 @@ pub fn reanalyze_print_job(
 
         for printer in &printers {
             if printer.jobs_count == 0 { continue; }
+            // Ignorer les imprimantes réseau hors ligne / inaccessibles pour éviter le timeout Win32 (30-60s)
+            if (printer.status & (0x00000080 | 0x00001000)) != 0
+                || printer.status_label.to_lowercase().contains("offline")
+                || printer.status_label.to_lowercase().contains("hors ligne")
+            {
+                log::info!("[printer_commands] reanalyze_print_job : saut de l'imprimante hors ligne '{}'", printer.name);
+                continue;
+            }
             if let Ok(jobs) = crate::windows_native::get_print_jobs(&printer.name) {
                 if let Some(job) = jobs.into_iter().find(|j| j.job_id == job_id) {
                     log::info!(

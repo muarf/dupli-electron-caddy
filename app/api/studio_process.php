@@ -1066,6 +1066,79 @@ if (session_id()) session_write_close();
                     $pdf->StopTransform();
                 }
             }
+
+            // Tracer les traits de coupe pour cette planche
+            $cropMarks = $planche['crop_marks'] ?? [];
+            $sheetMarks = $cropMarks['sheet_marks'] ?? [];
+            $aroundObjects = !empty($cropMarks['around_objects']);
+            $plancheW = $planche['width_mm'];
+            $plancheH = $planche['height_mm'];
+
+            $lineStyle = [
+                'width' => 0.15,
+                'cap'   => 'butt',
+                'join'  => 'miter',
+                'color' => [0, 0, 0]
+            ];
+
+            // 1. Repères de bord de feuille (massicotage)
+            $markLen = 8.0; // 8 mm
+            foreach ($sheetMarks as $sm) {
+                $axis = $sm['axis'] ?? 'H';
+                $pos = floatval($sm['pos_mm'] ?? 0);
+                if ($pos <= 0) continue;
+
+                if ($axis === 'H' && $pos < $plancheH) {
+                    $pdf->Line(0, $pos, $markLen, $pos, $lineStyle);
+                    $pdf->Line($plancheW - $markLen, $pos, $plancheW, $pos, $lineStyle);
+                } elseif ($axis === 'V' && $pos < $plancheW) {
+                    $pdf->Line($pos, 0, $pos, $markLen, $lineStyle);
+                    $pdf->Line($pos, $plancheH - $markLen, $pos, $plancheH, $lineStyle);
+                }
+            }
+
+            // 2. Repères d'angles aux 4 coins des objets (extérieur)
+            if ($aroundObjects && isset($planche['objects']) && is_array($planche['objects'])) {
+                $offset = 2.5; // Décalage extérieur 2.5 mm
+                $cornerLen = 5.0; // Longueur 5 mm
+
+                foreach ($planche['objects'] as $obj) {
+                    $cx = $obj['x_px'] / $obj['mm_to_px'];
+                    $cy = $obj['y_px'] / $obj['mm_to_px'];
+                    $sx = floatval($obj['scale_x'] ?? 1);
+                    $sy = floatval($obj['scale_y'] ?? 1);
+                    $ow = $obj['original_width_mm'] * $sx;
+                    $oh = $obj['original_height_mm'] * $sy;
+                    $angle = floatval($obj['angle'] ?? 0);
+
+                    $x1 = $cx - $ow / 2;
+                    $x2 = $cx + $ow / 2;
+                    $y1 = $cy - $oh / 2;
+                    $y2 = $cy + $oh / 2;
+
+                    $pdf->StartTransform();
+                    if ($angle != 0) {
+                        $pdf->Rotate(-$angle, $cx, $cy);
+                    }
+                    // Coin Haut-Gauche
+                    $pdf->Line($x1 - $offset - $cornerLen, $y1, $x1 - $offset, $y1, $lineStyle);
+                    $pdf->Line($x1, $y1 - $offset - $cornerLen, $x1, $y1 - $offset, $lineStyle);
+
+                    // Coin Haut-Droit
+                    $pdf->Line($x2 + $offset, $y1, $x2 + $offset + $cornerLen, $y1, $lineStyle);
+                    $pdf->Line($x2, $y1 - $offset - $cornerLen, $x2, $y1 - $offset, $lineStyle);
+
+                    // Coin Bas-Gauche
+                    $pdf->Line($x1 - $offset - $cornerLen, $y2, $x1 - $offset, $y2, $lineStyle);
+                    $pdf->Line($x1, $y2 + $offset, $x1, $y2 + $offset + $cornerLen, $lineStyle);
+
+                    // Coin Bas-Droit
+                    $pdf->Line($x2 + $offset, $y2, $x2 + $offset + $cornerLen, $y2, $lineStyle);
+                    $pdf->Line($x2, $y2 + $offset, $x2, $y2 + $offset + $cornerLen, $lineStyle);
+
+                    $pdf->StopTransform();
+                }
+            }
         }
 
         $outFilename = 'montage_libre_' . time() . '.pdf';
@@ -1698,6 +1771,79 @@ if (session_id()) session_write_close();
                     $pdf->StopTransform();
                 }
             }
+
+            // Tracer les traits de coupe pour cette planche
+            $cropMarks = $planche['crop_marks'] ?? [];
+            $sheetMarks = $cropMarks['sheet_marks'] ?? [];
+            $aroundObjects = !empty($cropMarks['around_objects']);
+            $plancheW = $planche['width_mm'];
+            $plancheH = $planche['height_mm'];
+
+            $lineStyle = [
+                'width' => 0.15,
+                'cap'   => 'butt',
+                'join'  => 'miter',
+                'color' => [0, 0, 0]
+            ];
+
+            // 1. Repères de bord de feuille (massicotage)
+            $markLen = 8.0; // 8 mm
+            foreach ($sheetMarks as $sm) {
+                $axis = $sm['axis'] ?? 'H';
+                $pos = floatval($sm['pos_mm'] ?? 0);
+                if ($pos <= 0) continue;
+
+                if ($axis === 'H' && $pos < $plancheH) {
+                    $pdf->Line(0, $pos, $markLen, $pos, $lineStyle);
+                    $pdf->Line($plancheW - $markLen, $pos, $plancheW, $pos, $lineStyle);
+                } elseif ($axis === 'V' && $pos < $plancheW) {
+                    $pdf->Line($pos, 0, $pos, $markLen, $lineStyle);
+                    $pdf->Line($pos, $plancheH - $markLen, $pos, $plancheH, $lineStyle);
+                }
+            }
+
+            // 2. Repères d'angles aux 4 coins des objets (extérieur)
+            if ($aroundObjects && isset($planche['objects']) && is_array($planche['objects'])) {
+                $offset = 2.5; // Décalage extérieur 2.5 mm
+                $cornerLen = 5.0; // Longueur 5 mm
+
+                foreach ($planche['objects'] as $obj) {
+                    $cx = $obj['x_px'] / $obj['mm_to_px'];
+                    $cy = $obj['y_px'] / $obj['mm_to_px'];
+                    $sx = floatval($obj['scale_x'] ?? 1);
+                    $sy = floatval($obj['scale_y'] ?? 1);
+                    $ow = $obj['original_width_mm'] * $sx;
+                    $oh = $obj['original_height_mm'] * $sy;
+                    $angle = floatval($obj['angle'] ?? 0);
+
+                    $x1 = $cx - $ow / 2;
+                    $x2 = $cx + $ow / 2;
+                    $y1 = $cy - $oh / 2;
+                    $y2 = $cy + $oh / 2;
+
+                    $pdf->StartTransform();
+                    if ($angle != 0) {
+                        $pdf->Rotate(-$angle, $cx, $cy);
+                    }
+                    // Coin Haut-Gauche
+                    $pdf->Line($x1 - $offset - $cornerLen, $y1, $x1 - $offset, $y1, $lineStyle);
+                    $pdf->Line($x1, $y1 - $offset - $cornerLen, $x1, $y1 - $offset, $lineStyle);
+
+                    // Coin Haut-Droit
+                    $pdf->Line($x2 + $offset, $y1, $x2 + $offset + $cornerLen, $y1, $lineStyle);
+                    $pdf->Line($x2, $y1 - $offset - $cornerLen, $x2, $y1 - $offset, $lineStyle);
+
+                    // Coin Bas-Gauche
+                    $pdf->Line($x1 - $offset - $cornerLen, $y2, $x1 - $offset, $y2, $lineStyle);
+                    $pdf->Line($x1, $y2 + $offset, $x1, $y2 + $offset + $cornerLen, $lineStyle);
+
+                    // Coin Bas-Droit
+                    $pdf->Line($x2 + $offset, $y2, $x2 + $offset + $cornerLen, $y2, $lineStyle);
+                    $pdf->Line($x2, $y2 + $offset, $x2, $y2 + $offset + $cornerLen, $lineStyle);
+
+                    $pdf->StopTransform();
+                }
+            }
         }
 
         $outFilename = 'montage_libre_' . time() . '.pdf';
@@ -1924,6 +2070,16 @@ if ($action === 'modification') {
         $currentPage = intval($data['currentPage'] ?? 1);
         $ops = $data['operations'] ?? [];
 
+        $brushOverlay = $data['brush_overlay'] ?? null;
+        $tmpBrushFile = null;
+        if ($brushOverlay && preg_match('#^data:image/png;base64,#i', $brushOverlay)) {
+            $brushPngData = base64_decode(preg_replace('#^data:image/png;base64,#i', '', $brushOverlay));
+            if ($brushPngData) {
+                $tmpBrushFile = $tmpBase . 'brush_' . uniqid() . '.png';
+                file_put_contents($tmpBrushFile, $brushPngData);
+            }
+        }
+
         // Utiliser $uploadedFile défini globalement
         $sourcePdf = $uploadedFile;
 
@@ -1974,6 +2130,11 @@ if ($action === 'modification') {
             elseif ($scope === 'current' && $p === $currentPage) $apply = true;
             
             if ($apply) {
+                // Calque pinceau / dessin libre
+                if ($tmpBrushFile && file_exists($tmpBrushFile)) {
+                    $pdf->Image($tmpBrushFile, 0, 0, $size['width'], $size['height'], 'PNG');
+                }
+
                 foreach ($ops as $op) {
                     $type = $op['type'] ?? '';
                     if ($type === 'redact_text' || $type === 'strikeout') {
@@ -1988,6 +2149,30 @@ if ($action === 'modification') {
                         } else {
                             addRedaction($pdf, $x, $y, $w, $h, $op['color'] ?? 'black');
                         }
+                    } elseif ($type === 'line') {
+                        $x1 = ($op['relX1'] ?? 0) * $size['width'];
+                        $y1 = ($op['relY1'] ?? 0) * $size['height'];
+                        $x2 = ($op['relX2'] ?? 0) * $size['width'];
+                        $y2 = ($op['relY2'] ?? 0) * $size['height'];
+                        $widthMm = max(0.1, ($op['relWidth'] ?? 0.005) * $size['width']);
+                        $color = $op['color'] ?? '#000000';
+                        
+                        $r = 0; $g = 0; $b = 0;
+                        if (preg_match('/^#([a-f0-9]{3}){1,2}$/i', $color)) {
+                            $hex = ltrim($color, '#');
+                            if (strlen($hex) == 3) {
+                                $r = hexdec(substr($hex, 0, 1) . substr($hex, 0, 1));
+                                $g = hexdec(substr($hex, 1, 1) . substr($hex, 1, 1));
+                                $b = hexdec(substr($hex, 2, 1) . substr($hex, 2, 1));
+                            } else {
+                                $r = hexdec(substr($hex, 0, 2));
+                                $g = hexdec(substr($hex, 2, 2));
+                                $b = hexdec(substr($hex, 4, 2));
+                            }
+                        }
+                        $pdf->SetLineWidth($widthMm);
+                        $pdf->SetDrawColor($r, $g, $b);
+                        $pdf->Line($x1, $y1, $x2, $y2);
                     } elseif ($type === 'page_number') {
                         $rangeStart = isset($op['rangeStart']) && $op['rangeStart'] !== null ? intval($op['rangeStart']) : 1;
                         $rangeEnd = isset($op['rangeEnd']) && $op['rangeEnd'] !== null ? intval($op['rangeEnd']) : $pageCount;
@@ -2032,6 +2217,10 @@ if ($action === 'modification') {
             }
         }
         
+        if ($tmpBrushFile && file_exists($tmpBrushFile)) {
+            @unlink($tmpBrushFile);
+        }
+
         $outFilename = $safeName . '_modif_' . time() . '.pdf';
         $outPath = $tmpBase . $outFilename;
         $pdf->Output($outPath, 'F');
@@ -2045,6 +2234,9 @@ if ($action === 'modification') {
         ]);
         
     } catch (Exception $e) {
+        if (isset($tmpBrushFile) && $tmpBrushFile && file_exists($tmpBrushFile)) {
+            @unlink($tmpBrushFile);
+        }
         echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
     exit;

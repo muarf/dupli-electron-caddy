@@ -224,6 +224,9 @@ jobs:
 
       - name: Download Tauri Sidecars
         run: node scripts/download-tauri-sidecars.js
+        
+      - name: Clean conflicting Linux binaries
+        run: rm -rf bin/win-x64/gs bin/linux-x64
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable

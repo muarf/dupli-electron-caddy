@@ -1,13 +1,15 @@
 <?php
 /**
- * API Tapis de Tri des Impressions
- * Endpoint pour la gestion du tri en atelier :
- * - action=list     : liste des impressions récentes non encore archivées
- * - action=save     : enregistrement définitif du lot sélectionné (dans photocop/dupli)
- * - action=delete   : suppression/annulation de jobs sélectionnés
+ * API Tapis de Tri des impressions
+ * 
+ * Endpoints:
+ * - GET  ?tapis_tri&action=list : Récupérer les jobs non traités des dernières 24h
+ * - POST ?tapis_tri&action=checkout_direct : Encaissement express au comptoir
+ * - POST ?tapis_tri&action=assign_to_session : Assigner un lot de jobs à une session (existante ou nouvelle)
+ * - POST ?tapis_tri&action=delete_jobs : Supprimer des jobs du tapis (et du spooler si actif)
+ * - POST ?tapis_tri&action=calculate_price : Recalculer le prix unitaire d'un job
  */
 
-// Headers CORS et JSON
 $allowedOrigins = ['http://127.0.0.1:8000', 'http://localhost:8000', 'http://tauri.localhost', 'tauri://localhost', 'https://tauri.localhost'];
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 $host = $_SERVER['HTTP_HOST'] ?? '';
@@ -21,423 +23,511 @@ header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
-if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
 
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
-ini_set('log_errors', 1);
-
-ob_start();
-
 require_once __DIR__ . '/../controler/conf.php';
 require_once __DIR__ . '/../controler/functions/database.php';
 require_once __DIR__ . '/../controler/functions/tirage.php';
-require_once __DIR__ . '/../controler/functions/pricing.php';
-require_once __DIR__ . '/../controler/functions/secure_delete.php';
-require_once __DIR__ . '/../models/migrations/DatabaseMigrationManager.php';
 require_once __DIR__ . '/../models/tirage_multimachines.php';
+require_once __DIR__ . '/../models/migrations/DatabaseMigrationManager.php';
 
 try {
     $db = create_database_manager();
     $con_pdo = pdo_connect();
 
     $action = $_GET['action'] ?? '';
-    if (empty($action) && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-        $action = $input['action'] ?? 'save';
-    } else if (empty($action)) {
-        $action = 'list';
+    $input = [];
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $rawInput = file_get_contents('php://input');
+        if (!empty($rawInput)) {
+            $input = json_decode($rawInput, true) ?? [];
+        }
+        if (empty($input) && !empty($_POST)) {
+            $input = $_POST;
+        }
+        if (empty($action) && isset($input['action'])) {
+            $action = $input['action'];
+        }
+    } else {
+        $input = $_GET;
     }
 
-    if ($action === 'list') {
-        // --- 1. LISTE DES JOBS DU TAPIS DE TRI ---
-        if (!$db->tableExists('print_jobs')) {
-            ob_end_clean();
-            echo json_encode(['success' => true, 'jobs' => [], 'total' => 0]);
-            exit;
-        }
+    switch ($action) {
+        case 'list':
+            handleListJobs($db, $con_pdo);
+            break;
 
-        // Récupérer les jobs non encore clôturés dans recorded_print_jobs et récents (dernières 24h)
-        $sql = "
-            SELECT
-                pj.id,
-                pj.job_id,
-                pj.document,
-                pj.document_display_name,
-                pj.printer_name,
-                pj.status,
-                pj.pages_printed,
-                pj.total_pages,
-                pj.size,
-                pj.paper_size,
-                pj.duplex,
-                pj.color_mode,
-                pj.copies,
-                pj.fill_rate,
-                pj.thumbnail_url,
-                pj.calculated_price,
-                pj.created_at,
-                pj.timestamp
-            FROM print_jobs pj
-            LEFT JOIN recorded_print_jobs rpj ON pj.id = rpj.print_job_id
-            WHERE rpj.print_job_id IS NULL
-              AND pj.created_at > datetime('now', '-24 hours')
-            ORDER BY pj.created_at DESC, pj.id DESC
-            LIMIT 100
-        ";
+        case 'checkout_direct':
+            handleCheckoutDirect($db, $con_pdo, $input);
+            break;
 
-        $jobs = $db->select($sql);
+        case 'assign_to_session':
+            handleAssignToSession($db, $con_pdo, $input);
+            break;
 
-        // Récupérer les tarifs pour calculer le prix à la volée si calculated_price == 0
-        $prix_data = get_price();
+        case 'delete_jobs':
+            handleDeleteJobs($db, $con_pdo, $input);
+            break;
 
-        foreach ($jobs as &$job) {
-            $calcPrice = floatval($job['calculated_price'] ?? 0);
-            if ($calcPrice <= 0) {
-                // Calcul du prix estimé
-                $printerName = $job['printer_name'];
-                $mapping = $db->selectOne("SELECT * FROM printer_mappings WHERE system_printer_name = ?", [$printerName]);
+        default:
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => "Action '$action' inconnue"]);
+            break;
+    }
 
-                $copies = max(1, intval($job['copies'] ?? 1));
-                $rawPages = max(1, intval($job['total_pages'] ?? 1));
-                
-                // Si total_pages reçu représente les pages du document unitaire
-                // (ex: document de 35p avec 7 copies -> 35p par exemplaire, total 245 faces)
-                $pagesPerCopy = $rawPages;
-                $totalPagesImprimees = $pagesPerCopy * $copies;
+} catch (Throwable $e) {
+    error_log("[TAPIS_TRI] Exception: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'error' => 'Erreur serveur : ' . $e->getMessage()
+    ]);
+}
 
-                $isDuplex = intval($job['duplex'] ?? 0) === 1;
-                $isColor = stripos($job['color_mode'] ?? '', 'color') !== false;
-                $fillRate = floatval($job['fill_rate'] ?? 0.5);
-                if ($fillRate > 1.0) $fillRate = $fillRate / 100.0;
-                $fillRate = max(0.05, min(1.0, $fillRate));
-                $docName = $job['document'] ?? '';
-                $isA3 = (stripos($docName, 'A3') !== false) || (stripos($job['paper_size'] ?? '', 'A3') !== false);
-                $taille = $isA3 ? 'A3' : 'A4';
+/**
+ * Liste tous les jobs en attente sur le tapis de tri (dernières 24 heures, non payés/archivés)
+ */
+function handleListJobs($db, $con_pdo) {
+    // Vérifier si la table print_jobs existe
+    if (!$db->tableExists('print_jobs')) {
+        echo json_encode(['success' => true, 'jobs' => [], 'total' => 0]);
+        return;
+    }
 
-                if ($mapping) {
-                    $mType = strtolower($mapping['machine_type'] ?? '');
-                    $mId = intval($mapping['machine_id'] ?? 1);
+    // Récupérer les jobs non encore archivés dans recorded_print_jobs
+    // et non encore finalisés (staged = 0 ou session_id IS NULL)
+    $sql = "
+        SELECT 
+            pj.id,
+            pj.job_id,
+            pj.document,
+            pj.document_display_name,
+            pj.document_full_path,
+            pj.printer_name,
+            pj.status,
+            pj.pages_printed,
+            pj.total_pages,
+            pj.copies,
+            pj.fill_rate,
+            pj.color_mode,
+            pj.duplex,
+            pj.paper_size,
+            pj.thumbnail_url,
+            pj.timestamp,
+            pj.created_at,
+            pj.calculated_price,
+            pj.machine_name,
+            pj.machine_type,
+            pj.machine_id,
+            pj.session_id,
+            pj.staged
+        FROM print_jobs pj
+        LEFT JOIN recorded_print_jobs rpj ON pj.id = rpj.print_job_id
+        WHERE rpj.print_job_id IS NULL
+          AND (pj.session_id IS NULL OR pj.staged = 0)
+          AND pj.created_at > datetime('now', '-24 hours')
+        ORDER BY pj.created_at DESC, pj.id DESC
+        LIMIT 100
+    ";
 
-                    if ($mType === 'photocop') {
-                        $photocop = $con_pdo->query("SELECT marque, type_encre FROM photocopieurs WHERE id = $mId")->fetch(PDO::FETCH_ASSOC);
-                        if ($photocop) {
-                            $marque = $photocop['marque'];
-                            $typeEncre = $photocop['type_encre'];
-                            $machinePrices = function_exists('getMachinePrices') ? getMachinePrices($con_pdo, $marque) : [];
-                            $photocopKey = 'photocop_' . $mId;
-                            $prices = $prix_data[$photocopKey] ?? $machinePrices;
+    $jobs = $db->select($sql);
 
-                            $costPerFace = 0;
-                            $fillMult = $isColor ? ($fillRate / 0.5) : 1.0;
-
-                            if ($typeEncre === 'toner') {
-                                if ($isColor) {
-                                    $costPerFace += (($prices['cyan']['unite'] ?? 0) * $fillMult);
-                                    $costPerFace += (($prices['magenta']['unite'] ?? 0) * $fillMult);
-                                    $costPerFace += (($prices['jaune']['unite'] ?? 0) * $fillMult);
-                                    $costPerFace += ($prices['noir']['unite'] ?? 0);
-                                    $costPerFace += ($prices['tambour']['unite'] ?? 0);
-                                    $costPerFace += ($prices['dev']['unite'] ?? 0);
-                                } else {
-                                    $costPerFace += ($prices['noir']['unite'] ?? 0);
-                                    $costPerFace += ($prices['tambour']['unite'] ?? 0);
-                                    $costPerFace += ($prices['dev']['unite'] ?? 0);
-                                }
-                            } else {
-                                // ComColor encre
-                                if ($isColor) {
-                                    $costPerFace += (($prices['bleue']['unite'] ?? 0) * $fillMult);
-                                    $costPerFace += (($prices['couleur']['unite'] ?? 0) * $fillMult);
-                                    $costPerFace += (($prices['jaune']['unite'] ?? 0) * $fillMult);
-                                    $costPerFace += (($prices['rouge']['unite'] ?? 0) * $fillMult);
-                                    $costPerFace += ($prices['noire']['unite'] ?? 0);
-                                } else {
-                                    $costPerFace += ($prices['noire']['unite'] ?? 0);
-                                }
-                            }
-
-                            $prixPapier = ($taille === 'A4') ? ($prix_data['papier']['A4'] ?? 0.01) : ($prix_data['papier']['A3'] ?? 0.02);
-                            if ($taille === 'A4') {
-                                $costPerFace = $costPerFace / 2;
-                            }
-
-                            $sheetsPerCopy = $isDuplex ? ceil($pagesPerCopy / 2) : $pagesPerCopy;
-                            $nbFeuillesTotal = $sheetsPerCopy * $copies;
-
-                            $coutPapier = $nbFeuillesTotal * $prixPapier;
-                            $coutEncre = $totalPagesImprimees * $costPerFace;
-                            $calcPrice = round($coutPapier + $coutEncre, 2);
-                        }
-                    } else if ($mType === 'dupli') {
-                        $dupliKey = 'dupli_' . $mId;
-                        $prixMaster = $prix_data[$dupliKey]['master']['unite'] ?? 0.40;
-                        $prixPassage = $prix_data[$dupliKey]['tambour_noir']['unite'] ?? 0.002;
-                        $prixPapier = ($taille === 'A4') ? ($prix_data['papier']['A4'] ?? 0.01) : ($prix_data['papier']['A3'] ?? 0.02);
-
-                        if ($taille === 'A4') {
-                            $prixMaster = $prixMaster / 2;
-                            $prixPassage = $prixPassage / 2;
-                        }
-
-                        $nbMasters = max(1, intval($pagesPerCopy));
-                        $nbPassages = $totalPagesImprimees;
-                        $nbFeuilles = $isDuplex ? ceil($nbPassages / 2) : $nbPassages;
-
-                        $coutMasters = $nbMasters * $prixMaster;
-                        $coutPassages = $nbPassages * $prixPassage;
-                        $coutPapier = $nbFeuilles * $prixPapier;
-                        $calcPrice = round($coutMasters + $coutPassages + $coutPapier, 2);
-                    }
-                }
-
-                if ($calcPrice <= 0) {
-                    $calcPrice = round(max(0.10, $totalPages * 0.05), 2);
-                }
-
-                $job['calculated_price'] = $calcPrice;
-                // Mettre à jour en base pour ne pas recalculer à chaque appel
-                $db->execute("UPDATE print_jobs SET calculated_price = ? WHERE id = ?", [$calcPrice, $job['id']]);
+    // Calculer les prix pour les jobs qui n'en ont pas encore
+    foreach ($jobs as &$job) {
+        if (empty($job['calculated_price']) || floatval($job['calculated_price']) <= 0) {
+            $computed = computeJobEstimatedPrice($con_pdo, $job);
+            if ($computed > 0) {
+                $job['calculated_price'] = $computed;
+                // Sauvegarder pour les prochains appels
+                $con_pdo->prepare("UPDATE print_jobs SET calculated_price = ? WHERE id = ?")
+                        ->execute([$computed, $job['id']]);
             }
         }
-
-        ob_end_clean();
-        echo json_encode(['success' => true, 'jobs' => $jobs, 'total' => count($jobs)]);
-        exit;
+        $job['calculated_price'] = round(floatval($job['calculated_price'] ?? 0), 2);
     }
 
-    if ($action === 'save') {
-        // --- 2. ENREGISTREMENT D'UN LOT SÉLECTIONNÉ ---
-        $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+    echo json_encode([
+        'success' => true,
+        'jobs' => $jobs,
+        'total' => count($jobs)
+    ]);
+}
 
-        $contact = trim($input['contact'] ?? '');
-        if (empty($contact)) {
-            throw new Exception("Le nom du contact est obligatoire pour enregistrer le tirage.");
-        }
+/**
+ * Encaissement express direct au comptoir (Client de passage ou nommé)
+ */
+function handleCheckoutDirect($db, $con_pdo, $input) {
+    $jobIds = $input['job_ids'] ?? [];
+    $contact = trim($input['contact'] ?? 'Passage');
+    if ($contact === '') {
+        $contact = 'Passage';
+    }
+    $paymentMethod = $input['payment_method'] ?? 'especes'; // 'especes', 'cb', 'cheque'
+    $amountReceived = floatval($input['amount_received'] ?? 0);
+    $manualItems = $input['manual_items'] ?? []; // Éventuels tirages manuels ajoutés au panier
 
-        $jobIds = isset($input['job_ids']) && is_array($input['job_ids']) ? array_map('intval', $input['job_ids']) : [];
+    if (empty($jobIds) && empty($manualItems)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => "Aucun document sélectionné pour l'encaissement."]);
+        return;
+    }
 
-        if (empty($jobIds)) {
-            throw new Exception("Aucun document sélectionné.");
-        }
+    $isCb = ($paymentMethod === 'cb') ? 'oui' : 'non';
+    $isPaid = 'oui';
+    $paymentLabel = match ($paymentMethod) {
+        'cb' => 'CB',
+        'cheque' => 'Chèque',
+        default => 'Espèces'
+    };
+    $mot = "Encaissement direct (" . $paymentLabel . ")";
+    $dateFormatted = date('d/m/Y');
+    $dateTime = date('Y-m-d H:i:s');
 
-        $idsList = implode(',', $jobIds);
-        $selectedJobs = $con_pdo->query("SELECT * FROM print_jobs WHERE id IN ($idsList)")->fetchAll(PDO::FETCH_ASSOC);
+    $con_pdo->beginTransaction();
 
-        if (empty($selectedJobs)) {
-            throw new Exception("Les documents sélectionnés sont introuvables.");
-        }
-
-        // Calcul du prix total global pour ventiler le montant payé (cb = combien ils ont payé)
-        $totalOrderPrice = 0.0;
-        foreach ($selectedJobs as $j) {
-            $totalOrderPrice += floatval($j['calculated_price'] ?? 0);
-        }
-        $totalOrderPrice = round($totalOrderPrice, 2);
-
-        $paye = (isset($input['paye']) && ($input['paye'] === 'oui' || $input['paye'] === true || $input['paye'] === '1')) ? 'oui' : 'non';
-        if ($paye === 'oui') {
-            $cbGlobal = (isset($input['cb']) && is_numeric($input['cb'])) ? floatval($input['cb']) : $totalOrderPrice;
-        } else {
-            $cbGlobal = 0.0;
-        }
-        $cbRemaining = $cbGlobal;
-        $totalItemsCount = count($selectedJobs);
-        $currentItemIndex = 0;
-
-        $mot = trim($input['mot'] ?? '');
-        $date = time();
-
-        $con_pdo->beginTransaction();
-
-        $savedCount = 0;
+    try {
         $totalPrice = 0.0;
+        $processedCount = 0;
+        $tirageGlobalId = DatabaseMigrationManager::generateTirageGlobalId($dateFormatted, $contact, 'TapisDeTri');
 
-        foreach ($selectedJobs as $job) {
-            $currentItemIndex++;
-            $printerName = $job['printer_name'];
-            $jobPrice = floatval($job['calculated_price'] ?? 0);
-            $docName = $job['document'] ?? 'Document';
-            $rawPages = max(1, intval($job['total_pages'] ?? 1));
-            $copies = max(1, intval($job['copies'] ?? 1));
-            $pagesPerCopy = $rawPages;
-            $totalPagesImprimees = $pagesPerCopy * $copies;
-            $isDuplex = intval($job['duplex'] ?? 0) === 1;
-            $duplexStr = $isDuplex ? 'oui' : 'non';
-            $isA3 = (stripos($docName, 'A3') !== false) || (stripos($job['paper_size'] ?? '', 'A3') !== false);
-            $taille = $isA3 ? 'A3' : 'A4';
-            $thumbUrl = $job['thumbnail_url'] ?? '';
+        // 1. Traiter les jobs du tapis de tri
+        if (!empty($jobIds)) {
+            $placeholders = implode(',', array_fill(0, count($jobIds), '?'));
+            $jobs = $db->select("SELECT * FROM print_jobs WHERE id IN ($placeholders)", $jobIds);
 
-            if ($currentItemIndex === $totalItemsCount) {
-                $itemCb = round($cbRemaining, 2);
-            } else {
-                $itemCb = ($totalOrderPrice > 0) ? round($cbGlobal * ($jobPrice / $totalOrderPrice), 2) : 0.0;
-                $cbRemaining -= $itemCb;
-            }
+            foreach ($jobs as $job) {
+                $jobPrice = floatval($job['calculated_price'] ?? 0);
+                if ($jobPrice <= 0) {
+                    $jobPrice = computeJobEstimatedPrice($con_pdo, $job);
+                }
+                $totalPrice += $jobPrice;
 
-            $mapping = $db->selectOne("SELECT * FROM printer_mappings WHERE system_printer_name = ?", [$printerName]);
-            $machineType = $mapping ? strtolower($mapping['machine_type'] ?? 'photocop') : 'photocop';
-            $machineId = $mapping ? intval($mapping['machine_id'] ?? 1) : 1;
+                $machineType = $job['machine_type'] ?? 'photocop';
+                $docName = $job['document_display_name'] ?: $job['document'];
+                $thumbnail = $job['thumbnail_url'] ?? null;
+                $copies = intval($job['copies'] ?? 1);
+                $totalPages = intval($job['total_pages'] ?? 1);
+                $duplex = ($job['duplex'] == 1 || $job['duplex'] === true || $job['duplex'] === '1') ? 'oui' : 'non';
+                $paperSize = strtoupper($job['paper_size'] ?? 'A4');
+                if (strpos($paperSize, 'A3') !== false) {
+                    $taille = 'A3';
+                } else {
+                    $taille = 'A4';
+                }
 
-            $jobMot = empty($mot) ? $docName : ($mot . ' - ' . $docName);
+                // Insertion dans photocop (ou dupli si applicable)
+                if ($machineType === 'dupli') {
+                    $con_pdo->prepare("
+                        INSERT INTO dupli (
+                            type, contact, master_av, master_ap, passage_av, passage_ap,
+                            rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id,
+                            tirage_global_id, document_name, thumbnail_url, nb_exemplaires, taille
+                        ) VALUES (?, ?, '0', '0', '0', '0', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ")->execute([
+                        $job['color_mode'] ?? 'Noir',
+                        $contact,
+                        $duplex,
+                        $jobPrice,
+                        $isPaid,
+                        $isCb,
+                        $mot,
+                        $dateFormatted,
+                        $job['machine_name'] ?? 'Duplicopieur',
+                        intval($job['machine_id'] ?? 1),
+                        $tirageGlobalId,
+                        $docName,
+                        $thumbnail,
+                        $copies,
+                        $taille
+                    ]);
+                } else {
+                    // Par défaut photocop
+                    $nbFeuilles = ($duplex === 'oui') ? ceil($totalPages / 2) : $totalPages;
+                    $con_pdo->prepare("
+                        INSERT INTO photocop (
+                            type, marque, contact, nb_f, rv, prix, paye, cb, mot, date,
+                            tirage_global_id, document_name, thumbnail_url, nb_exemplaires, taille
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ")->execute([
+                        (stripos($job['color_mode'] ?? '', 'color') !== false) ? 'couleur' : 'noir',
+                        $job['machine_name'] ?? $job['printer_name'],
+                        $contact,
+                        $nbFeuilles,
+                        $duplex,
+                        $jobPrice,
+                        $isPaid,
+                        $isCb,
+                        $mot,
+                        $dateFormatted,
+                        $tirageGlobalId,
+                        $docName,
+                        $thumbnail,
+                        $copies,
+                        $taille
+                    ]);
+                }
 
-            if ($machineType === 'dupli') {
-                // Enregistrement dans table dupli
-                $dupliMachine = $con_pdo->query("SELECT marque, modele FROM duplicopieurs WHERE id = $machineId")->fetch(PDO::FETCH_ASSOC);
-                $nomMachine = $dupliMachine ? ($dupliMachine['marque'] === $dupliMachine['modele'] ? $dupliMachine['marque'] : ($dupliMachine['marque'] . ' ' . $dupliMachine['modele'])) : 'Duplicopieur';
-
-                // Compteurs
-                $lastCounters = $con_pdo->query("SELECT master_ap, passage_ap FROM dupli WHERE nom_machine = " . $con_pdo->quote($nomMachine) . " ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
-                $masterAv = $lastCounters ? intval($lastCounters['master_ap']) : 0;
-                $passageAv = $lastCounters ? intval($lastCounters['passage_ap']) : 0;
-
-                $nbMasters = max(1, intval($pagesPerCopy));
-                $nbPassages = $totalPagesImprimees;
-                $masterAp = $masterAv + $nbMasters;
-                $passageAp = $passageAv + $nbPassages;
-
-                $tirageGlobalId = DatabaseMigrationManager::generateTirageGlobalId($date, $contact, $nomMachine);
-
-                $insertDupli = $con_pdo->prepare("
-                    INSERT INTO dupli 
-                    (type, contact, master_av, master_ap, passage_av, passage_ap, rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id, tambour, tirage_global_id, document_name, thumbnail_url, nb_exemplaires, taille)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ");
-                $insertDupli->execute([
-                    'duplicopieur',
-                    $contact,
-                    strval($masterAv),
-                    strval($masterAp),
-                    strval($passageAv),
-                    strval($passageAp),
-                    $duplexStr,
-                    strval($jobPrice),
-                    $paye,
-                    strval($itemCb),
-                    $jobMot,
-                    strval($date),
-                    $nomMachine,
-                    $machineId,
-                    'tambour_noir',
-                    $tirageGlobalId,
-                    $docName,
-                    $thumbUrl,
-                    $copies,
-                    $taille
+                // Enregistrer dans recorded_print_jobs pour ne plus réapparaître
+                $con_pdo->prepare("
+                    INSERT OR IGNORE INTO recorded_print_jobs (job_id, printer_name, print_job_id, recorded_at)
+                    VALUES (?, ?, ?, ?)
+                ")->execute([
+                    strval($job['job_id']),
+                    $job['printer_name'],
+                    $job['id'],
+                    $dateTime
                 ]);
 
-            } else {
-                // Photocopieur (ComColor ou autre) -> table photocop
-                $photoMachine = $con_pdo->query("SELECT marque FROM photocopieurs WHERE id = $machineId")->fetch(PDO::FETCH_ASSOC);
-                $marque = $photoMachine ? $photoMachine['marque'] : 'comcolor';
+                // Mettre à jour print_jobs comme complété
+                $con_pdo->prepare("
+                    UPDATE print_jobs 
+                    SET status = 'completed', staged = 0, contact = ?
+                    WHERE id = ?
+                ")->execute([$contact, $job['id']]);
 
-                $sheetsPerCopy = $isDuplex ? ceil($pagesPerCopy / 2) : $pagesPerCopy;
-                $nbFeuillesTotal = $sheetsPerCopy * $copies;
-
-                $tirageGlobalId = DatabaseMigrationManager::generateTirageGlobalId($date, $contact, $marque);
-
-                $insertPhoto = $con_pdo->prepare("
-                    INSERT INTO photocop 
-                    (type, marque, contact, nb_f, rv, prix, paye, cb, mot, date, tirage_global_id, document_name, thumbnail_url, nb_exemplaires, taille)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ");
-                $insertPhoto->execute([
-                    'photocopieur',
-                    $marque,
-                    $contact,
-                    strval($nbFeuillesTotal),
-                    $duplexStr,
-                    strval($jobPrice),
-                    $paye,
-                    strval($itemCb),
-                    $jobMot,
-                    strval($date),
-                    $tirageGlobalId,
-                    $docName,
-                    $thumbUrl,
-                    $copies,
-                    $taille
-                ]);
+                $processedCount++;
             }
+        }
 
-            // Clôturer le job dans recorded_print_jobs (INSERT OR REPLACE pour écraser les anciens IDs recyclés)
-            $mark = $con_pdo->prepare("INSERT OR REPLACE INTO recorded_print_jobs (job_id, printer_name, print_job_id, recorded_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)");
-            $mark->execute([strval($job['job_id']), $printerName, $job['id']]);
+        // 2. Traiter les tirages manuels supplémentaires ajoutés au panier
+        foreach ($manualItems as $mItem) {
+            $mPrice = floatval($mItem['prix'] ?? 0);
+            $totalPrice += $mPrice;
+            $mType = $mItem['type'] ?? 'photocop';
+            $mMarque = $mItem['marque'] ?? 'Manuel';
+            $mNbF = intval($mItem['nb_f'] ?? 1);
+            $mRv = ($mItem['rv'] ?? 'non') === 'oui' ? 'oui' : 'non';
+            $mTaille = strtoupper($mItem['taille'] ?? 'A4');
+            $mColor = ($mItem['couleur'] ?? 'non') === 'oui' ? 'couleur' : 'noir';
 
-            // Supprimer définitivement le job du tapis (print_jobs)
-            $con_pdo->prepare("DELETE FROM print_jobs WHERE id = ?")->execute([$job['id']]);
-
-            $savedCount++;
-            $totalPrice += $jobPrice;
+            $con_pdo->prepare("
+                INSERT INTO photocop (
+                    type, marque, contact, nb_f, rv, prix, paye, cb, mot, date,
+                    tirage_global_id, document_name, nb_exemplaires, taille
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ")->execute([
+                $mColor,
+                $mMarque,
+                $contact,
+                $mNbF,
+                $mRv,
+                $mPrice,
+                $isPaid,
+                $isCb,
+                $mot . " [Ajout Manuel]",
+                $dateFormatted,
+                $tirageGlobalId,
+                $mItem['label'] ?? 'Tirage manuel',
+                1,
+                $mTaille
+            ]);
+            $processedCount++;
         }
 
         $con_pdo->commit();
 
-        ob_end_clean();
-        echo json_encode([
-            'success' => true,
-            'message' => "Tirage enregistré avec succès pour $contact ($totalPrice €)",
-            'contact' => $contact,
-            'total_price' => round($totalPrice, 2),
-            'paye' => $paye,
-            'cb' => round($cbGlobal, 2),
-            'saved_count' => $savedCount
-        ]);
-        exit;
-    }
-
-    if ($action === 'delete') {
-        // --- 3. SUPPRESSION / REJET DES JOBS SÉLECTIONNÉS ---
-        $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-        $jobIds = isset($input['job_ids']) && is_array($input['job_ids']) ? array_map('intval', $input['job_ids']) : [];
-
-        if (empty($jobIds)) {
-            throw new Exception("Aucun job sélectionné pour la suppression.");
+        $totalPrice = round($totalPrice, 2);
+        $change = 0.0;
+        if ($amountReceived > 0 && $amountReceived >= $totalPrice) {
+            $change = round($amountReceived - $totalPrice, 2);
         }
 
-        $idsString = implode(',', $jobIds);
+        echo json_encode([
+            'success' => true,
+            'message' => 'Encaissement validé avec succès.',
+            'total_price' => $totalPrice,
+            'amount_received' => $amountReceived,
+            'change' => $change,
+            'items_count' => $processedCount,
+            'tirage_global_id' => $tirageGlobalId,
+            'contact' => $contact,
+            'payment_method' => $paymentMethod
+        ]);
 
-        // Récupérer les fichiers miniatures / documents pour nettoyage sécurisé
-        $jobsWithFiles = $db->select("SELECT document, thumbnail_url FROM print_jobs WHERE id IN ($idsString)");
+    } catch (Throwable $e) {
+        $con_pdo->rollBack();
+        throw $e;
+    }
+}
 
-        foreach ($jobsWithFiles as $job) {
-            if (!empty($job['document'])) {
-                secure_delete($job['document']);
+/**
+ * Assigne les jobs sélectionnés à une session (existante ou nouvelle)
+ */
+function handleAssignToSession($db, $con_pdo, $input) {
+    $jobIds = $input['job_ids'] ?? [];
+    $sessionId = isset($input['session_id']) && $input['session_id'] !== '' ? intval($input['session_id']) : null;
+    $contact = trim($input['contact'] ?? '');
+
+    if (empty($jobIds)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => "Aucun document sélectionné."]);
+        return;
+    }
+
+    $con_pdo->beginTransaction();
+
+    try {
+        // Création de session à la volée si demandé
+        if (!$sessionId && !empty($contact)) {
+            $sessionName = trim($input['session_name'] ?? '');
+            $stmt = $con_pdo->prepare("
+                INSERT INTO print_sessions (contact, session_name, status, opened_at)
+                VALUES (?, ?, 'active', CURRENT_TIMESTAMP)
+            ");
+            $stmt->execute([$contact, $sessionName]);
+            $sessionId = intval($con_pdo->lastInsertId());
+        } elseif ($sessionId) {
+            $session = $db->selectOne("SELECT contact FROM print_sessions WHERE id = ?", [$sessionId]);
+            if ($session && empty($contact)) {
+                $contact = $session['contact'];
             }
-            if (!empty($job['thumbnail_url'])) {
-                $baseDir = dirname(__DIR__) . '/public/';
-                $relPath = ltrim(parse_url($job['thumbnail_url'], PHP_URL_PATH), '/');
-                $fullThumb = str_replace('/', DIRECTORY_SEPARATOR, $baseDir . $relPath);
-                if (file_exists($fullThumb)) {
-                    secure_delete($fullThumb);
+        }
+
+        if (!$sessionId) {
+            throw new Exception("Session introuvable ou contact non spécifié.");
+        }
+
+        $placeholders = implode(',', array_fill(0, count($jobIds), '?'));
+        $updateSql = "
+            UPDATE print_jobs 
+            SET session_id = ?, contact = ?, staged = 1 
+            WHERE id IN ($placeholders)
+        ";
+        $params = array_merge([$sessionId, $contact], $jobIds);
+        $con_pdo->prepare($updateSql)->execute($params);
+
+        $con_pdo->commit();
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Impressions assignées à la session.',
+            'session_id' => $sessionId,
+            'contact' => $contact,
+            'assigned_count' => count($jobIds)
+        ]);
+
+    } catch (Throwable $e) {
+        $con_pdo->rollBack();
+        throw $e;
+    }
+}
+
+/**
+ * Supprime les jobs sélectionnés du tapis
+ */
+function handleDeleteJobs($db, $con_pdo, $input) {
+    $jobIds = $input['job_ids'] ?? [];
+    if (empty($jobIds)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => "Aucun identifiant fourni."]);
+        return;
+    }
+
+    $placeholders = implode(',', array_fill(0, count($jobIds), '?'));
+    $con_pdo->prepare("DELETE FROM print_jobs WHERE id IN ($placeholders)")->execute($jobIds);
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Impressions supprimées du tapis.',
+        'deleted_count' => count($jobIds)
+    ]);
+}
+
+/**
+ * Calcule une estimation précise du prix pour un job
+ */
+function computeJobEstimatedPrice($con_pdo, $job): float {
+    try {
+        $printerName = $job['printer_name'] ?? '';
+        $db = create_database_manager();
+        $mapping = $db->selectOne("SELECT * FROM printer_mappings WHERE system_printer_name = ?", [$printerName]);
+
+        $totalPages = intval($job['total_pages'] ?? 1);
+        $copies = intval($job['copies'] ?? 1);
+        $globalTotalPages = max(1, $totalPages * $copies);
+        $isColor = (stripos($job['color_mode'] ?? '', 'color') !== false);
+        $duplex = ($job['duplex'] == 1 || $job['duplex'] === true || $job['duplex'] === '1');
+        $paperSize = strtoupper($job['paper_size'] ?? 'A4');
+        $isA3 = (strpos($paperSize, 'A3') !== false || stripos($job['document'] ?? '', 'A3') !== false);
+        $taille = $isA3 ? 'A3' : 'A4';
+
+        if (!$mapping) {
+            // Pas de mapping spécifique : tarif de repli standard (ex: 0.10€ par page N&B, 0.25€ couleur)
+            $unitPrice = $isColor ? 0.25 : 0.10;
+            if ($taille === 'A3') $unitPrice *= 2;
+            return round($globalTotalPages * $unitPrice, 2);
+        }
+
+        $machineType = $mapping['machine_type'] ?? 'photocop';
+        $machineId = intval($mapping['machine_id'] ?? 1);
+
+        if ($machineType === 'photocop') {
+            $machine = $con_pdo->query("SELECT marque, type_encre FROM photocopieurs WHERE id = $machineId")->fetch(PDO::FETCH_ASSOC);
+            if (!$machine) return 0.20;
+
+            $marque = $machine['marque'];
+            $machine_type_detected = $machine['type_encre'] ?? 'toner';
+
+            $machine_prices = getMachinePrices($con_pdo, $marque);
+            $prix_data = get_price();
+            $prix_papier_a4 = $prix_data['papier']['A4'] ?? 0.01;
+            $prix_papier_a3 = $prix_data['papier']['A3'] ?? 0.02;
+
+            $rawFill = floatval($job['fill_rate'] ?? 0.5);
+            if ($rawFill > 1.0) $rawFill = $rawFill / 100.0;
+            $fillRate = max(0.05, min(1.0, $rawFill));
+            $fillRateMultiplier = $isColor ? ($fillRate / 0.5) : 1.0;
+
+            $costPerFace = 0;
+            $photocopKey = 'photocop_' . $machineId;
+            $prices = isset($prix_data[$photocopKey]) ? $prix_data[$photocopKey] : $machine_prices;
+
+            if ($machine_type_detected === 'toner') {
+                if ($isColor) {
+                    $costPerFace += (($prices['cyan']['unite'] ?? 0) * $fillRateMultiplier);
+                    $costPerFace += (($prices['magenta']['unite'] ?? 0) * $fillRateMultiplier);
+                    $costPerFace += (($prices['jaune']['unite'] ?? 0) * $fillRateMultiplier);
+                    $costPerFace += ($prices['noir']['unite'] ?? 0);
+                    $costPerFace += ($prices['tambour']['unite'] ?? 0);
+                    $costPerFace += ($prices['dev']['unite'] ?? 0);
+                } else {
+                    $costPerFace += ($prices['noir']['unite'] ?? 0);
+                    $costPerFace += ($prices['tambour']['unite'] ?? 0);
+                    $costPerFace += ($prices['dev']['unite'] ?? 0);
+                }
+            } else {
+                if ($isColor) {
+                    $costPerFace += (($prices['bleue']['unite'] ?? 0) * $fillRateMultiplier);
+                    $costPerFace += (($prices['couleur']['unite'] ?? 0) * $fillRateMultiplier);
+                    $costPerFace += (($prices['jaune']['unite'] ?? 0) * $fillRateMultiplier);
+                    $costPerFace += (($prices['rouge']['unite'] ?? 0) * $fillRateMultiplier);
+                    $costPerFace += ($prices['noire']['unite'] ?? 0);
+                } else {
+                    $costPerFace += ($prices['noire']['unite'] ?? 0);
                 }
             }
+
+            if ($taille === 'A4') {
+                $costPerFace = $costPerFace / 2;
+                $prixPapier = $prix_papier_a4;
+            } else {
+                $prixPapier = $prix_papier_a3;
+            }
+
+            $sheetsPerCopy = $duplex ? ceil($totalPages / 2) : $totalPages;
+            $nbFeuillesTotal = $sheetsPerCopy * $copies;
+            $coutPapier = $nbFeuillesTotal * $prixPapier;
+            $coutEncre = $globalTotalPages * $costPerFace;
+
+            return round($coutPapier + $coutEncre, 2);
         }
 
-        $db->execute("DELETE FROM print_jobs WHERE id IN ($idsString)");
-
-        ob_end_clean();
-        echo json_encode([
-            'success' => true,
-            'message' => count($jobIds) . ' document(s) supprimé(s) du tapis de tri.'
-        ]);
-        exit;
+        return 0.20;
+    } catch (Throwable $e) {
+        error_log("[computeJobEstimatedPrice] " . $e->getMessage());
+        return 0.15;
     }
-
-    throw new Exception("Action non reconnue : " . htmlspecialchars($action));
-
-} catch (Throwable $e) {
-    if (isset($con_pdo) && $con_pdo->inTransaction()) {
-        $con_pdo->rollBack();
-    }
-    ob_end_clean();
-    http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage()
-    ]);
-    exit;
 }

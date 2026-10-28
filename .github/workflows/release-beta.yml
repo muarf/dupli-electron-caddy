@@ -240,6 +240,9 @@ jobs:
       - name: Download Tauri Sidecars
         run: node scripts/download-tauri-sidecars.js
 
+      - name: Clean conflicting Linux binaries
+        run: rm -rf bin/win-x64/gs bin/linux-x64
+
       - name: Install Tauri system dependencies
         run: |
           sudo apt-get update
