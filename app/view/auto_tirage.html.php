@@ -1,391 +1,516 @@
+<?php
+/**
+ * Vue Tapis de Tri des Impressions (Remplacement auto_tirage)
+ * Interface atelier réactive, simple et rapide :
+ * - Cartes visuelles avec miniatures, format, prix calculé
+ * - Sélection multi-documents au clic
+ * - Barre flottante d'action inférieure (Sticky Bottom Bar)
+ * - Modal d'enregistrement direct (Contact libre, Payé/Non payé en espèces)
+ * - Possibilité d'intégrer un tirage manuel
+ */
+?>
+
 <style>
-    .main-container {
-        background: white;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        margin: 1rem auto;
-        overflow: hidden;
-    }
+/* --- Styles Modernes du Tapis de Tri --- */
+.tapis-container {
+    max-width: 1400px;
+    margin: 1.5rem auto 100px auto;
+    padding: 0 15px;
+}
 
-    .header-section {
-        background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
-        color: #424242;
-        padding: 1.5rem;
-        text-align: center;
-        border-bottom: 1px solid #e0e0e0;
-    }
+/* En-tête */
+.tapis-header {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    margin-bottom: 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
 
-    .header-section h1 {
-        margin: 0;
-        font-weight: 400;
-        font-size: 2.2rem;
-        color: #616161;
-    }
+.tapis-header-titles h1 {
+    font-size: 1.8rem;
+    margin: 0 0 5px 0;
+    font-weight: 600;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
-    .form-section {
-        padding: 1.5rem;
-    }
+.tapis-header-titles p {
+    margin: 0;
+    color: #7f8c8d;
+    font-size: 0.95rem;
+}
 
-    .btn-modern {
-        border-radius: 10px;
-        padding: 0.75rem 1.5rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
+.tapis-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
-    .btn-primary-modern {
-        background: linear-gradient(135deg, #81c784, #a5d6a7);
-        border: none;
-        color: white;
-    }
+/* Grille des impressions */
+.tapis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
 
-    .btn-success-modern {
-        background: linear-gradient(135deg, #a5d6a7, #c8e6c9);
-        border: none;
-        color: #2e7d32;
-    }
+/* Carte de tirage */
+.tapis-card {
+    background: #ffffff;
+    border: 2px solid #eef2f5;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.165, 0.84, 0.44, 1);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
 
-    /* Styles pour les onglets de session */
-    .session-tabs-container {
-        display: flex;
-        align-items: center;
-        margin-bottom: 1.5rem;
-        border-bottom: 2px solid #eee;
-        padding: 0 10px;
-        background: #f8f9fa;
-        border-top-left-radius: 8px;
-        border-top-right-radius: 8px;
-        flex-wrap: wrap;
-    }
+.tapis-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.09);
+    border-color: #cbd5e1;
+}
 
-    .session-tab {
-        padding: 10px 15px;
-        margin-right: 5px;
-        cursor: pointer;
-        border-top-left-radius: 8px;
-        border-top-right-radius: 8px;
-        background: #e9ecef;
-        color: #495057;
-        font-weight: 500;
-        transition: all 0.2s;
-        border: 1px solid transparent;
-        border-bottom: none;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: -2px;
-    }
+.tapis-card.selected {
+    border-color: #27ae60;
+    background: #f6fbf8;
+    box-shadow: 0 4px 15px rgba(39, 174, 96, 0.25);
+}
 
-    .session-tab:hover {
-        background: #dee2e6;
-    }
+.card-selection-check {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 5;
+    background: rgba(255,255,255,0.9);
+    border-radius: 6px;
+    padding: 3px 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
 
-    .session-tab.active {
-        background: white;
-        color: #007bff;
-        border-color: #eee;
-        border-bottom: 2px solid white;
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
-    }
+.card-selection-check input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    margin: 0;
+    accent-color: #27ae60;
+}
 
-    .session-tab .close-tab {
-        font-size: 14px;
-        opacity: 0.5;
-        transition: opacity 0.2s;
-        padding: 2px 5px;
-        border-radius: 4px;
-    }
+/* Miniature */
+.card-thumb-container {
+    height: 210px;
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border-bottom: 1px solid #edf2f7;
+    position: relative;
+}
 
-    .session-tab .close-tab:hover {
-        opacity: 1;
-        background: rgba(255, 0, 0, 0.1);
-        color: #dc3545;
-    }
+.card-thumb {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+    transition: transform 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
 
-    .add-session-tab {
-        padding: 10px 15px;
-        cursor: pointer;
-        color: #28a745;
-        font-size: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: transparent;
-        border: none;
-        margin-bottom: -2px;
-    }
+.tapis-card:hover .card-thumb {
+    transform: scale(1.04);
+}
 
-    .add-session-tab:hover {
-        color: #218838;
-        transform: scale(1.1);
-    }
+/* Corps de la carte */
+.card-body-content {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    justify-content: space-between;
+}
 
-    /* Fancy Creation Card */
-    .fancy-creation-card {
-        background: white;
-        border-radius: 15px;
-        padding: 3rem;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-        border: 1px solid #f0f0f0;
-        max-width: 500px;
-        margin: 2rem auto;
-        text-align: center;
-    }
+.card-title-row {
+    margin-bottom: 10px;
+}
 
-    .fancy-creation-card .icon-header {
-        width: 80px;
-        height: 80px;
-        background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1.5rem;
-        font-size: 30px;
-        color: #007bff;
-    }
+.card-doc-name {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 1rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+    line-height: 1.3;
+}
 
-    .fancy-creation-card h4 {
-        margin-bottom: 1.5rem;
-        font-weight: 600;
-        color: #333;
-    }
+.card-badges-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+}
 
-    .fancy-input {
-        border: 2px solid #eee;
-        border-radius: 10px;
-        padding: 12px 15px;
-        font-size: 16px;
-        transition: border-color 0.3s;
-        margin-bottom: 1rem;
-    }
+.tapis-badge {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 500;
+    background: #edf2f7;
+    color: #4a5568;
+}
 
-    .fancy-input:focus {
-        border-color: #80bdff;
-        box-shadow: none;
-    }
+.badge-printer { background: #e2e8f0; color: #334155; }
+.badge-color { background: #fee2e2; color: #dc2626; font-weight: 600; }
+.badge-mono { background: #f1f5f9; color: #475569; }
+.badge-duplex { background: #e0f2fe; color: #0284c7; }
+.badge-simplex { background: #f8fafc; color: #64748b; }
+.badge-copies { background: #fef3c7; color: #d97706; font-weight: 600; }
+.badge-pages { background: #f3e8ff; color: #7e22ce; }
 
-    /* Styles pour les lignes de session modifiables */
-    .editable-job-row {
-        cursor: pointer;
-        transition: all 0.2s ease;
-        position: relative;
-    }
+.card-footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 10px;
+}
 
-    .editable-job-row:hover {
-        background-color: #f0f8ff !important;
-        box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
-        transform: translateY(-1px);
-    }
+.card-time {
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
 
+.card-price {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #27ae60;
+}
+
+/* État vide */
+.tapis-empty-state {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 60px 20px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+}
+
+.tapis-empty-state i {
+    font-size: 3.5rem;
+    color: #cbd5e1;
+    margin-bottom: 15px;
+}
+
+.tapis-empty-state h3 {
+    color: #475569;
+    margin-bottom: 8px;
+}
+
+.tapis-empty-state p {
+    color: #94a3b8;
+}
+
+/* --- Barre Flottante Inférieure (Sticky Bottom Bar) --- */
+.bottom-action-bar {
+    position: fixed;
+    bottom: -90px;
+    left: 0;
+    right: 0;
+    background: #1e293b;
+    color: #ffffff;
+    padding: 15px 30px;
+    box-shadow: 0 -4px 25px rgba(0,0,0,0.25);
+    z-index: 1040;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: bottom 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.bottom-action-bar.visible {
+    bottom: 0;
+}
+
+.bar-summary-zone {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.bar-count-badge {
+    background: #3b82f6;
+    color: #ffffff;
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.bar-total-amount {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #4ade80;
+}
+
+.bar-buttons-zone {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn-tapis-save {
+    background: #10b981;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: none;
+    transition: background 0.2s;
+}
+
+.btn-tapis-save:hover {
+    background: #059669;
+    color: white;
+}
+
+.btn-tapis-manual {
+    background: #475569;
+    color: white;
+    font-size: 0.95rem;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+}
+
+.btn-tapis-manual:hover {
+    background: #64748b;
+    color: white;
+}
+
+.btn-tapis-delete {
+    background: transparent;
+    color: #ef4444;
+    border: 1px solid #ef4444;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+}
+
+.btn-tapis-delete:hover {
+    background: #ef4444;
+    color: white;
+}
+
+/* Modals */
+.tapis-modal-content {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.tapis-modal-header {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 18px 24px;
+}
+
+.tapis-modal-header h4 {
+    margin: 0;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.tapis-modal-body {
+    padding: 24px;
+}
+
+.btn-status-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.btn-status-group .btn {
+    flex: 1;
+    padding: 12px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    border-radius: 8px;
+}
+
+/* Toasts de feedback */
+.tapis-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #1e293b;
+    color: #ffffff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    z-index: 2000;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+}
+
+.tapis-toast.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.tapis-toast.toast-success { background: #059669; }
+.tapis-toast.toast-info { background: #0284c7; }
 </style>
 
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-12 col-xl-10">
-            <div class="main-container">
-                <div class="header-section">
-                    <h1><i class="fa fa-magic"></i> <?php _e('auto_tirage.title'); ?></h1>
-                    <p><?php _e('auto_tirage.subtitle'); ?></p>
+<div class="tapis-container">
+    <!-- En-tête du Tapis de Tri -->
+    <div class="tapis-header">
+        <div class="tapis-header-titles">
+            <h1><i class="fa fa-th-large text-primary"></i> Tapis de Tri des Impressions</h1>
+            <p>Sélectionnez les impressions au fur et à mesure pour enregistrer le tirage en direct.</p>
+        </div>
+
+        <div class="tapis-header-actions">
+            <button class="btn btn-default" onclick="window.tapisRefresh()" title="Actualiser et synchroniser avec les imprimantes">
+                <i id="btn-tapis-refresh" class="fa fa-refresh"></i> Actualiser
+            </button>
+            <button class="btn btn-default" onclick="window.tapisToggleSelectAll()" title="Tout cocher / décocher">
+                <i class="fa fa-check-square-o"></i> Tout sélectionner
+            </button>
+            <a href="?tirage_multimachines" class="btn btn-default" title="Accéder à la saisie manuelle de tirages">
+                <i class="fa fa-pencil"></i> Tirage manuel
+            </a>
+            <a href="?admin&tirages" class="btn btn-default" title="Gestion des tirages et encaissements passés">
+                <i class="fa fa-list"></i> Historique / Règlements
+            </a>
+        </div>
+    </div>
+
+    <!-- État vide (quand aucune impression en attente) -->
+    <div id="empty-state" class="tapis-empty-state" style="display: none;">
+        <i class="fa fa-inbox"></i>
+        <h3>Le tapis de tri est vide</h3>
+        <p>Les impressions envoyées par les utilisateurs apparaîtront ici automatiquement dès leur arrivée.</p>
+    </div>
+
+    <!-- Grille réactive des tirages -->
+    <div id="tapis-grid" class="tapis-grid">
+        <!-- Rendu dynamique par tapis-tri.js -->
+    </div>
+</div>
+
+<!-- --- Barre Flottante d'Action Inférieure (Sticky Bottom Bar) --- -->
+<div id="bottom-action-bar" class="bottom-action-bar">
+    <div class="bar-summary-zone">
+        <span class="bar-count-badge"><span id="bar-selected-count">0</span> sélectionné(s)</span>
+        <span>Total calculé : <strong id="bar-total-amount" class="bar-total-amount">0.00 €</strong></span>
+    </div>
+
+    <div class="bar-buttons-zone">
+        <button class="btn-tapis-delete" id="btn-delete-selected" onclick="window.tapisDeleteSelected()" title="Rejeter les impressions cochées (feuille ratée, brouillon)">
+            <i class="fa fa-trash"></i> Supprimer
+        </button>
+        <button class="btn-tapis-save" id="btn-open-save" onclick="window.tapisOpenSaveModal()">
+            <i class="fa fa-check-circle"></i> Enregistrer le tirage
+        </button>
+    </div>
+</div>
+
+<!-- --- MODAL D'ENREGISTREMENT DIRECT --- -->
+<div class="modal fade" id="saveModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content tapis-modal-content">
+            <div class="tapis-modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Fermer"><span aria-hidden="true">&times;</span></button>
+                <h4><i class="fa fa-bookmark text-success"></i> Enregistrement du tirage</h4>
+            </div>
+            <div class="tapis-modal-body">
+                <div class="form-group">
+                    <label for="modal-contact-input" style="font-weight: 600; font-size: 1rem;">
+                        <i class="fa fa-user"></i> Nom du contact *
+                    </label>
+                    <input type="text" id="modal-contact-input" class="form-control input-lg" placeholder="Ex: Jean, Collectif X, Atelier..." autocomplete="off" required>
+                    <small class="text-muted">Inscrivez le nom directement à la volée.</small>
                 </div>
 
-                <div class="form-section">
-                    <!-- Interface par onglets de Session -->
-                    <div id="session-tabs-container" class="session-tabs-container">
-                        <!-- Les onglets seront injectés ici par JS -->
-                        <button class="add-session-tab" onclick="createNewSessionClick()" title="<?php echo __('auto_tirage.new_session'); ?>">
-                            <i class="fa fa-plus-circle"></i>
+                <div class="form-group" style="margin-top: 20px;">
+                    <label style="font-weight: 600; font-size: 1rem;">
+                        <i class="fa fa-money"></i> Statut du règlement (Espèces)
+                    </label>
+                    <div class="btn-status-group">
+                        <button type="button" id="btn-paye-oui" class="btn btn-success active" onclick="window.setPaymentStatus('oui')">
+                            <i class="fa fa-check"></i> Payé (Espèces)
+                        </button>
+                        <button type="button" id="btn-paye-non" class="btn btn-default" onclick="window.setPaymentStatus('non')">
+                            <i class="fa fa-clock-o"></i> Non payé (En attente)
                         </button>
                     </div>
-
-                    <!-- Étape 1: Identification (Formulaire Fancy) -->
-                    <div id="step-identity" style="display:none;">
-                        <div class="fancy-creation-card">
-                            <div class="icon-header">
-                                <i class="fa fa-user-plus"></i>
-                            </div>
-                            <h4><?php _e('auto_tirage.start_new_session'); ?></h4>
-                            <div class="form-group">
-                                <input type="text" id="pseudo-input" class="form-control fancy-input"
-                                    placeholder="<?php echo __('auto_tirage.who_are_you'); ?>" onkeypress="if(event.key === 'Enter') startSession()">
-                                <input type="text" id="session-name-input" class="form-control fancy-input"
-                                    placeholder="<?php echo __('auto_tirage.session_name_optional'); ?>"
-                                    onkeypress="if(event.key === 'Enter') startSession()">
-                            </div>
-                            <button class="btn btn-primary-modern btn-block btn-lg" onclick="startSession()">
-                                <?php _e('auto_tirage.lets_go'); ?>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Étape 2: Écoute active -->
-                    <div id="step-listening" style="display:none;">
-                        <!-- BUFFER ZONE: Impressions en attente -->
-                        <div id="buffer-zone" class="card mb-4"
-                            style="display:none; border: 2px dashed #3498db; background: #f8fbff; margin-bottom: 30px; padding: 15px;">
-                            <div class="card-header bg-primary text-white">
-                                <h4 class="mb-0"><i class="fa fa-inbox"></i> <?php _e('auto_tirage.pending_jobs'); ?></h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <p class="text-muted mb-0"><?php _e('auto_tirage.buffer_description'); ?></p>
-                                    <div id="buffer-bulk-actions" style="display: none;">
-                                        <button class="btn btn-primary btn-sm mr-2" onclick="bulkMoveBufferToSession()">
-                                            <i class="fa fa-plus"></i> <?php _e('auto_tirage.add_selected'); ?>
-                                        </button>
-                                        <button class="btn btn-outline-danger btn-sm" onclick="bulkDeleteBufferJob()">
-                                            <i class="fa fa-trash"></i> <?php _e('auto_tirage.delete_selected'); ?>
-                                        </button>
-                                    </div>
-                                </div>
-                                <table class="table table-striped table-hover" id="buffer-table">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 40px;"><input type="checkbox" id="select-all-buffer"
-                                                    onclick="toggleAllBuffer(this)"></th>
-                                            <th><?php _e('auto_tirage.preview'); ?></th>
-                                            <th><?php _e('auto_tirage.date'); ?></th>
-                                            <th><?php _e('auto_tirage.machine'); ?></th>
-                                            <th><?php _e('auto_tirage.document'); ?></th>
-                                            <th><?php _e('auto_tirage.details'); ?></th>
-                                            <th><?php _e('auto_tirage.ink_coverage'); ?></th>
-                                            <th><?php _e('auto_tirage.action'); ?></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- Jobs will be injected here -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- Session Actuelle -->
-                        <div id="session-zone">
-                            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                                <small class="text-muted"><i class="fa fa-clock-o"></i> <span
-                                        id="session-status-text"><?php _e('auto_tirage.waiting_jobs'); ?></span></small>
-                                <button class="btn btn-link btn-sm text-muted" type="button" onclick="toggleLogs()">
-                                    <i class="fa fa-list"></i> <?php _e('auto_tirage.view_activity'); ?>
-                                </button>
-                            </div>
-
-                            <!-- Zone de logs / Status -->
-                            <div id="activity-log" class="mb-4" style="display: none;">
-                                <!-- Les cartes de détection apparaîtront ici -->
-                            </div>
-
-                            <!-- Liste des jobs en attente de validation -->
-                            <div id="pending-list-container" style="display:none;">
-                                <h5 class="border-bottom pb-2 mb-3"><i class="fa fa-list"></i> <?php _e('auto_tirage.active_jobs'); ?></h5>
-                                <div class="table-responsive">
-                                    <table class="table table-striped table-hover">
-                                        <thead>
-                                            <tr>
-                                                <th><?php _e('auto_tirage.machine'); ?></th>
-                                                <th><?php _e('auto_tirage.document'); ?></th>
-                                                <th><?php _e('auto_tirage.details'); ?></th>
-                                                <th><?php _e('tirage_multimachines.paper'); ?></th>
-                                                <th><?php _e('tirage_multimachines.ink_toner'); ?></th>
-                                                <th><?php _e('auto_tirage.total_price'); ?></th>
-                                                <th><?php _e('auto_tirage.paper_paid'); ?></th>
-                                                <th><?php _e('auto_tirage.action'); ?></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="pending-jobs-body">
-                                            <!-- Rows generated by JS -->
-                                        </tbody>
-                                        <tfoot>
-                                            <tr class="table-info">
-                                                <td colspan="5" class="text-right"><strong><?php _e('auto_tirage.session_total'); ?></strong></td>
-                                                <td colspan="3"><strong><span id="session-total">0.00</span> €</strong>
-                                                </td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-
-                                <div class="text-right mt-4">
-                                    <button class="btn btn-success-modern btn-lg" onclick="finishSession()">
-                                        <i class="fa fa-check"></i> <?php _e('auto_tirage.finish_validate'); ?> <span id="finish-badge"
-                                            class="badge badge-light">0</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
+
+                <div class="form-group" id="group-cb-montant" style="margin-top: 15px;">
+                    <label for="modal-cb-input" style="font-weight: 600; font-size: 0.95rem;">
+                        <i class="fa fa-eur"></i> Montant payé / Combien encaissé (€)
+                    </label>
+                    <div class="input-group">
+                        <input type="number" step="0.01" min="0" id="modal-cb-input" class="form-control input-lg" placeholder="0.00">
+                        <span class="input-group-addon">€</span>
+                    </div>
+                    <small class="text-muted">Prérempli avec le total calculé. Modifiez si la personne donne une autre somme.</small>
+                </div>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label for="modal-mot-input" style="font-weight: 500; color: #64748b;">
+                        <i class="fa fa-comment-o"></i> Commentaire / Note (optionnel)
+                    </label>
+                    <input type="text" id="modal-mot-input" class="form-control" placeholder="Remarque, projet...">
+                </div>
+
+                <div style="background: #f8fafc; border-radius: 8px; padding: 15px; margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 1.1rem; color: #475569;">Total à enregistrer :</span>
+                    <strong id="modal-final-total" style="font-size: 1.6rem; color: #059669;">0.00 €</strong>
+                </div>
+            </div>
+            <div class="modal-footer" style="background: #f8fafc; border-top: 1px solid #e2e8f0;">
+                <button type="button" class="btn btn-default btn-lg" data-dismiss="modal">Annuler</button>
+                <button type="button" id="btn-confirm-save" class="btn btn-success btn-lg" onclick="window.tapisConfirmSave()">
+                    <i class="fa fa-check"></i> Valider et enregistrer
+                </button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Modale pour l'aperçu de la vignette -->
-    <div class="modal fade" id="thumbnail-modal" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="thumbnail-modal-title"><?php _e('auto_tirage.document_preview'); ?></h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body text-center">
-                    <img id="modal-thumbnail-img" src=""
-                        style="max-width: 100%; max-height: 80vh; object-fit: contain;">
-                </div>
+<!-- --- MODAL APERÇU MINIATURE --- -->
+<div class="modal fade" id="previewModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content tapis-modal-content">
+            <div class="tapis-modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Fermer"><span aria-hidden="true">&times;</span></button>
+                <h4 id="preview-modal-title">Aperçu du document</h4>
+            </div>
+            <div class="modal-body text-center" style="background: #334155; padding: 20px;">
+                <img id="preview-modal-img" src="" alt="Aperçu" style="max-width: 100%; max-height: 80vh; object-fit: contain; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
             </div>
         </div>
     </div>
+</div>
 
-
-    <!-- Inclure la modale de sélection de session -->
-    <?php include __DIR__ . '/components/session-modal.html.php'; ?>
-    <!-- Inclure la modale d'édition de job -->
-    <?php include __DIR__ . '/components/edit-job-modal.html.php'; ?>
-
-    <script src="<?= $base_path ?>js/auto-tirage.js" defer></script>
-    <script>
-        const CONFIG = <?= json_encode([
-            'strings' => [
-                'auto_tirage.system_ready' => __js('auto_tirage.system_ready'),
-                'auto_tirage.job_detected' => __js('auto_tirage.job_detected'),
-                'auto_tirage.stabilizing' => __js('auto_tirage.stabilizing'),
-                'auto_tirage.page_update' => __js('auto_tirage.page_update'),
-                'auto_tirage.stabilization' => __js('auto_tirage.stabilization'),
-                'auto_tirage.add_selected' => __js('auto_tirage.add_selected'),
-                'auto_tirage.job_assigned' => __js('auto_tirage.job_assigned'),
-                'auto_tirage.job_waiting' => __js('auto_tirage.job_waiting'),
-                'auto_tirage.analyzing_job' => __js('auto_tirage.analyzing_job'),
-                'auto_tirage.already_recorded' => __js('auto_tirage.already_recorded'),
-                'auto_tirage.internal_error' => __js('auto_tirage.internal_error'),
-                'auto_tirage.updating_job' => __js('auto_tirage.updating_job'),
-                'auto_tirage.delete_spooler' => __js('auto_tirage.delete_spooler'),
-                'auto_tirage.spooler_cleaned' => __js('auto_tirage.spooler_cleaned'),
-                'auto_tirage.communication_error' => __js('auto_tirage.communication_error'),
-                'auto_tirage.job_deleted' => __js('auto_tirage.job_deleted'),
-                'auto_tirage.delete_error' => __js('auto_tirage.delete_error'),
-                'auto_tirage.adding_jobs' => __js('auto_tirage.adding_jobs'),
-                'auto_tirage.jobs_deleted' => __js('auto_tirage.jobs_deleted'),
-                'auto_tirage.confirm_delete' => __js('auto_tirage.confirm_delete'),
-                'auto_tirage.confirm_delete_many' => __js('auto_tirage.confirm_delete_many'),
-                'auto_tirage.fill_rate' => __js('auto_tirage.fill_rate'),
-                'auto_tirage.paper_paid' => __js('auto_tirage.paper_paid'),
-                'auto_tirage.preview' => __js('auto_tirage.preview'),
-                'auto_tirage.document_preview' => __js('auto_tirage.document_preview'),
-                'admin_tirage.no_prints_selected' => __js('admin_tirage.no_prints_selected'),
-                'tirage_multimachines.color' => __js('tirage_multimachines.color'),
-                'tirage_multimachines.photocopieur' => __js('tirage_multimachines.photocopieur'),
-                'tirage_multimachines.duplicopieur' => __js('tirage_multimachines.duplicopieur'),
-                'tirage_multimachines.tambour_used' => __js('tirage_multimachines.tambour_used'),
-                'library.file' => __js('library.file'),
-                'common.refresh' => __js('common.refresh'),
-                'common.duplex' => __js('common.duplex'),
-                'common.simplex' => __js('common.simplex'),
-                'common.delete' => __js('common.delete'),
-                'common.edit' => __js('common.edit'),
-                'common.before' => __js('common.before'),
-                'common.after' => __js('common.after'),
-                'common.total' => __js('common.total'),
-                'admin_machines.counter' => __js('admin_machines.counter'),
-            ],
-        ]) ?>;
-    </script>
+<!-- Inclusion du contrôleur Tapis de Tri -->
+<script src="js/tapis-tri.js" defer></script>

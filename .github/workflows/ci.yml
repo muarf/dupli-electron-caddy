@@ -42,7 +42,8 @@ jobs:
             libsoup-3.0-dev \
             libfuse2 \
             ghostscript \
-            libgs-dev
+            libgs-dev \
+            libpaper1
 
       - name: cargo check
         run: cargo check

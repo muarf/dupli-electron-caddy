@@ -285,7 +285,7 @@ class PrintSessionManager {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     jobId: jobData.JobId || jobData.jobId,
-                    document: jobData.Document || jobData.documentName,
+                    document: jobData.Document || jobData.documentName || jobData.document || 'Sans nom',
                     printerName: jobData.PrinterName || jobData.printerName,
                     status: jobData.Status || jobData.status,
                     totalPages: jobData.TotalPages || jobData.totalPages,
@@ -643,7 +643,15 @@ class PrintSessionManager {
 }
 
 // Initialiser le manager global au chargement de la page
-document.addEventListener('DOMContentLoaded', () => {
-    window.printSessionManager = new PrintSessionManager();
-    console.log('[PrintSessionManager] Manager global initialisé');
-});
+function initPrintSessionManager() {
+    if (!window.printSessionManager) {
+        window.printSessionManager = new PrintSessionManager();
+        console.log('[PrintSessionManager] Manager global initialisé');
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPrintSessionManager);
+} else {
+    initPrintSessionManager();
+}

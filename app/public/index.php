@@ -651,6 +651,19 @@ if ($page === 'manage_mappings' || isset($_GET['manage_mappings'])) {
     }
 }
 
+if ($page === 'tapis_tri' || isset($_GET['tapis_tri'])) {
+    $api_file = __DIR__ . '/../api/tapis_tri.php';
+    if (file_exists($api_file)) {
+        require_once $api_file;
+        exit;
+    } else {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'API file not found']);
+        exit;
+    }
+}
+
 if ($page === 'save_auto_print' || isset($_GET['save_auto_print'])) {
     $api_file = __DIR__ . '/../api/save_auto_print.php';
     if (file_exists($api_file)) {
@@ -850,6 +863,19 @@ if ($page === 'check_print_jobs' || $page === 'get_linux_thumb') {
         http_response_code(500);
         header('Content-Type: application/json');
         echo json_encode(['error' => 'Fichier API non trouvé', 'path' => $api_file]);
+        exit;
+    }
+}
+
+if ($page === 'tapis_tri') {
+    $api_file = __DIR__ . '/../api/tapis_tri.php';
+    if (file_exists($api_file)) {
+        require_once $api_file;
+        exit;
+    } else {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'API non trouvée']);
         exit;
     }
 }
@@ -1234,7 +1260,7 @@ if ($page === 'logout') {
     exit;
 }
 
-$page_secure = array('base', 'accueil', 'devis', 'tirage_multimachines', 'changement', 'admin', 'admin_aide_machines', 'admin_translations', 'installation', 'setup', 'setup_save', 'setup_upload', 'create_password', 'stats', 'aide_machines', 'error', 'lang', 'ajax_edit_tambours', 'ajax_get_tambour_prices', 'download_pdf', 'download_png', 'download_organized', 'organizer_thumb', 'download_merged', 'download_resized', 'download_unimposed', 'download_processed', 'download_backup', 'view_pdf', 'get-machine-template', 'upload_aide_pdf', 'get_pdf_path', 'view_aide_pdf', 'bibliotheque', 'bibliotheque_list', 'get_bibliotheque_file_info', 'update_bibliotheque_metadata', 'upload_bibliotheque', 'search_bibliotheque', 'preview_directory', 'index_file', 'start_indexing', 'get_indexing_status', 'delete_bibliotheque_file', 'get_bibliotheque_thumbnail', 'get_bibliotheque_file', 'get_bibliotheque_tags', 'chat_rag', 'check_print_jobs', 'print_notification', 'auto_tirage', 'sessions', 'get_session_jobs', 'get_session_staging_jobs', 'get_pending_jobs', 'convert_emf_to_png', 'convert_pcl_to_png', 'convert_xps_to_png', 'secure_purge', 'get_linux_thumb', 'admin_bibliotheque_ia', 'save_ai_settings', 'trigger_vectorization', 'trigger_markdown_migration', 'get_markdown_migration_status', 'studio', 'studio_process', 'download_studio', 'preview_studio', 'install_local_ai', 'logout');
+$page_secure = array('base', 'accueil', 'devis', 'tirage_multimachines', 'changement', 'admin', 'admin_aide_machines', 'admin_translations', 'installation', 'setup', 'setup_save', 'setup_upload', 'create_password', 'stats', 'aide_machines', 'error', 'lang', 'ajax_edit_tambours', 'ajax_get_tambour_prices', 'download_pdf', 'download_png', 'download_organized', 'organizer_thumb', 'download_merged', 'download_resized', 'download_unimposed', 'download_processed', 'download_backup', 'view_pdf', 'get-machine-template', 'upload_aide_pdf', 'get_pdf_path', 'view_aide_pdf', 'bibliotheque', 'bibliotheque_list', 'get_bibliotheque_file_info', 'update_bibliotheque_metadata', 'upload_bibliotheque', 'search_bibliotheque', 'preview_directory', 'index_file', 'start_indexing', 'get_indexing_status', 'delete_bibliotheque_file', 'get_bibliotheque_thumbnail', 'get_bibliotheque_file', 'get_bibliotheque_tags', 'chat_rag', 'check_print_jobs', 'print_notification', 'auto_tirage', 'tapis_tri', 'sessions', 'get_session_jobs', 'get_session_staging_jobs', 'get_pending_jobs', 'convert_emf_to_png', 'convert_pcl_to_png', 'convert_xps_to_png', 'secure_purge', 'get_linux_thumb', 'admin_bibliotheque_ia', 'save_ai_settings', 'trigger_vectorization', 'trigger_markdown_migration', 'get_markdown_migration_status', 'studio', 'studio_process', 'download_studio', 'preview_studio', 'install_local_ai', 'logout');
 
 error_log("[PASSWORD_CHECK] ===== DEBUT VERIFICATION =====");
 error_log("[PASSWORD_CHECK] Page demandée (avant vérification): " . $page);

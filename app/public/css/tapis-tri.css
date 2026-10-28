@@ -1,0 +1,426 @@
+/**
+ * tapis-tri.css
+ * Styles modernes pour le Tapis de Tri des impressions
+ */
+
+:root {
+  --tapis-bg: #f8fafc;
+  --tapis-card-bg: #ffffff;
+  --tapis-primary: #2563eb;
+  --tapis-primary-hover: #1d4ed8;
+  --tapis-success: #10b981;
+  --tapis-success-hover: #059669;
+  --tapis-border: #e2e8f0;
+  --tapis-border-selected: #3b82f6;
+  --tapis-text-main: #1e293b;
+  --tapis-text-muted: #64748b;
+  --tapis-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --tapis-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+}
+
+.tapis-container {
+  padding: 1.5rem 1rem 6rem 1rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ── En-tête du Tapis ── */
+.tapis-header-banner {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  color: white;
+  border-radius: 16px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.15);
+}
+
+.tapis-header-banner h2 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tapis-header-banner p {
+  margin: 4px 0 0 0;
+  color: #cbd5e1;
+  font-size: 0.95rem;
+}
+
+.tapis-header-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tapis-live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.tapis-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #10b981;
+  animation: tapis-pulse 2s infinite;
+}
+
+@keyframes tapis-pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* ── Grille de cartes ── */
+.tapis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+/* ── Carte d'impression ── */
+.tapis-card {
+  background: var(--tapis-card-bg);
+  border: 2px solid var(--tapis-border);
+  border-radius: 14px;
+  box-shadow: var(--tapis-shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  user-select: none;
+}
+
+.tapis-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--tapis-shadow-hover);
+  border-color: #cbd5e1;
+}
+
+.tapis-card.selected {
+  border-color: var(--tapis-border-selected);
+  background-color: #f0f7ff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.tapis-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px 6px 12px;
+}
+
+.tapis-card-time {
+  font-size: 0.8rem;
+  color: var(--tapis-text-muted);
+}
+
+.tapis-card-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.tapis-btn-icon {
+  background: transparent;
+  border: none;
+  color: var(--tapis-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.tapis-btn-icon:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--tapis-text-main);
+}
+
+/* Case à cocher circulaire */
+.tapis-checkbox-container {
+  display: inline-block;
+  position: relative;
+  cursor: pointer;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+}
+
+.tapis-checkbox-container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.tapis-checkbox-checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 22px;
+  width: 22px;
+  background-color: #f1f5f9;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.tapis-checkbox-container:hover input ~ .tapis-checkbox-checkmark {
+  background-color: #e2e8f0;
+}
+
+.tapis-checkbox-container input:checked ~ .tapis-checkbox-checkmark {
+  background-color: var(--tapis-primary);
+  border-color: var(--tapis-primary);
+}
+
+.tapis-checkbox-checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 7px;
+  top: 3px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.tapis-checkbox-container input:checked ~ .tapis-checkbox-checkmark:after {
+  display: block;
+}
+
+/* Miniature */
+.tapis-card-thumb-wrapper {
+  height: 140px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-top: 1px solid #f1f5f9;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.tapis-card-thumb {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-radius: 4px;
+}
+
+.tapis-card-thumb-placeholder {
+  height: 140px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 3rem;
+  border-top: 1px solid #f1f5f9;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* Corps de carte */
+.tapis-card-body {
+  padding: 12px;
+  flex: 1;
+}
+
+.tapis-card-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--tapis-text-main);
+  margin: 0 0 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tapis-card-machine {
+  font-size: 0.8rem;
+  margin-bottom: 10px;
+}
+
+.tapis-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tapis-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.badge-paper { background: #e0e7ff; color: #4338ca; }
+.badge-color { background: #fee2e2; color: #b91c1c; }
+.badge-mono  { background: #f1f5f9; color: #475569; }
+.badge-duplex{ background: #fef3c7; color: #b45309; }
+.badge-pages { background: #dcfce7; color: #15803d; }
+
+/* Pied de carte */
+.tapis-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #fafafa;
+  border-top: 1px solid var(--tapis-border);
+}
+
+.tapis-card.selected .tapis-card-footer {
+  background: #e8f2fe;
+}
+
+.tapis-card-price-label {
+  font-size: 0.8rem;
+  color: var(--tapis-text-muted);
+}
+
+.tapis-card-price {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--tapis-success-hover);
+}
+
+/* ── État vide ── */
+.tapis-empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 16px;
+  border: 2px dashed #cbd5e1;
+  margin-top: 1rem;
+}
+
+.tapis-empty-icon {
+  font-size: 4rem;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.tapis-empty-state h3 {
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 0.5rem;
+}
+
+.tapis-empty-state p {
+  color: #64748b;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* ── Barre flottante d'action (Sticky Bottom Bar) ── */
+.tapis-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid #cbd5e1;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
+  padding: 1rem 1.5rem;
+  z-index: 1030;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  transform: translateY(110%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tapis-bottom-bar.visible {
+  transform: translateY(0);
+}
+
+.tapis-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.tapis-bar-selection-summary {
+  font-size: 1.05rem;
+}
+
+.tapis-bar-total-badge {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 8px;
+  margin-left: 8px;
+}
+
+.tapis-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tapis-btn-checkout {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: white !important;
+  border: none !important;
+  font-size: 1.05rem !important;
+  padding: 0.65rem 1.5rem !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+  transition: all 0.2s !important;
+}
+
+.tapis-btn-checkout:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45);
+}
+
+/* ── Modales et détails ── */
+.checkout-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.checkout-item-row:last-child {
+  border-bottom: none;
+}
+
+.quick-amount-btn {
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 6px 12px;
+}
