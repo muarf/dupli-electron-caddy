@@ -24,12 +24,12 @@ jobs:
       run: |
         git fetch --tags --force
         
-        # Récupérer le dernier tag, avec fallback si aucun tag n'existe
-        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        # Récupérer le dernier tag stable X.Y.Z (ignorer les -alpha, -beta)
+        LATEST_TAG=$(git tag -l "v[0-9]*.[0-9]*.[0-9]*" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
         
         if [ -z "$LATEST_TAG" ]; then
-          echo "⚠️ Aucun tag existant trouvé, utilisation du tag initial v1.3.96"
-          LATEST_TAG="v1.3.96"
+          echo "⚠️ Aucun tag existant trouvé, utilisation du tag initial v3.0.0"
+          LATEST_TAG="v3.0.0"
         else
           # Vérifier que le tag existe bien
           if ! git rev-parse "$LATEST_TAG" >/dev/null 2>&1; then
