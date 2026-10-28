@@ -102,10 +102,13 @@ try {
                 $mapping = $db->selectOne("SELECT * FROM printer_mappings WHERE system_printer_name = ?", [$printerName]);
 
                 $copies = max(1, intval($job['copies'] ?? 1));
-                $totalPages = max(1, intval($job['total_pages'] ?? 1));
-                if ($totalPages < $copies) {
-                    $totalPages = $copies;
-                }
+                $rawPages = max(1, intval($job['total_pages'] ?? 1));
+                
+                // Si total_pages reçu représente les pages du document unitaire
+                // (ex: document de 35p avec 7 copies -> 35p par exemplaire, total 245 faces)
+                $pagesPerCopy = $rawPages;
+                $totalPagesImprimees = $pagesPerCopy * $copies;
+
                 $isDuplex = intval($job['duplex'] ?? 0) === 1;
                 $isColor = stripos($job['color_mode'] ?? '', 'color') !== false;
                 $fillRate = floatval($job['fill_rate'] ?? 0.5);
@@ -162,12 +165,11 @@ try {
                                 $costPerFace = $costPerFace / 2;
                             }
 
-                            $pagesPerCopy = $totalPages / $copies;
                             $sheetsPerCopy = $isDuplex ? ceil($pagesPerCopy / 2) : $pagesPerCopy;
                             $nbFeuillesTotal = $sheetsPerCopy * $copies;
 
                             $coutPapier = $nbFeuillesTotal * $prixPapier;
-                            $coutEncre = $totalPages * $costPerFace;
+                            $coutEncre = $totalPagesImprimees * $costPerFace;
                             $calcPrice = round($coutPapier + $coutEncre, 2);
                         }
                     } else if ($mType === 'dupli') {
@@ -181,8 +183,8 @@ try {
                             $prixPassage = $prixPassage / 2;
                         }
 
-                        $nbMasters = max(1, intval($totalPages / $copies));
-                        $nbPassages = $totalPages;
+                        $nbMasters = max(1, intval($pagesPerCopy));
+                        $nbPassages = $totalPagesImprimees;
                         $nbFeuilles = $isDuplex ? ceil($nbPassages / 2) : $nbPassages;
 
                         $coutMasters = $nbMasters * $prixMaster;
@@ -259,11 +261,10 @@ try {
             $printerName = $job['printer_name'];
             $jobPrice = floatval($job['calculated_price'] ?? 0);
             $docName = $job['document'] ?? 'Document';
-            $totalPages = max(1, intval($job['total_pages'] ?? 1));
+            $rawPages = max(1, intval($job['total_pages'] ?? 1));
             $copies = max(1, intval($job['copies'] ?? 1));
-            if ($totalPages < $copies) {
-                $totalPages = $copies;
-            }
+            $pagesPerCopy = $rawPages;
+            $totalPagesImprimees = $pagesPerCopy * $copies;
             $isDuplex = intval($job['duplex'] ?? 0) === 1;
             $duplexStr = $isDuplex ? 'oui' : 'non';
             $isA3 = (stripos($docName, 'A3') !== false) || (stripos($job['paper_size'] ?? '', 'A3') !== false);
@@ -293,8 +294,8 @@ try {
                 $masterAv = $lastCounters ? intval($lastCounters['master_ap']) : 0;
                 $passageAv = $lastCounters ? intval($lastCounters['passage_ap']) : 0;
 
-                $nbMasters = max(1, intval($totalPages / $copies));
-                $nbPassages = $totalPages;
+                $nbMasters = max(1, intval($pagesPerCopy));
+                $nbPassages = $totalPagesImprimees;
                 $masterAp = $masterAv + $nbMasters;
                 $passageAp = $passageAv + $nbPassages;
 
@@ -333,7 +334,6 @@ try {
                 $photoMachine = $con_pdo->query("SELECT marque FROM photocopieurs WHERE id = $machineId")->fetch(PDO::FETCH_ASSOC);
                 $marque = $photoMachine ? $photoMachine['marque'] : 'comcolor';
 
-                $pagesPerCopy = $totalPages / $copies;
                 $sheetsPerCopy = $isDuplex ? ceil($pagesPerCopy / 2) : $pagesPerCopy;
                 $nbFeuillesTotal = $sheetsPerCopy * $copies;
 
