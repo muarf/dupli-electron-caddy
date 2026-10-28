@@ -363,13 +363,12 @@ try {
                 ]);
             }
 
-            // Clôturer le job dans recorded_print_jobs
-            $mark = $con_pdo->prepare("INSERT OR IGNORE INTO recorded_print_jobs (job_id, printer_name, print_job_id) VALUES (?, ?, ?)");
+            // Clôturer le job dans recorded_print_jobs (INSERT OR REPLACE pour écraser les anciens IDs recyclés)
+            $mark = $con_pdo->prepare("INSERT OR REPLACE INTO recorded_print_jobs (job_id, printer_name, print_job_id, recorded_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)");
             $mark->execute([strval($job['job_id']), $printerName, $job['id']]);
 
-            // Mettre à jour statut dans print_jobs
-            $con_pdo->prepare("UPDATE print_jobs SET status = 'completed', staged = 1, contact = ? WHERE id = ?")
-                    ->execute([$contact, $job['id']]);
+            // Supprimer définitivement le job du tapis (print_jobs)
+            $con_pdo->prepare("DELETE FROM print_jobs WHERE id = ?")->execute([$job['id']]);
 
             $savedCount++;
             $totalPrice += $jobPrice;
