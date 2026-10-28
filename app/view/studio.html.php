@@ -139,8 +139,8 @@ var CONFIG = window.CONFIG;
       </div>
       
       <!-- Montage Canvas Container -->
-      <div id="montageCanvasContainer" style="display:none; width:100%; height:100%; position:absolute; top:0; left:0; align-items:flex-start; justify-content:center; overflow:auto; background:var(--studio-bg); padding: 40px; box-sizing: border-box;">
-        <div id="montageGridContainer" style="box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius:4px; background:white; display: grid; grid-template-columns: 30px 1fr; grid-template-rows: 30px 1fr; overflow: hidden; user-select: none; flex-shrink: 0;">
+      <div id="montageCanvasContainer" style="display:none; width:100%; height:100%; position:absolute; top:0; left:0; overflow:auto; background:var(--studio-bg); padding: 40px; box-sizing: border-box;">
+        <div id="montageGridContainer" style="box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius:4px; background:white; display: grid; grid-template-columns: 30px 1fr; grid-template-rows: 30px 1fr; overflow: hidden; user-select: none; flex-shrink: 0; margin: auto;">
           <!-- Corner spacer -->
           <div style="width:30px; height:30px; background:#f0f2f5; border-bottom:1px solid #ccc; border-right:1px solid #ccc;"></div>
           <!-- X Ruler -->
@@ -152,6 +152,24 @@ var CONFIG = window.CONFIG;
             <canvas id="montageCanvas"></canvas>
           </div>
         </div>
+      </div>
+
+      <!-- Montage Floating Zoom Controls -->
+      <div id="montageZoomBar" style="display:none; position:absolute; bottom:20px; right:20px; z-index:40; align-items:center; background:rgba(255,255,255,0.95); backdrop-filter:blur(8px); border:1px solid var(--studio-border, #e2e8f0); border-radius:30px; box-shadow:0 4px 16px rgba(0,0,0,0.15); padding:4px 8px; gap:4px; user-select:none;">
+        <button type="button" class="panel-btn" id="btnMontageZoomOut" title="<?php _e('studio.montage_zoom_out', [], false); ?>" style="width:28px; height:28px; padding:0; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:11px; cursor:pointer;">
+          <i class="fa fa-minus"></i>
+        </button>
+        <span id="montageZoomVal" style="font-size:12px; font-weight:700; min-width:44px; text-align:center; color:var(--studio-text, #334155); cursor:pointer;" title="<?php _e('studio.montage_zoom_reset', [], false); ?>">100%</span>
+        <button type="button" class="panel-btn" id="btnMontageZoomIn" title="<?php _e('studio.montage_zoom_in', [], false); ?>" style="width:28px; height:28px; padding:0; display:flex; align-items:center; justify-content:center; border-radius:50%; font-size:11px; cursor:pointer;">
+          <i class="fa fa-plus"></i>
+        </button>
+        <div style="width:1px; height:18px; background:var(--studio-border, #e2e8f0); margin:0 4px;"></div>
+        <button type="button" class="panel-btn" id="btnMontageZoomFit" title="<?php _e('studio.montage_zoom_fit', [], false); ?>" style="padding:4px 10px; font-size:11px; font-weight:600; display:flex; align-items:center; gap:6px; border-radius:14px; background:var(--studio-primary-light, #eff6ff); color:var(--studio-primary, #3b82f6); cursor:pointer;">
+          <i class="fa fa-arrows-alt"></i> <span><?php _e("studio.montage_zoom_fit", [], false); ?></span>
+        </button>
+        <button type="button" class="panel-btn" id="btnMontageZoom100" title="<?php _e('studio.montage_zoom_reset', [], false); ?>" style="padding:4px 8px; font-size:11px; font-weight:600; border-radius:14px; cursor:pointer;">
+          100%
+        </button>
       </div>
     </div>
 
@@ -643,6 +661,15 @@ var CONFIG = window.CONFIG;
             <option value="landscape"><?php _e("studio.montage_orientation_landscape", [], false); ?></option>
           </select>
         </div>
+        <div class="panel-row" style="margin-top:10px; align-items:center;">
+          <div class="panel-label"><i class="fa fa-search"></i> <?php _e("studio.montage_zoom", [], false); ?></div>
+          <div style="display:flex; gap:4px; align-items:center;">
+            <button type="button" class="panel-btn" id="btnPanelZoomOut" style="padding:4px 8px; font-size:11px;" title="<?php _e('studio.montage_zoom_out', [], false); ?>"><i class="fa fa-minus"></i></button>
+            <span id="panelZoomVal" style="font-size:11px; font-weight:700; min-width:40px; text-align:center;">100%</span>
+            <button type="button" class="panel-btn" id="btnPanelZoomIn" style="padding:4px 8px; font-size:11px;" title="<?php _e('studio.montage_zoom_in', [], false); ?>"><i class="fa fa-plus"></i></button>
+            <button type="button" class="panel-btn" id="btnPanelZoomFit" style="padding:4px 8px; font-size:11px;" title="<?php _e('studio.montage_zoom_fit', [], false); ?>"><i class="fa fa-arrows-alt"></i> <?php _e("studio.montage_zoom_fit", [], false); ?></button>
+          </div>
+        </div>
       </div>
       
       <div class="panel-section">
@@ -660,6 +687,46 @@ var CONFIG = window.CONFIG;
         <div id="montageSourceThumbs" style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:5px; max-height:300px; overflow-y:auto; padding-right:4px;">
           <!-- Thumbnails of uploaded PDFs -->
         </div>
+      </div>
+
+      <!-- Traits de coupe -->
+      <div class="panel-section">
+        <div class="panel-section-title"><i class="fa fa-crop"></i> <?php _e("studio.montage_crop_marks", [], false); ?></div>
+        
+        <div style="font-size:11px; font-weight:600; color:var(--studio-text); margin-bottom:6px;">
+          <?php _e("studio.montage_crop_sheet_borders", [], false); ?>
+        </div>
+        
+        <div style="display:flex; gap:6px; margin-bottom:8px;">
+          <button type="button" class="panel-btn" id="btnAddCenterCropH" style="flex:1; font-size:11px; padding:6px 4px; display:flex; align-items:center; justify-content:center; gap:4px;" title="Ajouter un trait de coupe au milieu horizontal (50%)">
+            <i class="fa fa-arrows-v"></i> <?php _e("studio.montage_crop_center_h", [], false); ?>
+          </button>
+          <button type="button" class="panel-btn" id="btnAddCenterCropV" style="flex:1; font-size:11px; padding:6px 4px; display:flex; align-items:center; justify-content:center; gap:4px;" title="Ajouter un trait de coupe au milieu vertical (50%)">
+            <i class="fa fa-arrows-h"></i> <?php _e("studio.montage_crop_center_v", [], false); ?>
+          </button>
+        </div>
+        
+        <div class="panel-row" style="gap:4px; align-items:center; margin-bottom:6px;">
+          <select class="panel-select" id="selCustomCropAxis" style="width:75px; font-size:11px; padding:4px;">
+            <option value="H">H (Y)</option>
+            <option value="V">V (X)</option>
+          </select>
+          <div style="position:relative; flex:1;">
+            <input type="number" class="panel-select" id="inputCustomCropMm" placeholder="ex: 210" style="width:100%; font-size:11px; padding:4px 26px 4px 6px;" min="1" step="1">
+            <span style="position:absolute; right:6px; top:50%; transform:translateY(-50%); font-size:10px; color:#888;">mm</span>
+          </div>
+          <button type="button" class="panel-btn" id="btnAddCustomCrop" style="padding:4px 8px; font-size:11px;" title="<?php _e('studio.montage_crop_custom_add', [], false); ?>"><i class="fa fa-plus"></i></button>
+        </div>
+        
+        <div id="montageCropMarksList" style="display:flex; flex-direction:column; gap:4px; margin-bottom:8px; max-height:90px; overflow-y:auto;">
+          <!-- Badges des traits de coupe actifs -->
+        </div>
+        
+        <div style="border-top:1px dashed var(--studio-border, #e2e8f0); margin:8px 0 6px 0;"></div>
+        
+        <label class="panel-checkbox" style="font-size:11px; cursor:pointer; display:flex; align-items:center; gap:6px;">
+          <input type="checkbox" id="chkCropAroundObjects"> <?php _e("studio.montage_crop_around_objects", [], false); ?>
+        </label>
       </div>
 
       <div class="panel-section" style="text-align:center">
@@ -752,8 +819,8 @@ var CONFIG = window.CONFIG;
         </div>
         
         <div class="panel-row" style="margin-top:12px">
-          <div class="panel-label"><?php _e("studio.riso_halftone_size", [], false); ?><span class="panel-value" id="valRisoHalftone">3</span></div>
-          <input type="range" class="panel-slider" id="sliderRisoHalftone" min="1" max="10" value="3">
+          <div class="panel-label"><?php _e("studio.riso_halftone_size", [], false); ?><span class="panel-value" id="valRisoHalftone">2</span></div>
+          <input type="range" class="panel-slider" id="sliderRisoHalftone" min="0.5" max="10" step="0.5" value="2">
         </div>
         <div class="panel-row" style="margin-top:4px">
           <button class="toolbar-btn" id="btnRisoHalftone" style="width:100%"><i class="fa fa-th-large"></i><?php _e("studio.riso_apply_halftone", [], false); ?></button>
@@ -840,10 +907,47 @@ var CONFIG = window.CONFIG;
         <div class="panel-section-title"><?php _e("studio.modification_tools", [], false); ?></div>
         <div class="panel-row" style="display: flex; flex-direction: column; gap: 5px;">
           <button class="panel-btn modif-tool-btn active" data-tool="none"><i class="fa fa-mouse-pointer" style="width: 20px;"></i><?php _e("studio.modification_tool_select", [], false); ?></button>
+          <button class="panel-btn modif-tool-btn" data-tool="brush"><i class="fa fa-paint-brush" style="width: 20px;"></i><?php _e("studio.modification_tool_brush", [], false); ?></button>
+          <button class="panel-btn modif-tool-btn" data-tool="line"><i class="fa fa-minus" style="width: 20px;"></i><?php _e("studio.modification_tool_line", [], false); ?></button>
           <button class="panel-btn modif-tool-btn" data-tool="redact_text"><i class="fa fa-font" style="width: 20px;"></i><?php _e("studio.modification_tool_redact", [], false); ?></button>
           <button class="panel-btn modif-tool-btn" data-tool="page_number"><i class="fa fa-hashtag" style="width: 20px;"></i><?php _e("studio.modification_tool_page_number", [], false); ?></button>
           <button class="panel-btn modif-tool-btn" data-tool="strikeout"><i class="fa fa-strikethrough" style="width: 20px;"></i><?php _e("studio.modification_tool_strikeout", [], false); ?></button>
         </div>
+      </div>
+
+      <!-- Outil : Pinceau / Gomme -->
+      <div id="modifToolBrush" class="panel-section" style="display:none">
+        <div class="panel-section-title"><?php _e("studio.modification_brush_title", [], false); ?></div>
+        <div class="panel-row">
+          <div class="panel-label"><?php _e("studio.modification_brush_mode", [], false); ?></div>
+          <select class="panel-select" id="modifBrushMode">
+            <option value="erase"><?php _e("studio.modification_brush_mode_erase", [], false); ?></option>
+            <option value="draw"><?php _e("studio.modification_brush_mode_draw", [], false); ?></option>
+          </select>
+        </div>
+        <div class="panel-row" id="rowBrushColor" style="margin-top:8px; display:none; align-items:center; gap:6px;">
+          <input type="color" class="panel-select" id="modifBrushColor" value="#000000" style="padding:0; height:32px; cursor:pointer; flex:1; border-radius:4px; border:1px solid var(--studio-border);">
+          <button type="button" class="panel-btn" id="btnBrushEyeDropper" title="<?= __('studio.modification_eyedropper') ?>" style="padding:0; height:32px; width:36px; flex-shrink:0; display:flex; align-items:center; justify-content:center;"><i class="fa fa-eyedropper"></i></button>
+        </div>
+        <div class="panel-row" style="margin-top:8px">
+          <div class="panel-label"><?php _e("studio.modification_brush_size", [], false); ?><span class="panel-value" id="valBrushSize">12 px</span></div>
+          <input type="range" class="panel-slider" id="sliderBrushSize" min="2" max="60" value="12">
+        </div>
+        <p style="font-size:10px; color:#6b7280; margin-top:8px"><?php _e("studio.modification_brush_hint", [], false); ?></p>
+      </div>
+
+      <!-- Outil : Tracer une ligne -->
+      <div id="modifToolLine" class="panel-section" style="display:none">
+        <div class="panel-section-title"><?php _e("studio.modification_line_title", [], false); ?></div>
+        <div class="panel-row" style="align-items:center; gap:6px;">
+          <input type="color" class="panel-select" id="modifLineColor" value="#000000" style="padding:0; height:32px; cursor:pointer; flex:1; border-radius:4px; border:1px solid var(--studio-border);">
+          <button type="button" class="panel-btn" id="btnLineEyeDropper" title="<?= __('studio.modification_eyedropper') ?>" style="padding:0; height:32px; width:36px; flex-shrink:0; display:flex; align-items:center; justify-content:center;"><i class="fa fa-eyedropper"></i></button>
+        </div>
+        <div class="panel-row" style="margin-top:8px">
+          <div class="panel-label"><?php _e("studio.modification_line_size", [], false); ?><span class="panel-value" id="valLineSize">2 px</span></div>
+          <input type="range" class="panel-slider" id="sliderLineSize" min="1" max="25" value="2">
+        </div>
+        <p style="font-size:10px; color:#6b7280; margin-top:8px"><?php _e("studio.modification_line_hint", [], false); ?></p>
       </div>
       
       <!-- Outil : Carré blanc + Texte -->

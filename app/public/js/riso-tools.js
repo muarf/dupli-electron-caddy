@@ -346,10 +346,10 @@ function applyHalftone(imageData, dotSize = 4, angle = 45) {
     const cosAngle = Math.cos(angleRad);
     const sinAngle = Math.sin(angleRad);
     
-    // dotSize contrôle l'espacement de la grille (1-10)
-    // Plus dotSize est petit, plus la trame est fine (plus de points)
+    // dotSize contrôle l'espacement de la grille (0.5 - 10)
+    // Plus dotSize est petit, plus la trame est fine (micro-points serrés)
     // La taille des cellules de la grille
-    const cellSize = dotSize;
+    const cellSize = Math.max(0.2, parseFloat(dotSize) || 2);
     
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
