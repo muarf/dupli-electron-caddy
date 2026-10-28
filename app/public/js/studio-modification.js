@@ -49,6 +49,54 @@
         });
     }
 
+    function updateBrushSettings() {
+      if (!canvas) return;
+      if (!canvas.freeDrawingBrush) {
+        canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+      }
+      const mode = $id('modifBrushMode') ? $id('modifBrushMode').value : 'erase';
+      const size = parseInt($id('sliderBrushSize') ? $id('sliderBrushSize').value : 12, 10);
+      const color = mode === 'erase' ? '#ffffff' : ($id('modifBrushColor') ? $id('modifBrushColor').value : '#000000');
+      
+      canvas.freeDrawingBrush.width = size;
+      canvas.freeDrawingBrush.color = color;
+      canvas.freeDrawingBrush.strokeLineCap = 'round';
+      canvas.freeDrawingBrush.strokeLineJoin = 'round';
+    }
+
+    const selBrushMode = $id('modifBrushMode');
+    if (selBrushMode) {
+      selBrushMode.addEventListener('change', () => {
+        const rowColor = $id('rowBrushColor');
+        if (rowColor) rowColor.style.display = (selBrushMode.value === 'draw') ? 'flex' : 'none';
+        updateBrushSettings();
+      });
+    }
+
+    const sliderBrush = $id('sliderBrushSize');
+    if (sliderBrush) {
+      sliderBrush.addEventListener('input', () => {
+        const valSpan = $id('valBrushSize');
+        if (valSpan) valSpan.textContent = sliderBrush.value + ' px';
+        updateBrushSettings();
+      });
+    }
+
+    const colorBrush = $id('modifBrushColor');
+    if (colorBrush) {
+      colorBrush.addEventListener('input', () => {
+        updateBrushSettings();
+      });
+    }
+
+    const sliderLine = $id('sliderLineSize');
+    if (sliderLine) {
+      sliderLine.addEventListener('input', () => {
+        const valSpan = $id('valLineSize');
+        if (valSpan) valSpan.textContent = sliderLine.value + ' px';
+      });
+    }
+
     // Tool selection via buttons
     const toolBtns = document.querySelectorAll('.modif-tool-btn');
     toolBtns.forEach(btn => {
@@ -62,11 +110,17 @@
         $id('modifToolRedact').style.display = (currentTool === 'redact_text') ? 'block' : 'none';
         $id('modifToolPageNum').style.display = (currentTool === 'page_number') ? 'block' : 'none';
         $id('modifToolStrikeout').style.display = (currentTool === 'strikeout') ? 'block' : 'none';
+        if ($id('modifToolBrush')) $id('modifToolBrush').style.display = (currentTool === 'brush') ? 'block' : 'none';
+        if ($id('modifToolLine')) $id('modifToolLine').style.display = (currentTool === 'line') ? 'block' : 'none';
         
         canvas.defaultCursor = (currentTool !== 'none') ? 'crosshair' : 'default';
-        canvas.isDrawingMode = false;
+        canvas.isDrawingMode = (currentTool === 'brush');
         canvas.selection = (currentTool === 'none'); // Allow dragging multiple only if not drawing
         
+        if (currentTool === 'brush') {
+          updateBrushSettings();
+        }
+
         if (currentTool !== 'none') {
             canvas.discardActiveObject();
             canvas.requestRenderAll();
@@ -74,10 +128,21 @@
       });
     });
 
-    // Drag to draw (Strikeout / Rect)
+    // Tag brush paths when created
+    canvas.on('path:created', function(e) {
+      if (e && e.path) {
+        e.path.set('modifType', 'brush');
+        e.path.set('brushMode', $id('modifBrushMode') ? $id('modifBrushMode').value : 'erase');
+      }
+    });
+
+    // Drag to draw (Strikeout / Line / Rect)
     let isDrawing = false;
     let isPickingColor = false;
+    let colorPickTargetInputId = null;
+    let colorPickCallback = null;
     let rect = null;
+    let currentLine = null;
     let origX, origY;
 
     canvas.on('mouse:down', function(o) {
@@ -93,9 +158,18 @@
             try {
                 const pixel = ctx.getImageData(x, y, 1, 1).data;
                 const hex = "#" + ("000000" + ((1 << 24) + (pixel[0] << 16) + (pixel[1] << 8) + pixel[2]).toString(16).slice(1)).slice(-6);
-                $id('modifStrikeColor').value = hex;
+                if (colorPickTargetInputId && $id(colorPickTargetInputId)) {
+                  $id(colorPickTargetInputId).value = hex;
+                } else {
+                  $id('modifStrikeColor').value = hex;
+                }
+                if (colorPickCallback) {
+                  colorPickCallback(hex);
+                }
             } catch(e) {}
         }
+        colorPickTargetInputId = null;
+        colorPickCallback = null;
         return;
       }
       
@@ -168,6 +242,19 @@
         rect.set('modifType', currentTool);
         canvas.add(rect);
         canvas.renderAll();
+      } else if (currentTool === 'line') {
+        const strokeColor = $id('modifLineColor') ? $id('modifLineColor').value : '#000000';
+        const strokeWidth = parseInt($id('sliderLineSize') ? $id('sliderLineSize').value : 2, 10);
+        currentLine = new fabric.Line([origX, origY, origX, origY], {
+          stroke: strokeColor,
+          strokeWidth: strokeWidth,
+          strokeLineCap: 'round',
+          strokeLineJoin: 'round',
+          selectable: true,
+          hasControls: true
+        });
+        currentLine.set('modifType', 'line');
+        canvas.add(currentLine);
       }
       else if (currentTool === 'page_number') {
         const format = $id('modifPageNumFormat').value || '{p}';
@@ -203,6 +290,27 @@
           fontCropRect.set({ height: Math.abs(origY - pointer.y) });
           canvas.renderAll();
           return;
+      }
+
+      if (currentTool === 'line' && currentLine) {
+        let targetX = pointer.x;
+        let targetY = pointer.y;
+        
+        // Verrouillage avec Shift (horizontal ou vertical)
+        if (o.e && o.e.shiftKey) {
+          const dx = Math.abs(targetX - origX);
+          const dy = Math.abs(targetY - origY);
+          if (dx > dy) {
+            targetY = origY;
+          } else {
+            targetX = origX;
+          }
+        }
+        
+        currentLine.set({ x2: targetX, y2: targetY });
+        currentLine.setCoords();
+        canvas.renderAll();
+        return;
       }
       
       if (!rect) return;
@@ -370,6 +478,20 @@
           return;
       }
 
+      if (currentTool === 'line' && currentLine) {
+        const dx = (currentLine.x2 || 0) - (currentLine.x1 || 0);
+        const dy = (currentLine.y2 || 0) - (currentLine.y1 || 0);
+        const length = Math.sqrt(dx * dx + dy * dy);
+        if (length < 3) {
+          canvas.remove(currentLine);
+        } else {
+          currentLine.setCoords();
+          canvas.setActiveObject(currentLine);
+          canvas.renderAll();
+        }
+        currentLine = null;
+      }
+
       if (rect) {
         rect.setCoords();
         rect = null;
@@ -407,25 +529,34 @@
       });
     }
 
-    // EyeDropper for Strikeout color
-    const btnEyeDropper = $id('btnEyeDropper');
-    if (btnEyeDropper) {
-      btnEyeDropper.addEventListener('click', async () => {
+    // Universal EyeDropper function
+    function setupEyeDropper(btnId, targetColorInputId, onColorSelected) {
+      const btn = $id(btnId);
+      if (!btn) return;
+      btn.addEventListener('click', async () => {
         if (window.EyeDropper) {
           try {
             const eyeDropper = new EyeDropper();
             const result = await eyeDropper.open();
-            $id('modifStrikeColor').value = result.sRGBHex;
+            const input = $id(targetColorInputId);
+            if (input) input.value = result.sRGBHex;
+            if (onColorSelected) onColorSelected(result.sRGBHex);
           } catch (e) {
-            // User canceled the eyedropper, do nothing
+            // User canceled
           }
         } else {
           isPickingColor = true;
+          colorPickTargetInputId = targetColorInputId;
+          colorPickCallback = onColorSelected;
           canvas.defaultCursor = 'crosshair';
           alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.pipette_activ_e___cliquez_sur'] || "Pipette activée : cliquez sur l'image du document pour capturer la couleur."));
         }
       });
     }
+
+    setupEyeDropper('btnEyeDropper', 'modifStrikeColor');
+    setupEyeDropper('btnBrushEyeDropper', 'modifBrushColor', () => updateBrushSettings());
+    setupEyeDropper('btnLineEyeDropper', 'modifLineColor');
     // === FONTS CUSTOM ===
     loadCustomFonts();
 
@@ -537,6 +668,31 @@
     }
   }
 
+  function getLineEndpoints(lineObj) {
+    try {
+      const matrix = lineObj.calcTransformMatrix ? lineObj.calcTransformMatrix() : null;
+      if (!matrix) {
+        return { x1: lineObj.x1 || 0, y1: lineObj.y1 || 0, x2: lineObj.x2 || 0, y2: lineObj.y2 || 0 };
+      }
+      let p1Local, p2Local;
+      if (typeof lineObj.calcLinePoints === 'function') {
+        const pts = lineObj.calcLinePoints();
+        p1Local = { x: pts.x1, y: pts.y1 };
+        p2Local = { x: pts.x2, y: pts.y2 };
+      } else {
+        const w = lineObj.width || 0;
+        const h = lineObj.height || 0;
+        p1Local = { x: (lineObj.x1 || 0) - w / 2, y: (lineObj.y1 || 0) - h / 2 };
+        p2Local = { x: (lineObj.x2 || 0) - w / 2, y: (lineObj.y2 || 0) - h / 2 };
+      }
+      const p1 = fabric.util.transformPoint(p1Local, matrix);
+      const p2 = fabric.util.transformPoint(p2Local, matrix);
+      return { x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y };
+    } catch (e) {
+      return { x1: lineObj.x1 || 0, y1: lineObj.y1 || 0, x2: lineObj.x2 || 0, y2: lineObj.y2 || 0 };
+    }
+  }
+
   async function applyModification() {
     if (!window.state || !window.state.file) {
       alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.aucun_document_charg'] || "Aucun document chargé."));
@@ -556,9 +712,52 @@
     const ch = canvas.getHeight();
     
     const ops = [];
+
+    // Si des coups de pinceau sont présents, les exporter en calque haute résolution transparent
+    const brushObjects = canvas.getObjects().filter(o => o.modifType === 'brush');
+    let brushOverlayDataUrl = null;
+    if (brushObjects.length > 0) {
+      const allObjects = canvas.getObjects();
+      allObjects.forEach(obj => {
+        obj._prevVisible = obj.visible;
+        obj.visible = (obj.modifType === 'brush');
+      });
+      canvas.discardActiveObject();
+      canvas.renderAll();
+      
+      brushOverlayDataUrl = canvas.toDataURL({
+        format: 'png',
+        multiplier: 2
+      });
+      
+      allObjects.forEach(obj => {
+        obj.visible = obj._prevVisible;
+        delete obj._prevVisible;
+      });
+      canvas.renderAll();
+    }
     
-    // 1. Récupérer les éléments dessinés sur le Canvas
+    // 1. Récupérer les éléments vectoriels dessinés sur le Canvas
     canvas.getObjects().forEach(obj => {
+      if (obj.modifType === 'brush') {
+        // Géré via le calque transparent brushOverlayDataUrl
+        return;
+      }
+
+      if (obj.modifType === 'line') {
+        const ep = getLineEndpoints(obj);
+        ops.push({
+          type: 'line',
+          relX1: ep.x1 / cw,
+          relY1: ep.y1 / ch,
+          relX2: ep.x2 / cw,
+          relY2: ep.y2 / ch,
+          relWidth: ((obj.strokeWidth || 2) * (obj.scaleX || 1)) / cw,
+          color: obj.stroke || '#000000'
+        });
+        return;
+      }
+
       const bbox = obj.getBoundingRect();
       // Calcul relatif [0, 1]
       const relX = bbox.left / cw;
@@ -612,7 +811,7 @@
       });
     }
 
-    if (ops.length === 0) {
+    if (ops.length === 0 && !brushOverlayDataUrl) {
       alert((window.CONFIG && window.CONFIG.translations && window.CONFIG.translations['js.studio_modification.aucune_modification___applique'] || "Aucune modification à appliquer (Dessinez sur le canevas ou activez la numérotation)."));
       return;
     }
@@ -620,7 +819,8 @@
     const payload = {
       scope: $id('selModifScope').value || 'current',
       currentPage: window.state ? window.state.currentPage : 1,
-      operations: ops
+      operations: ops,
+      brush_overlay: brushOverlayDataUrl
     };
 
     const formData = new FormData();

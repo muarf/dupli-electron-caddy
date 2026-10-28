@@ -109,6 +109,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (uploadZone) uploadZone.style.display = 'none';
         if (panel) panel.classList.add('visible');
         if (montageContainer) montageContainer.style.display = 'flex';
+        const zoomBar = $('montageZoomBar');
+        if (zoomBar) zoomBar.style.display = 'flex';
         // Initialize montage if not done yet
         if (window.initStudioMontage) window.initStudioMontage();
         
@@ -118,6 +120,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       } else {
         if (montageContainer) montageContainer.style.display = 'none';
+        const zoomBar = $('montageZoomBar');
+        if (zoomBar) zoomBar.style.display = 'none';
         if (stdThumbs && window.orgSequence && window.orgSequence.length > 0) stdThumbs.style.display = '';
         
         if (state.originalImageData || state.isPdf || state.file) {
@@ -681,8 +685,13 @@ document.addEventListener('DOMContentLoaded', function() {
     setPdfReady(null);
 
     // Update Riso channels if Riso panel is active
-    if (document.querySelector('.tool-btn[data-tool="riso"]').classList.contains('active')) {
-      initRisoChannels();
+    const risoBtn = document.querySelector('.tool-btn[data-tool="riso"]');
+    if (risoBtn && risoBtn.classList.contains('active')) {
+      try {
+        initRisoChannels();
+      } catch (err) {
+        console.warn('[Studio] initRisoChannels error during filter update:', err);
+      }
     }
   }
 
@@ -2147,15 +2156,21 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // == Brochure: toggle échelle % / mm ==
-  document.querySelectorAll('input[name="bro_resize"]').forEach(r => {
+  document.querySelectorAll('input[name="bro_resize_mode"], input[name="bro_resize"]').forEach(r => {
     r.addEventListener('change', () => {
-      const isMm = document.querySelector('input[name="bro_resize"]:checked')?.value === 'mm';
-      $('bro_block_percent').style.display = isMm ? 'none' : '';
-      $('bro_block_mm').style.display = isMm ? '' : 'none';
+      const isMm = document.querySelector('input[name="bro_resize_mode"]:checked, input[name="bro_resize"]:checked')?.value === 'mm';
+      if ($('bro_block_percent')) $('bro_block_percent').style.display = isMm ? 'none' : '';
+      if ($('bro_block_mm')) $('bro_block_mm').style.display = isMm ? '' : 'none';
+      if ($('bro_resize_percent_block')) $('bro_resize_percent_block').style.display = isMm ? 'none' : '';
+      if ($('bro_resize_mm_block')) $('bro_resize_mm_block').style.display = isMm ? '' : 'none';
     });
   });
-  $('bro_scale').addEventListener('input', () => $('bro_scale_val').textContent = $('bro_scale').value);
-  $('liv_scale').addEventListener('input', () => $('liv_scale_val').textContent = $('liv_scale').value);
+  if ($('bro_scale') && $('bro_scale_val')) {
+    $('bro_scale').addEventListener('input', () => $('bro_scale_val').textContent = $('bro_scale').value);
+  }
+  if ($('liv_scale') && $('liv_scale_val')) {
+    $('liv_scale').addEventListener('input', () => $('liv_scale_val').textContent = $('liv_scale').value);
+  }
 
   // == Brochure: un cahier de 8 pages est impossible avec 8 pages par feuille (nUp=8)
   const updateSignatureOptions = () => {
@@ -2718,23 +2733,47 @@ document.addEventListener('DOMContentLoaded', function() {
       });
       item.appendChild(sel);
 
+      if (!window.risoLayerSettings) window.risoLayerSettings = {};
+      if (!window.risoLayerSettings[mode]) window.risoLayerSettings[mode] = {};
+      if (!window.risoLayerSettings[mode][key]) {
+        window.risoLayerSettings[mode][key] = {
+          contrast: (mode === 'PIPETTE' && activeChans[key]?.contrast !== undefined) ? activeChans[key].contrast : 0,
+          opacity: 100
+        };
+      }
+      const curContrast = window.risoLayerSettings[mode][key].contrast || 0;
+      const curOpacity = window.risoLayerSettings[mode][key].opacity !== undefined ? window.risoLayerSettings[mode][key].opacity : 100;
+
       const sliders = document.createElement('div');
       sliders.style.display = 'flex'; sliders.style.flexDirection = 'column'; sliders.style.gap = '4px';
       
       const opcBox = document.createElement('div');
-      opcBox.innerHTML = `<div style="font-size:10px;">${CONFIG.translations['studio_js.opacity_prefix'] || 'Opacité: '}<span class="val">100%</span></div>`;
+      opcBox.innerHTML = `<div style="font-size:10px;">${CONFIG.translations['studio_js.opacity_prefix'] || 'Opacité: '}<span class="val">${curOpacity}%</span></div>`;
       const opc = document.createElement('input');
-      opc.type = 'range'; opc.className = 'panel-slider'; opc.min = '0'; opc.max = '100'; opc.value = '100';
+      opc.type = 'range'; opc.className = 'panel-slider'; opc.min = '0'; opc.max = '100'; opc.value = curOpacity;
       opc.dataset.channel = key;
-      opc.addEventListener('input', (e) => { opcBox.querySelector('.val').textContent = e.target.value + '%'; applyRisoPreview(); });
+      opc.addEventListener('input', (e) => {
+        window.risoLayerSettings[mode][key].opacity = parseInt(e.target.value, 10);
+        opcBox.querySelector('.val').textContent = e.target.value + '%';
+        applyRisoPreview();
+      });
       opcBox.appendChild(opc);
       sliders.appendChild(opcBox);
 
       const cstBox = document.createElement('div');
-      cstBox.innerHTML = `<div style="font-size:10px;">Contraste: <span class="val">${activeChans[key].contrast || 0}</span></div>`;
+      cstBox.innerHTML = `<div style="font-size:10px;">Contraste: <span class="val">${curContrast}</span></div>`;
       const cst = document.createElement('input');
-      cst.type = 'range'; cst.className = 'panel-slider'; cst.min = '-100'; cst.max = '100'; cst.value = activeChans[key].contrast || 0;
-      cst.addEventListener('input', (e) => { activeChans[key].contrast = parseInt(e.target.value); cstBox.querySelector('.val').textContent = e.target.value; applyRisoPreview(); });
+      cst.type = 'range'; cst.className = 'panel-slider'; cst.min = '-100'; cst.max = '100'; cst.value = curContrast;
+      cst.dataset.channel = key;
+      cst.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        window.risoLayerSettings[mode][key].contrast = val;
+        if (mode === 'PIPETTE' && typeof activeChans[key] === 'object' && activeChans[key] !== null) {
+          activeChans[key].contrast = val;
+        }
+        cstBox.querySelector('.val').textContent = val;
+        applyRisoPreview();
+      });
       cstBox.appendChild(cst);
       sliders.appendChild(cstBox);
 
@@ -2921,11 +2960,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (imgData) {
           let processed = imgData;
 
-          // Per-layer adjustments
-          if ((mode === 'PIPETTE' || mode === 'AUTO_BICHROMIE') && chanData) {
-            if (chanData.contrast || chanData.brightness) {
-              processed = applyContrastBrightness(processed, chanData.contrast || 0, chanData.brightness || 0);
-            }
+          // Per-layer adjustments (contrast, brightness)
+          const layerSettings = window.risoLayerSettings?.[mode]?.[key] || {};
+          const cstVal = (mode === 'PIPETTE' && chanData?.contrast !== undefined) ? chanData.contrast : (layerSettings.contrast || 0);
+          const brtVal = (mode === 'PIPETTE' && chanData?.brightness !== undefined) ? chanData.brightness : (layerSettings.brightness || 0);
+          if (cstVal || brtVal) {
+            processed = applyContrastBrightness(processed, cstVal, brtVal);
           }
 
           if (state.risoLevels) {
@@ -2989,7 +3029,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   $('btnRisoHalftone').addEventListener('click', () => {
     console.log('[Studio] Halftone clicked');
-    state.risoHalftone = parseInt($('sliderRisoHalftone').value);
+    state.risoHalftone = parseFloat($('sliderRisoHalftone').value);
     applyRisoPreview();
   });
 
@@ -3010,6 +3050,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     $('risoChannelsList').querySelectorAll('select').forEach(sel => {
       const key = sel.dataset.channel;
+      // Ne pas exporter les calques dont la vue est masquée
+      if (window.risoVisibility && window.risoVisibility[mode] && window.risoVisibility[mode][key] === false) {
+        return;
+      }
       const colorKey = sel.value;
       if (colorKey !== 'none') {
         let imgData = layersData[key];
@@ -3017,9 +3061,19 @@ document.addEventListener('DOMContentLoaded', function() {
           imgData = layersData[key].imageData;
         }
         if (imgData) {
+          let processed = imgData;
+          const layerSettings = window.risoLayerSettings?.[mode]?.[key] || {};
+          const cstVal = (mode === 'PIPETTE' && layersData[key]?.contrast !== undefined) ? layersData[key].contrast : (layerSettings.contrast || 0);
+          const brtVal = (mode === 'PIPETTE' && layersData[key]?.brightness !== undefined) ? layersData[key].brightness : (layerSettings.brightness || 0);
+          if (cstVal || brtVal) {
+            processed = applyContrastBrightness(processed, cstVal, brtVal);
+          }
+          if (state.risoLevels) processed = posterizeImage(processed, state.risoLevels);
+          if (state.risoHalftone) processed = applyHalftone(processed, state.risoHalftone, 45);
+
           toExport.push({
             name: key + '_' + colorKey,
-            imageData: imgData
+            imageData: processed
           });
         }
       }
@@ -3027,6 +3081,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (toExport.length > 0) {
       exportLayersAsZip(toExport, 'riso_' + mode.toLowerCase());
+    } else {
+      showToast(CONFIG.translations['studio_js.no_active_layer'] || 'Aucun calque actif et visible à exporter.', true);
     }
   });
 
@@ -3034,10 +3090,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const mode = $('selRisoMode').value;
     const chanList = $('risoChannelsList').querySelectorAll('select');
     let hasActiveLayer = false;
-    chanList.forEach(sel => { if(sel.value !== 'none') hasActiveLayer = true; });
+    chanList.forEach(sel => {
+      const key = sel.dataset.channel;
+      const isVisible = !(window.risoVisibility && window.risoVisibility[mode] && window.risoVisibility[mode][key] === false);
+      if (sel.value !== 'none' && isVisible) hasActiveLayer = true;
+    });
 
     if (!window.risoChannels || !hasActiveLayer) {
-      showToast(CONFIG.translations['studio_js.no_riso_data'] || 'Aucune donnée Riso à exporter. Veuillez d\'abord choisir un mode de séparation.', true);
+      showToast(CONFIG.translations['studio_js.no_active_layer'] || 'Aucun calque actif et visible à exporter. Veuillez vérifier que les calques souhaités ne sont pas masqués.', true);
       return;
     }
     
@@ -3059,8 +3119,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         let pChannels;
-        // Pour la page courante ou si ce n(window.CONFIG && window.CONFIG.translations && window.CONFIG.translations["js.studio.est_pas_un_pdf__utiliser_les_c"] || 'est pas un PDF, utiliser les calques déjà générés (et la Pipette)
-        if (p === state.currentPage || !state.isPdf || mode === ')PIPETTE') {
+        // Pour la page courante ou si ce n'est pas un PDF, utiliser les calques déjà générés (et la Pipette)
+        if (p === state.currentPage || !state.isPdf || mode === 'PIPETTE') {
           pChannels = window.risoChannels[mode];
         } else {
           // Rendu de la page PDF
@@ -3090,6 +3150,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         for (const sel of chanList) {
           const key = sel.dataset.channel;
+          // Ignorer les calques masqués
+          if (window.risoVisibility && window.risoVisibility[mode] && window.risoVisibility[mode][key] === false) {
+            continue;
+          }
+
           const colorKey = sel.value;
           if (colorKey !== 'none') {
             let imgData = pChannels[key];
@@ -3103,10 +3168,11 @@ document.addEventListener('DOMContentLoaded', function() {
               
               // Appliquer les effets Riso (contraste, postérisation, trame) sur le calque avant export
               let processed = imgData;
-              if ((mode === 'PIPETTE' || mode === 'AUTO_BICHROMIE') && pChannels[key]) {
-                if (pChannels[key].contrast || pChannels[key].brightness) {
-                  processed = applyContrastBrightness(processed, pChannels[key].contrast || 0, pChannels[key].brightness || 0);
-                }
+              const layerSettings = window.risoLayerSettings?.[mode]?.[key] || {};
+              const cstVal = (mode === 'PIPETTE' && pChannels[key]?.contrast !== undefined) ? pChannels[key].contrast : (layerSettings.contrast || 0);
+              const brtVal = (mode === 'PIPETTE' && pChannels[key]?.brightness !== undefined) ? pChannels[key].brightness : (layerSettings.brightness || 0);
+              if (cstVal || brtVal) {
+                processed = applyContrastBrightness(processed, cstVal, brtVal);
               }
               if (state.risoLevels) processed = posterizeImage(processed, state.risoLevels);
               if (state.risoHalftone) processed = applyHalftone(processed, state.risoHalftone, 45);
