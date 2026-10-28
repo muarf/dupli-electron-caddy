@@ -2,31 +2,37 @@
 
 Application de gestion de comptabilité pour collectifs de reproduction (duplicopieurs/photocopieurs) avec calcul des prix de revient, packagée en application Electron cross-platform avec serveur Caddy intégré.
 
-## 📥 Téléchargement
+## 📥 Téléchargements & Versions
 
-Choisissez la version qui vous convient :
+Choisissez le canal correspondant à vos besoins :
 
-### 🟢 Version Stable (Recommandée)
+### 🟢 Version Stable (v1.5.62)
 Dernière version stable testée et approuvée.
-[![Stable Release](https://img.shields.io/github/v/release/muarf/dupli-electron-caddy?label=Stable&style=for-the-badge&color=green)](https://github.com/muarf/dupli-electron-caddy/releases/latest)
-- **Windows** : [Duplicator-Setup-1.5.57.exe](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.57/Duplicator-Setup-1.5.57.exe)
-- **Linux** : [Duplicator-1.5.57-x86_64.AppImage](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.57/Duplicator-1.5.57-x86_64.AppImage)
-- **macOS** : [Duplicator-1.5.57.dmg](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.57/Duplicator-1.5.57.dmg)
+[![Stable Release](https://img.shields.io/github/v/release/muarf/dupli-electron-caddy?label=Stable&style=for-the-badge&color=green)](https://github.com/muarf/dupli-electron-caddy/releases/tag/v1.5.62)
+- **Windows** : [Duplicator-Setup-1.5.62.exe](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.62/Duplicator-Setup-1.5.62.exe)
+- **Linux (AppImage)** : [Duplicator-1.5.62-x86_64.AppImage](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.62/Duplicator-1.5.62-x86_64.AppImage)
+- **Linux (Debian/Ubuntu)** : [Duplicator-1.5.62-amd64.deb](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.62/Duplicator-1.5.62-amd64.deb)
 
 ---
 
-### 🧪 Version Beta (Dernières nouveautés)
-Contient les dernières fonctionnalités en cours de test (peut être instable).
+### 🧪 Version Beta (v2.0)
+Fonctionnalités récentes stabilisées (moteur Tauri v2, auto-tirage, cross-platform unifié).
 [![Beta Release](https://img.shields.io/github/v/release/muarf/dupli-electron-caddy?include_prereleases&label=Beta&style=for-the-badge&color=orange)](https://github.com/muarf/dupli-electron-caddy/releases)
-- **Windows/Linux** : [Voir les dernières releases Beta](https://github.com/muarf/dupli-electron-caddy/releases)
+- **Windows / Linux** : [Voir les dernières releases Beta](https://github.com/muarf/dupli-electron-caddy/releases?q=beta)
 
 ---
 
-### ✨ Nouveautés de la v2.0 (Beta)
-La version 2.0 introduit le nouveau moteur d'automatisation et l'unification système :
-- **🚀 Nouveau Module d'Auto-Tirage** : Automatisation complète du flux d'impression, ré-analyse intelligente des formats et persistance des sessions (ne perd plus les données en cas de coupure).
-- **🖥️ Unification Cross-Platform** : Support complet de Linux (AppImage/Deb) et intégration d'ImageMagick pour un traitement d'image identique sur Windows et Linux.
-- **🛡️ Fiabilité & Santé** : Isolation du canal Beta (`com.dupli.beta`) et nouveau système de diagnostic (Health Check) pour le serveur intégré.
+### ⚡ Version Alpha (v3.0)
+Canal expérimental de développement actif (tapis de tri interactif, synchronisation avancée du spooler d'impression).
+- **Windows / Linux** : [Voir les dernières releases Alpha](https://github.com/muarf/dupli-electron-caddy/releases?q=alpha)
+
+---
+
+### ✨ Nouveautés majeures (Beta & Alpha)
+- **🧺 Tapis de Tri (Auto-Tirage)** : Organisation visuelle et tri intuitif des travaux du spooler avec synchronisation temps réel et calcul précis par copie.
+- **🚀 Moteur d'Automatisation** : Analyse intelligente des formats, imposition automatique et persistance des sessions.
+- **🖥️ Unification Cross-Platform** : Support complet Linux & Windows sous moteur Tauri et traitement graphique ImageMagick unifié.
+- **🛡️ Fiabilité & Santé** : Isolation des canaux de release et système de diagnostic (Health Check) intégré.
 
 ---
 
