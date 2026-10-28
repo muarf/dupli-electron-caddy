@@ -2,21 +2,16 @@
 
 Application de gestion de comptabilité pour collectifs de reproduction (duplicopieurs/photocopieurs) avec calcul des prix de revient, atelier d'imposition et d'auto-tirage, packagée en application native cross-platform via **Tauri v2/v3** avec serveur Caddy et PHP intégrés.
 
-## 📥 Téléchargements & Versions
+## 📥 Téléchargements
 
-| Canal | Version | Moteur | Statut | Accès |
-| :--- | :--- | :--- | :--- | :--- |
-| **🟢 Production (Main)** | `v3.0.x` | Tauri | Version principale recommandée | [Dernières Releases](https://github.com/muarf/dupli-electron-caddy/releases) |
-| **🧪 Beta** | `v2.0.x` | Tauri | Canal de consolidation | [Releases Beta](https://github.com/muarf/dupli-electron-caddy/releases?q=beta) |
-| **⚡ Alpha** | `v3.0.x` | Tauri | Développement actif (spooler, tapis de tri) | [Releases Alpha](https://github.com/muarf/dupli-electron-caddy/releases?q=alpha) |
-| **📦 Archive Legacy** | `v1.5.62` | Electron | Ancienne version historique (archivée) | [Release v1.5.62](https://github.com/muarf/dupli-electron-caddy/releases/tag/v1.5.62) |
+L'application est distribuée via les releases GitHub pour Windows et Linux :
 
----
+- **Windows** : Installeur `.exe` (NSIS) ou `.msi`
+- **Linux** : Paquet `.AppImage` (portable) ou paquet Debian `.deb`
 
-### 🟢 Version Actuelle (Tauri)
-- **Windows** : Télécharger l'installeur `.exe` ou `.msi` sur la page des releases.
-- **Linux** : Paquets `.AppImage` et `.deb` disponibles.
-- 👉 **[Accéder aux dernières releases](https://github.com/muarf/dupli-electron-caddy/releases)**
+👉 **[Télécharger la dernière version (Releases GitHub)](https://github.com/muarf/dupli-electron-caddy/releases)**
+
+*(Pour l'ancienne version historique Electron v1.5.62, voir l'[archive v1.5.62](https://github.com/muarf/dupli-electron-caddy/releases/tag/v1.5.62)).*
 
 ---
 
