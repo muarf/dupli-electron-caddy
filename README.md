@@ -4,39 +4,37 @@ Application de gestion de comptabilité pour collectifs de reproduction (duplico
 
 ## 📥 Téléchargements & Versions
 
-Choisissez le canal correspondant à vos besoins :
-
-### 🟢 Version Stable (v1.5.62)
-Dernière version stable testée et approuvée.
-[![Stable Release](https://img.shields.io/github/v/release/muarf/dupli-electron-caddy?label=Stable&style=for-the-badge&color=green)](https://github.com/muarf/dupli-electron-caddy/releases/tag/v1.5.62)
-- **Windows** : [Duplicator-Setup-1.5.62.exe](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.62/Duplicator-Setup-1.5.62.exe)
-- **Linux (AppImage)** : [Duplicator-1.5.62-x86_64.AppImage](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.62/Duplicator-1.5.62-x86_64.AppImage)
-- **Linux (Debian/Ubuntu)** : [Duplicator-1.5.62-amd64.deb](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.62/Duplicator-1.5.62-amd64.deb)
+| Canal | Version | Moteur | Statut | Accès |
+| :--- | :--- | :--- | :--- | :--- |
+| **🟢 Stable** | `v1.5.62` | Electron | Recommandé en production | [Télécharger (v1.5.62)](#-version-stable-v1562) |
+| **🧪 Beta** | `v2.0.x` | Tauri | Nouvelles fonctionnalités stabilisées | [Releases Beta](https://github.com/muarf/dupli-electron-caddy/releases?q=beta) |
+| **⚡ Alpha** | `v3.0.x` | Tauri | Développement actif (spooler, tapis de tri) | [Releases Alpha](https://github.com/muarf/dupli-electron-caddy/releases?q=alpha) |
 
 ---
 
-### 🧪 Version Beta (v2.0)
-Fonctionnalités récentes stabilisées (moteur Tauri v2, auto-tirage, cross-platform unifié).
-[![Beta Release](https://img.shields.io/github/v/release/muarf/dupli-electron-caddy?include_prereleases&label=Beta&style=for-the-badge&color=orange)](https://github.com/muarf/dupli-electron-caddy/releases)
-- **Windows / Linux** : [Voir les dernières releases Beta](https://github.com/muarf/dupli-electron-caddy/releases?q=beta)
+### 🟢 Version Stable (`v1.5.62`)
+Version éprouvée basée sur **Electron + Caddy**, recommandée pour une utilisation quotidienne.
+
+- **Windows** : [Duplicator-Setup-1.5.62.exe](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.62/Duplicator-Setup-1.5.62.exe) *(Installeur)* | [Version portable .zip](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.62/Duplicator-1.5.62-win.zip)
+- **Linux** : [Duplicator-1.5.62-x86_64.AppImage](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.62/Duplicator-1.5.62-x86_64.AppImage) | [Paquet Debian/Ubuntu .deb](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.62/Duplicator-1.5.62-amd64.deb)
 
 ---
 
-### ⚡ Version Alpha (v3.0)
-Canal expérimental de développement actif (tapis de tri interactif, synchronisation avancée du spooler d'impression).
-- **Windows / Linux** : [Voir les dernières releases Alpha](https://github.com/muarf/dupli-electron-caddy/releases?q=alpha)
+### 🧪 Version Beta (`v2.0`)
+Version moderne basée sur **Tauri** avec performances accrues et empreinte mémoire réduite.
+- Accéder aux téléchargements : **[Dernières releases Beta (Windows & Linux)](https://github.com/muarf/dupli-electron-caddy/releases?q=beta)**
 
 ---
 
-### ✨ Nouveautés majeures (Beta & Alpha)
-- **🧺 Tapis de Tri (Auto-Tirage)** : Organisation visuelle et tri intuitif des travaux du spooler avec synchronisation temps réel et calcul précis par copie.
-- **🚀 Moteur d'Automatisation** : Analyse intelligente des formats, imposition automatique et persistance des sessions.
-- **🖥️ Unification Cross-Platform** : Support complet Linux & Windows sous moteur Tauri et traitement graphique ImageMagick unifié.
-- **🛡️ Fiabilité & Santé** : Isolation des canaux de release et système de diagnostic (Health Check) intégré.
+### ⚡ Version Alpha (`v3.0`)
+Canal de test à la pointe du développement :
+- Intègre le **Tapis de tri interactif** pour l'auto-tirage.
+- Synchronisation avancée du spooler d'impression et détection automatique multi-copies.
+- Accéder aux téléchargements : **[Dernières releases Alpha (Windows & Linux)](https://github.com/muarf/dupli-electron-caddy/releases?q=alpha)**
 
 ---
 
-👉 **[Voir toutes les releases](https://github.com/muarf/dupli-electron-caddy/releases)**
+👉 **[Voir l'ensemble des releases sur GitHub](https://github.com/muarf/dupli-electron-caddy/releases)**
 
 ## 🚀 Fonctionnalités
 
