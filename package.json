@@ -1,6 +1,6 @@
 {
   "name": "dupli-tauri-alpha",
-  "version": "1.5.65",
+  "version": "1.5.66",
   "scripts": {
     "download-caddy": "node scripts/download-caddy.js",
     "download-binaries": "node scripts/download-binaries.js",
