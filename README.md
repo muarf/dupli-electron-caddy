@@ -1,44 +1,36 @@
-# Duplicator - Gestion de Comptabilité pour Collectif de Reproduction
+# Duplicator - Gestion de Comptabilité & Atelier d'Impression
 
-Application de gestion de comptabilité pour collectifs de reproduction (duplicopieurs/photocopieurs) avec calcul des prix de revient, packagée en application Electron cross-platform avec serveur Caddy intégré.
+Application de gestion de comptabilité pour collectifs de reproduction (duplicopieurs/photocopieurs) avec calcul des prix de revient, atelier d'imposition et d'auto-tirage, packagée en application native cross-platform via **Tauri v2/v3** avec serveur Caddy et PHP intégrés.
 
 ## 📥 Téléchargements & Versions
 
 | Canal | Version | Moteur | Statut | Accès |
 | :--- | :--- | :--- | :--- | :--- |
-| **🟢 Stable** | `v1.5.62` | Electron | Recommandé en production | [Télécharger (v1.5.62)](#-version-stable-v1562) |
-| **🧪 Beta** | `v2.0.x` | Tauri | Nouvelles fonctionnalités stabilisées | [Releases Beta](https://github.com/muarf/dupli-electron-caddy/releases?q=beta) |
+| **🟢 Production (Main)** | `v3.0.x` | Tauri | Version principale recommandée | [Dernières Releases](https://github.com/muarf/dupli-electron-caddy/releases) |
+| **🧪 Beta** | `v2.0.x` | Tauri | Canal de consolidation | [Releases Beta](https://github.com/muarf/dupli-electron-caddy/releases?q=beta) |
 | **⚡ Alpha** | `v3.0.x` | Tauri | Développement actif (spooler, tapis de tri) | [Releases Alpha](https://github.com/muarf/dupli-electron-caddy/releases?q=alpha) |
+| **📦 Archive Legacy** | `v1.5.62` | Electron | Ancienne version historique (archivée) | [Release v1.5.62](https://github.com/muarf/dupli-electron-caddy/releases/tag/v1.5.62) |
 
 ---
 
-### 🟢 Version Stable (`v1.5.62`)
-Version éprouvée basée sur **Electron + Caddy**, recommandée pour une utilisation quotidienne.
-
-- **Windows** : [Duplicator-Setup-1.5.62.exe](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.62/Duplicator-Setup-1.5.62.exe) *(Installeur)* | [Version portable .zip](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.62/Duplicator-1.5.62-win.zip)
-- **Linux** : [Duplicator-1.5.62-x86_64.AppImage](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.62/Duplicator-1.5.62-x86_64.AppImage) | [Paquet Debian/Ubuntu .deb](https://github.com/muarf/dupli-electron-caddy/releases/download/v1.5.62/Duplicator-1.5.62-amd64.deb)
-
----
-
-### 🧪 Version Beta (`v2.0`)
-Version moderne basée sur **Tauri** avec performances accrues et empreinte mémoire réduite.
-- Accéder aux téléchargements : **[Dernières releases Beta (Windows & Linux)](https://github.com/muarf/dupli-electron-caddy/releases?q=beta)**
+### 🟢 Version Actuelle (Tauri)
+- **Windows** : Télécharger l'installeur `.exe` ou `.msi` sur la page des releases.
+- **Linux** : Paquets `.AppImage` et `.deb` disponibles.
+- 👉 **[Accéder aux dernières releases](https://github.com/muarf/dupli-electron-caddy/releases)**
 
 ---
 
-### ⚡ Version Alpha (`v3.0`)
-Canal de test à la pointe du développement :
-- Intègre le **Tapis de tri interactif** pour l'auto-tirage.
-- Synchronisation avancée du spooler d'impression et détection automatique multi-copies.
-- Accéder aux téléchargements : **[Dernières releases Alpha (Windows & Linux)](https://github.com/muarf/dupli-electron-caddy/releases?q=alpha)**
+### ✨ Fonctionnalités majeures
+- **🧺 Tapis de Tri (Auto-Tirage)** : Organisation visuelle et tri intuitif des travaux du spooler avec synchronisation temps réel et calcul précis par copie.
+- **🚀 Moteur d'Automatisation** : Analyse intelligente des formats, imposition automatique et persistance des sessions.
+- **🖥️ Moteur Moderne Tauri** : Performances accrues, empreinte mémoire ultra-faible, binaire natif et traitement d'image unifié (ImageMagick / Ghostscript).
+- **🛡️ Fiabilité & Santé** : Système de diagnostic (Health Check) intégré pour les services Caddy/PHP.
 
 ---
 
-👉 **[Voir l'ensemble des releases sur GitHub](https://github.com/muarf/dupli-electron-caddy/releases)**
+## 🚀 Fonctionnalités Détaillées
 
-## 🚀 Fonctionnalités
-
-### 🖨️ Production & Impression (Beta)
+### 🖨️ Production & Impression
 - **Imposition automatique** : Transformation de PDF A4 en planches A3 prêtes à l'impression.
 - **Traitement d'images** : Optimisation des densités pour la reproduction.
 - **Multimachines** : Gestion centralisée pour les collectifs équipés de plusieurs parcs.
@@ -64,38 +56,33 @@ Canal de test à la pointe du développement :
   - Prévisualisation intégrée et téléchargement
   - Fallback Ghostscript pour PDF incompatibles
 - Interface web moderne avec drag & drop
-- **Images vers Pdf** et reciproque
-- **Separateur de couleurs**
+- **Images vers Pdf** et réciproque
+- **Séparateur de couleurs**
    - RGB, CMYK, 2 couleurs, pipette
 - **Effets images**
-  - Posterisation ( pochoirs multi couches)
+  - Postérisation (pochoirs multi-couches)
   - Tramage 
 
 ### 🔧 Technique
+- Moteur applicatif **Tauri** (Rust + WebView native)
 - Serveur Caddy intégré pour la portabilité
-- Support PHP avec serveur intégré pour windows
-- Application Electron cross-platform (Windows, Linux, Macos à venir)
-- Interface utilisateur intuitive ( on essaie ;))
+- Moteur PHP embarqué pour le backend applicatif
 
+---
 
-
-
-## 📦 Installation
-
-
-
+## 📦 Installation & Développement
 
 ### Prérequis
 
 - Node.js 18+ 
 - npm ou yarn
+- Rust & Cargo (`rustup`)
 - **Composer** (pour les dépendances PHP)
 
 ### Installation de Composer
 
 **Windows (avec Chocolatey) :**
 ```powershell
-# Ouvrir PowerShell en tant qu'administrateur
 choco install composer -y
 ```
 
@@ -104,38 +91,34 @@ Téléchargez et installez Composer depuis https://getcomposer.org/download/
 
 **Linux/macOS :**
 ```bash
-# Installation globale
 curl -sS https://getcomposer.org/installer | php
 sudo mv composer.phar /usr/local/bin/composer
 ```
 
 ### Installation des dépendances
 
-**1. Dépendances Node.js :**
 ```bash
+# 1. Dépendances Node.js
 npm install
-```
 
-**2. Dépendances PHP (dans le dossier app/) :**
-```bash
+# 2. Dépendances PHP (dans app/)
 cd app
 composer install
 cd ..
-```
 
-### Téléchargement des binaires
-
-```bash
-# Télécharger Caddy et PHP pour toutes les plateformes
+# 3. Téléchargement des sidecars et binaires requis
 npm run download-all
+node scripts/download-tauri-sidecars.js
 ```
 
-## 🔧 Développement
+---
 
-### Démarrer en mode développement
+## 🔧 Lancement en développement
 
 ```bash
-npm start
+npm run dev
+# ou directement :
+npx @tauri-apps/cli dev
 ```
 
 ### Tests
@@ -154,39 +137,18 @@ npm run test:e2e
 npm test
 ```
 
+---
 
-## 🏗️ Build
-
-### Build pour toutes les plateformes
-
-```bash
-npm run build:caddy
-```
-
-### Build spécifique
+## 🏗️ Build de production
 
 ```bash
-# Windows
-npm run build:caddy -- --win
-
-# Linux
-npm run build:caddy -- --linux
-
-# macOS
-npm run build:caddy -- --mac
+# Build de l'application Tauri pour votre système courant :
+npx @tauri-apps/cli build
 ```
 
-
-
-
-### Releases
-
-Les releases sont automatiquement créées avec :
-- Windows: `Duplicator-Caddy-Setup-{version}.exe`
-- Linux: `Duplicator-{version}-x86_64.AppImage`
-- macOS: `Duplicator-{version}.dmg`
-
-Les liens ci-dessus pointent automatiquement vers la dernière version disponible.
+Les livrables générés se trouvent dans :
+- Windows: `src-tauri/target/release/bundle/nsis/` et `.../msi/`
+- Linux: `src-tauri/target/release/bundle/appimage/` et `.../deb/`
 
 ## ✅ À vérifier
 
