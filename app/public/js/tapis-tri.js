@@ -22,6 +22,15 @@
   let isFetching = false;
   let activeSessions = [];
 
+  function resolveThumbUrl(url) {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const origin = (window.location && window.location.origin && window.location.origin.includes('8000'))
+      ? ''
+      : 'http://127.0.0.1:8000';
+    return `${origin}${url.startsWith('/') ? '' : '/'}${url}`;
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     initTapisTri();
   });
@@ -173,9 +182,10 @@
     const docName = job.document_display_name || job.document || 'Document sans titre';
 
     let thumbHtml = '';
-    if (job.thumbnail_url) {
+    const resolvedThumb = resolveThumbUrl(job.thumbnail_url);
+    if (resolvedThumb) {
       thumbHtml = `<div class="tapis-card-thumb-wrapper">
-        <img src="${job.thumbnail_url}" alt="Aperçu" class="tapis-card-thumb" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'tapis-card-thumb-placeholder\\'><i class=\\'fa fa-file-pdf-o\\'></i></div>';">
+        <img src="${resolvedThumb}" alt="Aperçu" class="tapis-card-thumb" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'tapis-card-thumb-placeholder\\'><i class=\\'fa fa-file-pdf-o\\'></i></div>';">
       </div>`;
     } else {
       thumbHtml = `<div class="tapis-card-thumb-placeholder">
@@ -191,7 +201,7 @@
         </label>
         <span class="tapis-card-time"><i class="fa fa-clock-o"></i> ${dateStr}</span>
         <div class="tapis-card-actions" onclick="event.stopPropagation()">
-          ${job.thumbnail_url ? `<button class="tapis-btn-icon" title="Agrandir l'aperçu" onclick="window.tapisPreviewThumb('${job.thumbnail_url}', '${escapeHtml(docName)}')"><i class="fa fa-search-plus"></i></button>` : ''}
+          ${resolvedThumb ? `<button class="tapis-btn-icon" title="Agrandir l'aperçu" onclick="window.tapisPreviewThumb('${resolvedThumb}', '${escapeHtml(docName)}')"><i class="fa fa-search-plus"></i></button>` : ''}
           <button class="tapis-btn-icon text-danger" title="Supprimer" onclick="window.tapisDeleteSingleJob(${job.id})"><i class="fa fa-trash-o"></i></button>
         </div>
       </div>
