@@ -24,6 +24,12 @@ $duplicopieurs = $db->select("SELECT id, marque, modele FROM duplicopieurs WHERE
                 <span class="tapis-live-dot"></span>
                 Écoute active
             </span>
+            <button class="btn btn-sm btn-outline-light" onclick="window.tapisRefresh()" title="Actualiser le tapis de tri">
+                <i id="btn-tapis-refresh" class="fa fa-refresh"></i> Actualiser
+            </button>
+            <button class="btn btn-sm btn-outline-light" onclick="window.tapisToggleSelectAll()" title="Tout cocher / décocher">
+                <i class="fa fa-check-square-o"></i> Tout sélectionner
+            </button>
             <button class="btn btn-sm btn-outline-light" onclick="tapisOpenManualModal()">
                 <i class="fa fa-plus"></i> <?php _e('auto_tirage.add_manual_print'); ?>
             </button>
@@ -103,7 +109,7 @@ $duplicopieurs = $db->select("SELECT id, marque, modele FROM duplicopieurs WHERE
                 </div>
 
                 <!-- Récapitulatif condensé des documents -->
-                <div id="checkout-modal-items-list" class="mb-3" style="max-height: 120px; overflow-y: auto; background: #fff; border: 1px solid #edf2f7; border-radius: 8px;">
+                <div id="checkout-modal-items-list" class="mb-3" style="max-height: 140px; overflow-y: auto; background: #fff; border: 1px solid #edf2f7; border-radius: 8px;">
                     <!-- Rempli en JS -->
                 </div>
 
@@ -113,46 +119,43 @@ $duplicopieurs = $db->select("SELECT id, marque, modele FROM duplicopieurs WHERE
                     <input type="text" id="checkout-client-name" class="form-control" value="Passage" placeholder="Client de passage ou nom...">
                 </div>
 
-                <!-- Choix du moyen de paiement -->
+                <!-- As-tu payé ? (Comme sur tirage_multimachine) -->
                 <div class="form-group mb-3">
-                    <label class="font-weight-bold" style="font-size: 0.9rem;">Moyen de règlement</label>
-                    <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
-                        <button type="button" class="btn btn-payment-method btn-primary active w-33" data-method="especes" onclick="tapisSetPaymentMethod('especes')">
-                            <i class="fa fa-money"></i> <?php _e('auto_tirage.payment_cash'); ?>
-                        </button>
-                        <button type="button" class="btn btn-payment-method btn-outline-secondary w-33" data-method="cb" onclick="tapisSetPaymentMethod('cb')">
-                            <i class="fa fa-credit-card"></i> <?php _e('auto_tirage.payment_card'); ?>
-                        </button>
-                        <button type="button" class="btn btn-payment-method btn-outline-secondary w-33" data-method="cheque" onclick="tapisSetPaymentMethod('cheque')">
-                            <i class="fa fa-pencil-square-o"></i> <?php _e('auto_tirage.payment_check'); ?>
-                        </button>
+                    <label class="font-weight-bold" style="font-size: 0.95rem;">
+                        <strong><?php _e('tirage_multimachines.have_you_paid'); ?></strong>
+                    </label>
+                    <div class="d-flex align-items-center" style="gap: 25px; margin-top: 6px;">
+                        <label class="radio-inline mb-0" style="font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <input type="radio" name="checkout_paye" value="oui" id="checkout-paye-oui" checked onchange="tapisUpdatePaymentAmount()">
+                            <span class="font-weight-bold text-success"><?php _e('tirage_multimachines.yes'); ?></span>
+                        </label>
+                        <label class="radio-inline mb-0" style="font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <input type="radio" name="checkout_paye" value="non" id="checkout-paye-non" onchange="tapisUpdatePaymentAmount()">
+                            <span class="font-weight-bold text-danger"><?php _e('tirage_multimachines.no'); ?></span>
+                        </label>
                     </div>
                 </div>
 
-                <!-- Zone Espèces : Billets rapides & Rendu de monnaie -->
-                <div id="checkout-cash-details" class="p-3 mb-3" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;">
-                    <label class="font-weight-bold text-success" style="font-size: 0.85rem;"><?php _e('auto_tirage.amount_received'); ?></label>
-                    <div class="input-group mb-2">
-                        <input type="text" id="checkout-amount-received" class="form-control form-control-lg font-weight-bold text-center" style="font-size: 1.4rem;" placeholder="0.00">
+                <!-- Montant payé (Combien) -->
+                <div class="form-group mb-3" id="checkout-amount-group">
+                    <label class="font-weight-bold" for="checkout-amount-paid" style="font-size: 0.9rem;">
+                        <?php _e('tirage_multimachines.amount_paid'); ?>
+                    </label>
+                    <div class="input-group">
+                        <input type="number" step="0.01" min="0" id="checkout-amount-paid" class="form-control form-control-lg font-weight-bold text-center" style="font-size: 1.4rem;" placeholder="0.00">
                         <div class="input-group-append">
                             <span class="input-group-text font-weight-bold">€</span>
                         </div>
                     </div>
-                    
-                    <!-- Boutons billets rapides -->
-                    <div class="d-flex justify-content-between gap-1 mb-2">
-                        <button type="button" class="btn btn-sm btn-outline-success quick-amount-btn" onclick="tapisSetQuickAmount('exact')">Exact</button>
-                        <button type="button" class="btn btn-sm btn-outline-success quick-amount-btn" onclick="tapisSetQuickAmount(5)">5 €</button>
-                        <button type="button" class="btn btn-sm btn-outline-success quick-amount-btn" onclick="tapisSetQuickAmount(10)">10 €</button>
-                        <button type="button" class="btn btn-sm btn-outline-success quick-amount-btn" onclick="tapisSetQuickAmount(20)">20 €</button>
-                        <button type="button" class="btn btn-sm btn-outline-success quick-amount-btn" onclick="tapisSetQuickAmount(50)">50 €</button>
-                    </div>
+                    <small class="form-text text-muted"><?php _e('tirage_multimachines.amount_in_euros'); ?></small>
+                </div>
 
-                    <!-- Affichage du rendu -->
-                    <div class="d-flex justify-content-between align-items-center pt-2 border-top">
-                        <span class="font-weight-bold"><?php _e('auto_tirage.change_due'); ?> :</span>
-                        <span id="checkout-change-due" style="font-size: 1.4rem; font-weight: 800;" class="text-success">0.00 €</span>
-                    </div>
+                <!-- Un petit mot -->
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold" for="checkout-mot" style="font-size: 0.9rem;">
+                        <?php _e('tirage_multimachines.message_placeholder'); ?>
+                    </label>
+                    <textarea id="checkout-mot" class="form-control" rows="2" placeholder="<?php _e('tirage_multimachines.message_placeholder'); ?>"></textarea>
                 </div>
             </div>
             <div class="modal-footer" style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 1rem 1.5rem;">
@@ -276,6 +279,99 @@ $duplicopieurs = $db->select("SELECT id, marque, modele FROM duplicopieurs WHERE
             </div>
             <div class="modal-body text-center p-4">
                 <img id="tapis-preview-img" src="" style="max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modale 5 : Éditer le tirage -->
+<div class="modal fade" id="modal-edit-job" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content" style="border-radius: 14px;">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title font-weight-bold">
+                    <i class="fa fa-pencil"></i> Éditer le tirage
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-job-id" value="">
+                
+                <div class="form-group">
+                    <label class="font-weight-bold">Nom du document</label>
+                    <input type="text" id="edit-job-docname" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label class="font-weight-bold">Machine</label>
+                    <select id="edit-job-machine" class="form-control">
+                        <optgroup label="Photocopieurs">
+                            <?php foreach ($photocopieurs as $p): ?>
+                                <option value="photocop_<?= $p['id'] ?>" data-type="photocop" data-id="<?= $p['id'] ?>" data-name="<?= htmlspecialchars($p['marque']) ?>">
+                                    Photocopieur : <?= htmlspecialchars($p['marque'] . ' ' . $p['modele']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </optgroup>
+                        <optgroup label="Duplicopieurs">
+                            <?php foreach ($duplicopieurs as $d): ?>
+                                <option value="dupli_<?= $d['id'] ?>" data-type="dupli" data-id="<?= $d['id'] ?>" data-name="<?= htmlspecialchars($d['marque']) ?>">
+                                    Duplicopieur : <?= htmlspecialchars($d['marque'] . ' ' . $d['modele']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div class="row">
+                    <div class="col-6 form-group">
+                        <label class="font-weight-bold">Format</label>
+                        <select id="edit-job-taille" class="form-control">
+                            <option value="A4">A4</option>
+                            <option value="A3">A3</option>
+                        </select>
+                    </div>
+                    <div class="col-6 form-group">
+                        <label class="font-weight-bold">Couleur / Noir</label>
+                        <select id="edit-job-couleur" class="form-control">
+                            <option value="non">Noir & Blanc</option>
+                            <option value="oui">Couleur</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-6 form-group">
+                        <label class="font-weight-bold">Recto-Verso</label>
+                        <select id="edit-job-rv" class="form-control">
+                            <option value="non">Recto (1 face)</option>
+                            <option value="oui">Recto / Verso</option>
+                        </select>
+                    </div>
+                    <div class="col-6 form-group">
+                        <label class="font-weight-bold">Nombre d'exemplaires</label>
+                        <input type="number" id="edit-job-copies" class="form-control" value="1" min="1">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-6 form-group">
+                        <label class="font-weight-bold">Pages par exemplaire</label>
+                        <input type="number" id="edit-job-pages" class="form-control" value="1" min="1">
+                    </div>
+                    <div class="col-6 form-group">
+                        <label class="font-weight-bold">Prix forcé (€)</label>
+                        <input type="number" step="0.01" min="0" id="edit-job-prix" class="form-control font-weight-bold" placeholder="Auto">
+                    </div>
+                </div>
+                <small class="text-muted">Si le prix forcé est laissé vide, il sera automatiquement recalculé d'après les tarifs.</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary font-weight-bold" onclick="tapisSubmitEditJob()">
+                    <i class="fa fa-save"></i> Enregistrer les modifications
+                </button>
             </div>
         </div>
     </div>

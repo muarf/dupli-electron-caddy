@@ -70,7 +70,14 @@
       const data = await response.json();
 
       if (data && data.success && Array.isArray(data.jobs)) {
+        const wasEmpty = (allJobs.length === 0);
         allJobs = data.jobs;
+
+        // Présélectionner automatiquement les documents à l'arrivée pour que le bouton d'encaissement soit immédiatement visible
+        if (wasEmpty && allJobs.length > 0 && selectedJobIds.size === 0) {
+          allJobs.forEach(j => selectedJobIds.add(j.id));
+        }
+
         renderTapisGrid();
         updateBottomBar();
       }
@@ -202,6 +209,7 @@
         <span class="tapis-card-time"><i class="fa fa-clock-o"></i> ${dateStr}</span>
         <div class="tapis-card-actions" onclick="event.stopPropagation()">
           ${resolvedThumb ? `<button class="tapis-btn-icon" title="Agrandir l'aperçu" onclick="window.tapisPreviewThumb('${resolvedThumb}', '${escapeHtml(docName)}')"><i class="fa fa-search-plus"></i></button>` : ''}
+          <button class="tapis-btn-icon text-primary" title="Éditer le tirage" onclick="window.tapisOpenEditModal(${job.id})"><i class="fa fa-pencil"></i></button>
           <button class="tapis-btn-icon text-danger" title="Supprimer" onclick="window.tapisDeleteSingleJob(${job.id})"><i class="fa fa-trash-o"></i></button>
         </div>
       </div>
@@ -280,7 +288,7 @@
   }
 
   function updateBottomBar() {
-    const bar = document.getElementById('tapis-bottom-bar');
+    const bar = document.getElementById('tapis-bottom-bar') || document.getElementById('bottom-action-bar');
     if (!bar) return;
 
     const count = selectedJobIds.size + manualItems.length;
@@ -290,9 +298,9 @@
       bar.classList.remove('visible');
     }
 
-    const countEl = document.getElementById('tapis-selected-count');
-    const totalEl = document.getElementById('tapis-selected-total');
-    const btnPay = document.getElementById('tapis-btn-checkout');
+    const countEl = document.getElementById('tapis-selected-count') || document.getElementById('bar-selected-count');
+    const totalEl = document.getElementById('tapis-selected-total') || document.getElementById('bar-total-amount');
+    const btnPay = document.getElementById('tapis-btn-checkout') || document.getElementById('btn-open-save');
 
     let total = 0;
     allJobs.forEach(j => {
@@ -326,7 +334,41 @@
     }
   }
 
-  // ── Modale Encaissement Express ───────────────────────────────────────────
+  // ── Actions d'en-tête (Tout sélectionner, Actualiser, etc.) ────────────────
+
+  window.tapisToggleSelectAll = function () {
+    const shouldSelectAll = (selectedJobIds.size < allJobs.length);
+    if (shouldSelectAll) {
+      allJobs.forEach(j => selectedJobIds.add(j.id));
+    } else {
+      selectedJobIds.clear();
+    }
+    const selectAllChk = document.getElementById('tapis-select-all');
+    if (selectAllChk) {
+      selectAllChk.checked = shouldSelectAll;
+      selectAllChk.indeterminate = false;
+    }
+    updateCardSelectionVisuals();
+    updateBottomBar();
+  };
+
+  window.tapisRefresh = function () {
+    const refreshBtn = document.getElementById('btn-tapis-refresh');
+    if (refreshBtn) refreshBtn.classList.add('fa-spin');
+    return loadJobs().finally(() => {
+      if (refreshBtn) refreshBtn.classList.remove('fa-spin');
+    });
+  };
+
+  window.tapisOpenSaveModal = function () {
+    window.tapisOpenCheckoutModal();
+  };
+
+  window.tapisConfirmSave = function () {
+    window.tapisSubmitCheckout();
+  };
+
+  // ── Modale Encaissement Direct (Alignée sur Tirage Multi-Machines) ─────────
 
   window.tapisOpenCheckoutModal = function () {
     const count = selectedJobIds.size + manualItems.length;
@@ -346,9 +388,15 @@
       if (selectedJobIds.has(j.id)) {
         const p = parseFloat(j.calculated_price || 0);
         total += p;
+        const isDuplex = (j.duplex == 1 || j.duplex === true || j.duplex === '1');
+        const duplexLabel = isDuplex ? 'R/V' : 'Recto';
+        const isColor = (String(j.color_mode || '').toLowerCase().includes('color') || String(j.color_mode) === '2');
+        const colorLabel = isColor ? 'Couleur' : 'N&B';
+
         itemsSummary.push({
-          title: j.document_display_name || j.document,
-          detail: `${j.paper_size || 'A4'} • ${j.total_pages || 1} pages`,
+          id: j.id,
+          title: j.document_display_name || j.document || 'Document',
+          detail: `${j.paper_size || 'A4'} • ${j.total_pages || 1} pages ${j.copies > 1 ? 'x' + j.copies : ''} • ${colorLabel} • ${duplexLabel}`,
           price: p.toFixed(2)
         });
       }
@@ -358,79 +406,71 @@
       const p = parseFloat(m.prix || 0);
       total += p;
       itemsSummary.push({
+        id: null,
         title: m.label || 'Tirage manuel',
-        detail: `${m.taille || 'A4'} • ${m.nb_f || 1} f.`,
+        detail: `${m.taille || 'A4'} • ${m.nb_f || 1} f. • ${m.couleur === 'oui' ? 'Couleur' : 'N&B'}`,
         price: p.toFixed(2)
       });
     });
 
     total = Math.round(total * 100) / 100;
 
-    // Remplir le modal
+    // Remplir le total à régler
     const totalDisplay = document.getElementById('checkout-modal-total');
     if (totalDisplay) totalDisplay.textContent = total.toFixed(2) + ' €';
 
-    const inputReceived = document.getElementById('checkout-amount-received');
-    if (inputReceived) {
-      inputReceived.value = total.toFixed(2);
-    }
-
-    const changeDisplay = document.getElementById('checkout-change-due');
-    if (changeDisplay) changeDisplay.textContent = '0.00 €';
-
+    // Remplir la liste des documents avec bouton d'édition
     const listContainer = document.getElementById('checkout-modal-items-list');
     if (listContainer) {
       listContainer.innerHTML = itemsSummary.map(item => `
-        <div class="checkout-item-row">
-          <div>
-            <strong>${escapeHtml(item.title)}</strong>
+        <div class="checkout-item-row" style="display:flex; justify-content:space-between; align-items:center; padding: 8px 12px; border-bottom: 1px solid #edf2f7;">
+          <div style="flex: 1; min-width: 0; padding-right: 10px;">
+            <strong style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(item.title)}</strong>
             <small class="text-muted d-block">${escapeHtml(item.detail)}</small>
           </div>
-          <span class="badge badge-light border">${item.price} €</span>
+          <div style="display:flex; align-items:center; gap: 8px; flex-shrink: 0;">
+            <span class="badge badge-light border font-weight-bold" style="font-size: 0.95rem;">${item.price} €</span>
+            ${item.id ? `<button type="button" class="btn btn-sm btn-outline-primary p-1" style="line-height:1; border-radius:4px;" title="Éditer le tirage" onclick="$('#modal-checkout-direct').modal('hide'); window.tapisOpenEditModal(${item.id});"><i class="fa fa-pencil"></i></button>` : ''}
+          </div>
         </div>
       `).join('');
     }
 
-    // Réinitialiser les choix de paiement
-    setPaymentMethod('especes');
+    // Réinitialiser les champs selon tirage_multimachine
+    const payeOui = document.getElementById('checkout-paye-oui');
+    if (payeOui) payeOui.checked = true;
+
+    const amountPaidInput = document.getElementById('checkout-amount-paid');
+    if (amountPaidInput) {
+      amountPaidInput.value = total.toFixed(2);
+    }
+
+    const motInput = document.getElementById('checkout-mot');
+    if (motInput) motInput.value = '';
+
+    const contactInput = document.getElementById('checkout-client-name');
+    if (contactInput && !contactInput.value) {
+      contactInput.value = 'Passage';
+    }
 
     if (window.$ && typeof $('#modal-checkout-direct').modal === 'function') {
       $('#modal-checkout-direct').modal('show');
       setTimeout(() => {
-        if (inputReceived) inputReceived.select();
+        if (amountPaidInput) amountPaidInput.select();
       }, 300);
     }
   };
 
-  window.tapisSetQuickAmount = function (amount) {
-    const inputReceived = document.getElementById('checkout-amount-received');
-    if (!inputReceived) return;
+  window.tapisUpdatePaymentAmount = function () {
+    const payeOui = document.getElementById('checkout-paye-oui');
+    const amountPaidInput = document.getElementById('checkout-amount-paid');
+    if (!amountPaidInput) return;
 
-    if (amount === 'exact') {
-      let total = getSelectedTotal();
-      inputReceived.value = total.toFixed(2);
+    if (payeOui && payeOui.checked) {
+      const total = getSelectedTotal();
+      amountPaidInput.value = total.toFixed(2);
     } else {
-      inputReceived.value = parseFloat(amount).toFixed(2);
-    }
-    tapisComputeChange();
-  };
-
-  window.tapisComputeChange = function () {
-    const inputReceived = document.getElementById('checkout-amount-received');
-    const changeDisplay = document.getElementById('checkout-change-due');
-    if (!inputReceived || !changeDisplay) return;
-
-    const received = parseFloat(inputReceived.value.replace(',', '.')) || 0;
-    const total = getSelectedTotal();
-    const change = Math.max(0, received - total);
-
-    changeDisplay.textContent = change.toFixed(2) + ' €';
-    if (received < total) {
-      changeDisplay.classList.add('text-danger');
-      changeDisplay.classList.remove('text-success');
-    } else {
-      changeDisplay.classList.remove('text-danger');
-      changeDisplay.classList.add('text-success');
+      amountPaidInput.value = '0.00';
     }
   };
 
@@ -447,29 +487,6 @@
     return Math.round(total * 100) / 100;
   }
 
-  let selectedPaymentMethod = 'especes';
-  window.tapisSetPaymentMethod = function (method) {
-    selectedPaymentMethod = method;
-    document.querySelectorAll('.btn-payment-method').forEach(btn => {
-      if (btn.getAttribute('data-method') === method) {
-        btn.classList.add('active', 'btn-primary');
-        btn.classList.remove('btn-outline-secondary');
-      } else {
-        btn.classList.remove('active', 'btn-primary');
-        btn.classList.add('btn-outline-secondary');
-      }
-    });
-
-    const cashDetails = document.getElementById('checkout-cash-details');
-    if (cashDetails) {
-      cashDetails.style.display = (method === 'especes') ? 'block' : 'none';
-    }
-  };
-
-  function setPaymentMethod(method) {
-    window.tapisSetPaymentMethod(method);
-  }
-
   window.tapisSubmitCheckout = async function () {
     const btnSubmit = document.getElementById('btn-submit-checkout');
     if (btnSubmit) {
@@ -479,14 +496,24 @@
 
     const contactInput = document.getElementById('checkout-client-name');
     const contact = (contactInput && contactInput.value.trim()) ? contactInput.value.trim() : 'Passage';
-    const amountReceivedInput = document.getElementById('checkout-amount-received');
-    const amountReceived = parseFloat(amountReceivedInput ? amountReceivedInput.value.replace(',', '.') : 0) || 0;
+
+    const payeOui = document.getElementById('checkout-paye-oui');
+    const isPaid = (payeOui && payeOui.checked) ? 'oui' : 'non';
+
+    const amountPaidInput = document.getElementById('checkout-amount-paid');
+    const amountPaid = parseFloat(amountPaidInput ? amountPaidInput.value.replace(',', '.') : 0) || 0;
+
+    const motInput = document.getElementById('checkout-mot');
+    const mot = motInput ? motInput.value.trim() : '';
 
     const payload = {
       job_ids: Array.from(selectedJobIds),
       contact: contact,
-      payment_method: selectedPaymentMethod,
-      amount_received: amountReceived,
+      paye: isPaid,
+      amount_paid: (isPaid === 'oui' ? amountPaid : 0),
+      amount_received: (isPaid === 'oui' ? amountPaid : 0),
+      payment_method: 'especes',
+      mot: mot,
       manual_items: manualItems
     };
 
@@ -508,14 +535,19 @@
         selectedJobIds.clear();
         manualItems.length = 0;
 
-        let successMsg = `✅ <strong>Encaissement validé (${result.total_price.toFixed(2)} €)</strong>`;
-        if (selectedPaymentMethod === 'especes' && result.change > 0) {
-          successMsg += `<br><span class="badge badge-success" style="font-size: 16px; margin-top: 8px;">Rendu monnaie : ${result.change.toFixed(2)} €</span>`;
+        let successMsg = `✅ <strong>Règlement validé (${result.total_price.toFixed(2)} €)</strong>`;
+        if (isPaid === 'oui') {
+          successMsg += `<br><span class="text-success font-weight-bold">Payé : ${amountPaid.toFixed(2)} € (Espèces)</span>`;
+        } else {
+          successMsg += `<br><span class="text-danger font-weight-bold">Non payé (À régler : ${result.total_price.toFixed(2)} €)</span>`;
+        }
+        if (mot) {
+          successMsg += `<br><small class="text-muted">Mot : ${escapeHtml(mot)}</small>`;
         }
 
         if (typeof showAppModal === 'function') {
           showAppModal({
-            title: "Paiement réussi",
+            title: "Règlement effectué",
             message: successMsg,
             type: "success"
           });
@@ -524,7 +556,7 @@
         // Rafraîchir les jobs immédiatement
         await loadJobs();
       } else {
-        const err = (result && result.error) ? result.error : "Erreur inconnue lors du paiement.";
+        const err = (result && result.error) ? result.error : "Erreur inconnue lors du règlement.";
         if (typeof showAppModal === 'function') {
           showAppModal({ message: err, type: "danger" });
         } else {
@@ -537,8 +569,121 @@
     } finally {
       if (btnSubmit) {
         btnSubmit.disabled = false;
-        btnSubmit.innerHTML = '<i class="fa fa-check"></i> Valider et libérer';
+        btnSubmit.innerHTML = '<i class="fa fa-check"></i> ' + translate('auto_tirage.validate_payment', 'Valider le règlement') + ' (Entrée)';
       }
+    }
+  };
+
+  // ── Modale Édition d'un Tirage ────────────────────────────────────────────
+
+  window.tapisOpenEditModal = function (jobId) {
+    const job = allJobs.find(j => j.id === jobId);
+    if (!job) return;
+
+    document.getElementById('edit-job-id').value = job.id;
+    document.getElementById('edit-job-docname').value = job.document_display_name || job.document || '';
+
+    // Machine select
+    const machineSelect = document.getElementById('edit-job-machine');
+    if (machineSelect) {
+      let matched = false;
+      for (let i = 0; i < machineSelect.options.length; i++) {
+        const opt = machineSelect.options[i];
+        if (job.machine_id && opt.getAttribute('data-id') == job.machine_id && opt.getAttribute('data-type') === job.machine_type) {
+          machineSelect.selectedIndex = i;
+          matched = true;
+          break;
+        }
+      }
+      if (!matched && (job.machine_name || job.printer_name)) {
+        const targetName = (job.machine_name || job.printer_name).toLowerCase();
+        for (let i = 0; i < machineSelect.options.length; i++) {
+          const opt = machineSelect.options[i];
+          if (opt.textContent.toLowerCase().includes(targetName)) {
+            machineSelect.selectedIndex = i;
+            break;
+          }
+        }
+      }
+    }
+
+    // Format
+    const sizeSelect = document.getElementById('edit-job-taille');
+    if (sizeSelect) {
+      sizeSelect.value = (String(job.paper_size || 'A4').toUpperCase().includes('A3')) ? 'A3' : 'A4';
+    }
+
+    // Couleur
+    const colorSelect = document.getElementById('edit-job-couleur');
+    if (colorSelect) {
+      const isColor = (String(job.color_mode || '').toLowerCase().includes('color') || String(job.color_mode) === '2');
+      colorSelect.value = isColor ? 'oui' : 'non';
+    }
+
+    // Duplex
+    const rvSelect = document.getElementById('edit-job-rv');
+    if (rvSelect) {
+      const isDuplex = (job.duplex == 1 || job.duplex === true || job.duplex === '1');
+      rvSelect.value = isDuplex ? 'oui' : 'non';
+    }
+
+    // Copies & Pages
+    document.getElementById('edit-job-copies').value = job.copies || 1;
+    document.getElementById('edit-job-pages').value = job.total_pages || 1;
+
+    // Prix forcé (laissé vide par défaut pour permettre le calcul auto, ou prix actuel)
+    document.getElementById('edit-job-prix').value = '';
+
+    if (window.$ && typeof $('#modal-edit-job').modal === 'function') {
+      $('#modal-edit-job').modal('show');
+    }
+  };
+
+  window.tapisSubmitEditJob = async function () {
+    const jobId = parseInt(document.getElementById('edit-job-id').value, 10);
+    if (!jobId) return;
+
+    const machineSelect = document.getElementById('edit-job-machine');
+    const selectedOpt = machineSelect ? machineSelect.options[machineSelect.selectedIndex] : null;
+    const machineType = selectedOpt ? selectedOpt.getAttribute('data-type') : 'photocop';
+    const machineId = selectedOpt ? parseInt(selectedOpt.getAttribute('data-id'), 10) : 1;
+    const machineName = selectedOpt ? selectedOpt.getAttribute('data-name') : '';
+
+    const priceVal = document.getElementById('edit-job-prix').value.trim();
+    const calculatedPrice = priceVal !== '' ? parseFloat(priceVal.replace(',', '.')) : null;
+
+    const payload = {
+      job_id: jobId,
+      document_name: document.getElementById('edit-job-docname').value.trim(),
+      copies: parseInt(document.getElementById('edit-job-copies').value, 10) || 1,
+      total_pages: parseInt(document.getElementById('edit-job-pages').value, 10) || 1,
+      paper_size: document.getElementById('edit-job-taille').value,
+      color_mode: document.getElementById('edit-job-couleur').value,
+      duplex: document.getElementById('edit-job-rv').value,
+      machine_type: machineType,
+      machine_id: machineId,
+      machine_name: machineName,
+      calculated_price: calculatedPrice
+    };
+
+    try {
+      const response = await fetch('?tapis_tri&action=update_job', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json();
+      if (result && result.success) {
+        if (window.$ && typeof $('#modal-edit-job').modal === 'function') {
+          $('#modal-edit-job').modal('hide');
+        }
+        await loadJobs();
+      } else {
+        alert((result && result.error) || "Erreur lors de la modification du tirage.");
+      }
+    } catch (err) {
+      console.error('[TapisTri] Erreur update_job:', err);
+      alert("Erreur réseau lors de la modification.");
     }
   };
 
@@ -709,13 +854,32 @@
       });
     }
 
-    const inputReceived = document.getElementById('checkout-amount-received');
-    if (inputReceived) {
-      inputReceived.addEventListener('input', window.tapisComputeChange);
-      inputReceived.addEventListener('keypress', (e) => {
+    const amountPaid = document.getElementById('checkout-amount-paid');
+    if (amountPaid) {
+      amountPaid.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
           window.tapisSubmitCheckout();
+        }
+      });
+    }
+
+    const clientName = document.getElementById('checkout-client-name');
+    if (clientName) {
+      clientName.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          window.tapisSubmitCheckout();
+        }
+      });
+    }
+
+    const modalEdit = document.getElementById('modal-edit-job');
+    if (modalEdit) {
+      modalEdit.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && e.target && e.target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          window.tapisSubmitEditJob();
         }
       });
     }

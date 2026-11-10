@@ -109,6 +109,68 @@ it('deletes rejected jobs from the tapis de tri', function () {
     expect($json['deleted_count'])->toBe(1);
 });
 
+it('updates job properties and recalculates price on the tapis de tri', function () {
+    $output = execute_routed_endpoint('tapis_tri', [
+        'method' => 'POST',
+        'get' => ['action' => 'update_job'],
+        'post' => [
+            'job_id' => 1,
+            'document_name' => 'Doc_Modifie.pdf',
+            'copies' => 3,
+            'total_pages' => 10,
+            'duplex' => 1,
+            'paper_size' => 'A4',
+            'color_mode' => 'couleur'
+        ],
+        'session' => ['user' => '1'],
+        'conf' => $GLOBALS['conf'],
+        'env' => ['DUPLICATOR_DB_PATH' => $this->dbPath]
+    ]);
+
+    $json = json_decode($output, true);
+    expect($json)->toBeArray();
+    expect($json['success'])->toBeTrue();
+    expect($json['job']['document_display_name'])->toBe('Doc_Modifie.pdf');
+    expect(intval($json['job']['copies']))->toBe(3);
+    expect(intval($json['job']['total_pages']))->toBe(10);
+    expect(intval($json['job']['duplex']))->toBe(1);
+    expect($json['job']['color_mode'])->toBe('Color');
+    expect($json['calculated_price'])->toBeGreaterThan(0);
+});
+
+it('handles cash checkout with paye, amount_paid and mot like tirage_multimachine', function () {
+    $output = execute_routed_endpoint('tapis_tri', [
+        'method' => 'POST',
+        'get' => ['action' => 'checkout_direct'],
+        'post' => [
+            'job_ids' => [1],
+            'contact' => 'Comptoir Espèces',
+            'paye' => 'oui',
+            'amount_paid' => 0.50,
+            'mot' => 'Payé en pièces de 50c'
+        ],
+        'session' => ['user' => '1'],
+        'conf' => $GLOBALS['conf'],
+        'env' => ['DUPLICATOR_DB_PATH' => $this->dbPath]
+    ]);
+
+    $json = json_decode($output, true);
+    expect($json)->toBeArray();
+    expect($json['success'])->toBeTrue();
+    expect($json['paye'])->toBe('oui');
+    expect($json['amount_paid'])->toBe(0.50);
+    expect($json['mot'])->toBe('Payé en pièces de 50c');
+    expect($json['contact'])->toBe('Comptoir Espèces');
+
+    // Vérifier insertion dans photocop
+    $stmt = $this->pdo->query("SELECT * FROM photocop WHERE contact = 'Comptoir Espèces' ORDER BY id DESC LIMIT 1");
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    expect($row)->not->toBeFalse();
+    expect($row['paye'])->toBe('oui');
+    expect(floatval($row['cb']))->toBe(0.50);
+    expect($row['mot'])->toBe('Payé en pièces de 50c');
+});
+
 function seed_tapis_tri_schema(PDO $pdo): void {
     $pdo->exec('DROP TABLE IF EXISTS print_jobs');
     $pdo->exec('CREATE TABLE print_jobs (
