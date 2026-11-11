@@ -108,7 +108,9 @@ function seed_action_schema(PDO $pdo): void
         tirage_global_id TEXT,
         session_id TEXT,
         document_name TEXT DEFAULT "",
-        thumbnail_url TEXT
+        thumbnail_url TEXT,
+        nb_exemplaires INTEGER DEFAULT 1,
+        taille TEXT DEFAULT ""
     )');
 
     $pdo->exec('DROP TABLE IF EXISTS photocop');
@@ -127,7 +129,9 @@ function seed_action_schema(PDO $pdo): void
         tirage_global_id TEXT,
         session_id TEXT,
         document_name TEXT DEFAULT "",
-        thumbnail_url TEXT
+        thumbnail_url TEXT,
+        nb_exemplaires INTEGER DEFAULT 1,
+        taille TEXT DEFAULT ""
     )');
 
     $pdo->exec('DROP TABLE IF EXISTS photocopieurs');

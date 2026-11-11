@@ -147,8 +147,21 @@ function last($machine, $sql, $page = 1, $per_page = 20, $params = [])
     $i = 0;
     $last = array(); // Initialiser le tableau
     while ($result = $query->fetch(PDO::FETCH_OBJ)) {
-        $last[$i]['date'] = date('d.m.y', $result->date);
-        $last[$i]['date_timestamp'] = intval($result->date); // Conserver le timestamp pour le tri
+        if (is_numeric($result->date)) {
+            $ts = intval($result->date);
+            $last[$i]['date'] = date('d.m.y', $ts);
+            $last[$i]['date_timestamp'] = $ts;
+        } else {
+            $strDate = trim((string)($result->date ?? ''));
+            $parsedTs = !empty($strDate) ? strtotime(str_replace('/', '-', $strDate)) : false;
+            if ($parsedTs !== false && $parsedTs > 0) {
+                $last[$i]['date'] = date('d.m.y', $parsedTs);
+                $last[$i]['date_timestamp'] = $parsedTs;
+            } else {
+                $last[$i]['date'] = !empty($strDate) ? $strDate : date('d.m.y');
+                $last[$i]['date_timestamp'] = 0;
+            }
+        }
         $last[$i]['contact'] = $result->contact;
 
         // Debug: log pour comprendre combien de tirages sont récupérés
@@ -206,7 +219,8 @@ function last($machine, $sql, $page = 1, $per_page = 20, $params = [])
         }
     }
     $count_result = $count_query->fetch(PDO::FETCH_OBJ);
-    $total_entries = $count_result->total;
+    $total_entries = $count_result ? intval($count_result->total) : 0;
+    $per_page = max(1, intval($per_page));
     $total_pages = ceil($total_entries / $per_page);
 
     $last['pagination'] = array(

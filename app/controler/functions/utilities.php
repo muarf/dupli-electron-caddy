@@ -55,7 +55,7 @@ function get_mots()
       if(!empty($query)){
           while($result =$query->fetch(PDO::FETCH_OBJ))
           {
-             $timest =  $result->date;
+             $timest = is_numeric($result->date) ? intval($result->date) : (strtotime(str_replace('/', '-', (string)$result->date)) ?: time());
              $mots['photocop'][$i]['date'] = date('d.m.y',$timest);
              $mots['photocop'][$i]['mot'] = $result->mot;
              $mots['photocop'][$i]['id'] = $result->id;
@@ -70,7 +70,7 @@ function get_mots()
       if(!empty($query)){
           while($result =$query->fetch(PDO::FETCH_OBJ))
           {
-             $timest =  $result->date;
+             $timest = is_numeric($result->date) ? intval($result->date) : (strtotime(str_replace('/', '-', (string)$result->date)) ?: time());
              $mots['A4'][$i]['date'] = date('d.m.y',$timest);
              $mots['A4'][$i]['mot'] = $result->mot;
              $mots['A4'][$i]['id'] = $result->id;
@@ -85,7 +85,7 @@ function get_mots()
       if(!empty($query)){
         while($result =$query->fetch(PDO::FETCH_OBJ))
         {
-            $timest =  $result->date;
+            $timest = is_numeric($result->date) ? intval($result->date) : (strtotime(str_replace('/', '-', (string)$result->date)) ?: time());
             $mots['A3'][$i]['date'] = date('d.m.y',$timest);
             $mots['A3'][$i]['mot'] = $result->mot;
             $mots['A3'][$i]['id'] = $result->id;

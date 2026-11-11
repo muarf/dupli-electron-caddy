@@ -185,6 +185,7 @@ function handleCheckoutDirect($db, $con_pdo, $input) {
     }
 
     $dateFormatted = date('d/m/Y');
+    $timestamp = time();
     $dateTime = date('Y-m-d H:i:s');
 
     $con_pdo->beginTransaction();
@@ -275,7 +276,7 @@ function handleCheckoutDirect($db, $con_pdo, $input) {
                     $paye,
                     $jobCb,
                     $mot,
-                    $dateFormatted,
+                    $timestamp,
                     $job['machine_name'] ?? 'Duplicopieur',
                     intval($job['machine_id'] ?? 1),
                     $tirageGlobalId,
@@ -302,7 +303,7 @@ function handleCheckoutDirect($db, $con_pdo, $input) {
                     $paye,
                     $jobCb,
                     $mot,
-                    $dateFormatted,
+                    $timestamp,
                     $tirageGlobalId,
                     $docName,
                     $thumbnail,
@@ -370,7 +371,7 @@ function handleCheckoutDirect($db, $con_pdo, $input) {
                 $paye,
                 $mCb,
                 $mot . " [Ajout Manuel]",
-                $dateFormatted,
+                $timestamp,
                 $tirageGlobalId,
                 $mItem['label'] ?? 'Tirage manuel',
                 1,

@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/../../controler/functions/machines.php';
 require_once __DIR__ . '/../../models/admin/TirageManager.php';
 
 beforeEach(function () {

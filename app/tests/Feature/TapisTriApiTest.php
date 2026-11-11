@@ -169,6 +169,61 @@ it('handles cash checkout with paye, amount_paid and mot like tirage_multimachin
     expect($row['paye'])->toBe('oui');
     expect(floatval($row['cb']))->toBe(0.50);
     expect($row['mot'])->toBe('Payé en pièces de 50c');
+    expect(is_numeric($row['date']))->toBeTrue();
+    expect(intval($row['date']))->toBeGreaterThan(1700000000);
+});
+
+it('integrates direct checkout with last() and handles legacy text dates gracefully', function () {
+    require_once __DIR__ . '/../../controler/functions/paths.php';
+    require_once __DIR__ . '/../../controler/functions/database.php';
+    require_once __DIR__ . '/../../controler/functions/machines.php';
+    require_once __DIR__ . '/../../controler/functions/tirage.php';
+    require_once __DIR__ . '/../../models/admin/TirageManager.php';
+
+    // 1. Direct checkout via API
+    $output = execute_routed_endpoint('tapis_tri', [
+        'method' => 'POST',
+        'get' => ['action' => 'checkout_direct'],
+        'post' => [
+            'job_ids' => [1],
+            'contact' => 'E2E Client',
+            'paye' => 'oui',
+            'amount_paid' => 0.50,
+            'mot' => 'E2E Mot'
+        ],
+        'session' => ['user' => '1'],
+        'conf' => $GLOBALS['conf'],
+        'env' => ['DUPLICATOR_DB_PATH' => $this->dbPath]
+    ]);
+
+    $json = json_decode($output, true);
+    expect($json['success'])->toBeTrue();
+
+    // 2. Insert a legacy record with date stored as string '10/11/2026'
+    $this->pdo->exec("INSERT INTO photocop (marque, contact, prix, paye, date, mot) VALUES ('TestCopier', 'Legacy Client', 2.0, 'oui', '10/11/2026', 'Ancien tirage')");
+
+    // 3. Verify last() does not throw TypeError on either timestamp or text date
+    $lastTirages = last('TestCopier', ' ORDER BY id DESC', 1, 10);
+    expect($lastTirages)->toBeArray();
+    expect(count($lastTirages))->toBeGreaterThanOrEqual(2);
+
+    // Find the E2E Client tirage and Legacy Client tirage
+    $contacts = array_column($lastTirages, 'contact');
+    expect($contacts)->toContain('E2E Client');
+    expect($contacts)->toContain('Legacy Client');
+
+    foreach ($lastTirages as $item) {
+        if (!isset($item['contact'])) continue;
+        // Date must be formatted as dd.mm.yy without fatal error
+        expect($item['date'])->toMatch('/^\d{2}\.\d{2}\.\d{2}$/');
+        expect($item['date_timestamp'])->toBeInt();
+    }
+
+    // 4. Verify TirageManager::getLastTirages() also processes these without error
+    $manager = new TirageManager($GLOBALS['conf']);
+    $managerResults = $manager->getLastTirages('TestCopier', ' ORDER BY date DESC, id DESC', 1, 10);
+    expect($managerResults)->toBeArray();
+    expect(count($managerResults))->toBeGreaterThanOrEqual(2);
 });
 
 function seed_tapis_tri_schema(PDO $pdo): void {
