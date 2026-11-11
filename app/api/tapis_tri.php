@@ -232,11 +232,8 @@ function handleCheckoutDirect($db, $con_pdo, $input) {
             $amountPaid = 0.0;
         }
 
-        // Un mot
+        // Un mot (uniquement ce que l'utilisateur a saisi, pas de mot automatique)
         $mot = trim($input['mot'] ?? '');
-        if ($mot === '') {
-            $mot = "Encaissement direct (Espèces)";
-        }
 
         $allItemCount = count($jobs) + count($manualItems);
         $cbRestant = $amountPaid;
@@ -385,7 +382,7 @@ function handleCheckoutDirect($db, $con_pdo, $input) {
                 $mPrice,
                 $paye,
                 $mCb,
-                $mot . " [Ajout Manuel]",
+                $mot,
                 $timestamp,
                 $tirageGlobalId,
                 $mItem['label'] ?? 'Tirage manuel',
