@@ -226,6 +226,41 @@ it('integrates direct checkout with last() and handles legacy text dates gracefu
     expect(count($managerResults))->toBeGreaterThanOrEqual(2);
 });
 
+it('resolves printer_mappings to save correct machine marque (comcolor) instead of raw Windows printer name', function () {
+    // 1. Setup mapping: 'RISO ComColor FW5230' -> photocopier 1 ('comcolor')
+    $this->pdo->exec("INSERT OR REPLACE INTO photocopieurs (id, marque, modele, actif) VALUES (1, 'comcolor', 'FW5230', 1)");
+    $this->pdo->exec("INSERT OR REPLACE INTO printer_mappings (system_printer_name, machine_type, machine_id) VALUES ('RISO ComColor FW5230', 'photocop', 1)");
+
+    // 2. Add an unmapped spooler job
+    $now = date('Y-m-d H:i:s');
+    $this->pdo->exec("INSERT INTO print_jobs (id, job_id, document, printer_name, status, total_pages, copies, calculated_price, timestamp, created_at, machine_name) VALUES (99, 'spool_99', 'MappedDoc.pdf', 'RISO ComColor FW5230', 'pending', 4, 1, 0.40, '$now', '$now', '')");
+
+    // 3. Checkout direct
+    $output = execute_routed_endpoint('tapis_tri', [
+        'method' => 'POST',
+        'get' => ['action' => 'checkout_direct'],
+        'post' => [
+            'job_ids' => [99],
+            'contact' => 'Mapped Client',
+            'paye' => 'oui',
+            'amount_paid' => 0.40,
+            'mot' => 'Mapping Test'
+        ],
+        'session' => ['user' => '1'],
+        'conf' => $GLOBALS['conf'],
+        'env' => ['DUPLICATOR_DB_PATH' => $this->dbPath]
+    ]);
+
+    $json = json_decode($output, true);
+    expect($json['success'])->toBeTrue();
+
+    // 4. Check photocop row has marque = 'comcolor', NOT 'RISO ComColor FW5230' and NOT ''
+    $stmt = $this->pdo->query("SELECT * FROM photocop WHERE contact = 'Mapped Client' ORDER BY id DESC LIMIT 1");
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    expect($row)->not->toBeFalse();
+    expect($row['marque'])->toBe('comcolor');
+});
+
 function seed_tapis_tri_schema(PDO $pdo): void {
     $pdo->exec('DROP TABLE IF EXISTS print_jobs');
     $pdo->exec('CREATE TABLE print_jobs (

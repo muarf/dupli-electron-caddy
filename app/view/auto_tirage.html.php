@@ -315,9 +315,11 @@ $duplicopieurs = $db->select("SELECT id, marque, modele FROM duplicopieurs WHERE
                             <?php endforeach; ?>
                         </optgroup>
                         <optgroup label="Duplicopieurs">
-                            <?php foreach ($duplicopieurs as $d): ?>
-                                <option value="dupli_<?= $d['id'] ?>" data-type="dupli" data-id="<?= $d['id'] ?>" data-name="<?= htmlspecialchars($d['marque']) ?>">
-                                    Duplicopieur : <?= htmlspecialchars($d['marque'] . ' ' . $d['modele']) ?>
+                            <?php foreach ($duplicopieurs as $d): 
+                                $dNom = ($d['marque'] === $d['modele']) ? $d['marque'] : ($d['marque'] . ' ' . $d['modele']);
+                            ?>
+                                <option value="dupli_<?= $d['id'] ?>" data-type="dupli" data-id="<?= $d['id'] ?>" data-name="<?= htmlspecialchars($dNom) ?>">
+                                    Duplicopieur : <?= htmlspecialchars($dNom) ?>
                                 </option>
                             <?php endforeach; ?>
                         </optgroup>

@@ -599,8 +599,10 @@
         const targetName = (job.machine_name || job.printer_name).toLowerCase();
         for (let i = 0; i < machineSelect.options.length; i++) {
           const opt = machineSelect.options[i];
-          if (opt.textContent.toLowerCase().includes(targetName)) {
+          const optName = (opt.getAttribute('data-name') || '').toLowerCase();
+          if (opt.textContent.toLowerCase().includes(targetName) || (optName && targetName.includes(optName))) {
             machineSelect.selectedIndex = i;
+            matched = true;
             break;
           }
         }
@@ -645,9 +647,9 @@
 
     const machineSelect = document.getElementById('edit-job-machine');
     const selectedOpt = machineSelect ? machineSelect.options[machineSelect.selectedIndex] : null;
-    const machineType = selectedOpt ? selectedOpt.getAttribute('data-type') : 'photocop';
-    const machineId = selectedOpt ? parseInt(selectedOpt.getAttribute('data-id'), 10) : 1;
-    const machineName = selectedOpt ? selectedOpt.getAttribute('data-name') : '';
+    const machineType = selectedOpt ? (selectedOpt.getAttribute('data-type') || 'photocop') : 'photocop';
+    const machineId = selectedOpt ? (parseInt(selectedOpt.getAttribute('data-id'), 10) || 1) : 1;
+    const machineName = selectedOpt ? (selectedOpt.getAttribute('data-name') || 'comcolor') : 'comcolor';
 
     const priceVal = document.getElementById('edit-job-prix').value.trim();
     const calculatedPrice = priceVal !== '' ? parseFloat(priceVal.replace(',', '.')) : null;

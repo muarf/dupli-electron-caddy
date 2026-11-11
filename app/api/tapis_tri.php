@@ -139,16 +139,24 @@ function handleListJobs($db, $con_pdo) {
 
     $jobs = $db->select($sql);
 
-    // Calculer les prix pour les jobs qui n'en ont pas encore
+    // Calculer les prix et résoudre les machines pour les jobs
     foreach ($jobs as &$job) {
+        $resolved = resolveJobMachineInfo($con_pdo, $db, $job);
+        $job['machine_name'] = $resolved['name'];
+        $job['machine_type'] = $resolved['type'];
+        $job['machine_id'] = $resolved['id'];
+
         if (empty($job['calculated_price']) || floatval($job['calculated_price']) <= 0) {
             $computed = computeJobEstimatedPrice($con_pdo, $job);
             if ($computed > 0) {
                 $job['calculated_price'] = $computed;
                 // Sauvegarder pour les prochains appels
-                $con_pdo->prepare("UPDATE print_jobs SET calculated_price = ? WHERE id = ?")
-                        ->execute([$computed, $job['id']]);
+                $con_pdo->prepare("UPDATE print_jobs SET calculated_price = ?, machine_name = ?, machine_type = ?, machine_id = ? WHERE id = ?")
+                        ->execute([$computed, $resolved['name'], $resolved['type'], $resolved['id'], $job['id']]);
             }
+        } else if (empty($job['machine_name']) || $job['machine_name'] === $job['printer_name']) {
+            $con_pdo->prepare("UPDATE print_jobs SET machine_name = ?, machine_type = ?, machine_id = ? WHERE id = ?")
+                    ->execute([$resolved['name'], $resolved['type'], $resolved['id'], $job['id']]);
         }
         $job['calculated_price'] = round(floatval($job['calculated_price'] ?? 0), 2);
     }
@@ -251,7 +259,11 @@ function handleCheckoutDirect($db, $con_pdo, $input) {
                 $jobCb = 0;
             }
 
-            $machineType = $job['machine_type'] ?? 'photocop';
+            $machineInfo = resolveJobMachineInfo($con_pdo, $db, $job);
+            $machineType = $machineInfo['type'];
+            $machineName = $machineInfo['name'];
+            $machineId = $machineInfo['id'];
+
             $docName = $job['document_display_name'] ?: $job['document'];
             $thumbnail = $job['thumbnail_url'] ?? null;
             $copies = intval($job['copies'] ?? 1);
@@ -277,8 +289,8 @@ function handleCheckoutDirect($db, $con_pdo, $input) {
                     $jobCb,
                     $mot,
                     $timestamp,
-                    $job['machine_name'] ?? 'Duplicopieur',
-                    intval($job['machine_id'] ?? 1),
+                    $machineName,
+                    $machineId,
                     $tirageGlobalId,
                     $docName,
                     $thumbnail,
@@ -295,7 +307,7 @@ function handleCheckoutDirect($db, $con_pdo, $input) {
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ")->execute([
                     (stripos($job['color_mode'] ?? '', 'color') !== false) ? 'couleur' : 'noir',
-                    $job['machine_name'] ?? $job['printer_name'],
+                    $machineName,
                     $contact,
                     $nbFeuilles,
                     $duplex,
@@ -350,7 +362,10 @@ function handleCheckoutDirect($db, $con_pdo, $input) {
             }
 
             $mType = $mItem['type'] ?? 'photocop';
-            $mMarque = $mItem['marque'] ?? 'Manuel';
+            $mMarque = trim(strval($mItem['marque'] ?? ''));
+            if (empty($mMarque) || $mMarque === 'Manuel') {
+                $mMarque = 'comcolor';
+            }
             $mNbF = intval($mItem['nb_f'] ?? 1);
             $mRv = ($mItem['rv'] ?? 'non') === 'oui' ? 'oui' : 'non';
             $mTaille = strtoupper($mItem['taille'] ?? 'A4');
@@ -449,9 +464,15 @@ function handleUpdateJob($db, $con_pdo, $input) {
         $paperSize = 'A4';
     }
 
-    $machineType = $input['machine_type'] ?? ($job['machine_type'] ?? 'photocop');
-    $machineId = isset($input['machine_id']) ? intval($input['machine_id']) : intval($job['machine_id'] ?? 1);
-    $machineName = $input['machine_name'] ?? ($job['machine_name'] ?? $job['printer_name']);
+    $resolved = resolveJobMachineInfo($con_pdo, $db, [
+        'machine_name' => $input['machine_name'] ?? null,
+        'machine_type' => $input['machine_type'] ?? null,
+        'machine_id' => $input['machine_id'] ?? null,
+        'printer_name' => $job['printer_name'] ?? null
+    ]);
+    $machineType = $resolved['type'];
+    $machineId = $resolved['id'];
+    $machineName = $resolved['name'];
 
     $tempJob = $job;
     $tempJob['total_pages'] = $totalPages;
@@ -588,6 +609,102 @@ function handleDeleteJobs($db, $con_pdo, $input) {
         'message' => 'Impressions supprimées du tapis.',
         'deleted_count' => count($jobIds)
     ]);
+}
+
+/**
+ * Résout le nom et le type officiel de machine (comcolor / Duplicopieur) via printer_mappings ou les tables machines
+ */
+function resolveJobMachineInfo($con_pdo, $db, $job) {
+    $machineName = trim(strval($job['machine_name'] ?? ''));
+    $machineType = trim(strval($job['machine_type'] ?? ''));
+    $machineId = intval($job['machine_id'] ?? 0);
+    $printerName = trim(strval($job['printer_name'] ?? ''));
+
+    // 1. Si machine_name est renseigné et n'est pas le nom brut du spouleur Windows
+    if (!empty($machineName) && $machineName !== $printerName) {
+        try {
+            $stmt = $con_pdo->prepare("SELECT marque FROM photocopieurs WHERE marque = ?");
+            $stmt->execute([$machineName]);
+            $p = $stmt->fetchColumn();
+            if ($p) {
+                return ['type' => 'photocop', 'name' => $p, 'id' => $machineId ?: 1];
+            }
+
+            $stmtD = $con_pdo->prepare("SELECT id, marque, modele FROM duplicopieurs WHERE marque = ? OR (marque || ' ' || modele) = ?");
+            $stmtD->execute([$machineName, $machineName]);
+            $d = $stmtD->fetch(PDO::FETCH_ASSOC);
+            if ($d) {
+                $nom = ($d['marque'] === $d['modele']) ? $d['marque'] : ($d['marque'] . ' ' . $d['modele']);
+                return ['type' => 'dupli', 'name' => $nom, 'id' => intval($d['id'])];
+            }
+        } catch (Throwable $e) {}
+
+        // S'il a été explicitement défini (ex: dans les tests ou saisie manuelle), le respecter
+        return [
+            'type' => !empty($machineType) ? $machineType : 'photocop',
+            'name' => $machineName,
+            'id' => $machineId ?: 1
+        ];
+    }
+
+    // 2. Si machine_id et machine_type sont valides
+    if ($machineId > 0 && !empty($machineType)) {
+        try {
+            if ($machineType === 'photocop') {
+                $stmt = $con_pdo->prepare("SELECT marque FROM photocopieurs WHERE id = ?");
+                $stmt->execute([$machineId]);
+                $p = $stmt->fetchColumn();
+                if ($p) {
+                    return ['type' => 'photocop', 'name' => $p, 'id' => $machineId];
+                }
+            } elseif ($machineType === 'dupli') {
+                $stmtD = $con_pdo->prepare("SELECT id, marque, modele FROM duplicopieurs WHERE id = ?");
+                $stmtD->execute([$machineId]);
+                $d = $stmtD->fetch(PDO::FETCH_ASSOC);
+                if ($d) {
+                    $nom = ($d['marque'] === $d['modele']) ? $d['marque'] : ($d['marque'] . ' ' . $d['modele']);
+                    return ['type' => 'dupli', 'name' => $nom, 'id' => $machineId];
+                }
+            }
+        } catch (Throwable $e) {}
+    }
+
+    // 3. Résoudre via printer_mappings à partir de printer_name
+    if (!empty($printerName)) {
+        try {
+            $mapping = $db->selectOne("SELECT * FROM printer_mappings WHERE system_printer_name = ?", [$printerName]);
+            if ($mapping) {
+                $mType = $mapping['machine_type'] ?? 'photocop';
+                $mId = intval($mapping['machine_id'] ?? 1);
+                if ($mType === 'dupli') {
+                    $stmtD = $con_pdo->prepare("SELECT id, marque, modele FROM duplicopieurs WHERE id = ?");
+                    $stmtD->execute([$mId]);
+                    $d = $stmtD->fetch(PDO::FETCH_ASSOC);
+                    if ($d) {
+                        $nom = ($d['marque'] === $d['modele']) ? $d['marque'] : ($d['marque'] . ' ' . $d['modele']);
+                        return ['type' => 'dupli', 'name' => $nom, 'id' => $mId];
+                    }
+                } else {
+                    $stmt = $con_pdo->prepare("SELECT marque FROM photocopieurs WHERE id = ?");
+                    $stmt->execute([$mId]);
+                    $p = $stmt->fetchColumn();
+                    if ($p) {
+                        return ['type' => 'photocop', 'name' => $p, 'id' => $mId];
+                    }
+                }
+            }
+        } catch (Throwable $e) {}
+    }
+
+    // 4. Repli par défaut : premier photocopieur actif en base
+    try {
+        $p = $con_pdo->query("SELECT id, marque FROM photocopieurs WHERE actif = 1 LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+        if ($p && !empty($p['marque'])) {
+            return ['type' => 'photocop', 'name' => $p['marque'], 'id' => intval($p['id'])];
+        }
+    } catch (Throwable $e) {}
+
+    return ['type' => 'photocop', 'name' => 'comcolor', 'id' => 1];
 }
 
 /**
