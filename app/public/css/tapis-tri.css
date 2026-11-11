@@ -87,6 +87,36 @@
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
+.tapis-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.5;
+  text-decoration: none !important;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.tapis-header-btn:hover,
+.tapis-header-btn:focus {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.55);
+  color: #ffffff !important;
+  text-decoration: none !important;
+  transform: translateY(-1px);
+}
+
+.tapis-header-btn:active {
+  transform: translateY(0);
+}
+
 /* ── Grille de cartes ── */
 .tapis-grid {
   display: grid;
@@ -389,6 +419,54 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.tapis-bar-actions .btn-outline-primary {
+  color: #2563eb !important;
+  background-color: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.tapis-bar-actions .btn-outline-primary:hover,
+.tapis-bar-actions .btn-outline-primary:focus {
+  color: #ffffff !important;
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
+}
+
+.tapis-bar-actions .btn-outline-secondary {
+  color: #475569 !important;
+  background-color: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.tapis-bar-actions .btn-outline-secondary:hover,
+.tapis-bar-actions .btn-outline-secondary:focus {
+  color: #ffffff !important;
+  background-color: #475569 !important;
+  border-color: #475569 !important;
+}
+
+.tapis-bar-actions .btn-outline-danger {
+  color: #dc2626 !important;
+  background-color: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.tapis-bar-actions .btn-outline-danger:hover,
+.tapis-bar-actions .btn-outline-danger:focus {
+  color: #ffffff !important;
+  background-color: #dc2626 !important;
+  border-color: #dc2626 !important;
 }
 
 .tapis-btn-checkout {

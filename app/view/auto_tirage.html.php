@@ -24,16 +24,10 @@ $duplicopieurs = $db->select("SELECT id, marque, modele FROM duplicopieurs WHERE
                 <span class="tapis-live-dot"></span>
                 Écoute active
             </span>
-            <button class="btn btn-sm btn-outline-light" onclick="window.tapisRefresh()" title="Actualiser le tapis de tri">
+            <button class="tapis-header-btn" onclick="window.tapisRefresh()" title="Actualiser le tapis de tri">
                 <i id="btn-tapis-refresh" class="fa fa-refresh"></i> Actualiser
             </button>
-            <button class="btn btn-sm btn-outline-light" onclick="window.tapisToggleSelectAll()" title="Tout cocher / décocher">
-                <i class="fa fa-check-square-o"></i> Tout sélectionner
-            </button>
-            <button class="btn btn-sm btn-outline-light" onclick="tapisOpenManualModal()">
-                <i class="fa fa-plus"></i> <?php _e('auto_tirage.add_manual_print'); ?>
-            </button>
-            <a href="?tirage_multimachines" class="btn btn-sm btn-outline-light" title="Accéder à la saisie manuelle traditionnelle">
+            <a href="?tirage_multimachines" class="tapis-header-btn" title="Accéder à la saisie manuelle traditionnelle">
                 <i class="fa fa-print"></i> Saisie manuelle
             </a>
         </div>
