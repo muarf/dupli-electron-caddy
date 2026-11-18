@@ -108,18 +108,19 @@ function analyzePDFFormat($pdfFile)
 
 function determineFormat($widthMm, $heightMm)
 {
-    // Formats A4, A5, A6 (en mm)
+    // Formats A3, A4, A5, A6 (en mm)
     $formats = [
+        'A3' => [297, 420],
         'A4' => [210, 297],
         'A5' => [148, 210],
         'A6' => [105, 148]
     ];
 
-    // Vérifier chaque format (portrait et paysage)
+    // Vérifier chaque format (portrait et paysage avec tolérance de 2mm)
     foreach ($formats as $format => $dimensions) {
         if (
-            ($widthMm === $dimensions[0] && $heightMm === $dimensions[1]) ||
-            ($widthMm === $dimensions[1] && $heightMm === $dimensions[0])
+            (abs($widthMm - $dimensions[0]) <= 2 && abs($heightMm - $dimensions[1]) <= 2) ||
+            (abs($widthMm - $dimensions[1]) <= 2 && abs($heightMm - $dimensions[0]) <= 2)
         ) {
             return $format;
         }
@@ -390,6 +391,9 @@ function determineAutomaticParams($pdfInfo, $outputFormat = 'A3')
     if ($outputFormat === 'A4') {
         // Format de sortie A4 : réduire proportionnellement
         switch ($format) {
+            case 'A3':
+                $copiesPerSheet = 2; // 2 copies (réduit en A5)
+                break;
             case 'A4':
                 $copiesPerSheet = 1; // 1 copie A4 sur A4
                 break;
@@ -403,6 +407,9 @@ function determineAutomaticParams($pdfInfo, $outputFormat = 'A3')
     } else {
         // Format de sortie A3 (par défaut)
         switch ($format) {
+            case 'A3':
+                $copiesPerSheet = 2; // 2 copies A4 sur A3
+                break;
             case 'A4':
                 $copiesPerSheet = 2; // 2 copies A4 sur A3
                 break;
@@ -442,6 +449,9 @@ function performImposition($inputFile, $params, $cutMargin = 2)
         $cropMarksLength = $params['crop_marks_length'] ?? 10;
         $cropMarksWidth = $params['crop_marks_width'] ?? 0.5;
 
+        $tractIsPortrait = ($orientation === 'portrait') ? true :
+            (($orientation === 'landscape') ? false : $sourceIsPortrait);
+
         // Dimensions selon le format de sortie et l'orientation choisie ou automatique
         if ($outputFormat === 'A4') {
             if ($orientation === 'portrait') {
@@ -453,16 +463,16 @@ function performImposition($inputFile, $params, $cutMargin = 2)
                 $sheet_height = 210;
                 $sheet_orientation = 'L';
             } else {
-                // Auto : choisir l'orientation selon l'orientation réelle de la source
-                if ($copiesPerSheet <= 1) {
-                    $sheet_width = $sourceIsPortrait ? 210 : 297;
-                    $sheet_height = $sourceIsPortrait ? 297 : 210;
-                    $sheet_orientation = $sourceIsPortrait ? 'P' : 'L';
+                // Auto : orientation optimale selon le format et l'orientation du tract
+                if ($format === 'A5') {
+                    $sheet_orientation = $tractIsPortrait ? 'L' : 'P';
+                } elseif ($format === 'A6') {
+                    $sheet_orientation = $tractIsPortrait ? 'P' : 'L';
                 } else {
-                    $sheet_width = $sourceIsPortrait ? 297 : 210;
-                    $sheet_height = $sourceIsPortrait ? 210 : 297;
-                    $sheet_orientation = $sourceIsPortrait ? 'L' : 'P';
+                    $sheet_orientation = $tractIsPortrait ? 'P' : 'L';
                 }
+                $sheet_width = ($sheet_orientation === 'P') ? 210 : 297;
+                $sheet_height = ($sheet_orientation === 'P') ? 297 : 210;
             }
         } else {
             // Format de sortie A3 (par défaut)
@@ -475,36 +485,34 @@ function performImposition($inputFile, $params, $cutMargin = 2)
                 $sheet_height = 297;
                 $sheet_orientation = 'L';
             } else {
-                // Auto : choisir l'orientation selon l'orientation réelle de la source
-                if ($copiesPerSheet <= 1) {
-                    $sheet_width = $sourceIsPortrait ? 297 : 420;
-                    $sheet_height = $sourceIsPortrait ? 420 : 297;
-                    $sheet_orientation = $sourceIsPortrait ? 'P' : 'L';
+                // Auto : orientation optimale selon le format et l'orientation du tract
+                if ($format === 'A5') {
+                    $sheet_orientation = $tractIsPortrait ? 'P' : 'L';
                 } else {
-                    $sheet_width = $sourceIsPortrait ? 420 : 297;
-                    $sheet_height = $sourceIsPortrait ? 297 : 420;
-                    $sheet_orientation = $sourceIsPortrait ? 'L' : 'P';
+                    // A4 et A6
+                    $sheet_orientation = $tractIsPortrait ? 'L' : 'P';
                 }
+                $sheet_width = ($sheet_orientation === 'P') ? 297 : 420;
+                $sheet_height = ($sheet_orientation === 'P') ? 420 : 297;
             }
         }
 
-        // Dimensions des zones d'imposition (target slots) basées sur les dimensions réelles de la source
-        if ($sourceWidth && $sourceHeight) {
+        // Dimensions des zones d'imposition (target slots)
+        $stdFormats = [
+            'A4' => [210, 297],
+            'A5' => [148, 210],
+            'A6' => [105, 148],
+        ];
+
+        if (isset($stdFormats[$format])) {
+            $slot_width  = $tractIsPortrait ? $stdFormats[$format][0] : $stdFormats[$format][1];
+            $slot_height = $tractIsPortrait ? $stdFormats[$format][1] : $stdFormats[$format][0];
+        } elseif ($sourceWidth && $sourceHeight) {
             $slot_width = $sourceWidth;
             $slot_height = $sourceHeight;
         } else {
             $slot_width = 210;
             $slot_height = 297;
-            switch ($format) {
-                case 'A5':
-                    $slot_width = 148;
-                    $slot_height = 210;
-                    break;
-                case 'A6':
-                    $slot_width = 105;
-                    $slot_height = 148;
-                    break;
-            }
         }
 
         // Calculer la disposition selon l'orientation et le nombre de copies
@@ -541,9 +549,9 @@ function performImposition($inputFile, $params, $cutMargin = 2)
             }
         }
 
-        // Espacement entre les copies
-        $spacingX = ($sheet_width - ($cols * $slot_width)) / ($cols + 1);
-        $spacingY = ($sheet_height - ($rows * $slot_height)) / ($rows + 1);
+        // Espacement entre les copies (garanti non négatif)
+        $spacingX = max(0, ($sheet_width - ($cols * $slot_width)) / ($cols + 1));
+        $spacingY = max(0, ($sheet_height - ($rows * $slot_height)) / ($rows + 1));
 
         // Créer une seule instance TCPDI pour tout le processus
         $pdf = new TCPDI();
@@ -595,7 +603,7 @@ function performImposition($inputFile, $params, $cutMargin = 2)
                         $contentW = $slot_width;
                         $contentH = $slot_height;
 
-                        if ($keepOriginalSize) {
+                        if ($keepOriginalSize && !$forceResize) {
                             $contentW = $tplSize['width'];
                             $contentH = $tplSize['height'];
                             $contentX = $slotX + ($slot_width  - $contentW) / 2;
@@ -640,7 +648,7 @@ function performImposition($inputFile, $params, $cutMargin = 2)
                         $contentW = $slot_width;
                         $contentH = $slot_height;
 
-                        if ($keepOriginalSize) {
+                        if ($keepOriginalSize && !$forceResize) {
                             // Garder taille originale mais centrer dans le slot
                             $contentW = $tplWidth;
                             $contentH = $tplHeight;

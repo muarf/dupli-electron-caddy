@@ -103,6 +103,40 @@ it("analyse le format d'un PDF pour l'imposition de tracts", function () {
     }
 });
 
+it("analyse et impose un PDF A3 en tracts A6", function () {
+    $pdfPath = createSamplePdf(1, 'A3');
+    try {
+        $analysis = runPdfTool('imposition_tracts', 'analyzePDFFormat', [[
+            'type' => 'application/pdf',
+            'tmp_name' => $pdfPath,
+        ]]);
+
+        expect($analysis['success'])->toBeTrue();
+        expect($analysis['format'])->toBe('A3');
+
+        $params = [
+            'page_count' => 1,
+            'copies_per_sheet' => 8,
+            'format' => 'A6',
+            'orientation' => 'auto',
+            'output_format' => 'A3',
+            'source_width' => 297,
+            'source_height' => 420,
+            'source_is_portrait' => true,
+            'force_resize' => true,
+            'keep_original_size' => false,
+        ];
+        $resultFile = runPdfTool('imposition_tracts', 'performImposition', [$pdfPath, $params]);
+        expect(file_exists($resultFile))->toBeTrue();
+        expect(filesize($resultFile))->toBeGreaterThan(0);
+        if (file_exists($resultFile)) {
+            unlink($resultFile);
+        }
+    } finally {
+        cleanupPath($pdfPath);
+    }
+});
+
 it('calcule un taux de remplissage cohérent', function () {
     [$pngPath] = createSamplePng(20, 20, 0.5);
     try {

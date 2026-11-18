@@ -199,6 +199,31 @@ it('impose un PDF en tracts (copies identiques N-up)', function () {
     }
 });
 
+it('impose un PDF A3 en tracts A6 avec redimensionnement forcé', function () {
+    $pdfPath = createSamplePdf(1, 'A3');
+
+    try {
+        $response = runStudioProcess('impose', [
+            'impose_type' => 'tracts',
+            'output_format' => 'A3',
+            'manual_format' => 'A6',
+            'force_resize' => '1',
+            'duplex_mode' => 'none',
+        ], [
+            'file' => [
+                'name' => 'tract_a3.pdf',
+                'type' => 'application/pdf',
+                'tmp_name' => $pdfPath,
+            ],
+        ]);
+
+        expect($response['success'])->toBeTrue();
+        expect($response['download_url'])->toMatch('/file=/');
+    } finally {
+        cleanupPath($pdfPath);
+    }
+});
+
 it('redimensionne un PDF', function () {
     $pdfPath = createSamplePdf(1);
 
