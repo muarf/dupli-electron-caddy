@@ -157,14 +157,11 @@ function getTableForMachine($machine)
                     $date_display = $matches[3] . '/' . $matches[2]; // jour/mois
                   }
 
-                  if (count($parts) >= 3) {
-                    $contact_display = $parts[2];
-                    $contact_display = ucfirst($contact_display);
+                  if (!empty($group['tirages'][0]['contact'])) {
+                    $contact_display = ucfirst($group['tirages'][0]['contact']);
+                  } else if (count($parts) >= 3) {
+                    $contact_display = ucfirst($parts[2]);
                   }
-                }
-
-                if (empty($contact_display) && !empty($group['tirages'][0]['contact'])) {
-                  $contact_display = ucfirst($group['tirages'][0]['contact']);
                 }
 
                 if (empty($date_display) && !empty($group['tirages'][0]['date'])) {

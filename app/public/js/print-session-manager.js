@@ -58,8 +58,8 @@ class PrintSessionManager {
     /**
      * Programmer une réanalyse après délai pour mettre à jour les valeurs analysées
      */
-    scheduleReanalysis(jobId) {
-        const delayMs = 3000; // 3 secondes après détection
+    scheduleReanalysis(jobId, dbId = null) {
+        const delayMs = 2000; // 2 secondes après détection pour laisser le spooler finir d'écrire
         
         setTimeout(async () => {
             try {
@@ -70,11 +70,11 @@ class PrintSessionManager {
                     return;
                 }
                 this.analyzingJobIds.add(numericJobId);
-                console.log('[PrintSessionManager] Réanalyse scheduled pour job:', numericJobId);
+                console.log('[PrintSessionManager] Réanalyse scheduled pour job:', numericJobId, 'dbId:', dbId);
                 
                 try {
                     if (window.electronAPI && window.electronAPI.reanalyzePrintJob) {
-                        const result = await window.electronAPI.reanalyzePrintJob(numericJobId);
+                        const result = await window.electronAPI.reanalyzePrintJob(numericJobId, null, null, null, null, dbId);
                         
                         if (result && result.success) {
                             console.log('[PrintSessionManager] Réanalyse result:', result);
@@ -86,6 +86,7 @@ class PrintSessionManager {
                             // Mettre à jour la DB avec les valeurs analysées
                             const postBody = {
                                 action: 'update_job_analysis',
+                                id: dbId,
                                 job_id: numericJobId,
                                 printer_name: printerName,
                                 thumbnail_url: result.thumbnailUrl || '',
@@ -102,6 +103,10 @@ class PrintSessionManager {
                             });
                             
                             console.log('[PrintSessionManager] DB mise à jour pour job:', numericJobId, result.totalPages, 'pages');
+
+                            window.dispatchEvent(new CustomEvent('thumbnails-updated', {
+                                detail: { id: dbId, jobId: numericJobId, count: 1 }
+                            }));
                         } else {
                             console.warn('[PrintSessionManager] Réanalyse échouée pour job:', numericJobId, result);
                         }
@@ -113,6 +118,15 @@ class PrintSessionManager {
                 console.error('[PrintSessionManager] Erreur réanalyse scheduled:', e);
             }
         }, delayMs);
+    }
+
+    /**
+     * Vérifier si un job est actuellement en cours d'analyse
+     */
+    isJobAnalyzing(jobId) {
+        if (!jobId) return false;
+        const numericId = parseInt(jobId, 10);
+        return this.analyzingJobIds.has(numericId);
     }
 
     /**
@@ -157,8 +171,8 @@ class PrintSessionManager {
                 try {
                     // Appeler le C++ via Electron IPC pour analyse complète
                     if (window.electronAPI && window.electronAPI.reanalyzePrintJob) {
-                        console.log(`[PrintSessionManager] Appel IPC reanalyzePrintJob pour job ${jobId}...`);
-                        const analysisResult = await window.electronAPI.reanalyzePrintJob(jobId);
+                        console.log(`[PrintSessionManager] Appel IPC reanalyzePrintJob pour job ${jobId} (dbId=${job.id})...`);
+                        const analysisResult = await window.electronAPI.reanalyzePrintJob(jobId, job.document, null, null, null, job.id);
                         console.log(`[PrintSessionManager] Résultat IPC pour job ${jobId}:`, analysisResult);
 
                         if (analysisResult && analysisResult.success) {
@@ -273,9 +287,6 @@ class PrintSessionManager {
                     this.lastJobData.delete(jobId);
                 }
             }, 60000);
-            
-            // Programmer réanalyse
-            this.scheduleReanalysis(jobId);
         }
 
         // Envoyer à print-notification pour enregistrer en base
@@ -297,14 +308,23 @@ class PrintSessionManager {
                     fillRate: jobData.FillRate || jobData.fillRate || 0,
                     thumbnailUrl: jobData.ThumbnailUrl || jobData.thumbnailUrl || '',
                     timestamp: jobData.TimeSubmitted || jobData.timestamp || new Date().toISOString(),
+                    timeSubmitted: jobData.TimeSubmitted || jobData.timeSubmitted || null,
                     eventType: 'job_detected',
                     platform: navigator.platform.toLowerCase().includes('win') ? 'win32' : 'linux'
                 })
             });
             const result = await response.json();
             console.log('[PrintSessionManager] Notification sent:', result);
+            const dbId = (result && result.id) ? result.id : null;
+            if (jobId) {
+                // Programmer réanalyse avec l'identifiant DB unique
+                this.scheduleReanalysis(jobId, dbId);
+            }
         } catch (e) {
             console.error('[PrintSessionManager] Error sending notification:', e);
+            if (jobId) {
+                this.scheduleReanalysis(jobId);
+            }
         }
 
         /* 

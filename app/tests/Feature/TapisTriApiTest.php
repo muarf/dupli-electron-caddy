@@ -120,7 +120,8 @@ it('updates job properties and recalculates price on the tapis de tri', function
             'total_pages' => 10,
             'duplex' => 1,
             'paper_size' => 'A4',
-            'color_mode' => 'couleur'
+            'color_mode' => 'couleur',
+            'fill_rate' => 35.5
         ],
         'session' => ['user' => '1'],
         'conf' => $GLOBALS['conf'],
@@ -135,6 +136,7 @@ it('updates job properties and recalculates price on the tapis de tri', function
     expect(intval($json['job']['total_pages']))->toBe(10);
     expect(intval($json['job']['duplex']))->toBe(1);
     expect($json['job']['color_mode'])->toBe('Color');
+    expect(floatval($json['job']['fill_rate']))->toBe(35.5);
     expect($json['calculated_price'])->toBeGreaterThan(0);
 });
 
@@ -259,6 +261,32 @@ it('resolves printer_mappings to save correct machine marque (comcolor) instead 
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     expect($row)->not->toBeFalse();
     expect($row['marque'])->toBe('comcolor');
+});
+
+it('returns list of unpaid accounts with total amount due and count', function () {
+    $this->pdo->exec("INSERT INTO photocop (contact, prix, paye, date) VALUES ('La crique', 3.50, 'non', '19/11/2026')");
+    $this->pdo->exec("INSERT INTO photocop (contact, prix, paye, date) VALUES ('La crique', 2.00, 'non', '19/11/2026')");
+    $this->pdo->exec("INSERT INTO dupli (contact, prix, paye, date) VALUES ('Autre Association', 4.20, 'non', '19/11/2026')");
+    $this->pdo->exec("INSERT INTO photocop (contact, prix, paye, date) VALUES ('Payeur Comptant', 10.00, 'oui', '19/11/2026')");
+
+    $output = execute_routed_endpoint('tapis_tri', [
+        'method' => 'GET',
+        'get' => ['action' => 'unpaid_accounts'],
+        'session' => ['user' => '1'],
+        'conf' => $GLOBALS['conf'],
+        'env' => ['DUPLICATOR_DB_PATH' => $this->dbPath]
+    ]);
+
+    $json = json_decode($output, true);
+    expect($json)->toBeArray();
+    expect($json['success'])->toBeTrue();
+    expect($json['accounts'])->toHaveCount(2);
+    expect($json['accounts'][0]['contact'])->toBe('Autre Association');
+    expect($json['accounts'][0]['total_du'])->toBe(4.20);
+    expect($json['accounts'][0]['nb_tirages'])->toBe(1);
+    expect($json['accounts'][1]['contact'])->toBe('La crique');
+    expect($json['accounts'][1]['total_du'])->toBe(5.50);
+    expect($json['accounts'][1]['nb_tirages'])->toBe(2);
 });
 
 function seed_tapis_tri_schema(PDO $pdo): void {

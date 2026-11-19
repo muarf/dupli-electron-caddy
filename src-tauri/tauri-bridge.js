@@ -248,8 +248,9 @@
     },
 
     /** Réanalyse un job d'impression existant */
-    reanalyzePrintJob: async (jobId, documentName, format, splPath, driverColor) => {
+    reanalyzePrintJob: async (jobId, documentName, format, splPath, driverColor, dbId) => {
       const numericJobId = Number(jobId);
+      const targetDirId = dbId ? `job_${dbId}` : `${numericJobId}`;
 
       // 1. Récupérer les infos du spouleur Windows/Linux via Rust (total_pages, is_grayscale, is_duplex, paper_size)
       const res = await invoke('reanalyze_print_job', {
@@ -282,8 +283,8 @@
       try {
         const phpBase = window.location.origin.includes('8000') ? '' : 'http://127.0.0.1:8000';
         const endpoints = [
-          `${phpBase}/?convert_emf_to_png&job_id=${numericJobId}`,
-          `${phpBase}/?convert_pcl_to_png&job_id=${numericJobId}`,
+          `${phpBase}/?convert_emf_to_png&job_id=${numericJobId}&target_id=${targetDirId}`,
+          `${phpBase}/?convert_pcl_to_png&job_id=${numericJobId}&target_id=${targetDirId}`,
         ];
 
         for (const endpoint of endpoints) {
@@ -293,8 +294,9 @@
               const data = await resp.json();
               if (data && data.success) {
                 // PHP retourne base_url avec le port hardcodé 8001 — on construit l'URL relative à la place
-                thumbnailUrl = `/thumbnails/${numericJobId}/page_0.png?t=${Date.now()}`;
-                if (data.page_count) totalPages = data.page_count;
+                thumbnailUrl = `/thumbnails/${targetDirId}/page_0.png?t=${Date.now()}`;
+                if (data.page_count) totalPages = Math.max(totalPages, data.page_count);
+                if (data.detected_pages) totalPages = Math.max(totalPages, data.detected_pages);
                 pages = data.pages || [];
                 break; // succes, pas besoin du fallback
               }
@@ -383,7 +385,7 @@
       if (pageCount > 0) {
         const baseUrl = window.location.origin.includes('8000') ? '' : 'http://127.0.0.1:8000';
         for (let i = 0; i < pageCount; i++) {
-          const fullImageUrl = `${baseUrl}/thumbnails/${numericJobId}/page_${i}.png?t=${Date.now()}`;
+          const fullImageUrl = `${baseUrl}/thumbnails/${targetDirId}/page_${i}.png?t=${Date.now()}`;
           const analysis = await analyzeImagePage(fullImageUrl);
           totalFillRate += analysis.fillRate;
           if (analysis.isColor) {
@@ -394,11 +396,17 @@
       }
 
       const calculatedFillRate = analyzedCount > 0 ? (totalFillRate / analyzedCount) : 0;
-      const finalIsGrayscale = res.isGrayscale || !foundRealColor;
+      let finalIsGrayscale = res.isGrayscale;
+      if (!res.isGrayscale && analyzedCount > 0) {
+        // Seulement si des pages ont été analysées avec succès, affiner la détection
+        finalIsGrayscale = !foundRealColor;
+      }
+
+      const isSuccess = Boolean(res.found || thumbnailUrl);
 
       // 3. Retourner le format attendu par print-session-manager.js
       return {
-        success:      res.found,
+        success:      isSuccess,
         isGrayscale:  finalIsGrayscale,     // depuis DEVMODE.dmColor + analyse pixels
         isDuplex:     res.isDuplex,          // depuis DEVMODE.dmDuplex
         paperSize:    res.paperSize,         // depuis DEVMODE.dmPaperSize

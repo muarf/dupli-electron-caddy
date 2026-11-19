@@ -302,11 +302,14 @@ try {
         $data['status']
     ));
 
+    $actualId = $existingJobId ? intval($existingJobId['id']) : intval($db->lastInsertId());
+
     // Réponse de succès
     http_response_code(200);
     echo json_encode([
         'success' => true,
         'message' => 'Notification d\'impression enregistrée',
+        'id' => $actualId,
         'jobId' => $data['jobId'],
         'printerName' => $data['printerName']
     ]);

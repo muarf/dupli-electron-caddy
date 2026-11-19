@@ -36,8 +36,16 @@ it('TranslationManager: getTranslationStats() retourne les statistiques', functi
 
 it('TranslationManager: saveTranslations() et getTranslations()', function () {
     $manager = new TranslationManager($GLOBALS['conf']);
+    $frPath = __DIR__ . '/../../translations/fr.json';
+    $backup = file_exists($frPath) ? file_get_contents($frPath) : null;
 
-    $manager->saveTranslations('fr', ['test.key' => 'Valeur test']);
-    $translations = $manager->getTranslations('fr');
-    expect($translations)->toBeArray();
+    try {
+        $manager->saveTranslations('fr', ['test.key' => 'Valeur test']);
+        $translations = $manager->getTranslations('fr');
+        expect($translations)->toBeArray();
+    } finally {
+        if ($backup !== null) {
+            file_put_contents($frPath, $backup);
+        }
+    }
 });

@@ -107,10 +107,10 @@ $duplicopieurs = $db->select("SELECT id, marque, modele FROM duplicopieurs WHERE
                     <!-- Rempli en JS -->
                 </div>
 
-                <!-- Nom du contact / Client de passage -->
+                <!-- Nom du contact -->
                 <div class="form-group mb-3">
-                    <label class="font-weight-bold" style="font-size: 0.9rem;"><?php _e('auto_tirage.client_name'); ?></label>
-                    <input type="text" id="checkout-client-name" class="form-control" value="Passage" placeholder="Client de passage ou nom...">
+                    <label class="font-weight-bold" style="font-size: 0.9rem;"><?php _e('auto_tirage.client_name'); ?> <span class="text-danger">*</span></label>
+                    <input type="text" id="checkout-client-name" class="form-control" value="" placeholder="Nom du contact (obligatoire)..." required>
                 </div>
 
                 <!-- As-tu payé ? (Comme sur tirage_multimachine) -->
@@ -228,33 +228,38 @@ $duplicopieurs = $db->select("SELECT id, marque, modele FROM duplicopieurs WHERE
     </div>
 </div>
 
-<!-- Modale 3 : Assignation à un compte / session client -->
+<!-- Modale 3 : Mettre sur un compte (Non payé) -->
 <div class="modal fade" id="modal-assign-session" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-md" role="document">
         <div class="modal-content" style="border-radius: 14px;">
             <div class="modal-header bg-info text-white">
-                <h5 class="modal-title font-weight-bold"><i class="fa fa-folder-open"></i> Mettre sur un compte client</h5>
+                <h5 class="modal-title font-weight-bold"><i class="fa fa-folder-open"></i> Mettre sur un compte (Non payé)</h5>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="font-weight-bold">Choisir une session active existante</label>
-                    <select id="assign-session-select" class="form-control">
-                        <!-- Rempli en JS -->
+                    <label class="font-weight-bold">Rechercher parmi les comptes non payés</label>
+                    <div class="input-group" style="margin-bottom: 6px;">
+                        <span class="input-group-addon"><i class="fa fa-search"></i></span>
+                        <input type="text" id="assign-account-search" class="form-control" placeholder="Taper pour filtrer les comptes..." autocomplete="off">
+                    </div>
+                    <select id="assign-session-select" class="form-control" size="6" style="height: 160px; font-size: 0.95rem;">
+                        <!-- Rempli en JS avec tous les comptes non payés -->
                     </select>
                 </div>
                 <div class="text-center font-weight-bold text-muted my-2">— OU —</div>
                 <div class="form-group">
-                    <label class="font-weight-bold">Créer un nouveau compte / contact</label>
+                    <label class="font-weight-bold">Nouveau compte / nom du contact</label>
                     <input type="text" id="assign-new-contact-name" class="form-control" placeholder="Nom ou pseudo du contact...">
                 </div>
+                <small class="text-muted"><i class="fa fa-info-circle"></i> Le tirage sera immédiatement enregistré dans l'historique et dans l'Admin comme non payé.</small>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Annuler</button>
                 <button type="button" class="btn btn-info text-white font-weight-bold" onclick="tapisSubmitAssign()">
-                    <i class="fa fa-check"></i> Assigner
+                    <i class="fa fa-check"></i> Enregistrer sur le compte
                 </button>
             </div>
         </div>
@@ -321,14 +326,14 @@ $duplicopieurs = $db->select("SELECT id, marque, modele FROM duplicopieurs WHERE
                 </div>
 
                 <div class="row">
-                    <div class="col-6 form-group">
+                    <div class="col-xs-6 col-sm-6 form-group">
                         <label class="font-weight-bold">Format</label>
                         <select id="edit-job-taille" class="form-control">
                             <option value="A4">A4</option>
                             <option value="A3">A3</option>
                         </select>
                     </div>
-                    <div class="col-6 form-group">
+                    <div class="col-xs-6 col-sm-6 form-group">
                         <label class="font-weight-bold">Couleur / Noir</label>
                         <select id="edit-job-couleur" class="form-control">
                             <option value="non">Noir & Blanc</option>
@@ -338,25 +343,35 @@ $duplicopieurs = $db->select("SELECT id, marque, modele FROM duplicopieurs WHERE
                 </div>
 
                 <div class="row">
-                    <div class="col-6 form-group">
+                    <div class="col-xs-6 col-sm-6 form-group">
                         <label class="font-weight-bold">Recto-Verso</label>
                         <select id="edit-job-rv" class="form-control">
                             <option value="non">Recto (1 face)</option>
                             <option value="oui">Recto / Verso</option>
                         </select>
                     </div>
-                    <div class="col-6 form-group">
+                    <div class="col-xs-6 col-sm-6 form-group">
                         <label class="font-weight-bold">Nombre d'exemplaires</label>
                         <input type="number" id="edit-job-copies" class="form-control" value="1" min="1">
                     </div>
                 </div>
 
                 <div class="row">
-                    <div class="col-6 form-group">
+                    <div class="col-xs-6 col-sm-6 form-group">
                         <label class="font-weight-bold">Pages par exemplaire</label>
                         <input type="number" id="edit-job-pages" class="form-control" value="1" min="1">
                     </div>
-                    <div class="col-6 form-group">
+                    <div class="col-xs-6 col-sm-6 form-group">
+                        <label class="font-weight-bold">Taux d'encrage</label>
+                        <div class="input-group">
+                            <input type="number" step="0.1" min="0" max="100" id="edit-job-fill-rate" class="form-control" placeholder="0.0">
+                            <span class="input-group-addon">%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-xs-12 col-sm-12 form-group">
                         <label class="font-weight-bold">Prix forcé (€)</label>
                         <input type="number" step="0.01" min="0" id="edit-job-prix" class="form-control font-weight-bold" placeholder="Auto">
                     </div>

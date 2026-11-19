@@ -21,6 +21,7 @@
   let pollingTimer = null;
   let isFetching = false;
   let activeSessions = [];
+  let unpaidAccounts = [];
 
   function resolveThumbUrl(url) {
     if (!url) return '';
@@ -52,6 +53,12 @@
         console.warn('[TapisTri] Erreur init IPC onPrintJobDetected:', err);
       }
     }
+
+    // Écoute de l'événement de mise à jour des miniatures / analyse
+    window.addEventListener('thumbnails-updated', () => {
+      console.log('[TapisTri] Événement thumbnails-updated reçu, actualisation de la grille...');
+      loadJobs(true);
+    });
   }
 
   function startPolling() {
@@ -92,30 +99,50 @@
 
   async function loadActiveSessions() {
     try {
-      const response = await fetch('?sessions&action=list');
+      const response = await fetch('?tapis_tri&action=unpaid_accounts');
       const data = await response.json();
-      if (data && data.success && Array.isArray(data.sessions)) {
-        activeSessions = data.sessions;
+      if (data && data.success && Array.isArray(data.accounts)) {
+        unpaidAccounts = data.accounts;
         renderSessionSelect();
       }
     } catch (e) {
-      console.warn('[TapisTri] Erreur chargement sessions actives:', e);
+      console.warn('[TapisTri] Erreur chargement comptes non payés:', e);
     }
   }
 
-  function renderSessionSelect() {
+  function renderSessionSelect(filterText = '') {
     const select = document.getElementById('assign-session-select');
     if (!select) return;
 
-    select.innerHTML = '<option value="">-- Créer un nouveau compte / session --</option>';
-    activeSessions.forEach(sess => {
+    const searchInput = document.getElementById('assign-account-search');
+    const effectiveFilter = (filterText !== '' ? filterText : (searchInput ? searchInput.value : '')).trim().toLowerCase();
+    const filtered = unpaidAccounts.filter(acc => !effectiveFilter || (acc.contact && acc.contact.toLowerCase().includes(effectiveFilter)));
+
+    select.innerHTML = '';
+    if (filtered.length === 0) {
       const opt = document.createElement('option');
-      opt.value = sess.id;
-      const count = sess.job_count || 0;
-      const total = parseFloat(sess.total_price || 0).toFixed(2);
-      opt.textContent = `${sess.contact} ${sess.session_name ? '(' + sess.session_name + ')' : ''} — ${count} jobs (${total} €)`;
+      opt.value = '';
+      opt.disabled = true;
+      opt.textContent = effectiveFilter ? 'Aucun compte correspondant à la recherche' : 'Aucun compte avec tirages non payés';
+      select.appendChild(opt);
+      return;
+    }
+
+    filtered.forEach(acc => {
+      const opt = document.createElement('option');
+      opt.value = acc.contact;
+      const count = acc.nb_tirages || 0;
+      const total = parseFloat(acc.total_du || 0).toFixed(2);
+      opt.textContent = `${acc.contact} — ${count} tirage${count > 1 ? 's' : ''} (${total} € non payé)`;
       select.appendChild(opt);
     });
+
+    select.onchange = select.onclick = function() {
+      const contactInput = document.getElementById('assign-new-contact-name');
+      if (select.value && contactInput) {
+        contactInput.value = select.value;
+      }
+    };
   }
 
   function renderTapisGrid() {
@@ -149,24 +176,45 @@
       }
     });
 
+    function isJobAnalyzing(j) {
+      if (!j) return false;
+      if (!j.thumbnail_url) return true;
+      if (window.printSessionManager && typeof window.printSessionManager.isJobAnalyzing === 'function') {
+        if (window.printSessionManager.isJobAnalyzing(j.job_id) || window.printSessionManager.isJobAnalyzing(j.id)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     allJobs.forEach(job => {
       const isSelected = selectedJobIds.has(job.id);
+      const analyzing = isJobAnalyzing(job);
+      const fingerprint = `${analyzing}|${job.thumbnail_url}|${job.color_mode}|${job.fill_rate}|${job.total_pages}|${job.copies}|${job.calculated_price}|${job.paper_size}|${job.duplex}|${job.document_display_name || job.document}`;
 
       if (currentDomJobIds.has(job.id)) {
-        // Mettre à jour l'état sélectionné
         const card = grid.querySelector(`.tapis-card[data-job-id="${job.id}"]`);
         if (card) {
-          if (isSelected) {
-            card.classList.add('selected');
+          if (card.getAttribute('data-fingerprint') !== fingerprint) {
+            // Remplacer la carte si les données (miniature, couleur, encrage, prix...) ont changé
+            const newCard = createJobCard(job, isSelected);
+            newCard.setAttribute('data-fingerprint', fingerprint);
+            card.replaceWith(newCard);
           } else {
-            card.classList.remove('selected');
+            // Mettre à jour uniquement l'état sélectionné
+            if (isSelected) {
+              card.classList.add('selected');
+            } else {
+              card.classList.remove('selected');
+            }
+            const checkbox = card.querySelector('.tapis-card-checkbox');
+            if (checkbox) checkbox.checked = isSelected;
           }
-          const checkbox = card.querySelector('.tapis-card-checkbox');
-          if (checkbox) checkbox.checked = isSelected;
         }
       } else {
         // Créer une nouvelle carte
         const card = createJobCard(job, isSelected);
+        card.setAttribute('data-fingerprint', fingerprint);
         grid.appendChild(card);
       }
     });
@@ -177,6 +225,10 @@
     card.className = 'tapis-card' + (isSelected ? ' selected' : '');
     card.setAttribute('data-job-id', job.id);
 
+    const isAnalyzing = !job.thumbnail_url || 
+      (window.printSessionManager && typeof window.printSessionManager.isJobAnalyzing === 'function' && 
+       (window.printSessionManager.isJobAnalyzing(job.job_id) || window.printSessionManager.isJobAnalyzing(job.id)));
+
     const price = parseFloat(job.calculated_price || 0).toFixed(2);
     const dateStr = formatTime(job.created_at || job.timestamp);
     const copies = job.copies > 1 ? `x${job.copies}` : '';
@@ -185,6 +237,15 @@
     const isColor = (String(job.color_mode || '').toLowerCase().includes('color') || String(job.color_mode) === '2');
     const colorLabel = isColor ? 'Couleur' : 'N&B';
     const colorBadgeClass = isColor ? 'badge-color' : 'badge-mono';
+    const fillRateNum = parseFloat(job.fill_rate || 0);
+
+    let fillRateBadge = '';
+    if (isAnalyzing) {
+      fillRateBadge = `<span class="tapis-badge badge-fill text-muted"><i class="fa fa-spinner fa-spin"></i> Encrage...</span>`;
+    } else if (fillRateNum > 0) {
+      fillRateBadge = `<span class="tapis-badge badge-fill" title="Taux d'encrage moyen : ${fillRateNum.toFixed(1)}%"><i class="fa fa-tint"></i> ${fillRateNum.toFixed(0)}%</span>`;
+    }
+
     const paperSize = (job.paper_size || 'A4').toUpperCase();
     const docName = job.document_display_name || job.document || 'Document sans titre';
 
@@ -195,8 +256,9 @@
         <img src="${resolvedThumb}" alt="Aperçu" class="tapis-card-thumb" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'tapis-card-thumb-placeholder\\'><i class=\\'fa fa-file-pdf-o\\'></i></div>';">
       </div>`;
     } else {
-      thumbHtml = `<div class="tapis-card-thumb-placeholder">
-        <i class="fa fa-file-text-o"></i>
+      thumbHtml = `<div class="tapis-card-thumb-placeholder tapis-thumb-loading">
+        <i class="fa fa-spinner fa-spin"></i>
+        <span>Analyse en cours...</span>
       </div>`;
     }
 
@@ -223,6 +285,7 @@
         <div class="tapis-card-badges">
           <span class="tapis-badge badge-paper">${paperSize}</span>
           <span class="tapis-badge ${colorBadgeClass}">${colorLabel}</span>
+          ${fillRateBadge}
           <span class="tapis-badge badge-duplex">${duplexLabel}</span>
           <span class="tapis-badge badge-pages">${job.total_pages || 1} p. ${copies}</span>
         </div>
@@ -230,7 +293,10 @@
 
       <div class="tapis-card-footer">
         <span class="tapis-card-price-label">Prix calculé :</span>
-        <span class="tapis-card-price">${price} €</span>
+        ${isAnalyzing 
+          ? `<span class="tapis-card-price loading"><i class="fa fa-spinner fa-spin"></i> Calcul...</span>`
+          : `<span class="tapis-card-price">${price} €</span>`
+        }
       </div>
     `;
 
@@ -303,8 +369,12 @@
     const btnPay = document.getElementById('tapis-btn-checkout') || document.getElementById('btn-open-save');
 
     let total = 0;
+    let hasAnalyzing = false;
     allJobs.forEach(j => {
       if (selectedJobIds.has(j.id)) {
+        if (!j.thumbnail_url || (window.printSessionManager && typeof window.printSessionManager.isJobAnalyzing === 'function' && (window.printSessionManager.isJobAnalyzing(j.job_id) || window.printSessionManager.isJobAnalyzing(j.id)))) {
+          hasAnalyzing = true;
+        }
         total += parseFloat(j.calculated_price || 0);
       }
     });
@@ -320,10 +390,18 @@
       countEl.textContent = `${count} ${translate('auto_tirage.selected_docs', 'document(s) sélectionné(s)')}`;
     }
     if (totalEl) {
-      totalEl.textContent = `${formattedTotal} €`;
+      if (hasAnalyzing) {
+        totalEl.innerHTML = `<i class="fa fa-spinner fa-spin text-primary"></i> ${formattedTotal} €`;
+      } else {
+        totalEl.textContent = `${formattedTotal} €`;
+      }
     }
     if (btnPay) {
-      btnPay.innerHTML = `<i class="fa fa-credit-card"></i> <strong>ENCAISSER DIRECT (${formattedTotal} €)</strong>`;
+      if (hasAnalyzing) {
+        btnPay.innerHTML = `<i class="fa fa-spinner fa-spin"></i> <strong>ENCAISSER DIRECT (${formattedTotal} €)</strong>`;
+      } else {
+        btnPay.innerHTML = `<i class="fa fa-credit-card"></i> <strong>ENCAISSER DIRECT (${formattedTotal} €)</strong>`;
+      }
     }
 
     // Mise à jour du checkbox select-all
@@ -449,15 +527,19 @@
     if (motInput) motInput.value = '';
 
     const contactInput = document.getElementById('checkout-client-name');
-    if (contactInput && !contactInput.value) {
-      contactInput.value = 'Passage';
+    if (contactInput) {
+      contactInput.value = '';
     }
 
     if (window.$ && typeof $('#modal-checkout-direct').modal === 'function') {
       $('#modal-checkout-direct').modal('show');
       setTimeout(() => {
-        if (amountPaidInput) amountPaidInput.select();
-      }, 300);
+        if (contactInput) {
+          contactInput.focus();
+        } else if (amountPaidInput) {
+          amountPaidInput.select();
+        }
+      }, 350);
     }
   };
 
@@ -488,14 +570,20 @@
   }
 
   window.tapisSubmitCheckout = async function () {
+    const contactInput = document.getElementById('checkout-client-name');
+    const contact = contactInput ? contactInput.value.trim() : '';
+
+    if (!contact) {
+      alert("Veuillez renseigner le nom du contact.");
+      if (contactInput) contactInput.focus();
+      return;
+    }
+
     const btnSubmit = document.getElementById('btn-submit-checkout');
     if (btnSubmit) {
       btnSubmit.disabled = true;
       btnSubmit.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Validation...';
     }
-
-    const contactInput = document.getElementById('checkout-client-name');
-    const contact = (contactInput && contactInput.value.trim()) ? contactInput.value.trim() : 'Passage';
 
     const payeOui = document.getElementById('checkout-paye-oui');
     const isPaid = (payeOui && payeOui.checked) ? 'oui' : 'non';
@@ -633,6 +721,12 @@
     document.getElementById('edit-job-copies').value = job.copies || 1;
     document.getElementById('edit-job-pages').value = job.total_pages || 1;
 
+    // Taux d'encrage
+    const fillRateInput = document.getElementById('edit-job-fill-rate');
+    if (fillRateInput) {
+      fillRateInput.value = (job.fill_rate !== null && job.fill_rate !== undefined) ? parseFloat(job.fill_rate).toFixed(1) : '0.0';
+    }
+
     // Prix forcé (laissé vide par défaut pour permettre le calcul auto, ou prix actuel)
     document.getElementById('edit-job-prix').value = '';
 
@@ -654,6 +748,9 @@
     const priceVal = document.getElementById('edit-job-prix').value.trim();
     const calculatedPrice = priceVal !== '' ? parseFloat(priceVal.replace(',', '.')) : null;
 
+    const fillRateVal = document.getElementById('edit-job-fill-rate') ? document.getElementById('edit-job-fill-rate').value.trim() : '';
+    const fillRate = fillRateVal !== '' ? parseFloat(fillRateVal.replace(',', '.')) : null;
+
     const payload = {
       job_id: jobId,
       document_name: document.getElementById('edit-job-docname').value.trim(),
@@ -667,6 +764,10 @@
       machine_name: machineName,
       calculated_price: calculatedPrice
     };
+
+    if (fillRate !== null && !isNaN(fillRate)) {
+      payload.fill_rate = fillRate;
+    }
 
     try {
       const response = await fetch('?tapis_tri&action=update_job', {
@@ -693,29 +794,41 @@
 
   window.tapisOpenAssignModal = function () {
     if (selectedJobIds.size === 0) return;
-    renderSessionSelect();
+
+    const searchInput = document.getElementById('assign-account-search');
+    if (searchInput) {
+      searchInput.value = '';
+    }
+
+    loadActiveSessions();
+
     const contactInput = document.getElementById('assign-new-contact-name');
     if (contactInput) contactInput.value = '';
 
     if (window.$ && typeof $('#modal-assign-session').modal === 'function') {
       $('#modal-assign-session').modal('show');
+      setTimeout(() => {
+        if (searchInput) searchInput.focus();
+      }, 350);
     }
   };
 
   window.tapisSubmitAssign = async function () {
     const select = document.getElementById('assign-session-select');
     const contactInput = document.getElementById('assign-new-contact-name');
-    const sessionId = select ? select.value : '';
-    const contactName = contactInput ? contactInput.value.trim() : '';
+    let contactName = contactInput ? contactInput.value.trim() : '';
 
-    if (!sessionId && !contactName) {
-      alert("Veuillez sélectionner une session existante ou saisir un nom de contact.");
+    if (!contactName && select && select.value) {
+      contactName = select.value.trim();
+    }
+
+    if (!contactName) {
+      alert("Veuillez sélectionner un compte existant ou saisir un nom de compte.");
       return;
     }
 
     const payload = {
       job_ids: Array.from(selectedJobIds),
-      session_id: sessionId ? parseInt(sessionId, 10) : null,
       contact: contactName
     };
 
@@ -736,16 +849,16 @@
         await loadActiveSessions();
         if (typeof showAppModal === 'function') {
           showAppModal({
-            title: "Impressions assignées",
-            message: `Les documents ont été transférés sur le compte de <strong>${escapeHtml(result.contact)}</strong>.`,
+            title: "Enregistré sur le compte",
+            message: `Les documents ont été enregistrés sur le compte de <strong>${escapeHtml(result.contact)}</strong> comme non payé (${parseFloat(result.total_price || 0).toFixed(2)} €).`,
             type: "success"
           });
         }
       } else {
-        alert(result.error || "Erreur lors de l'assignation.");
+        alert(result.error || "Erreur lors de l'enregistrement sur le compte.");
       }
     } catch (e) {
-      console.error('[TapisTri] Erreur assignation:', e);
+      console.error('[TapisTri] Erreur assignation compte:', e);
       alert("Erreur serveur.");
     }
   };
@@ -882,6 +995,47 @@
         if (e.key === 'Enter' && e.target && e.target.tagName !== 'TEXTAREA') {
           e.preventDefault();
           window.tapisSubmitEditJob();
+        }
+      });
+    }
+
+    // Recherche et sélection dans la modale "Mettre sur un compte"
+    const searchInput = document.getElementById('assign-account-search');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        renderSessionSelect(e.target.value);
+      });
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const select = document.getElementById('assign-session-select');
+          if (select && select.options.length > 0 && !select.options[0].disabled) {
+            select.selectedIndex = 0;
+            const contactInput = document.getElementById('assign-new-contact-name');
+            if (contactInput) contactInput.value = select.value;
+            window.tapisSubmitAssign();
+          }
+        }
+      });
+    }
+
+    const sessionSelect = document.getElementById('assign-session-select');
+    if (sessionSelect) {
+      sessionSelect.addEventListener('dblclick', () => {
+        if (sessionSelect.value) {
+          const contactInput = document.getElementById('assign-new-contact-name');
+          if (contactInput) contactInput.value = sessionSelect.value;
+          window.tapisSubmitAssign();
+        }
+      });
+    }
+
+    const assignContactName = document.getElementById('assign-new-contact-name');
+    if (assignContactName) {
+      assignContactName.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          window.tapisSubmitAssign();
         }
       });
     }

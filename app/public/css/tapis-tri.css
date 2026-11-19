@@ -272,6 +272,20 @@
   border-bottom: 1px solid #f1f5f9;
 }
 
+.tapis-card-thumb-placeholder.tapis-thumb-loading {
+  flex-direction: column;
+  gap: 8px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.tapis-card-thumb-placeholder.tapis-thumb-loading i {
+  font-size: 2rem;
+  color: #2563eb;
+}
+
 /* Corps de carte */
 .tapis-card-body {
   padding: 12px;
@@ -312,6 +326,7 @@
 .badge-mono  { background: #f1f5f9; color: #475569; }
 .badge-duplex{ background: #fef3c7; color: #b45309; }
 .badge-pages { background: #dcfce7; color: #15803d; }
+.badge-fill  { background: #fae8ff; color: #86198f; font-weight: 700; }
 
 /* Pied de carte */
 .tapis-card-footer {
@@ -336,6 +351,15 @@
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--tapis-success-hover);
+}
+
+.tapis-card-price.loading {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--tapis-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* ── État vide ── */

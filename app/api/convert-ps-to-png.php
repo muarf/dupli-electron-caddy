@@ -10,7 +10,8 @@ require_once __DIR__ . '/../controler/functions/database.php';
 require_once __DIR__ . '/../controler/functions/SpoolManager.php';
 require_once __DIR__ . '/../controler/functions/binary_utilities.php';
 
-$job_id = isset($_GET['job_id']) ? intval($_GET['job_id']) : 0;
+$job_id = isset($_REQUEST['job_id']) ? intval($_REQUEST['job_id']) : 0;
+$targetId = !empty($_REQUEST['target_id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_REQUEST['target_id']) : (isset($_REQUEST['db_id']) ? 'job_' . intval($_REQUEST['db_id']) : strval($job_id));
 
 if ($job_id <= 0) {
     echo json_encode(['success' => false, 'error' => 'Job ID manquant']);
@@ -36,7 +37,7 @@ try {
     }
 
     // 3. Dossier de sortie
-    $outputDir = __DIR__ . "/../public/thumbnails/$job_id/";
+    $outputDir = __DIR__ . "/../public/thumbnails/$targetId/";
     if (!is_dir($outputDir)) {
         mkdir($outputDir, 0777, true);
     }
@@ -85,17 +86,18 @@ try {
         }
 
         $pages[] = [
-            'path' => "thumbnails/$job_id/$file",
-            'url' => "http://127.0.0.1:8001/thumbnails/$job_id/$file"
+            'path' => "thumbnails/$targetId/$file",
+            'url' => "/thumbnails/$targetId/$file"
         ];
     }
 
     echo json_encode([
         'success' => true,
         'job_id' => $job_id,
+        'target_id' => $targetId,
         'page_count' => count($pages),
         'pages' => $pages,
-        'base_url' => "http://127.0.0.1:8001/thumbnails/$job_id/"
+        'base_url' => "/thumbnails/$targetId/"
     ]);
 
 } catch (Exception $e) {

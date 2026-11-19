@@ -16,10 +16,14 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-if ((!isset($_SESSION['admin']) || $_SESSION['admin'] !== true) && 
-    (!isset($_SESSION['user']) || $_SESSION['user'] !== "1")) {
+$isCli = (php_sapi_name() === 'cli');
+$isLocalhost = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1', 'localhost'], true);
+$isAdminSession = (isset($_SESSION['admin']) && $_SESSION['admin'] === true) || 
+                   (isset($_SESSION['user']) && $_SESSION['user'] === "1");
+
+if (!$isCli && !$isLocalhost && !$isAdminSession) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'error' => 'Accès réservé à l\'administrateur']);
+    echo json_encode(['success' => false, 'error' => 'Accès réservé à l\'administrateur ou en local']);
     exit;
 }
 

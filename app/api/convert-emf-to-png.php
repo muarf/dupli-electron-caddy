@@ -38,7 +38,8 @@ debugLog("IM Path: $imPath");
 
 // Récupérer le job ID
 $jobId = isset($_REQUEST['job_id']) ? intval($_REQUEST['job_id']) : 0;
-debugLog("Job ID: $jobId");
+$targetId = !empty($_REQUEST['target_id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_REQUEST['target_id']) : (isset($_REQUEST['db_id']) ? 'job_' . intval($_REQUEST['db_id']) : strval($jobId));
+debugLog("Job ID: $jobId, Target ID: $targetId");
 
 if ($jobId == 0) {
     debugLog("Invalid Job ID");
@@ -119,8 +120,8 @@ if (file_exists($standardName)) {
         }
     }
 
-    // Step 3: Fallback to most recent FP file
-    if (!$splFile && $mostRecentFpSpl) {
+    // Step 3: Fallback to most recent FP file (uniquement si très récent < 60s)
+    if (!$splFile && $mostRecentFpSpl && (time() - $mostRecentTime < 60)) {
         $splFile = $mostRecentFpSpl;
         debugLog("Using most recent FP SPL as fallback: $splFile");
     }
@@ -145,7 +146,7 @@ if (@copy($splFile, $shadowSplFile)) {
 }
 
 // Créer le dossier de sortie (Accessible publiquement)
-$outputDir = __DIR__ . '/../public/thumbnails/' . $jobId . '/';
+$outputDir = __DIR__ . '/../public/thumbnails/' . $targetId . '/';
 
 // Fichier de cache pour les positions EMF
 $cacheFile = $outputDir . 'emf_positions.cache';
@@ -255,10 +256,14 @@ if (!is_dir($outputDir)) {
 }
 
 // URL de base pour les thumbnails
-$baseUrl = '/thumbnails/' . $jobId . '/';
+$baseUrl = '/thumbnails/' . $targetId . '/';
 
 // Extraire chaque EMF vers un fichier temporaire et convertir
 $generatedPages = [];
+$firstPageWidth = null;
+$firstPageHeight = null;
+$firstPageBoundsBytes = null; // 32 octets (rclBounds + rclFrame)
+$validEmfCount = 0;
 
 foreach ($emfPositions as $index => $startOffset) {
 
@@ -270,6 +275,7 @@ foreach ($emfPositions as $index => $startOffset) {
         debugLog("Skipping EMF at index $index: Length is too small ($length), likely metadata/header record.");
         continue;
     }
+    $validEmfCount++;
 
     $outputPng = $outputDir . "page_$index.png";
 
@@ -277,6 +283,13 @@ foreach ($emfPositions as $index => $startOffset) {
     // IMPORTANT : ce `continue` doit être AVANT l'écriture de l'EMF sur disque,
     // sinon l'EMF serait créé mais jamais supprimé.
     if (file_exists($outputPng) && filesize($outputPng) > 0) {
+        if (!$firstPageWidth) {
+            $sz = @getimagesize($outputPng);
+            if ($sz && $sz[0] > 0 && $sz[1] > 0) {
+                $firstPageWidth = $sz[0];
+                $firstPageHeight = $sz[1];
+            }
+        }
         $generatedPages[] = [
             'page' => $index,
             'path' => $outputPng,
@@ -289,14 +302,67 @@ foreach ($emfPositions as $index => $startOffset) {
     // Extraire l'EMF depuis le SPL vers un fichier temporaire
     fseek($handle, $startOffset);
     $emfData = fread($handle, $length);
+
+    // 1. Tronquer si nBytes spécifie une taille EMF valide plus petite que le chunk
+    if (strlen($emfData) >= 52) {
+        $hdr = unpack('VnBytes', substr($emfData, 48, 4));
+        $realEmfBytes = intval($hdr['nBytes'] ?? 0);
+        if ($realEmfBytes > 1024 && $realEmfBytes < strlen($emfData)) {
+            $emfData = substr($emfData, 0, $realEmfBytes);
+        }
+    }
+
+    // 2. Contrôle des coordonnées de bounding box (rclBounds / rclFrame)
+    $hasValidBounds = false;
+    if (strlen($emfData) >= 40) {
+        $bounds = unpack('lleft/ltop/lright/lbottom', substr($emfData, 8, 16));
+        $w = $bounds['right'] - $bounds['left'];
+        $h = $bounds['bottom'] - $bounds['top'];
+        if ($w > 0 && $h > 0) {
+            $hasValidBounds = true;
+            if (!$firstPageBoundsBytes) {
+                $firstPageBoundsBytes = substr($emfData, 8, 32);
+            }
+        }
+    }
+
+    // Si bounds nulles ou négatives : il s'agit d'un enregistrement de fin de job / reset spooler,
+    // ce n'est pas une page imprimable : on l'ignore.
+    if (!$hasValidBounds) {
+        debugLog("Skipping EMF at index $index: Invalid or zero image bounds ({$w}x{$h}), ignoring trailer record.");
+        continue;
+    }
+
     $tempEmf = $outputDir . "page_$index.emf";
     file_put_contents($tempEmf, $emfData);
 
-    // Conversion avec ImageMagick (Resolution basse 72 DPI)
+    // 3. Conversion avec ImageMagick (Resolution basse 72 DPI)
     $magick_args = "-density 72 " . escapeshellarg($tempEmf) . " -background white -flatten " . escapeshellarg($outputPng);
     $im_result = run_imagemagick($magick_args);
 
+    // Si échec et qu'on a les dimensions de la page 1, fallback avec -size explicite
+    if ((!$im_result['success'] || !file_exists($outputPng)) && $firstPageWidth && $firstPageHeight) {
+        debugLog("Standard conversion failed for page $index, retrying with fallback dimensions {$firstPageWidth}x{$firstPageHeight}...");
+        $magick_args = "-size {$firstPageWidth}x{$firstPageHeight} -density 72 " . escapeshellarg($tempEmf) . " -background white -flatten " . escapeshellarg($outputPng);
+        $im_result = run_imagemagick($magick_args);
+    }
+
+    // Si toujours échec mais qu'on a les dimensions de la page 1, générer une page de secours blanche
+    // pour garantir la présence de la miniature et le comptage exact de la page
+    if ((!$im_result['success'] || !file_exists($outputPng)) && $firstPageWidth && $firstPageHeight) {
+        debugLog("EMF conversion failed for page $index despite size fallback. Generating blank placeholder image.");
+        $blank_args = "-size {$firstPageWidth}x{$firstPageHeight} xc:white " . escapeshellarg($outputPng);
+        $im_result = run_imagemagick($blank_args);
+    }
+
     if ($im_result['success'] && file_exists($outputPng)) {
+        if (!$firstPageWidth) {
+            $sz = @getimagesize($outputPng);
+            if ($sz && $sz[0] > 0 && $sz[1] > 0) {
+                $firstPageWidth = $sz[0];
+                $firstPageHeight = $sz[1];
+            }
+        }
         $generatedPages[] = [
             'page' => $index,
             'path' => $outputPng,
@@ -321,19 +387,6 @@ foreach ($emfPositions as $index => $startOffset) {
 
 fclose($handle);
 
-// Optimisation : Filtrer les pages potentiellement vides à la fin
-$totalFound = count($generatedPages);
-if ($totalFound > 1) {
-    $lastPageIndex = $totalFound - 1;
-    $lastPage = $generatedPages[$lastPageIndex];
-    // Si la dernière page est très petite (< 5KB), c'est probablement une page blanche de fin
-    if (filesize($lastPage['path']) < 5120) {
-        debugLog("Removing potentially blank last page: " . $lastPage['path']);
-        @unlink($lastPage['path']);
-        array_pop($generatedPages);
-    }
-}
-
 if (empty($generatedPages)) {
     debugLog("No PNG files generated");
     echo json_encode(['error' => 'No PNG files generated']);
@@ -346,6 +399,7 @@ echo json_encode([
     'success' => true,
     'job_id' => $jobId,
     'page_count' => count($generatedPages),
+    'detected_pages' => $validEmfCount,
     'pages' => $generatedPages,
     'base_url' => $baseUrl
 ], JSON_UNESCAPED_SLASHES);

@@ -102,7 +102,8 @@ debugLog("Ghostscript Path: $ghostscriptPath");
 
 // Récupérer le job ID
 $jobId = isset($_REQUEST['job_id']) ? intval($_REQUEST['job_id']) : 0;
-debugLog("Job ID: $jobId");
+$targetId = !empty($_REQUEST['target_id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_REQUEST['target_id']) : (isset($_REQUEST['db_id']) ? 'job_' . intval($_REQUEST['db_id']) : strval($jobId));
+debugLog("Job ID: $jobId, Target ID: $targetId");
 
 if ($jobId == 0) {
     debugLog("Invalid Job ID");
@@ -180,8 +181,8 @@ if (file_exists($standardName)) {
         }
     }
 
-    // Step 3: Fallback to most recent FP file
-    if (!$splFile && $mostRecentFpSpl) {
+    // Step 3: Fallback to most recent FP file (uniquement si très récent < 60s)
+    if (!$splFile && $mostRecentFpSpl && (time() - $mostRecentTime < 60)) {
         $splFile = $mostRecentFpSpl;
         debugLog("Using most recent FP SPL as fallback: $splFile");
     }
@@ -351,7 +352,7 @@ if ($isPostScript && !$isPcl && $psOffset > 0) {
 }
 
 // Créer le dossier de sortie (Accessible publiquement)
-$outputDir = __DIR__ . '/../public/thumbnails/' . $jobId . '/';
+$outputDir = __DIR__ . '/../public/thumbnails/' . $targetId . '/';
 if (is_dir($outputDir)) {
     // Nettoyer si existe déjà (peut-être une tentative précédente)
     rrmdir($outputDir);
@@ -363,7 +364,7 @@ if (!is_dir($outputDir)) {
 }
 
 // URL de base pour les thumbnails
-$baseUrl = 'http://127.0.0.1:8001/thumbnails/' . $jobId . '/';
+$baseUrl = '/thumbnails/' . $targetId . '/';
 
 // Conversion avec Ghostscript
 // On utilise le fichier SPL directement. Ghostscript est assez intelligent pour ignorer les en-têtes RAW/PJL souvent.

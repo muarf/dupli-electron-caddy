@@ -38,6 +38,21 @@ it('convertit un EMF depuis le spool (Mock)', function () {
     expect($result)->toHaveKey('success', true);
     expect($result)->toHaveKey('page_count');
     expect($result['page_count'])->toBeGreaterThan(0);
+    expect($result)->toHaveKey('detected_pages');
+});
+
+it('convertit un EMF avec target_id personnalisé', function () {
+    $result = run_endpoint('api/convert-emf-to-png.php', [
+        'job_id' => 123,
+        'target_id' => 'job_9999'
+    ], [
+        'DUPLICATOR_SPOOL_PATH' => $this->spoolDir,
+        'DUPLICATOR_MAGICK_PATH' => $this->mockBinary
+    ]);
+
+    expect($result)->toBeArray();
+    expect($result)->toHaveKey('success', true);
+    expect($result['base_url'])->toContain('job_9999');
 });
 
 it('convertit un PCL depuis le spool (Mock)', function () {

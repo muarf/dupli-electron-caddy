@@ -333,8 +333,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $targetId = null;
                 
-                // Priorité: utiliser job_id Windows si fourni
-                if (isset($input['job_id'])) {
+                // Priorité 1: utiliser id DB direct si fourni (évite toute collision)
+                if (!empty($input['id'])) {
+                    $targetId = intval($input['id']);
+                }
+                
+                // Priorité 2: utiliser job_id Windows si id non fourni
+                if (!$targetId && isset($input['job_id'])) {
                     $jobIdWindows = strval($input['job_id']);
                     $printerName = $input['printer_name'] ?? '';
                     
@@ -361,11 +366,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 
-                // Fallback: utiliser id DB direct
-                if (!$targetId && isset($input['id'])) {
-                    $targetId = intval($input['id']);
-                }
-                
                 if (!$targetId) {
                     throw new Exception("Paramètre manquant (id ou job_id)");
                 }
@@ -380,7 +380,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $updates = [];
                 $params = [];
                 
-                if ($thumbnailUrl !== null) {
+                if (!empty($thumbnailUrl)) {
                     $updates[] = "thumbnail_url = ?";
                     $params[] = $thumbnailUrl;
                 }
@@ -394,7 +394,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $updates[] = "color_mode = ?";
                     $params[] = $colorMode;
                 }
-                if (isset($input['total_pages'])) {
+                if (isset($input['total_pages']) && intval($input['total_pages']) > 0) {
                     $updates[] = "total_pages = ?";
                     $params[] = intval($input['total_pages']);
                 }
@@ -411,6 +411,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $params[] = $targetId;
                     $sql = "UPDATE print_jobs SET " . implode(', ', $updates) . " WHERE id = ?";
                     $db->execute($sql, $params);
+
+                    // Recalculer immédiatement le prix avec les nouvelles métadonnées réelles
+                    try {
+                        require_once __DIR__ . '/../controler/functions/tirage_calc.php';
+                        $updatedJob = $db->selectOne("SELECT * FROM print_jobs WHERE id = ?", [$targetId]);
+                        if ($updatedJob && function_exists('computeJobEstimatedPrice')) {
+                            $con_pdo = pdo_connect();
+                            $newPrice = computeJobEstimatedPrice($con_pdo, $updatedJob);
+                            if ($newPrice > 0) {
+                                $db->execute("UPDATE print_jobs SET calculated_price = ? WHERE id = ?", [$newPrice, $targetId]);
+                            }
+                        }
+                    } catch (Throwable $ePrice) {
+                        error_log("[update_job_analysis] Erreur recalcul prix: " . $ePrice->getMessage());
+                    }
                 }
                 
                 echo json_encode(['success' => true, 'updated_id' => $targetId]);

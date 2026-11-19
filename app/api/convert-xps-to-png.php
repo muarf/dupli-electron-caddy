@@ -45,6 +45,7 @@ debugLog("GhostXPS Path: $gsPath");
 
 // Récupérer le job ID
 $jobId = isset($_REQUEST['job_id']) ? intval($_REQUEST['job_id']) : 0;
+$targetId = !empty($_REQUEST['target_id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $_REQUEST['target_id']) : (isset($_REQUEST['db_id']) ? 'job_' . intval($_REQUEST['db_id']) : strval($jobId));
 debugLog("Job ID: $jobId");
 
 if ($jobId == 0) {
@@ -281,7 +282,7 @@ $thumbnailsDir = __DIR__ . '/../public/thumbnails';
 if (!is_dir($thumbnailsDir)) {
     mkdir($thumbnailsDir, 0777, true);
 }
-$outputDir = realpath($thumbnailsDir) . DIRECTORY_SEPARATOR . $jobId . DIRECTORY_SEPARATOR;
+$outputDir = realpath($thumbnailsDir) . DIRECTORY_SEPARATOR . $targetId . DIRECTORY_SEPARATOR;
 if (!is_dir($outputDir)) {
     mkdir($outputDir, 0777, true);
 }
@@ -353,8 +354,8 @@ foreach ($pngFiles as $pngFile) {
     $pageNum = intval(preg_replace('/[^0-9]/', '', basename($pngFile)));
     // Note: pageNum is now 0-based from the filename (page_0.png -> 0)
     
-    // Path should be relative to public root: thumbnails/JOBID/page_X.png
-    $relativePath = 'thumbnails/' . $jobId . '/' . basename($pngFile);
+    // Path should be relative to public root: thumbnails/TARGET_ID/page_X.png
+    $relativePath = 'thumbnails/' . $targetId . '/' . basename($pngFile);
     
     $pages[] = [
         'page' => $pageNum + 1, // Display page is usually 1-based in UI
