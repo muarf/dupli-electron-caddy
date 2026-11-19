@@ -195,6 +195,17 @@ fn main() {
                     log::error!("Fenêtre 'main' introuvable après le démarrage des serveurs");
                 }
 
+                // Vérification automatique des mises à jour au démarrage (après 5 secondes)
+                let app_update_handle = app_handle.clone();
+                tauri::async_runtime::spawn(async move {
+                    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                    log::info!("[AUTO-UPDATE] Vérification automatique des mises à jour au démarrage...");
+                    let state = app_update_handle.state::<app_commands::UpdateState>();
+                    if let Err(e) = app_commands::check_for_updates(app_update_handle.clone(), state).await {
+                        log::warn!("[AUTO-UPDATE] Erreur lors de la vérification automatique : {e}");
+                    }
+                });
+
                 // Démarrer la purge automatique planifiée (startup + toutes les heures)
                 if php_ready {
                     tauri::async_runtime::spawn(async move {

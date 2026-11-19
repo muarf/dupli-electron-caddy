@@ -337,6 +337,30 @@
                 }
             }
         };
+
+        // Raccourci clavier F3 pour déclencher la mise à jour
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'F3' || e.keyCode === 114) {
+                e.preventDefault();
+                console.log('[Updater] F3 pressé - Vérification des mises à jour...');
+                window.updaterUI.checkForUpdates();
+            }
+        });
+
+        // Vérification automatique au démarrage (une seule fois par session, après 3 secondes)
+        if (!sessionStorage.getItem('dupli_auto_update_checked')) {
+            sessionStorage.setItem('dupli_auto_update_checked', '1');
+            setTimeout(() => {
+                console.log('[Updater] Vérification automatique des mises à jour au démarrage...');
+                window.updaterUI.checkForUpdates();
+            }, 3000);
+        }
+
+        // Vérification périodique toutes les 4 heures
+        setInterval(() => {
+            console.log('[Updater] Vérification périodique des mises à jour...');
+            window.updaterUI.checkForUpdates();
+        }, 4 * 60 * 60 * 1000);
         
         console.log('[Updater] Interface utilisateur initialisée avec succès');
     }

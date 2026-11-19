@@ -158,10 +158,15 @@ if (file_exists($task_manager_path)) {
     }
 
     // Intercepter F3 pour empêcher l'ouverture de la barre de recherche du navigateur,
-    // afin que le raccourci Tauri pour la mise à jour fonctionne correctement.
+    // et déclencher la recherche de mise à jour.
     window.addEventListener('keydown', function(e) {
         if (e.key === 'F3' || e.keyCode === 114) {
             e.preventDefault();
+            if (window.updaterUI && typeof window.updaterUI.checkForUpdates === 'function') {
+                window.updaterUI.checkForUpdates();
+            } else if (window.electronAPI && typeof window.electronAPI.checkForUpdates === 'function') {
+                window.electronAPI.checkForUpdates();
+            }
         }
     });
 </script>
