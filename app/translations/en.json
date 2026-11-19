@@ -2675,7 +2675,11 @@
         "network_error_bold": "Network error:",
         "unimposing_in_progress": "Unimposing in progress...",
         "copy_message": "Copy message",
-        "close": "Close"
+        "export_png_progress": "Export PNG: page ",
+        "creating_zip": "Creating ZIP archive...",
+        "export_success": "Export completed:",
+        "export_error": "Export error:",
+        "export_png_zip_title": "Export all pages as ZIP (PNG)"
     },
     "studio_studio-metadata": {
         "window_state_undefined": "Error: window.state is undefined.",

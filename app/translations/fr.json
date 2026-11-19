@@ -2720,7 +2720,11 @@
         "network_error_bold": "Erreur réseau :",
         "unimposing_in_progress": "Désimposition en cours...",
         "copy_message": "Copier le message",
-        "close": "Fermer"
+        "export_png_progress": "Export PNG : page ",
+        "creating_zip": "Création du fichier ZIP...",
+        "export_success": "Export terminé :",
+        "export_error": "Erreur lors de l'export :",
+        "export_png_zip_title": "Exporter toutes les pages en ZIP (PNG)"
     },
     "studio_studio-metadata": {
         "window_state_undefined": "Erreur: window.state est indéfini.",

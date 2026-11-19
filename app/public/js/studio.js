@@ -390,7 +390,13 @@ document.addEventListener('DOMContentLoaded', function() {
       if (window.orgSequence.length === 0) {
         thumbsBar.innerHTML = '';
         thumbsBar.classList.remove('visible');
+        if ($('btnExportPng')) $('btnExportPng').title = (CONFIG.translations && CONFIG.translations['studio_js.export_png_title'] || 'Exporter le canvas en PNG');
         return;
+      }
+      if ($('btnExportPng')) {
+        $('btnExportPng').title = window.orgSequence.length > 1 
+          ? (CONFIG.translations && CONFIG.translations['studio_js.export_png_zip_title'] || 'Exporter toutes les pages en ZIP (PNG)')
+          : (CONFIG.translations && CONFIG.translations['studio_js.export_png_title'] || 'Exporter le canvas en PNG');
       }
       const fragment = document.createDocumentFragment();
 
@@ -1437,30 +1443,236 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // === EXPORT PNG (Canvas) ===
-  $('btnExportPng').addEventListener('click', () => {
-    const link = document.createElement('a');
-    link.download = (state.file ? ($('fileNameDisplay').value || state.file.name).replace(/\.[^.]+$/, '') : 'studio') + '_export.png';
-    const c = state.crop;
+  // === HELPERS EXPORT PNG / ZIP ===
+  function applyFiltersToCanvas(targetCanvas) {
+    if (typeof hasFiltersModified === 'function' && !hasFiltersModified()) return;
+    const tCtx = targetCanvas.getContext('2d');
+    const d = tCtx.getImageData(0, 0, targetCanvas.width, targetCanvas.height);
+    const contrast = sliders && sliders.contrast ? parseFloat(sliders.contrast.el.value) : 0;
+    const brightness = sliders && sliders.brightness ? parseFloat(sliders.brightness.el.value) : 0;
+    const gamma = sliders && sliders.gamma ? parseFloat(sliders.gamma.el.value) : 1;
+    const saturation = sliders && sliders.saturation ? parseFloat(sliders.saturation.el.value) : 0;
+    const bitmapOn = $('chkBitmap') ? $('chkBitmap').checked : false;
+    const threshold = sliders && sliders.threshold ? parseInt(sliders.threshold.el.value) : 128;
+    const px = d.data;
+    for (let i = 0; i < px.length; i += 4) {
+      let r = px[i], g = px[i+1], b = px[i+2];
+      // Contrast
+      if (contrast !== 0) {
+        const cv = contrast * 2.55;
+        const f = (259 * (cv + 255)) / (255 * (259 - cv));
+        r = Math.min(255, Math.max(0, f * (r - 128) + 128));
+        g = Math.min(255, Math.max(0, f * (g - 128) + 128));
+        b = Math.min(255, Math.max(0, f * (b - 128) + 128));
+      }
+      // Brightness
+      if (brightness !== 0) {
+        r = Math.min(255, Math.max(0, r + brightness));
+        g = Math.min(255, Math.max(0, g + brightness));
+        b = Math.min(255, Math.max(0, b + brightness));
+      }
+      // Gamma
+      if (gamma !== 1.0) {
+        r = Math.pow(r / 255, 1 / gamma) * 255;
+        g = Math.pow(g / 255, 1 / gamma) * 255;
+        b = Math.pow(b / 255, 1 / gamma) * 255;
+      }
+      // Saturation
+      if (saturation !== 0) {
+        const sf = 1 + saturation / 100;
+        const gray = (r + g + b) / 3;
+        r = Math.min(255, Math.max(0, gray + (r - gray) * sf));
+        g = Math.min(255, Math.max(0, gray + (g - gray) * sf));
+        b = Math.min(255, Math.max(0, gray + (b - gray) * sf));
+      }
+      // Bitmap
+      if (bitmapOn) {
+        const gr = (r + g + b) / 3;
+        const v = gr < threshold ? 0 : 255;
+        r = g = b = v;
+      }
+      px[i] = r; px[i+1] = g; px[i+2] = b;
+    }
+    tCtx.putImageData(d, 0, 0);
+  }
+
+  function applyCropToExportCanvas(targetCanvas, pageNum) {
+    const c = typeof getEffectiveCropForPage === 'function' ? getEffectiveCropForPage(pageNum) : state.crop;
     const hasAnyCrop = c && (c.top > 0 || c.bottom > 0 || c.left > 0 || c.right > 0);
-    if (hasAnyCrop && state.dims) {
-      // Appliquer le crop directement sur un canvas temporaire
-      const leftPx   = Math.round(mmToCanvasPx(c.left,   'x'));
-      const topPx    = Math.round(mmToCanvasPx(c.top,    'y'));
-      const rightPx  = Math.round(mmToCanvasPx(c.right,  'x'));
-      const bottomPx = Math.round(mmToCanvasPx(c.bottom, 'y'));
-      const newW = canvas.width - leftPx - rightPx;
-      const newH = canvas.height - topPx - bottomPx;
-      if (newW > 0 && newH > 0) {
-        const tmp = document.createElement('canvas');
-        tmp.width = newW; tmp.height = newH;
-        tmp.getContext('2d').drawImage(canvas, leftPx, topPx, newW, newH, 0, 0, newW, newH);
-        link.href = tmp.toDataURL('image/png');
-        link.click(); return;
+    if (!hasAnyCrop) return targetCanvas;
+
+    let leftPx, topPx, rightPx, bottomPx;
+    if (state.dims && state.dims.wMm && state.dims.hMm) {
+      leftPx   = Math.round((c.left / state.dims.wMm) * targetCanvas.width);
+      topPx    = Math.round((c.top / state.dims.hMm) * targetCanvas.height);
+      rightPx  = Math.round((c.right / state.dims.wMm) * targetCanvas.width);
+      bottomPx = Math.round((c.bottom / state.dims.hMm) * targetCanvas.height);
+    } else if (canvas && canvas.width > 0 && canvas.height > 0) {
+      const rx = targetCanvas.width / canvas.width;
+      const ry = targetCanvas.height / canvas.height;
+      leftPx   = Math.round(mmToCanvasPx(c.left, 'x') * rx);
+      topPx    = Math.round(mmToCanvasPx(c.top, 'y') * ry);
+      rightPx  = Math.round(mmToCanvasPx(c.right, 'x') * rx);
+      bottomPx = Math.round(mmToCanvasPx(c.bottom, 'y') * ry);
+    } else {
+      return targetCanvas;
+    }
+
+    const newW = targetCanvas.width - leftPx - rightPx;
+    const newH = targetCanvas.height - topPx - bottomPx;
+    if (newW > 0 && newH > 0) {
+      const cropped = document.createElement('canvas');
+      cropped.width = newW;
+      cropped.height = newH;
+      cropped.getContext('2d').drawImage(targetCanvas, leftPx, topPx, newW, newH, 0, 0, newW, newH);
+      return cropped;
+    }
+    return targetCanvas;
+  }
+
+  // === EXPORT PNG (Canvas ou ZIP multi-pages) ===
+  $('btnExportPng').addEventListener('click', async () => {
+    const rawName = ($('fileNameDisplay') ? $('fileNameDisplay').value : '') || (state.file ? state.file.name : 'studio');
+    const baseName = rawName.replace(/\.[^.]+$/, '').trim() || 'studio';
+
+    // Déterminer la séquence des pages
+    let sequence = [];
+    if (window.orgSequence && window.orgSequence.length > 0) {
+      sequence = window.orgSequence;
+    } else if (state.isPdf && state.pdfDoc && state.pdfDoc.numPages > 0) {
+      for (let i = 1; i <= state.pdfDoc.numPages; i++) {
+        sequence.push({ file_idx: 0, page_num: i, type: 'page', rotation: 0 });
       }
     }
-    link.href = canvas.toDataURL('image/png');
-    link.click();
+
+    const pageCount = sequence.length;
+
+    // --- CAS 1 : Document mono-page ou image simple -> Export direct du PNG ---
+    if (pageCount <= 1) {
+      const link = document.createElement('a');
+      link.download = baseName + '_export.png';
+      const c = state.crop;
+      const hasAnyCrop = c && (c.top > 0 || c.bottom > 0 || c.left > 0 || c.right > 0);
+      if (hasAnyCrop && state.dims) {
+        const leftPx   = Math.round(mmToCanvasPx(c.left,   'x'));
+        const topPx    = Math.round(mmToCanvasPx(c.top,    'y'));
+        const rightPx  = Math.round(mmToCanvasPx(c.right,  'x'));
+        const bottomPx = Math.round(mmToCanvasPx(c.bottom, 'y'));
+        const newW = canvas.width - leftPx - rightPx;
+        const newH = canvas.height - topPx - bottomPx;
+        if (newW > 0 && newH > 0) {
+          const tmp = document.createElement('canvas');
+          tmp.width = newW; tmp.height = newH;
+          tmp.getContext('2d').drawImage(canvas, leftPx, topPx, newW, newH, 0, 0, newW, newH);
+          link.href = tmp.toDataURL('image/png');
+          link.click();
+          return;
+        }
+      }
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      return;
+    }
+
+    // --- CAS 2 : Document multi-pages -> Export de toutes les pages en ZIP ---
+    if (typeof JSZip === 'undefined') {
+      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>Erreur :</b> JSZip non disponible.', true);
+      return;
+    }
+
+    showSpinner((CONFIG.translations && CONFIG.translations['studio_js.export_png_progress'] || 'Export PNG : page 1 / ') + pageCount);
+
+    try {
+      const zip = new JSZip();
+      const padLen = pageCount >= 100 ? 3 : 2;
+
+      for (let i = 0; i < pageCount; i++) {
+        const msgEl = $('spinnerMsg');
+        if (msgEl) {
+          msgEl.textContent = 'Export PNG : page ' + (i + 1) + ' / ' + pageCount;
+        }
+
+        const item = sequence[i];
+        let pageCanvas = document.createElement('canvas');
+        let pCtx = pageCanvas.getContext('2d');
+
+        if (item.type === 'page') {
+          const doc = (window.orgDocs && window.orgDocs[item.file_idx]) ? window.orgDocs[item.file_idx] : state.pdfDoc;
+          if (doc) {
+            const page = await doc.getPage(item.page_num);
+            const targetScale = 2.0; // Rendu haute résolution (~144-150 DPI)
+            const svp = page.getViewport({ scale: targetScale });
+
+            const r = ((item.rotation || 0) % 360 + 360) % 360;
+            let cw = svp.width, ch = svp.height;
+            if (r === 90 || r === 270) {
+              cw = svp.height; ch = svp.width;
+            }
+
+            const rawCanvas = document.createElement('canvas');
+            rawCanvas.width = svp.width;
+            rawCanvas.height = svp.height;
+            await page.render({ canvasContext: rawCanvas.getContext('2d'), viewport: svp }).promise;
+
+            pageCanvas.width = cw;
+            pageCanvas.height = ch;
+            pCtx.save();
+            pCtx.translate(cw / 2, ch / 2);
+            if (r) pCtx.rotate(r * Math.PI / 180);
+            let sx = item.flipH ? -1 : 1;
+            let sy = item.flipV ? -1 : 1;
+            pCtx.scale(sx, sy);
+            pCtx.drawImage(rawCanvas, -svp.width / 2, -svp.height / 2);
+            pCtx.restore();
+          }
+        } else if (item.type === 'blank') {
+          const w = (state.dims && state.dims.wPx) ? Math.round(state.dims.wPx * 1.5) : 1654;
+          const h = (state.dims && state.dims.hPx) ? Math.round(state.dims.hPx * 1.5) : 2339;
+          pageCanvas.width = w;
+          pageCanvas.height = h;
+          pCtx.fillStyle = 'white';
+          pCtx.fillRect(0, 0, w, h);
+        }
+
+        // Appliquer filtres et recadrage éventuels
+        applyFiltersToCanvas(pageCanvas);
+        pageCanvas = applyCropToExportCanvas(pageCanvas, item.page_num || (i + 1));
+
+        const blob = await new Promise((resolve) => pageCanvas.toBlob(resolve, 'image/png'));
+        const pageNumStr = String(i + 1).padStart(padLen, '0');
+        const filename = `${baseName}_page_${pageNumStr}.png`;
+        zip.file(filename, blob);
+
+        // Laisser respirer l'interface utilisateur
+        await new Promise((r) => setTimeout(r, 10));
+      }
+
+      const msgEl = $('spinnerMsg');
+      if (msgEl) {
+        msgEl.textContent = (CONFIG.translations && CONFIG.translations['studio_js.creating_zip'] || 'Création du fichier ZIP...');
+      }
+
+      const zipBlob = await zip.generateAsync({
+        type: 'blob',
+        compression: 'DEFLATE',
+        compressionOptions: { level: 6 }
+      });
+
+      const downloadLink = document.createElement('a');
+      downloadLink.href = URL.createObjectURL(zipBlob);
+      downloadLink.download = `${baseName}_pages.zip`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      setTimeout(() => URL.revokeObjectURL(downloadLink.href), 30000);
+
+      hideSpinner();
+      showToast('<i class="fa fa-check-circle" style="color:#10b981"></i> <b>' + (CONFIG.translations && CONFIG.translations['studio_js.export_success'] || 'Export terminé :') + '</b> ' + baseName + '_pages.zip', false);
+    } catch (err) {
+      hideSpinner();
+      console.error('[Studio] Erreur export ZIP:', err);
+      showToast('<i class="fa fa-times-circle" style="color:#ef4444"></i> <b>' + (CONFIG.translations && CONFIG.translations['studio_js.export_error'] || 'Erreur lors de l\'export :') + '</b> ' + err.message, true);
+    }
   });
 
   // === ENREGISTRER DANS LA BIBLIOTHEQUE ===
@@ -1677,10 +1889,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('resultModalDownloadBtn').href = downloadUrl;
 
     const reopenBtn = document.getElementById('resultModalReopenBtn');
-      if (fname.toLowerCase().endsWith('.docx') || fname.toLowerCase().endsWith('.odt')) {
-        reopenBtn.style.display = 'none';
+    if (fname.toLowerCase().endsWith('.docx') || fname.toLowerCase().endsWith('.odt') || fname.toLowerCase().endsWith('.zip')) {
+      reopenBtn.style.display = 'none';
     } else {
-        reopenBtn.style.display = '';
+      reopenBtn.style.display = '';
     }
 
     reopenBtn.onclick = function() {
