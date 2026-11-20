@@ -40,6 +40,11 @@ $duplicopieurs = $db->select("SELECT id, marque, modele FROM duplicopieurs WHERE
         </div>
         <h3><?php _e('auto_tirage.tapis_empty_title'); ?></h3>
         <p><?php _e('auto_tirage.tapis_empty_desc'); ?></p>
+        <div class="mt-4">
+            <a href="?tirage_multimachines" class="btn btn-primary">
+                <i class="fa fa-print"></i> <?php _e('auto_tirage.add_manual_print'); ?>
+            </a>
+        </div>
     </div>
 
     <!-- Grille de cartes d'impressions du Tapis de Tri -->
@@ -61,6 +66,9 @@ $duplicopieurs = $db->select("SELECT id, marque, modele FROM duplicopieurs WHERE
         </div>
     </div>
     <div class="tapis-bar-actions">
+        <a href="?tirage_multimachines" class="btn btn-outline-primary btn-sm" title="Accéder à la saisie manuelle multi-machines">
+            <i class="fa fa-print"></i> <?php _e('auto_tirage.add_manual_print'); ?>
+        </a>
         <button class="btn btn-outline-secondary btn-sm" onclick="tapisOpenAssignModal()">
             <i class="fa fa-folder-open"></i> <?php _e('auto_tirage.assign_to_account'); ?>
         </button>

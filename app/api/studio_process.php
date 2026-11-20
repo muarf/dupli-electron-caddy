@@ -48,11 +48,9 @@ $action = $_POST['action'] ?? '';
 $errors = [];
 $result = [];
 
-if (!defined('IS_BACKGROUND')) {
-    $uploadedFile = null;
-    $originalName = null;
-    $safeName = 'studio_doc';
-}
+$uploadedFile = $uploadedFile ?? null;
+$originalName = $originalName ?? null;
+$safeName     = $safeName ?? 'studio_doc';
 
 // Si file_id est fourni, on priorise le fichier de la bibliothèque (évite l'upload réseau)
 if (isset($_POST['file_id']) && !empty($_POST['file_id'])) {

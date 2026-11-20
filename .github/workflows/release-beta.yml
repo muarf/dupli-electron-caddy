@@ -61,7 +61,7 @@ jobs:
         uses: shivammathur/setup-php@27853eb8b46dc01c33bf9fef67d98df2683c3be2 # v2
         with:
           php-version: '8.2'
-          extensions: sqlite3, pdo_sqlite, dom, curl, libxml, mbstring, zip
+          extensions: sqlite3, pdo_sqlite, dom, curl, libxml, mbstring, zip, gd, fileinfo
           tools: composer
           coverage: none
 
@@ -116,7 +116,7 @@ jobs:
         uses: shivammathur/setup-php@27853eb8b46dc01c33bf9fef67d98df2683c3be2 # v2
         with:
           php-version: '8.2'
-          extensions: sqlite3, pdo_sqlite, dom, curl, libxml, mbstring, zip
+          extensions: sqlite3, pdo_sqlite, dom, curl, libxml, mbstring, zip, gd, fileinfo
           tools: composer
           coverage: none
 
