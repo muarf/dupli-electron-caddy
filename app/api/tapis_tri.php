@@ -155,9 +155,12 @@ function handleListJobs($db, $con_pdo) {
             $computed = computeJobEstimatedPrice($con_pdo, $job);
             if ($computed > 0) {
                 $job['calculated_price'] = $computed;
-                // Sauvegarder pour les prochains appels
-                $con_pdo->prepare("UPDATE print_jobs SET calculated_price = ?, machine_name = ?, machine_type = ?, machine_id = ? WHERE id = ?")
-                        ->execute([$computed, $resolved['name'], $resolved['type'], $resolved['id'], $job['id']]);
+                // Sauvegarder pour les prochains appels uniquement si l'analyse est terminée (thumbnail_url présent)
+                // pour éviter de figer un prix préliminaire calculé avec un encrage à 0% ou des pages incomplètes
+                if (!empty($job['thumbnail_url'])) {
+                    $con_pdo->prepare("UPDATE print_jobs SET calculated_price = ?, machine_name = ?, machine_type = ?, machine_id = ? WHERE id = ?")
+                            ->execute([$computed, $resolved['name'], $resolved['type'], $resolved['id'], $job['id']]);
+                }
             }
         } else if (empty($job['machine_name']) || $job['machine_name'] === $job['printer_name']) {
             $con_pdo->prepare("UPDATE print_jobs SET machine_name = ?, machine_type = ?, machine_id = ? WHERE id = ?")

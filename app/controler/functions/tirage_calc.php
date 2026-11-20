@@ -4,7 +4,9 @@
  */
 
 require_once __DIR__ . '/database.php';
+require_once __DIR__ . '/pricing.php';
 require_once __DIR__ . '/tirage.php';
+require_once __DIR__ . '/../../models/tirage_multimachines.php';
 
 /**
  * Résout le nom et le type officiel de machine (comcolor / Duplicopieur) via printer_mappings ou les tables machines
@@ -114,8 +116,9 @@ function computeJobEstimatedPrice($con_pdo, $job): float {
         $totalPages = intval($job['total_pages'] ?? 1);
         $copies = intval($job['copies'] ?? 1);
         $globalTotalPages = max(1, $totalPages * $copies);
-        $isColor = (stripos($job['color_mode'] ?? '', 'color') !== false);
-        $duplex = ($job['duplex'] == 1 || $job['duplex'] === true || $job['duplex'] === '1');
+        $colorRaw = strtolower(strval($job['color_mode'] ?? ''));
+        $isColor = (strpos($colorRaw, 'color') !== false || $colorRaw === 'oui' || $colorRaw === '2' || $colorRaw === '1');
+        $duplex = ($job['duplex'] == 1 || job['duplex'] === true || $job['duplex'] === '1');
         $paperSize = strtoupper($job['paper_size'] ?? 'A4');
         $isA3 = (strpos($paperSize, 'A3') !== false || stripos($job['document'] ?? '', 'A3') !== false);
         $taille = $isA3 ? 'A3' : 'A4';
