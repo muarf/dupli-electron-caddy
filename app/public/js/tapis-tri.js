@@ -863,39 +863,6 @@
     }
   };
 
-  // ── Modale Ajout Manuel ───────────────────────────────────────────────────
-
-  window.tapisOpenManualModal = function () {
-    if (window.$ && typeof $('#modal-add-manual').modal === 'function') {
-      $('#modal-add-manual').modal('show');
-    }
-  };
-
-  window.tapisSubmitManual = function () {
-    const machine = document.getElementById('manual-machine-select').value;
-    const taille = document.getElementById('manual-taille-select').value;
-    const couleur = document.getElementById('manual-couleur-select').value;
-    const rv = document.getElementById('manual-rv-select').value;
-    const nbF = parseInt(document.getElementById('manual-nbf-input').value, 10) || 1;
-    const prix = parseFloat(document.getElementById('manual-prix-input').value) || 0.10;
-
-    manualItems.push({
-      type: 'photocop',
-      marque: machine,
-      taille: taille,
-      couleur: couleur,
-      rv: rv,
-      nb_f: nbF,
-      prix: prix,
-      label: `Manuel: ${nbF}x ${taille} ${couleur === 'oui' ? 'Couleur' : 'N&B'}`
-    });
-
-    if (window.$ && typeof $('#modal-add-manual').modal === 'function') {
-      $('#modal-add-manual').modal('hide');
-    }
-
-    updateBottomBar();
-  };
 
   // ── Suppression ───────────────────────────────────────────────────────────
 

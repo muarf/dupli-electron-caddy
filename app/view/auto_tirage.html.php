@@ -40,11 +40,6 @@ $duplicopieurs = $db->select("SELECT id, marque, modele FROM duplicopieurs WHERE
         </div>
         <h3><?php _e('auto_tirage.tapis_empty_title'); ?></h3>
         <p><?php _e('auto_tirage.tapis_empty_desc'); ?></p>
-        <div class="mt-4">
-            <button class="btn btn-primary" onclick="tapisOpenManualModal()">
-                <i class="fa fa-plus-circle"></i> <?php _e('auto_tirage.add_manual_print'); ?>
-            </button>
-        </div>
     </div>
 
     <!-- Grille de cartes d'impressions du Tapis de Tri -->
@@ -66,9 +61,6 @@ $duplicopieurs = $db->select("SELECT id, marque, modele FROM duplicopieurs WHERE
         </div>
     </div>
     <div class="tapis-bar-actions">
-        <button class="btn btn-outline-primary btn-sm" onclick="tapisOpenManualModal()">
-            <i class="fa fa-plus"></i> <?php _e('auto_tirage.add_manual_print'); ?>
-        </button>
         <button class="btn btn-outline-secondary btn-sm" onclick="tapisOpenAssignModal()">
             <i class="fa fa-folder-open"></i> <?php _e('auto_tirage.assign_to_account'); ?>
         </button>
@@ -162,71 +154,6 @@ $duplicopieurs = $db->select("SELECT id, marque, modele FROM duplicopieurs WHERE
     </div>
 </div>
 
-<!-- Modale 2 : Ajout Tirage Manuel Express -->
-<div class="modal fade" id="modal-add-manual" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-md" role="document">
-        <div class="modal-content" style="border-radius: 14px;">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title font-weight-bold"><i class="fa fa-plus-circle"></i> Ajouter un tirage manuel au panier</h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label class="font-weight-bold">Machine</label>
-                    <select id="manual-machine-select" class="form-control">
-                        <?php foreach ($photocopieurs as $p): ?>
-                            <option value="<?= htmlspecialchars($p['marque']) ?>">Photocopieur: <?= htmlspecialchars($p['marque'] . ' ' . $p['modele']) ?></option>
-                        <?php endforeach; ?>
-                        <?php foreach ($duplicopieurs as $d): ?>
-                            <option value="<?= htmlspecialchars($d['marque']) ?>">Duplicopieur: <?= htmlspecialchars($d['marque'] . ' ' . $d['modele']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="row">
-                    <div class="col-6 form-group">
-                        <label class="font-weight-bold">Format</label>
-                        <select id="manual-taille-select" class="form-control">
-                            <option value="A4">A4</option>
-                            <option value="A3">A3</option>
-                        </select>
-                    </div>
-                    <div class="col-6 form-group">
-                        <label class="font-weight-bold">Couleur / Noir</label>
-                        <select id="manual-couleur-select" class="form-control">
-                            <option value="non">Noir & Blanc</option>
-                            <option value="oui">Couleur</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-6 form-group">
-                        <label class="font-weight-bold">Recto-Verso</label>
-                        <select id="manual-rv-select" class="form-control">
-                            <option value="non">Recto</option>
-                            <option value="oui">Recto-Verso</option>
-                        </select>
-                    </div>
-                    <div class="col-6 form-group">
-                        <label class="font-weight-bold">Nombre de feuilles</label>
-                        <input type="number" id="manual-nbf-input" class="form-control" value="1" min="1">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="font-weight-bold">Prix calculé (€)</label>
-                    <input type="number" id="manual-prix-input" class="form-control font-weight-bold" value="0.20" step="0.05" min="0">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-primary" onclick="tapisSubmitManual()">
-                    <i class="fa fa-cart-plus"></i> Ajouter au panier
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Modale 3 : Mettre sur un compte (Non payé) -->
 <div class="modal fade" id="modal-assign-session" tabindex="-1" role="dialog" aria-hidden="true">
