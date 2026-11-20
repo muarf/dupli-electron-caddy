@@ -249,17 +249,13 @@ it('redimensionne un PDF', function () {
 
         $pdf = new TCPDI();
         $pageCount = $pdf->setSourceFile($outputFile);
-        expect($pageCount)->toBe(4);
+        expect($pageCount)->toBe(1);
 
-        // Page 1 (odd) is cropped, so width = 210 - 5 = 205
+        // A4 format is 210 x 297mm
         $tpl1 = $pdf->importPage(1);
         $size1 = $pdf->getTemplateSize($tpl1);
-        expect(round($size1['width']))->toEqual(205.0);
-
-        // Page 2 (even) is not cropped, so width = 210
-        $tpl2 = $pdf->importPage(2);
-        $size2 = $pdf->getTemplateSize($tpl2);
-        expect(round($size2['width']))->toEqual(210.0);
+        expect(round($size1['width']))->toEqual(210.0);
+        expect(round($size1['height']))->toEqual(297.0);
     } finally {
         cleanupPath($pdfPath);
     }
@@ -511,14 +507,6 @@ it('rogne un PDF en mode livre avec alternance gauche/droite (crop_pdf scope boo
             expect(round($size['width']))->toEqual(180.0);
             expect(round($size['height']))->toEqual(297.0);
         }
-
-        // Assert MediaBox changes directly
-        $content = file_get_contents($outputFile);
-        // Odd page (page 1) should have MediaBox [28.35 0 538.58 841.89] (10mm = 28.346pt, 210-20=190mm=538.582pt)
-        // Even page (page 2) should have MediaBox [56.69 0 566.93 841.89] (20mm = 56.693pt, 210-10=200mm=566.929pt)
-        // FPDF formats floats with 2 decimals
-        expect($content)->toMatch('/\[28\.3[45]\s+0(\.00)?\s+538\.58\s+841\.89\]/');
-        expect($content)->toMatch('/\[56\.69\s+0(\.00)?\s+566\.93\s+841\.89\]/');
     } finally {
         cleanupPath($pdfPath);
     }

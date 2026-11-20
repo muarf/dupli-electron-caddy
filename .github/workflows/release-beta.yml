@@ -136,8 +136,8 @@ jobs:
         working-directory: app
         run: |
           $phpPath = (Get-Command php).Source
-          $pestPath = "vendor\bin\pest.bat"
-          & $phpPath $pestPath --display-deprecations --display-errors --display-notices
+          & $phpPath vendor/pestphp/pest/bin/pest --display-deprecations --display-errors --display-notices
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Run JS Tests (Jest)
         run: npm test -- --runInBand --forceExit
