@@ -664,6 +664,92 @@
 
   // ── Modale Édition d'un Tirage ────────────────────────────────────────────
 
+  function updateDupliCalcSummary() {
+    const masterAv = parseInt(document.getElementById('edit-job-master-av')?.value, 10) || 0;
+    const masterAp = parseInt(document.getElementById('edit-job-master-ap')?.value, 10) || 0;
+    const passageAv = parseInt(document.getElementById('edit-job-passage-av')?.value, 10) || 0;
+    const passageAp = parseInt(document.getElementById('edit-job-passage-ap')?.value, 10) || 0;
+
+    const nbMasters = Math.max(0, masterAp - masterAv);
+    const nbPassages = Math.max(0, passageAp - passageAv);
+
+    const spanMasters = document.getElementById('edit-job-calc-masters');
+    const spanPassages = document.getElementById('edit-job-calc-passages');
+    if (spanMasters) spanMasters.textContent = nbMasters;
+    if (spanPassages) spanPassages.textContent = nbPassages;
+  }
+
+  async function loadDupliInfoForEdit(machineId, machineName, initialJob = null) {
+    const tambourSelect = document.getElementById('edit-job-tambour');
+    const masterAvInput = document.getElementById('edit-job-master-av');
+    const masterApInput = document.getElementById('edit-job-master-ap');
+    const passageAvInput = document.getElementById('edit-job-passage-av');
+    const passageApInput = document.getElementById('edit-job-passage-ap');
+    const feuillesPayeesInput = document.getElementById('edit-job-feuilles-payees');
+
+    try {
+      const res = await fetch(`?tapis_tri&action=dupli_info&machine_id=${machineId || 0}&machine_name=${encodeURIComponent(machineName || '')}`);
+      const data = await res.json();
+      if (data && data.success) {
+        if (tambourSelect && data.tambours) {
+          tambourSelect.innerHTML = data.tambours.map(t =>
+            `<option value="${t.id}">${t.label}</option>`
+          ).join('');
+          if (initialJob && initialJob.tambour) {
+            tambourSelect.value = initialJob.tambour;
+          }
+        }
+
+        // Si le job a déjà des compteurs enregistrés
+        if (initialJob && (initialJob.master_av > 0 || initialJob.master_ap > 0 || initialJob.passage_av > 0 || initialJob.passage_ap > 0)) {
+          if (masterAvInput) masterAvInput.value = initialJob.master_av || 0;
+          if (masterApInput) masterApInput.value = initialJob.master_ap || 0;
+          if (passageAvInput) passageAvInput.value = initialJob.passage_av || 0;
+          if (passageApInput) passageApInput.value = initialJob.passage_ap || 0;
+        } else {
+          // Pré-remplir avec les derniers compteurs connus de la machine
+          const mAv = data.master_av || 0;
+          const pAv = data.passage_av || 0;
+          const totalPages = initialJob ? (parseInt(initialJob.total_pages, 10) || 1) : 1;
+          const copies = initialJob ? (parseInt(initialJob.copies, 10) || 1) : 1;
+
+          if (masterAvInput) masterAvInput.value = mAv;
+          if (masterApInput) masterApInput.value = mAv + totalPages;
+          if (passageAvInput) passageAvInput.value = pAv;
+          if (passageApInput) passageApInput.value = pAv + (totalPages * copies);
+        }
+
+        if (feuillesPayeesInput && initialJob) {
+          feuillesPayeesInput.checked = !!initialJob.feuilles_payees;
+        }
+
+        updateDupliCalcSummary();
+      }
+    } catch (err) {
+      console.error('[TapisTri] Erreur loadDupliInfoForEdit:', err);
+    }
+  }
+
+  function handleEditModalMachineChange(initialJob = null) {
+    const machineSelect = document.getElementById('edit-job-machine');
+    const selectedOpt = machineSelect ? machineSelect.options[machineSelect.selectedIndex] : null;
+    const machineType = selectedOpt ? (selectedOpt.getAttribute('data-type') || 'photocop') : 'photocop';
+    const machineId = selectedOpt ? parseInt(selectedOpt.getAttribute('data-id'), 10) : 0;
+    const machineName = selectedOpt ? selectedOpt.getAttribute('data-name') : '';
+
+    const sectionPhotocop = document.getElementById('edit-section-photocop');
+    const sectionDupli = document.getElementById('edit-section-dupli');
+
+    if (machineType === 'dupli') {
+      if (sectionPhotocop) sectionPhotocop.style.display = 'none';
+      if (sectionDupli) sectionDupli.style.display = 'block';
+      loadDupliInfoForEdit(machineId, machineName, initialJob);
+    } else {
+      if (sectionPhotocop) sectionPhotocop.style.display = 'block';
+      if (sectionDupli) sectionDupli.style.display = 'none';
+    }
+  }
+
   window.tapisOpenEditModal = function (jobId) {
     const job = allJobs.find(j => j.id === jobId);
     if (!job) return;
@@ -730,6 +816,9 @@
     // Prix forcé (laissé vide par défaut pour permettre le calcul auto, ou prix actuel)
     document.getElementById('edit-job-prix').value = '';
 
+    // Basculer l'affichage (Photocopieur vs Duplicopieur) selon la machine sélectionnée
+    handleEditModalMachineChange(job);
+
     if (window.$ && typeof $('#modal-edit-job').modal === 'function') {
       $('#modal-edit-job').modal('show');
     }
@@ -764,6 +853,22 @@
       machine_name: machineName,
       calculated_price: calculatedPrice
     };
+
+    if (machineType === 'dupli') {
+      const masterAv = parseInt(document.getElementById('edit-job-master-av')?.value, 10) || 0;
+      const masterAp = parseInt(document.getElementById('edit-job-master-ap')?.value, 10) || 0;
+      const passageAv = parseInt(document.getElementById('edit-job-passage-av')?.value, 10) || 0;
+      const passageAp = parseInt(document.getElementById('edit-job-passage-ap')?.value, 10) || 0;
+      const tambour = document.getElementById('edit-job-tambour')?.value || '';
+      const feuillesPayees = document.getElementById('edit-job-feuilles-payees')?.checked ? 1 : 0;
+
+      payload.master_av = masterAv;
+      payload.master_ap = masterAp;
+      payload.passage_av = passageAv;
+      payload.passage_ap = passageAp;
+      payload.tambour = tambour;
+      payload.feuilles_payees = feuillesPayees;
+    }
 
     if (fillRate !== null && !isNaN(fillRate)) {
       payload.fill_rate = fillRate;
@@ -962,6 +1067,22 @@
         if (e.key === 'Enter' && e.target && e.target.tagName !== 'TEXTAREA') {
           e.preventDefault();
           window.tapisSubmitEditJob();
+        }
+      });
+
+      // Écouteur changement machine dans la modale
+      const editMachineSelect = document.getElementById('edit-job-machine');
+      if (editMachineSelect) {
+        editMachineSelect.addEventListener('change', () => {
+          handleEditModalMachineChange();
+        });
+      }
+
+      // Écouteurs sur les compteurs duplicopieur pour mise à jour du récapitulatif
+      ['edit-job-master-av', 'edit-job-master-ap', 'edit-job-passage-av', 'edit-job-passage-ap'].forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+          input.addEventListener('input', updateDupliCalcSummary);
         }
       });
     }

@@ -269,39 +269,95 @@ $duplicopieurs = $db->select("SELECT id, marque, modele FROM duplicopieurs WHERE
                         </select>
                     </div>
                     <div class="col-xs-6 col-sm-6 form-group">
-                        <label class="font-weight-bold">Couleur / Noir</label>
-                        <select id="edit-job-couleur" class="form-control">
-                            <option value="non">Noir & Blanc</option>
-                            <option value="oui">Couleur</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-xs-6 col-sm-6 form-group">
                         <label class="font-weight-bold">Recto-Verso</label>
                         <select id="edit-job-rv" class="form-control">
                             <option value="non">Recto (1 face)</option>
                             <option value="oui">Recto / Verso</option>
                         </select>
                     </div>
-                    <div class="col-xs-6 col-sm-6 form-group">
-                        <label class="font-weight-bold">Nombre d'exemplaires</label>
-                        <input type="number" id="edit-job-copies" class="form-control" value="1" min="1">
+                </div>
+
+                <!-- Section Photocopieur -->
+                <div id="edit-section-photocop">
+                    <div class="row">
+                        <div class="col-xs-6 col-sm-6 form-group">
+                            <label class="font-weight-bold">Couleur / Noir</label>
+                            <select id="edit-job-couleur" class="form-control">
+                                <option value="non">Noir & Blanc</option>
+                                <option value="oui">Couleur</option>
+                            </select>
+                        </div>
+                        <div class="col-xs-6 col-sm-6 form-group">
+                            <label class="font-weight-bold">Nombre d'exemplaires</label>
+                            <input type="number" id="edit-job-copies" class="form-control" value="1" min="1">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-xs-6 col-sm-6 form-group">
+                            <label class="font-weight-bold">Pages par exemplaire</label>
+                            <input type="number" id="edit-job-pages" class="form-control" value="1" min="1">
+                        </div>
+                        <div class="col-xs-6 col-sm-6 form-group">
+                            <label class="font-weight-bold">Taux d'encrage</label>
+                            <div class="input-group">
+                                <input type="number" step="0.1" min="0" max="100" id="edit-job-fill-rate" class="form-control" placeholder="0.0">
+                                <span class="input-group-addon">%</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="row">
-                    <div class="col-xs-6 col-sm-6 form-group">
-                        <label class="font-weight-bold">Pages par exemplaire</label>
-                        <input type="number" id="edit-job-pages" class="form-control" value="1" min="1">
+                <!-- Section Duplicopieur (Relevé des compteurs comme tirage multimachine) -->
+                <div id="edit-section-dupli" style="display:none; background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px; padding:12px 14px; margin-bottom:14px;">
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label class="font-weight-bold text-info"><i class="fa fa-paint-brush"></i> Tambour de couleur</label>
+                        <select id="edit-job-tambour" class="form-control">
+                            <!-- Rempli dynamiquement -->
+                        </select>
                     </div>
-                    <div class="col-xs-6 col-sm-6 form-group">
-                        <label class="font-weight-bold">Taux d'encrage</label>
-                        <div class="input-group">
-                            <input type="number" step="0.1" min="0" max="100" id="edit-job-fill-rate" class="form-control" placeholder="0.0">
-                            <span class="input-group-addon">%</span>
+
+                    <div style="font-weight:700; font-size:12px; color:#475569; text-transform:uppercase; letter-spacing:0.5px; margin:10px 0 6px;">
+                        <i class="fa fa-tachometer text-primary"></i> Relevé des compteurs machine
+                    </div>
+                    <div class="row">
+                        <div class="col-xs-6 col-sm-6">
+                            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:10px; margin-bottom:10px;">
+                                <div style="font-weight:600; font-size:11px; color:#64748b; margin-bottom:6px;">Compteurs AVANT</div>
+                                <div class="form-group" style="margin-bottom:8px;">
+                                    <label style="font-size:11px;">Master Avant</label>
+                                    <input type="number" id="edit-job-master-av" class="form-control input-sm" min="0" value="0">
+                                </div>
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label style="font-size:11px;">Passages Avant</label>
+                                    <input type="number" id="edit-job-passage-av" class="form-control input-sm" min="0" value="0">
+                                </div>
+                            </div>
                         </div>
+                        <div class="col-xs-6 col-sm-6">
+                            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:10px; margin-bottom:10px;">
+                                <div style="font-weight:600; font-size:11px; color:#64748b; margin-bottom:6px;">Compteurs APRÈS</div>
+                                <div class="form-group" style="margin-bottom:8px;">
+                                    <label style="font-size:11px;">Master Après</label>
+                                    <input type="number" id="edit-job-master-ap" class="form-control input-sm" min="0" value="0">
+                                </div>
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label style="font-size:11px;">Passages Après</label>
+                                    <input type="number" id="edit-job-passage-ap" class="form-control input-sm" min="0" value="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Récapitulatif calculé en direct -->
+                    <div id="edit-job-dupli-calc-summary" class="alert alert-info py-2 px-3" style="font-size:12px; margin-bottom:8px; padding:8px 12px;">
+                        <i class="fa fa-calculator"></i> <strong>Consommation calculée :</strong> <span id="edit-job-calc-masters" class="badge badge-light border">0</span> master(s) et <span id="edit-job-calc-passages" class="badge badge-light border">0</span> passage(s)
+                    </div>
+
+                    <div class="checkbox" style="margin-top:6px; margin-bottom:0;">
+                        <label style="font-size:12px; cursor:pointer;">
+                            <input type="checkbox" id="edit-job-feuilles-payees"> <i class="fa fa-money text-warning"></i> Feuilles de papier déjà payées (ne facturer que masters & encre)
+                        </label>
                     </div>
                 </div>
 

@@ -39,6 +39,14 @@ try {
     $db = create_database_manager();
     $con_pdo = pdo_connect();
 
+    // Migration non destructive des colonnes compteurs duplicopieur pour print_jobs
+    try { $con_pdo->exec("ALTER TABLE print_jobs ADD COLUMN master_av INTEGER DEFAULT 0"); } catch(Exception $e) {}
+    try { $con_pdo->exec("ALTER TABLE print_jobs ADD COLUMN master_ap INTEGER DEFAULT 0"); } catch(Exception $e) {}
+    try { $con_pdo->exec("ALTER TABLE print_jobs ADD COLUMN passage_av INTEGER DEFAULT 0"); } catch(Exception $e) {}
+    try { $con_pdo->exec("ALTER TABLE print_jobs ADD COLUMN passage_ap INTEGER DEFAULT 0"); } catch(Exception $e) {}
+    try { $con_pdo->exec("ALTER TABLE print_jobs ADD COLUMN tambour TEXT DEFAULT ''"); } catch(Exception $e) {}
+    try { $con_pdo->exec("ALTER TABLE print_jobs ADD COLUMN feuilles_payees INTEGER DEFAULT 0"); } catch(Exception $e) {}
+
     $action = $_GET['action'] ?? '';
     $input = [];
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -67,6 +75,10 @@ try {
 
         case 'update_job':
             handleUpdateJob($db, $con_pdo, $input);
+            break;
+
+        case 'dupli_info':
+            handleDupliInfo($con_pdo, $input);
             break;
 
         case 'assign_to_session':
@@ -280,16 +292,26 @@ function handleCheckoutDirect($db, $con_pdo, $input) {
             $taille = (strpos($paperSize, 'A3') !== false) ? 'A3' : 'A4';
 
             // Insertion dans photocop (ou dupli si applicable)
-            if ($machineType === 'dupli') {
+            if ($machineType === 'dupli' || $machineType === 'duplicopieur') {
+                $masterAv = intval($job['master_av'] ?? 0);
+                $masterAp = intval($job['master_ap'] ?? 0);
+                $passageAv = intval($job['passage_av'] ?? 0);
+                $passageAp = intval($job['passage_ap'] ?? 0);
+                $tambourType = !empty($job['tambour']) ? $job['tambour'] : ($job['color_mode'] ?? 'tambour_noir');
+
                 $con_pdo->prepare("
                     INSERT INTO dupli (
                         type, contact, master_av, master_ap, passage_av, passage_ap,
                         rv, prix, paye, cb, mot, date, nom_machine, duplicopieur_id,
                         tirage_global_id, document_name, thumbnail_url, nb_exemplaires, taille
-                    ) VALUES (?, ?, '0', '0', '0', '0', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ")->execute([
-                    $job['color_mode'] ?? 'Noir',
+                    $tambourType,
                     $contact,
+                    $masterAv,
+                    $masterAp,
+                    $passageAv,
+                    $passageAp,
                     $duplex,
                     $jobPrice,
                     $paye,
@@ -483,6 +505,13 @@ function handleUpdateJob($db, $con_pdo, $input) {
 
     $fillRate = isset($input['fill_rate']) ? max(0, min(100, floatval($input['fill_rate']))) : floatval($job['fill_rate'] ?? 0);
 
+    $masterAv = isset($input['master_av']) ? intval($input['master_av']) : intval($job['master_av'] ?? 0);
+    $masterAp = isset($input['master_ap']) ? intval($input['master_ap']) : intval($job['master_ap'] ?? 0);
+    $passageAv = isset($input['passage_av']) ? intval($input['passage_av']) : intval($job['passage_av'] ?? 0);
+    $passageAp = isset($input['passage_ap']) ? intval($input['passage_ap']) : intval($job['passage_ap'] ?? 0);
+    $tambour = isset($input['tambour']) ? trim($input['tambour']) : ($job['tambour'] ?? '');
+    $feuillesPayees = isset($input['feuilles_payees']) ? (intval($input['feuilles_payees']) ? 1 : 0) : intval($job['feuilles_payees'] ?? 0);
+
     $tempJob = $job;
     $tempJob['total_pages'] = $totalPages;
     $tempJob['copies'] = $copies;
@@ -493,11 +522,21 @@ function handleUpdateJob($db, $con_pdo, $input) {
     $tempJob['machine_id'] = $machineId;
     $tempJob['machine_name'] = $machineName;
     $tempJob['fill_rate'] = $fillRate;
+    $tempJob['master_av'] = $masterAv;
+    $tempJob['master_ap'] = $masterAp;
+    $tempJob['passage_av'] = $passageAv;
+    $tempJob['passage_ap'] = $passageAp;
+    $tempJob['tambour'] = $tambour;
+    $tempJob['feuilles_payees'] = $feuillesPayees;
 
     if (isset($input['calculated_price']) && is_numeric($input['calculated_price']) && floatval($input['calculated_price']) > 0) {
         $calculatedPrice = round(floatval($input['calculated_price']), 2);
     } else {
-        $calculatedPrice = computeJobEstimatedPrice($con_pdo, $tempJob);
+        if ($machineType === 'dupli' || $machineType === 'duplicopieur') {
+            $calculatedPrice = computeDupliJobPrice($con_pdo, $tempJob);
+        } else {
+            $calculatedPrice = computeJobEstimatedPrice($con_pdo, $tempJob);
+        }
     }
 
     $stmt = $con_pdo->prepare("
@@ -512,7 +551,13 @@ function handleUpdateJob($db, $con_pdo, $input) {
             machine_type = ?,
             machine_id = ?,
             machine_name = ?,
-            calculated_price = ?
+            calculated_price = ?,
+            master_av = ?,
+            master_ap = ?,
+            passage_av = ?,
+            passage_ap = ?,
+            tambour = ?,
+            feuilles_payees = ?
         WHERE id = ?
     ");
     $stmt->execute([
@@ -527,6 +572,12 @@ function handleUpdateJob($db, $con_pdo, $input) {
         $machineId,
         $machineName,
         $calculatedPrice,
+        $masterAv,
+        $masterAp,
+        $passageAv,
+        $passageAp,
+        $tambour,
+        $feuillesPayees,
         $jobId
     ]);
 
@@ -603,7 +654,13 @@ function handleAssignToSession($db, $con_pdo, $input) {
             $thumbUrl = $job['thumbnail_url'] ?? '';
             $mot = trim($input['session_name'] ?? $input['mot'] ?? 'Mis sur compte');
 
-            if ($machineType === 'duplicopieur') {
+            if ($machineType === 'duplicopieur' || $machineType === 'dupli') {
+                $masterAv = intval($job['master_av'] ?? 0);
+                $masterAp = intval($job['master_ap'] ?? 0);
+                $passageAv = intval($job['passage_av'] ?? 0);
+                $passageAp = intval($job['passage_ap'] ?? 0);
+                $tambourType = !empty($job['tambour']) ? $job['tambour'] : ($job['color_mode'] ?? 'tambour_noir');
+
                 $con_pdo->prepare("
                     INSERT INTO dupli (
                         type, contact, master_av, master_ap, passage_av, passage_ap,
@@ -615,9 +672,12 @@ function handleAssignToSession($db, $con_pdo, $input) {
                         ?, ?, ?, ?, ?
                     )
                 ")->execute([
-                    $taille,
+                    $tambourType,
                     $contact,
-                    0, 0, 0, 0,
+                    $masterAv,
+                    $masterAp,
+                    $passageAv,
+                    $passageAp,
                     $rv,
                     $jobPrice,
                     $mot,
@@ -726,4 +786,141 @@ function handleUnpaidAccounts($db, $con_pdo) {
         $acc['nb_tirages'] = intval($acc['nb_tirages'] ?? 0);
     }
     echo json_encode(['success' => true, 'accounts' => $accounts]);
+}
+
+/**
+ * Informations et derniers compteurs pour un duplicopieur (pour la modale d'édition)
+ */
+function handleDupliInfo($con_pdo, $input) {
+    $machineId = intval($input['machine_id'] ?? 0);
+    $machineName = trim($input['machine_name'] ?? '');
+
+    $dupli = null;
+    if ($machineId > 0) {
+        $stmt = $con_pdo->prepare("SELECT * FROM duplicopieurs WHERE id = ?");
+        $stmt->execute([$machineId]);
+        $dupli = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    if (!$dupli && !empty($machineName)) {
+        $stmt = $con_pdo->prepare("SELECT * FROM duplicopieurs WHERE marque = ? OR (marque || ' ' || modele) = ?");
+        $stmt->execute([$machineName, $machineName]);
+        $dupli = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    if (!$dupli) {
+        $dupli = $con_pdo->query("SELECT * FROM duplicopieurs WHERE actif = 1 LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+    }
+
+    if (!$dupli) {
+        echo json_encode(['success' => false, 'error' => 'Aucun duplicopieur trouvé.']);
+        return;
+    }
+
+    $realMachineName = ($dupli['marque'] === $dupli['modele']) ? $dupli['marque'] : ($dupli['marque'] . ' ' . $dupli['modele']);
+
+    // Compteurs précédents
+    $stmtC = $con_pdo->prepare("SELECT master_ap, passage_ap FROM dupli WHERE nom_machine = ? OR duplicopieur_id = ? ORDER BY id DESC LIMIT 1");
+    $stmtC->execute([$realMachineName, $dupli['id']]);
+    $last = $stmtC->fetch(PDO::FETCH_ASSOC);
+    $masterAv = $last ? intval($last['master_ap']) : 0;
+    $passageAv = $last ? intval($last['passage_ap']) : 0;
+
+    // Tambours
+    $tamboursList = [];
+    if (!empty($dupli['tambours'])) {
+        $raw = json_decode($dupli['tambours'], true);
+        if (is_array($raw)) {
+            $translations = [
+                'tambour_noir' => 'Tambour Noir',
+                'tambour_rouge' => 'Tambour Rouge',
+                'tambour_bleu' => 'Tambour Bleu',
+                'tambour_vert' => 'Tambour Vert',
+                'tambour_jaune' => 'Tambour Jaune'
+            ];
+            foreach ($raw as $t) {
+                $tamboursList[] = [
+                    'id' => $t,
+                    'label' => $translations[$t] ?? ucfirst(str_replace('_', ' ', $t))
+                ];
+            }
+        }
+    }
+    if (empty($tamboursList)) {
+        $tamboursList[] = ['id' => 'tambour_noir', 'label' => 'Tambour Noir'];
+    }
+
+    // Prix
+    $prices = [];
+    $stmtP = $con_pdo->prepare("SELECT type, unite, pack FROM prix WHERE machine_type = 'dupli' AND machine_id = ?");
+    $stmtP->execute([$dupli['id']]);
+    while ($row = $stmtP->fetch(PDO::FETCH_ASSOC)) {
+        $prices[$row['type']] = floatval($row['unite']);
+    }
+
+    echo json_encode([
+        'success' => true,
+        'duplicopieur_id' => $dupli['id'],
+        'machine_name' => $realMachineName,
+        'master_av' => $masterAv,
+        'passage_av' => $passageAv,
+        'tambours' => $tamboursList,
+        'prices' => $prices
+    ]);
+}
+
+/**
+ * Calcul du prix d'un job pour duplicopieur selon la logique de tirage_multimachines
+ */
+function computeDupliJobPrice($con_pdo, $job): float {
+    $dupliId = intval($job['machine_id'] ?? 0);
+    $paperSize = strtoupper($job['paper_size'] ?? 'A4');
+    $taille = (strpos($paperSize, 'A3') !== false) ? 'A3' : 'A4';
+    $rv = !empty($job['duplex']) && ($job['duplex'] == 1 || $job['duplex'] === 'oui' || $job['duplex'] === true || $job['duplex'] === '1');
+    $feuillesPayees = !empty($job['feuilles_payees']);
+
+    $masterAv = intval($job['master_av'] ?? 0);
+    $masterAp = intval($job['master_ap'] ?? 0);
+    $passageAv = intval($job['passage_av'] ?? 0);
+    $passageAp = intval($job['passage_ap'] ?? 0);
+
+    $nbMasters = max(0, $masterAp - $masterAv);
+    $nbPassages = max(0, $passageAp - $passageAv);
+
+    // Si les compteurs n'ont pas été saisis ou différence = 0, estimation de secours
+    if ($nbMasters <= 0 && $nbPassages <= 0) {
+        $totalPages = max(1, intval($job['total_pages'] ?? 1));
+        $copies = max(1, intval($job['copies'] ?? 1));
+        $nbMasters = $totalPages;
+        $nbPassages = $totalPages * $copies;
+    }
+
+    // Récupérer les prix
+    $stmt = $con_pdo->prepare("SELECT type, unite FROM prix WHERE machine_type = 'dupli' AND machine_id = ?");
+    $stmt->execute([$dupliId]);
+    $prixMap = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $prixMap[$row['type']] = floatval($row['unite']);
+    }
+
+    $prixMaster = $prixMap['master'] ?? 0.15;
+    $tambour = !empty($job['tambour']) ? $job['tambour'] : 'tambour_noir';
+    $prixPassage = $prixMap[$tambour] ?? ($prixMap['tambour_noir'] ?? 0.02);
+
+    $prixData = function_exists('get_price') ? get_price() : [];
+    $prixPapier = $prixData['papier'][$taille] ?? ($taille === 'A3' ? 0.02 : 0.01);
+
+    if ($taille === 'A4') {
+        $prixMaster = $prixMaster / 2;
+        $prixPassage = $prixPassage / 2;
+    }
+
+    $nbFeuilles = $rv ? ($nbPassages / 2) : $nbPassages;
+    if ($feuillesPayees) {
+        $nbFeuilles = 0;
+    }
+
+    $coutMasters = $nbMasters * $prixMaster;
+    $coutPassages = $nbPassages * $prixPassage;
+    $coutPapier = $nbFeuilles * $prixPapier;
+
+    return round($coutMasters + $coutPassages + $coutPapier, 2);
 }
