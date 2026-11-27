@@ -160,9 +160,17 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
-      - name: Setup PHP and Caddy via Homebrew
+      - name: Setup PHP
+        uses: shivammathur/setup-php@27853eb8b46dc01c33bf9fef67d98df2683c3be2 # v2
+        with:
+          php-version: '8.2'
+          extensions: sqlite3, pdo_sqlite, dom, curl, libxml, mbstring, zip, gd, fileinfo
+          tools: composer
+          coverage: none
+
+      - name: Setup Caddy and system dependencies via Homebrew
         run: |
-          brew install caddy php ghostscript imagemagick
+          brew install caddy ghostscript imagemagick
           # Copy Caddy binary to caddy/
           mkdir -p caddy
           cp /opt/homebrew/bin/caddy caddy/caddy || cp /usr/local/bin/caddy caddy/caddy
@@ -176,14 +184,7 @@ jobs:
         run: |
           npm install
           cd app
-          php ../composer.phar install --no-dev --optimize-autoloader --ignore-platform-reqs || true
-          cd ..
-
-      - name: Install Composer and PHP dependencies
-        run: |
-          curl -sS https://getcomposer.org/installer | php
-          cd app
-          php ../composer.phar install --optimize-autoloader --ignore-platform-reqs
+          composer install --optimize-autoloader --ignore-platform-reqs
           cd ..
 
       - name: Run PHP Tests (Pest)
@@ -476,14 +477,17 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Install PHP via Homebrew
-        run: brew install php
+      - name: Setup PHP
+        uses: shivammathur/setup-php@27853eb8b46dc01c33bf9fef67d98df2683c3be2 # v2
+        with:
+          php-version: '8.2'
+          tools: composer
+          coverage: none
 
       - name: Install Composer and PHP dependencies
         run: |
-          curl -sS https://getcomposer.org/installer | php
           cd app
-          php ../composer.phar install --no-dev --optimize-autoloader --ignore-platform-reqs
+          composer install --no-dev --optimize-autoloader --ignore-platform-reqs
           cd ..
 
       - name: Download Tauri Sidecars

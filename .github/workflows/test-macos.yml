@@ -47,11 +47,19 @@ jobs:
             exit 1
           fi
         
-      - name: Install Caddy and PHP via Homebrew
+      - name: Setup PHP
+        uses: shivammathur/setup-php@27853eb8b46dc01c33bf9fef67d98df2683c3be2 # v2
+        with:
+          php-version: '8.2'
+          extensions: sqlite3, pdo_sqlite, dom, curl, libxml, mbstring, zip, gd, fileinfo
+          tools: composer
+          coverage: none
+
+      - name: Install Caddy and Ghostscript via Homebrew
         run: |
-          echo "Installation de Caddy, PHP et Ghostscript via Homebrew..."
-          brew install caddy php ghostscript
-          echo "Caddy et PHP installés via Homebrew"
+          echo "Installation de Caddy et Ghostscript via Homebrew..."
+          brew install caddy ghostscript
+          echo "Caddy et Ghostscript installés via Homebrew"
           
           # Copier le binaire Caddy vers le dossier caddy/
           mkdir -p caddy
