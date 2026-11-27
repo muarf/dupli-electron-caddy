@@ -146,8 +146,7 @@ jobs:
         run: npm test -- --runInBand --forceExit
 
   test-macos-alpha:
-    runs-on: macos-13
-    continue-on-error: true
+    runs-on: macos-latest
     timeout-minutes: 20
     steps:
       - name: Checkout code
@@ -161,24 +160,20 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@27853eb8b46dc01c33bf9fef67d98df2683c3be2 # v2
-        with:
-          php-version: '8.2'
-          extensions: sqlite3, pdo_sqlite, dom, curl, libxml, mbstring, zip, gd, fileinfo
-          tools: composer
-          coverage: none
-
-      - name: Setup Caddy and system dependencies via Homebrew
+      - name: Setup PHP 8.2, Composer, Caddy and system dependencies via Homebrew
         run: |
-          brew install caddy ghostscript imagemagick
+          brew install php@8.2 composer caddy ghostscript imagemagick
+          brew link --force --overwrite php@8.2
+          PHP_PREFIX="$(brew --prefix php@8.2)"
+          echo "$PHP_PREFIX/bin" >> $GITHUB_PATH
+          echo "$PHP_PREFIX/sbin" >> $GITHUB_PATH
           # Copy Caddy binary to caddy/
           mkdir -p caddy
           cp /opt/homebrew/bin/caddy caddy/caddy || cp /usr/local/bin/caddy caddy/caddy
           chmod +x caddy/caddy
           # Copy PHP binary to php/
           mkdir -p php
-          cp $(which php) php/php
+          cp "$PHP_PREFIX/bin/php" php/php
           chmod +x php/php
 
       - name: Install dependencies
@@ -478,12 +473,13 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@27853eb8b46dc01c33bf9fef67d98df2683c3be2 # v2
-        with:
-          php-version: '8.2'
-          tools: composer
-          coverage: none
+      - name: Setup PHP 8.2 and Composer via Homebrew
+        run: |
+          brew install php@8.2 composer
+          brew link --force --overwrite php@8.2
+          PHP_PREFIX="$(brew --prefix php@8.2)"
+          echo "$PHP_PREFIX/bin" >> $GITHUB_PATH
+          echo "$PHP_PREFIX/sbin" >> $GITHUB_PATH
 
       - name: Install Composer and PHP dependencies
         run: |
