@@ -146,7 +146,7 @@ jobs:
         run: npm test -- --runInBand --forceExit
 
   test-macos-alpha:
-    runs-on: macos-latest
+    runs-on: macos-13
     timeout-minutes: 20
     steps:
       - name: Checkout code
