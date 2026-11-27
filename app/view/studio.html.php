@@ -1118,7 +1118,7 @@ var CONFIG = window.CONFIG;
   <div style="font-family:Inter,sans-serif;font-size:14px;font-weight:500;color:#1a1d23" id="spinnerMsg"><?php _e("studio.spinner_loading", [], false); ?></div>
 </div>
 <!-- Toast -->
-<div id="studioToast" style="display:none;position:fixed;bottom:24px;right:24px;z-index:10000;background:#fff;border:1px solid #e2e5ea;border-radius:12px;padding:16px 20px;box-shadow:0 4px 20px rgba(0,0,0,0.12);font-family:Inter,sans-serif;font-size:13px;max-width:340px"></div>
+<div id="studioToast" style="display:none;position:fixed;bottom:24px;left:24px;z-index:10000;background:#fff;border:1px solid #e2e5ea;border-left:4px solid #10b981;border-radius:12px;padding:14px 18px;box-shadow:0 6px 24px rgba(0,0,0,0.14);font-family:Inter,sans-serif;font-size:13px;max-width:380px;min-width:240px;align-items:center;justify-content:space-between;gap:12px"></div>
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <!-- Result Modal -->

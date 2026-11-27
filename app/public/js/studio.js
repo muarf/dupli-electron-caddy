@@ -2026,7 +2026,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
+  window._studioToastDismissed = false;
+
   window.pollStudioTask = async function(json, onSuccess, onError) {
+    window._studioToastDismissed = false;
     if (json.job_id && (json.status === 'pending' || !json.download_url)) {
       hideSpinner();
       showToast('<i class="fa fa-spinner fa-spin" style="color:#4f46e5"></i> <b>' + (CONFIG.translations['studio_js.background_processing'] || 'Traitement en arrière-plan :') + '</b> ' + (CONFIG.translations['studio_js.in_progress'] || 'En cours...'), false);
@@ -2041,9 +2044,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const job = stData.job;
             if (job.status === 'done') {
               clearInterval(interval);
+              window._studioToastDismissed = false;
+              const t = $('studioToast');
+              if (t) t.style.display = 'none';
               onSuccess(job);
             } else if (job.status === 'error') {
               clearInterval(interval);
+              window._studioToastDismissed = false;
+              const t = $('studioToast');
+              if (t) t.style.display = 'none';
               onError(job);
             } else if (job.last_log) {
               let txt = job.last_log.substring(0, 60);
@@ -2052,10 +2061,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
           } else if (!stData.success) {
             clearInterval(interval);
+            window._studioToastDismissed = false;
+            const t = $('studioToast');
+            if (t) t.style.display = 'none';
             onError(stData);
           }
         } catch (e) {
           clearInterval(interval);
+          window._studioToastDismissed = false;
+          const t = $('studioToast');
+          if (t) t.style.display = 'none';
           onError({error: CONFIG.translations["studio_js.status_check_network_error"] || "Network error while checking status"});
         }
       }, 2000);
@@ -2064,6 +2079,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Si c'est déjà success ou error et pas de job en arrière-plan
     hideSpinner();
+    window._studioToastDismissed = false;
+    const t = $('studioToast');
+    if (t) t.style.display = 'none';
     if (json.success || json.status === 'done') {
       onSuccess(json);
     } else {
@@ -2071,7 +2089,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   };
 
-  window.showToast = function showToast(html, isError) {
+  window.showToast = function showToast(html, isError, forceShow = false) {
     if (isError) {
       const existing = document.getElementById('errorModalOverlay');
       if (existing) existing.remove();
@@ -2115,14 +2133,35 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
 
+    if (window._studioToastDismissed && !forceShow) {
+      return;
+    }
+
     const t = $('studioToast');
-    t.innerHTML = html;
+    if (!t) return;
+
+    t.innerHTML = `
+      <div style="flex:1;word-break:break-word;padding-right:6px;">${html}</div>
+      <button type="button" id="btnDismissStudioToast" style="border:none;background:transparent;cursor:pointer;color:#9ca3af;font-size:18px;line-height:1;padding:2px 6px;border-radius:4px;display:flex;align-items:center;justify-content:center;transition:color 0.2s;" title="Fermer" onmouseover="this.style.color='#111'" onmouseout="this.style.color='#9ca3af'">×</button>
+    `;
     t.style.borderLeftColor = '#10b981';
     t.style.borderLeftWidth = '4px';
-    t.style.display = 'block';
+    t.style.display = 'flex';
+
+    const dismissBtn = $('btnDismissStudioToast');
+    if (dismissBtn) {
+      dismissBtn.onclick = (e) => {
+        e.stopPropagation();
+        t.style.display = 'none';
+        window._studioToastDismissed = true;
+      };
+    }
+
     clearTimeout(t._tid);
-    t._tid = setTimeout(() => t.style.display = 'none', 5000);
-  }
+    t._tid = setTimeout(() => {
+      t.style.display = 'none';
+    }, 5000);
+  };
 
   function isOrgSequenceModified() {
     if (!window.orgSequence || !window.orgSequence.length) return false;
