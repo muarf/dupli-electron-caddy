@@ -275,10 +275,11 @@ $photocopieur_checked = 'checked';
                     </div>
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label class="control-label" for="nb_feuilles_<?= $index ?>_0">
-                                <i class="fa fa-file-text-o"></i> <?php _e('tirage_multimachines.sheets_per_copy'); ?>
+                            <label class="control-label" for="nb_pages_<?= $index ?>_0">
+                                <i class="fa fa-file-text-o"></i> <?php _e('tirage_multimachines.pages_per_copy'); ?>
                             </label>  
-                            <input id="nb_feuilles_<?= $index ?>_0" name="machines[<?= $index ?>][brochures][0][nb_feuilles]" class="form-control input-sm" type="number" min="1" onchange="calculateTotalPrice()" style="max-width: 100px;" placeholder="Ex: 5">
+                            <input id="nb_pages_<?= $index ?>_0" name="machines[<?= $index ?>][brochures][0][nb_pages]" class="form-control input-sm" type="number" min="1" onchange="calculateTotalPrice()" style="max-width: 100px;" placeholder="Ex: 10" value="1">
+                            <input type="hidden" id="nb_feuilles_<?= $index ?>_0" name="machines[<?= $index ?>][brochures][0][nb_feuilles]" value="1">
                             <small class="text-muted"><?php _e('tirage_multimachines.pages_per_copy'); ?></small>
                         </div>
                     </div>

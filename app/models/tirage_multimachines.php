@@ -139,20 +139,23 @@ function getMachinePrices($db, $machine_name)
  */
 function calculateBrochurePriceOptimized($brochure, $prix_papier_a3, $prix_papier_a4, $machine_prices, $machine_type_detected, $machine_name, $fill_rate = 0.5)
 {
-    $nb_exemplaires = intval($brochure['nb_exemplaires']);
-    $nb_feuilles = intval($brochure['nb_feuilles']);
-    $nb_f_total = $nb_exemplaires * $nb_feuilles;
-    $taille = $brochure['taille'];
-    $rv = isset($brochure['rv']) && $brochure['rv'] == 'oui';
-    $couleur = isset($brochure['couleur']) && $brochure['couleur'] == 'oui';
-    $feuilles_payees = isset($brochure['feuilles_payees']) && $brochure['feuilles_payees'] == 'oui';
+    $nb_exemplaires = intval($brochure['nb_exemplaires'] ?? 1);
+    $taille = $brochure['taille'] ?? 'A4';
+    $rv = isset($brochure['rv']) && ($brochure['rv'] == 'oui' || $brochure['rv'] === true || $brochure['rv'] == '1');
+    $couleur = isset($brochure['couleur']) && ($brochure['couleur'] == 'oui' || $brochure['couleur'] === true || $brochure['couleur'] == '1');
+    $feuilles_payees = isset($brochure['feuilles_payees']) && ($brochure['feuilles_payees'] == 'oui' || $brochure['feuilles_payees'] === true || $brochure['feuilles_payees'] == '1');
 
-    // Calcul rapide
     if (isset($brochure['nb_pages'])) {
-        $nb_p = $nb_exemplaires * floatval($brochure['nb_pages']);
+        $pages_per_copy = floatval($brochure['nb_pages']);
+        $sheets_per_copy = isset($brochure['nb_feuilles']) ? floatval($brochure['nb_feuilles']) : ($rv ? ceil($pages_per_copy / 2) : $pages_per_copy);
     } else {
-        $nb_p = $rv ? $nb_f_total * 2 : $nb_f_total;
+        $pages_per_copy = floatval($brochure['nb_feuilles'] ?? 0);
+        $sheets_per_copy = $rv ? ceil($pages_per_copy / 2) : $pages_per_copy;
     }
+
+    $nb_f_total = $nb_exemplaires * $sheets_per_copy;
+    $nb_p = $nb_exemplaires * $pages_per_copy;
+
     $prix_papier = ($taille == 'A4') ? $prix_papier_a4 : $prix_papier_a3;
     $prix_papier_total = $feuilles_payees ? 0 : ($nb_f_total * $prix_papier);
 
@@ -707,9 +710,20 @@ function Action($conf = null)
                             }
 
                             // Calculer le prix comme le JavaScript
-                            $nbPages = $nb_exemplaires * $nb_feuilles;
+                            if (isset($brochure['nb_pages'])) {
+                                $pages_per_copy = floatval($brochure['nb_pages']);
+                                $sheets_per_copy = isset($brochure['nb_feuilles']) ? floatval($brochure['nb_feuilles']) : ($rv ? ceil($pages_per_copy / 2) : $pages_per_copy);
+                            } else {
+                                $pages_per_copy = floatval($brochure['nb_feuilles'] ?? 0);
+                                $sheets_per_copy = $rv ? ceil($pages_per_copy / 2) : $pages_per_copy;
+                            }
+
+                            $nb_f_total = $nb_exemplaires * $sheets_per_copy;
+                            $nbPages = $nb_f_total; // Feuilles papier physiques
+                            $nbPagesEncre = $nb_exemplaires * $pages_per_copy; // Faces d'encre
+
                             $prixPapier = $array['prix_data']['papier'][$taille] ?? 0;
-                            $coutPapier = $feuilles_payees ? 0 : ($nbPages * $prixPapier);
+                            $coutPapier = $feuilles_payees ? 0 : ($nb_f_total * $prixPapier);
 
                             // Calculer le coût par page selon le type de machine et les couleurs (avec taux de remplissage)
                             $breakdown = calculatePageCost($machine['machine'], $machine_type_detected, $machine_prices, $couleur, $rv, $fill_rate, true);
@@ -724,10 +738,6 @@ function Action($conf = null)
                             }
 
                             // Calculer le coût d'encre
-                            $nbPagesEncre = $nbPages; // Pages pour l'encre
-                            if ($rv)
-                                $nbPagesEncre = $nbPages * 2; // Recto-verso = 2 fois plus de pages pour l'encre
-                            
                             $prixEncre = $nbPagesEncre * $cost_per_page;
                             $prixBrochure = $coutPapier + $prixEncre;
                             $prix_total += $prixBrochure;
@@ -1162,7 +1172,15 @@ function Action($conf = null)
                         $total_feuilles_machine = 0;
                         if (isset($machine['brochures']) && is_array($machine['brochures'])) {
                             foreach ($machine['brochures'] as $brochure) {
-                                $total_feuilles_machine += (intval($brochure['nb_exemplaires'] ?? 0) * intval($brochure['nb_feuilles'] ?? 0));
+                                $isRv = isset($brochure['rv']) && ($brochure['rv'] == 'oui' || $brochure['rv'] === true || $brochure['rv'] == '1');
+                                if (isset($brochure['nb_pages'])) {
+                                    $pPerCopy = floatval($brochure['nb_pages']);
+                                    $sPerCopy = isset($brochure['nb_feuilles']) ? floatval($brochure['nb_feuilles']) : ($isRv ? ceil($pPerCopy / 2) : $pPerCopy);
+                                } else {
+                                    $pPerCopy = floatval($brochure['nb_feuilles'] ?? 0);
+                                    $sPerCopy = $isRv ? ceil($pPerCopy / 2) : $pPerCopy;
+                                }
+                                $total_feuilles_machine += (intval($brochure['nb_exemplaires'] ?? 0) * $sPerCopy);
                             }
                         }
 
@@ -1173,12 +1191,19 @@ function Action($conf = null)
                         // Traiter les brochures pour récupérer les infos nécessaires à l'enregistrement
                         if (isset($machine['brochures']) && is_array($machine['brochures'])) {
                             foreach ($machine['brochures'] as $b_index => $brochure) {
-                                if (!empty($brochure['nb_exemplaires']) && !empty($brochure['nb_feuilles']) && !empty($brochure['taille'])) {
+                                if (!empty($brochure['nb_exemplaires']) && (!empty($brochure['nb_feuilles']) || !empty($brochure['nb_pages'])) && !empty($brochure['taille'])) {
                                     $nb_exemplaires = intval($brochure['nb_exemplaires']);
-                                    $nb_feuilles = intval($brochure['nb_feuilles']);
-                                    $nb_f_total = $nb_exemplaires * $nb_feuilles;
+                                    $rv = isset($brochure['rv']) && ($brochure['rv'] == 'oui' || $brochure['rv'] === true || $brochure['rv'] == '1') ? 'oui' : 'non';
+                                    if (isset($brochure['nb_pages'])) {
+                                        $pages_per_copy = floatval($brochure['nb_pages']);
+                                        $sheets_per_copy = isset($brochure['nb_feuilles']) ? floatval($brochure['nb_feuilles']) : ($rv === 'oui' ? ceil($pages_per_copy / 2) : $pages_per_copy);
+                                    } else {
+                                        $pages_per_copy = floatval($brochure['nb_feuilles'] ?? 0);
+                                        $sheets_per_copy = $rv === 'oui' ? ceil($pages_per_copy / 2) : $pages_per_copy;
+                                    }
+                                    $nb_feuilles = $sheets_per_copy;
+                                    $nb_f_total = $nb_exemplaires * $sheets_per_copy;
                                     $taille = $brochure['taille'];
-                                    $rv = isset($brochure['rv']) && $brochure['rv'] == 'oui' ? 'oui' : 'non';
 
                                     if ($total_feuilles_machine > 0) {
                                         $prix_brochure = round($prix_machine_calcule * ($nb_f_total / $total_feuilles_machine), 2);

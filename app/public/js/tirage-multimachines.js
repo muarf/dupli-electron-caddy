@@ -496,18 +496,18 @@
         field.disabled = false;
       });
 
-      var requiredFields = photocopieurInterface.querySelectorAll('input[name*="[nb_exemplaires]"], input[name*="[nb_feuilles]"]');
+      var requiredFields = photocopieurInterface.querySelectorAll('input[name*="[nb_exemplaires]"], input[name*="[nb_pages]"], input[name*="[nb_feuilles]"]');
       requiredFields.forEach(function (field) {
-        field.setAttribute('required', 'required');
+        if (field.type !== 'hidden') field.setAttribute('required', 'required');
       });
 
       var exemplairesInput = photocopieurInterface.querySelector('input[name*="[nb_exemplaires]"]');
+      var pagesInput = photocopieurInterface.querySelector('input[name*="[nb_pages]"]');
       var feuillesInput = photocopieurInterface.querySelector('input[name*="[nb_feuilles]"]');
 
-      if (exemplairesInput && feuillesInput) {
-        exemplairesInput.addEventListener('input', updateTotalFeuilles);
-        feuillesInput.addEventListener('input', updateTotalFeuilles);
-      }
+      if (exemplairesInput) exemplairesInput.addEventListener('input', updateTotalFeuilles);
+      if (pagesInput) pagesInput.addEventListener('input', updateTotalFeuilles);
+      if (feuillesInput) feuillesInput.addEventListener('input', updateTotalFeuilles);
     }
 
     calculateTotalPrice();
@@ -525,13 +525,21 @@
 
     brochures.forEach(function (brochure, brochureIndex) {
       var exemplairesInput = brochure.querySelector('input[name*="[nb_exemplaires]"]');
+      var pagesInput = brochure.querySelector('input[name*="[nb_pages]"]');
       var feuillesInput = brochure.querySelector('input[name*="[nb_feuilles]"]');
+      var rvInput = brochure.querySelector('input[name*="[rv]"]');
       var totalSpan = document.getElementById(`total-feuilles-${machineIndex}-${brochureIndex}`);
 
-      if (exemplairesInput && feuillesInput && totalSpan) {
+      if (exemplairesInput && totalSpan) {
         var exemplaires = parseInt(exemplairesInput.value) || 0;
-        var feuilles = parseInt(feuillesInput.value) || 0;
-        var total = exemplaires * feuilles;
+        var pagesOrFeuilles = pagesInput ? (parseInt(pagesInput.value) || 0) : (feuillesInput ? (parseInt(feuillesInput.value) || 0) : 0);
+        var isRv = rvInput && rvInput.checked;
+        var sheetsPerCopy = isRv ? Math.ceil(pagesOrFeuilles / 2) : pagesOrFeuilles;
+        var total = exemplaires * sheetsPerCopy;
+
+        if (feuillesInput) {
+          feuillesInput.value = sheetsPerCopy;
+        }
 
         if (total > 0) {
           totalSpan.textContent = total + (total > 1 ? ' feuilles' : ' feuille');
@@ -756,16 +764,23 @@
 
         if (taille === 'A4') prixEncre = prixEncre / 2;
 
-        var nbPages = nbExemplaires * nbFeuilles;
-        var coutPapier = feuilles_payees ? 0 : (nbPages * prixPapier);
+        var pagesInput = brochure.querySelector('input[name*="[nb_pages]"]');
+        var feuillesInput = brochure.querySelector('input[name*="[nb_feuilles]"]');
 
-        var nbPagesExactInput = brochure.querySelector('input[name*="[nb_pages]"]');
-        var nbFacesTotalEncre = nbPagesExactInput ? (nbExemplaires * parseFloat(nbPagesExactInput.value)) : (rv ? nbPages * 2 : nbPages);
+        var pagesParCopie = pagesInput ? (parseFloat(pagesInput.value) || 0) : (feuillesInput ? (parseFloat(feuillesInput.value) || 0) : 0);
+        var sheetsParCopie = rv ? Math.ceil(pagesParCopie / 2) : pagesParCopie;
+        if (feuillesInput) {
+          feuillesInput.value = sheetsParCopie;
+        }
 
-        var coutEncre = nbFacesTotalEncre * prixEncre;
+        var totalSheetsPaper = nbExemplaires * sheetsParCopie;
+        var coutPapier = feuilles_payees ? 0 : (totalSheetsPaper * prixPapier);
+
+        var totalPagesEncre = nbExemplaires * pagesParCopie;
+        var coutEncre = totalPagesEncre * prixEncre;
         var coutBrochure = coutPapier + coutEncre;
 
-        console.log(`Brochure ${taille}: exemplaires=${nbExemplaires}, feuilles=${nbFeuilles}, rv=${rv}, nbPages=${nbPages}, prixPapier=${prixPapier}, prixEncre=${prixEncre}, coutBrochure=${coutBrochure}`);
+        console.log(`Brochure ${taille}: exemplaires=${nbExemplaires}, pages=${pagesParCopie}, feuilles=${sheetsParCopie}, rv=${rv}, totalFeuilles=${totalSheetsPaper}, totalEncre=${totalPagesEncre}, prixPapier=${prixPapier}, prixEncre=${prixEncre}, coutBrochure=${coutBrochure}`);
 
         price += coutBrochure;
 
@@ -879,20 +894,22 @@
 
         if (taille === 'A4') prixEncre = prixEncre / 2;
 
-        var nbPages = nbExemplaires * nbFeuilles;
+        var pagesInput = brochure.querySelector('input[name*="[nb_pages]"]');
+        var feuillesInput = brochure.querySelector('input[name*="[nb_feuilles]"]');
+        var pagesParCopie = pagesInput ? (parseFloat(pagesInput.value) || 0) : (feuillesInput ? (parseFloat(feuillesInput.value) || 0) : 0);
+        var sheetsParCopie = rv ? Math.ceil(pagesParCopie / 2) : pagesParCopie;
 
-        var nbPagesExactInput = brochure.querySelector('input[name*="[nb_pages]"]');
-        var nbPagesEncre = nbPagesExactInput ? (nbExemplaires * parseFloat(nbPagesExactInput.value)) : (rv ? nbPages * 2 : nbPages);
+        var totalSheetsPaper = nbExemplaires * sheetsParCopie;
+        var totalPagesEncre = nbExemplaires * pagesParCopie;
 
-        var coutEncreBrochure = nbPagesEncre * prixEncre;
+        var coutEncreBrochure = totalPagesEncre * prixEncre;
+        var coutPapierBrochure = feuilles_payees ? 0 : (totalSheetsPaper * prixPapier);
 
         prixPapierMoyen += prixPapier;
         prixEncreMoyen += prixEncre;
-        totalPages += nbPages;
-        totalPagesEncre += nbPagesEncre;
+        totalPages += totalSheetsPaper;
+        totalPagesEncre += totalPagesEncre;
         coutEncreTotal += coutEncreBrochure;
-
-        var coutPapierBrochure = feuilles_payees ? 0 : (nbPages * prixPapier);
         coutPapierTotal += coutPapierBrochure;
 
         if (detailEncreBrochure) {
@@ -911,7 +928,7 @@
       detailCalcul = `
             <div class="price-detail" style="font-size: 0.9em; color: #666; margin-top: 5px;">
                 <strong>Détail du calcul :</strong><br>
-                • ${totalExemplaires} exemplaires × ${feuillesParExemplaireText} feuilles = ${totalPagesText} pages<br>
+                • ${totalExemplaires} exemplaires × ${feuillesParExemplaireText} feuilles = ${totalPagesText} feuilles papier<br>
                 • Papier : ${totalPages} feuilles × ${prixPapierMoyen.toFixed(3)}€ = ${coutPapierTotal.toFixed(2)}€<br>
                 • Encre : ${totalPagesEncre} pages × ${prixEncreMoyen.toFixed(4)}€ = ${coutEncreTotal.toFixed(2)}€${detailEncre}<br>
                 <strong>Total : ${price.toFixed(2)}€</strong>
