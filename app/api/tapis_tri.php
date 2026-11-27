@@ -870,7 +870,8 @@ function handleDupliInfo($con_pdo, $input) {
 /**
  * Calcul du prix d'un job pour duplicopieur selon la logique de tirage_multimachines
  */
-function computeDupliJobPrice($con_pdo, $job): float {
+if (!function_exists('computeDupliJobPrice')) {
+    function computeDupliJobPrice($con_pdo, $job): float {
     $dupliId = intval($job['machine_id'] ?? 0);
     $paperSize = strtoupper($job['paper_size'] ?? 'A4');
     $taille = (strpos($paperSize, 'A3') !== false) ? 'A3' : 'A4';
@@ -923,4 +924,5 @@ function computeDupliJobPrice($con_pdo, $job): float {
     $coutPapier = $nbFeuilles * $prixPapier;
 
     return round($coutMasters + $coutPassages + $coutPapier, 2);
+    }
 }

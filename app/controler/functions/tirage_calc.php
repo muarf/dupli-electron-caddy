@@ -105,33 +105,91 @@ function resolveJobMachineInfo($con_pdo, $db, $job) {
 }
 
 /**
+ * Calcul du prix d'un job pour duplicopieur selon la logique de tirage_multimachines
+ */
+if (!function_exists('computeDupliJobPrice')) {
+    function computeDupliJobPrice($con_pdo, $job): float {
+        $dupliId = intval($job['machine_id'] ?? 0);
+        $paperSize = strtoupper($job['paper_size'] ?? 'A4');
+        $taille = (strpos($paperSize, 'A3') !== false) ? 'A3' : 'A4';
+        $rv = !empty($job['duplex']) && ($job['duplex'] == 1 || $job['duplex'] === 'oui' || $job['duplex'] === true || $job['duplex'] === '1');
+        $feuillesPayees = !empty($job['feuilles_payees']);
+
+        $masterAv = intval($job['master_av'] ?? 0);
+        $masterAp = intval($job['master_ap'] ?? 0);
+        $passageAv = intval($job['passage_av'] ?? 0);
+        $passageAp = intval($job['passage_ap'] ?? 0);
+
+        $nbMasters = max(0, $masterAp - $masterAv);
+        $nbPassages = max(0, $passageAp - $passageAv);
+
+        // Si les compteurs n'ont pas été saisis ou différence = 0, estimation de secours
+        if ($nbMasters <= 0 && $nbPassages <= 0) {
+            $totalPages = max(1, intval($job['total_pages'] ?? 1));
+            $copies = max(1, intval($job['copies'] ?? 1));
+            $nbMasters = $totalPages;
+            $nbPassages = $totalPages * $copies;
+        }
+
+        // Récupérer les prix
+        $stmt = $con_pdo->prepare("SELECT type, unite FROM prix WHERE machine_type = 'dupli' AND machine_id = ?");
+        $stmt->execute([$dupliId]);
+        $prixMap = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $prixMap[$row['type']] = floatval($row['unite']);
+        }
+
+        $prixMaster = $prixMap['master'] ?? 0.15;
+        $tambour = !empty($job['tambour']) ? $job['tambour'] : 'tambour_noir';
+        $prixPassage = $prixMap[$tambour] ?? ($prixMap['tambour_noir'] ?? 0.02);
+
+        $prixData = function_exists('get_price') ? get_price() : [];
+        $prixPapier = $prixData['papier'][$taille] ?? ($taille === 'A3' ? 0.012 : 0.006);
+
+        if ($taille === 'A4') {
+            $prixMaster = $prixMaster / 2;
+            $prixPassage = $prixPassage / 2;
+        }
+
+        $nbFeuilles = $rv ? ceil($nbPassages / 2) : $nbPassages;
+        if ($feuillesPayees) {
+            $nbFeuilles = 0;
+        }
+
+        $coutMasters = $nbMasters * $prixMaster;
+        $coutPassages = $nbPassages * $prixPassage;
+        $coutPapier = $nbFeuilles * $prixPapier;
+
+        return round($coutMasters + $coutPassages + $coutPapier, 2);
+    }
+}
+
+/**
  * Calcule une estimation précise du prix pour un job
  */
 function computeJobEstimatedPrice($con_pdo, $job): float {
     try {
-        $printerName = $job['printer_name'] ?? '';
         $db = create_database_manager();
-        $mapping = $db->selectOne("SELECT * FROM printer_mappings WHERE system_printer_name = ?", [$printerName]);
+        $machineInfo = resolveJobMachineInfo($con_pdo, $db, $job);
+        $machineType = $machineInfo['type'] ?? 'photocop';
+        $machineId = intval($machineInfo['id'] ?? 1);
 
         $totalPages = intval($job['total_pages'] ?? 1);
         $copies = intval($job['copies'] ?? 1);
         $globalTotalPages = max(1, $totalPages * $copies);
         $colorRaw = strtolower(strval($job['color_mode'] ?? ''));
         $isColor = (strpos($colorRaw, 'color') !== false || $colorRaw === 'oui' || $colorRaw === '2' || $colorRaw === '1');
-        $duplex = ($job['duplex'] == 1 || job['duplex'] === true || $job['duplex'] === '1');
+        $duplex = !empty($job['duplex']) && ($job['duplex'] == 1 || $job['duplex'] === true || $job['duplex'] === '1' || $job['duplex'] === 'oui');
         $paperSize = strtoupper($job['paper_size'] ?? 'A4');
         $isA3 = (strpos($paperSize, 'A3') !== false || stripos($job['document'] ?? '', 'A3') !== false);
         $taille = $isA3 ? 'A3' : 'A4';
 
-        if (!$mapping) {
-            // Pas de mapping spécifique : tarif de repli standard (ex: 0.10€ par page N&B, 0.25€ couleur)
-            $unitPrice = $isColor ? 0.25 : 0.10;
-            if ($taille === 'A3') $unitPrice *= 2;
-            return round($globalTotalPages * $unitPrice, 2);
+        if ($machineType === 'dupli' || $machineType === 'duplicopieur') {
+            if (function_exists('computeDupliJobPrice')) {
+                return computeDupliJobPrice($con_pdo, $job);
+            }
+            return 0.20;
         }
-
-        $machineType = $mapping['machine_type'] ?? 'photocop';
-        $machineId = intval($mapping['machine_id'] ?? 1);
 
         if ($machineType === 'photocop') {
             $machine = $con_pdo->query("SELECT marque, type_encre FROM photocopieurs WHERE id = $machineId")->fetch(PDO::FETCH_ASSOC);
@@ -140,10 +198,10 @@ function computeJobEstimatedPrice($con_pdo, $job): float {
             $marque = $machine['marque'];
             $machine_type_detected = $machine['type_encre'] ?? 'toner';
 
-            $machine_prices = getMachinePrices($con_pdo, $marque);
-            $prix_data = get_price();
-            $prix_papier_a4 = $prix_data['papier']['A4'] ?? 0.01;
-            $prix_papier_a3 = $prix_data['papier']['A3'] ?? 0.02;
+            $machine_prices = function_exists('getMachinePrices') ? getMachinePrices($con_pdo, $marque) : [];
+            $prix_data = function_exists('get_price') ? get_price() : [];
+            $prix_papier_a4 = $prix_data['papier']['A4'] ?? 0.006;
+            $prix_papier_a3 = $prix_data['papier']['A3'] ?? 0.012;
 
             $rawFill = floatval($job['fill_rate'] ?? 0.5);
             if ($rawFill > 1.0) $rawFill = $rawFill / 100.0;
