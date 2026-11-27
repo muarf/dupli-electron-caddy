@@ -275,7 +275,6 @@ foreach ($emfPositions as $index => $startOffset) {
         debugLog("Skipping EMF at index $index: Length is too small ($length), likely metadata/header record.");
         continue;
     }
-    $validEmfCount++;
 
     $outputPng = $outputDir . "page_$index.png";
 
@@ -283,6 +282,7 @@ foreach ($emfPositions as $index => $startOffset) {
     // IMPORTANT : ce `continue` doit être AVANT l'écriture de l'EMF sur disque,
     // sinon l'EMF serait créé mais jamais supprimé.
     if (file_exists($outputPng) && filesize($outputPng) > 0) {
+        $validEmfCount++;
         if (!$firstPageWidth) {
             $sz = @getimagesize($outputPng);
             if ($sz && $sz[0] > 0 && $sz[1] > 0) {
@@ -333,6 +333,8 @@ foreach ($emfPositions as $index => $startOffset) {
         debugLog("Skipping EMF at index $index: Invalid or zero image bounds ({$w}x{$h}), ignoring trailer record.");
         continue;
     }
+
+    $validEmfCount++;
 
     $tempEmf = $outputDir . "page_$index.emf";
     file_put_contents($tempEmf, $emfData);

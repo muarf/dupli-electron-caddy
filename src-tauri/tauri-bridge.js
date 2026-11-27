@@ -295,8 +295,11 @@
               if (data && data.success) {
                 // PHP retourne base_url avec le port hardcodé 8001 — on construit l'URL relative à la place
                 thumbnailUrl = `/thumbnails/${targetDirId}/page_0.png?t=${Date.now()}`;
-                if (data.page_count) totalPages = Math.max(totalPages, data.page_count);
-                if (data.detected_pages) totalPages = Math.max(totalPages, data.detected_pages);
+                if (data.page_count && data.page_count > 0) {
+                  totalPages = data.page_count;
+                } else if (data.detected_pages && data.detected_pages > 0) {
+                  totalPages = data.detected_pages;
+                }
                 pages = data.pages || [];
                 break; // succes, pas besoin du fallback
               }
